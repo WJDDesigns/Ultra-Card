@@ -2245,12 +2245,23 @@ export interface CardColumn {
     hold_action?: ModuleActionConfig;
     double_tap_action?: ModuleActionConfig;
 }
+export type ColumnLayoutId = '1-col' | '1-2-1-2' | '1-3-2-3' | '2-3-1-3' | '2-5-3-5' | '3-5-2-5' | '1-3-1-3-1-3' | '1-4-1-2-1-4' | '1-5-3-5-1-5' | '1-6-2-3-1-6' | '1-4-1-4-1-4-1-4' | '1-5-1-5-1-5-1-5' | '1-6-1-6-1-6-1-6' | '1-8-1-4-1-4-1-8' | '1-5-1-5-1-5-1-5-1-5' | '1-6-1-6-1-3-1-6-1-6' | '1-8-1-4-1-4-1-4-1-8' | '1-6-1-6-1-6-1-6-1-6-1-6' | '50-50' | '30-70' | '70-30' | '40-60' | '60-40' | '33-33-33' | '25-50-25' | '20-60-20' | '25-25-25-25' | 'custom';
+export interface ResponsiveColumnLayoutConfig {
+    layout: ColumnLayoutId;
+    custom_sizing?: string;
+}
+export interface ResponsiveColumnLayouts {
+    laptop?: ResponsiveColumnLayoutConfig;
+    tablet?: ResponsiveColumnLayoutConfig;
+    mobile?: ResponsiveColumnLayoutConfig;
+}
 export interface CardRow {
     id: string;
     name?: string;
     columns: CardColumn[];
-    column_layout?: '1-col' | '1-2-1-2' | '1-3-2-3' | '2-3-1-3' | '2-5-3-5' | '3-5-2-5' | '1-3-1-3-1-3' | '1-4-1-2-1-4' | '1-5-3-5-1-5' | '1-6-2-3-1-6' | '1-4-1-4-1-4-1-4' | '1-5-1-5-1-5-1-5' | '1-6-1-6-1-6-1-6' | '1-8-1-4-1-4-1-8' | '1-5-1-5-1-5-1-5-1-5' | '1-6-1-6-1-3-1-6-1-6' | '1-8-1-4-1-4-1-4-1-8' | '1-6-1-6-1-6-1-6-1-6-1-6' | '50-50' | '30-70' | '70-30' | '40-60' | '60-40' | '33-33-33' | '25-50-25' | '20-60-20' | '25-25-25-25' | 'custom';
+    column_layout?: ColumnLayoutId;
     custom_column_sizing?: string;
+    responsive_column_layouts?: ResponsiveColumnLayouts;
     gap?: number;
     column_alignment?: 'top' | 'middle' | 'bottom';
     content_alignment?: 'start' | 'end' | 'center' | 'stretch';

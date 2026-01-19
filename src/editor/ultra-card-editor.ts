@@ -62,6 +62,7 @@ export class UltraCardEditor extends LitElement {
   @state() private _snapshotSchedulerStatus: SnapshotSchedulerStatus | null = null;
   @state() private _newerBackupAvailable: any = null;
   @state() private _showSyncNotification: boolean = false;
+  @state() private _skipDefaultModules: boolean = false;
   @state() private _isCreatingManualSnapshot: boolean = false;
 
   // Variable mapping dialog state
@@ -107,6 +108,10 @@ export class UltraCardEditor extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    
+    // Initialize Pro settings from localStorage
+    this._skipDefaultModules = UltraCardEditor.getSkipDefaultModulesSetting();
+    
     try {
       (window as any).__UC_PREVIEW_SUPPRESS_LOCKS = true;
       window.dispatchEvent(
@@ -1326,6 +1331,71 @@ export class UltraCardEditor extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  // localStorage key for Pro setting to skip default modules
+  private static readonly SKIP_DEFAULT_MODULES_KEY = 'ultra-card-pro-skip-default-modules';
+  // Window-level fallback key when localStorage is full
+  private static readonly SKIP_DEFAULT_MODULES_WINDOW_KEY = '__ultraCardSkipDefaultModules';
+
+  /**
+   * Get whether to skip default modules when creating new cards (Pro feature)
+   * Checks localStorage, sessionStorage, and window fallback
+   */
+  public static getSkipDefaultModulesSetting(): boolean {
+    // First check window fallback (takes priority - most recent in session)
+    if ((window as any)[UltraCardEditor.SKIP_DEFAULT_MODULES_WINDOW_KEY] === true) {
+      return true;
+    }
+    // Check sessionStorage (separate quota from localStorage, persists during session)
+    try {
+      if (sessionStorage.getItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY) === 'true') {
+        return true;
+      }
+    } catch { /* ignore */ }
+    // Finally check localStorage
+    try {
+      return localStorage.getItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Set whether to skip default modules when creating new cards (Pro feature)
+   * Tries localStorage, sessionStorage, and window fallback
+   */
+  private _setSkipDefaultModulesSetting(enabled: boolean): void {
+    // Always set window fallback (works even when all storage is full)
+    (window as any)[UltraCardEditor.SKIP_DEFAULT_MODULES_WINDOW_KEY] = enabled;
+    this._skipDefaultModules = enabled;
+    
+    let savedTo = 'memory only';
+    
+    // Try sessionStorage first (separate quota, persists during browser session)
+    try {
+      sessionStorage.setItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY, enabled ? 'true' : 'false');
+      savedTo = 'sessionStorage';
+    } catch { /* sessionStorage full or unavailable */ }
+    
+    // Also try localStorage for persistence across browser restarts
+    try {
+      localStorage.setItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY, enabled ? 'true' : 'false');
+      savedTo = 'localStorage';
+    } catch { /* localStorage full */ }
+    
+    console.log(`[Ultra Card Pro] Skip default modules setting saved to ${savedTo}:`, enabled);
+  }
+
+  /**
+   * Handle the skip default modules toggle change
+   */
+  private _handleSkipDefaultModulesChange(e: Event): void {
+    e.stopPropagation();
+    const target = e.target as HTMLInputElement;
+    const checked = target.checked;
+    console.log('[Ultra Card Pro] Toggle changed to:', checked);
+    this._setSkipDefaultModulesSetting(checked);
   }
 
   /**
@@ -3747,6 +3817,7 @@ export class UltraCardEditor extends LitElement {
         <!-- PRO TOOLS SECTIONS (integration auth only) -->
         ${isLoggedIn ? this._renderCardProTools(lang, isPro) : ''}
         ${isLoggedIn && isPro ? this._renderDashboardProTools(lang) : ''}
+        ${isLoggedIn && isPro ? this._renderProSettings(lang) : ''}
 
         <!-- MODALS -->
         ${this._showBackupHistory && this._cloudUser
@@ -4959,6 +5030,134 @@ export class UltraCardEditor extends LitElement {
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
     return time.toLocaleDateString();
+  }
+
+  /**
+   * Render Pro Settings Section (Pro tab only)
+   */
+  private _renderProSettings(lang: string): TemplateResult {
+    return html`
+      <div class="pro-tools-section pro-settings-section">
+        <div class="section-header">
+          <div class="header-icon">
+            <ha-icon icon="mdi:cog"></ha-icon>
+          </div>
+          <div class="header-content">
+            <h3>${localize('editor.pro_settings.title', lang, 'Pro Settings')}</h3>
+            <p>${localize('editor.pro_settings.description', lang, 'Exclusive settings for Ultra Card Pro subscribers')}</p>
+          </div>
+        </div>
+
+        <div class="pro-settings-list">
+          <!-- Start with Empty Card Setting -->
+          <div class="pro-setting-item">
+            <div class="setting-icon">
+              <ha-icon icon="mdi:card-remove-outline"></ha-icon>
+            </div>
+            <div class="setting-content">
+              <h4>${localize('editor.pro_settings.skip_default_modules', lang, 'Start with Empty Card')}</h4>
+              <p>${localize('editor.pro_settings.skip_default_modules_desc', lang, 'When adding a new Ultra Card, start with an empty layout instead of the default text and image modules')}</p>
+            </div>
+            <div class="setting-toggle">
+              <ha-switch
+                .checked=${this._skipDefaultModules}
+                @change=${this._handleSkipDefaultModulesChange}
+              ></ha-switch>
+            </div>
+          </div>
+        </div>
+
+        <style>
+          .pro-settings-section {
+            margin: 16px 0;
+            padding: 20px;
+            background: var(--card-background-color);
+            border-radius: 12px;
+            border: 2px solid var(--primary-color, #03a9f4);
+          }
+
+          .pro-settings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+          }
+
+          .pro-setting-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px;
+            background: var(--secondary-background-color, #f5f5f5);
+            border-radius: 10px;
+            transition: all 0.2s ease;
+          }
+
+          .pro-setting-item:hover {
+            background: var(--divider-color, #e0e0e0);
+          }
+
+          .pro-setting-item .setting-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            background: linear-gradient(135deg, var(--primary-color, #03a9f4) 0%, #0288d1 100%);
+            border-radius: 10px;
+            box-shadow: 0 3px 8px rgba(3, 169, 244, 0.25);
+          }
+
+          .pro-setting-item .setting-icon ha-icon {
+            --mdc-icon-size: 24px;
+            color: white;
+          }
+
+          .pro-setting-item .setting-content {
+            flex: 1;
+            min-width: 0;
+          }
+
+          .pro-setting-item .setting-content h4 {
+            margin: 0 0 4px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--primary-text-color);
+          }
+
+          .pro-setting-item .setting-content p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.4;
+            color: var(--secondary-text-color);
+          }
+
+          .pro-setting-item .setting-toggle {
+            display: flex;
+            align-items: center;
+            padding-top: 4px;
+          }
+
+          .pro-setting-item .setting-toggle ha-switch {
+            --mdc-theme-secondary: var(--primary-color, #03a9f4);
+          }
+
+          @media (max-width: 480px) {
+            .pro-setting-item {
+              flex-wrap: wrap;
+            }
+
+            .pro-setting-item .setting-toggle {
+              width: 100%;
+              justify-content: flex-end;
+              padding-top: 8px;
+              border-top: 1px solid var(--divider-color);
+              margin-top: 8px;
+            }
+          }
+        </style>
+      </div>
+    `;
   }
 
   private _handleCardNameChange(e: Event) {

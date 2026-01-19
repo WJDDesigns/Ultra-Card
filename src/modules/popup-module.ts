@@ -2140,38 +2140,46 @@ export class UltraPopupModule extends BaseUltraModule {
     let renderPopupToPortal: (initialInvisibleRender?: boolean) => void;
 
     // Register external popup open listener (for module triggers)
-    // This is idempotent - only one listener per unique popup key
-    const listenerKey = `__ultraPopupOpenListener_${uniquePopupKey}`;
+    // BUGFIX: Use popup module ID as listener key (not uniquePopupKey) to prevent listener accumulation
+    // During editing, uniquePopupKey changes because cardInstanceId changes with Date.now(),
+    // causing multiple listeners to be added but never removed, resulting in multiple popups opening
+    const listenerKey = `__ultraPopupOpenListener_${popupModule.id}`;
     const w = window as any;
-    if (!w[listenerKey]) {
-      const handleExternalOpen = (e: Event) => {
-        const customEvent = e as CustomEvent;
-        // For external triggers, check both the module ID and unique key
-        if (customEvent.detail?.popupId === popupModule.id || customEvent.detail?.popupId === uniquePopupKey) {
-          popupStates.set(uniquePopupKey, true);
-          manuallyOpenedPopups.add(uniquePopupKey);
-          if (popupModule.auto_close_timer_enabled) {
-            this._startAutoCloseTimer(popupModule, uniquePopupKey);
-          }
-          // Render popup directly
-          setTimeout(() => {
-            if (renderPopupToPortal) {
-              renderPopupToPortal(false);
-              // TEMPLATE FIX: Schedule a card update after templates have had time to evaluate
-              setTimeout(() => {
-                if (popupStates.get(uniquePopupKey)) {
-                  // Set refresh flag so portal content will be re-rendered with evaluated templates
-                  popupNeedsRefresh.set(uniquePopupKey, true);
-                  this.triggerPreviewUpdate(true);
-                }
-              }, 500);
-            }
-          }, 0);
-        }
-      };
-      window.addEventListener('ultra-popup-open', handleExternalOpen);
-      w[listenerKey] = handleExternalOpen;
+    
+    // Always remove existing listener before adding new one (handles cardInstanceId changes during editing)
+    if (w[listenerKey]) {
+      window.removeEventListener('ultra-popup-open', w[listenerKey]);
+      delete w[listenerKey];
     }
+    
+    const handleExternalOpen = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const eventPopupId = customEvent.detail?.popupId;
+      // Match against this specific popup's module ID
+      if (eventPopupId === popupModule.id) {
+        popupStates.set(uniquePopupKey, true);
+        manuallyOpenedPopups.add(uniquePopupKey);
+        if (popupModule.auto_close_timer_enabled) {
+          this._startAutoCloseTimer(popupModule, uniquePopupKey);
+        }
+        // Render popup directly
+        setTimeout(() => {
+          if (renderPopupToPortal) {
+            renderPopupToPortal(false);
+            // TEMPLATE FIX: Schedule a card update after templates have had time to evaluate
+            setTimeout(() => {
+              if (popupStates.get(uniquePopupKey)) {
+                // Set refresh flag so portal content will be re-rendered with evaluated templates
+                popupNeedsRefresh.set(uniquePopupKey, true);
+                this.triggerPreviewUpdate(true);
+              }
+            }, 500);
+          }
+        }, 0);
+      }
+    };
+    window.addEventListener('ultra-popup-open', handleExternalOpen);
+    w[listenerKey] = handleExternalOpen;
 
     // Handle trigger click
     const handleTriggerClick = (e: Event) => {

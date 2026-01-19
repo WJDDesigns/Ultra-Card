@@ -1,5 +1,20 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta22
+
+### 🚀 New Features
+
+- **Added viewport column breakpoint menu** - New breakpoint menu for responsive column layouts across different viewports
+- **Added Pro User toggle to remove default modules on new cards** - Pro users can now disable default modules when creating new cards
+
+### 🐛 Bug Fixes
+
+- **Fixed double border issue with row builder** - Resolved visual border duplication in row builder
+- **Fixed issues with popup module with multiple windows** - Corrected popup behavior when using multiple browser windows
+- **Fixed using certain operators in active/inactive state** - Resolved issues with comparison operators in state conditions
+
+---
+
 ## Version 2.3.0-beta20
 
 ### 🚀 New Features

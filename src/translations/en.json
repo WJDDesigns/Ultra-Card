@@ -18,6 +18,12 @@
       "title": "Behavior",
       "description": "Configure how your card responds to user interactions"
     },
+    "pro_settings": {
+      "title": "Pro Settings",
+      "description": "Exclusive settings for Ultra Card Pro subscribers",
+      "skip_default_modules": "Start with Empty Card",
+      "skip_default_modules_desc": "When adding a new Ultra Card, start with an empty layout instead of the default text and image modules"
+    },
     "spacing": {
       "title": "Spacing",
       "description": "Control the spacing and positioning of your card"

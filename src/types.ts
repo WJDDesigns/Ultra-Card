@@ -4097,43 +4097,64 @@ export interface CardColumn {
   double_tap_action?: ModuleActionConfig;
 }
 
+// Column layout ID type for reuse
+export type ColumnLayoutId =
+  | '1-col'
+  | '1-2-1-2'
+  | '1-3-2-3'
+  | '2-3-1-3'
+  | '2-5-3-5'
+  | '3-5-2-5'
+  | '1-3-1-3-1-3'
+  | '1-4-1-2-1-4'
+  | '1-5-3-5-1-5'
+  | '1-6-2-3-1-6'
+  | '1-4-1-4-1-4-1-4'
+  | '1-5-1-5-1-5-1-5'
+  | '1-6-1-6-1-6-1-6'
+  | '1-8-1-4-1-4-1-8'
+  | '1-5-1-5-1-5-1-5-1-5'
+  | '1-6-1-6-1-3-1-6-1-6'
+  | '1-8-1-4-1-4-1-4-1-8'
+  | '1-6-1-6-1-6-1-6-1-6-1-6'
+  // Legacy support
+  | '50-50'
+  | '30-70'
+  | '70-30'
+  | '40-60'
+  | '60-40'
+  | '33-33-33'
+  | '25-50-25'
+  | '20-60-20'
+  | '25-25-25-25'
+  // Custom sizing
+  | 'custom';
+
+// Responsive column layout for a specific breakpoint
+export interface ResponsiveColumnLayoutConfig {
+  layout: ColumnLayoutId;
+  custom_sizing?: string; // Only used when layout === 'custom'
+}
+
+// Responsive column layouts by device breakpoint
+// Desktop layout uses the base column_layout property
+// Other breakpoints can have different layouts (with <= columns than desktop)
+export interface ResponsiveColumnLayouts {
+  laptop?: ResponsiveColumnLayoutConfig;
+  tablet?: ResponsiveColumnLayoutConfig;
+  mobile?: ResponsiveColumnLayoutConfig;
+}
+
 // Row interface that contains columns
 export interface CardRow {
   id: string;
   name?: string;
   columns: CardColumn[];
-  column_layout?:
-    | '1-col'
-    | '1-2-1-2'
-    | '1-3-2-3'
-    | '2-3-1-3'
-    | '2-5-3-5'
-    | '3-5-2-5'
-    | '1-3-1-3-1-3'
-    | '1-4-1-2-1-4'
-    | '1-5-3-5-1-5'
-    | '1-6-2-3-1-6'
-    | '1-4-1-4-1-4-1-4'
-    | '1-5-1-5-1-5-1-5'
-    | '1-6-1-6-1-6-1-6'
-    | '1-8-1-4-1-4-1-8'
-    | '1-5-1-5-1-5-1-5-1-5'
-    | '1-6-1-6-1-3-1-6-1-6'
-    | '1-8-1-4-1-4-1-4-1-8'
-    | '1-6-1-6-1-6-1-6-1-6-1-6'
-    // Legacy support
-    | '50-50'
-    | '30-70'
-    | '70-30'
-    | '40-60'
-    | '60-40'
-    | '33-33-33'
-    | '25-50-25'
-    | '20-60-20'
-    | '25-25-25-25'
-    // Custom sizing
-    | 'custom';
+  column_layout?: ColumnLayoutId;
   custom_column_sizing?: string; // Custom CSS grid template columns value (e.g., "1fr 1fr 100px")
+  // Responsive column layouts - allows different layouts per breakpoint
+  // Desktop uses column_layout/custom_column_sizing; other breakpoints can override
+  responsive_column_layouts?: ResponsiveColumnLayouts;
   gap?: number;
   column_alignment?: 'top' | 'middle' | 'bottom';
   content_alignment?: 'start' | 'end' | 'center' | 'stretch';

@@ -601,8 +601,61 @@ export class UltraCard extends LitElement {
     return document.createElement('ultra-card-editor');
   }
 
+  // localStorage key for Pro setting to skip default modules
+  private static readonly SKIP_DEFAULT_MODULES_KEY = 'ultra-card-pro-skip-default-modules';
+  // Window-level fallback key when localStorage is full
+  private static readonly SKIP_DEFAULT_MODULES_WINDOW_KEY = '__ultraCardSkipDefaultModules';
+
+  /**
+   * Check if user wants to skip default modules when creating new cards
+   * Note: This setting is only accessible in the Pro tab, so only Pro users can enable it.
+   * Checks window fallback, sessionStorage, and localStorage.
+   */
+  private static _shouldSkipDefaultModules(): boolean {
+    // First check window fallback (takes priority - most recent in session)
+    if ((window as any)[UltraCard.SKIP_DEFAULT_MODULES_WINDOW_KEY] === true) {
+      return true;
+    }
+    // Check sessionStorage (separate quota, persists during browser session)
+    try {
+      if (sessionStorage.getItem(UltraCard.SKIP_DEFAULT_MODULES_KEY) === 'true') {
+        return true;
+      }
+    } catch { /* ignore */ }
+    // Finally check localStorage
+    try {
+      return localStorage.getItem(UltraCard.SKIP_DEFAULT_MODULES_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
   // Provide default configuration for new cards
   public static getStubConfig(): UltraCardConfig {
+    // Check if Pro user wants empty card (no default modules)
+    const skipDefaultModules = UltraCard._shouldSkipDefaultModules();
+
+    const defaultModules: CardModule[] = skipDefaultModules
+      ? []
+      : [
+          {
+            type: 'text',
+            text: 'Ultra Card',
+            font_size: 24,
+            color: '#2196f3',
+            alignment: 'center',
+          } as TextModule,
+          {
+            type: 'image',
+            image_type: 'default',
+            width: 100,
+            height: 200,
+            alignment: 'center',
+            border_radius: 8,
+            object_fit: 'cover',
+          } as ImageModule,
+        ];
+
     return {
       type: 'custom:ultra-card',
       card_background: 'var(--card-background-color, var(--ha-card-background, white))',
@@ -617,24 +670,7 @@ export class UltraCard extends LitElement {
             columns: [
               {
                 id: 'col1',
-                modules: [
-                  {
-                    type: 'text',
-                    text: 'Ultra Card',
-                    font_size: 24,
-                    color: '#2196f3',
-                    alignment: 'center',
-                  } as TextModule,
-                  {
-                    type: 'image',
-                    image_type: 'default',
-                    width: 100,
-                    height: 200,
-                    alignment: 'center',
-                    border_radius: 8,
-                    object_fit: 'cover',
-                  } as ImageModule,
-                ],
+                modules: defaultModules,
               },
             ],
           },
@@ -1294,9 +1330,18 @@ export class UltraCard extends LitElement {
       effectiveRowDesign.background_filter && effectiveRowDesign.background_filter !== 'none';
     const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
 
+    // Generate responsive column layout CSS
+    const responsiveColumnLayoutCSS = this._generateResponsiveColumnLayoutCSS(
+      row,
+      `.responsive-row-${rowId}`
+    );
+
     // Include responsive CSS if any device-specific settings or hide rules exist
-    const responsiveStyleTag = (hideOnDevicesCSS || responsiveCSS)
-      ? html`<style>${hideOnDevicesCSS}${responsiveCSS}</style>`
+    const allResponsiveCSS = [hideOnDevicesCSS, responsiveCSS, responsiveColumnLayoutCSS]
+      .filter(Boolean)
+      .join('\n');
+    const responsiveStyleTag = allResponsiveCSS
+      ? html`<style>${allResponsiveCSS}</style>`
       : '';
 
     // Check if row has actions configured
@@ -1923,6 +1968,52 @@ export class UltraCard extends LitElement {
   }
 
   /**
+   * Layout ID to CSS grid-template-columns mapping
+   */
+  private static readonly LAYOUT_CSS_MAP: Record<string, string> = {
+    // 1 Column
+    '1-col': '1fr',
+
+    // 2 Columns
+    '1-2-1-2': '1fr 1fr',
+    '1-3-2-3': '1fr 2fr',
+    '2-3-1-3': '2fr 1fr',
+    '2-5-3-5': '2fr 3fr',
+    '3-5-2-5': '3fr 2fr',
+
+    // 3 Columns
+    '1-3-1-3-1-3': '1fr 1fr 1fr',
+    '1-4-1-2-1-4': '1fr 2fr 1fr',
+    '1-5-3-5-1-5': '1fr 3fr 1fr',
+    '1-6-2-3-1-6': '1fr 4fr 1fr',
+
+    // 4 Columns
+    '1-4-1-4-1-4-1-4': '1fr 1fr 1fr 1fr',
+    '1-5-1-5-1-5-1-5': '1fr 1fr 1fr 1fr',
+    '1-6-1-6-1-6-1-6': '1fr 1fr 1fr 1fr',
+    '1-8-1-4-1-4-1-8': '1fr 2fr 2fr 1fr',
+
+    // 5 Columns
+    '1-5-1-5-1-5-1-5-1-5': '1fr 1fr 1fr 1fr 1fr',
+    '1-6-1-6-1-3-1-6-1-6': '1fr 1fr 2fr 1fr 1fr',
+    '1-8-1-4-1-4-1-4-1-8': '1fr 2fr 2fr 2fr 1fr',
+
+    // 6 Columns
+    '1-6-1-6-1-6-1-6-1-6-1-6': '1fr 1fr 1fr 1fr 1fr 1fr',
+
+    // Legacy support
+    '50-50': '1fr 1fr',
+    '30-70': '3fr 7fr',
+    '70-30': '7fr 3fr',
+    '40-60': '4fr 6fr',
+    '60-40': '6fr 4fr',
+    '33-33-33': '1fr 1fr 1fr',
+    '25-50-25': '1fr 2fr 1fr',
+    '20-60-20': '1fr 3fr 1fr',
+    '25-25-25-25': '1fr 1fr 1fr 1fr',
+  };
+
+  /**
    * Convert column layout ID to CSS grid template columns
    */
   private _getGridTemplateColumns(layout: string, columnCount: number, customSizing?: string): string {
@@ -1931,51 +2022,65 @@ export class UltraCard extends LitElement {
       return customSizing;
     }
 
-    const layouts: Record<string, string> = {
-      // 1 Column
-      '1-col': '1fr',
+    // Return the specific layout if it exists, otherwise fall back to equal columns
+    return UltraCard.LAYOUT_CSS_MAP[layout] || `repeat(${columnCount}, 1fr)`;
+  }
 
-      // 2 Columns
-      '1-2-1-2': '1fr 1fr',
-      '1-3-2-3': '1fr 2fr',
-      '2-3-1-3': '2fr 1fr',
-      '2-5-3-5': '2fr 3fr',
-      '3-5-2-5': '3fr 2fr',
+  /**
+   * Generate responsive CSS media queries for column layouts
+   * Returns CSS that overrides grid-template-columns at different breakpoints
+   */
+  private _generateResponsiveColumnLayoutCSS(row: CardRow, selector: string): string {
+    const responsiveLayouts = row.responsive_column_layouts;
+    if (!responsiveLayouts) return '';
 
-      // 3 Columns
-      '1-3-1-3-1-3': '1fr 1fr 1fr',
-      '1-4-1-2-1-4': '1fr 2fr 1fr',
-      '1-5-3-5-1-5': '1fr 3fr 1fr',
-      '1-6-2-3-1-6': '1fr 4fr 1fr',
+    const cssRules: string[] = [];
+    const columnCount = row.columns.length;
 
-      // 4 Columns
-      '1-4-1-4-1-4-1-4': '1fr 1fr 1fr 1fr',
-      '1-5-1-5-1-5-1-5': '1fr 1fr 1fr 1fr',
-      '1-6-1-6-1-6-1-6': '1fr 1fr 1fr 1fr',
-      '1-8-1-4-1-4-1-8': '1fr 2fr 2fr 1fr',
-
-      // 5 Columns
-      '1-5-1-5-1-5-1-5-1-5': '1fr 1fr 1fr 1fr 1fr',
-      '1-6-1-6-1-3-1-6-1-6': '1fr 1fr 2fr 1fr 1fr',
-      '1-8-1-4-1-4-1-4-1-8': '1fr 2fr 2fr 2fr 1fr',
-
-      // 6 Columns
-      '1-6-1-6-1-6-1-6-1-6-1-6': '1fr 1fr 1fr 1fr 1fr 1fr',
-
-      // Legacy support
-      '50-50': '1fr 1fr',
-      '30-70': '3fr 7fr',
-      '70-30': '7fr 3fr',
-      '40-60': '4fr 6fr',
-      '60-40': '6fr 4fr',
-      '33-33-33': '1fr 1fr 1fr',
-      '25-50-25': '1fr 2fr 1fr',
-      '20-60-20': '1fr 3fr 1fr',
-      '25-25-25-25': '1fr 1fr 1fr 1fr',
+    // Import DEVICE_BREAKPOINTS from types
+    const breakpoints = {
+      laptop: { minWidth: 1025, maxWidth: 1380 },
+      tablet: { minWidth: 601, maxWidth: 1024 },
+      mobile: { maxWidth: 600 },
     };
 
-    // Return the specific layout if it exists, otherwise fall back to equal columns
-    return layouts[layout] || `repeat(${columnCount}, 1fr)`;
+    // Laptop (1025px - 1380px)
+    if (responsiveLayouts.laptop) {
+      const laptopLayout = responsiveLayouts.laptop.layout;
+      const laptopCustom = responsiveLayouts.laptop.custom_sizing;
+      const gridCols = this._getGridTemplateColumns(laptopLayout, columnCount, laptopCustom);
+      cssRules.push(`
+        @media (min-width: ${breakpoints.laptop.minWidth}px) and (max-width: ${breakpoints.laptop.maxWidth}px) {
+          ${selector} { grid-template-columns: ${gridCols} !important; }
+        }
+      `);
+    }
+
+    // Tablet (601px - 1024px)
+    if (responsiveLayouts.tablet) {
+      const tabletLayout = responsiveLayouts.tablet.layout;
+      const tabletCustom = responsiveLayouts.tablet.custom_sizing;
+      const gridCols = this._getGridTemplateColumns(tabletLayout, columnCount, tabletCustom);
+      cssRules.push(`
+        @media (min-width: ${breakpoints.tablet.minWidth}px) and (max-width: ${breakpoints.tablet.maxWidth}px) {
+          ${selector} { grid-template-columns: ${gridCols} !important; }
+        }
+      `);
+    }
+
+    // Mobile (≤600px)
+    if (responsiveLayouts.mobile) {
+      const mobileLayout = responsiveLayouts.mobile.layout;
+      const mobileCustom = responsiveLayouts.mobile.custom_sizing;
+      const gridCols = this._getGridTemplateColumns(mobileLayout, columnCount, mobileCustom);
+      cssRules.push(`
+        @media (max-width: ${breakpoints.mobile.maxWidth}px) {
+          ${selector} { grid-template-columns: ${gridCols} !important; }
+        }
+      `);
+    }
+
+    return cssRules.join('\n');
   }
 
   /**
@@ -2697,7 +2802,9 @@ export class UltraCard extends LitElement {
         min-width: 0; /* critical: prevent overflow from long content */
         width: 100%;
         max-width: 100%;
-        overflow: hidden; /* keep column from exceeding its card area */
+        /* overflow: visible allows child modules to extend beyond bounds (e.g., for negative gap, gauges) */
+        /* Inline styles from _generateColumnStyles can override this when design.overflow is set */
+        overflow: visible;
         overflow-anchor: none; /* Prevent scroll anchoring on mobile when 3rd party cards update */
       }
 

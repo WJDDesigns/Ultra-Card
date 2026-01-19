@@ -29,6 +29,7 @@ export declare class LayoutTab extends LitElement {
     private _activeTabsChildTab;
     private _showColumnLayoutSelector;
     private _selectedRowForLayout;
+    private _columnLayoutBreakpoint;
     private _customSizingInput;
     private _customSizingValid;
     private _customSizingError;
@@ -616,7 +617,50 @@ export declare class LayoutTab extends LitElement {
     private _isLayoutModule;
     private _shouldAutoOpenSettings;
     private _getLayoutModuleColor;
+    /**
+     * Get the current layout for a specific breakpoint
+     */
+    private _getBreakpointLayout;
+    /**
+     * Check if a breakpoint has a custom override (not inheriting from desktop)
+     */
+    private _hasBreakpointOverride;
+    /**
+     * Get available layouts for a breakpoint based on column divisibility
+     * For non-desktop breakpoints, layouts must evenly divide the desktop column count
+     * e.g., 4 desktop columns can use 4, 2, or 1 column layouts (not 3)
+     */
+    private _getAvailableLayoutsForBreakpoint;
     private _renderColumnLayoutSelector;
+    /**
+     * Set layout for a specific breakpoint
+     */
+    private _setBreakpointLayout;
+    /**
+     * Clear a breakpoint's override (revert to inheriting from desktop)
+     */
+    private _clearBreakpointLayout;
+    /**
+     * Get valid column counts for a breakpoint (must evenly divide desktop columns)
+     */
+    private _getValidColumnCountsForBreakpoint;
+    /**
+     * Handle custom sizing input for a specific breakpoint
+     */
+    private _onCustomSizingInputBreakpoint;
+    /**
+     * Validate custom column sizing with exact value count (for desktop)
+     */
+    private _validateCustomColumnSizingExact;
+    /**
+     * Validate custom column sizing for non-desktop breakpoints
+     * Value count must evenly divide into desktop column count
+     */
+    private _validateCustomColumnSizingDivisible;
+    /**
+     * Apply custom sizing for a specific breakpoint
+     */
+    private _applyCustomSizingBreakpoint;
     private _onCustomSizingInput;
     private _applyCustomSizing;
     static get styles(): import("lit").CSSResult;

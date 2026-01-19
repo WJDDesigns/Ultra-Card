@@ -210,6 +210,7 @@ export class LayoutTab extends LitElement {
   // Column layout selector state
   @state() private _showColumnLayoutSelector = false;
   @state() private _selectedRowForLayout = -1;
+  @state() private _columnLayoutBreakpoint: DeviceBreakpoint = 'desktop';
 
   // Custom column sizing state
   @state() private _customSizingInput = '';
@@ -5771,7 +5772,7 @@ export class LayoutTab extends LitElement {
             padding: 8px 12px;
             min-height: 60px;
             box-sizing: border-box;
-            overflow: hidden;
+            overflow: visible;
           "
           @dragover=${this._onDragOver}
           @dragenter=${(e: DragEvent) =>
@@ -5813,7 +5814,7 @@ export class LayoutTab extends LitElement {
                     (this._dropTarget as any)?.childIndex === childIndex
                       ? 'drop-target'
                       : ''}"
-                    style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;"
+                    style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
                   >
                     ${this._renderLayoutChildModule(
                       childModule,
@@ -6297,7 +6298,7 @@ export class LayoutTab extends LitElement {
             padding: 8px 12px;
             min-height: 60px;
             box-sizing: border-box;
-            overflow: hidden;
+            overflow: visible;
           "
           @dragover=${this._onDragOver}
           @dragenter=${(e: DragEvent) => {
@@ -6694,7 +6695,7 @@ export class LayoutTab extends LitElement {
             padding: 8px 12px;
             min-height: 60px;
             box-sizing: border-box;
-            overflow: hidden;
+            overflow: visible;
           "
           @dragover=${this._onDragOver}
           @dragenter=${(e: DragEvent) => {
@@ -20664,22 +20665,93 @@ export class LayoutTab extends LitElement {
     return 'var(--accent-color, var(--orange-color, #ff9800))';
   }
 
+  /**
+   * Get the current layout for a specific breakpoint
+   */
+  private _getBreakpointLayout(row: CardRow, breakpoint: DeviceBreakpoint): { layout: string; custom?: string } {
+    if (breakpoint === 'desktop') {
+      return {
+        layout: row.column_layout || '1-col',
+        custom: row.custom_column_sizing,
+      };
+    }
+    
+    const responsiveLayouts = row.responsive_column_layouts;
+    if (!responsiveLayouts || !responsiveLayouts[breakpoint]) {
+      // Inherit from desktop
+      return {
+        layout: row.column_layout || '1-col',
+        custom: row.custom_column_sizing,
+      };
+    }
+    
+    return {
+      layout: responsiveLayouts[breakpoint]!.layout,
+      custom: responsiveLayouts[breakpoint]!.custom_sizing,
+    };
+  }
+
+  /**
+   * Check if a breakpoint has a custom override (not inheriting from desktop)
+   */
+  private _hasBreakpointOverride(row: CardRow, breakpoint: DeviceBreakpoint): boolean {
+    if (breakpoint === 'desktop') return true; // Desktop is always "set"
+    return !!(row.responsive_column_layouts?.[breakpoint]);
+  }
+
+  /**
+   * Get available layouts for a breakpoint based on column divisibility
+   * For non-desktop breakpoints, layouts must evenly divide the desktop column count
+   * e.g., 4 desktop columns can use 4, 2, or 1 column layouts (not 3)
+   */
+  private _getAvailableLayoutsForBreakpoint(
+    desktopColumnCount: number,
+    breakpoint: DeviceBreakpoint
+  ): Array<{ id: string; name: string; proportions: number[]; columnCount: number }> {
+    if (breakpoint === 'desktop') {
+      // Desktop can use any layout
+      return this.COLUMN_LAYOUTS;
+    }
+    
+    // Non-desktop breakpoints can only use layouts where desktop columns
+    // evenly divide by the layout's column count (columns wrap properly)
+    // e.g., 4 columns: 4, 2, 1 are valid (4%4=0, 4%2=0, 4%1=0)
+    //       4 columns: 3 is invalid (4%3≠0 - can't fit 4 items in 3 columns evenly)
+    return this.COLUMN_LAYOUTS.filter(l => desktopColumnCount % l.columnCount === 0);
+  }
+
   private _renderColumnLayoutSelector(): TemplateResult {
     const layout = this._ensureLayout();
     const currentRow = layout.rows[this._selectedRowForLayout];
-    const currentColumnCount = currentRow ? currentRow.columns.length : 1;
-
-    // Get the current layout ID, considering migration
-    const currentLayoutId = currentRow?.column_layout || '1-col';
+    const desktopColumnCount = currentRow ? currentRow.columns.length : 1;
+    const breakpoint = this._columnLayoutBreakpoint;
+    
+    // Get the current layout for the selected breakpoint
+    const { layout: currentLayoutId, custom: currentCustomSizing } = this._getBreakpointLayout(currentRow, breakpoint);
     const migratedLayoutId = this._migrateLegacyLayoutId(currentLayoutId);
     const isCustomLayout = currentLayoutId === 'custom';
+    const hasOverride = this._hasBreakpointOverride(currentRow, breakpoint);
 
-    // Show only layouts for the current column count
-    const availableLayouts = this._getLayoutsForColumnCount(currentColumnCount);
+    // For desktop: show layouts for current column count (can add/remove columns)
+    // For other breakpoints: show layouts up to desktop column count
+    const availableLayouts = breakpoint === 'desktop'
+      ? this._getLayoutsForColumnCount(desktopColumnCount)
+      : this._getAvailableLayoutsForBreakpoint(desktopColumnCount, breakpoint);
+
+    // Breakpoint info for display
+    const breakpointLabels: Record<DeviceBreakpoint, { label: string; icon: string; description: string }> = {
+      desktop: { label: 'Desktop', icon: 'mdi:monitor', description: '≥1381px - Sets the base column structure' },
+      laptop: { label: 'Laptop', icon: 'mdi:laptop', description: '1025px - 1380px' },
+      tablet: { label: 'Tablet', icon: 'mdi:tablet', description: '601px - 1024px' },
+      mobile: { label: 'Mobile', icon: 'mdi:cellphone', description: '≤600px' },
+    };
 
     return html`
       <div class="column-layout-selector-popup">
-        <div class="popup-overlay" @click=${() => (this._showColumnLayoutSelector = false)}></div>
+        <div class="popup-overlay" @click=${() => {
+          this._showColumnLayoutSelector = false;
+          this._columnLayoutBreakpoint = 'desktop'; // Reset to desktop on close
+        }}></div>
         <div class="selector-content draggable-popup" id="column-layout-selector-popup">
           <div
             class="selector-header"
@@ -20688,15 +20760,77 @@ export class LayoutTab extends LitElement {
               if (popup) this._startPopupDrag(e, popup);
             }}
           >
-            <h3>Choose Column Layout</h3>
-            <p>
-              Select any layout for ${currentColumnCount}
-              column${currentColumnCount !== 1 ? 's' : ''} (Currently: ${currentColumnCount}
-              column${currentColumnCount !== 1 ? 's' : ''})
-            </p>
+            <h3>Responsive Column Layout</h3>
+            <p>Configure how columns appear at different screen sizes</p>
+          </div>
+
+          <!-- Breakpoint Tabs -->
+          <div class="breakpoint-tabs">
+            ${(['desktop', 'laptop', 'tablet', 'mobile'] as DeviceBreakpoint[]).map(bp => {
+              const info = breakpointLabels[bp];
+              const bpHasOverride = this._hasBreakpointOverride(currentRow, bp);
+              return html`
+                <button
+                  class="breakpoint-tab ${breakpoint === bp ? 'active' : ''} ${bpHasOverride && bp !== 'desktop' ? 'has-override' : ''}"
+                  @click=${() => {
+                    this._columnLayoutBreakpoint = bp;
+                    // Reset custom sizing input when switching breakpoints
+                    const bpLayout = this._getBreakpointLayout(currentRow, bp);
+                    if (bpLayout.layout === 'custom' && bpLayout.custom) {
+                      this._customSizingInput = bpLayout.custom;
+                      this._customSizingValid = true;
+                      this._customSizingError = '';
+                    } else {
+                      this._customSizingInput = '';
+                      this._customSizingValid = false;
+                      this._customSizingError = '';
+                    }
+                  }}
+                  title="${info.description}"
+                >
+                  <ha-icon icon="${info.icon}"></ha-icon>
+                  <span class="tab-label">${info.label}</span>
+                  ${bpHasOverride && bp !== 'desktop' ? html`<span class="override-dot"></span>` : ''}
+                </button>
+              `;
+            })}
           </div>
 
           <div class="selector-body">
+            <!-- Breakpoint Info -->
+            <div class="breakpoint-info">
+              <ha-icon icon="${breakpointLabels[breakpoint].icon}"></ha-icon>
+              <div class="breakpoint-details">
+                <div class="breakpoint-label">${breakpointLabels[breakpoint].label}</div>
+                <div class="breakpoint-description">${breakpointLabels[breakpoint].description}</div>
+              </div>
+              ${breakpoint !== 'desktop' && hasOverride ? html`
+                <button 
+                  class="clear-override-btn"
+                  @click=${() => this._clearBreakpointLayout(breakpoint)}
+                  title="Clear override and inherit from desktop"
+                >
+                  <ha-icon icon="mdi:close"></ha-icon>
+                  Clear
+                </button>
+              ` : ''}
+            </div>
+
+            ${breakpoint === 'desktop' ? html`
+              <div class="desktop-note">
+                <ha-icon icon="mdi:information-outline"></ha-icon>
+                <span>Desktop defines the number of columns. Other breakpoints can rearrange them differently.</span>
+              </div>
+            ` : html`
+              <div class="inherit-note ${!hasOverride ? 'active' : ''}">
+                <ha-icon icon="${hasOverride ? 'mdi:pencil' : 'mdi:link-variant'}"></ha-icon>
+                <span>${hasOverride 
+                  ? 'Custom layout set for this breakpoint' 
+                  : `Inheriting from desktop (${desktopColumnCount} column${desktopColumnCount !== 1 ? 's' : ''})`
+                }</span>
+              </div>
+            `}
+
             <div class="layout-options">
               ${availableLayouts.map(
                 layoutOpt => html`
@@ -20705,8 +20839,8 @@ export class LayoutTab extends LitElement {
                     layoutOpt.id === migratedLayoutId
                       ? 'current'
                       : ''}"
-                    @click=${() => this._changeColumnLayout(layoutOpt.id)}
-                    title="${layoutOpt.name}"
+                    @click=${() => this._setBreakpointLayout(breakpoint, layoutOpt.id)}
+                    title="${layoutOpt.name} (${layoutOpt.columnCount} column${layoutOpt.columnCount !== 1 ? 's' : ''})"
                   >
                     <div class="layout-visual">
                       <div class="layout-icon-large">
@@ -20714,6 +20848,7 @@ export class LayoutTab extends LitElement {
                       </div>
                     </div>
                     <div class="layout-name">${layoutOpt.name}</div>
+                    <div class="layout-columns">${layoutOpt.columnCount} col${layoutOpt.columnCount !== 1 ? 's' : ''}</div>
                     ${layoutOpt.id === currentLayoutId || layoutOpt.id === migratedLayoutId
                       ? html`<div class="current-badge">Current</div>`
                       : ''}
@@ -20726,21 +20861,22 @@ export class LayoutTab extends LitElement {
             <div class="custom-sizing-section">
               <div class="custom-sizing-title">Custom Sizing</div>
               <div class="custom-sizing-description">
-                Enter custom CSS grid sizing (e.g., "${this._getCustomSizingPlaceholder(
-                  currentColumnCount
-                )}").
-                Must have exactly ${currentColumnCount} value${currentColumnCount !== 1 ? 's' : ''}.
+                Enter custom CSS grid sizing (e.g., "${this._getCustomSizingPlaceholder(desktopColumnCount)}").
+                ${breakpoint === 'desktop' 
+                  ? `Must have exactly ${desktopColumnCount} value${desktopColumnCount !== 1 ? 's' : ''}.`
+                  : `Valid column counts: ${this._getValidColumnCountsForBreakpoint(desktopColumnCount).join(', ')} (must divide evenly into ${desktopColumnCount}).`
+                }
               </div>
 
               <input
                 type="text"
                 class="custom-sizing-input ${this._customSizingError ? 'has-error' : ''}"
-                placeholder="${this._getCustomSizingPlaceholder(currentColumnCount)}"
-                .value="${this._customSizingInput || currentRow?.custom_column_sizing || ''}"
-                @input=${(e: Event) => this._onCustomSizingInput(e)}
+                placeholder="${this._getCustomSizingPlaceholder(desktopColumnCount)}"
+                .value="${this._customSizingInput || currentCustomSizing || ''}"
+                @input=${(e: Event) => this._onCustomSizingInputBreakpoint(e, breakpoint, desktopColumnCount)}
                 @keydown=${(e: KeyboardEvent) => {
                   if (e.key === 'Enter' && this._customSizingValid) {
-                    this._applyCustomSizing();
+                    this._applyCustomSizingBreakpoint(breakpoint);
                   }
                 }}
               />
@@ -20752,7 +20888,7 @@ export class LayoutTab extends LitElement {
               <button
                 class="apply-custom-btn"
                 ?disabled="${!this._customSizingValid}"
-                @click=${() => this._applyCustomSizing()}
+                @click=${() => this._applyCustomSizingBreakpoint(breakpoint)}
               >
                 Apply Custom Sizing
               </button>
@@ -20761,6 +20897,23 @@ export class LayoutTab extends LitElement {
                 ? html`<div class="current-custom-badge">Currently using custom sizing</div>`
                 : ''}
             </div>
+          </div>
+
+          <!-- Footer with Apply & Close button -->
+          <div class="selector-footer">
+            <button
+              class="close-selector-btn"
+              @click=${() => {
+                this._showColumnLayoutSelector = false;
+                this._columnLayoutBreakpoint = 'desktop';
+                this._customSizingInput = '';
+                this._customSizingValid = false;
+                this._customSizingError = '';
+              }}
+            >
+              <ha-icon icon="mdi:check"></ha-icon>
+              Done
+            </button>
           </div>
 
           <!-- Resize handle -->
@@ -20777,6 +20930,200 @@ export class LayoutTab extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Set layout for a specific breakpoint
+   */
+  private _setBreakpointLayout(breakpoint: DeviceBreakpoint, layoutId: string): void {
+    if (this._selectedRowForLayout === -1) return;
+
+    if (breakpoint === 'desktop') {
+      // Desktop uses the original _changeColumnLayout which can add/remove columns
+      this._changeColumnLayout(layoutId);
+      return;
+    }
+
+    // Non-desktop breakpoints only change the layout style, never columns
+    const layout = this._ensureLayout();
+    const row = layout.rows[this._selectedRowForLayout];
+    if (!row) return;
+
+    const selectedLayout = this.COLUMN_LAYOUTS.find(l => l.id === layoutId);
+    if (!selectedLayout) return;
+
+    const desktopColumnCount = row.columns.length;
+
+    // Validate that the layout column count evenly divides desktop columns
+    if (desktopColumnCount % selectedLayout.columnCount !== 0) {
+      return; // Silently reject - shouldn't happen if UI is correct
+    }
+
+    // Create new layout
+    const newLayout = JSON.parse(JSON.stringify(layout));
+    const targetRow = newLayout.rows[this._selectedRowForLayout];
+
+    // Initialize responsive_column_layouts if needed
+    if (!targetRow.responsive_column_layouts) {
+      targetRow.responsive_column_layouts = {};
+    }
+
+    // Set the breakpoint-specific layout
+    targetRow.responsive_column_layouts[breakpoint] = {
+      layout: layoutId,
+    };
+
+    this._updateLayout(newLayout);
+  }
+
+  /**
+   * Clear a breakpoint's override (revert to inheriting from desktop)
+   */
+  private _clearBreakpointLayout(breakpoint: DeviceBreakpoint): void {
+    if (this._selectedRowForLayout === -1 || breakpoint === 'desktop') return;
+
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+    const targetRow = newLayout.rows[this._selectedRowForLayout];
+
+    if (targetRow.responsive_column_layouts?.[breakpoint]) {
+      delete targetRow.responsive_column_layouts[breakpoint];
+      
+      // Clean up empty object
+      if (Object.keys(targetRow.responsive_column_layouts).length === 0) {
+        delete targetRow.responsive_column_layouts;
+      }
+    }
+
+    this._updateLayout(newLayout);
+  }
+
+  /**
+   * Get valid column counts for a breakpoint (must evenly divide desktop columns)
+   */
+  private _getValidColumnCountsForBreakpoint(desktopColumnCount: number): number[] {
+    const validCounts: number[] = [];
+    for (let i = 1; i <= desktopColumnCount; i++) {
+      if (desktopColumnCount % i === 0) {
+        validCounts.push(i);
+      }
+    }
+    return validCounts;
+  }
+
+  /**
+   * Handle custom sizing input for a specific breakpoint
+   */
+  private _onCustomSizingInputBreakpoint(e: Event, breakpoint: DeviceBreakpoint, desktopColumnCount: number): void {
+    const input = e.target as HTMLInputElement;
+    this._customSizingInput = input.value;
+
+    if (breakpoint === 'desktop') {
+      // Desktop must have exactly desktopColumnCount values
+      const validation = this._validateCustomColumnSizingExact(input.value, desktopColumnCount);
+      this._customSizingValid = validation.valid;
+      this._customSizingError = validation.error || '';
+    } else {
+      // Non-desktop must have a count that evenly divides desktop columns
+      const validCounts = this._getValidColumnCountsForBreakpoint(desktopColumnCount);
+      const validation = this._validateCustomColumnSizingDivisible(input.value, desktopColumnCount, validCounts);
+      this._customSizingValid = validation.valid;
+      this._customSizingError = validation.error || '';
+    }
+  }
+
+  /**
+   * Validate custom column sizing with exact value count (for desktop)
+   */
+  private _validateCustomColumnSizingExact(
+    value: string,
+    exactCount: number
+  ): { valid: boolean; error?: string } {
+    if (!value.trim()) {
+      return { valid: false, error: undefined };
+    }
+
+    const values = value.trim().split(/\s+/).filter(v => v);
+    
+    if (values.length !== exactCount) {
+      return { valid: false, error: `Must have exactly ${exactCount} value${exactCount !== 1 ? 's' : ''}` };
+    }
+
+    // Validate each value is a valid CSS grid value
+    const validPattern = /^(\d+(\.\d+)?(fr|px|%|em|rem|vh|vw)|auto|minmax\(.+\)|min-content|max-content)$/i;
+    for (const v of values) {
+      if (!validPattern.test(v)) {
+        return { valid: false, error: `Invalid value: ${v}` };
+      }
+    }
+
+    return { valid: true };
+  }
+
+  /**
+   * Validate custom column sizing for non-desktop breakpoints
+   * Value count must evenly divide into desktop column count
+   */
+  private _validateCustomColumnSizingDivisible(
+    value: string,
+    desktopColumnCount: number,
+    validCounts: number[]
+  ): { valid: boolean; error?: string } {
+    if (!value.trim()) {
+      return { valid: false, error: undefined };
+    }
+
+    const values = value.trim().split(/\s+/).filter(v => v);
+    
+    if (!validCounts.includes(values.length)) {
+      const validStr = validCounts.join(', ');
+      return { 
+        valid: false, 
+        error: `Must have ${validStr} value${validCounts.length > 1 || validCounts[0] !== 1 ? 's' : ''} (must divide evenly into ${desktopColumnCount})` 
+      };
+    }
+
+    // Validate each value is a valid CSS grid value
+    const validPattern = /^(\d+(\.\d+)?(fr|px|%|em|rem|vh|vw)|auto|minmax\(.+\)|min-content|max-content)$/i;
+    for (const v of values) {
+      if (!validPattern.test(v)) {
+        return { valid: false, error: `Invalid value: ${v}` };
+      }
+    }
+
+    return { valid: true };
+  }
+
+  /**
+   * Apply custom sizing for a specific breakpoint
+   */
+  private _applyCustomSizingBreakpoint(breakpoint: DeviceBreakpoint): void {
+    if (!this._customSizingValid || !this._customSizingInput.trim()) return;
+
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+    const targetRow = newLayout.rows[this._selectedRowForLayout];
+
+    if (breakpoint === 'desktop') {
+      targetRow.column_layout = 'custom';
+      targetRow.custom_column_sizing = this._customSizingInput.trim();
+    } else {
+      // Initialize responsive_column_layouts if needed
+      if (!targetRow.responsive_column_layouts) {
+        targetRow.responsive_column_layouts = {};
+      }
+      targetRow.responsive_column_layouts[breakpoint] = {
+        layout: 'custom',
+        custom_sizing: this._customSizingInput.trim(),
+      };
+    }
+
+    this._updateLayout(newLayout);
+
+    // Reset custom sizing state
+    this._customSizingInput = '';
+    this._customSizingValid = false;
+    this._customSizingError = '';
   }
 
   private _onCustomSizingInput(e: Event): void {
@@ -21289,7 +21636,6 @@ export class LayoutTab extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 8px;
-        border: 1px solid var(--primary-color);
         margin-bottom: 16px;
         border-radius: 0px 0px 8px 8px;
       }
@@ -22305,6 +22651,227 @@ export class LayoutTab extends LitElement {
         justify-content: center;
       }
 
+      /* Responsive Breakpoint Tabs */
+      .breakpoint-tabs {
+        display: flex;
+        gap: 4px;
+        padding: 12px 16px;
+        background: var(--secondary-background-color, rgba(0,0,0,0.1));
+        border-bottom: 1px solid var(--divider-color);
+      }
+
+      .breakpoint-tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: var(--secondary-text-color);
+        font-size: 13px;
+        font-weight: 500;
+        position: relative;
+      }
+
+      .breakpoint-tab:hover {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.1);
+        color: var(--primary-text-color);
+      }
+
+      .breakpoint-tab.active {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .breakpoint-tab.active ha-icon {
+        color: white;
+      }
+
+      .breakpoint-tab ha-icon {
+        --mdc-icon-size: 18px;
+        color: inherit;
+      }
+
+      .breakpoint-tab .tab-label {
+        display: none;
+      }
+
+      @media (min-width: 500px) {
+        .breakpoint-tab .tab-label {
+          display: inline;
+        }
+      }
+
+      .breakpoint-tab .override-dot {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--warning-color, #ff9800);
+      }
+
+      .breakpoint-tab.active .override-dot {
+        background: white;
+      }
+
+      /* Breakpoint Info Bar */
+      .breakpoint-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+
+      .breakpoint-info ha-icon {
+        --mdc-icon-size: 24px;
+        color: var(--primary-color);
+      }
+
+      .breakpoint-details {
+        flex: 1;
+      }
+
+      .breakpoint-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .breakpoint-description {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+      }
+
+      .clear-override-btn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 12px;
+        border: 1px solid var(--divider-color);
+        background: transparent;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        transition: all 0.2s ease;
+      }
+
+      .clear-override-btn:hover {
+        background: var(--error-color, #f44336);
+        border-color: var(--error-color, #f44336);
+        color: white;
+      }
+
+      .clear-override-btn ha-icon {
+        --mdc-icon-size: 14px;
+      }
+
+      /* Desktop Note */
+      .desktop-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 12px;
+        background: rgba(var(--rgb-info-color, 33, 150, 243), 0.1);
+        border-radius: 6px;
+        margin-bottom: 16px;
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        line-height: 1.4;
+      }
+
+      .desktop-note ha-icon {
+        --mdc-icon-size: 18px;
+        color: var(--info-color, #2196f3);
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      /* Inherit Note */
+      .inherit-note {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: var(--secondary-background-color, rgba(0,0,0,0.05));
+        border-radius: 6px;
+        margin-bottom: 16px;
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        border-left: 3px solid var(--divider-color);
+      }
+
+      .inherit-note.active {
+        border-left-color: var(--success-color, #4caf50);
+        background: rgba(var(--rgb-success-color, 76, 175, 80), 0.1);
+      }
+
+      .inherit-note ha-icon {
+        --mdc-icon-size: 18px;
+        color: var(--secondary-text-color);
+      }
+
+      .inherit-note.active ha-icon {
+        color: var(--success-color, #4caf50);
+      }
+
+      /* Layout Columns Badge */
+      .layout-columns {
+        font-size: 10px;
+        color: var(--secondary-text-color);
+        background: var(--secondary-background-color, rgba(0,0,0,0.05));
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-top: 2px;
+      }
+
+      .layout-option-btn.current .layout-columns {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.2);
+        color: var(--primary-color);
+      }
+
+      /* Selector Footer */
+      .selector-footer {
+        display: flex;
+        justify-content: flex-end;
+        padding: 16px;
+        border-top: 1px solid var(--divider-color);
+        background: var(--secondary-background-color, rgba(0,0,0,0.05));
+      }
+
+      .close-selector-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+      }
+
+      .close-selector-btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(var(--rgb-primary-color, 3, 169, 244), 0.3);
+      }
+
+      .close-selector-btn ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
       .layout-options {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -23017,7 +23584,7 @@ export class LayoutTab extends LitElement {
         min-height: 60px;
         display: block;
         max-width: 100%;
-        overflow: hidden; /* ensure preview content doesn't overflow */
+        overflow: visible; /* allow module content to extend beyond bounds (e.g., gauges, negative gap) */
         background: var(
           --view-background,
           var(--lovelace-background, var(--primary-background-color))

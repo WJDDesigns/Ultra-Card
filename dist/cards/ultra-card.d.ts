@@ -57,6 +57,14 @@ export declare class UltraCard extends LitElement {
     private _applyInstanceIdToDataset;
     private _generatePreviewInstanceId;
     static getConfigElement(): HTMLElement;
+    private static readonly SKIP_DEFAULT_MODULES_KEY;
+    private static readonly SKIP_DEFAULT_MODULES_WINDOW_KEY;
+    /**
+     * Check if user wants to skip default modules when creating new cards
+     * Note: This setting is only accessible in the Pro tab, so only Pro users can enable it.
+     * Checks window fallback, sessionStorage, and localStorage.
+     */
+    private static _shouldSkipDefaultModules;
     static getStubConfig(): UltraCardConfig;
     protected render(): TemplateResult;
     updated(changedProperties: Map<string, any>): void;
@@ -105,9 +113,18 @@ export declare class UltraCard extends LitElement {
      */
     private _countTotalModules;
     /**
+     * Layout ID to CSS grid-template-columns mapping
+     */
+    private static readonly LAYOUT_CSS_MAP;
+    /**
      * Convert column layout ID to CSS grid template columns
      */
     private _getGridTemplateColumns;
+    /**
+     * Generate responsive CSS media queries for column layouts
+     * Returns CSS that overrides grid-template-columns at different breakpoints
+     */
+    private _generateResponsiveColumnLayoutCSS;
     /**
      * Helper method to ensure border radius values have proper units
      */

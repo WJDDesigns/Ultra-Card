@@ -32,6 +32,7 @@ export declare class UltraCardEditor extends LitElement {
     private _snapshotSchedulerStatus;
     private _newerBackupAvailable;
     private _showSyncNotification;
+    private _skipDefaultModules;
     private _isCreatingManualSnapshot;
     private _showVariableMappingDialog;
     private _missingVariables;
@@ -52,6 +53,22 @@ export declare class UltraCardEditor extends LitElement {
     private _toggleFullScreen;
     protected render(): TemplateResult<1>;
     private _renderSettingsTab;
+    private static readonly SKIP_DEFAULT_MODULES_KEY;
+    private static readonly SKIP_DEFAULT_MODULES_WINDOW_KEY;
+    /**
+     * Get whether to skip default modules when creating new cards (Pro feature)
+     * Checks localStorage, sessionStorage, and window fallback
+     */
+    static getSkipDefaultModulesSetting(): boolean;
+    /**
+     * Set whether to skip default modules when creating new cards (Pro feature)
+     * Tries localStorage, sessionStorage, and window fallback
+     */
+    private _setSkipDefaultModulesSetting;
+    /**
+     * Handle the skip default modules toggle change
+     */
+    private _handleSkipDefaultModulesChange;
     /**
      * Handle card background image upload
      */
@@ -141,6 +158,10 @@ export declare class UltraCardEditor extends LitElement {
     private _renderSnapshotStatusSection;
     private _formatNextSnapshotTime;
     private _formatLastSnapshotTime;
+    /**
+     * Render Pro Settings Section (Pro tab only)
+     */
+    private _renderProSettings;
     private _handleCardNameChange;
     /**
      * Handle preview breakpoint change from layout tab.

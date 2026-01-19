@@ -5221,7 +5221,8 @@ export class UltraIconModule extends BaseUltraModule {
   }
 
   /**
-   * Enhanced state matching that supports both actual entity states and binary equivalents
+   * Enhanced state matching that supports both actual entity states, binary equivalents,
+   * and numeric comparison operators (>, >=, <, <=, !=, =)
    */
   private _matchesState(actualValue: string, configuredState: string, entityState: any): boolean {
     // Direct match first
@@ -5232,6 +5233,46 @@ export class UltraIconModule extends BaseUltraModule {
     // Case-insensitive match
     if (actualValue.toLowerCase() === configuredState.toLowerCase()) {
       return true;
+    }
+
+    // Check for comparison operators (>=, <=, !=, >, <, =)
+    // Must check longer operators first to avoid matching partial operators
+    const comparisonMatch = configuredState.match(/^(>=|<=|!=|>|<|=)\s*(.+)$/);
+    if (comparisonMatch) {
+      const operator = comparisonMatch[1];
+      const targetValueStr = comparisonMatch[2].trim();
+      
+      // Try numeric comparison first
+      const actualNum = parseFloat(actualValue);
+      const targetNum = parseFloat(targetValueStr);
+      
+      if (!isNaN(actualNum) && !isNaN(targetNum)) {
+        switch (operator) {
+          case '>':
+            return actualNum > targetNum;
+          case '>=':
+            return actualNum >= targetNum;
+          case '<':
+            return actualNum < targetNum;
+          case '<=':
+            return actualNum <= targetNum;
+          case '!=':
+            return actualNum !== targetNum;
+          case '=':
+            return actualNum === targetNum;
+        }
+      } else {
+        // Fall back to string comparison for non-numeric values
+        switch (operator) {
+          case '!=':
+            return actualValue.toLowerCase() !== targetValueStr.toLowerCase();
+          case '=':
+            return actualValue.toLowerCase() === targetValueStr.toLowerCase();
+          default:
+            // Other operators don't make sense for strings, return false
+            return false;
+        }
+      }
     }
 
     // Binary state mapping - allow users to use either actual states or binary equivalents

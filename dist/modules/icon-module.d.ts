@@ -42,7 +42,8 @@ export declare class UltraIconModule extends BaseUltraModule {
     private _getEntityAttributes;
     private _isBinaryEntity;
     /**
-     * Enhanced state matching that supports both actual entity states and binary equivalents
+     * Enhanced state matching that supports both actual entity states, binary equivalents,
+     * and numeric comparison operators (>, >=, <, <=, !=, =)
      */
     private _matchesState;
     /**
