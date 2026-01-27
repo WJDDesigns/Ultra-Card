@@ -1016,6 +1016,12 @@ export class LayoutTab extends LitElement {
             this._openLayoutChildSettings(rowIndex, columnIndex, parentModuleIndex, childIndex),
         },
         {
+          icon: 'mdi:clipboard-arrow-up',
+          label: localize('editor.layout.copy', lang, 'Copy'),
+          action: () =>
+            this._copyLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex),
+        },
+        {
           icon: 'mdi:content-copy',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
           action: () =>
@@ -1050,6 +1056,12 @@ export class LayoutTab extends LitElement {
             ),
         },
         {
+          icon: 'mdi:clipboard-arrow-up',
+          label: localize('editor.layout.copy', lang, 'Copy'),
+          action: () =>
+            this._copyLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex),
+        },
+        {
           icon: 'mdi:content-copy',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
           action: () =>
@@ -1071,6 +1083,18 @@ export class LayoutTab extends LitElement {
           label: localize('editor.layout.edit', lang, 'Edit'),
           action: () =>
             this._openNestedChildSettings(
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              nestedLayoutIndex,
+              childIndex
+            ),
+        },
+        {
+          icon: 'mdi:clipboard-arrow-up',
+          label: localize('editor.layout.copy', lang, 'Copy'),
+          action: () =>
+            this._copyNestedChildModule(
               rowIndex,
               columnIndex,
               parentModuleIndex,
@@ -1314,6 +1338,21 @@ export class LayoutTab extends LitElement {
               >
                 <ha-icon icon="mdi:plus"></ha-icon>
               </button>
+              ${this._hasModuleClipboard
+                ? html`
+                    <button
+                      class="tree-action-btn paste-btn"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._pasteModule(rowIndex, columnIndex);
+                      }}
+                      @mousedown=${(e: Event) => e.stopPropagation()}
+                      title="${localize('editor.layout.paste', lang, 'Paste')}"
+                    >
+                      <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
+                    </button>
+                  `
+                : ''}
               <button
                 class="tree-action-btn edit-btn"
                 @click=${(e: Event) => {
@@ -1478,6 +1517,17 @@ export class LayoutTab extends LitElement {
                 <ha-icon icon="mdi:pencil"></ha-icon>
               </button>
               <button
+                class="tree-action-btn copy-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._copyModule(rowIndex, columnIndex, moduleIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.copy', lang, 'Copy')}"
+              >
+                <ha-icon icon="mdi:clipboard-arrow-up"></ha-icon>
+              </button>
+              <button
                 class="tree-action-btn duplicate-btn"
                 @click=${(e: Event) => {
                   e.stopPropagation();
@@ -1518,7 +1568,10 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const layoutModule = module as any;
-    const hasChildren = layoutModule.modules && layoutModule.modules.length > 0;
+    const isTabs = module.type === 'tabs';
+    const hasChildren = isTabs
+      ? layoutModule.sections && layoutModule.sections.length > 0
+      : layoutModule.modules && layoutModule.modules.length > 0;
     const isLastModule = moduleIndex === totalModules - 1;
     const moduleKey = `layout-${rowIndex}-${columnIndex}-${moduleIndex}`;
     const isCollapsed = this._collapsedPreviewModules.has(moduleKey);
@@ -1537,9 +1590,9 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-layout-module ${isLastModule ? 'last-node' : ''} ${isCollapsed
-          ? 'collapsed'
-          : ''}"
+        class="tree-node tree-layout-module ${isTabs ? 'tabs-layout' : ''} ${isLastModule
+          ? 'last-node'
+          : ''} ${isCollapsed ? 'collapsed' : ''}"
         draggable="true"
         @dragstart=${(e: DragEvent) =>
           this._onDragStart(e, 'module', rowIndex, columnIndex, moduleIndex)}
@@ -1564,17 +1617,36 @@ export class LayoutTab extends LitElement {
             ></ha-icon>
             <span class="tree-node-title">${layoutTitle}</span>
             <div class="tree-action-buttons">
-              <button
-                class="tree-action-btn add-btn"
-                @click=${(e: Event) => {
-                  e.stopPropagation();
-                  this._openLayoutModuleSelector(rowIndex, columnIndex, moduleIndex);
-                }}
-                @mousedown=${(e: Event) => e.stopPropagation()}
-                title="${localize('editor.layout.add_module', lang, 'Add Module')}"
-              >
-                <ha-icon icon="mdi:plus"></ha-icon>
-              </button>
+              ${!isTabs
+                ? html`
+                    <button
+                      class="tree-action-btn add-btn"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._openLayoutModuleSelector(rowIndex, columnIndex, moduleIndex);
+                      }}
+                      @mousedown=${(e: Event) => e.stopPropagation()}
+                      title="${localize('editor.layout.add_module', lang, 'Add Module')}"
+                    >
+                      <ha-icon icon="mdi:plus"></ha-icon>
+                    </button>
+                    ${this._hasModuleClipboard
+                      ? html`
+                          <button
+                            class="tree-action-btn paste-btn"
+                            @click=${(e: Event) => {
+                              e.stopPropagation();
+                              this._pasteModuleToLayoutModule(rowIndex, columnIndex, moduleIndex);
+                            }}
+                            @mousedown=${(e: Event) => e.stopPropagation()}
+                            title="${localize('editor.layout.paste', lang, 'Paste')}"
+                          >
+                            <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
+                          </button>
+                        `
+                      : ''}
+                  `
+                : ''}
               <button
                 class="tree-action-btn edit-btn"
                 @click=${(e: Event) => {
@@ -1585,6 +1657,17 @@ export class LayoutTab extends LitElement {
                 title="${localize('editor.layout.settings', lang, 'Settings')}"
               >
                 <ha-icon icon="mdi:cog"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn copy-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._copyModule(rowIndex, columnIndex, moduleIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.copy', lang, 'Copy')}"
+              >
+                <ha-icon icon="mdi:clipboard-arrow-up"></ha-icon>
               </button>
               <button
                 class="tree-action-btn duplicate-btn"
@@ -1626,16 +1709,204 @@ export class LayoutTab extends LitElement {
           </div>
           ${!isCollapsed
             ? html`
-                ${hasChildren
+                ${isTabs
                   ? html`
-                      ${layoutModule.modules.map((childModule: CardModule, childIndex: number) =>
-                        this._renderTreeLayoutChild(
+                      ${hasChildren
+                        ? html`
+                            ${(layoutModule.sections || []).map(
+                              (section: any, sectionIndex: number) =>
+                                this._renderTreeTabsSection(
+                                  section,
+                                  sectionIndex,
+                                  rowIndex,
+                                  columnIndex,
+                                  moduleIndex,
+                                  layoutModule.sections.length
+                                )
+                            )}
+                          `
+                        : html`
+                            <div
+                              style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                            >
+                              ${localize(
+                                'editor.layout.tabs_no_sections',
+                                lang,
+                                'No sections. Open settings to add sections.'
+                              )}
+                            </div>
+                          `}
+                    `
+                  : html`
+                      ${hasChildren
+                        ? html`
+                            ${layoutModule.modules.map(
+                              (childModule: CardModule, childIndex: number) =>
+                                this._renderTreeLayoutChild(
+                                  childModule,
+                                  rowIndex,
+                                  columnIndex,
+                                  moduleIndex,
+                                  childIndex,
+                                  layoutModule.modules.length
+                                )
+                            )}
+                          `
+                        : ''}
+                      <div class="tree-add-button-container">
+                        <button
+                          class="tree-add-btn"
+                          @click=${(e: Event) => {
+                            e.stopPropagation();
+                            this._openLayoutModuleSelector(rowIndex, columnIndex, moduleIndex);
+                          }}
+                        >
+                          <ha-icon icon="mdi:plus"></ha-icon>
+                          <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
+                        </button>
+                      </div>
+                    `}
+              `
+            : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // Render a tabs section in tree view
+  private _renderTreeTabsSection(
+    section: any,
+    sectionIndex: number,
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    totalSections: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const sectionModules = section.modules || [];
+    const hasModules = sectionModules.length > 0;
+    const sectionTitle = section.title || `Section ${sectionIndex + 1}`;
+    const isLastSection = sectionIndex === totalSections - 1;
+    const sectionKey = `tabs-section-${rowIndex}-${columnIndex}-${moduleIndex}-${sectionIndex}`;
+    const isCollapsed = this._collapsedPreviewModules.has(sectionKey);
+
+    return html`
+      <div
+        class="tree-node tree-tabs-section ${isLastSection ? 'last-node' : ''} ${isCollapsed
+          ? 'collapsed'
+          : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) => {
+          e.stopPropagation();
+          this._onTabsSectionDragStart(e, rowIndex, columnIndex, moduleIndex, sectionIndex);
+        }}
+        @dragend=${(e: DragEvent) => this._onDragEnd(e)}
+        @dragover=${(e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        @dragenter=${(e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this._onTabsSectionDragEnter(e, rowIndex, columnIndex, moduleIndex, sectionIndex);
+        }}
+        @dragleave=${(e: DragEvent) => this._onDragLeave(e)}
+        @drop=${(e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this._onTabsSectionDrop(e, rowIndex, columnIndex, moduleIndex, sectionIndex);
+        }}
+      >
+        <div class="tree-node-content">
+          <div
+            class="tree-node-header section-header"
+            style="background: rgba(var(--rgb-primary-color), 0.15); border-left: 3px solid var(--primary-color);"
+          >
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_reorder', lang, 'Drag to reorder')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
+            ${section.icon
+              ? html`<ha-icon icon="${section.icon}" class="tree-node-icon"></ha-icon>`
+              : html`<ha-icon icon="mdi:tab" class="tree-node-icon"></ha-icon>`}
+            <span class="tree-node-title">${sectionTitle}</span>
+            <div class="tree-action-buttons">
+              <button
+                class="tree-action-btn add-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openTabsSectionModuleSelector(
+                    rowIndex,
+                    columnIndex,
+                    moduleIndex,
+                    sectionIndex,
+                    undefined,
+                    false
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize(
+                  'editor.layout.add_module_to_section',
+                  lang,
+                  'Add Module to Section'
+                )}"
+              >
+                <ha-icon icon="mdi:plus"></ha-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div
+          class="tree-node-children tree-tabs-section-children"
+          style="margin-left: 16px;"
+          @dragover=${(e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          @dragenter=${(e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this._onTabsSectionContentDragEnter(
+              e,
+              rowIndex,
+              columnIndex,
+              moduleIndex,
+              sectionIndex
+            );
+          }}
+          @dragleave=${(e: DragEvent) => this._onDragLeave(e)}
+          @drop=${(e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this._onTabsSectionContentDrop(e, rowIndex, columnIndex, moduleIndex, sectionIndex);
+          }}
+        >
+          <div
+            class="tree-track-collapse"
+            @click=${(e: Event) => this._toggleLayoutModuleCollapsed(sectionKey, e)}
+            title="${isCollapsed ? 'Expand' : 'Collapse'}"
+          >
+            <ha-icon
+              icon="mdi:chevron-down"
+              class="track-chevron"
+              style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
+            ></ha-icon>
+          </div>
+          ${!isCollapsed
+            ? html`
+                ${hasModules
+                  ? html`
+                      ${sectionModules.map((childModule: any, childIndex: number) =>
+                        this._renderTreeTabsSectionChild(
                           childModule,
                           rowIndex,
                           columnIndex,
                           moduleIndex,
+                          sectionIndex,
                           childIndex,
-                          layoutModule.modules.length
+                          sectionModules.length
                         )
                       )}
                     `
@@ -1645,8 +1916,16 @@ export class LayoutTab extends LitElement {
                     class="tree-add-btn"
                     @click=${(e: Event) => {
                       e.stopPropagation();
-                      this._openLayoutModuleSelector(rowIndex, columnIndex, moduleIndex);
+                      this._openTabsSectionModuleSelector(
+                        rowIndex,
+                        columnIndex,
+                        moduleIndex,
+                        sectionIndex,
+                        undefined,
+                        false
+                      );
                     }}
+                    style="border: 1px dashed var(--primary-color); background: rgba(var(--rgb-primary-color), 0.05);"
                   >
                     <ha-icon icon="mdi:plus"></ha-icon>
                     <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
@@ -1654,6 +1933,295 @@ export class LayoutTab extends LitElement {
                 </div>
               `
             : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // Render a child module inside a tabs section in tree view
+  private _renderTreeTabsSectionChild(
+    childModule: any,
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    sectionIndex: number,
+    childIndex: number,
+    totalChildren: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(childModule.type);
+    const metadata = moduleHandler?.metadata || {
+      icon: 'mdi:help-circle',
+      title: 'Unknown',
+    };
+    const isLastChild = childIndex === totalChildren - 1;
+    const moduleTitle = this._getModuleDisplayName(childModule);
+    const moduleInfo = this._generateModuleInfo(childModule);
+
+    // Check if this child is itself a layout module (nested layout)
+    const isNestedLayout = this._isLayoutModule(childModule.type);
+
+    if (isNestedLayout) {
+      // For nested layouts inside tabs sections, render simplified with message to edit in settings
+      const nestedLayoutTitle =
+        childModule.type === 'horizontal'
+          ? localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout')
+          : childModule.type === 'vertical'
+            ? localize('editor.layout.vertical_layout', lang, 'Vertical Layout')
+            : childModule.type === 'tabs'
+              ? localize('editor.layout.tabs_layout', lang, 'Tabs Layout')
+              : childModule.type === 'slider'
+                ? localize('editor.layout.slider_module', lang, 'Slider Module')
+                : metadata.title;
+
+      return html`
+        <div
+          class="tree-node tree-module ${isLastChild ? 'last-node' : ''}"
+          draggable="true"
+          @dragstart=${(e: DragEvent) => {
+            e.stopPropagation();
+            this._onTabsSectionChildDragStart(
+              e,
+              rowIndex,
+              columnIndex,
+              moduleIndex,
+              sectionIndex,
+              childIndex,
+              undefined,
+              false
+            );
+          }}
+          @dragend=${(e: DragEvent) => this._onLayoutChildDragEnd(e)}
+          @dragover=${(e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          @dragenter=${(e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this._onTreeTabsSectionChildDragEnter(
+              e,
+              rowIndex,
+              columnIndex,
+              moduleIndex,
+              sectionIndex,
+              childIndex
+            );
+          }}
+          @dragleave=${(e: DragEvent) => this._onDragLeave(e)}
+          @drop=${(e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this._onTreeTabsSectionChildDrop(
+              e,
+              rowIndex,
+              columnIndex,
+              moduleIndex,
+              sectionIndex,
+              childIndex
+            );
+          }}
+        >
+          <div class="tree-node-content">
+            <div class="tree-node-header module-header">
+              <div
+                class="tree-node-drag-handle"
+                title="${localize('editor.layout.drag_to_reorder', lang, 'Drag to reorder')}"
+              >
+                <ha-icon icon="mdi:drag"></ha-icon>
+              </div>
+              <ha-icon icon="${metadata.icon}" class="tree-node-icon"></ha-icon>
+              <div class="tree-node-info">
+                <span class="tree-node-title">${nestedLayoutTitle}</span>
+                <span class="tree-node-subtitle">${moduleInfo}</span>
+              </div>
+              <div class="tree-action-buttons">
+                <button
+                  class="tree-action-btn edit-btn"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._openTabsSectionChildSettings(
+                      rowIndex,
+                      columnIndex,
+                      moduleIndex,
+                      sectionIndex,
+                      childIndex,
+                      undefined,
+                      false
+                    );
+                  }}
+                  @mousedown=${(e: Event) => e.stopPropagation()}
+                  title="${localize('editor.layout.settings', lang, 'Settings')}"
+                >
+                  <ha-icon icon="mdi:cog"></ha-icon>
+                </button>
+                <button
+                  class="tree-action-btn duplicate-btn"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._duplicateTabsSectionChild(
+                      rowIndex,
+                      columnIndex,
+                      moduleIndex,
+                      moduleIndex,
+                      childIndex,
+                      undefined,
+                      false
+                    );
+                  }}
+                  @mousedown=${(e: Event) => e.stopPropagation()}
+                  title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
+                >
+                  <ha-icon icon="mdi:content-copy"></ha-icon>
+                </button>
+                <button
+                  class="tree-action-btn delete-btn"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._deleteTabsSectionChild(
+                      rowIndex,
+                      columnIndex,
+                      moduleIndex,
+                      sectionIndex,
+                      childIndex,
+                      undefined,
+                      false
+                    );
+                  }}
+                  @mousedown=${(e: Event) => e.stopPropagation()}
+                  title="${localize('editor.layout.delete', lang, 'Delete')}"
+                >
+                  <ha-icon icon="mdi:delete"></ha-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    return html`
+      <div
+        class="tree-node tree-module ${isLastChild ? 'last-node' : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) => {
+          e.stopPropagation();
+          this._onTabsSectionChildDragStart(
+            e,
+            rowIndex,
+            columnIndex,
+            moduleIndex,
+            sectionIndex,
+            childIndex,
+            undefined,
+            false
+          );
+        }}
+        @dragend=${(e: DragEvent) => this._onLayoutChildDragEnd(e)}
+        @dragover=${(e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        @dragenter=${(e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this._onTreeTabsSectionChildDragEnter(
+            e,
+            rowIndex,
+            columnIndex,
+            moduleIndex,
+            sectionIndex,
+            childIndex
+          );
+        }}
+        @dragleave=${(e: DragEvent) => this._onDragLeave(e)}
+        @drop=${(e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this._onTreeTabsSectionChildDrop(
+            e,
+            rowIndex,
+            columnIndex,
+            moduleIndex,
+            sectionIndex,
+            childIndex
+          );
+        }}
+      >
+        <div class="tree-node-content">
+          <div class="tree-node-header module-header">
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_reorder', lang, 'Drag to reorder')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
+            <ha-icon icon="${metadata.icon}" class="tree-node-icon"></ha-icon>
+            <div class="tree-node-info">
+              <span class="tree-node-title">${moduleTitle}</span>
+              <span class="tree-node-subtitle">${moduleInfo}</span>
+            </div>
+            <div class="tree-action-buttons">
+              <button
+                class="tree-action-btn edit-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openTabsSectionChildSettings(
+                    rowIndex,
+                    columnIndex,
+                    moduleIndex,
+                    sectionIndex,
+                    childIndex,
+                    undefined,
+                    false
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.edit', lang, 'Edit')}"
+              >
+                <ha-icon icon="mdi:pencil"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn duplicate-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._duplicateTabsSectionChild(
+                    rowIndex,
+                    columnIndex,
+                    moduleIndex,
+                    sectionIndex,
+                    childIndex,
+                    undefined,
+                    false
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
+              >
+                <ha-icon icon="mdi:content-copy"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn delete-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._deleteTabsSectionChild(
+                    rowIndex,
+                    columnIndex,
+                    moduleIndex,
+                    sectionIndex,
+                    childIndex,
+                    undefined,
+                    false
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.delete', lang, 'Delete')}"
+              >
+                <ha-icon icon="mdi:delete"></ha-icon>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -1742,6 +2310,17 @@ export class LayoutTab extends LitElement {
                 title="${localize('editor.layout.edit', lang, 'Edit')}"
               >
                 <ha-icon icon="mdi:pencil"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn copy-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._copyLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.copy', lang, 'Copy')}"
+              >
+                <ha-icon icon="mdi:clipboard-arrow-up"></ha-icon>
               </button>
               <button
                 class="tree-action-btn duplicate-btn"
@@ -1864,6 +2443,26 @@ export class LayoutTab extends LitElement {
               >
                 <ha-icon icon="mdi:plus"></ha-icon>
               </button>
+              ${this._hasModuleClipboard
+                ? html`
+                    <button
+                      class="tree-action-btn paste-btn"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._pasteModuleToNestedLayoutModule(
+                          rowIndex,
+                          columnIndex,
+                          parentModuleIndex,
+                          childIndex
+                        );
+                      }}
+                      @mousedown=${(e: Event) => e.stopPropagation()}
+                      title="${localize('editor.layout.paste', lang, 'Paste')}"
+                    >
+                      <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
+                    </button>
+                  `
+                : ''}
               <button
                 class="tree-action-btn edit-btn"
                 @click=${(e: Event) => {
@@ -1879,6 +2478,17 @@ export class LayoutTab extends LitElement {
                 title="${localize('editor.layout.settings', lang, 'Settings')}"
               >
                 <ha-icon icon="mdi:cog"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn copy-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._copyLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.copy', lang, 'Copy')}"
+              >
+                <ha-icon icon="mdi:clipboard-arrow-up"></ha-icon>
               </button>
               <button
                 class="tree-action-btn duplicate-btn"
@@ -4441,6 +5051,297 @@ export class LayoutTab extends LitElement {
           this.hass?.locale?.language || 'en',
           'Failed to paste module'
         ),
+        'error'
+      );
+    }
+  }
+
+  /**
+   * Copy a nested child module (module inside a nested layout module) to clipboard
+   */
+  private _copyNestedChildModule(
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    childIndex: number
+  ): void {
+    const lang = this.hass?.locale?.language || 'en';
+
+    const layout = this.config.layout;
+    if (!layout || !layout.rows) {
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
+      return;
+    }
+
+    const row = layout.rows[rowIndex];
+    if (!row || !row.columns) {
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
+      return;
+    }
+
+    const column = row.columns[columnIndex];
+    if (!column || !column.modules) {
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
+      return;
+    }
+
+    const parentModule = column.modules[parentModuleIndex] as any;
+    if (!parentModule || !parentModule.modules) {
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
+      return;
+    }
+
+    const nestedLayout = parentModule.modules[nestedLayoutIndex] as any;
+    if (!nestedLayout || !nestedLayout.modules) {
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
+      return;
+    }
+
+    const childModule = nestedLayout.modules[childIndex];
+    if (!childModule) {
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
+      return;
+    }
+
+    try {
+      ucExportImportService.copyModuleToLocalStorage(childModule);
+      this._hasModuleClipboard = true;
+      this._showToast(
+        localize('editor.layout.module_copied', lang, 'Module copied to clipboard'),
+        'success'
+      );
+    } catch (error) {
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
+    }
+  }
+
+  /**
+   * Paste a module from clipboard into a layout module
+   */
+  private _pasteModuleToLayoutModule(
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number
+  ): void {
+    const lang = this.hass?.locale?.language || 'en';
+
+    try {
+      const module = ucExportImportService.getModuleFromLocalStorage();
+      if (!module) {
+        this._showToast(
+          localize('editor.layout.no_module_to_paste', lang, 'No module to paste'),
+          'error'
+        );
+        return;
+      }
+
+      const layout = this._ensureLayout();
+      const row = layout.rows[rowIndex];
+      if (!row || !row.columns) {
+        this._showToast(
+          localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+          'error'
+        );
+        return;
+      }
+
+      const column = row.columns[columnIndex];
+      if (!column || !column.modules) {
+        this._showToast(
+          localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+          'error'
+        );
+        return;
+      }
+
+      const layoutModule = column.modules[moduleIndex] as any;
+      if (!layoutModule) {
+        this._showToast(
+          localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+          'error'
+        );
+        return;
+      }
+
+      // Save undo state
+      this._saveStateToUndoStack();
+
+      // Add the module to the layout module's modules array
+      const newLayout = {
+        ...layout,
+        rows: layout.rows.map((r, rIdx) =>
+          rIdx === rowIndex
+            ? {
+                ...r,
+                columns: r.columns.map((col, cIdx) =>
+                  cIdx === columnIndex
+                    ? {
+                        ...col,
+                        modules: col.modules.map((mod, mIdx) =>
+                          mIdx === moduleIndex
+                            ? {
+                                ...mod,
+                                modules: [...((mod as any).modules || []), module],
+                              }
+                            : mod
+                        ),
+                      }
+                    : col
+                ),
+              }
+            : r
+        ),
+      };
+
+      this._updateLayout(newLayout);
+
+      // Clear clipboard after successful paste
+      ucExportImportService.clearModuleClipboard();
+      this._hasModuleClipboard = false;
+
+      this._showToast(
+        localize('editor.layout.module_pasted', lang, 'Module pasted successfully'),
+        'success'
+      );
+    } catch (error) {
+      this._showToast(
+        localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+        'error'
+      );
+    }
+  }
+
+  /**
+   * Paste a module from clipboard into a nested layout module
+   */
+  private _pasteModuleToNestedLayoutModule(
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number
+  ): void {
+    const lang = this.hass?.locale?.language || 'en';
+
+    try {
+      const module = ucExportImportService.getModuleFromLocalStorage();
+      if (!module) {
+        this._showToast(
+          localize('editor.layout.no_module_to_paste', lang, 'No module to paste'),
+          'error'
+        );
+        return;
+      }
+
+      const layout = this._ensureLayout();
+      const row = layout.rows[rowIndex];
+      if (!row || !row.columns) {
+        this._showToast(
+          localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+          'error'
+        );
+        return;
+      }
+
+      const column = row.columns[columnIndex];
+      if (!column || !column.modules) {
+        this._showToast(
+          localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+          'error'
+        );
+        return;
+      }
+
+      const parentModule = column.modules[parentModuleIndex] as any;
+      if (!parentModule || !parentModule.modules) {
+        this._showToast(
+          localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+          'error'
+        );
+        return;
+      }
+
+      const nestedLayout = parentModule.modules[nestedLayoutIndex] as any;
+      if (!nestedLayout) {
+        this._showToast(
+          localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
+          'error'
+        );
+        return;
+      }
+
+      // Save undo state
+      this._saveStateToUndoStack();
+
+      // Add the module to the nested layout module's modules array
+      const newLayout = {
+        ...layout,
+        rows: layout.rows.map((r, rIdx) =>
+          rIdx === rowIndex
+            ? {
+                ...r,
+                columns: r.columns.map((col, cIdx) =>
+                  cIdx === columnIndex
+                    ? {
+                        ...col,
+                        modules: col.modules.map((mod, mIdx) =>
+                          mIdx === parentModuleIndex
+                            ? {
+                                ...mod,
+                                modules: (mod as any).modules.map(
+                                  (nestedMod: any, nestedIdx: number) =>
+                                    nestedIdx === nestedLayoutIndex
+                                      ? {
+                                          ...nestedMod,
+                                          modules: [...(nestedMod.modules || []), module],
+                                        }
+                                      : nestedMod
+                                ),
+                              }
+                            : mod
+                        ),
+                      }
+                    : col
+                ),
+              }
+            : r
+        ),
+      };
+
+      this._updateLayout(newLayout);
+
+      // Clear clipboard after successful paste
+      ucExportImportService.clearModuleClipboard();
+      this._hasModuleClipboard = false;
+
+      this._showToast(
+        localize('editor.layout.module_pasted', lang, 'Module pasted successfully'),
+        'success'
+      );
+    } catch (error) {
+      this._showToast(
+        localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
         'error'
       );
     }
@@ -11681,6 +12582,393 @@ export class LayoutTab extends LitElement {
   }
 
   /**
+   * Handles drag start for tabs sections in tree view (for reordering sections)
+   */
+  private _onTabsSectionDragStart(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    sectionIndex: number
+  ): void {
+    e.stopPropagation();
+
+    const layout = this._ensureLayout();
+    const tabsModule = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex] as any;
+    const sectionData = tabsModule?.sections?.[sectionIndex];
+
+    if (!sectionData) return;
+
+    this._draggedItem = {
+      type: 'tabs-section' as any,
+      data: sectionData,
+      rowIndex,
+      columnIndex,
+      moduleIndex,
+      sectionIndex,
+    } as any;
+
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'tabs-section' }));
+    }
+
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.opacity = '0.5';
+    }
+  }
+
+  /**
+   * Handles drag enter for tabs sections in tree view
+   */
+  private _onTabsSectionDragEnter(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    sectionIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!this._draggedItem) return;
+
+    // Set drop target for visual feedback
+    this._dropTarget = {
+      type: 'tabs-section' as any,
+      rowIndex,
+      columnIndex,
+      moduleIndex,
+      sectionIndex,
+    } as any;
+
+    // Add visual feedback
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.borderTop = '2px solid var(--primary-color)';
+    }
+
+    this.requestUpdate();
+  }
+
+  /**
+   * Handles drop on tabs sections in tree view (for reordering sections)
+   */
+  private _onTabsSectionDrop(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    targetSectionIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Reset visual feedback
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.borderTop = '';
+    }
+
+    // Clear all drag styles
+    this._clearAllDragStyles();
+
+    if (!this._draggedItem) return;
+
+    const draggedItem = this._draggedItem as any;
+
+    // Handle section reordering within the same tabs module
+    if (
+      draggedItem.type === 'tabs-section' &&
+      draggedItem.rowIndex === rowIndex &&
+      draggedItem.columnIndex === columnIndex &&
+      draggedItem.moduleIndex === moduleIndex
+    ) {
+      const sourceSectionIndex = draggedItem.sectionIndex;
+
+      if (sourceSectionIndex === targetSectionIndex) {
+        this._draggedItem = null;
+        this._dropTarget = null;
+        return;
+      }
+
+      const layout = this._ensureLayout();
+      const newLayout = JSON.parse(JSON.stringify(layout));
+      const tabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex] as any;
+
+      if (!tabsModule?.sections) {
+        this._draggedItem = null;
+        this._dropTarget = null;
+        return;
+      }
+
+      // Remove from source and insert at target
+      const [movedSection] = tabsModule.sections.splice(sourceSectionIndex, 1);
+      const adjustedTargetIndex =
+        targetSectionIndex > sourceSectionIndex ? targetSectionIndex - 1 : targetSectionIndex;
+      tabsModule.sections.splice(adjustedTargetIndex, 0, movedSection);
+
+      this._updateLayout(newLayout);
+    }
+
+    this._draggedItem = null;
+    this._dropTarget = null;
+  }
+
+  /**
+   * Handles drag enter for child modules in tabs sections in tree view
+   */
+  private _onTreeTabsSectionChildDragEnter(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    sectionIndex: number,
+    childIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!this._draggedItem) return;
+
+    // Set drop target for visual feedback
+    this._dropTarget = {
+      type: 'tabs-section-child' as any,
+      rowIndex,
+      columnIndex,
+      moduleIndex,
+      sectionIndex,
+      childIndex,
+    } as any;
+
+    // Add visual feedback
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.borderTop = '2px solid var(--primary-color)';
+    }
+
+    this.requestUpdate();
+  }
+
+  /**
+   * Handles drop on child modules in tabs sections in tree view
+   */
+  private _onTreeTabsSectionChildDrop(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    sectionIndex: number,
+    targetChildIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Reset visual feedback
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.borderTop = '';
+    }
+
+    // Clear all drag styles
+    this._clearAllDragStyles();
+
+    if (!this._draggedItem) return;
+
+    // Use the existing handler
+    this._handleTabsSectionChildDrop(
+      rowIndex,
+      columnIndex,
+      moduleIndex,
+      sectionIndex,
+      targetChildIndex,
+      undefined,
+      false
+    );
+
+    this._draggedItem = null;
+    this._dropTarget = null;
+  }
+
+  /**
+   * Handles drag enter for section content area (for dropping modules from other sections)
+   */
+  private _onTabsSectionContentDragEnter(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    sectionIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!this._draggedItem) return;
+
+    // Set drop target for visual feedback
+    this._dropTarget = {
+      type: 'tabs-section-content' as any,
+      rowIndex,
+      columnIndex,
+      moduleIndex,
+      sectionIndex,
+    } as any;
+
+    // Add visual feedback using CSS class (will be cleared by _onDragLeave)
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.classList.add('drag-over');
+    }
+
+    this.requestUpdate();
+  }
+
+  /**
+   * Handles drop on section content area (adds module to end of section)
+   */
+  private _onTabsSectionContentDrop(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    sectionIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Reset visual feedback - remove CSS class from target and all other elements
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.classList.remove('drag-over');
+    }
+
+    // Clear ALL drag-over classes from the entire shadow DOM
+    this._clearAllDragStyles();
+
+    if (!this._draggedItem) return;
+
+    const draggedItem = this._draggedItem as any;
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+
+    // Get target tabs module
+    const targetTabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[
+      moduleIndex
+    ] as any;
+
+    if (!targetTabsModule?.sections?.[sectionIndex]) {
+      this._draggedItem = null;
+      this._dropTarget = null;
+      return;
+    }
+
+    // Initialize target modules array if needed
+    if (!targetTabsModule.sections[sectionIndex].modules) {
+      targetTabsModule.sections[sectionIndex].modules = [];
+    }
+
+    let movedModule: any = null;
+
+    // Handle different drag source types
+    if (draggedItem.type === 'tabs-section-child') {
+      // Moving from another tabs section
+      const sourceTabsModule = newLayout.rows[draggedItem.rowIndex].columns[draggedItem.columnIndex]
+        .modules[draggedItem.moduleIndex] as any;
+
+      if (!sourceTabsModule?.sections?.[draggedItem.sectionIndex]?.modules) {
+        this._draggedItem = null;
+        this._dropTarget = null;
+        return;
+      }
+
+      // Check if same section - don't do anything
+      if (
+        draggedItem.rowIndex === rowIndex &&
+        draggedItem.columnIndex === columnIndex &&
+        draggedItem.moduleIndex === moduleIndex &&
+        draggedItem.sectionIndex === sectionIndex
+      ) {
+        this._draggedItem = null;
+        this._dropTarget = null;
+        return;
+      }
+
+      // Remove from source section
+      [movedModule] = sourceTabsModule.sections[draggedItem.sectionIndex].modules.splice(
+        draggedItem.childIndex,
+        1
+      );
+    } else if (draggedItem.type === 'module') {
+      // Moving from a column (regular module)
+      const sourceColumn = newLayout.rows[draggedItem.rowIndex].columns[draggedItem.columnIndex];
+      if (!sourceColumn?.modules?.[draggedItem.moduleIndex]) {
+        this._draggedItem = null;
+        this._dropTarget = null;
+        return;
+      }
+
+      // Remove from source column
+      [movedModule] = sourceColumn.modules.splice(draggedItem.moduleIndex, 1);
+    } else if (draggedItem.type === 'layout-child') {
+      // Moving from a layout module's children
+      const sourceLayout = newLayout.rows[draggedItem.rowIndex].columns[draggedItem.columnIndex]
+        .modules[draggedItem.parentModuleIndex] as any;
+      if (!sourceLayout?.modules?.[draggedItem.childIndex]) {
+        this._draggedItem = null;
+        this._dropTarget = null;
+        return;
+      }
+
+      // Remove from source layout
+      [movedModule] = sourceLayout.modules.splice(draggedItem.childIndex, 1);
+    } else if (draggedItem.data) {
+      // New module from selector or clipboard
+      movedModule = JSON.parse(JSON.stringify(draggedItem.data));
+    }
+
+    if (movedModule) {
+      // Add to end of target section
+      targetTabsModule.sections[sectionIndex].modules.push(movedModule);
+      this._updateLayout(newLayout);
+    }
+
+    this._draggedItem = null;
+    this._dropTarget = null;
+  }
+
+  /**
+   * Clears all drag-related styles from the shadow DOM
+   */
+  private _clearAllDragStyles(): void {
+    // Clear drag-over classes
+    this.shadowRoot?.querySelectorAll('.drag-over').forEach(el => {
+      el.classList.remove('drag-over');
+    });
+
+    // Clear drop-target classes
+    this.shadowRoot?.querySelectorAll('.drop-target').forEach(el => {
+      el.classList.remove('drop-target');
+    });
+
+    // Clear layout-drop-target classes
+    this.shadowRoot?.querySelectorAll('.layout-drop-target').forEach(el => {
+      el.classList.remove('layout-drop-target');
+    });
+
+    // Clear any inline opacity styles from dragged elements
+    this.shadowRoot?.querySelectorAll('[style*="opacity"]').forEach(el => {
+      (el as HTMLElement).style.opacity = '';
+    });
+
+    // Clear any inline border styles from drag enter
+    this.shadowRoot?.querySelectorAll('[style*="border"]').forEach(el => {
+      (el as HTMLElement).style.borderTop = '';
+      (el as HTMLElement).style.borderBottom = '';
+    });
+  }
+
+  /**
    * Handles drop on a specific child module within a tabs section (for reordering)
    */
   private _handleTabsSectionChildDrop(
@@ -12468,6 +13756,9 @@ export class LayoutTab extends LitElement {
       container.style.opacity = '';
       container.style.transform = '';
     }
+
+    // Clear all drag styles globally
+    this._clearAllDragStyles();
 
     this._draggedItem = null;
     this._dropTarget = null;
@@ -24146,6 +25437,16 @@ export class LayoutTab extends LitElement {
         background: rgba(3, 169, 244, 0.3);
       }
 
+      /* Copy button - purple tint */
+      .tree-action-btn.copy-btn:hover {
+        background: rgba(156, 39, 176, 0.3);
+      }
+
+      /* Paste button - teal tint */
+      .tree-action-btn.paste-btn:hover {
+        background: rgba(0, 150, 136, 0.3);
+      }
+
       /* Delete button - red tint */
       .tree-action-btn.delete-btn:hover {
         background: rgba(244, 67, 54, 0.3);
@@ -24440,6 +25741,64 @@ export class LayoutTab extends LitElement {
         animation: slideInFromLeft 0.2s ease-out forwards;
         opacity: 0;
         animation-delay: 0.15s;
+      }
+
+      /* ========== DISABLE ANIMATIONS FOR TABS LAYOUT AND ALL ITS CONTENTS ========== */
+      /* This prevents the flash/animation when collapsing sections or interacting with tabs */
+
+      /* Tabs sections themselves should never animate */
+      .tree-tabs-section {
+        animation: none !important;
+        opacity: 1 !important;
+      }
+
+      /* All content inside tabs sections should never animate */
+      .tree-tabs-section-children,
+      .tree-tabs-section-children > .tree-node,
+      .tree-tabs-section-children > .tree-add-button-container,
+      .tree-tabs-section-children * {
+        animation: none !important;
+        opacity: 1 !important;
+      }
+
+      /* The entire tabs layout module children container - no animations */
+      .tree-layout-module:has(.tree-tabs-section) .tree-node-children,
+      .tree-layout-module:has(.tree-tabs-section) .tree-node-children > *,
+      .tree-layout-module:has(.tree-tabs-section) .tree-node {
+        animation: none !important;
+        opacity: 1 !important;
+      }
+
+      /* Fallback for browsers without :has() - use a specific class we can add */
+      .tree-layout-module.tabs-layout .tree-node-children,
+      .tree-layout-module.tabs-layout .tree-node-children > *,
+      .tree-layout-module.tabs-layout .tree-node {
+        animation: none !important;
+        opacity: 1 !important;
+      }
+
+      /* Tabs section drop zone styling */
+      .tree-tabs-section-children {
+        transition: background 0.15s ease;
+        border-radius: 4px;
+      }
+
+      /* Drag over highlight for section content - simple highlight, no pulse */
+      .tree-tabs-section-children.drag-over {
+        background: rgba(var(--rgb-primary-color), 0.1) !important;
+      }
+
+      /* Disable pulsing animation for tabs sections when dragged over */
+      .tree-tabs-section.drag-over > .tree-node-content > .tree-node-header,
+      .tree-tabs-section.drag-over > .tree-node-content > .tree-node-header::after {
+        animation: none !important;
+        box-shadow: none !important;
+      }
+
+      /* Track collapse chevron inside tabs should still rotate but not animate */
+      .tree-tabs-section .tree-track-collapse .track-chevron,
+      .tree-tabs-section-children .tree-track-collapse .track-chevron {
+        transition: transform 0.2s ease;
       }
 
       @keyframes slideInFromLeft {

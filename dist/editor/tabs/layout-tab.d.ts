@@ -106,6 +106,8 @@ export declare class LayoutTab extends LitElement {
     private _renderTreeColumn;
     private _renderTreeModule;
     private _renderTreeLayoutModule;
+    private _renderTreeTabsSection;
+    private _renderTreeTabsSectionChild;
     private _renderTreeLayoutChild;
     private _renderTreeNestedLayoutChild;
     private _renderTreeDeepNestedChild;
@@ -202,6 +204,18 @@ export declare class LayoutTab extends LitElement {
      */
     private _copyModuleToClipboard;
     private _pasteModule;
+    /**
+     * Copy a nested child module (module inside a nested layout module) to clipboard
+     */
+    private _copyNestedChildModule;
+    /**
+     * Paste a module from clipboard into a layout module
+     */
+    private _pasteModuleToLayoutModule;
+    /**
+     * Paste a module from clipboard into a nested layout module
+     */
+    private _pasteModuleToNestedLayoutModule;
     private _copyColumn;
     private _pasteColumn;
     /**
@@ -422,6 +436,38 @@ export declare class LayoutTab extends LitElement {
      * Handles drag start for modules inside tabs sections
      */
     private _onTabsSectionChildDragStart;
+    /**
+     * Handles drag start for tabs sections in tree view (for reordering sections)
+     */
+    private _onTabsSectionDragStart;
+    /**
+     * Handles drag enter for tabs sections in tree view
+     */
+    private _onTabsSectionDragEnter;
+    /**
+     * Handles drop on tabs sections in tree view (for reordering sections)
+     */
+    private _onTabsSectionDrop;
+    /**
+     * Handles drag enter for child modules in tabs sections in tree view
+     */
+    private _onTreeTabsSectionChildDragEnter;
+    /**
+     * Handles drop on child modules in tabs sections in tree view
+     */
+    private _onTreeTabsSectionChildDrop;
+    /**
+     * Handles drag enter for section content area (for dropping modules from other sections)
+     */
+    private _onTabsSectionContentDragEnter;
+    /**
+     * Handles drop on section content area (adds module to end of section)
+     */
+    private _onTabsSectionContentDrop;
+    /**
+     * Clears all drag-related styles from the shadow DOM
+     */
+    private _clearAllDragStyles;
     /**
      * Handles drop on a specific child module within a tabs section (for reordering)
      */
