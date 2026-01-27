@@ -22,11 +22,26 @@ interface CacheEntry {
 }
 
 /**
+ * Check if a template key is for a string-based template (unified, info_entity, state_text)
+ * These templates return JSON/text that should be compared as strings, not booleans
+ */
+function isStringBasedTemplate(templateKey: string): boolean {
+  return (
+    templateKey.startsWith('unified_') ||
+    templateKey.startsWith('info_entity_') ||
+    templateKey.startsWith('state_text_')
+  );
+}
+
+/**
  * Service class for handling template evaluation and subscription in Ultra Vehicle Card
  */
 export class TemplateService {
   private _templateSubscriptions: Map<string, Promise<() => Promise<void>>> = new Map();
   private _templateResults: Map<string, boolean> = new Map();
+  // Store previous string values for string-based templates (unified, info_entity, state_text)
+  // These need string comparison for change detection, not boolean comparison
+  private _previousStringResults: Map<string, string> = new Map();
 
   // Add cache for template evaluation results
   private _evaluationCache: Map<string, CacheEntry> = new Map();
@@ -102,6 +117,7 @@ export class TemplateService {
         (message: any) => {
           // Extract the rendered result from the message
           const renderedResult = message.result;
+          const renderedString = String(renderedResult);
 
           // Store the original rendered string for use in state text templates
           if (!this.hass.__uvc_template_strings) {
@@ -109,24 +125,38 @@ export class TemplateService {
           }
           this.hass.__uvc_template_strings[templateKey] = renderedResult;
 
-          // Update the template result using the extracted string
-          const newValue = this.parseTemplateResult(renderedResult, templateKey);
-          const oldValue = this._templateResults.get(templateKey);
+          // Determine if value changed based on template type
+          let hasChanged = false;
 
-          if (newValue !== oldValue) {
+          if (isStringBasedTemplate(templateKey)) {
+            // For unified/info_entity/state_text templates, compare actual string results
+            // These templates return JSON/text that must be compared as strings, not booleans
+            // (parseTemplateResult returns true for all unified templates, breaking change detection)
+            const previousString = this._previousStringResults.get(templateKey);
+            hasChanged = previousString !== renderedString;
+            this._previousStringResults.set(templateKey, renderedString);
+          } else {
+            // For boolean templates (active/inactive state), compare boolean results
+            const newValue = this.parseTemplateResult(renderedResult, templateKey);
+            const oldValue = this._templateResults.get(templateKey);
+            hasChanged = newValue !== oldValue;
+            this._templateResults.set(templateKey, newValue);
+          }
+
+          if (hasChanged) {
             // Only request a re-render if the value actually changed
             if (onResultChanged) {
               onResultChanged();
             }
           }
 
-          this._templateResults.set(templateKey, newValue);
-
-          // Also cache the result
+          // Also cache the result (for backward compatibility)
+          const boolValue = this.parseTemplateResult(renderedResult, templateKey);
+          this._templateResults.set(templateKey, boolValue);
           this._evaluationCache.set(templateKey, {
-            value: newValue,
+            value: boolValue,
             timestamp: Date.now(),
-            stringValue: renderedResult,
+            stringValue: renderedString,
           });
         },
         {
@@ -259,6 +289,7 @@ export class TemplateService {
     this._templateSubscriptions.clear();
     this._templateResults.clear();
     this._evaluationCache.clear(); // Also clear the cache
+    this._previousStringResults.clear(); // Clear string comparison cache
   }
 
   /**
@@ -268,5 +299,6 @@ export class TemplateService {
     this.hass = hass;
     // Clear cache when hass reference changes to ensure fresh data
     this._evaluationCache.clear();
+    this._previousStringResults.clear();
   }
 }

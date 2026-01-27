@@ -21,7 +21,7 @@ export class UltraTabsModule extends BaseUltraModule {
 
   // Track the active tab for each tabs module instance
   private activeTabStates = new Map<string, string>();
-  
+
   // Track dragged section for reordering
   private _draggedSection: TabSection | null = null;
 
@@ -29,7 +29,7 @@ export class UltraTabsModule extends BaseUltraModule {
     const moduleId = id || this.generateId('tabs');
     const section1Id = this.generateId('section');
     const section2Id = this.generateId('section');
-    
+
     return {
       id: moduleId,
       type: 'tabs',
@@ -199,7 +199,8 @@ export class UltraTabsModule extends BaseUltraModule {
         .add-section-btn:hover {
           background: rgba(var(--rgb-primary-color), 0.1);
         }
-        .orientation-btn, .style-btn {
+        .orientation-btn,
+        .style-btn {
           flex: 1;
           padding: 12px;
           border: 1px solid var(--divider-color);
@@ -213,7 +214,8 @@ export class UltraTabsModule extends BaseUltraModule {
           align-items: center;
           gap: 4px;
         }
-        .orientation-btn.active, .style-btn.active {
+        .orientation-btn.active,
+        .style-btn.active {
           background: var(--primary-color);
           color: white;
           border-color: var(--primary-color);
@@ -223,21 +225,35 @@ export class UltraTabsModule extends BaseUltraModule {
       <div class="module-general-settings" style="overflow: visible;">
         <!-- Inject global style for icon picker dropdown width -->
         ${this._injectIconPickerStyles()}
-        
+
         <!-- Orientation Section -->
         ${this.renderSettingsSection(
           localize('editor.tabs_module.orientation.title', lang, 'Tab Orientation'),
-          localize('editor.tabs_module.orientation.desc', lang, 'Choose how the tabs are arranged.'),
+          localize(
+            'editor.tabs_module.orientation.desc',
+            lang,
+            'Choose how the tabs are arranged.'
+          ),
           []
         )}
         <div style="display: flex; gap: 8px; margin-bottom: 32px;">
           ${[
-            { value: 'horizontal', icon: 'mdi:view-column', label: localize('editor.tabs_module.orientation.horizontal', lang, 'Horizontal') },
-            { value: 'vertical', icon: 'mdi:view-sequential', label: localize('editor.tabs_module.orientation.vertical', lang, 'Vertical') },
+            {
+              value: 'horizontal',
+              icon: 'mdi:view-column',
+              label: localize('editor.tabs_module.orientation.horizontal', lang, 'Horizontal'),
+            },
+            {
+              value: 'vertical',
+              icon: 'mdi:view-sequential',
+              label: localize('editor.tabs_module.orientation.vertical', lang, 'Vertical'),
+            },
           ].map(
             opt => html`
               <button
-                class="orientation-btn ${(tabsModule.orientation || 'horizontal') === opt.value ? 'active' : ''}"
+                class="orientation-btn ${(tabsModule.orientation || 'horizontal') === opt.value
+                  ? 'active'
+                  : ''}"
                 @click=${() => {
                   updateModule({ orientation: opt.value as 'horizontal' | 'vertical' });
                   setTimeout(() => this.triggerPreviewUpdate(), 50);
@@ -286,7 +302,11 @@ export class UltraTabsModule extends BaseUltraModule {
         <!-- Alignment Section -->
         ${this.renderSettingsSection(
           localize('editor.tabs_module.alignment.title', lang, 'Tab Alignment'),
-          localize('editor.tabs_module.alignment.desc', lang, 'Choose how tabs are aligned within their container.'),
+          localize(
+            'editor.tabs_module.alignment.desc',
+            lang,
+            'Choose how tabs are aligned within their container.'
+          ),
           [
             {
               title: localize('editor.tabs_module.alignment.alignment', lang, 'Alignment'),
@@ -314,23 +334,35 @@ export class UltraTabsModule extends BaseUltraModule {
         <!-- Position Section -->
         ${this.renderSettingsSection(
           localize('editor.tabs_module.position.title', lang, 'Tab Position'),
-          localize('editor.tabs_module.position.desc', lang, 'Choose where the tabs appear relative to the content.'),
+          localize(
+            'editor.tabs_module.position.desc',
+            lang,
+            'Choose where the tabs appear relative to the content.'
+          ),
           [
             {
               title: localize('editor.tabs_module.position.position', lang, 'Position'),
               description: '',
               hass,
-              data: { tab_position: tabsModule.tab_position || (tabsModule.orientation === 'vertical' ? 'left' : 'top') },
+              data: {
+                tab_position:
+                  tabsModule.tab_position ||
+                  (tabsModule.orientation === 'vertical' ? 'left' : 'top'),
+              },
               schema: [
-                this.selectField('tab_position', 
-                  tabsModule.orientation === 'vertical' 
+                this.selectField(
+                  'tab_position',
+                  tabsModule.orientation === 'vertical'
                     ? [
                         { value: 'left', label: localize('editor.common.left', lang, 'Left') },
                         { value: 'right', label: localize('editor.common.right', lang, 'Right') },
                       ]
                     : [
                         { value: 'top', label: localize('editor.common.top', lang, 'Top') },
-                        { value: 'bottom', label: localize('editor.common.bottom', lang, 'Bottom') },
+                        {
+                          value: 'bottom',
+                          label: localize('editor.common.bottom', lang, 'Bottom'),
+                        },
                       ]
                 ),
               ],
@@ -358,7 +390,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <div
             style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
           >
-            ${localize('editor.tabs_module.colors.desc', lang, 'Customize the colors for your tabs.')}
+            ${localize(
+              'editor.tabs_module.colors.desc',
+              lang,
+              'Customize the colors for your tabs.'
+            )}
           </div>
 
           <style>
@@ -559,7 +595,9 @@ export class UltraTabsModule extends BaseUltraModule {
           </div>
 
           <!-- Wrap Tabs Toggle -->
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+          <div
+            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;"
+          >
             <div style="flex: 1;">
               <div
                 class="field-title"
@@ -591,13 +629,19 @@ export class UltraTabsModule extends BaseUltraModule {
           </div>
 
           <!-- Mobile Icons Only Toggle -->
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+          <div
+            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;"
+          >
             <div style="flex: 1;">
               <div
                 class="field-title"
                 style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
               >
-                ${localize('editor.tabs_module.responsive.mobile_icons_only', lang, 'Icons Only on Mobile')}
+                ${localize(
+                  'editor.tabs_module.responsive.mobile_icons_only',
+                  lang,
+                  'Icons Only on Mobile'
+                )}
               </div>
               <div
                 class="field-description"
@@ -625,9 +669,15 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Mobile Breakpoint (conditional on mobile_icons_only) -->
           ${tabsModule.mobile_icons_only
             ? html`
-                <div style="border-left: 3px solid var(--primary-color); padding-left: 16px; margin-top: 8px;">
+                <div
+                  style="border-left: 3px solid var(--primary-color); padding-left: 16px; margin-top: 8px;"
+                >
                   ${this.renderFieldSection(
-                    localize('editor.tabs_module.responsive.mobile_breakpoint', lang, 'Mobile Breakpoint'),
+                    localize(
+                      'editor.tabs_module.responsive.mobile_breakpoint',
+                      lang,
+                      'Mobile Breakpoint'
+                    ),
                     localize(
                       'editor.tabs_module.responsive.mobile_breakpoint_desc',
                       lang,
@@ -669,7 +719,9 @@ export class UltraTabsModule extends BaseUltraModule {
 
           <!-- Section List -->
           <div class="sections-list">
-            ${(tabsModule.sections || []).map((section, index) => this._renderSectionItem(section, index, tabsModule, hass, updateModule))}
+            ${(tabsModule.sections || []).map((section, index) =>
+              this._renderSectionItem(section, index, tabsModule, hass, updateModule)
+            )}
           </div>
 
           <!-- Add Section Button -->
@@ -694,7 +746,11 @@ export class UltraTabsModule extends BaseUltraModule {
         <!-- Typography Section -->
         ${this.renderSettingsSection(
           localize('editor.tabs_module.typography.title', lang, 'Typography'),
-          localize('editor.tabs_module.typography.desc', lang, 'Configure the font settings for tab labels.'),
+          localize(
+            'editor.tabs_module.typography.desc',
+            lang,
+            'Configure the font settings for tab labels.'
+          ),
           [
             {
               title: localize('editor.tabs_module.typography.font_size', lang, 'Font Size'),
@@ -729,7 +785,11 @@ export class UltraTabsModule extends BaseUltraModule {
               },
             },
             {
-              title: localize('editor.tabs_module.typography.text_transform', lang, 'Text Transform'),
+              title: localize(
+                'editor.tabs_module.typography.text_transform',
+                lang,
+                'Text Transform'
+              ),
               description: '',
               hass,
               data: { text_transform: tabsModule.text_transform || 'none' },
@@ -810,7 +870,11 @@ export class UltraTabsModule extends BaseUltraModule {
           type="text"
           class="section-title-input"
           .value=${section.title}
-          placeholder=${localize('editor.tabs_module.sections.title_placeholder', lang, 'Section Title')}
+          placeholder=${localize(
+            'editor.tabs_module.sections.title_placeholder',
+            lang,
+            'Section Title'
+          )}
           @input=${(e: Event) => {
             const target = e.target as HTMLInputElement;
             const updatedSections = [...sections];
@@ -832,7 +896,10 @@ export class UltraTabsModule extends BaseUltraModule {
                 requestAnimationFrame(() => {
                   const overlay = document.querySelector('vaadin-combo-box-overlay');
                   if (overlay) {
-                    (overlay as HTMLElement).style.setProperty('--vaadin-combo-box-overlay-width', '320px');
+                    (overlay as HTMLElement).style.setProperty(
+                      '--vaadin-combo-box-overlay-width',
+                      '320px'
+                    );
                     (overlay as HTMLElement).style.width = '320px';
                     (overlay as HTMLElement).style.minWidth = '320px';
                   }
@@ -860,7 +927,10 @@ export class UltraTabsModule extends BaseUltraModule {
           }}
           style="color: ${isDefault ? 'var(--primary-color)' : 'var(--secondary-text-color)'}"
         >
-          <ha-icon icon=${isDefault ? 'mdi:star' : 'mdi:star-outline'} style="--mdc-icon-size: 18px;"></ha-icon>
+          <ha-icon
+            icon=${isDefault ? 'mdi:star' : 'mdi:star-outline'}
+            style="--mdc-icon-size: 18px;"
+          ></ha-icon>
         </button>
 
         <!-- Section Actions -->
@@ -901,7 +971,9 @@ export class UltraTabsModule extends BaseUltraModule {
               updateModule(updates);
               setTimeout(() => this.triggerPreviewUpdate(), 50);
             }}
-            style="opacity: ${canDelete ? 1 : 0.3}; cursor: ${canDelete ? 'pointer' : 'not-allowed'};"
+            style="opacity: ${canDelete ? 1 : 0.3}; cursor: ${canDelete
+              ? 'pointer'
+              : 'not-allowed'};"
           >
             <ha-icon icon="mdi:trash-can-outline" style="--mdc-icon-size: 18px;"></ha-icon>
           </button>
@@ -1025,7 +1097,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Active Tab Background Color -->
           <div style="margin-bottom: 16px;">
             <ultra-color-picker
-              .label=${localize('editor.tabs_module.design.active_bg_color', lang, 'Background Color')}
+              .label=${localize(
+                'editor.tabs_module.design.active_bg_color',
+                lang,
+                'Background Color'
+              )}
               .value=${tabsModule.active_tab_background || ''}
               .defaultValue=${'var(--primary-color)'}
               .hass=${hass}
@@ -1039,7 +1115,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Active Tab Border Color -->
           <div style="margin-bottom: 16px;">
             <ultra-color-picker
-              .label=${localize('editor.tabs_module.design.active_border_color', lang, 'Border Color')}
+              .label=${localize(
+                'editor.tabs_module.design.active_border_color',
+                lang,
+                'Border Color'
+              )}
               .value=${tabsModule.active_tab_border_color || ''}
               .defaultValue=${'transparent'}
               .hass=${hass}
@@ -1069,7 +1149,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Inactive Tab Text Color -->
           <div style="margin-bottom: 16px;">
             <ultra-color-picker
-              .label=${localize('editor.tabs_module.design.inactive_text_color', lang, 'Text Color')}
+              .label=${localize(
+                'editor.tabs_module.design.inactive_text_color',
+                lang,
+                'Text Color'
+              )}
               .value=${tabsModule.inactive_tab_color || ''}
               .defaultValue=${'var(--secondary-text-color)'}
               .hass=${hass}
@@ -1083,7 +1167,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Inactive Tab Background Color -->
           <div style="margin-bottom: 16px;">
             <ultra-color-picker
-              .label=${localize('editor.tabs_module.design.inactive_bg_color', lang, 'Background Color')}
+              .label=${localize(
+                'editor.tabs_module.design.inactive_bg_color',
+                lang,
+                'Background Color'
+              )}
               .value=${tabsModule.inactive_tab_background || ''}
               .defaultValue=${'var(--secondary-background-color)'}
               .hass=${hass}
@@ -1097,7 +1185,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Inactive Tab Border Color -->
           <div style="margin-bottom: 16px;">
             <ultra-color-picker
-              .label=${localize('editor.tabs_module.design.inactive_border_color', lang, 'Border Color')}
+              .label=${localize(
+                'editor.tabs_module.design.inactive_border_color',
+                lang,
+                'Border Color'
+              )}
               .value=${tabsModule.inactive_tab_border_color || ''}
               .defaultValue=${'transparent'}
               .hass=${hass}
@@ -1141,7 +1233,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Hover Tab Background Color -->
           <div style="margin-bottom: 16px;">
             <ultra-color-picker
-              .label=${localize('editor.tabs_module.design.hover_bg_color', lang, 'Background Color')}
+              .label=${localize(
+                'editor.tabs_module.design.hover_bg_color',
+                lang,
+                'Background Color'
+              )}
               .value=${tabsModule.hover_tab_background || ''}
               .defaultValue=${'rgba(var(--rgb-primary-color), 0.1)'}
               .hass=${hass}
@@ -1162,7 +1258,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Tab Gap -->
           ${this.renderFieldSection(
             localize('editor.tabs_module.design.tab_gap', lang, 'Gap Between Tabs'),
-            localize('editor.tabs_module.design.tab_gap_desc', lang, 'Space between individual tabs (in pixels).'),
+            localize(
+              'editor.tabs_module.design.tab_gap_desc',
+              lang,
+              'Space between individual tabs (in pixels).'
+            ),
             hass,
             { tab_gap: tabsModule.tab_gap ?? 4 },
             [this.numberField('tab_gap', 0, 32, 1)],
@@ -1175,7 +1275,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Tab Padding -->
           ${this.renderFieldSection(
             localize('editor.tabs_module.design.tab_padding', lang, 'Tab Padding'),
-            localize('editor.tabs_module.design.tab_padding_desc', lang, 'Padding inside each tab (CSS value, e.g. "10px 16px").'),
+            localize(
+              'editor.tabs_module.design.tab_padding_desc',
+              lang,
+              'Padding inside each tab (CSS value, e.g. "10px 16px").'
+            ),
             hass,
             { tab_padding: tabsModule.tab_padding || '10px 16px' },
             [this.textField('tab_padding')],
@@ -1188,7 +1292,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Tab Border Radius -->
           ${this.renderFieldSection(
             localize('editor.tabs_module.design.tab_border_radius', lang, 'Tab Border Radius'),
-            localize('editor.tabs_module.design.tab_border_radius_desc', lang, 'Border radius for tabs (CSS value, e.g. "8px" or "50%").'),
+            localize(
+              'editor.tabs_module.design.tab_border_radius_desc',
+              lang,
+              'Border radius for tabs (CSS value, e.g. "8px" or "50%").'
+            ),
             hass,
             { tab_border_radius: tabsModule.tab_border_radius || '8px' },
             [this.textField('tab_border_radius')],
@@ -1201,7 +1309,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Tab Border Width -->
           ${this.renderFieldSection(
             localize('editor.tabs_module.design.tab_border_width', lang, 'Tab Border Width'),
-            localize('editor.tabs_module.design.tab_border_width_desc', lang, 'Border width for tabs (in pixels).'),
+            localize(
+              'editor.tabs_module.design.tab_border_width_desc',
+              lang,
+              'Border width for tabs (in pixels).'
+            ),
             hass,
             { tab_border_width: tabsModule.tab_border_width ?? 0 },
             [this.numberField('tab_border_width', 0, 10, 1)],
@@ -1230,7 +1342,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Content Background Color -->
           <div style="margin-bottom: 16px;">
             <ultra-color-picker
-              .label=${localize('editor.tabs_module.design.content_bg_color', lang, 'Background Color')}
+              .label=${localize(
+                'editor.tabs_module.design.content_bg_color',
+                lang,
+                'Background Color'
+              )}
               .value=${tabsModule.content_background || ''}
               .defaultValue=${'transparent'}
               .hass=${hass}
@@ -1244,7 +1360,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Content Padding -->
           ${this.renderFieldSection(
             localize('editor.tabs_module.design.content_padding', lang, 'Content Padding'),
-            localize('editor.tabs_module.design.content_padding_desc', lang, 'Padding around the content area (CSS value).'),
+            localize(
+              'editor.tabs_module.design.content_padding_desc',
+              lang,
+              'Padding around the content area (CSS value).'
+            ),
             hass,
             { content_padding: tabsModule.content_padding || '16px' },
             [this.textField('content_padding')],
@@ -1256,8 +1376,16 @@ export class UltraTabsModule extends BaseUltraModule {
 
           <!-- Content Border Radius -->
           ${this.renderFieldSection(
-            localize('editor.tabs_module.design.content_border_radius', lang, 'Content Border Radius'),
-            localize('editor.tabs_module.design.content_border_radius_desc', lang, 'Border radius for content area (CSS value).'),
+            localize(
+              'editor.tabs_module.design.content_border_radius',
+              lang,
+              'Content Border Radius'
+            ),
+            localize(
+              'editor.tabs_module.design.content_border_radius_desc',
+              lang,
+              'Border radius for content area (CSS value).'
+            ),
             hass,
             { content_border_radius: tabsModule.content_border_radius || '0' },
             [this.textField('content_border_radius')],
@@ -1270,7 +1398,11 @@ export class UltraTabsModule extends BaseUltraModule {
           <!-- Content Border Color -->
           <div style="margin-bottom: 16px;">
             <ultra-color-picker
-              .label=${localize('editor.tabs_module.design.content_border_color', lang, 'Border Color')}
+              .label=${localize(
+                'editor.tabs_module.design.content_border_color',
+                lang,
+                'Border Color'
+              )}
               .value=${tabsModule.content_border_color || ''}
               .defaultValue=${'transparent'}
               .hass=${hass}
@@ -1283,8 +1415,16 @@ export class UltraTabsModule extends BaseUltraModule {
 
           <!-- Content Border Width -->
           ${this.renderFieldSection(
-            localize('editor.tabs_module.design.content_border_width', lang, 'Content Border Width'),
-            localize('editor.tabs_module.design.content_border_width_desc', lang, 'Border width for content area (in pixels).'),
+            localize(
+              'editor.tabs_module.design.content_border_width',
+              lang,
+              'Content Border Width'
+            ),
+            localize(
+              'editor.tabs_module.design.content_border_width_desc',
+              lang,
+              'Border width for content area (in pixels).'
+            ),
             hass,
             { content_border_width: tabsModule.content_border_width ?? 0 },
             [this.numberField('content_border_width', 0, 10, 1)],
@@ -1303,7 +1443,11 @@ export class UltraTabsModule extends BaseUltraModule {
 
           ${this.renderFieldSection(
             localize('editor.tabs_module.design.transition_duration', lang, 'Transition Duration'),
-            localize('editor.tabs_module.design.transition_duration_desc', lang, 'How long tab transitions take (CSS value, e.g. "0.2s").'),
+            localize(
+              'editor.tabs_module.design.transition_duration_desc',
+              lang,
+              'How long tab transitions take (CSS value, e.g. "0.2s").'
+            ),
             hass,
             { transition_duration: tabsModule.transition_duration || '0.2s' },
             [this.textField('transition_duration')],
@@ -1340,7 +1484,11 @@ export class UltraTabsModule extends BaseUltraModule {
     if (sections.length === 0) {
       return this.renderGradientErrorState(
         localize('editor.tabs_module.preview.no_sections', lang, 'No Sections'),
-        localize('editor.tabs_module.preview.no_sections_desc', lang, 'Add sections in the General tab to get started.')
+        localize(
+          'editor.tabs_module.preview.no_sections_desc',
+          lang,
+          'Add sections in the General tab to get started.'
+        )
       );
     }
 
@@ -1440,7 +1588,9 @@ export class UltraTabsModule extends BaseUltraModule {
 
         <!-- Tab Content -->
         <div class="ultra-tabs-content" style="${contentStyles}">
-          ${activeSection ? this._renderSectionContent(activeSection, hass, config, previewContext, lang) : ''}
+          ${activeSection
+            ? this._renderSectionContent(activeSection, hass, config, previewContext, lang)
+            : ''}
         </div>
       </div>
     `;
@@ -1457,9 +1607,9 @@ export class UltraTabsModule extends BaseUltraModule {
     const hasIcon = !!section.icon;
     const hasTitle = !!section.title?.trim();
     const isIconOnly = hasIcon && !hasTitle;
-    
+
     const buttonStyles = this._buildTabButtonStyles(tabsModule, isActive, style, isIconOnly);
-    
+
     const handleClick = (e: Event) => {
       e.stopPropagation();
       this.activeTabStates.set(tabsModule.id, section.id);
@@ -1474,7 +1624,9 @@ export class UltraTabsModule extends BaseUltraModule {
 
     return html`
       <button
-        class="ultra-tab-btn ${isActive ? 'active' : ''} ${isIconOnly ? 'icon-only' : ''} ${hasIcon ? 'has-icon' : ''}"
+        class="ultra-tab-btn ${isActive ? 'active' : ''} ${isIconOnly ? 'icon-only' : ''} ${hasIcon
+          ? 'has-icon'
+          : ''}"
         style="${buttonStyles}"
         @click=${handleClick}
         @mouseenter=${handleHover}
@@ -1546,8 +1698,27 @@ export class UltraTabsModule extends BaseUltraModule {
           `;
         }
 
+        // Build design styles from child module config
+        // Use type assertion to access dynamic properties that may be present on modules
+        const childAny = childModule as any;
+        const childDesign = childAny.design || {};
+        const bgColor = childAny.background_color || childDesign.background_color || '';
+        const borderRadius = childAny.border_radius || childDesign.border_radius || '';
+        const border = childAny.border || childDesign.border || null;
+        const backdropFilter = childAny.backdrop_filter || childDesign.backdrop_filter || '';
+
+        let childDesignStyle = 'margin-bottom: 8px;';
+        if (bgColor) childDesignStyle += ` background: ${bgColor};`;
+        if (borderRadius) childDesignStyle += ` border-radius: ${borderRadius};`;
+        if (border && border.style && border.style !== 'none') {
+          childDesignStyle += ` border: ${border.width || '1px'} ${border.style} ${border.color || 'var(--divider-color)'};`;
+          if (border.radius)
+            childDesignStyle += ` border-radius: ${typeof border.radius === 'number' ? border.radius + 'px' : border.radius};`;
+        }
+        if (backdropFilter) childDesignStyle += ` backdrop-filter: ${backdropFilter};`;
+
         return html`
-          <div class="tab-child-module" style="margin-bottom: 8px;">
+          <div class="tab-child-module" style="${childDesignStyle}">
             ${childModuleHandler.renderPreview(childModule, hass, config, previewContext)}
           </div>
         `;
@@ -1559,26 +1730,51 @@ export class UltraTabsModule extends BaseUltraModule {
   private _buildContainerStyles(tabsModule: TabsModule): string {
     const orientation = tabsModule.orientation || 'horizontal';
     const position = tabsModule.tab_position || (orientation === 'vertical' ? 'left' : 'top');
-    
+
     let flexDirection = 'column'; // default for horizontal top
     if (orientation === 'horizontal') {
       flexDirection = position === 'bottom' ? 'column-reverse' : 'column';
     } else {
       flexDirection = position === 'right' ? 'row-reverse' : 'row';
     }
-    
-    return `
+
+    // Get background from module config or design
+    // Use type assertion to access dynamic properties
+    const tabsAny = tabsModule as any;
+    const design = tabsAny.design || {};
+    const bgColor = tabsAny.background_color || design.background_color || '';
+    const borderRadius = tabsAny.border_radius || design.border_radius || '';
+    const border = tabsAny.border || design.border || null;
+    const backdropFilter = tabsAny.backdrop_filter || design.backdrop_filter || '';
+
+    let styles = `
       display: flex;
       flex-direction: ${flexDirection};
       width: 100%;
     `;
+
+    // Apply design styles
+    if (bgColor) styles += ` background: ${bgColor};`;
+    if (borderRadius) styles += ` border-radius: ${borderRadius};`;
+    if (border && border.style && border.style !== 'none') {
+      styles += ` border: ${border.width || '1px'} ${border.style} ${border.color || 'var(--divider-color)'};`;
+      if (border.radius)
+        styles += ` border-radius: ${typeof border.radius === 'number' ? border.radius + 'px' : border.radius};`;
+    }
+    if (backdropFilter) styles += ` backdrop-filter: ${backdropFilter};`;
+
+    return styles;
   }
 
-  private _buildTabsContainerStyles(tabsModule: TabsModule, orientation: string, alignment: string): string {
+  private _buildTabsContainerStyles(
+    tabsModule: TabsModule,
+    orientation: string,
+    alignment: string
+  ): string {
     const gap = tabsModule.tab_gap ?? 4;
     const style = tabsModule.style || 'switch_1';
     const wrapTabs = tabsModule.wrap_tabs || false;
-    
+
     let justifyContent = 'flex-start';
     if (alignment === 'center') justifyContent = 'center';
     else if (alignment === 'right') justifyContent = 'flex-end';
@@ -1590,7 +1786,7 @@ export class UltraTabsModule extends BaseUltraModule {
     let containerBg = trackBg || 'var(--secondary-background-color)';
     let containerPadding = '4px';
     let containerRadius = tabsModule.tab_border_radius || '8px';
-    
+
     if (style === 'default' || style === 'simple' || style === 'simple_2' || style === 'simple_3') {
       containerBg = trackBg || 'transparent';
       containerPadding = '0';
@@ -1611,7 +1807,7 @@ export class UltraTabsModule extends BaseUltraModule {
     // Check if all sections are icon-only (have icon but no title)
     const sections = tabsModule.sections || [];
     const allIconOnly = sections.length > 0 && sections.every(s => !!s.icon && !s.title?.trim());
-    
+
     // For vertical orientation, use smaller width if all tabs are icon-only
     let verticalWidthStyle = '';
     if (orientation === 'vertical') {
@@ -1656,9 +1852,14 @@ export class UltraTabsModule extends BaseUltraModule {
     `;
   }
 
-  private _buildTabButtonStyles(tabsModule: TabsModule, isActive: boolean, style: string, isIconOnly: boolean = false): string {
+  private _buildTabButtonStyles(
+    tabsModule: TabsModule,
+    isActive: boolean,
+    style: string,
+    isIconOnly: boolean = false
+  ): string {
     // For icon-only tabs, use square padding; otherwise use configured padding
-    const padding = isIconOnly ? '10px' : (tabsModule.tab_padding || '10px 16px');
+    const padding = isIconOnly ? '10px' : tabsModule.tab_padding || '10px 16px';
     const fontSize = tabsModule.font_size || '14px';
     const fontWeight = tabsModule.font_weight || '500';
     const textTransform = tabsModule.text_transform || 'none';
@@ -1677,7 +1878,10 @@ export class UltraTabsModule extends BaseUltraModule {
     // Base styles
     let bgColor = isActive ? activeBg : inactiveBg;
     let textColor = isActive ? activeColor : inactiveColor;
-    let border = borderWidth > 0 ? `${borderWidth}px solid ${isActive ? activeBorder : inactiveBorder}` : 'none';
+    let border =
+      borderWidth > 0
+        ? `${borderWidth}px solid ${isActive ? activeBorder : inactiveBorder}`
+        : 'none';
     let radius = borderRadius;
     let extraStyles = '';
 
@@ -1689,7 +1893,7 @@ export class UltraTabsModule extends BaseUltraModule {
         textColor = isActive ? activeBg : inactiveColor;
         border = 'none';
         radius = '0';
-        extraStyles = isActive 
+        extraStyles = isActive
           ? `border-bottom: 2px solid ${activeBg}; margin-bottom: -1px;`
           : 'border-bottom: 2px solid transparent;';
         break;
@@ -1761,7 +1965,9 @@ export class UltraTabsModule extends BaseUltraModule {
 
       case 'trendy':
         // Stylized with gradient-like accent
-        bgColor = isActive ? `linear-gradient(135deg, ${activeBg}, color-mix(in srgb, ${activeBg} 70%, white))` : 'transparent';
+        bgColor = isActive
+          ? `linear-gradient(135deg, ${activeBg}, color-mix(in srgb, ${activeBg} 70%, white))`
+          : 'transparent';
         textColor = isActive ? activeColor : inactiveColor;
         radius = '8px';
         extraStyles = isActive ? 'box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);' : '';
@@ -1840,4 +2046,3 @@ export class UltraTabsModule extends BaseUltraModule {
     return { valid: errors.length === 0, errors };
   }
 }
-

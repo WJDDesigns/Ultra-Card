@@ -371,9 +371,25 @@ export class UltraGraphsModule extends BaseUltraModule {
                       }),
                     ],
                     (e: CustomEvent) => {
-                      updateModule({
-                        forecast_entity: e.detail.value?.forecast_entity || e.detail.value,
-                      });
+                      const newEntity = e.detail.value?.forecast_entity || e.detail.value;
+                      if (newEntity === graphsModule.forecast_entity) return;
+                      updateModule({ forecast_entity: newEntity });
+                      // Clear cached data to force re-fetch
+                      delete this._historyData[graphsModule.id];
+                      delete this._deferredHistoryScheduled[graphsModule.id];
+                      delete this._historyLoading[graphsModule.id];
+                      // Clear localStorage cache using correct cache key
+                      try {
+                        const store = this._getCacheStore();
+                        const cacheKey = this._makeCacheKey(graphsModule);
+                        delete store[cacheKey];
+                        this._persistCacheStore(store);
+                      } catch (_e) {}
+                      // Create updated module and reload data immediately
+                      const updated = { ...graphsModule, forecast_entity: newEntity } as any;
+                      this._loadHistoryData(updated, hass);
+                      this.requestUpdate();
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
                     }
                   )}
                   <div style="margin-top: 16px;">
@@ -406,6 +422,17 @@ export class UltraGraphsModule extends BaseUltraModule {
                         delete this._historyError[graphsModule.id];
                         delete this._historyLoading[graphsModule.id];
                         delete this._deferredHistoryScheduled[graphsModule.id];
+                        // Clear localStorage cache using correct cache key
+                        try {
+                          const store = this._getCacheStore();
+                          const cacheKey = this._makeCacheKey(graphsModule);
+                          delete store[cacheKey];
+                          this._persistCacheStore(store);
+                        } catch (_e) {}
+                        // Create updated module and reload data immediately
+                        const updated = { ...graphsModule, forecast_type: next } as any;
+                        this._loadHistoryData(updated, hass);
+                        this.requestUpdate();
                         setTimeout(() => this.triggerPreviewUpdate(), 50);
                       }
                     )}
@@ -563,7 +590,8 @@ export class UltraGraphsModule extends BaseUltraModule {
                                     e.detail.value?.entity ||
                                     e.detail.value,
                                 },
-                                updateModule
+                                updateModule,
+                                hass
                               );
                             }
                           )
@@ -643,9 +671,9 @@ export class UltraGraphsModule extends BaseUltraModule {
                                 graphsModule,
                                 index,
                                 { forecast_attribute: next },
-                                updateModule
+                                updateModule,
+                                hass
                               );
-                              setTimeout(() => this.triggerPreviewUpdate(), 50);
                             }
                           )
                         : ''}
@@ -789,7 +817,8 @@ export class UltraGraphsModule extends BaseUltraModule {
                                   graphsModule,
                                   index,
                                   { attribute: e.detail.value.attribute },
-                                  updateModule
+                                  updateModule,
+                                  hass
                                 );
                               }
                             )
@@ -1191,75 +1220,113 @@ export class UltraGraphsModule extends BaseUltraModule {
             <!-- Forecast Info (Forecast Mode Only) -->
             ${graphsModule.data_source === 'forecast'
               ? html`<div
-                  style="padding: 12px; background: rgba(var(--rgb-primary-color), 0.08); border-radius: 8px; border-left: 3px solid var(--primary-color); margin-bottom: 16px;"
-                >
-                  <div style="font-size: 13px; color: var(--primary-text-color); font-weight: 500;">
-                    ${localize('editor.graphs.forecast_info.title', lang, 'Forecast Display')}
-                  </div>
-                  <div
-                    style="font-size: 12px; color: var(--secondary-text-color); margin-top: 4px;"
+                    style="padding: 12px; background: rgba(var(--rgb-primary-color), 0.08); border-radius: 8px; border-left: 3px solid var(--primary-color); margin-bottom: 16px;"
                   >
-                    ${localize(
-                      'editor.graphs.forecast_info.desc',
-                      lang,
-                      'Forecasts display all available data from your weather service. The forecast type (hourly/daily) determines the time range shown.'
-                    )}
+                    <div
+                      style="font-size: 13px; color: var(--primary-text-color); font-weight: 500;"
+                    >
+                      ${localize('editor.graphs.forecast_info.title', lang, 'Forecast Display')}
+                    </div>
+                    <div
+                      style="font-size: 12px; color: var(--secondary-text-color); margin-top: 4px;"
+                    >
+                      ${localize(
+                        'editor.graphs.forecast_info.desc',
+                        lang,
+                        'Forecasts display all available data from your weather service. The forecast type (hourly/daily) determines the time range shown.'
+                      )}
+                    </div>
                   </div>
-                </div>
-                
-                <!-- Forecast Display Limit Controls -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                  <div>
-                    <label style="font-size: 13px; color: var(--primary-text-color); display: block; margin-bottom: 6px;">
-                      ${localize('editor.graphs.forecast_limit.hours', lang, 'Limit Hours')}
-                    </label>
-                    <ha-textfield
-                      type="number"
-                      min="0"
-                      max="168"
-                      .value=${String((graphsModule as any).forecast_display_hours ?? 0)}
-                      @input=${(e: Event) => {
-                        const input = e.target as HTMLInputElement;
-                        const value = parseInt(input.value) || 0;
-                        // Immediately update module with new value
-                        updateModule({ forecast_display_hours: value } as any);
-                        // Clear cached data to force re-fetch with new limits
-                        delete this._historyData[graphsModule.id];
-                        delete this._deferredHistoryScheduled[graphsModule.id];
-                        delete this._historyLoading[graphsModule.id];
-                        setTimeout(() => this.triggerPreviewUpdate(), 100);
-                      }}
-                      style="width: 100%;"
-                      placeholder="0"
-                      helper="${localize('editor.graphs.forecast_limit.hours_desc', lang, '0 = show all')}"
-                    ></ha-textfield>
-                  </div>
-                  <div>
-                    <label style="font-size: 13px; color: var(--primary-text-color); display: block; margin-bottom: 6px;">
-                      ${localize('editor.graphs.forecast_limit.days', lang, 'Limit Days')}
-                    </label>
-                    <ha-textfield
-                      type="number"
-                      min="0"
-                      max="14"
-                      .value=${String((graphsModule as any).forecast_display_days ?? 0)}
-                      @input=${(e: Event) => {
-                        const input = e.target as HTMLInputElement;
-                        const value = parseInt(input.value) || 0;
-                        // Immediately update module with new value
-                        updateModule({ forecast_display_days: value } as any);
-                        // Clear cached data to force re-fetch with new limits
-                        delete this._historyData[graphsModule.id];
-                        delete this._deferredHistoryScheduled[graphsModule.id];
-                        delete this._historyLoading[graphsModule.id];
-                        setTimeout(() => this.triggerPreviewUpdate(), 100);
-                      }}
-                      style="width: 100%;"
-                      placeholder="0"
-                      helper="${localize('editor.graphs.forecast_limit.days_desc', lang, 'Days override hours')}"
-                    ></ha-textfield>
-                  </div>
-                </div>`
+
+                  <!-- Forecast Display Limit Controls -->
+                  <div
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;"
+                  >
+                    <div>
+                      <label
+                        style="font-size: 13px; color: var(--primary-text-color); display: block; margin-bottom: 6px;"
+                      >
+                        ${localize('editor.graphs.forecast_limit.hours', lang, 'Limit Hours')}
+                      </label>
+                      <ha-textfield
+                        type="number"
+                        min="0"
+                        max="168"
+                        .value=${String((graphsModule as any).forecast_display_hours ?? 0)}
+                        @change=${(e: Event) => {
+                          const input = e.target as HTMLInputElement;
+                          const value = parseInt(input.value) || 0;
+                          // Immediately update module with new value
+                          updateModule({ forecast_display_hours: value } as any);
+                          // Clear cached data to force re-fetch with new limits
+                          delete this._historyData[graphsModule.id];
+                          delete this._deferredHistoryScheduled[graphsModule.id];
+                          delete this._historyLoading[graphsModule.id];
+                          // Clear localStorage cache using correct cache key
+                          try {
+                            const store = this._getCacheStore();
+                            const cacheKey = this._makeCacheKey(graphsModule);
+                            delete store[cacheKey];
+                            this._persistCacheStore(store);
+                          } catch (_e) {}
+                          // Create updated module and reload data immediately
+                          const updated = { ...graphsModule, forecast_display_hours: value } as any;
+                          this._loadHistoryData(updated, hass);
+                          this.requestUpdate();
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        }}
+                        style="width: 100%;"
+                        placeholder="0"
+                        helper="${localize(
+                          'editor.graphs.forecast_limit.hours_desc',
+                          lang,
+                          '0 = show all'
+                        )}"
+                      ></ha-textfield>
+                    </div>
+                    <div>
+                      <label
+                        style="font-size: 13px; color: var(--primary-text-color); display: block; margin-bottom: 6px;"
+                      >
+                        ${localize('editor.graphs.forecast_limit.days', lang, 'Limit Days')}
+                      </label>
+                      <ha-textfield
+                        type="number"
+                        min="0"
+                        max="14"
+                        .value=${String((graphsModule as any).forecast_display_days ?? 0)}
+                        @change=${(e: Event) => {
+                          const input = e.target as HTMLInputElement;
+                          const value = parseInt(input.value) || 0;
+                          // Immediately update module with new value
+                          updateModule({ forecast_display_days: value } as any);
+                          // Clear cached data to force re-fetch with new limits
+                          delete this._historyData[graphsModule.id];
+                          delete this._deferredHistoryScheduled[graphsModule.id];
+                          delete this._historyLoading[graphsModule.id];
+                          // Clear localStorage cache using correct cache key
+                          try {
+                            const store = this._getCacheStore();
+                            const cacheKey = this._makeCacheKey(graphsModule);
+                            delete store[cacheKey];
+                            this._persistCacheStore(store);
+                          } catch (_e) {}
+                          // Create updated module and reload data immediately
+                          const updated = { ...graphsModule, forecast_display_days: value } as any;
+                          this._loadHistoryData(updated, hass);
+                          this.requestUpdate();
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        }}
+                        style="width: 100%;"
+                        placeholder="0"
+                        helper="${localize(
+                          'editor.graphs.forecast_limit.days_desc',
+                          lang,
+                          'Days override hours'
+                        )}"
+                      ></ha-textfield>
+                    </div>
+                  </div>`
               : ''}
 
             <!-- Normalize Values Toggle (only show when multiple entities) -->
@@ -2062,26 +2129,31 @@ export class UltraGraphsModule extends BaseUltraModule {
         const templateHash = this._hashString(graphsModule.template);
         const templateKey = `graphs_${graphsModule.id}_${templateHash}`;
 
-        if (
-          this._templateService &&
-          !this._templateService.hasTemplateSubscription(templateKey)
-        ) {
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
           // Build context with primary entity or multi-entity context
           const primaryEntity =
             graphsModule.entities?.find(e => e.is_primary && e.entity)?.entity ||
             graphsModule.entities?.find(e => e.entity)?.entity ||
             '';
           const entityIds = (graphsModule.entities || [])
-            .filter(e => (graphsModule.data_source === 'forecast' ? e.forecast_attribute : e.entity))
-            .map(e => (graphsModule.data_source === 'forecast' ? graphsModule.forecast_entity : e.entity) || '')
+            .filter(e =>
+              graphsModule.data_source === 'forecast' ? e.forecast_attribute : e.entity
+            )
+            .map(
+              e =>
+                (graphsModule.data_source === 'forecast'
+                  ? graphsModule.forecast_entity
+                  : e.entity) || ''
+            )
             .filter(id => id);
 
-          const context = entityIds.length > 1
-            ? buildMultiEntityContext(entityIds, hass, graphsModule.entities)
-            : buildEntityContext(primaryEntity, hass, {
-              entities: graphsModule.entities,
-              chart_type: graphsModule.chart_type,
-            });
+          const context =
+            entityIds.length > 1
+              ? buildMultiEntityContext(entityIds, hass, graphsModule.entities)
+              : buildEntityContext(primaryEntity, hass, {
+                  entities: graphsModule.entities,
+                  chart_type: graphsModule.chart_type,
+                });
 
           this._templateService.subscribeToTemplate(
             graphsModule.template,
@@ -2339,7 +2411,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         } else {
           datasetColor = dataset.color;
         }
-        
+
         return {
           name: dataset.name,
           value: dataset.values[dataset.values.length - 1] || 0, // Use last value
@@ -2649,7 +2721,8 @@ export class UltraGraphsModule extends BaseUltraModule {
       }
 
       // Determine fill area: template fill_area > entity config
-      const fillArea = templateFillArea !== undefined ? templateFillArea : entityConfig.fill_area === true;
+      const fillArea =
+        templateFillArea !== undefined ? templateFillArea : entityConfig.fill_area === true;
 
       data.push({
         name: entityConfig.name || entityState.attributes.friendly_name || entityConfig.entity,
@@ -2728,15 +2801,41 @@ export class UltraGraphsModule extends BaseUltraModule {
         : parseInt(String(module.chart_height)) || 345) - 80;
 
     if (['pie', 'donut'].includes(module.chart_type)) {
-      return this._renderPieChart(module, data, chartHeight, textStyle, hass, align, templateColors, templateGlobalColor, templatePieFill);
+      return this._renderPieChart(
+        module,
+        data,
+        chartHeight,
+        textStyle,
+        hass,
+        align,
+        templateColors,
+        templateGlobalColor,
+        templatePieFill
+      );
     }
 
     if (['line', 'area'].includes(module.chart_type)) {
-      return this._renderLineChart(module, data, chartHeight, hass, templateColors, templateGlobalColor, templateFillArea);
+      return this._renderLineChart(
+        module,
+        data,
+        chartHeight,
+        hass,
+        templateColors,
+        templateGlobalColor,
+        templateFillArea
+      );
     }
 
     // Default to bar chart for other types
-    return this._renderBarChart(module, data, chartHeight, textStyle, hass, templateColors, templateGlobalColor);
+    return this._renderBarChart(
+      module,
+      data,
+      chartHeight,
+      textStyle,
+      hass,
+      templateColors,
+      templateGlobalColor
+    );
   }
 
   private _renderPieChart(
@@ -2753,7 +2852,7 @@ export class UltraGraphsModule extends BaseUltraModule {
     // Apply template pie_fill if provided - adjust total for slice sizing
     let adjustedTotal = data.reduce((sum, d) => sum + d.value, 0);
     let adjustedData = data;
-    
+
     if (templatePieFill !== undefined && !isNaN(templatePieFill)) {
       // If pie_fill is provided, scale values proportionally
       const fillPercent = Math.max(0, Math.min(100, templatePieFill)) / 100;
@@ -2809,7 +2908,7 @@ export class UltraGraphsModule extends BaseUltraModule {
       const sweepDeg = total > 0 ? (d.value / total) * 360 : 0;
       const endDeg = startDeg + sweepDeg;
       cumulative += d.value;
-      
+
       // Apply template colors: per-entity > global > data color
       let segmentColor = d.color;
       if (templateColors && templateColors[index]) {
@@ -2817,7 +2916,7 @@ export class UltraGraphsModule extends BaseUltraModule {
       } else if (templateGlobalColor) {
         segmentColor = this._formatColor(templateGlobalColor);
       }
-      
+
       return {
         startDeg: startDeg,
         endDeg: endDeg,
@@ -2915,8 +3014,9 @@ export class UltraGraphsModule extends BaseUltraModule {
 
             // Truncate long names/values for display
             const displayName = s.name.length > 14 ? s.name.substring(0, 14) + '...' : s.name;
-            const displayValue = formatted.length > 10 ? formatted.substring(0, 10) + '...' : formatted;
-            
+            const displayValue =
+              formatted.length > 10 ? formatted.substring(0, 10) + '...' : formatted;
+
             return shouldShowLabels
               ? svg`<g transform="translate(${lx}, ${ly})" style="pointer-events:none;">
               ${
@@ -2997,7 +3097,7 @@ export class UltraGraphsModule extends BaseUltraModule {
     // Apply template colors if provided: per-entity > global > entity config > default
     datasets = datasets.map((dataset, i) => {
       const cfg = module.entities?.[i];
-      
+
       // Determine color: template colors (per-entity) > template global_color > entity config > dataset color > default
       let datasetColor: string;
       if (templateColors && templateColors[i]) {
@@ -3007,12 +3107,13 @@ export class UltraGraphsModule extends BaseUltraModule {
       } else {
         datasetColor = this._formatColor(cfg?.color) || dataset.color || this._getDefaultColor(i);
       }
-      
+
       // Determine fill area: template fill_area > entity config > dataset fillArea
-      const fillArea = templateFillArea !== undefined 
-        ? templateFillArea 
-        : (cfg?.fill_area === true || dataset.fillArea);
-      
+      const fillArea =
+        templateFillArea !== undefined
+          ? templateFillArea
+          : cfg?.fill_area === true || dataset.fillArea;
+
       return {
         ...dataset,
         color: datasetColor,
@@ -3044,7 +3145,7 @@ export class UltraGraphsModule extends BaseUltraModule {
     // Calculate min/max values - use fixed scale if enabled
     let maxValue: number;
     let minValue: number;
-    
+
     if ((module as any).use_fixed_y_axis) {
       // Use fixed values from configuration
       minValue = (module as any).y_axis_min ?? 0;
@@ -3058,7 +3159,7 @@ export class UltraGraphsModule extends BaseUltraModule {
       maxValue = Math.max(...normalizedDatasets.flatMap(d => d.values));
       minValue = Math.min(...normalizedDatasets.flatMap(d => d.values));
     }
-    
+
     const valueRange = maxValue - minValue;
 
     const grid = module.show_grid !== false;
@@ -3200,9 +3301,10 @@ export class UltraGraphsModule extends BaseUltraModule {
             return normalizedDatasets.map(dataset => {
               const pathPoints = dataset.values.map((value, index) => {
                 // Calculate x within padded area
-                const x = timePoints.length > 1
-                  ? padLeft + (index / (timePoints.length - 1)) * usableWidth
-                  : padLeft + usableWidth / 2;
+                const x =
+                  timePoints.length > 1
+                    ? padLeft + (index / (timePoints.length - 1)) * usableWidth
+                    : padLeft + usableWidth / 2;
                 // Calculate y within padded area
                 const y =
                   valueRange > 0
@@ -3228,9 +3330,10 @@ export class UltraGraphsModule extends BaseUltraModule {
                 ${
                   dataset.showPoints !== false
                     ? svg`${dataset.values.map((value, index) => {
-                        const x = timePoints.length > 1
-                          ? padLeft + (index / (timePoints.length - 1)) * usableWidth
-                          : padLeft + usableWidth / 2;
+                        const x =
+                          timePoints.length > 1
+                            ? padLeft + (index / (timePoints.length - 1)) * usableWidth
+                            : padLeft + usableWidth / 2;
                         const y =
                           valueRange > 0
                             ? padTop + ((maxValue - value) / valueRange) * usableHeight
@@ -3439,7 +3542,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         } else {
           datasetColor = this._formatColor(dataset.color) || this._getDefaultColor(index);
         }
-        
+
         return {
           name: dataset.name,
           color: datasetColor,
@@ -3458,7 +3561,7 @@ export class UltraGraphsModule extends BaseUltraModule {
           const fallback = data[index];
           const value = fallback ? fallback.value : 0;
           const values = new Array(timePoints.length).fill(value);
-          
+
           // Apply template colors: per-entity > global > entity config > default
           let datasetColor: string;
           if (templateColors && templateColors[index]) {
@@ -3468,7 +3571,7 @@ export class UltraGraphsModule extends BaseUltraModule {
           } else {
             datasetColor = this._formatColor(entityConfig.color) || this._getDefaultColor(index);
           }
-          
+
           return {
             name:
               entityConfig.name ||
@@ -3502,11 +3605,11 @@ export class UltraGraphsModule extends BaseUltraModule {
     }
 
     const allValues = normalizedDatasets.flatMap(d => d.values);
-    
+
     // Calculate min/max values - use fixed scale if enabled
     let maxValue: number;
     let minValue: number;
-    
+
     if ((module as any).use_fixed_y_axis) {
       // Use fixed values from configuration
       minValue = (module as any).y_axis_min ?? 0;
@@ -3520,7 +3623,7 @@ export class UltraGraphsModule extends BaseUltraModule {
       maxValue = allValues.length ? Math.max(...allValues) : 0;
       minValue = allValues.length ? Math.min(...allValues) : 0;
     }
-    
+
     const valueRange = maxValue - minValue || 1;
 
     const labelArea = 28;
@@ -3574,11 +3677,12 @@ export class UltraGraphsModule extends BaseUltraModule {
 
     // Add padding for top overlay if showing title/value at top
     const infoPos = (module as any).info_position || 'top_left';
-    const hasTopOverlay = infoPos.startsWith('top') && 
+    const hasTopOverlay =
+      infoPos.startsWith('top') &&
       ((module as any).show_display_name !== false || (module as any).show_entity_value !== false);
     // Increased top padding to prevent title/value overlay
     const topPadding = hasTopOverlay ? 80 : 12;
-    
+
     // Add bottom padding for legend - more entities = more rows potentially
     const showLegend = module.show_legend !== false;
     const legendPos = module.legend_position || 'bottom_left';
@@ -3586,7 +3690,7 @@ export class UltraGraphsModule extends BaseUltraModule {
     // Each row of legend is about 24px, assume 2 entities per row
     const legendRows = hasBottomLegend ? Math.ceil(datasetCount / 2) : 0;
     const bottomPadding = hasBottomLegend ? Math.max(40, 24 + legendRows * 24) : 12;
-    
+
     const adjustedBarAreaHeight = Math.max(40, barAreaHeight - topPadding - bottomPadding);
 
     return html`
@@ -3658,7 +3762,11 @@ export class UltraGraphsModule extends BaseUltraModule {
                         position:absolute;
                         left:0;
                         right:0;
-                        top:${minValue >= 0 ? adjustedBarAreaHeight : (maxValue <= 0 ? 0 : maxValue * (adjustedBarAreaHeight / valueRange))}px;
+                        top:${minValue >= 0
+                        ? adjustedBarAreaHeight
+                        : maxValue <= 0
+                          ? 0
+                          : maxValue * (adjustedBarAreaHeight / valueRange)}px;
                         border-top:1px solid rgba(255,255,255,0.1);
                         pointer-events:none;
                       "
@@ -3684,9 +3792,14 @@ export class UltraGraphsModule extends BaseUltraModule {
 
                       // Use adjusted scale for the reduced bar area
                       const adjustedScale = adjustedBarAreaHeight / valueRange;
-                      const adjustedZeroY = minValue >= 0 ? adjustedBarAreaHeight : 
-                        (maxValue <= 0 ? 0 : maxValue * adjustedScale);
-                      const valueY = maxValue === minValue ? adjustedZeroY : (maxValue - value) * adjustedScale;
+                      const adjustedZeroY =
+                        minValue >= 0
+                          ? adjustedBarAreaHeight
+                          : maxValue <= 0
+                            ? 0
+                            : maxValue * adjustedScale;
+                      const valueY =
+                        maxValue === minValue ? adjustedZeroY : (maxValue - value) * adjustedScale;
                       const top = Math.min(adjustedZeroY, valueY);
                       // Clamp bar height to never exceed the adjusted area
                       const rawBarHeight = Math.abs(adjustedZeroY - valueY);
@@ -3774,8 +3887,18 @@ export class UltraGraphsModule extends BaseUltraModule {
     // Get the circle element
     const circle = event.target as SVGCircleElement;
 
-    // Find or create tooltip element on body (to avoid overflow clipping)
+    // Find if we're inside a popup portal (to append tooltip there for proper z-index stacking)
+    const popupPortal = circle.closest('.ultra-popup-portal');
+    const tooltipContainer = popupPortal || document.body;
+
+    // Find or create tooltip element in the appropriate container
     let tooltip = document.getElementById(`graph-tooltip-${moduleId}`) as HTMLElement;
+
+    // If tooltip exists but is in wrong container (e.g., moved from popup to outside), recreate it
+    if (tooltip && tooltip.parentElement !== tooltipContainer) {
+      tooltip.remove();
+      tooltip = null as any;
+    }
 
     if (!tooltip) {
       // Create tooltip if it doesn't exist
@@ -3795,7 +3918,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         z-index: ${Z_INDEX.GRAPH_TOOLTIP};
         white-space: nowrap;
       `;
-      document.body.appendChild(tooltip);
+      tooltipContainer.appendChild(tooltip);
     }
 
     // Create tooltip content
@@ -4558,10 +4681,10 @@ export class UltraGraphsModule extends BaseUltraModule {
   private async _fetchForecastDataAsync(module: GraphsModule, hass: HomeAssistant): Promise<void> {
     try {
       let forecastData = await this._fetchForecastData(module, hass);
-      
+
       // Apply forecast display limits if configured
       forecastData = this._applyForecastDisplayLimits(forecastData, module);
-      
+
       const timePoints = this._generateForecastTimePoints(forecastData, module.forecast_type);
       const processed = this._processForecastData(forecastData, module, timePoints);
 
@@ -4594,24 +4717,24 @@ export class UltraGraphsModule extends BaseUltraModule {
   private _applyForecastDisplayLimits(forecastData: any[], module: GraphsModule): any[] {
     const displayHours = (module as any).forecast_display_hours ?? 0;
     const displayDays = (module as any).forecast_display_days ?? 0;
-    
+
     // If no limits configured, return all data
     if (displayHours <= 0 && displayDays <= 0) {
       return forecastData;
     }
-    
+
     const now = Date.now();
     let cutoffMs: number;
-    
+
     if (displayDays > 0) {
       // Days take priority over hours if both are set
       cutoffMs = displayDays * 24 * 60 * 60 * 1000;
     } else {
       cutoffMs = displayHours * 60 * 60 * 1000;
     }
-    
+
     const cutoffTime = now + cutoffMs;
-    
+
     return forecastData.filter(forecast => {
       const forecastTime = new Date(forecast.datetime).getTime();
       return forecastTime <= cutoffTime;
@@ -4665,7 +4788,8 @@ export class UltraGraphsModule extends BaseUltraModule {
     graphsModule: GraphsModule,
     index: number,
     updates: Partial<GraphEntityConfig>,
-    updateModule: (updates: Partial<CardModule>) => void
+    updateModule: (updates: Partial<CardModule>) => void,
+    hass?: HomeAssistant
   ): void {
     const updatedEntities = [...(graphsModule.entities || [])];
     updatedEntities[index] = { ...updatedEntities[index], ...updates };
@@ -4675,10 +4799,14 @@ export class UltraGraphsModule extends BaseUltraModule {
     delete this._historyError[graphsModule.id];
     delete this._historyLoading[graphsModule.id];
     delete this._deferredHistoryScheduled[graphsModule.id];
-    
-    // Clear localStorage cache for this module to force fresh data fetch
+
+    // Clear localStorage cache using the correct cache key
     try {
       const store = this._getCacheStore();
+      // Clear using the computed cache key (not just the module ID)
+      const cacheKey = this._makeCacheKey(graphsModule);
+      delete store[cacheKey];
+      // Also clear the old key format just in case
       delete store[graphsModule.id];
       this._persistCacheStore(store);
     } catch (_e) {
@@ -4686,17 +4814,29 @@ export class UltraGraphsModule extends BaseUltraModule {
     }
 
     updateModule({ entities: updatedEntities });
-    
+
+    // Create updated module with new entities for immediate data reload
+    const updatedModule = { ...graphsModule, entities: updatedEntities };
+
+    // If hass is available, trigger immediate data reload
+    if (hass) {
+      this._loadHistoryData(updatedModule, hass);
+    }
+
+    this.requestUpdate();
+
     // Force immediate UI refresh to trigger data re-fetch
     setTimeout(() => {
       this.triggerPreviewUpdate();
       // Dispatch event to notify the card to refresh
-      window.dispatchEvent(new CustomEvent('ultra-graph-entity-changed', {
-        detail: { moduleId: graphsModule.id },
-        bubbles: true,
-        composed: true,
-      }));
-    }, 100);
+      window.dispatchEvent(
+        new CustomEvent('ultra-graph-entity-changed', {
+          detail: { moduleId: graphsModule.id },
+          bubbles: true,
+          composed: true,
+        })
+      );
+    }, 50);
   }
 
   private _toggleEntityOptions(event: Event, index: number): void {

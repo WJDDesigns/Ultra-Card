@@ -175,8 +175,8 @@ export const Z_INDEX = {
   /** Toast notifications (z-index: 8500) */
   TOAST_NOTIFICATION: 8500,
 
-  /** Graph tooltips and data overlays (z-index: 9000) */
-  GRAPH_TOOLTIP: 9000,
+  /** Graph tooltips and data overlays (z-index: 2147483647) - maximum to appear above popups */
+  GRAPH_TOOLTIP: 2147483647,
 
   // ============================================================================
   // Layer 10000+: Critical System Overlays

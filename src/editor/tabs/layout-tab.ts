@@ -72,7 +72,12 @@ const TYPOGRAPHY_FONTS = [
 const CUSTOM_YAML_CARD_TYPE = 'custom-yaml-card';
 
 const NATIVE_HA_CARDS = [
-  { type: CUSTOM_YAML_CARD_TYPE, name: 'Custom YAML Card', icon: 'mdi:code-braces', description: 'Paste any card configuration' },
+  {
+    type: CUSTOM_YAML_CARD_TYPE,
+    name: 'Custom YAML Card',
+    icon: 'mdi:code-braces',
+    description: 'Paste any card configuration',
+  },
   { type: 'hui-activity-card', name: 'Activity' },
   { type: 'hui-alarm-panel-card', name: 'Alarm Panel' },
   { type: 'hui-area-card', name: 'Area' },
@@ -253,16 +258,16 @@ export class LayoutTab extends LitElement {
   @state() private _hasModuleClipboard = false;
   @state() private _hasColumnClipboard = false;
   @state() private _hasCardClipboard = false;
-  
+
   // Variable mapping dialog state for imports
   @state() private _showVariableMappingDialog = false;
   @state() private _missingVariables: string[] = [];
-  
+
   // Search state
   @state() private _moduleSearchQuery = '';
   @state() private _cardSearchQuery = '';
   @state() private _presetSearchQuery = '';
-  
+
   // Preset sorting state
   @state() private _presetSortBy: 'name' | 'date' | 'rating' = 'date';
   @state() private _presetSortDirection: 'asc' | 'desc' = 'desc';
@@ -294,6 +299,20 @@ export class LayoutTab extends LitElement {
 
   // Breakpoint preview state - allows simulating different device widths in preview areas
   @state() private _previewBreakpoint: DeviceBreakpoint = 'desktop';
+
+  // Timeline tree view state - breadcrumb navigation
+  @state() private _breadcrumbPath: {
+    type: 'row' | 'column' | 'module' | 'layout-child' | 'section';
+    rowIndex: number;
+    columnIndex?: number;
+    moduleIndex?: number;
+    layoutChildIndex?: number;
+    sectionIndex?: number;
+    name: string;
+  }[] = [];
+
+  // Overflow menu state - tracks which menu is currently open
+  @state() private _openOverflowMenuKey: string | null = null;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -346,16 +365,22 @@ export class LayoutTab extends LitElement {
           this._openMoreMenuRowIndex = -1;
         }
       }
+      // Close timeline tree overflow menus
+      if (this._openOverflowMenuKey !== null) {
+        if (!target.closest('.tree-overflow-container')) {
+          this._openOverflowMenuKey = null;
+        }
+      }
     };
     document.addEventListener('click', this._documentClickListener);
 
     // Check for module and column clipboard on load
     this._hasModuleClipboard = ucExportImportService.hasModuleInLocalStorage();
     this._hasColumnClipboard = ucExportImportService.hasColumnInLocalStorage();
-    
+
     // Check for card data in system clipboard
     this._checkCardClipboard();
-    
+
     // Listen for focus/visibility changes to re-check clipboard when user returns
     this._visibilityChangeListener = () => {
       if (document.visibilityState === 'visible') {
@@ -363,7 +388,7 @@ export class LayoutTab extends LitElement {
       }
     };
     document.addEventListener('visibilitychange', this._visibilityChangeListener);
-    
+
     // Also check when window gains focus (user switches tabs/apps)
     this._windowFocusListener = () => {
       this._checkCardClipboard();
@@ -377,11 +402,7 @@ export class LayoutTab extends LitElement {
       // Using composedPath() instead of e.target because shadow DOM retargets events
       const isTypingInInput = e.composedPath().some((el: EventTarget) => {
         if (el instanceof HTMLElement) {
-          return (
-            el.tagName === 'INPUT' ||
-            el.tagName === 'TEXTAREA' ||
-            el.isContentEditable
-          );
+          return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
         }
         return false;
       });
@@ -556,8 +577,8 @@ export class LayoutTab extends LitElement {
   private _getSelectedModuleKey(): string | null {
     // Check main module selection first
     if (this._selectedModule) {
-    const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
-    return `${rowIndex}-${columnIndex}-${moduleIndex}`;
+      const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
+      return `${rowIndex}-${columnIndex}-${moduleIndex}`;
     }
     // Check child module selection (for layout modules like horizontal/vertical/slider)
     if (this._selectedLayoutChild) {
@@ -614,14 +635,33 @@ export class LayoutTab extends LitElement {
       e.stopPropagation();
       e.preventDefault();
     }
+    const isCurrentlyCollapsed = this._collapsedRows.has(rowIndex);
     const next = new Set(this._collapsedRows);
-    if (next.has(rowIndex)) {
+    const target = (e?.currentTarget as HTMLElement)?.closest('.tree-row');
+    const childrenEl = target?.querySelector('.tree-node-children');
+
+    if (isCurrentlyCollapsed) {
+      // Expanding - remove collapsing class and update state
+      childrenEl?.classList.remove('collapsing');
       next.delete(rowIndex);
+      this._collapsedRows = next;
+      this.requestUpdate();
     } else {
-      next.add(rowIndex);
+      // Collapsing - animate first, then update state
+      if (childrenEl) {
+        childrenEl.classList.add('collapsing');
+        setTimeout(() => {
+          childrenEl.classList.remove('collapsing');
+          next.add(rowIndex);
+          this._collapsedRows = next;
+          this.requestUpdate();
+        }, 200); // Match animation duration
+      } else {
+        next.add(rowIndex);
+        this._collapsedRows = next;
+        this.requestUpdate();
+      }
     }
-    this._collapsedRows = next;
-    this.requestUpdate();
   }
 
   // Toggle column collapsed state
@@ -631,14 +671,1439 @@ export class LayoutTab extends LitElement {
       e.preventDefault();
     }
     const key = `${rowIndex}-${columnIndex}`;
+    const isCurrentlyCollapsed = this._collapsedColumns.has(key);
     const next = new Set(this._collapsedColumns);
-    if (next.has(key)) {
+    const target = (e?.currentTarget as HTMLElement)?.closest('.tree-column');
+    const childrenEl = target?.querySelector('.tree-node-children');
+
+    if (isCurrentlyCollapsed) {
+      // Expanding - remove collapsing class and update state
+      childrenEl?.classList.remove('collapsing');
       next.delete(key);
+      this._collapsedColumns = next;
+      this.requestUpdate();
     } else {
-      next.add(key);
+      // Collapsing - animate first, then update state
+      if (childrenEl) {
+        childrenEl.classList.add('collapsing');
+        setTimeout(() => {
+          childrenEl.classList.remove('collapsing');
+          next.add(key);
+          this._collapsedColumns = next;
+          this.requestUpdate();
+        }, 200); // Match animation duration
+      } else {
+        next.add(key);
+        this._collapsedColumns = next;
+        this.requestUpdate();
+      }
     }
-    this._collapsedColumns = next;
+  }
+
+  // Toggle layout module collapsed state with animation
+  private _toggleLayoutModuleCollapsed(moduleKey: string, e?: Event): void {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const isCurrentlyCollapsed = this._collapsedPreviewModules.has(moduleKey);
+    const next = new Set(this._collapsedPreviewModules);
+    const target = (e?.currentTarget as HTMLElement)?.closest(
+      '.tree-layout-module, .tree-nested-layout'
+    );
+    const childrenEl = target?.querySelector('.tree-node-children');
+
+    if (isCurrentlyCollapsed) {
+      // Expanding - remove collapsing class and update state
+      childrenEl?.classList.remove('collapsing');
+      next.delete(moduleKey);
+      this._collapsedPreviewModules = next;
+      this.requestUpdate();
+    } else {
+      // Collapsing - animate first, then update state
+      if (childrenEl) {
+        childrenEl.classList.add('collapsing');
+        setTimeout(() => {
+          childrenEl.classList.remove('collapsing');
+          next.add(moduleKey);
+          this._collapsedPreviewModules = next;
+          this.requestUpdate();
+        }, 200); // Match animation duration
+      } else {
+        next.add(moduleKey);
+        this._collapsedPreviewModules = next;
+        this.requestUpdate();
+      }
+    }
+  }
+
+  // Timeline tree overflow menu toggle
+  private _toggleOverflowMenu(key: string, e?: Event): void {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    if (this._openOverflowMenuKey === key) {
+      this._openOverflowMenuKey = null;
+    } else {
+      this._openOverflowMenuKey = key;
+    }
     this.requestUpdate();
+  }
+
+  // Breadcrumb navigation - navigate to a specific level
+  private _navigateBreadcrumb(index: number): void {
+    // Truncate the path to navigate back
+    this._breadcrumbPath = this._breadcrumbPath.slice(0, index + 1);
+    this.requestUpdate();
+  }
+
+  // Add item to breadcrumb path
+  private _pushBreadcrumb(item: (typeof this._breadcrumbPath)[0]): void {
+    this._breadcrumbPath = [...this._breadcrumbPath, item];
+    this.requestUpdate();
+  }
+
+  // Clear breadcrumb path
+  private _clearBreadcrumbs(): void {
+    this._breadcrumbPath = [];
+    this.requestUpdate();
+  }
+
+  // Render breadcrumbs for timeline tree view
+  private _renderBreadcrumbs(): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+
+    if (this._breadcrumbPath.length === 0) {
+      return html``;
+    }
+
+    return html`
+      <div class="tree-breadcrumbs">
+        <button class="breadcrumb-item breadcrumb-root" @click=${() => this._clearBreadcrumbs()}>
+          <ha-icon icon="mdi:home"></ha-icon>
+        </button>
+        ${this._breadcrumbPath.map(
+          (item, index) => html`
+            <span class="breadcrumb-separator">
+              <ha-icon icon="mdi:chevron-right"></ha-icon>
+            </span>
+            <button
+              class="breadcrumb-item ${index === this._breadcrumbPath.length - 1 ? 'active' : ''}"
+              @click=${() => this._navigateBreadcrumb(index)}
+            >
+              ${item.name}
+            </button>
+          `
+        )}
+      </div>
+    `;
+  }
+
+  // Render overflow menu for tree nodes
+  private _renderTreeOverflowMenu(
+    type: 'row' | 'column' | 'module' | 'layout-module',
+    rowIndex: number,
+    columnIndex?: number,
+    moduleIndex?: number,
+    layoutChildIndex?: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const menuKey =
+      layoutChildIndex !== undefined
+        ? `${type}-${rowIndex}-${columnIndex}-${moduleIndex}-${layoutChildIndex}`
+        : moduleIndex !== undefined
+          ? `${type}-${rowIndex}-${columnIndex}-${moduleIndex}`
+          : columnIndex !== undefined
+            ? `${type}-${rowIndex}-${columnIndex}`
+            : `${type}-${rowIndex}`;
+    const isOpen = this._openOverflowMenuKey === menuKey;
+
+    // Define menu items based on type
+    let menuItems: { icon: string; label: string; action: () => void; destructive?: boolean }[] =
+      [];
+
+    if (type === 'row') {
+      menuItems = [
+        {
+          icon: 'mdi:cog',
+          label: localize('editor.layout.settings', lang, 'Settings'),
+          action: () => this._openRowSettings(rowIndex),
+        },
+        {
+          icon: 'mdi:plus',
+          label: localize('editor.layout.add_column', lang, 'Add Column'),
+          action: () => this._addColumn(rowIndex),
+        },
+        {
+          icon: 'mdi:content-copy',
+          label: localize('editor.layout.duplicate', lang, 'Duplicate'),
+          action: () => this._duplicateRow(rowIndex),
+        },
+        {
+          icon: 'mdi:export',
+          label: localize('editor.layout.export', lang, 'Export'),
+          action: () => this._exportRow(rowIndex),
+        },
+        {
+          icon: 'mdi:heart',
+          label: localize('editor.layout.save_favorite', lang, 'Save as Favorite'),
+          action: () => this._saveRowAsFavorite(rowIndex),
+        },
+        {
+          icon: 'mdi:clipboard-text',
+          label: localize('editor.layout.paste_clipboard', lang, 'Paste from Clipboard'),
+          action: () => this._pasteRowFromClipboard(rowIndex),
+        },
+        {
+          icon: 'mdi:resistor-nodes',
+          label: localize('editor.layout.remap_entities', lang, 'Remap Entities'),
+          action: () => this._remapRowEntities(rowIndex),
+        },
+        {
+          icon: 'mdi:delete',
+          label: localize('editor.layout.delete', lang, 'Delete'),
+          action: () => this._deleteRow(rowIndex),
+          destructive: true,
+        },
+      ];
+    } else if (type === 'column' && columnIndex !== undefined) {
+      menuItems = [
+        {
+          icon: 'mdi:cog',
+          label: localize('editor.layout.settings', lang, 'Settings'),
+          action: () => this._openColumnSettings(rowIndex, columnIndex),
+        },
+        {
+          icon: 'mdi:plus',
+          label: localize('editor.layout.add_module', lang, 'Add Module'),
+          action: () => this._openModuleSelector(rowIndex, columnIndex),
+        },
+        {
+          icon: 'mdi:content-copy',
+          label: localize('editor.layout.duplicate', lang, 'Duplicate'),
+          action: () => this._duplicateColumn(rowIndex, columnIndex),
+        },
+        {
+          icon: 'mdi:clipboard-arrow-up',
+          label: localize('editor.layout.copy', lang, 'Copy'),
+          action: () => this._copyColumn(rowIndex, columnIndex),
+        },
+        {
+          icon: 'mdi:delete',
+          label: localize('editor.layout.delete', lang, 'Delete'),
+          action: () => this._deleteColumn(rowIndex, columnIndex),
+          destructive: true,
+        },
+      ];
+    } else if (type === 'module' && columnIndex !== undefined && moduleIndex !== undefined) {
+      menuItems = [
+        {
+          icon: 'mdi:pencil',
+          label: localize('editor.layout.edit', lang, 'Edit'),
+          action: () => this._openModuleSettings(rowIndex, columnIndex, moduleIndex),
+        },
+        {
+          icon: 'mdi:content-copy',
+          label: localize('editor.layout.duplicate', lang, 'Duplicate'),
+          action: () => this._duplicateModule(rowIndex, columnIndex, moduleIndex),
+        },
+        {
+          icon: 'mdi:clipboard-arrow-up',
+          label: localize('editor.layout.copy', lang, 'Copy'),
+          action: () => this._copyModule(rowIndex, columnIndex, moduleIndex),
+        },
+        {
+          icon: 'mdi:delete',
+          label: localize('editor.layout.delete', lang, 'Delete'),
+          action: () => this._deleteModule(rowIndex, columnIndex, moduleIndex),
+          destructive: true,
+        },
+      ];
+    } else if (type === 'layout-module' && columnIndex !== undefined && moduleIndex !== undefined) {
+      menuItems = [
+        {
+          icon: 'mdi:pencil',
+          label: localize('editor.layout.edit', lang, 'Edit'),
+          action: () => this._openModuleSettings(rowIndex, columnIndex, moduleIndex),
+        },
+        {
+          icon: 'mdi:plus',
+          label: localize('editor.layout.add_module', lang, 'Add Module'),
+          action: () => this._openLayoutModuleSelector(rowIndex, columnIndex, moduleIndex),
+        },
+        {
+          icon: 'mdi:content-copy',
+          label: localize('editor.layout.duplicate', lang, 'Duplicate'),
+          action: () => this._duplicateModule(rowIndex, columnIndex, moduleIndex),
+        },
+        {
+          icon: 'mdi:clipboard-arrow-up',
+          label: localize('editor.layout.copy', lang, 'Copy'),
+          action: () => this._copyModule(rowIndex, columnIndex, moduleIndex),
+        },
+        {
+          icon: 'mdi:delete',
+          label: localize('editor.layout.delete', lang, 'Delete'),
+          action: () => this._deleteModule(rowIndex, columnIndex, moduleIndex),
+          destructive: true,
+        },
+      ];
+    }
+
+    return html`
+      <div class="tree-overflow-container">
+        <button
+          class="tree-overflow-btn"
+          @click=${(e: Event) => this._toggleOverflowMenu(menuKey, e)}
+          @mousedown=${(e: Event) => e.stopPropagation()}
+          @dragstart=${(e: Event) => e.preventDefault()}
+          title="${localize('editor.layout.more_actions', lang, 'More actions')}"
+        >
+          <ha-icon icon="mdi:dots-horizontal"></ha-icon>
+        </button>
+        ${isOpen
+          ? html`
+              <div class="tree-overflow-menu" @click=${(e: Event) => e.stopPropagation()}>
+                ${menuItems.map(
+                  (item, index) => html`
+                    ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
+                    <button
+                      class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
+                      @click=${() => {
+                        item.action();
+                        this._openOverflowMenuKey = null;
+                      }}
+                    >
+                      <ha-icon icon="${item.icon}"></ha-icon>
+                      <span>${item.label}</span>
+                    </button>
+                  `
+                )}
+              </div>
+            `
+          : ''}
+      </div>
+    `;
+  }
+
+  // Render overflow menu for layout children (modules inside layouts, nested layouts, deep nested children)
+  private _renderLayoutChildOverflowMenu(
+    type: 'layout-child' | 'nested-layout' | 'deep-nested-child',
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    childIndex: number,
+    nestedLayoutIndex?: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const menuKey =
+      nestedLayoutIndex !== undefined
+        ? `${type}-${rowIndex}-${columnIndex}-${parentModuleIndex}-${nestedLayoutIndex}-${childIndex}`
+        : `${type}-${rowIndex}-${columnIndex}-${parentModuleIndex}-${childIndex}`;
+    const isOpen = this._openOverflowMenuKey === menuKey;
+
+    let menuItems: { icon: string; label: string; action: () => void; destructive?: boolean }[] =
+      [];
+
+    if (type === 'layout-child') {
+      // Regular module inside a layout
+      menuItems = [
+        {
+          icon: 'mdi:pencil',
+          label: localize('editor.layout.edit', lang, 'Edit'),
+          action: () =>
+            this._openLayoutChildSettings(rowIndex, columnIndex, parentModuleIndex, childIndex),
+        },
+        {
+          icon: 'mdi:content-copy',
+          label: localize('editor.layout.duplicate', lang, 'Duplicate'),
+          action: () =>
+            this._duplicateLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex),
+        },
+        {
+          icon: 'mdi:delete',
+          label: localize('editor.layout.delete', lang, 'Delete'),
+          action: () =>
+            this._deleteLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex),
+          destructive: true,
+        },
+      ];
+    } else if (type === 'nested-layout') {
+      // Nested layout (layout inside another layout)
+      menuItems = [
+        {
+          icon: 'mdi:pencil',
+          label: localize('editor.layout.edit', lang, 'Edit'),
+          action: () =>
+            this._openLayoutChildSettings(rowIndex, columnIndex, parentModuleIndex, childIndex),
+        },
+        {
+          icon: 'mdi:plus',
+          label: localize('editor.layout.add_module', lang, 'Add Module'),
+          action: () =>
+            this._openNestedLayoutModuleSelector(
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              childIndex
+            ),
+        },
+        {
+          icon: 'mdi:content-copy',
+          label: localize('editor.layout.duplicate', lang, 'Duplicate'),
+          action: () =>
+            this._duplicateLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex),
+        },
+        {
+          icon: 'mdi:delete',
+          label: localize('editor.layout.delete', lang, 'Delete'),
+          action: () =>
+            this._deleteLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex),
+          destructive: true,
+        },
+      ];
+    } else if (type === 'deep-nested-child' && nestedLayoutIndex !== undefined) {
+      // Module inside a nested layout
+      menuItems = [
+        {
+          icon: 'mdi:pencil',
+          label: localize('editor.layout.edit', lang, 'Edit'),
+          action: () =>
+            this._openNestedChildSettings(
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              nestedLayoutIndex,
+              childIndex
+            ),
+        },
+        {
+          icon: 'mdi:content-copy',
+          label: localize('editor.layout.duplicate', lang, 'Duplicate'),
+          action: () =>
+            this._duplicateNestedChildModule(
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              nestedLayoutIndex,
+              childIndex
+            ),
+        },
+        {
+          icon: 'mdi:delete',
+          label: localize('editor.layout.delete', lang, 'Delete'),
+          action: () =>
+            this._deleteNestedChildModule(
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              nestedLayoutIndex,
+              childIndex
+            ),
+          destructive: true,
+        },
+      ];
+    }
+
+    return html`
+      <div class="tree-overflow-container">
+        <button
+          class="tree-overflow-btn"
+          @click=${(e: Event) => this._toggleOverflowMenu(menuKey, e)}
+          @mousedown=${(e: Event) => e.stopPropagation()}
+          @dragstart=${(e: Event) => e.preventDefault()}
+          title="${localize('editor.layout.more_actions', lang, 'More actions')}"
+        >
+          <ha-icon icon="mdi:dots-horizontal"></ha-icon>
+        </button>
+        ${isOpen
+          ? html`
+              <div class="tree-overflow-menu" @click=${(e: Event) => e.stopPropagation()}>
+                ${menuItems.map(
+                  (item, index) => html`
+                    ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
+                    <button
+                      class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
+                      @click=${() => {
+                        item.action();
+                        this._openOverflowMenuKey = null;
+                      }}
+                    >
+                      <ha-icon icon="${item.icon}"></ha-icon>
+                      <span>${item.label}</span>
+                    </button>
+                  `
+                )}
+              </div>
+            `
+          : ''}
+      </div>
+    `;
+  }
+
+  // Render a tree node for a row
+  private _renderTreeRow(row: CardRow, rowIndex: number, totalRows: number): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const isCollapsed = this._collapsedRows.has(rowIndex);
+    const rowName = (row as any).row_name || `Row ${rowIndex + 1}`;
+    const isLastRow = rowIndex === totalRows - 1;
+
+    return html`
+      <div
+        class="tree-node tree-row ${isLastRow ? 'last-node' : ''} ${isCollapsed
+          ? 'collapsed'
+          : ''} ${this._dropTarget?.type === 'row' && this._dropTarget?.rowIndex === rowIndex
+          ? 'drop-target'
+          : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) => this._onDragStart(e, 'row', rowIndex)}
+        @dragend=${this._onDragEnd}
+        @dragover=${this._onDragOver}
+        @dragenter=${(e: DragEvent) => this._onDragEnter(e, 'row', rowIndex)}
+        @dragleave=${this._onDragLeave}
+        @drop=${(e: DragEvent) => this._onDrop(e, 'row', rowIndex)}
+      >
+        <div class="tree-node-content">
+          <div class="tree-node-header">
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_move', lang, 'Drag to move')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
+            <ha-icon icon="mdi:view-grid-outline" class="tree-node-icon"></ha-icon>
+            <span class="tree-node-title">${rowName}</span>
+            <div class="tree-action-buttons">
+              <button
+                class="tree-action-btn add-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._addColumn(rowIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.add_column', lang, 'Add Column')}"
+              >
+                <ha-icon icon="mdi:plus"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn edit-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openRowSettings(rowIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.settings', lang, 'Settings')}"
+              >
+                <ha-icon icon="mdi:cog"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn duplicate-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._duplicateRow(rowIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
+              >
+                <ha-icon icon="mdi:content-copy"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn delete-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._deleteRow(rowIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.delete', lang, 'Delete')}"
+              >
+                <ha-icon icon="mdi:delete"></ha-icon>
+              </button>
+            </div>
+            ${this._renderTreeOverflowMenu('row', rowIndex)}
+          </div>
+        </div>
+        <div class="tree-node-children">
+          <div
+            class="tree-track-collapse"
+            @click=${(e: Event) => this._toggleRowCollapsed(rowIndex, e)}
+            title="${isCollapsed ? 'Expand' : 'Collapse'}"
+          >
+            <ha-icon
+              icon="mdi:chevron-down"
+              class="track-chevron"
+              style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
+            ></ha-icon>
+          </div>
+          ${!isCollapsed
+            ? html`
+                ${row.columns && row.columns.length > 0
+                  ? row.columns.map((column, columnIndex) =>
+                      this._renderTreeColumn(column, rowIndex, columnIndex, row.columns!.length)
+                    )
+                  : ''}
+                <div class="tree-add-button-container">
+                  <button
+                    class="tree-add-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._addColumn(rowIndex);
+                    }}
+                  >
+                    <ha-icon icon="mdi:plus"></ha-icon>
+                    <span>${localize('editor.layout.add_column', lang, 'Add Column')}</span>
+                  </button>
+                </div>
+              `
+            : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // Render a tree node for a column
+  private _renderTreeColumn(
+    column: CardColumn,
+    rowIndex: number,
+    columnIndex: number,
+    totalColumns: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const colKey = `${rowIndex}-${columnIndex}`;
+    const isCollapsed = this._collapsedColumns.has(colKey);
+    const isLastColumn = columnIndex === totalColumns - 1;
+
+    return html`
+      <div
+        class="tree-node tree-column ${isLastColumn ? 'last-node' : ''} ${isCollapsed
+          ? 'collapsed'
+          : ''} ${this._dropTarget?.type === 'column' &&
+        this._dropTarget?.rowIndex === rowIndex &&
+        this._dropTarget?.columnIndex === columnIndex
+          ? 'drop-target'
+          : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) => this._onDragStart(e, 'column', rowIndex, columnIndex)}
+        @dragend=${this._onDragEnd}
+        @dragover=${this._onDragOver}
+        @dragenter=${(e: DragEvent) => this._onDragEnter(e, 'column', rowIndex, columnIndex)}
+        @dragleave=${this._onDragLeave}
+        @drop=${(e: DragEvent) => this._onDrop(e, 'column', rowIndex, columnIndex)}
+      >
+        <div class="tree-node-content">
+          <div class="tree-node-header">
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_move', lang, 'Drag to move')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
+            <ha-icon icon="mdi:view-column-outline" class="tree-node-icon"></ha-icon>
+            <span class="tree-node-title"
+              >${localize('editor.layout.column', lang, 'Column')} ${columnIndex + 1}</span
+            >
+            <div class="tree-action-buttons">
+              <button
+                class="tree-action-btn add-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openModuleSelector(rowIndex, columnIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.add_module', lang, 'Add Module')}"
+              >
+                <ha-icon icon="mdi:plus"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn edit-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openColumnSettings(rowIndex, columnIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.settings', lang, 'Settings')}"
+              >
+                <ha-icon icon="mdi:cog"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn duplicate-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._duplicateColumn(rowIndex, columnIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
+              >
+                <ha-icon icon="mdi:content-copy"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn delete-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._deleteColumn(rowIndex, columnIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.delete', lang, 'Delete')}"
+              >
+                <ha-icon icon="mdi:delete"></ha-icon>
+              </button>
+            </div>
+            ${this._renderTreeOverflowMenu('column', rowIndex, columnIndex)}
+          </div>
+        </div>
+        <div class="tree-node-children tree-column-children">
+          <div
+            class="tree-track-collapse"
+            @click=${(e: Event) => this._toggleColumnCollapsed(rowIndex, columnIndex, e)}
+            title="${isCollapsed ? 'Expand' : 'Collapse'}"
+          >
+            <ha-icon
+              icon="mdi:chevron-down"
+              class="track-chevron"
+              style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
+            ></ha-icon>
+          </div>
+          ${!isCollapsed
+            ? html`
+                ${column.modules && column.modules.length > 0
+                  ? column.modules.map((module, moduleIndex) =>
+                      this._renderTreeModule(
+                        module,
+                        rowIndex,
+                        columnIndex,
+                        moduleIndex,
+                        column.modules!.length
+                      )
+                    )
+                  : ''}
+                <div class="tree-add-button-container">
+                  <button
+                    class="tree-add-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._openModuleSelector(rowIndex, columnIndex);
+                    }}
+                  >
+                    <ha-icon icon="mdi:plus"></ha-icon>
+                    <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
+                  </button>
+                </div>
+              `
+            : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // Render a tree node for a module
+  private _renderTreeModule(
+    module: CardModule,
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    totalModules: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(module.type);
+    const metadata = moduleHandler?.metadata || {
+      icon: 'mdi:help-circle',
+      title: 'Unknown',
+      description: 'Unknown module type',
+    };
+    const isLayoutModule = this._isLayoutModule(module.type);
+    const isLastModule = moduleIndex === totalModules - 1;
+    const moduleTitle = this._getModuleDisplayName(module);
+    const moduleInfo = this._generateModuleInfo(module);
+
+    // For layout modules (horizontal, vertical, slider, tabs), render with children
+    if (isLayoutModule) {
+      return this._renderTreeLayoutModule(
+        module,
+        rowIndex,
+        columnIndex,
+        moduleIndex,
+        totalModules,
+        metadata
+      );
+    }
+
+    const isPagebreak = module.type === 'pagebreak';
+
+    return html`
+      <div
+        class="tree-node tree-module ${isLastModule ? 'last-node' : ''} ${isPagebreak
+          ? 'tree-pagebreak'
+          : ''} ${this._dropTarget?.type === 'module' &&
+        this._dropTarget?.rowIndex === rowIndex &&
+        this._dropTarget?.columnIndex === columnIndex &&
+        this._dropTarget?.moduleIndex === moduleIndex
+          ? 'drop-target'
+          : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) =>
+          this._onDragStart(e, 'module', rowIndex, columnIndex, moduleIndex)}
+        @dragend=${this._onDragEnd}
+        @dragover=${this._onDragOver}
+        @dragenter=${(e: DragEvent) =>
+          this._onDragEnter(e, 'module', rowIndex, columnIndex, moduleIndex)}
+        @dragleave=${this._onDragLeave}
+        @drop=${(e: DragEvent) => this._onDrop(e, 'module', rowIndex, columnIndex, moduleIndex)}
+      >
+        <div class="tree-node-line"></div>
+        <div class="tree-node-dot module-dot"></div>
+        <div class="tree-node-content">
+          <div class="tree-node-header module-header ${isPagebreak ? 'pagebreak-header' : ''}">
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_move', lang, 'Drag to move')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
+            <ha-icon icon="${metadata.icon}" class="tree-node-icon module-icon"></ha-icon>
+            <div class="tree-node-info">
+              <span class="tree-node-title">${moduleTitle}</span>
+              ${moduleInfo ? html`<span class="tree-node-subtitle">${moduleInfo}</span>` : ''}
+            </div>
+            <div class="tree-action-buttons">
+              <button
+                class="tree-action-btn edit-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openModuleSettings(rowIndex, columnIndex, moduleIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.edit', lang, 'Edit')}"
+              >
+                <ha-icon icon="mdi:pencil"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn duplicate-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._duplicateModule(rowIndex, columnIndex, moduleIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
+              >
+                <ha-icon icon="mdi:content-copy"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn delete-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._deleteModule(rowIndex, columnIndex, moduleIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.delete', lang, 'Delete')}"
+              >
+                <ha-icon icon="mdi:delete"></ha-icon>
+              </button>
+            </div>
+            ${this._renderTreeOverflowMenu('module', rowIndex, columnIndex, moduleIndex)}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Render a tree node for layout modules (horizontal, vertical, slider, tabs)
+  private _renderTreeLayoutModule(
+    module: CardModule,
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    totalModules: number,
+    metadata: any
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const layoutModule = module as any;
+    const hasChildren = layoutModule.modules && layoutModule.modules.length > 0;
+    const isLastModule = moduleIndex === totalModules - 1;
+    const moduleKey = `layout-${rowIndex}-${columnIndex}-${moduleIndex}`;
+    const isCollapsed = this._collapsedPreviewModules.has(moduleKey);
+
+    // Get layout title
+    let layoutTitle = metadata?.title || 'Layout';
+    if (module.type === 'horizontal') {
+      layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
+    } else if (module.type === 'vertical') {
+      layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (module.type === 'slider') {
+      layoutTitle = localize('editor.layout.slider_layout', lang, 'Slider Layout');
+    } else if (module.type === 'tabs') {
+      layoutTitle = localize('editor.layout.tabs_layout', lang, 'Tabs Layout');
+    }
+
+    return html`
+      <div
+        class="tree-node tree-layout-module ${isLastModule ? 'last-node' : ''} ${isCollapsed
+          ? 'collapsed'
+          : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) =>
+          this._onDragStart(e, 'module', rowIndex, columnIndex, moduleIndex)}
+        @dragend=${this._onDragEnd}
+        @dragover=${this._onDragOver}
+        @dragenter=${(e: DragEvent) =>
+          this._onDragEnter(e, 'module', rowIndex, columnIndex, moduleIndex)}
+        @dragleave=${this._onDragLeave}
+        @drop=${(e: DragEvent) => this._onDrop(e, 'module', rowIndex, columnIndex, moduleIndex)}
+      >
+        <div class="tree-node-content">
+          <div class="tree-node-header layout-header">
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_move', lang, 'Drag to move')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
+            <ha-icon
+              icon="${metadata?.icon || 'mdi:view-sequential'}"
+              class="tree-node-icon layout-icon"
+            ></ha-icon>
+            <span class="tree-node-title">${layoutTitle}</span>
+            <div class="tree-action-buttons">
+              <button
+                class="tree-action-btn add-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openLayoutModuleSelector(rowIndex, columnIndex, moduleIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.add_module', lang, 'Add Module')}"
+              >
+                <ha-icon icon="mdi:plus"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn edit-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openModuleSettings(rowIndex, columnIndex, moduleIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.settings', lang, 'Settings')}"
+              >
+                <ha-icon icon="mdi:cog"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn duplicate-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._duplicateModule(rowIndex, columnIndex, moduleIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
+              >
+                <ha-icon icon="mdi:content-copy"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn delete-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._deleteModule(rowIndex, columnIndex, moduleIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.delete', lang, 'Delete')}"
+              >
+                <ha-icon icon="mdi:delete"></ha-icon>
+              </button>
+            </div>
+            ${this._renderTreeOverflowMenu('layout-module', rowIndex, columnIndex, moduleIndex)}
+          </div>
+        </div>
+        <div class="tree-node-children">
+          <div
+            class="tree-track-collapse"
+            @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
+            title="${isCollapsed ? 'Expand' : 'Collapse'}"
+          >
+            <ha-icon
+              icon="mdi:chevron-down"
+              class="track-chevron"
+              style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
+            ></ha-icon>
+          </div>
+          ${!isCollapsed
+            ? html`
+                ${hasChildren
+                  ? html`
+                      ${layoutModule.modules.map((childModule: CardModule, childIndex: number) =>
+                        this._renderTreeLayoutChild(
+                          childModule,
+                          rowIndex,
+                          columnIndex,
+                          moduleIndex,
+                          childIndex,
+                          layoutModule.modules.length
+                        )
+                      )}
+                    `
+                  : ''}
+                <div class="tree-add-button-container">
+                  <button
+                    class="tree-add-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._openLayoutModuleSelector(rowIndex, columnIndex, moduleIndex);
+                    }}
+                  >
+                    <ha-icon icon="mdi:plus"></ha-icon>
+                    <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
+                  </button>
+                </div>
+              `
+            : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // Render a child module inside a layout module
+  private _renderTreeLayoutChild(
+    module: CardModule,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    childIndex: number,
+    totalChildren: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(module.type);
+    const metadata = moduleHandler?.metadata || {
+      icon: 'mdi:help-circle',
+      title: 'Unknown',
+    };
+    const isLastChild = childIndex === totalChildren - 1;
+    const moduleTitle = this._getModuleDisplayName(module);
+    const moduleInfo = this._generateModuleInfo(module);
+
+    // Check if this child is itself a layout module (nested layout)
+    const isNestedLayout = this._isLayoutModule(module.type);
+    const isPagebreak = module.type === 'pagebreak';
+
+    if (isNestedLayout) {
+      return this._renderTreeNestedLayoutChild(
+        module,
+        rowIndex,
+        columnIndex,
+        parentModuleIndex,
+        childIndex,
+        totalChildren,
+        metadata
+      );
+    }
+
+    return html`
+      <div
+        class="tree-node tree-layout-child ${isLastChild ? 'last-node' : ''} ${isPagebreak
+          ? 'tree-pagebreak'
+          : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) =>
+          this._onTreeLayoutChildDragStart(e, rowIndex, columnIndex, parentModuleIndex, childIndex)}
+        @dragend=${this._onDragEnd}
+        @dragover=${this._onDragOver}
+        @dragenter=${(e: DragEvent) =>
+          this._onDragEnter(e, 'layout-child', rowIndex, columnIndex, parentModuleIndex)}
+        @dragleave=${this._onDragLeave}
+        @drop=${(e: DragEvent) =>
+          this._onTreeLayoutChildDrop(e, rowIndex, columnIndex, parentModuleIndex, childIndex)}
+      >
+        <div class="tree-node-line"></div>
+        <div class="tree-node-dot child-dot"></div>
+        <div class="tree-node-content">
+          <div class="tree-node-header child-header ${isPagebreak ? 'pagebreak-header' : ''}">
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_move', lang, 'Drag to move')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
+            <ha-icon icon="${metadata.icon}" class="tree-node-icon"></ha-icon>
+            <div class="tree-node-info">
+              <span class="tree-node-title">${moduleTitle}</span>
+              ${moduleInfo ? html`<span class="tree-node-subtitle">${moduleInfo}</span>` : ''}
+            </div>
+            <div class="tree-action-buttons">
+              <button
+                class="tree-action-btn edit-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openLayoutChildSettings(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    childIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.edit', lang, 'Edit')}"
+              >
+                <ha-icon icon="mdi:pencil"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn duplicate-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._duplicateLayoutChildModule(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    childIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
+              >
+                <ha-icon icon="mdi:content-copy"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn delete-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._deleteLayoutChildModule(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    childIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.delete', lang, 'Delete')}"
+              >
+                <ha-icon icon="mdi:delete"></ha-icon>
+              </button>
+            </div>
+            ${this._renderLayoutChildOverflowMenu(
+              'layout-child',
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              childIndex
+            )}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Render a nested layout module (layout inside another layout)
+  private _renderTreeNestedLayoutChild(
+    module: CardModule,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    childIndex: number,
+    totalChildren: number,
+    metadata: any
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const layoutModule = module as any;
+    const hasChildren = layoutModule.modules && layoutModule.modules.length > 0;
+    const isLastChild = childIndex === totalChildren - 1;
+    const moduleKey = `nested-layout-${rowIndex}-${columnIndex}-${parentModuleIndex}-${childIndex}`;
+    const isCollapsed = this._collapsedPreviewModules.has(moduleKey);
+
+    // Get layout title
+    let layoutTitle = metadata?.title || 'Layout';
+    if (module.type === 'horizontal') {
+      layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
+    } else if (module.type === 'vertical') {
+      layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (module.type === 'slider') {
+      layoutTitle = localize('editor.layout.slider_layout', lang, 'Slider Layout');
+    } else if (module.type === 'tabs') {
+      layoutTitle = localize('editor.layout.tabs_layout', lang, 'Tabs Layout');
+    }
+
+    return html`
+      <div
+        class="tree-node tree-nested-layout ${isLastChild ? 'last-node' : ''} ${isCollapsed
+          ? 'collapsed'
+          : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) =>
+          this._onTreeLayoutChildDragStart(e, rowIndex, columnIndex, parentModuleIndex, childIndex)}
+        @dragend=${this._onDragEnd}
+        @dragover=${this._onDragOver}
+        @dragenter=${(e: DragEvent) =>
+          this._onDragEnter(e, 'layout', rowIndex, columnIndex, parentModuleIndex, childIndex)}
+        @dragleave=${this._onDragLeave}
+        @drop=${(e: DragEvent) =>
+          this._onTreeLayoutChildDrop(e, rowIndex, columnIndex, parentModuleIndex, childIndex)}
+      >
+        <div class="tree-node-content">
+          <div class="tree-node-header layout-header">
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_move', lang, 'Drag to move')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
+            <ha-icon
+              icon="${metadata?.icon || 'mdi:view-sequential'}"
+              class="tree-node-icon layout-icon"
+            ></ha-icon>
+            <span class="tree-node-title">${layoutTitle}</span>
+            <div class="tree-action-buttons">
+              <button
+                class="tree-action-btn add-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openNestedLayoutModuleSelector(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    childIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.add_module', lang, 'Add Module')}"
+              >
+                <ha-icon icon="mdi:plus"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn edit-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openLayoutChildSettings(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    childIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.settings', lang, 'Settings')}"
+              >
+                <ha-icon icon="mdi:cog"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn duplicate-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._duplicateLayoutChildModule(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    childIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
+              >
+                <ha-icon icon="mdi:content-copy"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn delete-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._deleteLayoutChildModule(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    childIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.delete', lang, 'Delete')}"
+              >
+                <ha-icon icon="mdi:delete"></ha-icon>
+              </button>
+            </div>
+            ${this._renderLayoutChildOverflowMenu(
+              'nested-layout',
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              childIndex
+            )}
+          </div>
+        </div>
+        <div class="tree-node-children">
+          <div
+            class="tree-track-collapse"
+            @click=${(e: Event) => this._toggleLayoutModuleCollapsed(moduleKey, e)}
+            title="${isCollapsed ? 'Expand' : 'Collapse'}"
+          >
+            <ha-icon
+              icon="mdi:chevron-down"
+              class="track-chevron"
+              style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
+            ></ha-icon>
+          </div>
+          ${!isCollapsed
+            ? html`
+                ${hasChildren
+                  ? html`
+                      ${layoutModule.modules.map((nestedChild: CardModule, nestedIndex: number) =>
+                        this._renderTreeDeepNestedChild(
+                          nestedChild,
+                          rowIndex,
+                          columnIndex,
+                          parentModuleIndex,
+                          childIndex,
+                          nestedIndex,
+                          layoutModule.modules.length
+                        )
+                      )}
+                    `
+                  : ''}
+                <div class="tree-add-button-container">
+                  <button
+                    class="tree-add-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._openNestedLayoutModuleSelector(
+                        rowIndex,
+                        columnIndex,
+                        parentModuleIndex,
+                        childIndex
+                      );
+                    }}
+                  >
+                    <ha-icon icon="mdi:plus"></ha-icon>
+                    <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
+                  </button>
+                </div>
+              `
+            : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // Render deeply nested child (child of a nested layout)
+  private _renderTreeDeepNestedChild(
+    module: CardModule,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    childIndex: number,
+    totalChildren: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(module.type);
+    const metadata = moduleHandler?.metadata || {
+      icon: 'mdi:help-circle',
+      title: 'Unknown',
+    };
+    const isLastChild = childIndex === totalChildren - 1;
+    const moduleTitle = this._getModuleDisplayName(module);
+    const moduleInfo = this._generateModuleInfo(module);
+
+    return html`
+      <div
+        class="tree-node tree-deep-child ${isLastChild ? 'last-node' : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) =>
+          this._onTreeDeepNestedChildDragStart(
+            e,
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedLayoutIndex,
+            childIndex
+          )}
+        @dragend=${this._onDragEnd}
+        @dragover=${this._onDragOver}
+        @dragenter=${(e: DragEvent) =>
+          this._onDragEnter(e, 'layout-child', rowIndex, columnIndex, parentModuleIndex)}
+        @dragleave=${this._onDragLeave}
+        @drop=${(e: DragEvent) =>
+          this._onTreeDeepNestedChildDrop(
+            e,
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedLayoutIndex,
+            childIndex
+          )}
+      >
+        <div class="tree-node-line"></div>
+        <div class="tree-node-dot child-dot"></div>
+        <div class="tree-node-content">
+          <div class="tree-node-header child-header">
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_move', lang, 'Drag to move')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
+            <ha-icon icon="${metadata.icon}" class="tree-node-icon"></ha-icon>
+            <div class="tree-node-info">
+              <span class="tree-node-title">${moduleTitle}</span>
+              ${moduleInfo ? html`<span class="tree-node-subtitle">${moduleInfo}</span>` : ''}
+            </div>
+            <div class="tree-action-buttons">
+              <button
+                class="tree-action-btn edit-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openNestedChildSettings(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    nestedLayoutIndex,
+                    childIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.edit', lang, 'Edit')}"
+              >
+                <ha-icon icon="mdi:pencil"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn duplicate-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._duplicateNestedChildModule(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    nestedLayoutIndex,
+                    childIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
+              >
+                <ha-icon icon="mdi:content-copy"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn delete-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._deleteNestedChildModule(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    nestedLayoutIndex,
+                    childIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.delete', lang, 'Delete')}"
+              >
+                <ha-icon icon="mdi:delete"></ha-icon>
+              </button>
+            </div>
+            ${this._renderLayoutChildOverflowMenu(
+              'deep-nested-child',
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              childIndex,
+              nestedLayoutIndex
+            )}
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   // Generic array reorder helper
@@ -755,6 +2220,12 @@ export class LayoutTab extends LitElement {
   // Track the intended drag target element (set on mousedown before dragstart)
   // This helps parent handlers know when a nested element is being dragged
   private _intendedDragTarget: HTMLElement | null = null;
+  // Track items temporarily expanded during drag (auto-expand on hover)
+  @state() private _dragExpandedRows: Set<number> = new Set();
+  @state() private _dragExpandedColumns: Set<string> = new Set();
+  @state() private _dragExpandedModules: Set<string> = new Set();
+  // Timeout for auto-expand delay
+  private _dragExpandTimeout: ReturnType<typeof setTimeout> | null = null;
   @state() private _selectedLayoutModuleIndex: number = -1;
   @state() private _selectedNestedChildIndex: number = -1;
   @state() private _selectedNestedNestedChildIndex: number = -1; // For 3rd level nesting
@@ -1424,7 +2895,6 @@ export class LayoutTab extends LitElement {
     const layout = this._ensureLayout();
     const rowToCopy = layout.rows[rowIndex];
     if (!rowToCopy) {
-      console.error('Row to copy not found at index:', rowIndex);
       return;
     }
 
@@ -1456,7 +2926,6 @@ export class LayoutTab extends LitElement {
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
     if (!row) {
-      console.error('Row not found at index:', rowIndex);
       return;
     }
 
@@ -1547,7 +3016,6 @@ export class LayoutTab extends LitElement {
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
     if (!row || !row.columns[columnIndex]) {
-      console.error('Row or column not found:', rowIndex, columnIndex);
       return;
     }
 
@@ -1562,7 +3030,7 @@ export class LayoutTab extends LitElement {
     const duplicatedColumn: CardColumn = {
       ...JSON.parse(JSON.stringify(columnToCopy)),
       id: `col-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      modules: columnToCopy.modules.map((module) => {
+      modules: columnToCopy.modules.map(module => {
         const clonedModule = JSON.parse(JSON.stringify(module));
         // Generate new IDs for the module and all nested content
         this._regenerateModuleIds(clonedModule);
@@ -1590,12 +3058,10 @@ export class LayoutTab extends LitElement {
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
     if (!row) {
-      console.error('Row not found at index:', rowIndex);
       return;
     }
 
     if (!row.columns[columnIndex]) {
-      console.error('Column not found at index:', columnIndex);
       return;
     }
 
@@ -1852,21 +3318,18 @@ export class LayoutTab extends LitElement {
     }
 
     if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
-      console.error('No row or column selected');
       return;
     }
 
     const layout = this._ensureLayout();
 
     if (!layout.rows[this._selectedRowIndex]) {
-      console.error('Selected row does not exist:', this._selectedRowIndex);
       return;
     }
 
     const row = layout.rows[this._selectedRowIndex];
 
     if (!row.columns[this._selectedColumnIndex]) {
-      console.error('Selected column does not exist:', this._selectedColumnIndex);
       return;
     }
 
@@ -1992,9 +3455,7 @@ export class LayoutTab extends LitElement {
             delete (newModule as any).label;
             break;
           }
-        } catch (e) {
-          console.error('Module registry failed:', e);
-        }
+        } catch (e) {}
         // Fallback to text module
         newModule = {
           id: `text-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -2024,7 +3485,10 @@ export class LayoutTab extends LitElement {
                         const layoutModule = module as any;
 
                         // Check if we're adding to a deeply nested layout module (3rd level)
-                        if (this._selectedNestedNestedChildIndex >= 0 && this._selectedNestedChildIndex >= 0) {
+                        if (
+                          this._selectedNestedNestedChildIndex >= 0 &&
+                          this._selectedNestedChildIndex >= 0
+                        ) {
                           // Adding to a 3rd level nested layout module
                           return {
                             ...layoutModule,
@@ -2150,7 +3614,6 @@ export class LayoutTab extends LitElement {
     ] as any;
 
     if (!parentLayout || !parentLayout.modules || !parentLayout.modules[sliderChildIndex]) {
-      console.error('Parent layout or slider child not found');
       return;
     }
 
@@ -2158,14 +3621,12 @@ export class LayoutTab extends LitElement {
     const sliderModule = parentLayout.modules[sliderChildIndex] as any;
 
     if (!sliderModule || sliderModule.type !== 'slider') {
-      console.error('Target is not a slider module');
       return;
     }
 
     // Create a new page break module
     const pageBreakModule = registry.createDefaultModule('pagebreak');
     if (!pageBreakModule) {
-      console.error('Could not create page break module');
       return;
     }
 
@@ -2226,14 +3687,12 @@ export class LayoutTab extends LitElement {
     const sliderModule = layout.rows[rowIndex].columns[columnIndex].modules[moduleIndex] as any;
 
     if (!sliderModule || sliderModule.type !== 'slider') {
-      console.error('Target is not a slider module');
       return;
     }
 
     // Create a new page break module
     const pageBreakModule = registry.createDefaultModule('pagebreak');
     if (!pageBreakModule) {
-      console.error('Could not create page break module');
       return;
     }
 
@@ -2278,10 +3737,6 @@ export class LayoutTab extends LitElement {
       const currentLayout = this._ensureLayout();
 
       if (!preset.layout || !preset.layout.rows || preset.layout.rows.length === 0) {
-        console.error('Invalid preset layout:', preset);
-        console.error('Layout structure:', preset.layout);
-        console.error('Layout rows:', preset.layout?.rows);
-        console.error('Full preset object:', preset);
         this._showToast(`Error: Invalid preset "${preset.name}" - missing layout rows`, 'error');
         return;
       }
@@ -2297,7 +3752,6 @@ export class LayoutTab extends LitElement {
         this._applyPresetToLayout(preset, []);
       }
     } catch (error) {
-      console.error('Error adding preset:', error);
       this._showToast(
         `Error adding preset: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'error'
@@ -2307,7 +3761,6 @@ export class LayoutTab extends LitElement {
 
   private _showEntityMappingDialog(preset: PresetDefinition, entityReferences: any[]): void {
     if (this._entityMappingOpen) {
-      console.warn('Entity mapping dialog already open - ignoring duplicate open request');
       return;
     }
     this._entityMappingOpen = true;
@@ -2318,12 +3771,10 @@ export class LayoutTab extends LitElement {
       `Map Entities for "${preset.name}"`,
       entityReferences,
       (mappings: EntityMapping[]) => {
-        console.log('✅ Apply mappings:', mappings);
         this._entityMappingOpen = false;
         this._applyPresetToLayout(preset, mappings);
       },
       () => {
-        console.log('❌ Cancel mapping');
         this._entityMappingOpen = false;
         // On cancel, add preset with all original entities
         this._applyPresetToLayout(preset, []);
@@ -2357,7 +3808,6 @@ export class LayoutTab extends LitElement {
           const newRow = this._cloneRowWithNewIds(presetRow);
           newRows.push(newRow);
         } catch (cloneError) {
-          console.error(`Failed to clone row ${index}:`, cloneError);
           throw cloneError;
         }
       });
@@ -2371,7 +3821,7 @@ export class LayoutTab extends LitElement {
       // Apply card-level settings if this is a full card preset
       if (preset.cardSettings) {
         const cardSettingsUpdates: Record<string, any> = {};
-        
+
         // Apply each card setting
         if (preset.cardSettings.card_background !== undefined) {
           cardSettingsUpdates.card_background = preset.cardSettings.card_background;
@@ -2415,7 +3865,8 @@ export class LayoutTab extends LitElement {
         }
         // Background image settings
         if (preset.cardSettings.card_background_image_type !== undefined) {
-          cardSettingsUpdates.card_background_image_type = preset.cardSettings.card_background_image_type;
+          cardSettingsUpdates.card_background_image_type =
+            preset.cardSettings.card_background_image_type;
         }
         if (preset.cardSettings.card_background_image !== undefined) {
           cardSettingsUpdates.card_background_image = preset.cardSettings.card_background_image;
@@ -2427,7 +3878,8 @@ export class LayoutTab extends LitElement {
           cardSettingsUpdates.card_background_repeat = preset.cardSettings.card_background_repeat;
         }
         if (preset.cardSettings.card_background_position !== undefined) {
-          cardSettingsUpdates.card_background_position = preset.cardSettings.card_background_position;
+          cardSettingsUpdates.card_background_position =
+            preset.cardSettings.card_background_position;
         }
 
         // Apply both layout and card settings together
@@ -2437,7 +3889,7 @@ export class LayoutTab extends LitElement {
             ...cardSettingsUpdates,
             layout: newLayout,
           };
-          
+
           this.dispatchEvent(
             new CustomEvent('config-changed', {
               detail: { config: fullConfig },
@@ -2462,7 +3914,6 @@ export class LayoutTab extends LitElement {
 
       // debug removed
     } catch (error) {
-      console.error('Error applying preset to layout:', error);
       this._showToast(
         `Error applying preset: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'error'
@@ -2473,7 +3924,6 @@ export class LayoutTab extends LitElement {
   private _remapRowEntities(rowIndex: number): void {
     try {
       if (this._entityMappingOpen) {
-        console.warn('Entity mapping dialog already open - ignoring duplicate open request');
         return;
       }
       this._entityMappingOpen = true;
@@ -2487,15 +3937,10 @@ export class LayoutTab extends LitElement {
         return;
       }
 
-      console.log('🔍 Scanning row for entities:', row);
-
       // Detect entities in the row
       const entityReferences = entityDetector.scanRow(row);
 
-      console.log('📋 Found entity references:', entityReferences);
-
       if (entityReferences.length === 0) {
-        console.warn('⚠️ No entities found in row:', row);
         this._showToast('No entities found in this row', 'info');
         this._entityMappingOpen = false;
         return;
@@ -2507,18 +3952,15 @@ export class LayoutTab extends LitElement {
         `Remap Entities in Row ${rowIndex + 1}`,
         entityReferences,
         (mappings: EntityMapping[]) => {
-          console.log('✅ Apply row mappings:', mappings);
           this._entityMappingOpen = false;
           this._applyMappingsToRow(rowIndex, mappings);
         },
         () => {
-          console.log('❌ Cancel row mapping');
           this._entityMappingOpen = false;
           // Cancel - do nothing (keep original entities)
         }
       );
     } catch (error) {
-      console.error('Error remapping row entities:', error);
       this._showToast(
         `Error remapping entities: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'error'
@@ -2551,7 +3993,6 @@ export class LayoutTab extends LitElement {
         'success'
       );
     } catch (error) {
-      console.error('Error applying mappings to row:', error);
       this._showToast(
         `Error applying mappings: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'error'
@@ -2603,11 +4044,10 @@ export class LayoutTab extends LitElement {
       // Pass config to include card-specific variables in export
       await ucExportImportService.exportRowToClipboard(row, `Row ${rowIndex + 1}`, this.config);
       this._showToast('Row exported to clipboard!', 'success');
-      
+
       // Update clipboard state to light up import button
       this._hasCardClipboard = true;
     } catch (error) {
-      console.error('Failed to export row:', error);
       if (error instanceof Error && error.message === 'Export cancelled by user') {
         this._showToast('Export cancelled - privacy protection', 'info');
       } else {
@@ -2693,17 +4133,22 @@ export class LayoutTab extends LitElement {
       // Handle variables from export - always add as card-specific with auto-rename
       if (ucExportImportService.hasCustomVariables(importData)) {
         const currentCardVars = this.config._customVariables || [];
-        const varResult = ucExportImportService.importVariablesAsCardSpecific(importData, currentCardVars);
-        
+        const varResult = ucExportImportService.importVariablesAsCardSpecific(
+          importData,
+          currentCardVars
+        );
+
         // Add card-specific variables to card config
         if (varResult.cardVarsToAdd.length > 0) {
           const updatedCardVars = [...currentCardVars, ...varResult.cardVarsToAdd];
-          this.dispatchEvent(new CustomEvent('config-changed', {
-            detail: { config: { ...this.config, _customVariables: updatedCardVars } },
-            bubbles: true,
-            composed: true
-          }));
-          
+          this.dispatchEvent(
+            new CustomEvent('config-changed', {
+              detail: { config: { ...this.config, _customVariables: updatedCardVars } },
+              bubbles: true,
+              composed: true,
+            })
+          );
+
           // Show summary toast
           const { summary } = varResult;
           let message = `Added ${summary.added} variable(s) to this card`;
@@ -2745,7 +4190,6 @@ export class LayoutTab extends LitElement {
         this._showVariableMappingDialog = true;
       }
     } catch (error) {
-      console.error('Failed to paste row from clipboard:', error);
       if (error instanceof Error && error.name === 'NotAllowedError') {
         this._showToast('Clipboard access denied. Please check browser permissions.', 'error');
       } else {
@@ -2761,7 +4205,6 @@ export class LayoutTab extends LitElement {
       await ucExportImportService.exportRowToClipboard(favorite.row, favorite.name, this.config);
       this._showToast('Favorite exported to clipboard!', 'success');
     } catch (error) {
-      console.error('Failed to export favorite:', error);
       if (error instanceof Error && error.message === 'Export cancelled by user') {
         this._showToast('Export cancelled - privacy protection', 'info');
       } else {
@@ -2818,7 +4261,6 @@ export class LayoutTab extends LitElement {
 
       return cloned;
     } catch (error) {
-      console.error('Error cloning row:', error);
       throw new Error(
         `Failed to clone row: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -2835,50 +4277,95 @@ export class LayoutTab extends LitElement {
 
   private _copyModule(rowIndex: number, columnIndex: number, moduleIndex: number): void {
     const lang = this.hass?.locale?.language || 'en';
-    
+
     // Validate indices
     if (rowIndex === undefined || columnIndex === undefined || moduleIndex === undefined) {
-      console.error('Copy module: Invalid indices', { rowIndex, columnIndex, moduleIndex });
-      this._showToast(localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'), 'error');
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
       return;
     }
 
     // Get the module
     const layout = this.config.layout;
     if (!layout || !layout.rows) {
-      console.error('Copy module: No layout found');
-      this._showToast(localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'), 'error');
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
       return;
     }
 
     const row = layout.rows[rowIndex];
     if (!row || !row.columns) {
-      console.error('Copy module: Row not found', { rowIndex });
-      this._showToast(localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'), 'error');
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
       return;
     }
 
     const column = row.columns[columnIndex];
     if (!column || !column.modules) {
-      console.error('Copy module: Column not found', { rowIndex, columnIndex });
-      this._showToast(localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'), 'error');
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
       return;
     }
 
     const module = column.modules[moduleIndex];
     if (!module) {
-      console.error('Copy module: Module not found', { rowIndex, columnIndex, moduleIndex });
-      this._showToast(localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'), 'error');
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
       return;
     }
 
     try {
       ucExportImportService.copyModuleToLocalStorage(module);
       this._hasModuleClipboard = true;
-      this._showToast(localize('editor.layout.module_copied', lang, 'Module copied to clipboard'), 'success');
+      this._showToast(
+        localize('editor.layout.module_copied', lang, 'Module copied to clipboard'),
+        'success'
+      );
     } catch (error) {
-      console.error('Failed to copy module to localStorage:', error);
-      this._showToast(localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'), 'error');
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
+    }
+  }
+
+  /**
+   * Generic method to copy any module directly to clipboard
+   * Works for nested modules where we already have the module object
+   */
+  private _copyModuleToClipboard(module: CardModule): void {
+    const lang = this.hass?.locale?.language || 'en';
+
+    if (!module) {
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
+      return;
+    }
+
+    try {
+      ucExportImportService.copyModuleToLocalStorage(module);
+      this._hasModuleClipboard = true;
+      this._showToast(
+        localize('editor.layout.module_copied', lang, 'Module copied to clipboard'),
+        'success'
+      );
+    } catch (error) {
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
     }
   }
 
@@ -2886,14 +4373,28 @@ export class LayoutTab extends LitElement {
     try {
       const module = ucExportImportService.getModuleFromLocalStorage();
       if (!module) {
-        this._showToast(localize('editor.layout.no_module_to_paste', this.hass?.locale?.language || 'en', 'No module to paste'), 'error');
+        this._showToast(
+          localize(
+            'editor.layout.no_module_to_paste',
+            this.hass?.locale?.language || 'en',
+            'No module to paste'
+          ),
+          'error'
+        );
         return;
       }
 
       const layout = this._ensureLayout();
       const column = layout.rows[rowIndex]?.columns[columnIndex];
       if (!column) {
-        this._showToast(localize('editor.layout.paste_failed', this.hass?.locale?.language || 'en', 'Failed to paste module'), 'error');
+        this._showToast(
+          localize(
+            'editor.layout.paste_failed',
+            this.hass?.locale?.language || 'en',
+            'Failed to paste module'
+          ),
+          'error'
+        );
         return;
       }
 
@@ -2920,74 +4421,113 @@ export class LayoutTab extends LitElement {
       };
 
       this._updateLayout(newLayout);
-      
+
       // Clear clipboard after successful paste
       ucExportImportService.clearModuleClipboard();
       this._hasModuleClipboard = false;
-      
-      this._showToast(localize('editor.layout.module_pasted', this.hass?.locale?.language || 'en', 'Module pasted successfully'), 'success');
+
+      this._showToast(
+        localize(
+          'editor.layout.module_pasted',
+          this.hass?.locale?.language || 'en',
+          'Module pasted successfully'
+        ),
+        'success'
+      );
     } catch (error) {
-      console.error('Failed to paste module:', error);
-      this._showToast(localize('editor.layout.paste_failed', this.hass?.locale?.language || 'en', 'Failed to paste module'), 'error');
+      this._showToast(
+        localize(
+          'editor.layout.paste_failed',
+          this.hass?.locale?.language || 'en',
+          'Failed to paste module'
+        ),
+        'error'
+      );
     }
   }
 
   private _copyColumn(rowIndex: number, columnIndex: number): void {
     const lang = this.hass?.locale?.language || 'en';
-    
+
     if (rowIndex === undefined || columnIndex === undefined) {
-      this._showToast(localize('editor.layout.column_copy_failed', lang, 'Failed to copy column'), 'error');
+      this._showToast(
+        localize('editor.layout.column_copy_failed', lang, 'Failed to copy column'),
+        'error'
+      );
       return;
     }
 
     const layout = this.config.layout;
     if (!layout || !layout.rows) {
-      this._showToast(localize('editor.layout.column_copy_failed', lang, 'Failed to copy column'), 'error');
+      this._showToast(
+        localize('editor.layout.column_copy_failed', lang, 'Failed to copy column'),
+        'error'
+      );
       return;
     }
 
     const row = layout.rows[rowIndex];
     if (!row || !row.columns) {
-      this._showToast(localize('editor.layout.column_copy_failed', lang, 'Failed to copy column'), 'error');
+      this._showToast(
+        localize('editor.layout.column_copy_failed', lang, 'Failed to copy column'),
+        'error'
+      );
       return;
     }
 
     const column = row.columns[columnIndex];
     if (!column) {
-      this._showToast(localize('editor.layout.column_copy_failed', lang, 'Failed to copy column'), 'error');
+      this._showToast(
+        localize('editor.layout.column_copy_failed', lang, 'Failed to copy column'),
+        'error'
+      );
       return;
     }
 
     try {
       ucExportImportService.copyColumnToLocalStorage(column);
       this._hasColumnClipboard = true;
-      this._showToast(localize('editor.layout.column_copied', lang, 'Column copied to clipboard'), 'success');
+      this._showToast(
+        localize('editor.layout.column_copied', lang, 'Column copied to clipboard'),
+        'success'
+      );
     } catch (error) {
-      console.error('Failed to copy column to localStorage:', error);
-      this._showToast(localize('editor.layout.column_copy_failed', lang, 'Failed to copy column'), 'error');
+      this._showToast(
+        localize('editor.layout.column_copy_failed', lang, 'Failed to copy column'),
+        'error'
+      );
     }
   }
 
   private _pasteColumn(rowIndex: number): void {
     const lang = this.hass?.locale?.language || 'en';
-    
+
     try {
       const column = ucExportImportService.getColumnFromLocalStorage();
       if (!column) {
-        this._showToast(localize('editor.layout.no_column_to_paste', lang, 'No column to paste'), 'error');
+        this._showToast(
+          localize('editor.layout.no_column_to_paste', lang, 'No column to paste'),
+          'error'
+        );
         return;
       }
 
       const layout = this._ensureLayout();
       const row = layout.rows[rowIndex];
       if (!row) {
-        this._showToast(localize('editor.layout.column_paste_failed', lang, 'Failed to paste column'), 'error');
+        this._showToast(
+          localize('editor.layout.column_paste_failed', lang, 'Failed to paste column'),
+          'error'
+        );
         return;
       }
 
       // Enforce maximum 6 columns
       if (row.columns.length >= 6) {
-        this._showToast(localize('editor.layout.max_columns_reached', lang, 'Maximum 6 columns allowed'), 'error');
+        this._showToast(
+          localize('editor.layout.max_columns_reached', lang, 'Maximum 6 columns allowed'),
+          'error'
+        );
         return;
       }
 
@@ -3016,15 +4556,20 @@ export class LayoutTab extends LitElement {
       };
 
       this._updateLayout(newLayout);
-      
+
       // Clear clipboard after successful paste
       ucExportImportService.clearColumnClipboard();
       this._hasColumnClipboard = false;
-      
-      this._showToast(localize('editor.layout.column_pasted', lang, 'Column pasted successfully'), 'success');
+
+      this._showToast(
+        localize('editor.layout.column_pasted', lang, 'Column pasted successfully'),
+        'success'
+      );
     } catch (error) {
-      console.error('Failed to paste column:', error);
-      this._showToast(localize('editor.layout.column_paste_failed', lang, 'Failed to paste column'), 'error');
+      this._showToast(
+        localize('editor.layout.column_paste_failed', lang, 'Failed to paste column'),
+        'error'
+      );
     }
   }
 
@@ -3044,21 +4589,29 @@ export class LayoutTab extends LitElement {
    */
   private async _exportCard(): Promise<void> {
     const lang = this.hass?.locale?.language || 'en';
-    
+
     try {
       this._showToast(localize('editor.layout.card_exporting', lang, 'Exporting card...'), 'info');
-      await ucExportImportService.exportCardToClipboard(this.config, this.config.card_name || 'Ultra Card');
-      this._showToast(localize('editor.layout.card_exported', lang, 'Card exported to clipboard'), 'success');
-      
+      await ucExportImportService.exportCardToClipboard(
+        this.config,
+        this.config.card_name || 'Ultra Card'
+      );
+      this._showToast(
+        localize('editor.layout.card_exported', lang, 'Card exported to clipboard'),
+        'success'
+      );
+
       // Update clipboard state to light up import button
       this._hasCardClipboard = true;
     } catch (error) {
-      console.error('Failed to export card:', error);
       if (error instanceof Error && error.message === 'Export cancelled by user') {
         // User cancelled, don't show error
         return;
       }
-      this._showToast(localize('editor.layout.card_export_failed', lang, 'Failed to export card'), 'error');
+      this._showToast(
+        localize('editor.layout.card_export_failed', lang, 'Failed to export card'),
+        'error'
+      );
     }
   }
 
@@ -3067,36 +4620,54 @@ export class LayoutTab extends LitElement {
    */
   private async _importCard(): Promise<void> {
     const lang = this.hass?.locale?.language || 'en';
-    
+
     try {
       const importData = await ucExportImportService.importFromClipboard();
-      
+
       if (!importData) {
-        this._showToast(localize('editor.layout.no_card_to_import', lang, 'No valid card data found in clipboard'), 'error');
+        this._showToast(
+          localize(
+            'editor.layout.no_card_to_import',
+            lang,
+            'No valid card data found in clipboard'
+          ),
+          'error'
+        );
         return;
       }
 
       // Handle full card import
       if (importData.type === 'ultra-card-full') {
         // Confirm before replacing entire card config
-        if (!confirm(localize('editor.layout.confirm_import_card', lang, 'This will replace your entire card configuration. Are you sure?'))) {
+        if (
+          !confirm(
+            localize(
+              'editor.layout.confirm_import_card',
+              lang,
+              'This will replace your entire card configuration. Are you sure?'
+            )
+          )
+        ) {
           return;
         }
 
         const cardConfig = importData.data as UltraCardConfig;
-        
+
         // Preserve the card type
         cardConfig.type = 'custom:ultra-card';
-        
+
         // Handle variables - always import as card-specific (local)
         if (ucExportImportService.hasCustomVariables(importData)) {
           const currentCardVars = this.config._customVariables || [];
-          const varResult = ucExportImportService.importVariablesAsCardSpecific(importData, currentCardVars);
-          
+          const varResult = ucExportImportService.importVariablesAsCardSpecific(
+            importData,
+            currentCardVars
+          );
+
           // Set imported variables as card-specific in the config
           if (varResult.cardVarsToAdd.length > 0) {
             cardConfig._customVariables = varResult.cardVarsToAdd;
-            
+
             // Show summary toast
             const { summary } = varResult;
             let message = `Imported ${summary.added} variable(s) as card-specific`;
@@ -3113,7 +4684,7 @@ export class LayoutTab extends LitElement {
           // No variables in import - clear any existing card-specific vars
           delete cardConfig._customVariables;
         }
-        
+
         // Fire config-changed event with the new full config
         const event = new CustomEvent('config-changed', {
           detail: { config: cardConfig, isInternal: true },
@@ -3121,13 +4692,20 @@ export class LayoutTab extends LitElement {
           composed: true,
         });
         this.dispatchEvent(event);
-        
-        this._showToast(localize('editor.layout.card_imported', lang, `Card "${importData.metadata?.name || 'Imported Card'}" imported successfully!`), 'success');
-        
+
+        this._showToast(
+          localize(
+            'editor.layout.card_imported',
+            lang,
+            `Card "${importData.metadata?.name || 'Imported Card'}" imported successfully!`
+          ),
+          'success'
+        );
+
         // Clear clipboard tracking after successful import
         ucExportImportService.clearExportClipboard();
         this._hasCardClipboard = false;
-        
+
         // Check for missing variables in the imported card
         const missingVars = findMissingVariables(cardConfig);
         if (missingVars.length > 0) {
@@ -3139,15 +4717,18 @@ export class LayoutTab extends LitElement {
         if (!confirm('This will replace your entire layout. Are you sure?')) {
           return;
         }
-        
+
         const newLayout = importData.data as { rows: CardRow[] };
         this._updateLayout(newLayout);
-        this._showToast(`Layout "${importData.metadata?.name || 'Imported Layout'}" imported successfully!`, 'success');
-        
+        this._showToast(
+          `Layout "${importData.metadata?.name || 'Imported Layout'}" imported successfully!`,
+          'success'
+        );
+
         // Clear clipboard tracking after successful import
         ucExportImportService.clearExportClipboard();
         this._hasCardClipboard = false;
-        
+
         // Check for missing variables in the imported layout
         const missingVars = findMissingVariables(newLayout);
         if (missingVars.length > 0) {
@@ -3168,19 +4749,27 @@ export class LayoutTab extends LitElement {
         } else {
           this._addImportedRow(rowData, importData.metadata?.name || 'Imported Row');
         }
-        
+
         // Clear clipboard tracking after successful import
         ucExportImportService.clearExportClipboard();
         this._hasCardClipboard = false;
       } else if (importData.type === 'ultra-card-module') {
         // Handle module import - show message that modules should be imported via column
-        this._showToast('Module exports should be imported using the Paste button on a column.', 'info');
+        this._showToast(
+          'Module exports should be imported using the Paste button on a column.',
+          'info'
+        );
       } else {
-        this._showToast('Unsupported import type. Please use Export Card to export full configurations.', 'error');
+        this._showToast(
+          'Unsupported import type. Please use Export Card to export full configurations.',
+          'error'
+        );
       }
     } catch (error) {
-      console.error('Failed to import card:', error);
-      this._showToast(localize('editor.layout.card_import_failed', lang, 'Failed to import card'), 'error');
+      this._showToast(
+        localize('editor.layout.card_import_failed', lang, 'Failed to import card'),
+        'error'
+      );
     }
   }
 
@@ -3232,7 +4821,7 @@ export class LayoutTab extends LitElement {
             // Don't count native HA cards (hui-* prefix) toward the limit
             const cardType = (module as any).card_type || '';
             if (!cardType.startsWith('hui-')) {
-            count++;
+              count++;
             }
           }
         });
@@ -3266,7 +4855,7 @@ export class LayoutTab extends LitElement {
                   // Don't count native HA cards (hui-* prefix) toward the limit
                   const cardType = (module as any).card_type || '';
                   if (!cardType.startsWith('hui-')) {
-                  totalExternalCards++;
+                    totalExternalCards++;
                   }
                 }
               });
@@ -3279,7 +4868,6 @@ export class LayoutTab extends LitElement {
       // console.log(`[UC] Global external card count across ALL dashboards: ${totalExternalCards}`);
       return totalExternalCards;
     } catch (error) {
-      console.error('[UC] Failed to count global external cards:', error);
       // Fallback to local count if global scan fails
       return this._countExternalCardModules();
     }
@@ -3326,7 +4914,6 @@ export class LayoutTab extends LitElement {
 
       return allowedIds;
     } catch (error) {
-      console.error('[UC] Failed to get allowed external card IDs:', error);
       return new Set();
     }
   }
@@ -3370,7 +4957,6 @@ export class LayoutTab extends LitElement {
    */
   private async _addNativeCard(cardType: string): Promise<void> {
     if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
-      console.error('[UC] No row or column selected');
       return;
     }
 
@@ -3696,14 +5282,17 @@ export class LayoutTab extends LitElement {
       )
         return;
 
-      const deepNestedLayoutModule = nestedLayoutModule.modules[this._selectedNestedChildIndex] as any;
+      const deepNestedLayoutModule = nestedLayoutModule.modules[
+        this._selectedNestedChildIndex
+      ] as any;
       if (
         !deepNestedLayoutModule.modules ||
         !deepNestedLayoutModule.modules[this._selectedNestedNestedChildIndex]
       )
         return;
 
-      const originalChildModule = deepNestedLayoutModule.modules[this._selectedNestedNestedChildIndex];
+      const originalChildModule =
+        deepNestedLayoutModule.modules[this._selectedNestedNestedChildIndex];
 
       // Create updated module by copying original and applying updates
       updatedModule = { ...originalChildModule };
@@ -3899,7 +5488,9 @@ export class LayoutTab extends LitElement {
       if (this._selectedNestedNestedChildIndex >= 0 && this._selectedNestedChildIndex >= 0) {
         const nestedLayoutModule = layoutModule.modules[childIndex] as any;
         if (!nestedLayoutModule?.modules?.[this._selectedNestedChildIndex]) return null;
-        const deepNestedLayoutModule = nestedLayoutModule.modules[this._selectedNestedChildIndex] as any;
+        const deepNestedLayoutModule = nestedLayoutModule.modules[
+          this._selectedNestedChildIndex
+        ] as any;
         if (!deepNestedLayoutModule?.modules?.[this._selectedNestedNestedChildIndex]) return null;
         return deepNestedLayoutModule.modules[this._selectedNestedNestedChildIndex];
       } else if (this._selectedNestedChildIndex >= 0) {
@@ -3920,7 +5511,6 @@ export class LayoutTab extends LitElement {
     // Support both direct module edits and child-module edits inside layout containers
     const isChildEdit = !this._selectedModule && !!this._selectedLayoutChild;
     if (!this._selectedModule && !this._selectedLayoutChild) {
-      console.warn('_updateModuleDesign called but no selected module or layout child');
       return;
     }
 
@@ -3933,22 +5523,22 @@ export class LayoutTab extends LitElement {
     };
 
     const moduleUpdates: any = {};
-    
+
     // RESPONSIVE DESIGN: Handle when updates.design contains responsive device overrides
     // This is sent from GlobalDesignTab when responsive mode is enabled
     if ((updates as any).hasOwnProperty('design') && (updates as any).design) {
       const incomingDesign = (updates as any).design;
       const currentModule = this._getModuleForDesignUpdate();
       const existingDesign = (currentModule?.design || {}) as Record<string, any>;
-      
+
       // Check if incoming design has responsive device keys (mobile, tablet, laptop, desktop, base)
       const responsiveKeys = ['base', 'desktop', 'laptop', 'tablet', 'mobile'];
       const hasResponsiveStructure = responsiveKeys.some(key => incomingDesign.hasOwnProperty(key));
-      
+
       if (hasResponsiveStructure) {
         // Deep merge responsive design structure
         const mergedDesign: Record<string, any> = { ...existingDesign };
-        
+
         for (const [dKey, dVal] of Object.entries(incomingDesign)) {
           if (dVal === undefined) {
             delete mergedDesign[dKey];
@@ -3973,14 +5563,17 @@ export class LayoutTab extends LitElement {
             mergedDesign[dKey] = dVal;
           }
         }
-        
+
         moduleUpdates.design = mergedDesign;
-        
+
         // For responsive updates, also ensure base/desktop properties are mirrored to top-level
         // for backward compatibility with modules that read from top-level properties
         const baseDesign = mergedDesign.base || mergedDesign.desktop || {};
         for (const [key, value] of Object.entries(baseDesign)) {
-          if (value !== undefined && !['base', 'desktop', 'laptop', 'tablet', 'mobile'].includes(key)) {
+          if (
+            value !== undefined &&
+            !['base', 'desktop', 'laptop', 'tablet', 'mobile'].includes(key)
+          ) {
             moduleUpdates[key] = value;
           }
         }
@@ -3996,7 +5589,7 @@ export class LayoutTab extends LitElement {
         }
         moduleUpdates.design = Object.keys(mergedDesign).length > 0 ? mergedDesign : undefined;
       }
-      
+
       // Apply the module updates and return early
       if (isChildEdit) {
         this._updateLayoutChildModule(moduleUpdates);
@@ -4050,9 +5643,9 @@ export class LayoutTab extends LitElement {
       // CRITICAL: If design.base exists (from responsive mode), also update base.background_color
       // Otherwise the base value takes precedence in getEffectiveDesign merge
       if (moduleUpdates.design.base) {
-        moduleUpdates.design.base = { 
-          ...moduleUpdates.design.base, 
-          background_color: updates.background_color 
+        moduleUpdates.design.base = {
+          ...moduleUpdates.design.base,
+          background_color: updates.background_color,
         };
       }
     }
@@ -4573,17 +6166,29 @@ export class LayoutTab extends LitElement {
     // This ensures non-responsive mode edits properly override responsive mode values
     // The responsive design service uses: top-level → base → device-specific (later wins)
     // So if base has values, they need to be updated when user edits in non-responsive mode
-    if (moduleUpdates.design && typeof moduleUpdates.design === 'object' && moduleUpdates.design.base) {
-      const responsiveKeys = new Set(['base', 'desktop', 'laptop', 'tablet', 'mobile', '_effectiveBreakpoint', '_effectiveDesign']);
+    if (
+      moduleUpdates.design &&
+      typeof moduleUpdates.design === 'object' &&
+      moduleUpdates.design.base
+    ) {
+      const responsiveKeys = new Set([
+        'base',
+        'desktop',
+        'laptop',
+        'tablet',
+        'mobile',
+        '_effectiveBreakpoint',
+        '_effectiveDesign',
+      ]);
       const baseUpdates: Record<string, any> = {};
-      
+
       // Find all top-level design properties (excluding responsive keys) and sync to base
       for (const [key, value] of Object.entries(moduleUpdates.design)) {
         if (!responsiveKeys.has(key) && value !== undefined) {
           baseUpdates[key] = value;
         }
       }
-      
+
       if (Object.keys(baseUpdates).length > 0) {
         moduleUpdates.design.base = {
           ...moduleUpdates.design.base,
@@ -4653,6 +6258,41 @@ export class LayoutTab extends LitElement {
   ): void {
     if (!e.dataTransfer) return;
 
+    // CRITICAL: If a nested element already set the drag item, abort to prevent parent from overriding
+    // This handles nested layouts where the child layout's drag handler runs first
+    if (this._draggedItem) {
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+
+    // Check if drag started from within a nested draggable element
+    // If so, let the nested element handle it
+    const currentTarget = e.currentTarget as HTMLElement;
+    const target = e.target as HTMLElement;
+    if (target && currentTarget) {
+      // Look for a nested draggable that contains the target
+      // Include all tree node types that can be dragged
+      const nestedDraggable = target.closest(
+        '.tree-node[draggable="true"], .tree-nested-layout[draggable="true"], .tree-layout-child[draggable="true"], .tree-deep-child[draggable="true"]'
+      );
+      if (
+        nestedDraggable &&
+        currentTarget.contains(nestedDraggable) &&
+        nestedDraggable !== currentTarget
+      ) {
+        // Drag started from within a nested draggable, let it handle the drag
+        return;
+      }
+
+      // Allow dragging from the header area even when expanded
+      const header = target.closest('.tree-node-header, .tree-node-content');
+      if (header && currentTarget.contains(header)) {
+        // Drag started from header, allow it to proceed for this element
+        // Don't return here - continue with drag setup
+      }
+    }
+
     e.stopPropagation();
 
     const layout = this._ensureLayout();
@@ -4682,11 +6322,10 @@ export class LayoutTab extends LitElement {
       JSON.stringify({ type, rowIndex, columnIndex, moduleIndex })
     );
 
-    // Add visual feedback
-    const target = e.currentTarget as HTMLElement;
-    if (target) {
-      target.style.opacity = '0.6';
-      target.style.transform = 'scale(0.95)';
+    // Add visual feedback - mark the dragged element
+    const dragElement = e.currentTarget as HTMLElement;
+    if (dragElement) {
+      dragElement.classList.add('being-dragged');
     }
 
     // Add dragging state to host for CSS targeting
@@ -4696,17 +6335,157 @@ export class LayoutTab extends LitElement {
       this.setAttribute('dragging-row', '');
     }
   }
-  private _onDragEnd(e: DragEvent): void {
-    // Reset visual feedback
+
+  // Specialized drag start for layout child modules (modules inside layouts) - tree view version
+  private _onTreeLayoutChildDragStart(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    childIndex: number
+  ): void {
+    if (!e.dataTransfer) return;
+
+    // CRITICAL: Stop propagation to prevent parent layout from capturing the drag
+    e.stopPropagation();
+
+    const layout = this._ensureLayout();
+    const parentLayout = layout.rows[rowIndex]?.columns[columnIndex]?.modules[
+      parentModuleIndex
+    ] as any;
+    const data = parentLayout?.modules?.[childIndex];
+
+    this._draggedItem = {
+      type: 'layout-child',
+      rowIndex,
+      columnIndex,
+      moduleIndex: parentModuleIndex,
+      layoutChildIndex: childIndex,
+      data,
+    };
+
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData(
+      'text/plain',
+      JSON.stringify({
+        type: 'layout-child',
+        rowIndex,
+        columnIndex,
+        moduleIndex: parentModuleIndex,
+        layoutChildIndex: childIndex,
+      })
+    );
+
+    // Add visual feedback
     const target = e.currentTarget as HTMLElement;
     if (target) {
-      target.style.opacity = '';
-      target.style.transform = '';
+      target.style.opacity = '0.6';
+      target.style.transform = 'scale(0.95)';
     }
+  }
+
+  // Specialized drag start for deep nested child modules (modules inside nested layouts) - tree view version
+  // This is for 3-level nesting: Slider -> Horizontal -> Icon (uses nested-child type)
+  private _onTreeDeepNestedChildDragStart(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    childIndex: number
+  ): void {
+    if (!e.dataTransfer) return;
+
+    // CRITICAL: Stop propagation to prevent parent layout from capturing the drag
+    e.stopPropagation();
+
+    const layout = this._ensureLayout();
+    const parentLayout = layout.rows[rowIndex]?.columns[columnIndex]?.modules[
+      parentModuleIndex
+    ] as any;
+    const nestedLayout = parentLayout?.modules?.[nestedLayoutIndex] as any;
+    const data = nestedLayout?.modules?.[childIndex];
+
+    // Use nested-child type for 3-level nesting (Slider -> Horizontal -> Module)
+    // This matches what _moveNestedChild expects:
+    // - moduleIndex: the parent layout module index (slider)
+    // - layoutChildIndex: the nested layout index within parent (horizontal)
+    // - nestedChildIndex: the module index within nested layout (icon)
+    this._draggedItem = {
+      type: 'nested-child',
+      rowIndex,
+      columnIndex,
+      moduleIndex: parentModuleIndex,
+      layoutChildIndex: nestedLayoutIndex,
+      nestedChildIndex: childIndex,
+      data,
+    };
+
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData(
+      'text/plain',
+      JSON.stringify({
+        type: 'nested-child',
+        rowIndex,
+        columnIndex,
+        moduleIndex: parentModuleIndex,
+        nestedLayoutIndex,
+        childIndex,
+      })
+    );
+
+    // Add visual feedback
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.opacity = '0.6';
+      target.style.transform = 'scale(0.95)';
+    }
+  }
+
+  private _onDragEnd(e: DragEvent): void {
+    // Reset visual feedback - remove CSS classes
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.classList.remove('being-dragged');
+    }
+
+    // Clean up any remaining drag-over classes
+    this.shadowRoot?.querySelectorAll('.drag-over').forEach(el => {
+      el.classList.remove('drag-over');
+    });
+    this.shadowRoot?.querySelectorAll('.being-dragged').forEach(el => {
+      el.classList.remove('being-dragged');
+    });
 
     // Remove dragging state attributes
     this.removeAttribute('dragging-column');
     this.removeAttribute('dragging-row');
+
+    // Clear drag expand timeout
+    if (this._dragExpandTimeout) {
+      clearTimeout(this._dragExpandTimeout);
+      this._dragExpandTimeout = null;
+    }
+
+    // Re-collapse items that were temporarily expanded during drag
+    if (this._dragExpandedRows.size > 0) {
+      this._dragExpandedRows.forEach(rowIndex => {
+        this._collapsedRows.add(rowIndex);
+      });
+      this._dragExpandedRows.clear();
+    }
+    if (this._dragExpandedColumns.size > 0) {
+      this._dragExpandedColumns.forEach(colKey => {
+        this._collapsedColumns.add(colKey);
+      });
+      this._dragExpandedColumns.clear();
+    }
+    if (this._dragExpandedModules.size > 0) {
+      this._dragExpandedModules.forEach(modKey => {
+        this._collapsedPreviewModules.add(modKey);
+      });
+      this._dragExpandedModules.clear();
+    }
 
     this._draggedItem = null;
     this._dropTarget = null;
@@ -4729,7 +6508,8 @@ export class LayoutTab extends LitElement {
     type: 'module' | 'column' | 'row' | 'layout' | 'layout-child',
     rowIndex: number,
     columnIndex?: number,
-    moduleIndex?: number
+    moduleIndex?: number,
+    childIndex?: number
   ): void {
     e.preventDefault();
     e.stopPropagation();
@@ -4748,13 +6528,14 @@ export class LayoutTab extends LitElement {
 
     // Special handling for layout children being dragged to layout modules
     if (this._draggedItem.layoutChildIndex !== undefined) {
-      // Only prevent dropping on the EXACT SAME parent layout module
-      // Allow dropping on different layout modules (different row/column/module coordinates)
+      // Only prevent dropping on the EXACT SAME nested layout
+      // Allow dropping on different nested layouts (different childIndex)
       if (
         type === 'layout' &&
         this._draggedItem.rowIndex === rowIndex &&
         this._draggedItem.columnIndex === columnIndex &&
-        this._draggedItem.moduleIndex === moduleIndex
+        this._draggedItem.moduleIndex === moduleIndex &&
+        this._draggedItem.layoutChildIndex === childIndex
       ) {
         return;
       }
@@ -4767,30 +6548,121 @@ export class LayoutTab extends LitElement {
 
     this._dropTarget = { type, rowIndex, columnIndex, moduleIndex };
 
-    // Add enhanced visual feedback
+    // Auto-expand collapsed items after a short delay
+    if (this._dragExpandTimeout) {
+      clearTimeout(this._dragExpandTimeout);
+    }
+    this._dragExpandTimeout = setTimeout(() => {
+      this._autoExpandOnDragOver(type, rowIndex, columnIndex, moduleIndex);
+    }, 500); // 500ms delay before auto-expand
+
+    // Add enhanced visual feedback via CSS class
     const target = e.currentTarget as HTMLElement;
     if (target) {
-      target.style.borderColor = 'var(--primary-color)';
-      target.style.backgroundColor = 'rgba(var(--rgb-primary-color), 0.1)';
+      // Remove drag-over from any other elements first
+      this.shadowRoot?.querySelectorAll('.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+      });
+      target.classList.add('drag-over');
     }
 
     this.requestUpdate();
   }
 
-  private _onDragLeave(e: DragEvent): void {
-    // Reset visual feedback
-    const target = e.currentTarget as HTMLElement;
-    if (target) {
-      target.style.borderColor = '';
-      target.style.backgroundColor = '';
+  // Auto-expand collapsed items when dragging over them
+  // Only expand items HIGHER in the hierarchy than what's being dragged
+  // Hierarchy: row > column > layout > module
+  private _autoExpandOnDragOver(
+    type: string,
+    rowIndex: number,
+    columnIndex?: number,
+    moduleIndex?: number
+  ): void {
+    if (!this._draggedItem) return;
+
+    const draggedType = this._draggedItem.type;
+    let needsUpdate = false;
+
+    // Determine hierarchy level of dragged item (lower number = higher in hierarchy)
+    const getHierarchyLevel = (itemType: string): number => {
+      switch (itemType) {
+        case 'row':
+          return 1;
+        case 'column':
+          return 2;
+        case 'module':
+        case 'layout':
+        case 'layout-child':
+        case 'nested-child':
+        case 'deep-nested-child':
+          return 3;
+        default:
+          return 4;
+      }
+    };
+
+    const draggedLevel = getHierarchyLevel(draggedType);
+    const targetLevel = getHierarchyLevel(type);
+
+    // Only expand if target is at a HIGHER level (lower number) in the hierarchy
+    // e.g., dragging a column (level 2) over a row (level 1) -> expand row
+    // e.g., dragging a column (level 2) over another column (level 2) -> DON'T expand
+
+    // Auto-expand rows - only if dragging something at column level or below
+    if (type === 'row' && draggedLevel >= 2 && this._collapsedRows.has(rowIndex)) {
+      this._collapsedRows.delete(rowIndex);
+      this._dragExpandedRows.add(rowIndex);
+      needsUpdate = true;
     }
 
-    // Only clear drop target if we're actually leaving the element
+    // Auto-expand columns - only if dragging something at module/layout level or below
+    if (type === 'column' && columnIndex !== undefined && draggedLevel >= 3) {
+      const colKey = `${rowIndex}-${columnIndex}`;
+      if (this._collapsedColumns.has(colKey)) {
+        this._collapsedColumns.delete(colKey);
+        this._dragExpandedColumns.add(colKey);
+        needsUpdate = true;
+      }
+    }
+
+    // Auto-expand layout modules - only if dragging layout children or nested modules
     if (
-      e.relatedTarget &&
-      e.currentTarget &&
-      !(e.currentTarget as Element).contains(e.relatedTarget as Node)
+      (type === 'layout' || type === 'module') &&
+      columnIndex !== undefined &&
+      moduleIndex !== undefined &&
+      draggedLevel >= 3
     ) {
+      // Only expand if we're dragging something that can go INTO this layout
+      // (layout-child, nested-child, deep-nested-child, or a regular module)
+      const modKey = `layout-${rowIndex}-${columnIndex}-${moduleIndex}`;
+      if (this._collapsedPreviewModules.has(modKey)) {
+        this._collapsedPreviewModules.delete(modKey);
+        this._dragExpandedModules.add(modKey);
+        needsUpdate = true;
+      }
+    }
+
+    if (needsUpdate) {
+      this.requestUpdate();
+    }
+  }
+
+  private _onDragLeave(e: DragEvent): void {
+    const target = e.currentTarget as HTMLElement;
+
+    // Only remove visual feedback if we're ACTUALLY leaving the element
+    // (not just moving to a child element within it)
+    const isActuallyLeaving =
+      !e.relatedTarget ||
+      !e.currentTarget ||
+      !(e.currentTarget as Element).contains(e.relatedTarget as Node);
+
+    if (isActuallyLeaving) {
+      // Reset visual feedback - remove CSS class
+      if (target) {
+        target.classList.remove('drag-over');
+      }
+
       this._dropTarget = null;
       this.requestUpdate();
     }
@@ -4806,11 +6678,10 @@ export class LayoutTab extends LitElement {
     e.preventDefault();
     e.stopPropagation();
 
-    // Reset visual feedback
+    // Reset visual feedback - remove CSS class
     const target = e.currentTarget as HTMLElement;
     if (target) {
-      target.style.borderColor = '';
-      target.style.backgroundColor = '';
+      target.classList.remove('drag-over');
     }
 
     if (!this._draggedItem) return;
@@ -4830,19 +6701,136 @@ export class LayoutTab extends LitElement {
 
     this._performMove(this._draggedItem, { type, rowIndex, columnIndex, moduleIndex });
 
+    // Clear temporarily expanded items on successful drop
+    this._clearDragExpandedItems();
+
     this._draggedItem = null;
     this._dropTarget = null;
     this.requestUpdate();
   }
 
+  // Specialized drop handler for dropping ON a specific layout child in tree view (for reordering)
+  private _onTreeLayoutChildDrop(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    childIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Reset visual feedback - remove CSS class
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.classList.remove('drag-over');
+    }
+
+    if (!this._draggedItem) return;
+
+    // Don't allow dropping on self
+    if (
+      this._draggedItem.type === 'layout-child' &&
+      this._draggedItem.rowIndex === rowIndex &&
+      this._draggedItem.columnIndex === columnIndex &&
+      this._draggedItem.moduleIndex === parentModuleIndex &&
+      this._draggedItem.layoutChildIndex === childIndex
+    ) {
+      return;
+    }
+
+    // Validate drop target compatibility
+    if (!this._isValidDropTarget(this._draggedItem.type, 'layout-child')) return;
+
+    this._performMove(this._draggedItem, {
+      type: 'layout-child',
+      rowIndex,
+      columnIndex,
+      moduleIndex: parentModuleIndex,
+      childIndex,
+    });
+
+    // Clear temporarily expanded items on successful drop
+    this._clearDragExpandedItems();
+
+    this._draggedItem = null;
+    this._dropTarget = null;
+    this.requestUpdate();
+  }
+
+  // Specialized drop handler for deep nested children (modules inside nested layouts like horizontal inside slider)
+  // This is for 3-level nesting: Slider -> Horizontal -> Icon
+  private _onTreeDeepNestedChildDrop(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    childIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Reset visual feedback - remove CSS class
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.classList.remove('drag-over');
+    }
+
+    if (!this._draggedItem) return;
+
+    // Don't allow dropping on self (check for nested-child type now)
+    if (
+      this._draggedItem.type === 'nested-child' &&
+      this._draggedItem.rowIndex === rowIndex &&
+      this._draggedItem.columnIndex === columnIndex &&
+      this._draggedItem.moduleIndex === parentModuleIndex &&
+      this._draggedItem.layoutChildIndex === nestedLayoutIndex &&
+      this._draggedItem.nestedChildIndex === childIndex
+    ) {
+      return;
+    }
+
+    // Validate drop target compatibility
+    if (!this._isValidDropTarget(this._draggedItem.type, 'layout-child')) return;
+
+    // Use nested-child-target type to indicate dropping within a nested layout
+    this._performMove(this._draggedItem, {
+      type: 'nested-child-target',
+      rowIndex,
+      columnIndex,
+      moduleIndex: parentModuleIndex,
+      layoutChildIndex: nestedLayoutIndex,
+      childIndex,
+    });
+
+    // Clear temporarily expanded items on successful drop
+    this._clearDragExpandedItems();
+
+    this._draggedItem = null;
+    this._dropTarget = null;
+    this.requestUpdate();
+  }
+
+  // Helper to clear temporarily expanded items (don't re-collapse after successful drop)
+  private _clearDragExpandedItems(): void {
+    this._dragExpandedRows.clear();
+    this._dragExpandedColumns.clear();
+    this._dragExpandedModules.clear();
+    if (this._dragExpandTimeout) {
+      clearTimeout(this._dragExpandTimeout);
+      this._dragExpandTimeout = null;
+    }
+  }
+
   private _isValidDropTarget(sourceType: string, targetType: string): boolean {
     // Define valid drop combinations
     const validCombinations: Record<string, string[]> = {
-      module: ['module', 'column', 'layout', 'layout-child'], // Modules can be dropped on other modules, column areas, layout modules, or layout children for reordering
-      'nested-child': ['module', 'column', 'layout', 'layout-child'], // Back-compat alias (older DnD path)
-      'layout-child': ['module', 'column', 'layout', 'layout-child'], // Actual type emitted by layout child drag start
-      'deep-nested-child': ['module', 'column', 'layout', 'layout-child'], // Modules from deeply nested layouts can be dropped on columns, layouts, etc.
-      'tabs-section-child': ['module', 'column', 'layout', 'layout-child'], // Modules from tabs sections can be dropped on columns, layouts, etc.
+      module: ['module', 'column', 'layout', 'layout-child', 'nested-child-target'], // Modules can be dropped on other modules, column areas, layout modules, or layout children for reordering
+      'nested-child': ['module', 'column', 'layout', 'layout-child', 'nested-child-target'], // Modules from nested layouts (3-level: Slider -> Horizontal -> Module)
+      'layout-child': ['module', 'column', 'layout', 'layout-child', 'nested-child-target'], // Actual type emitted by layout child drag start
+      'deep-nested-child': ['module', 'column', 'layout', 'layout-child', 'nested-child-target'], // Modules from deeply nested layouts (4-level)
+      'tabs-section-child': ['module', 'column', 'layout', 'layout-child', 'nested-child-target'], // Modules from tabs sections can be dropped on columns, layouts, etc.
       column: ['column', 'row'], // Columns can be dropped on other columns or row areas
       row: ['row'], // Rows can only be dropped on other rows
     };
@@ -4856,6 +6844,10 @@ export class LayoutTab extends LitElement {
 
     switch (source.type) {
       case 'module':
+        this._moveModule(newLayout, source, target);
+        break;
+      case 'layout-child':
+        // Layout children use the same move logic as modules with layoutChildIndex set
         this._moveModule(newLayout, source, target);
         break;
       case 'nested-child':
@@ -5178,19 +7170,50 @@ export class LayoutTab extends LitElement {
 
   private _moveNestedChild(layout: any, source: any, target: any): void {
     // Handle moving nested child modules (modules inside nested layout modules)
+    // Structure: Row -> Column -> Parent Layout (e.g., Slider) -> Nested Layout (e.g., Horizontal) -> Module
     const sourceParentLayout =
       layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
     const sourceNestedLayout = sourceParentLayout.modules[source.layoutChildIndex];
     const sourceModule = sourceNestedLayout.modules[source.nestedChildIndex];
 
+    // Handle reordering within the same nested layout
+    if (
+      target.type === 'nested-child-target' &&
+      source.rowIndex === target.rowIndex &&
+      source.columnIndex === target.columnIndex &&
+      source.moduleIndex === target.moduleIndex &&
+      source.layoutChildIndex === target.layoutChildIndex
+    ) {
+      // Reordering within the same nested layout
+      const sourceIdx = source.nestedChildIndex;
+      let targetIdx = target.childIndex;
+
+      if (sourceIdx === targetIdx) {
+        return; // No change needed
+      }
+
+      // Remove from source position
+      sourceNestedLayout.modules.splice(sourceIdx, 1);
+
+      // Adjust target index if source was before target
+      if (sourceIdx < targetIdx) {
+        targetIdx--;
+      }
+
+      // Insert at target position
+      sourceNestedLayout.modules.splice(targetIdx, 0, sourceModule);
+      return;
+    }
+
     // Remove from source
     sourceNestedLayout.modules.splice(source.nestedChildIndex, 1);
 
     // Add to target based on target type
-    if (target.type === 'module') {
+    if (target.type === 'module' || target.type === 'column') {
       // Moving to a regular column
       const targetColumn = layout.rows[target.rowIndex].columns[target.columnIndex];
-      const targetIndex = target.moduleIndex || 0;
+      const targetIndex =
+        target.moduleIndex !== undefined ? target.moduleIndex : targetColumn.modules.length;
       targetColumn.modules.splice(targetIndex, 0, sourceModule);
     } else if (target.type === 'layout') {
       // Moving to a layout module
@@ -5201,13 +7224,27 @@ export class LayoutTab extends LitElement {
       }
       targetLayoutModule.modules.push(sourceModule);
     } else if (target.type === 'layout-child') {
-      // Moving to another position within a layout module
+      // Moving to another position within a layout module (1st level nesting)
       const targetLayoutModule =
         layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      const targetIndex = target.childIndex || 0;
+      if (!targetLayoutModule.modules) {
+        targetLayoutModule.modules = [];
+      }
+      const targetIndex =
+        target.childIndex !== undefined ? target.childIndex : targetLayoutModule.modules.length;
       targetLayoutModule.modules.splice(targetIndex, 0, sourceModule);
+    } else if (target.type === 'nested-child-target') {
+      // Moving to a different nested layout (different parent or different nested layout)
+      const targetParentLayout =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      const targetNestedLayout = targetParentLayout.modules[target.layoutChildIndex];
+      if (!targetNestedLayout.modules) {
+        targetNestedLayout.modules = [];
+      }
+      const targetIndex =
+        target.childIndex !== undefined ? target.childIndex : targetNestedLayout.modules.length;
+      targetNestedLayout.modules.splice(targetIndex, 0, sourceModule);
     }
-    // Note: We could add more target types here for moving to nested layouts, etc.
   }
 
   private _moveDeepNestedChild(layout: any, source: any, target: any): void {
@@ -5225,7 +7262,8 @@ export class LayoutTab extends LitElement {
     if (target.type === 'module' || target.type === 'column') {
       // Moving to a regular column
       const targetColumn = layout.rows[target.rowIndex].columns[target.columnIndex];
-      const targetIndex = target.moduleIndex !== undefined ? target.moduleIndex : targetColumn.modules.length;
+      const targetIndex =
+        target.moduleIndex !== undefined ? target.moduleIndex : targetColumn.modules.length;
       targetColumn.modules.splice(targetIndex, 0, sourceModule);
     } else if (target.type === 'layout') {
       // Moving to a layout module (1st level)
@@ -5242,7 +7280,8 @@ export class LayoutTab extends LitElement {
       if (!targetLayoutModule.modules) {
         targetLayoutModule.modules = [];
       }
-      const targetIndex = target.childIndex !== undefined ? target.childIndex : targetLayoutModule.modules.length;
+      const targetIndex =
+        target.childIndex !== undefined ? target.childIndex : targetLayoutModule.modules.length;
       targetLayoutModule.modules.splice(targetIndex, 0, sourceModule);
     }
   }
@@ -5254,10 +7293,12 @@ export class LayoutTab extends LitElement {
     // Get the source tabs module
     let sourceTabsModule: any;
     if (source.isNested && source.parentLayoutChildIndex !== undefined) {
-      const parentLayout = layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
+      const parentLayout =
+        layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
       sourceTabsModule = parentLayout.modules[source.parentLayoutChildIndex];
     } else {
-      sourceTabsModule = layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
+      sourceTabsModule =
+        layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
     }
 
     // Get the module from the tabs section
@@ -5266,13 +7307,17 @@ export class LayoutTab extends LitElement {
     }
 
     // Extract the module
-    const sourceModule = sourceTabsModule.sections[source.sectionIndex].modules.splice(source.childIndex, 1)[0];
+    const sourceModule = sourceTabsModule.sections[source.sectionIndex].modules.splice(
+      source.childIndex,
+      1
+    )[0];
 
     // Add to target based on target type
     if (target.type === 'module' || target.type === 'column') {
       // Moving to a regular column
       const targetColumn = layout.rows[target.rowIndex].columns[target.columnIndex];
-      const targetIndex = target.moduleIndex !== undefined ? target.moduleIndex : targetColumn.modules.length;
+      const targetIndex =
+        target.moduleIndex !== undefined ? target.moduleIndex : targetColumn.modules.length;
       targetColumn.modules.splice(targetIndex, 0, sourceModule);
     } else if (target.type === 'layout') {
       // Moving to a layout module (horizontal, vertical, etc.)
@@ -5289,7 +7334,8 @@ export class LayoutTab extends LitElement {
       if (!targetLayoutModule.modules) {
         targetLayoutModule.modules = [];
       }
-      const targetIndex = target.childIndex !== undefined ? target.childIndex : targetLayoutModule.modules.length;
+      const targetIndex =
+        target.childIndex !== undefined ? target.childIndex : targetLayoutModule.modules.length;
       targetLayoutModule.modules.splice(targetIndex, 0, sourceModule);
     }
   }
@@ -5451,7 +7497,10 @@ export class LayoutTab extends LitElement {
           class="preview-content"
           style="display: ${this._isCurrentModulePreviewCollapsed() ? 'none' : 'block'};"
         >
-          <div class="preview-breakpoint-container ${this._previewBreakpoint}" style="${this._getPreviewBreakpointStyle()}">
+          <div
+            class="preview-breakpoint-container ${this._previewBreakpoint}"
+            style="${this._getPreviewBreakpointStyle()}"
+          >
             ${previewContent}
           </div>
         </div>
@@ -5466,19 +7515,21 @@ export class LayoutTab extends LitElement {
   private _handlePreviewBreakpointChange(e: CustomEvent): void {
     const { breakpoint, width } = e.detail;
     this._previewBreakpoint = breakpoint;
-    
+
     // Update the module preview service so it applies breakpoint-specific design properties
     ucModulePreviewService.setPreviewBreakpoint(breakpoint);
-    
+
     // Trigger re-render to update all preview areas with new breakpoint styles
     this.requestUpdate();
-    
+
     // Dispatch event for parent editor
-    this.dispatchEvent(new CustomEvent('preview-breakpoint-changed', {
-      detail: { breakpoint, width },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent('preview-breakpoint-changed', {
+        detail: { breakpoint, width },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   /**
@@ -5498,14 +7549,14 @@ export class LayoutTab extends LitElement {
    */
   private _getEffectiveDesign(design: any): any {
     if (!design) return {};
-    
+
     // Get effective design for the current preview breakpoint
     // This merges base + device-specific properties correctly for all breakpoints
     const effectiveDesign = responsiveDesignService.getEffectiveDesign(
       design,
       this._previewBreakpoint
     );
-    
+
     // For backward compatibility, merge with original design but let effective design win
     // This ensures top-level properties are available while breakpoint-specific values take precedence
     return { ...design, ...effectiveDesign };
@@ -5652,7 +7703,14 @@ export class LayoutTab extends LitElement {
 
     // For tabs, render with sections
     if (isTabs) {
-      return this._renderTabsLayoutModule(layoutModule, rowIndex, columnIndex, moduleIndex, metadata, layoutTitle);
+      return this._renderTabsLayoutModule(
+        layoutModule,
+        rowIndex,
+        columnIndex,
+        moduleIndex,
+        metadata,
+        layoutTitle
+      );
     }
 
     return html`
@@ -5670,7 +7728,7 @@ export class LayoutTab extends LitElement {
               <ha-icon icon="mdi:drag"></ha-icon>
             </div>
             <ha-icon icon="${metadata?.icon || 'mdi:view-sequential'}"></ha-icon>
-            <span>${layoutTitle}</span>
+            <span>${layoutTitle} (${layoutModule.modules?.length || 0})</span>
           </div>
           <div class="layout-module-actions">
             ${rowIndex !== undefined && columnIndex !== undefined && moduleIndex !== undefined
@@ -5768,8 +7826,7 @@ export class LayoutTab extends LitElement {
           style="
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            padding: 8px 12px;
+            gap: 0.5rem;
             min-height: 60px;
             box-sizing: border-box;
             overflow: visible;
@@ -5943,16 +8000,28 @@ export class LayoutTab extends LitElement {
     const moduleInfo = this._generateModuleInfo(childModule);
     const moduleTitle = this._getModuleDisplayName(childModule);
 
-    // Check if this is a page break module - give it special styling
+    // Check if this is a page break module - give it special styling with visible background
     const isPageBreak = childModule.type === 'pagebreak';
     const pageBreakStyle = isPageBreak
-      ? 'background: rgba(var(--rgb-primary-color), 0.08); border-left: 3px solid rgba(var(--rgb-primary-color), 0.3);'
+      ? 'background: var(--secondary-background-color, rgba(var(--rgb-primary-color), 0.15)); border: 1px dashed var(--primary-color, #03a9f4); border-left: 4px solid var(--primary-color, #03a9f4);'
       : '';
 
     return html`
       <div
         class="layout-child-simplified-module ${isPageBreak ? 'pagebreak-module' : ''}"
         style="${pageBreakStyle}"
+        @pointerdown=${(e: PointerEvent) => {
+          const path = e.composedPath();
+          const isHandle = path.some(
+            el => el instanceof HTMLElement && el.classList.contains('layout-child-drag-handle')
+          );
+          if (!isHandle) {
+            e.preventDefault();
+          }
+        }}
+        @dragstart=${(e: DragEvent) => {
+          e.preventDefault();
+        }}
         @click=${(e: Event) => {
           // Only open settings if not clicking on action buttons or drag handle
           const target = e.target as HTMLElement;
@@ -5980,7 +8049,25 @@ export class LayoutTab extends LitElement {
         <div class="layout-child-module-header">
           <div
             class="layout-child-drag-handle"
+            draggable="true"
             title="${localize('editor.layout.drag_to_reorder', lang, 'Drag to reorder')}"
+            @mousedown=${(e: MouseEvent) => {
+              e.stopPropagation();
+              this._intendedDragTarget = e.currentTarget as HTMLElement;
+            }}
+            @dragstart=${(e: DragEvent) => {
+              this._onLayoutChildDragStart(
+                e,
+                parentRowIndex,
+                parentColumnIndex,
+                parentModuleIndex,
+                childIndex
+              );
+            }}
+            @dragend=${(e: DragEvent) => {
+              this._intendedDragTarget = null;
+              this._onLayoutChildDragEnd(e);
+            }}
           >
             <ha-icon icon="mdi:drag"></ha-icon>
           </div>
@@ -6016,48 +8103,48 @@ export class LayoutTab extends LitElement {
                   >
                     <ha-icon icon="mdi:pencil"></ha-icon>
                   </button>
-                  <button
-                    class="layout-child-action-btn duplicate-btn"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._duplicateLayoutChildModule(
-                        parentRowIndex,
-                        parentColumnIndex,
-                        parentModuleIndex,
-                        childIndex
-                      );
-                    }}
-                    @mousedown=${(e: Event) => e.stopPropagation()}
-                    @dragstart=${(e: Event) => e.preventDefault()}
-                    title="${localize(
-                      'editor.layout.duplicate_child_module',
-                      lang,
-                      'Duplicate Child Module'
-                    )}"
-                  >
-                    <ha-icon icon="mdi:content-copy"></ha-icon>
-                  </button>
-                  <button
-                    class="layout-child-action-btn copy-btn"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._copyLayoutChildModule(
-                        parentRowIndex,
-                        parentColumnIndex,
-                        parentModuleIndex,
-                        childIndex
-                      );
-                    }}
-                    @mousedown=${(e: Event) => e.stopPropagation()}
-                    @dragstart=${(e: Event) => e.preventDefault()}
-                    title="${localize(
-                      'editor.layout.copy_module',
-                      lang,
-                      'Copy Module'
-                    )}"
-                  >
-                    <ha-icon icon="mdi:clipboard-arrow-up"></ha-icon>
-                  </button>
+                  ${!isPageBreak
+                    ? html`
+                        <button
+                          class="layout-child-action-btn duplicate-btn"
+                          @click=${(e: Event) => {
+                            e.stopPropagation();
+                            this._duplicateLayoutChildModule(
+                              parentRowIndex,
+                              parentColumnIndex,
+                              parentModuleIndex,
+                              childIndex
+                            );
+                          }}
+                          @mousedown=${(e: Event) => e.stopPropagation()}
+                          @dragstart=${(e: Event) => e.preventDefault()}
+                          title="${localize(
+                            'editor.layout.duplicate_child_module',
+                            lang,
+                            'Duplicate Child Module'
+                          )}"
+                        >
+                          <ha-icon icon="mdi:content-copy"></ha-icon>
+                        </button>
+                        <button
+                          class="layout-child-action-btn copy-btn"
+                          @click=${(e: Event) => {
+                            e.stopPropagation();
+                            this._copyLayoutChildModule(
+                              parentRowIndex,
+                              parentColumnIndex,
+                              parentModuleIndex,
+                              childIndex
+                            );
+                          }}
+                          @mousedown=${(e: Event) => e.stopPropagation()}
+                          @dragstart=${(e: Event) => e.preventDefault()}
+                          title="${localize('editor.layout.copy_module', lang, 'Copy Module')}"
+                        >
+                          <ha-icon icon="mdi:clipboard-arrow-up"></ha-icon>
+                        </button>
+                      `
+                    : ''}
                   <button
                     class="layout-child-action-btn delete-btn"
                     @click=${(e: Event) => {
@@ -6130,45 +8217,53 @@ export class LayoutTab extends LitElement {
 
     // For tabs, render with sections (nested context)
     if (isTabs) {
-      return this._renderNestedTabsLayoutModule(nestedLayout, parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex, metadata, layoutTitle);
+      return this._renderNestedTabsLayoutModule(
+        nestedLayout,
+        parentRowIndex,
+        parentColumnIndex,
+        parentModuleIndex,
+        childIndex,
+        metadata,
+        layoutTitle
+      );
     }
 
     return html`
-      <div 
-        class="nested-layout-module-container layout-module-container"
-        draggable="true"
-        @mousedown=${(e: MouseEvent) => {
-          // Set the intended drag target BEFORE dragstart fires
-          // This allows parent handlers to know a nested element wants to be dragged
-          this._intendedDragTarget = e.currentTarget as HTMLElement;
-        }}
-        @dragstart=${(e: DragEvent) =>
-          this._onLayoutChildDragStart(
-            e,
-            parentRowIndex,
-            parentColumnIndex,
-            parentModuleIndex,
-            childIndex
-          )}
-        @dragend=${(e: DragEvent) => {
-          this._intendedDragTarget = null;
-          this._onLayoutChildDragEnd(e);
-        }}
-      >
+      <div class="nested-layout-module-container layout-module-container">
         <div class="nested-layout-module-header layout-module-header">
           <div class="nested-layout-module-title layout-module-title">
             <div
               class="nested-layout-drag-handle layout-module-drag-handle"
+              draggable="true"
               title="${localize(
                 'editor.layout.drag_to_move_nested_layout',
                 lang,
                 'Drag to move nested layout module'
               )}"
+              @mousedown=${(e: MouseEvent) => {
+                e.stopPropagation();
+                // Set the intended drag target BEFORE dragstart fires
+                this._intendedDragTarget = e.currentTarget as HTMLElement;
+              }}
+              @dragstart=${(e: DragEvent) => {
+                e.stopPropagation();
+                this._onLayoutChildDragStart(
+                  e,
+                  parentRowIndex,
+                  parentColumnIndex,
+                  parentModuleIndex,
+                  childIndex
+                );
+              }}
+              @dragend=${(e: DragEvent) => {
+                this._intendedDragTarget = null;
+                this._onLayoutChildDragEnd(e);
+              }}
             >
               <ha-icon icon="mdi:drag"></ha-icon>
             </div>
             <ha-icon icon="${metadata.icon}"></ha-icon>
-            <span>${layoutTitle}</span>
+            <span>${layoutTitle} (${nestedLayout.modules?.length || 0})</span>
           </div>
           <div class="nested-layout-module-actions layout-module-actions">
             ${parentRowIndex !== undefined &&
@@ -6294,8 +8389,7 @@ export class LayoutTab extends LitElement {
           style="
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            padding: 8px 12px;
+            gap: 0.5rem;
             min-height: 60px;
             box-sizing: border-box;
             overflow: visible;
@@ -6390,14 +8484,22 @@ export class LayoutTab extends LitElement {
 
               // Get the source module
               let sourceModule;
-              if (this._draggedItem.type === 'deep-nested-child' && this._draggedItem.deepNestedChildIndex !== undefined) {
+              if (
+                this._draggedItem.type === 'deep-nested-child' &&
+                this._draggedItem.deepNestedChildIndex !== undefined
+              ) {
                 // From deep nested layout child (4th level - e.g., icon inside popup inside horizontal inside slider)
-                const sourceTopLayout =
-                  newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex]
-                    .modules[this._draggedItem.moduleIndex] as any;
-                const sourceNestedLayout = sourceTopLayout.modules[this._draggedItem.layoutChildIndex!] as any;
-                const sourceDeepNestedLayout = sourceNestedLayout.modules[this._draggedItem.nestedChildIndex!] as any;
-                sourceModule = sourceDeepNestedLayout.modules[this._draggedItem.deepNestedChildIndex];
+                const sourceTopLayout = newLayout.rows[this._draggedItem.rowIndex].columns[
+                  this._draggedItem.columnIndex
+                ].modules[this._draggedItem.moduleIndex] as any;
+                const sourceNestedLayout = sourceTopLayout.modules[
+                  this._draggedItem.layoutChildIndex!
+                ] as any;
+                const sourceDeepNestedLayout = sourceNestedLayout.modules[
+                  this._draggedItem.nestedChildIndex!
+                ] as any;
+                sourceModule =
+                  sourceDeepNestedLayout.modules[this._draggedItem.deepNestedChildIndex];
                 // Remove from source deep nested layout
                 sourceDeepNestedLayout.modules.splice(this._draggedItem.deepNestedChildIndex, 1);
               } else if (this._draggedItem.nestedChildIndex !== undefined) {
@@ -6407,8 +8509,7 @@ export class LayoutTab extends LitElement {
                     .modules[this._draggedItem.moduleIndex];
                 const sourceNestedLayout =
                   sourceParentLayout.modules[this._draggedItem.layoutChildIndex!];
-                sourceModule =
-                  sourceNestedLayout.modules[this._draggedItem.nestedChildIndex];
+                sourceModule = sourceNestedLayout.modules[this._draggedItem.nestedChildIndex];
                 // Remove from source nested layout
                 sourceNestedLayout.modules.splice(this._draggedItem.nestedChildIndex, 1);
               } else if (this._draggedItem.layoutChildIndex !== undefined) {
@@ -6571,43 +8672,43 @@ export class LayoutTab extends LitElement {
     }
 
     return html`
-      <div 
-        class="nested-layout-module-container layout-module-container deep-nested-layout-module"
-        draggable="true"
-        @mousedown=${(e: MouseEvent) => {
-          // Set the intended drag target BEFORE dragstart fires
-          // This allows parent handlers to know a nested element wants to be dragged
-          this._intendedDragTarget = e.currentTarget as HTMLElement;
-        }}
-        @dragstart=${(e: DragEvent) =>
-          this._onDeepNestedLayoutDragStart(
-            e,
-            layoutModule,
-            parentRowIndex,
-            parentColumnIndex,
-            parentModuleIndex,
-            nestedLayoutIndex,
-            deepNestedIndex
-          )}
-        @dragend=${(e: DragEvent) => {
-          this._intendedDragTarget = null;
-          this._onLayoutChildDragEnd(e);
-        }}
-      >
+      <div class="nested-layout-module-container layout-module-container deep-nested-layout-module">
         <div class="nested-layout-module-header layout-module-header">
           <div class="nested-layout-module-title layout-module-title">
             <div
               class="nested-layout-drag-handle layout-module-drag-handle deep-nested-drag-handle"
+              draggable="true"
               title="${localize(
                 'editor.layout.drag_to_move_nested_layout',
                 lang,
                 'Drag to move deep nested layout module'
               )}"
+              @mousedown=${(e: MouseEvent) => {
+                e.stopPropagation();
+                // Set the intended drag target BEFORE dragstart fires
+                this._intendedDragTarget = e.currentTarget as HTMLElement;
+              }}
+              @dragstart=${(e: DragEvent) => {
+                e.stopPropagation();
+                this._onDeepNestedLayoutDragStart(
+                  e,
+                  layoutModule,
+                  parentRowIndex,
+                  parentColumnIndex,
+                  parentModuleIndex,
+                  nestedLayoutIndex,
+                  deepNestedIndex
+                );
+              }}
+              @dragend=${(e: DragEvent) => {
+                this._intendedDragTarget = null;
+                this._onLayoutChildDragEnd(e);
+              }}
             >
               <ha-icon icon="mdi:drag"></ha-icon>
             </div>
             <ha-icon icon="${metadata.icon}"></ha-icon>
-            <span>${layoutTitle}</span>
+            <span>${layoutTitle} (${deepNestedLayout.modules?.length || 0})</span>
           </div>
           <div class="nested-layout-module-actions layout-module-actions">
             ${parentRowIndex !== undefined &&
@@ -6691,8 +8792,7 @@ export class LayoutTab extends LitElement {
           style="
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            padding: 8px 12px;
+            gap: 0.5rem;
             min-height: 60px;
             box-sizing: border-box;
             overflow: visible;
@@ -6836,10 +8936,21 @@ export class LayoutTab extends LitElement {
         class="layout-child-simplified-module deep-nested-child-module"
         draggable="true"
         @mousedown=${(e: MouseEvent) => {
+          // Don't initiate drag if clicking on action buttons
+          const target = e.target as HTMLElement;
+          if (target.closest('.layout-child-actions')) {
+            return;
+          }
           // Set the intended drag target BEFORE dragstart fires
           this._intendedDragTarget = e.currentTarget as HTMLElement;
         }}
-        @dragstart=${(e: DragEvent) =>
+        @dragstart=${(e: DragEvent) => {
+          // Prevent drag if clicking on action buttons
+          const target = e.target as HTMLElement;
+          if (target.closest('.layout-child-actions')) {
+            e.preventDefault();
+            return;
+          }
           this._onDeepNestedChildDragStart(
             e,
             childModule,
@@ -6849,7 +8960,8 @@ export class LayoutTab extends LitElement {
             nestedLayoutIndex,
             deepNestedIndex,
             deepChildIndex
-          )}
+          );
+        }}
         @dragend=${(e: DragEvent) => {
           this._intendedDragTarget = null;
           this._onDeepNestedChildDragEnd(e);
@@ -6884,7 +8996,11 @@ export class LayoutTab extends LitElement {
         <div class="layout-child-module-header">
           <div
             class="layout-child-drag-handle"
-            title="${localize('editor.layout.drag_to_reorder', this.hass?.locale?.language || 'en', 'Drag to reorder')}"
+            title="${localize(
+              'editor.layout.drag_to_reorder',
+              this.hass?.locale?.language || 'en',
+              'Drag to reorder'
+            )}"
           >
             <ha-icon icon="mdi:drag"></ha-icon>
           </div>
@@ -6938,6 +9054,18 @@ export class LayoutTab extends LitElement {
                     title="${localize('editor.layout.duplicate_child_module', lang, 'Duplicate')}"
                   >
                     <ha-icon icon="mdi:content-copy"></ha-icon>
+                  </button>
+                  <button
+                    class="layout-child-action-btn copy-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._copyModuleToClipboard(childModule);
+                    }}
+                    @mousedown=${(e: Event) => e.stopPropagation()}
+                    @dragstart=${(e: Event) => e.preventDefault()}
+                    title="${localize('editor.layout.copy_module', lang, 'Copy Module')}"
+                  >
+                    <ha-icon icon="mdi:clipboard-arrow-up"></ha-icon>
                   </button>
                   <button
                     class="layout-child-action-btn delete-btn"
@@ -7292,7 +9420,11 @@ export class LayoutTab extends LitElement {
             }}
             @mousedown=${(e: Event) => e.stopPropagation()}
             @dragstart=${(e: Event) => e.preventDefault()}
-            title="${localize('editor.layout.add_module_to_section', lang, 'Add Module to Section')}"
+            title="${localize(
+              'editor.layout.add_module_to_section',
+              lang,
+              'Add Module to Section'
+            )}"
             style="
               background: var(--primary-color);
               color: white;
@@ -7325,7 +9457,7 @@ export class LayoutTab extends LitElement {
             e.preventDefault();
             e.stopPropagation();
             if (!this._draggedItem) return;
-            
+
             // Set drop target for this section
             this._dropTarget = {
               type: 'tabs-section' as any,
@@ -7379,13 +9511,74 @@ export class LayoutTab extends LitElement {
           }}
         >
           ${hasModules
-            ? sectionModules.map((childModule: any, childIndex: number) => html`
-                <div
-                  class="tabs-section-module-wrapper"
-                  draggable="true"
-                  @dragstart=${(e: DragEvent) => {
-                    this._onTabsSectionChildDragStart(
-                      e,
+            ? sectionModules.map(
+                (childModule: any, childIndex: number) => html`
+                  <div
+                    class="tabs-section-module-wrapper"
+                    draggable="true"
+                    @dragstart=${(e: DragEvent) => {
+                      this._onTabsSectionChildDragStart(
+                        e,
+                        rowIndex,
+                        columnIndex,
+                        moduleIndex,
+                        sectionIndex,
+                        childIndex,
+                        parentLayoutChildIndex,
+                        isNested
+                      );
+                    }}
+                    @dragover=${(e: DragEvent) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!this._draggedItem) return;
+
+                      // Only show drop indicator if dragging a valid module
+                      if (e.dataTransfer) {
+                        e.dataTransfer.dropEffect = 'move';
+                      }
+
+                      // Add visual feedback
+                      const target = e.currentTarget as HTMLElement;
+                      if (target) {
+                        target.style.borderTop = '2px solid var(--primary-color)';
+                      }
+                    }}
+                    @dragleave=${(e: DragEvent) => {
+                      e.preventDefault();
+                      // Reset visual feedback
+                      const target = e.currentTarget as HTMLElement;
+                      if (target) {
+                        target.style.borderTop = '';
+                      }
+                    }}
+                    @drop=${(e: DragEvent) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+
+                      // Reset visual feedback
+                      const target = e.currentTarget as HTMLElement;
+                      if (target) {
+                        target.style.borderTop = '';
+                      }
+
+                      if (!this._draggedItem) return;
+
+                      this._handleTabsSectionChildDrop(
+                        rowIndex,
+                        columnIndex,
+                        moduleIndex,
+                        sectionIndex,
+                        childIndex,
+                        parentLayoutChildIndex,
+                        isNested
+                      );
+                    }}
+                    @dragend=${(e: DragEvent) => this._onLayoutChildDragEnd(e)}
+                    style="width: 100%; box-sizing: border-box;"
+                  >
+                    ${this._renderTabsSectionChild(
+                      childModule,
                       rowIndex,
                       columnIndex,
                       moduleIndex,
@@ -7393,69 +9586,10 @@ export class LayoutTab extends LitElement {
                       childIndex,
                       parentLayoutChildIndex,
                       isNested
-                    );
-                  }}
-                  @dragover=${(e: DragEvent) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!this._draggedItem) return;
-                    
-                    // Only show drop indicator if dragging a valid module
-                    if (e.dataTransfer) {
-                      e.dataTransfer.dropEffect = 'move';
-                    }
-                    
-                    // Add visual feedback
-                    const target = e.currentTarget as HTMLElement;
-                    if (target) {
-                      target.style.borderTop = '2px solid var(--primary-color)';
-                    }
-                  }}
-                  @dragleave=${(e: DragEvent) => {
-                    e.preventDefault();
-                    // Reset visual feedback
-                    const target = e.currentTarget as HTMLElement;
-                    if (target) {
-                      target.style.borderTop = '';
-                    }
-                  }}
-                  @drop=${(e: DragEvent) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Reset visual feedback
-                    const target = e.currentTarget as HTMLElement;
-                    if (target) {
-                      target.style.borderTop = '';
-                    }
-                    
-                    if (!this._draggedItem) return;
-                    
-                    this._handleTabsSectionChildDrop(
-                      rowIndex,
-                      columnIndex,
-                      moduleIndex,
-                      sectionIndex,
-                      childIndex,
-                      parentLayoutChildIndex,
-                      isNested
-                    );
-                  }}
-                  @dragend=${(e: DragEvent) => this._onLayoutChildDragEnd(e)}
-                  style="width: 100%; box-sizing: border-box;"
-                >
-                  ${this._renderTabsSectionChild(
-                    childModule,
-                    rowIndex,
-                    columnIndex,
-                    moduleIndex,
-                    sectionIndex,
-                    childIndex,
-                    parentLayoutChildIndex,
-                    isNested
-                  )}
-                </div>
-              `)
+                    )}
+                  </div>
+                `
+              )
             : html`
                 <div
                   class="tabs-section-empty"
@@ -7485,7 +9619,9 @@ export class LayoutTab extends LitElement {
                   "
                 >
                   <ha-icon icon="mdi:plus-circle" style="--mdc-icon-size: 20px;"></ha-icon>
-                  <span>${localize('editor.layout.drop_modules_here', lang, 'Drop modules here')}</span>
+                  <span
+                    >${localize('editor.layout.drop_modules_here', lang, 'Drop modules here')}</span
+                  >
                 </div>
               `}
         </div>
@@ -7547,7 +9683,10 @@ export class LayoutTab extends LitElement {
         class="layout-child-simplified-module"
         @click=${(e: Event) => {
           const target = e.target as HTMLElement;
-          if (!target.closest('.layout-child-actions') && !target.closest('.layout-child-drag-handle')) {
+          if (
+            !target.closest('.layout-child-actions') &&
+            !target.closest('.layout-child-drag-handle')
+          ) {
             e.stopPropagation();
             this._openTabsSectionChildSettings(
               rowIndex,
@@ -7610,7 +9749,11 @@ export class LayoutTab extends LitElement {
               }}
               @mousedown=${(e: Event) => e.stopPropagation()}
               @dragstart=${(e: Event) => e.preventDefault()}
-              title="${localize('editor.layout.duplicate_child_module', lang, 'Duplicate Child Module')}"
+              title="${localize(
+                'editor.layout.duplicate_child_module',
+                lang,
+                'Duplicate Child Module'
+              )}"
             >
               <ha-icon icon="mdi:content-copy"></ha-icon>
             </button>
@@ -7785,7 +9928,9 @@ export class LayoutTab extends LitElement {
             </div>
           </div>
           <div class="nested-layout-module-content" style="padding: 8px;">
-            <div style="color: var(--secondary-text-color); font-size: 12px; text-align: center; padding: 8px;">
+            <div
+              style="color: var(--secondary-text-color); font-size: 12px; text-align: center; padding: 8px;"
+            >
               ${sections.length} section${sections.length !== 1 ? 's' : ''} - Edit in settings
             </div>
           </div>
@@ -7890,10 +10035,7 @@ export class LayoutTab extends LitElement {
           ${hasChildren
             ? nestedModules.map(
                 (nestedChild: any, nestedChildIndex: number) => html`
-                  <div
-                    class="nested-layout-child-wrapper"
-                    style="margin-bottom: 4px;"
-                  >
+                  <div class="nested-layout-child-wrapper" style="margin-bottom: 4px;">
                     ${this._renderTabsSectionNestedLayoutChild(
                       nestedChild,
                       rowIndex,
@@ -7937,7 +10079,9 @@ export class LayoutTab extends LitElement {
                   "
                 >
                   <ha-icon icon="mdi:plus-circle" style="--mdc-icon-size: 16px;"></ha-icon>
-                  <span>${localize('editor.layout.drop_modules_here', lang, 'Drop modules here')}</span>
+                  <span
+                    >${localize('editor.layout.drop_modules_here', lang, 'Drop modules here')}</span
+                  >
                 </div>
               `}
         </div>
@@ -8001,7 +10145,10 @@ export class LayoutTab extends LitElement {
         class="layout-child-simplified-module"
         @click=${(e: Event) => {
           const target = e.target as HTMLElement;
-          if (!target.closest('.layout-child-actions') && !target.closest('.layout-child-drag-handle')) {
+          if (
+            !target.closest('.layout-child-actions') &&
+            !target.closest('.layout-child-drag-handle')
+          ) {
             e.stopPropagation();
             this._openTabsSectionNestedLayoutChildSettings(
               rowIndex,
@@ -8067,6 +10214,18 @@ export class LayoutTab extends LitElement {
               title="${localize('editor.layout.duplicate_child_module', lang, 'Duplicate')}"
             >
               <ha-icon icon="mdi:content-copy"></ha-icon>
+            </button>
+            <button
+              class="layout-child-action-btn copy-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._copyModuleToClipboard(childModule);
+              }}
+              @mousedown=${(e: Event) => e.stopPropagation()}
+              @dragstart=${(e: Event) => e.preventDefault()}
+              title="${localize('editor.layout.copy_module', lang, 'Copy Module')}"
+            >
+              <ha-icon icon="mdi:clipboard-arrow-up"></ha-icon>
             </button>
             <button
               class="layout-child-action-btn delete-btn"
@@ -8224,7 +10383,9 @@ export class LayoutTab extends LitElement {
             </div>
           </div>
           <div class="nested-layout-module-content" style="padding: 8px;">
-            <div style="color: var(--secondary-text-color); font-size: 12px; text-align: center; padding: 8px;">
+            <div
+              style="color: var(--secondary-text-color); font-size: 12px; text-align: center; padding: 8px;"
+            >
               ${sections.length} section${sections.length !== 1 ? 's' : ''} - Edit in settings
             </div>
           </div>
@@ -8333,10 +10494,7 @@ export class LayoutTab extends LitElement {
           ${hasChildren
             ? nestedModules.map(
                 (deepNestedChild: any, deepNestedChildIndex: number) => html`
-                  <div
-                    class="deeply-nested-layout-child-wrapper"
-                    style="margin-bottom: 4px;"
-                  >
+                  <div class="deeply-nested-layout-child-wrapper" style="margin-bottom: 4px;">
                     ${this._renderTabsSectionDeeplyNestedLayoutChild(
                       deepNestedChild,
                       rowIndex,
@@ -8382,7 +10540,9 @@ export class LayoutTab extends LitElement {
                   "
                 >
                   <ha-icon icon="mdi:plus-circle" style="--mdc-icon-size: 16px;"></ha-icon>
-                  <span>${localize('editor.layout.drop_modules_here', lang, 'Drop modules here')}</span>
+                  <span
+                    >${localize('editor.layout.drop_modules_here', lang, 'Drop modules here')}</span
+                  >
                 </div>
               `}
         </div>
@@ -8423,7 +10583,10 @@ export class LayoutTab extends LitElement {
         class="layout-child-simplified-module"
         @click=${(e: Event) => {
           const target = e.target as HTMLElement;
-          if (!target.closest('.layout-child-actions') && !target.closest('.layout-child-drag-handle')) {
+          if (
+            !target.closest('.layout-child-actions') &&
+            !target.closest('.layout-child-drag-handle')
+          ) {
             e.stopPropagation();
             this._openTabsSectionDeeplyNestedLayoutChildSettings(
               rowIndex,
@@ -8492,6 +10655,18 @@ export class LayoutTab extends LitElement {
               title="${localize('editor.layout.duplicate_child_module', lang, 'Duplicate')}"
             >
               <ha-icon icon="mdi:content-copy"></ha-icon>
+            </button>
+            <button
+              class="layout-child-action-btn copy-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._copyModuleToClipboard(childModule);
+              }}
+              @mousedown=${(e: Event) => e.stopPropagation()}
+              @dragstart=${(e: Event) => e.preventDefault()}
+              title="${localize('editor.layout.copy_module', lang, 'Copy Module')}"
+            >
+              <ha-icon icon="mdi:clipboard-arrow-up"></ha-icon>
             </button>
             <button
               class="layout-child-action-btn delete-btn"
@@ -8637,7 +10812,9 @@ export class LayoutTab extends LitElement {
 
     let tabsModule: any;
     if (isNested && parentLayoutChildIndex !== undefined) {
-      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex] as any;
+      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[
+        moduleIndex
+      ] as any;
       if (!parentLayout?.modules) return;
       tabsModule = parentLayout.modules[parentLayoutChildIndex];
     } else {
@@ -8690,7 +10867,9 @@ export class LayoutTab extends LitElement {
 
     let tabsModule: any;
     if (isNested && parentLayoutChildIndex !== undefined) {
-      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex] as any;
+      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[
+        moduleIndex
+      ] as any;
       if (!parentLayout?.modules) return;
       tabsModule = parentLayout.modules[parentLayoutChildIndex];
     } else {
@@ -8778,14 +10957,8 @@ export class LayoutTab extends LitElement {
   private _addModuleToTabsSection(moduleType: string): void {
     if (!this._tabsSectionContext) return;
 
-    const {
-      rowIndex,
-      columnIndex,
-      moduleIndex,
-      sectionIndex,
-      parentLayoutChildIndex,
-      isNested,
-    } = this._tabsSectionContext;
+    const { rowIndex, columnIndex, moduleIndex, sectionIndex, parentLayoutChildIndex, isNested } =
+      this._tabsSectionContext;
 
     if (
       rowIndex === undefined ||
@@ -8881,7 +11054,9 @@ export class LayoutTab extends LitElement {
     // Get the tabs module
     let tabsModule: any;
     if (isNested && parentLayoutChildIndex !== undefined) {
-      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex] as any;
+      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[
+        moduleIndex
+      ] as any;
       if (!parentLayout?.modules) return;
       tabsModule = parentLayout.modules[parentLayoutChildIndex];
     } else {
@@ -8903,7 +11078,6 @@ export class LayoutTab extends LitElement {
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(moduleType);
     if (!moduleHandler) {
-      console.error(`Unknown module type: ${moduleType}`);
       return;
     }
 
@@ -9321,7 +11495,8 @@ export class LayoutTab extends LitElement {
       columnIndex === undefined ||
       moduleIndex === undefined ||
       sectionIndex === undefined ||
-      (childIndex === undefined && (layoutChildIndex === undefined || nestedChildIndex === undefined))
+      (childIndex === undefined &&
+        (layoutChildIndex === undefined || nestedChildIndex === undefined))
     ) {
       return;
     }
@@ -9340,7 +11515,11 @@ export class LayoutTab extends LitElement {
 
     // Handle direct children, nested layout children, and deeply nested layout children
     let targetModule: any;
-    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined && deepNestedChildIndex !== undefined) {
+    if (
+      layoutChildIndex !== undefined &&
+      nestedChildIndex !== undefined &&
+      deepNestedChildIndex !== undefined
+    ) {
       // Deeply nested layout child (3 levels deep)
       const section = tabsModule?.sections?.[sectionIndex];
       const layoutModule = section?.modules?.[layoutChildIndex];
@@ -9373,7 +11552,6 @@ export class LayoutTab extends LitElement {
     this._updateLayout(newLayout);
   }
 
-
   /**
    * Copies a child module from a tabs section to clipboard
    */
@@ -9387,7 +11565,7 @@ export class LayoutTab extends LitElement {
     isNested: boolean = false
   ): void {
     const lang = this.hass?.locale?.language || 'en';
-    
+
     if (
       rowIndex === undefined ||
       columnIndex === undefined ||
@@ -9395,7 +11573,10 @@ export class LayoutTab extends LitElement {
       sectionIndex === undefined ||
       childIndex === undefined
     ) {
-      this._showToast(localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'), 'error');
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
       return;
     }
 
@@ -9411,7 +11592,10 @@ export class LayoutTab extends LitElement {
     }
 
     if (!tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex]) {
-      this._showToast(localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'), 'error');
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
       return;
     }
 
@@ -9420,10 +11604,15 @@ export class LayoutTab extends LitElement {
     try {
       ucExportImportService.copyModuleToLocalStorage(childModule);
       this._hasModuleClipboard = true;
-      this._showToast(localize('editor.layout.module_copied', lang, 'Module copied to clipboard'), 'success');
+      this._showToast(
+        localize('editor.layout.module_copied', lang, 'Module copied to clipboard'),
+        'success'
+      );
     } catch (error) {
-      console.error('Failed to copy tabs section child:', error);
-      this._showToast(localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'), 'error');
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
     }
   }
 
@@ -9442,7 +11631,7 @@ export class LayoutTab extends LitElement {
   ): void {
     // CRITICAL: Stop propagation to prevent parent module drag handlers from firing
     e.stopPropagation();
-    
+
     if (
       rowIndex === undefined ||
       columnIndex === undefined ||
@@ -9505,7 +11694,7 @@ export class LayoutTab extends LitElement {
   ): void {
     // Set flag immediately to prevent section handler from also processing
     this._tabsSectionDropHandled = true;
-    
+
     if (!this._draggedItem) {
       this._tabsSectionDropHandled = false;
       return;
@@ -9559,7 +11748,7 @@ export class LayoutTab extends LitElement {
 
       if (isSameTabsModule) {
         const sourceChildIndex = draggedItem.childIndex;
-        
+
         // Don't do anything if dropping on itself
         if (sourceChildIndex === targetChildIndex) {
           this._draggedItem = null;
@@ -9570,7 +11759,7 @@ export class LayoutTab extends LitElement {
 
         // Reorder within the same section
         const modules = targetTabsModule.sections[sectionIndex].modules;
-        
+
         const [movedModule] = modules.splice(sourceChildIndex, 1);
 
         // Calculate new insertion index - INSERT BEFORE the target module
@@ -9667,7 +11856,7 @@ export class LayoutTab extends LitElement {
       this._tabsSectionDropHandled = false;
       return;
     }
-    
+
     if (!this._draggedItem) {
       return;
     }
@@ -9830,142 +12019,166 @@ export class LayoutTab extends LitElement {
     const moduleInfo = this._generateModuleInfo(childModule);
     const moduleTitle = this._getModuleDisplayName(childModule);
 
+    // Use compact 2-row layout for deeply nested modules
+    // Separate click handling: row1 opens settings, row2 handles actions independently
     return html`
       <div
-        class="layout-child-simplified-module"
-        draggable="true"
-        @mousedown=${(e: MouseEvent) => {
-          // Set the intended drag target BEFORE dragstart fires
-          this._intendedDragTarget = e.currentTarget as HTMLElement;
+        class="layout-child-simplified-module layout-child-compact"
+        @pointerdown=${(e: PointerEvent) => {
+          const path = e.composedPath();
+          const isHandle = path.some(
+            el => el instanceof HTMLElement && el.classList.contains('layout-child-drag-handle')
+          );
+          if (!isHandle) {
+            e.preventDefault();
+          }
         }}
-        @dragstart=${(e: DragEvent) =>
-          this._onNestedChildDragStart(
-            e,
-            childModule,
-            parentRowIndex,
-            parentColumnIndex,
-            parentModuleIndex,
-            nestedLayoutIndex,
-            nestedChildIndex
-          )}
-        @dragend=${(e: DragEvent) => {
-          this._intendedDragTarget = null;
-          this._onNestedChildDragEnd(e);
+        @dragstart=${(e: DragEvent) => {
+          e.preventDefault();
         }}
-        @click=${(e: Event) => {
-          // Only open settings if not clicking on action buttons or drag handle
-          const target = e.target as HTMLElement;
-          if (
-            !target.closest('.layout-child-actions') &&
-            !target.closest('.layout-child-drag-handle')
-          ) {
-            e.stopPropagation();
-            if (
-              parentRowIndex !== undefined &&
-              parentColumnIndex !== undefined &&
-              parentModuleIndex !== undefined &&
-              nestedLayoutIndex !== undefined &&
-              nestedChildIndex !== undefined
-            ) {
-              this._openNestedChildSettings(
+      >
+        <!-- Compact 2-column layout: drag handle | content -->
+        <div class="layout-child-compact-wrapper">
+          <div
+            class="layout-child-drag-handle"
+            draggable="true"
+            title="${localize('editor.layout.drag_to_reorder', lang, 'Drag to reorder')}"
+            @mousedown=${(e: MouseEvent) => {
+              e.stopPropagation();
+              this._intendedDragTarget = e.currentTarget as HTMLElement;
+            }}
+            @dragstart=${(e: DragEvent) => {
+              this._onNestedChildDragStart(
+                e,
+                childModule,
                 parentRowIndex,
                 parentColumnIndex,
                 parentModuleIndex,
                 nestedLayoutIndex,
                 nestedChildIndex
               );
-            }
-          }
-        }}
-      >
-        <div class="layout-child-module-header">
-          <div
-            class="layout-child-drag-handle"
-            title="${localize('editor.layout.drag_to_reorder', lang, 'Drag to reorder')}"
+            }}
+            @dragend=${(e: DragEvent) => {
+              this._intendedDragTarget = null;
+              this._onNestedChildDragEnd(e);
+            }}
           >
             <ha-icon icon="mdi:drag"></ha-icon>
           </div>
-          <ha-icon icon="${metadata.icon}" class="layout-child-icon"></ha-icon>
-          <div class="layout-child-content">
-            <div class="layout-child-title">${moduleTitle}</div>
-            <div class="layout-child-info">${moduleInfo}</div>
-          </div>
-          ${parentRowIndex !== undefined &&
-          parentColumnIndex !== undefined &&
-          parentModuleIndex !== undefined &&
-          nestedLayoutIndex !== undefined &&
-          nestedChildIndex !== undefined
-            ? html`
-                <div class="layout-child-actions">
-                  <button
-                    class="layout-child-action-btn edit-btn"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._openNestedChildSettings(
-                        parentRowIndex,
-                        parentColumnIndex,
-                        parentModuleIndex,
-                        nestedLayoutIndex,
-                        nestedChildIndex
-                      );
-                    }}
-                    @mousedown=${(e: Event) => e.stopPropagation()}
-                    @dragstart=${(e: Event) => e.preventDefault()}
-                    title="${localize(
-                      'editor.layout.edit_nested_child_module',
-                      lang,
-                      'Edit Nested Child Module'
-                    )}"
-                  >
-                    <ha-icon icon="mdi:pencil"></ha-icon>
-                  </button>
-                  <button
-                    class="layout-child-action-btn duplicate-btn"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._duplicateNestedChildModule(
-                        parentRowIndex,
-                        parentColumnIndex,
-                        parentModuleIndex,
-                        nestedLayoutIndex,
-                        nestedChildIndex
-                      );
-                    }}
-                    @mousedown=${(e: Event) => e.stopPropagation()}
-                    @dragstart=${(e: Event) => e.preventDefault()}
-                    title="${localize(
-                      'editor.layout.duplicate_nested_child_module',
-                      lang,
-                      'Duplicate Nested Child Module'
-                    )}"
-                  >
-                    <ha-icon icon="mdi:content-copy"></ha-icon>
-                  </button>
-                  <button
-                    class="layout-child-action-btn delete-btn"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._deleteNestedChildModule(
-                        parentRowIndex,
-                        parentColumnIndex,
-                        parentModuleIndex,
-                        nestedLayoutIndex,
-                        nestedChildIndex
-                      );
-                    }}
-                    @mousedown=${(e: Event) => e.stopPropagation()}
-                    @dragstart=${(e: Event) => e.preventDefault()}
-                    title="${localize(
-                      'editor.layout.delete_nested_child_module',
-                      lang,
-                      'Delete Nested Child Module'
-                    )}"
-                  >
-                    <ha-icon icon="mdi:delete"></ha-icon>
-                  </button>
+          <div class="layout-child-compact-content">
+            <!-- Row 1: Icon + Title + Entity Info - CLICK HERE TO OPEN SETTINGS -->
+            <div class="layout-child-compact-row1">
+              <div class="layout-child-compact-row1-content">
+                <ha-icon icon="${metadata.icon}" class="layout-child-icon"></ha-icon>
+                <div class="layout-child-content">
+                  <div class="layout-child-title">${moduleTitle}</div>
+                  <div class="layout-child-info">${moduleInfo}</div>
                 </div>
-              `
-            : ''}
+              </div>
+            </div>
+            <!-- Row 2: Action Buttons - SEPARATE CLICK ZONE -->
+            ${parentRowIndex !== undefined &&
+            parentColumnIndex !== undefined &&
+            parentModuleIndex !== undefined &&
+            nestedLayoutIndex !== undefined &&
+            nestedChildIndex !== undefined
+              ? html`
+                  <div
+                    class="layout-child-actions layout-child-compact-actions"
+                    @pointerdown=${(e: PointerEvent) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    <button
+                      class="layout-child-action-btn edit-btn"
+                      type="button"
+                      @pointerdown=${(e: PointerEvent) => {
+                        e.stopPropagation();
+                      }}
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._openNestedChildSettings(
+                          parentRowIndex,
+                          parentColumnIndex,
+                          parentModuleIndex,
+                          nestedLayoutIndex,
+                          nestedChildIndex
+                        );
+                      }}
+                      title="${localize(
+                        'editor.layout.edit_nested_child_module',
+                        lang,
+                        'Edit Nested Child Module'
+                      )}"
+                    >
+                      <ha-icon icon="mdi:pencil"></ha-icon>
+                    </button>
+                    <button
+                      class="layout-child-action-btn duplicate-btn"
+                      type="button"
+                      @pointerdown=${(e: PointerEvent) => {
+                        e.stopPropagation();
+                      }}
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._duplicateNestedChildModule(
+                          parentRowIndex,
+                          parentColumnIndex,
+                          parentModuleIndex,
+                          nestedLayoutIndex,
+                          nestedChildIndex
+                        );
+                      }}
+                      title="${localize(
+                        'editor.layout.duplicate_nested_child_module',
+                        lang,
+                        'Duplicate Nested Child Module'
+                      )}"
+                    >
+                      <ha-icon icon="mdi:content-copy"></ha-icon>
+                    </button>
+                    <button
+                      class="layout-child-action-btn copy-btn"
+                      type="button"
+                      @pointerdown=${(e: PointerEvent) => {
+                        e.stopPropagation();
+                      }}
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._copyModuleToClipboard(childModule);
+                      }}
+                      title="${localize('editor.layout.copy_module', lang, 'Copy Module')}"
+                    >
+                      <ha-icon icon="mdi:clipboard-arrow-up"></ha-icon>
+                    </button>
+                    <button
+                      class="layout-child-action-btn delete-btn"
+                      type="button"
+                      @pointerdown=${(e: PointerEvent) => {
+                        e.stopPropagation();
+                      }}
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._deleteNestedChildModule(
+                          parentRowIndex,
+                          parentColumnIndex,
+                          parentModuleIndex,
+                          nestedLayoutIndex,
+                          nestedChildIndex
+                        );
+                      }}
+                      title="${localize(
+                        'editor.layout.delete_nested_child_module',
+                        lang,
+                        'Delete Nested Child Module'
+                      )}"
+                    >
+                      <ha-icon icon="mdi:delete"></ha-icon>
+                    </button>
+                  </div>
+                `
+              : ''}
+          </div>
         </div>
       </div>
     `;
@@ -10150,7 +12363,11 @@ export class LayoutTab extends LitElement {
 
     // CRITICAL FIX #2: Check if the intended drag target (set on mousedown) is different
     // from the current element. If so, a nested element wants to be dragged.
-    if (this._intendedDragTarget && this._intendedDragTarget !== currentTarget && currentTarget.contains(this._intendedDragTarget)) {
+    if (
+      this._intendedDragTarget &&
+      this._intendedDragTarget !== currentTarget &&
+      currentTarget.contains(this._intendedDragTarget)
+    ) {
       // A nested element set itself as the intended drag target - abort and let it handle the drag
       e.stopPropagation();
       e.preventDefault();
@@ -10162,20 +12379,21 @@ export class LayoutTab extends LitElement {
     // 1. Dragging THIS module (the direct child) - OK to handle
     // 2. Dragging a module INSIDE this child (if this child is a layout) - should abort
     const target = e.target as HTMLElement;
-    
+
     // Check if the target or any of its parents (up to currentTarget) is a nested draggable element
     // This handles any level of nesting - if there's a more deeply nested draggable,
     // we should abort and let that element handle the drag
     let checkElement: HTMLElement | null = target;
     while (checkElement && checkElement !== currentTarget) {
       // Check if this element is a draggable nested layout container OR any nested draggable
-      const isDraggable = checkElement.getAttribute('draggable') === 'true' || checkElement.draggable === true;
+      const isDraggable =
+        checkElement.getAttribute('draggable') === 'true' || checkElement.draggable === true;
       if (
         isDraggable &&
-        (checkElement.classList.contains('nested-layout-module-container') ||
-         checkElement.classList.contains('deep-nested-layout-module') ||
-         checkElement.classList.contains('layout-child-simplified-module') ||
-         checkElement.classList.contains('layout-child-module-wrapper'))
+        (checkElement.classList.contains('nested-layout-drag-handle') ||
+          checkElement.classList.contains('deep-nested-drag-handle') ||
+          checkElement.classList.contains('layout-child-drag-handle') ||
+          checkElement.classList.contains('layout-child-module-wrapper'))
       ) {
         // A more deeply nested element should handle this drag
         e.stopPropagation();
@@ -10184,10 +12402,10 @@ export class LayoutTab extends LitElement {
       }
       checkElement = checkElement.parentElement;
     }
-    
+
     // Also check for deeply nested drag handles specifically
     const deepNestedDragHandle = target.closest('.deep-nested-drag-handle');
-    if (deepNestedDragHandle && !deepNestedDragHandle.isSameNode(currentTarget.querySelector(':scope > .nested-layout-module-header > .nested-layout-module-title > .nested-layout-drag-handle'))) {
+    if (deepNestedDragHandle && !deepNestedDragHandle.isSameNode(currentTarget)) {
       // The drag started from a deep nested module's drag handle
       e.stopPropagation();
       e.preventDefault();
@@ -10227,11 +12445,12 @@ export class LayoutTab extends LitElement {
         })
       );
 
-      // Add visual feedback
-      const target = e.currentTarget as HTMLElement;
-      if (target) {
-        target.style.opacity = '0.6';
-        target.style.transform = 'scale(0.95)';
+      // Add visual feedback - apply to the container, not the drag handle
+      const dragHandle = e.currentTarget as HTMLElement;
+      const container = dragHandle.closest('.nested-layout-module-container') as HTMLElement;
+      if (container) {
+        container.style.opacity = '0.6';
+        container.style.transform = 'scale(0.95)';
       }
     }
   }
@@ -10240,11 +12459,14 @@ export class LayoutTab extends LitElement {
     e.preventDefault();
     e.stopPropagation();
 
-    // Reset visual feedback
-    const target = e.currentTarget as HTMLElement;
-    if (target) {
-      target.style.opacity = '';
-      target.style.transform = '';
+    // Reset visual feedback - apply to the container, not the drag handle
+    const dragHandle = e.currentTarget as HTMLElement;
+    const container = dragHandle.closest(
+      '.nested-layout-module-container, .deep-nested-layout-module'
+    ) as HTMLElement;
+    if (container) {
+      container.style.opacity = '';
+      container.style.transform = '';
     }
 
     this._draggedItem = null;
@@ -10391,11 +12613,12 @@ export class LayoutTab extends LitElement {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', 'deep-nested-layout-module');
 
-    // Visual feedback
-    const target = e.currentTarget as HTMLElement;
-    if (target) {
-      target.style.opacity = '0.5';
-      target.style.transform = 'scale(0.95)';
+    // Visual feedback - apply to the container, not the drag handle
+    const dragHandle = e.currentTarget as HTMLElement;
+    const container = dragHandle.closest('.deep-nested-layout-module') as HTMLElement;
+    if (container) {
+      container.style.opacity = '0.5';
+      container.style.transform = 'scale(0.95)';
     }
   }
 
@@ -10507,13 +12730,11 @@ export class LayoutTab extends LitElement {
       newLayout.rows[parentRowIndex!].columns[parentColumnIndex!].modules[parentModuleIndex!];
 
     if (!parentLayoutModule || !Array.isArray(parentLayoutModule.modules)) {
-      console.warn('❌ Parent layout module missing modules array');
       return;
     }
 
     const nestedLayout: any = parentLayoutModule.modules[nestedLayoutIndex!];
     if (!nestedLayout || !Array.isArray(nestedLayout.modules)) {
-      console.warn('❌ Nested layout missing modules array');
       return;
     }
 
@@ -10559,7 +12780,9 @@ export class LayoutTab extends LitElement {
     const newLayout = JSON.parse(JSON.stringify(layout));
 
     // Get the deep nested layout module
-    const topLevelLayout = newLayout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any;
+    const topLevelLayout = newLayout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[
+      parentModuleIndex
+    ] as any;
     if (!topLevelLayout?.modules?.[nestedLayoutIndex]) return;
 
     const nestedLayout = topLevelLayout.modules[nestedLayoutIndex] as any;
@@ -10577,17 +12800,24 @@ export class LayoutTab extends LitElement {
 
     if (this._draggedItem.type === 'module') {
       // Dragging from a column
-      sourceModule = newLayout.rows[this._draggedItem.rowIndex]?.columns[this._draggedItem.columnIndex]?.modules[this._draggedItem.moduleIndex];
+      sourceModule =
+        newLayout.rows[this._draggedItem.rowIndex]?.columns[this._draggedItem.columnIndex]?.modules[
+          this._draggedItem.moduleIndex
+        ];
       if (!sourceModule) return;
 
       // Remove from source column
-      newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex].modules.splice(
-        this._draggedItem.moduleIndex,
-        1
-      );
-    } else if (this._draggedItem.type === 'layout-child' && this._draggedItem.layoutChildIndex !== undefined) {
+      newLayout.rows[this._draggedItem.rowIndex].columns[
+        this._draggedItem.columnIndex
+      ].modules.splice(this._draggedItem.moduleIndex, 1);
+    } else if (
+      this._draggedItem.type === 'layout-child' &&
+      this._draggedItem.layoutChildIndex !== undefined
+    ) {
       // Dragging from a layout module (2nd level)
-      const sourceParentLayout = newLayout.rows[this._draggedItem.rowIndex]?.columns[this._draggedItem.columnIndex]?.modules[this._draggedItem.moduleIndex] as any;
+      const sourceParentLayout = newLayout.rows[this._draggedItem.rowIndex]?.columns[
+        this._draggedItem.columnIndex
+      ]?.modules[this._draggedItem.moduleIndex] as any;
       if (!sourceParentLayout?.modules) return;
 
       sourceModule = sourceParentLayout.modules[this._draggedItem.layoutChildIndex];
@@ -10595,12 +12825,19 @@ export class LayoutTab extends LitElement {
 
       // Remove from source layout
       sourceParentLayout.modules.splice(this._draggedItem.layoutChildIndex, 1);
-    } else if (this._draggedItem.type === 'nested-child' && this._draggedItem.nestedChildIndex !== undefined) {
+    } else if (
+      this._draggedItem.type === 'nested-child' &&
+      this._draggedItem.nestedChildIndex !== undefined
+    ) {
       // Dragging from a nested layout (3rd level)
-      const sourceTopLayout = newLayout.rows[this._draggedItem.rowIndex]?.columns[this._draggedItem.columnIndex]?.modules[this._draggedItem.moduleIndex] as any;
+      const sourceTopLayout = newLayout.rows[this._draggedItem.rowIndex]?.columns[
+        this._draggedItem.columnIndex
+      ]?.modules[this._draggedItem.moduleIndex] as any;
       if (!sourceTopLayout?.modules?.[this._draggedItem.layoutChildIndex!]) return;
 
-      const sourceNestedLayout = sourceTopLayout.modules[this._draggedItem.layoutChildIndex!] as any;
+      const sourceNestedLayout = sourceTopLayout.modules[
+        this._draggedItem.layoutChildIndex!
+      ] as any;
       if (!sourceNestedLayout?.modules) return;
 
       sourceModule = sourceNestedLayout.modules[this._draggedItem.nestedChildIndex];
@@ -10608,15 +12845,24 @@ export class LayoutTab extends LitElement {
 
       // Remove from source nested layout
       sourceNestedLayout.modules.splice(this._draggedItem.nestedChildIndex, 1);
-    } else if (this._draggedItem.type === 'deep-nested-child' && this._draggedItem.deepNestedChildIndex !== undefined) {
+    } else if (
+      this._draggedItem.type === 'deep-nested-child' &&
+      this._draggedItem.deepNestedChildIndex !== undefined
+    ) {
       // Dragging from a deep nested layout (4th level)
-      const sourceTopLayout = newLayout.rows[this._draggedItem.rowIndex]?.columns[this._draggedItem.columnIndex]?.modules[this._draggedItem.moduleIndex] as any;
+      const sourceTopLayout = newLayout.rows[this._draggedItem.rowIndex]?.columns[
+        this._draggedItem.columnIndex
+      ]?.modules[this._draggedItem.moduleIndex] as any;
       if (!sourceTopLayout?.modules?.[this._draggedItem.layoutChildIndex!]) return;
 
-      const sourceNestedLayout = sourceTopLayout.modules[this._draggedItem.layoutChildIndex!] as any;
+      const sourceNestedLayout = sourceTopLayout.modules[
+        this._draggedItem.layoutChildIndex!
+      ] as any;
       if (!sourceNestedLayout?.modules?.[this._draggedItem.nestedChildIndex!]) return;
 
-      const sourceDeepNestedLayout = sourceNestedLayout.modules[this._draggedItem.nestedChildIndex!] as any;
+      const sourceDeepNestedLayout = sourceNestedLayout.modules[
+        this._draggedItem.nestedChildIndex!
+      ] as any;
       if (!sourceDeepNestedLayout?.modules) return;
 
       sourceModule = sourceDeepNestedLayout.modules[this._draggedItem.deepNestedChildIndex];
@@ -11078,19 +13324,28 @@ export class LayoutTab extends LitElement {
     const layout = this._ensureLayout();
     const row = layout.rows[parentRowIndex];
     if (!row || !row.columns[parentColumnIndex]) {
-      this._showToast(localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'), 'error');
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
       return;
     }
 
     const column = row.columns[parentColumnIndex];
     if (!column.modules || !column.modules[parentModuleIndex]) {
-      this._showToast(localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'), 'error');
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
       return;
     }
 
     const layoutModule = column.modules[parentModuleIndex] as any;
     if (!layoutModule.modules || !layoutModule.modules[childIndex]) {
-      this._showToast(localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'), 'error');
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
       return;
     }
 
@@ -11099,10 +13354,15 @@ export class LayoutTab extends LitElement {
     try {
       ucExportImportService.copyModuleToLocalStorage(childModule);
       this._hasModuleClipboard = true;
-      this._showToast(localize('editor.layout.module_copied', lang, 'Module copied to clipboard'), 'success');
+      this._showToast(
+        localize('editor.layout.module_copied', lang, 'Module copied to clipboard'),
+        'success'
+      );
     } catch (error) {
-      console.error('Failed to copy child module:', error);
-      this._showToast(localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'), 'error');
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
     }
   }
 
@@ -11339,7 +13599,9 @@ export class LayoutTab extends LitElement {
     if (!deepNestedLayoutModule.modules || !deepNestedLayoutModule.modules[deepChildIndex]) return;
 
     // Deep clone the module to duplicate
-    const moduleToDuplicate = JSON.parse(JSON.stringify(deepNestedLayoutModule.modules[deepChildIndex]));
+    const moduleToDuplicate = JSON.parse(
+      JSON.stringify(deepNestedLayoutModule.modules[deepChildIndex])
+    );
 
     // Regenerate IDs for the duplicated module
     this._regenerateModuleIds(moduleToDuplicate);
@@ -11486,7 +13748,13 @@ export class LayoutTab extends LitElement {
     module.id = `${module.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // If this is a layout module, regenerate IDs for all nested modules
-    if ((module.type === 'horizontal' || module.type === 'vertical' || module.type === 'accordion' || module.type === 'popup') && module.modules) {
+    if (
+      (module.type === 'horizontal' ||
+        module.type === 'vertical' ||
+        module.type === 'accordion' ||
+        module.type === 'popup') &&
+      module.modules
+    ) {
       module.modules.forEach((childModule: any) => {
         this._regenerateModuleIds(childModule); // Recursive for nested layouts
       });
@@ -11781,7 +14049,9 @@ export class LayoutTab extends LitElement {
         // Show the card type for native cards
         if (moduleAny.card_type) {
           const nativeInfo = ucNativeCardsService.getNativeCardInfo(moduleAny.card_type);
-          return nativeInfo ? nativeInfo.description || `Native: ${nativeInfo.name}` : `Native: ${moduleAny.card_type}`;
+          return nativeInfo
+            ? nativeInfo.description || `Native: ${nativeInfo.name}`
+            : `Native: ${moduleAny.card_type}`;
         }
         return 'No card type configured';
 
@@ -11998,7 +14268,10 @@ export class LayoutTab extends LitElement {
           class="preview-content"
           style="display: ${this._isRowColumnPreviewCollapsed ? 'none' : 'block'};"
         >
-          <div class="preview-breakpoint-container ${this._previewBreakpoint}" style="${this._getPreviewBreakpointStyle()}">
+          <div
+            class="preview-breakpoint-container ${this._previewBreakpoint}"
+            style="${this._getPreviewBreakpointStyle()}"
+          >
             ${rowAnimationData.class
               ? html`
                   <div
@@ -12101,7 +14374,10 @@ export class LayoutTab extends LitElement {
           class="preview-content"
           style="display: ${this._isRowColumnPreviewCollapsed ? 'none' : 'block'};"
         >
-          <div class="preview-breakpoint-container ${this._previewBreakpoint}" style="${this._getPreviewBreakpointStyle()}">
+          <div
+            class="preview-breakpoint-container ${this._previewBreakpoint}"
+            style="${this._getPreviewBreakpointStyle()}"
+          >
             ${columnAnimationData.class
               ? html`
                   <div
@@ -12147,7 +14423,11 @@ export class LayoutTab extends LitElement {
 
     // Handle direct children, nested layout children, and deeply nested layout children
     let module: any;
-    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined && deepNestedChildIndex !== undefined) {
+    if (
+      layoutChildIndex !== undefined &&
+      nestedChildIndex !== undefined &&
+      deepNestedChildIndex !== undefined
+    ) {
       // Deeply nested layout child (3 levels deep)
       const section = tabsModule?.sections?.[sectionIndex];
       const layoutModule = section?.modules?.[layoutChildIndex];
@@ -12226,7 +14506,9 @@ export class LayoutTab extends LitElement {
               >
                 <ha-icon icon="mdi:delete"></ha-icon>
               </button>
-              <button class="close-button" @click=${() => this._closeTabsSectionChildSettings()}>×</button>
+              <button class="close-button" @click=${() => this._closeTabsSectionChildSettings()}>
+                ×
+              </button>
             </div>
           </div>
 
@@ -12237,12 +14519,17 @@ export class LayoutTab extends LitElement {
               ${module.type === 'external_card'
                 ? (() => {
                     const externalModule = module as any;
-                    const isNativeCard = externalModule.card_type && externalModule.card_type.startsWith('hui-');
-                    const hasEditor = isNativeCard || ucExternalCardsService.hasCardEditor(externalModule.card_type);
+                    const isNativeCard =
+                      externalModule.card_type && externalModule.card_type.startsWith('hui-');
+                    const hasEditor =
+                      isNativeCard ||
+                      ucExternalCardsService.hasCardEditor(externalModule.card_type);
                     return hasEditor
                       ? html`
                           <button
-                            class="module-tab ${this._activeTabsChildTab === 'general' ? 'active' : ''}"
+                            class="module-tab ${this._activeTabsChildTab === 'general'
+                              ? 'active'
+                              : ''}"
                             @click=${() => (this._activeTabsChildTab = 'general')}
                           >
                             ${localize('editor.layout.general_tab', lang, 'General')}
@@ -12320,8 +14607,12 @@ export class LayoutTab extends LitElement {
               ${this._activeTabsChildTab === 'other' && hasOtherTab
                 ? this._renderTabsSectionChildOtherTab(module)
                 : ''}
-              ${this._activeTabsChildTab === 'logic' ? this._renderTabsSectionChildLogicTab(module) : ''}
-              ${this._activeTabsChildTab === 'design' ? this._renderTabsSectionChildDesignTab(module) : ''}
+              ${this._activeTabsChildTab === 'logic'
+                ? this._renderTabsSectionChildLogicTab(module)
+                : ''}
+              ${this._activeTabsChildTab === 'design'
+                ? this._renderTabsSectionChildDesignTab(module)
+                : ''}
             </div>
           </div>
         </div>
@@ -12358,7 +14649,11 @@ export class LayoutTab extends LitElement {
 
     // Handle direct children, nested layout children, and deeply nested layout children
     let module: any;
-    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined && deepNestedChildIndex !== undefined) {
+    if (
+      layoutChildIndex !== undefined &&
+      nestedChildIndex !== undefined &&
+      deepNestedChildIndex !== undefined
+    ) {
       // Deeply nested layout child (3 levels deep)
       const section = tabsModule?.sections?.[sectionIndex];
       const layoutModule = section?.modules?.[layoutChildIndex];
@@ -12446,7 +14741,10 @@ export class LayoutTab extends LitElement {
           class="preview-content"
           style="display: ${this._isCurrentModulePreviewCollapsed() ? 'none' : 'block'};"
         >
-          <div class="preview-breakpoint-container ${this._previewBreakpoint}" style="${this._getPreviewBreakpointStyle()}">
+          <div
+            class="preview-breakpoint-container ${this._previewBreakpoint}"
+            style="${this._getPreviewBreakpointStyle()}"
+          >
             ${previewContent}
           </div>
         </div>
@@ -12462,11 +14760,8 @@ export class LayoutTab extends LitElement {
       return html`<div>Module does not support general settings</div>`;
     }
 
-    return moduleHandler.renderGeneralTab(
-      module,
-      this.hass!,
-      this.config,
-      (updates: any) => this._updateTabsSectionChild(updates)
+    return moduleHandler.renderGeneralTab(module, this.hass!, this.config, (updates: any) =>
+      this._updateTabsSectionChild(updates)
     );
   }
 
@@ -12474,12 +14769,12 @@ export class LayoutTab extends LitElement {
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(module.type);
 
-    if (module.type === 'external_card' && typeof (moduleHandler as any).renderYamlTab === 'function') {
-      return (moduleHandler as any).renderYamlTab(
-        module,
-        this.hass!,
-        this.config,
-        (updates: any) => this._updateTabsSectionChild(updates)
+    if (
+      module.type === 'external_card' &&
+      typeof (moduleHandler as any).renderYamlTab === 'function'
+    ) {
+      return (moduleHandler as any).renderYamlTab(module, this.hass!, this.config, (updates: any) =>
+        this._updateTabsSectionChild(updates)
       );
     }
 
@@ -12522,11 +14817,8 @@ export class LayoutTab extends LitElement {
       return html`<div>Module does not support design settings</div>`;
     }
 
-    return moduleHandler.renderDesignTab(
-      module,
-      this.hass!,
-      this.config,
-      (updates: any) => this._updateTabsSectionChild(updates)
+    return moduleHandler.renderDesignTab(module, this.hass!, this.config, (updates: any) =>
+      this._updateTabsSectionChild(updates)
     );
   }
 
@@ -12611,7 +14903,11 @@ export class LayoutTab extends LitElement {
     let targetArray: any[];
     let insertIndex: number;
 
-    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined && deepNestedChildIndex !== undefined) {
+    if (
+      layoutChildIndex !== undefined &&
+      nestedChildIndex !== undefined &&
+      deepNestedChildIndex !== undefined
+    ) {
       // Deeply nested layout child (3 levels deep)
       const section = tabsModule?.sections?.[sectionIndex];
       const layoutModule = section?.modules?.[layoutChildIndex];
@@ -12725,7 +15021,11 @@ export class LayoutTab extends LitElement {
     }
 
     // Handle direct children, nested layout children, and deeply nested layout children
-    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined && deepNestedChildIndex !== undefined) {
+    if (
+      layoutChildIndex !== undefined &&
+      nestedChildIndex !== undefined &&
+      deepNestedChildIndex !== undefined
+    ) {
       // Deeply nested layout child (3 levels deep)
       const section = tabsModule?.sections?.[sectionIndex];
       const layoutModule = section?.modules?.[layoutChildIndex];
@@ -12787,7 +15087,8 @@ export class LayoutTab extends LitElement {
     if (module.type === 'external_card') {
       const externalModule = module as any;
       const isNativeCard = externalModule.card_type && externalModule.card_type.startsWith('hui-');
-      const hasEditor = isNativeCard || ucExternalCardsService.hasCardEditor(externalModule.card_type);
+      const hasEditor =
+        isNativeCard || ucExternalCardsService.hasCardEditor(externalModule.card_type);
 
       // If no editor, hide General tab and default to YAML (only if not already on another valid tab)
       if (!hasEditor && this._activeModuleTab === 'general') {
@@ -12861,17 +15162,22 @@ export class LayoutTab extends LitElement {
               ${module.type === 'external_card'
                 ? (() => {
                     const externalModule = module as any;
-                    const isNativeCard = externalModule.card_type && externalModule.card_type.startsWith('hui-');
-                    const hasEditor = isNativeCard || ucExternalCardsService.hasCardEditor(externalModule.card_type);
+                    const isNativeCard =
+                      externalModule.card_type && externalModule.card_type.startsWith('hui-');
+                    const hasEditor =
+                      isNativeCard ||
+                      ucExternalCardsService.hasCardEditor(externalModule.card_type);
                     return hasEditor
-                  ? html`
-                      <button
-                        class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
-                        @click=${() => (this._activeModuleTab = 'general')}
-                      >
-                        ${localize('editor.layout.general_tab', lang, 'General')}
-                      </button>
-                    `
+                      ? html`
+                          <button
+                            class="module-tab ${this._activeModuleTab === 'general'
+                              ? 'active'
+                              : ''}"
+                            @click=${() => (this._activeModuleTab = 'general')}
+                          >
+                            ${localize('editor.layout.general_tab', lang, 'General')}
+                          </button>
+                        `
                       : '';
                   })()
                 : html`
@@ -13003,7 +15309,9 @@ export class LayoutTab extends LitElement {
       )
         return html``;
 
-      const deepNestedLayoutModule = nestedLayoutModule.modules[this._selectedNestedChildIndex] as any;
+      const deepNestedLayoutModule = nestedLayoutModule.modules[
+        this._selectedNestedChildIndex
+      ] as any;
       if (
         !deepNestedLayoutModule.modules ||
         !deepNestedLayoutModule.modules[this._selectedNestedNestedChildIndex]
@@ -13099,12 +15407,38 @@ export class LayoutTab extends LitElement {
                 class="action-button duplicate-button"
                 @click=${() => {
                   if (this._selectedLayoutChild) {
-                    this._duplicateLayoutChildModule(
-                      this._selectedLayoutChild.parentRowIndex,
-                      this._selectedLayoutChild.parentColumnIndex,
-                      this._selectedLayoutChild.parentModuleIndex,
-                      this._selectedLayoutChild.childIndex
-                    );
+                    // Check nesting level and call appropriate duplicate method
+                    if (
+                      this._selectedNestedNestedChildIndex >= 0 &&
+                      this._selectedNestedChildIndex >= 0
+                    ) {
+                      // 4th level: deeply nested child (e.g., icon inside horizontal inside slider inside another container)
+                      this._duplicateDeepNestedChildModule(
+                        this._selectedLayoutChild.parentRowIndex,
+                        this._selectedLayoutChild.parentColumnIndex,
+                        this._selectedLayoutChild.parentModuleIndex,
+                        this._selectedLayoutChild.childIndex,
+                        this._selectedNestedChildIndex,
+                        this._selectedNestedNestedChildIndex
+                      );
+                    } else if (this._selectedNestedChildIndex >= 0) {
+                      // 3rd level: nested child (e.g., icon inside horizontal inside slider)
+                      this._duplicateNestedChildModule(
+                        this._selectedLayoutChild.parentRowIndex,
+                        this._selectedLayoutChild.parentColumnIndex,
+                        this._selectedLayoutChild.parentModuleIndex,
+                        this._selectedLayoutChild.childIndex,
+                        this._selectedNestedChildIndex
+                      );
+                    } else {
+                      // 2nd level: direct child of layout module
+                      this._duplicateLayoutChildModule(
+                        this._selectedLayoutChild.parentRowIndex,
+                        this._selectedLayoutChild.parentColumnIndex,
+                        this._selectedLayoutChild.parentModuleIndex,
+                        this._selectedLayoutChild.childIndex
+                      );
+                    }
                     this._closeLayoutChildSettings();
                   }
                 }}
@@ -13116,12 +15450,38 @@ export class LayoutTab extends LitElement {
                 class="action-button delete-button"
                 @click=${() => {
                   if (this._selectedLayoutChild) {
-                    this._deleteLayoutChildModule(
-                      this._selectedLayoutChild.parentRowIndex,
-                      this._selectedLayoutChild.parentColumnIndex,
-                      this._selectedLayoutChild.parentModuleIndex,
-                      this._selectedLayoutChild.childIndex
-                    );
+                    // Check nesting level and call appropriate delete method
+                    if (
+                      this._selectedNestedNestedChildIndex >= 0 &&
+                      this._selectedNestedChildIndex >= 0
+                    ) {
+                      // 4th level: deeply nested child (e.g., icon inside horizontal inside slider inside another container)
+                      this._deleteDeepNestedChildModule(
+                        this._selectedLayoutChild.parentRowIndex,
+                        this._selectedLayoutChild.parentColumnIndex,
+                        this._selectedLayoutChild.parentModuleIndex,
+                        this._selectedLayoutChild.childIndex,
+                        this._selectedNestedChildIndex,
+                        this._selectedNestedNestedChildIndex
+                      );
+                    } else if (this._selectedNestedChildIndex >= 0) {
+                      // 3rd level: nested child (e.g., icon inside horizontal inside slider)
+                      this._deleteNestedChildModule(
+                        this._selectedLayoutChild.parentRowIndex,
+                        this._selectedLayoutChild.parentColumnIndex,
+                        this._selectedLayoutChild.parentModuleIndex,
+                        this._selectedLayoutChild.childIndex,
+                        this._selectedNestedChildIndex
+                      );
+                    } else {
+                      // 2nd level: direct child of layout module
+                      this._deleteLayoutChildModule(
+                        this._selectedLayoutChild.parentRowIndex,
+                        this._selectedLayoutChild.parentColumnIndex,
+                        this._selectedLayoutChild.parentModuleIndex,
+                        this._selectedLayoutChild.childIndex
+                      );
+                    }
                     this._closeLayoutChildSettings();
                   }
                 }}
@@ -13174,7 +15534,10 @@ export class LayoutTab extends LitElement {
               class="preview-content"
               style="display: ${this._isCurrentModulePreviewCollapsed() ? 'none' : 'block'};"
             >
-              <div class="preview-breakpoint-container ${this._previewBreakpoint}" style="${this._getPreviewBreakpointStyle()}">
+              <div
+                class="preview-breakpoint-container ${this._previewBreakpoint}"
+                style="${this._getPreviewBreakpointStyle()}"
+              >
                 ${this._renderSingleModuleWithAnimation(childModule)}
               </div>
             </div>
@@ -14224,13 +16587,21 @@ export class LayoutTab extends LitElement {
             <select
               .value=${this._getColumnVerticalAlignment(row) || 'center'}
               @change=${(e: Event) => {
-                const value = (e.target as HTMLSelectElement).value as 'top' | 'center' | 'bottom' | 'stretch';
+                const value = (e.target as HTMLSelectElement).value as
+                  | 'top'
+                  | 'center'
+                  | 'bottom'
+                  | 'stretch';
                 this._updateAllColumnsVerticalAlignment(row, value);
               }}
               style="width: 100%; padding: 8px 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 14px;"
             >
               <option value="top">
-                ${localize('editor.layout.alignment_top', this.hass?.locale?.language || 'en', 'Top')}
+                ${localize(
+                  'editor.layout.alignment_top',
+                  this.hass?.locale?.language || 'en',
+                  'Top'
+                )}
               </option>
               <option value="center">
                 ${localize(
@@ -14264,12 +16635,14 @@ export class LayoutTab extends LitElement {
    * Get the column vertical alignment value for display in row settings
    * Returns the first column's alignment if all columns have the same, otherwise returns undefined
    */
-  private _getColumnVerticalAlignment(row: CardRow): 'top' | 'center' | 'bottom' | 'stretch' | undefined {
+  private _getColumnVerticalAlignment(
+    row: CardRow
+  ): 'top' | 'center' | 'bottom' | 'stretch' | undefined {
     if (!row.columns || row.columns.length === 0) return undefined;
-    
+
     const firstAlignment = row.columns[0].vertical_alignment;
     if (!firstAlignment) return undefined;
-    
+
     // Check if all columns have the same alignment
     const allSame = row.columns.every(col => col.vertical_alignment === firstAlignment);
     return allSame ? firstAlignment : undefined;
@@ -14283,18 +16656,18 @@ export class LayoutTab extends LitElement {
     alignment: 'top' | 'center' | 'bottom' | 'stretch'
   ): void {
     if (this._selectedRowForSettings === -1) return;
-    
+
     const layout = this._ensureLayout();
     const newLayout = JSON.parse(JSON.stringify(layout));
     const targetRow = newLayout.rows[this._selectedRowForSettings];
-    
+
     // Update all columns in the row
     if (targetRow.columns) {
       targetRow.columns.forEach((column: CardColumn) => {
         column.vertical_alignment = alignment;
       });
     }
-    
+
     this._updateLayout(newLayout);
   }
 
@@ -14363,16 +16736,22 @@ export class LayoutTab extends LitElement {
             // Handle responsive design updates - deep merge device-specific properties
             const responsiveKeys = ['base', 'desktop', 'laptop', 'tablet', 'mobile'];
             const incomingDesign = updates.design;
-            const hasResponsiveStructure = responsiveKeys.some(key => incomingDesign.hasOwnProperty(key));
-            
+            const hasResponsiveStructure = responsiveKeys.some(key =>
+              incomingDesign.hasOwnProperty(key)
+            );
+
             if (hasResponsiveStructure) {
               const existingDesign = (row.design || {}) as Record<string, any>;
               const mergedDesign: Record<string, any> = { ...existingDesign };
-              
+
               for (const [key, value] of Object.entries(incomingDesign)) {
                 if (value === undefined) {
                   delete mergedDesign[key];
-                } else if (responsiveKeys.includes(key) && typeof value === 'object' && value !== null) {
+                } else if (
+                  responsiveKeys.includes(key) &&
+                  typeof value === 'object' &&
+                  value !== null
+                ) {
                   // Deep merge device-specific objects
                   mergedDesign[key] = { ...(mergedDesign[key] || {}), ...(value as object) };
                   // Clean up undefined values
@@ -14572,16 +16951,22 @@ export class LayoutTab extends LitElement {
             // Handle responsive design updates - deep merge device-specific properties
             const responsiveKeys = ['base', 'desktop', 'laptop', 'tablet', 'mobile'];
             const incomingDesign = updates.design;
-            const hasResponsiveStructure = responsiveKeys.some(key => incomingDesign.hasOwnProperty(key));
-            
+            const hasResponsiveStructure = responsiveKeys.some(key =>
+              incomingDesign.hasOwnProperty(key)
+            );
+
             if (hasResponsiveStructure) {
               const existingDesign = (column.design || {}) as Record<string, any>;
               const mergedDesign: Record<string, any> = { ...existingDesign };
-              
+
               for (const [key, value] of Object.entries(incomingDesign)) {
                 if (value === undefined) {
                   delete mergedDesign[key];
-                } else if (responsiveKeys.includes(key) && typeof value === 'object' && value !== null) {
+                } else if (
+                  responsiveKeys.includes(key) &&
+                  typeof value === 'object' &&
+                  value !== null
+                ) {
                   // Deep merge device-specific objects
                   mergedDesign[key] = { ...(mergedDesign[key] || {}), ...(value as object) };
                   // Clean up undefined values
@@ -14589,7 +16974,7 @@ export class LayoutTab extends LitElement {
                     if (propVal === undefined) delete mergedDesign[key][propKey];
                   }
                   if (Object.keys(mergedDesign[key]).length === 0) delete mergedDesign[key];
-                }  else {
+                } else {
                   mergedDesign[key] = value;
                 }
               }
@@ -15580,8 +17965,10 @@ export class LayoutTab extends LitElement {
         if ((module as any).text_align !== undefined) return (module as any).text_align;
         // IMPORTANT: Don't use alignment as fallback for layout modules (vertical/horizontal)
         // because their alignment property controls flexbox layout, not text alignment
-        const isLayoutModule = (module as any).type === 'vertical' || (module as any).type === 'horizontal';
-        if (!isLayoutModule && (module as any).alignment !== undefined) return (module as any).alignment;
+        const isLayoutModule =
+          (module as any).type === 'vertical' || (module as any).type === 'horizontal';
+        if (!isLayoutModule && (module as any).alignment !== undefined)
+          return (module as any).alignment;
         if ((module as any).design?.text_align !== undefined)
           return (module as any).design.text_align;
         // Do not inject defaults here; allow field to remain blank in the editor
@@ -16607,7 +18994,9 @@ export class LayoutTab extends LitElement {
               <span>${localize('editor.layout.export_card', lang, 'Export Card')}</span>
             </button>
             <button
-              class="header-btn with-text import-card-btn ${this._hasCardClipboard ? 'has-clipboard' : ''}"
+              class="header-btn with-text import-card-btn ${this._hasCardClipboard
+                ? 'has-clipboard'
+                : ''}"
               @click=${(e: Event) => {
                 e.stopPropagation();
                 this._importCard();
@@ -16625,11 +19014,35 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
 
-        <div class="rows-container">
+        ${this._renderBreadcrumbs()}
+
+        <div class="tree-view-container">
+          ${layout.rows.map((row, rowIndex) =>
+            this._renderTreeRow(row, rowIndex, layout.rows.length)
+          )}
+          <div class="tree-add-row-container">
+            <button
+              class="tree-add-row-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._addRow();
+              }}
+            >
+              <ha-icon icon="mdi:plus"></ha-icon>
+              <span>${localize('editor.layout.add_row', lang, 'Add Row')}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Legacy rows-container kept for compatibility with popups and dialogs -->
+        <div class="rows-container" style="display: none;">
           ${layout.rows.map(
             (row, rowIndex) => html`
               <div
-                class="row-builder ${this._dropTarget?.type === 'row' && this._dropTarget?.rowIndex === rowIndex ? 'drop-target' : ''}"
+                class="row-builder ${this._dropTarget?.type === 'row' &&
+                this._dropTarget?.rowIndex === rowIndex
+                  ? 'drop-target'
+                  : ''}"
                 draggable="true"
                 @dragstart=${(e: DragEvent) => this._onDragStart(e, 'row', rowIndex)}
                 @dragend=${this._onDragEnd}
@@ -17043,7 +19456,11 @@ export class LayoutTab extends LitElement {
                                   }}
                                 >
                                   <ha-icon icon="mdi:plus"></ha-icon>
-                                  ${localize('editor.layout.add_module', this.hass?.locale?.language || 'en', 'Add Module')}
+                                  ${localize(
+                                    'editor.layout.add_module',
+                                    this.hass?.locale?.language || 'en',
+                                    'Add Module'
+                                  )}
                                 </button>
                                 ${this._hasModuleClipboard
                                   ? html`
@@ -17053,10 +19470,18 @@ export class LayoutTab extends LitElement {
                                           e.stopPropagation();
                                           this._pasteModule(rowIndex, columnIndex);
                                         }}
-                                        title="${localize('editor.layout.paste_module', this.hass?.locale?.language || 'en', 'Paste Module')}"
+                                        title="${localize(
+                                          'editor.layout.paste_module',
+                                          this.hass?.locale?.language || 'en',
+                                          'Paste Module'
+                                        )}"
                                       >
                                         <ha-icon icon="mdi:content-paste"></ha-icon>
-                                        ${localize('editor.layout.paste_module', this.hass?.locale?.language || 'en', 'Paste')}
+                                        ${localize(
+                                          'editor.layout.paste_module',
+                                          this.hass?.locale?.language || 'en',
+                                          'Paste'
+                                        )}
                                       </button>
                                     `
                                   : ''}
@@ -17078,7 +19503,11 @@ export class LayoutTab extends LitElement {
                               style="margin-top: 8px;"
                             >
                               <ha-icon icon="mdi:plus"></ha-icon>
-                              ${localize('editor.layout.add_module_auto_column', this.hass?.locale?.language || 'en', 'Add Module (will create column automatically)')}
+                              ${localize(
+                                'editor.layout.add_module_auto_column',
+                                this.hass?.locale?.language || 'en',
+                                'Add Module (will create column automatically)'
+                              )}
                             </button>
                             ${this._hasModuleClipboard
                               ? html`
@@ -17089,10 +19518,18 @@ export class LayoutTab extends LitElement {
                                       this._pasteModule(rowIndex, 0);
                                     }}
                                     style="margin-top: 8px;"
-                                    title="${localize('editor.layout.paste_module', this.hass?.locale?.language || 'en', 'Paste Module')}"
+                                    title="${localize(
+                                      'editor.layout.paste_module',
+                                      this.hass?.locale?.language || 'en',
+                                      'Paste Module'
+                                    )}"
                                   >
                                     <ha-icon icon="mdi:content-paste"></ha-icon>
-                                    ${localize('editor.layout.paste_module', this.hass?.locale?.language || 'en', 'Paste')}
+                                    ${localize(
+                                      'editor.layout.paste_module',
+                                      this.hass?.locale?.language || 'en',
+                                      'Paste'
+                                    )}
                                   </button>
                                 `
                               : ''}
@@ -17119,7 +19556,11 @@ export class LayoutTab extends LitElement {
                               e.stopPropagation();
                               this._pasteColumn(rowIndex);
                             }}
-                            title="${localize('editor.layout.paste_column', this.hass?.locale?.language || 'en', 'Paste Column')}"
+                            title="${localize(
+                              'editor.layout.paste_column',
+                              this.hass?.locale?.language || 'en',
+                              'Paste Column'
+                            )}"
                           >
                             <ha-icon icon="mdi:content-paste"></ha-icon>
                             Paste
@@ -17140,7 +19581,8 @@ export class LayoutTab extends LitElement {
         ${this._showRowSettings ? this._renderRowSettings() : ''}
         ${this._showColumnSettings ? this._renderColumnSettings() : ''}
         ${this._showColumnLayoutSelector ? this._renderColumnLayoutSelector() : ''}
-        ${this._renderImagePopup()} ${this._renderFavoriteDialog()} ${this._renderImportDialog()} ${this._renderVariableMappingDialog()}
+        ${this._renderImagePopup()} ${this._renderFavoriteDialog()} ${this._renderImportDialog()}
+        ${this._renderVariableMappingDialog()}
       </div>
     `;
   }
@@ -17148,9 +19590,9 @@ export class LayoutTab extends LitElement {
   private _renderModuleSelector(): TemplateResult {
     const registry = getModuleRegistry();
     // Get all modules but exclude external_card and native_card from the selector (they're in the Cards tab)
-    const allModules = registry.getAllModules().filter(m => 
-      m.metadata.type !== 'external_card' && m.metadata.type !== 'native_card'
-    );
+    const allModules = registry
+      .getAllModules()
+      .filter(m => m.metadata.type !== 'external_card' && m.metadata.type !== 'native_card');
     const isAddingToLayoutModule = this._selectedLayoutModuleIndex >= 0;
 
     return html`
@@ -17416,13 +19858,13 @@ export class LayoutTab extends LitElement {
   private _focusSearchInput(): void {
     requestAnimationFrame(() => {
       let inputId = 'module-search-input';
-      
+
       if (this._activeModuleSelectorTab === 'cards') {
         inputId = 'card-search-input';
       } else if (this._activeModuleSelectorTab === 'presets') {
         inputId = 'preset-search-input';
       }
-      
+
       const input = this.shadowRoot?.getElementById(inputId) as HTMLInputElement;
       if (input) {
         input.focus();
@@ -17439,14 +19881,14 @@ export class LayoutTab extends LitElement {
     }
 
     const searchLower = query.toLowerCase().trim();
-    
+
     return modules.filter(module => {
       const metadata = module.metadata;
       const name = metadata.title?.toLowerCase() || '';
       const description = metadata.description?.toLowerCase() || '';
       const type = metadata.type?.toLowerCase() || '';
       const tags = (metadata.tags || []).join(' ').toLowerCase();
-      
+
       return (
         name.includes(searchLower) ||
         description.includes(searchLower) ||
@@ -17468,12 +19910,12 @@ export class LayoutTab extends LitElement {
     }
 
     const searchLower = query.toLowerCase().trim();
-    
+
     return cards.filter(card => {
       const name = card.name?.toLowerCase() || '';
       const description = card.description?.toLowerCase() || '';
       const type = card.type?.toLowerCase() || '';
-      
+
       return (
         name.includes(searchLower) ||
         description.includes(searchLower) ||
@@ -17491,13 +19933,13 @@ export class LayoutTab extends LitElement {
     }
 
     const searchLower = query.toLowerCase().trim();
-    
+
     return presets.filter(preset => {
       const name = preset.name?.toLowerCase() || '';
       const description = preset.description?.toLowerCase() || '';
       const author = preset.author?.toLowerCase() || '';
       const category = preset.category?.toLowerCase() || '';
-      
+
       return (
         name.includes(searchLower) ||
         description.includes(searchLower) ||
@@ -17540,12 +19982,12 @@ export class LayoutTab extends LitElement {
           const countA = a.metadata?.rating_count || 0;
           const ratingB = b.metadata?.rating || 0;
           const countB = b.metadata?.rating_count || 0;
-          
+
           // Compare ratings first
           if (ratingA !== ratingB) {
             return direction === 'asc' ? ratingA - ratingB : ratingB - ratingA;
           }
-          
+
           // If ratings are equal, compare vote counts
           return direction === 'asc' ? countA - countB : countB - countA;
 
@@ -17693,7 +20135,7 @@ export class LayoutTab extends LitElement {
     const layoutModules = filteredModules
       .filter(m => m.metadata.category === 'layout' && m.metadata.type !== 'pagebreak')
       .sort((a, b) => (a.metadata.title || '').localeCompare(b.metadata.title || ''));
-    
+
     let contentModules = filteredModules
       .filter(m => m.metadata.category !== 'layout')
       .sort((a, b) => (a.metadata.title || '').localeCompare(b.metadata.title || ''));
@@ -17752,7 +20194,11 @@ export class LayoutTab extends LitElement {
           // Check if any existing children are layout modules (indicating we're at/near max depth)
           const hasLayoutChildren = layoutParent.modules.some(
             (child: any) =>
-              child.type === 'horizontal' || child.type === 'vertical' || child.type === 'accordion' || child.type === 'popup' || child.type === 'slider'
+              child.type === 'horizontal' ||
+              child.type === 'vertical' ||
+              child.type === 'accordion' ||
+              child.type === 'popup' ||
+              child.type === 'slider'
           );
           if (hasLayoutChildren && nestingDepth >= 3) {
             nestingDepth = 4; // Would exceed maximum depth (currently allowing 3 levels)
@@ -17785,7 +20231,6 @@ export class LayoutTab extends LitElement {
     return html`
       <!-- Search Bar -->
       ${this._renderModuleSearchBar()}
-
       ${hasSearchQuery
         ? this._renderModuleSearchResults(filteredModules, isPro, isAddingToLayoutModule)
         : html`
@@ -17799,7 +20244,9 @@ export class LayoutTab extends LitElement {
                 <span>Standard</span>
               </button>
               <button
-                class="category-tab pro-tab ${this._activeModuleCategoryTab === 'pro' ? 'active' : ''}"
+                class="category-tab pro-tab ${this._activeModuleCategoryTab === 'pro'
+                  ? 'active'
+                  : ''}"
                 @click=${() => (this._activeModuleCategoryTab = 'pro')}
               >
                 <ha-icon icon="mdi:star-circle"></ha-icon>
@@ -17811,70 +20258,70 @@ export class LayoutTab extends LitElement {
             ${this._activeModuleCategoryTab === 'pro' && !isPro
               ? this._renderProUpgradePrompt(isLoggedIn)
               : html`
-            ${allowedLayoutModules.length > 0
-              ? html`
-                  <div class="module-category layout-containers">
-                    <h4 class="category-title">Layout Containers</h4>
-                    <p class="category-description">
-                      ${isAddingToLayoutModule
-                        ? nestingDepth < 2
-                          ? `Add layout modules (${2 - nestingDepth} more level${2 - nestingDepth !== 1 ? 's' : ''} allowed)`
-                          : 'Maximum nesting depth reached - only content modules allowed'
-                        : 'Create containers to organize your modules'}
-                    </p>
-                    <div class="module-types layout-modules">
-                      ${allowedLayoutModules.map(module => {
-                        const metadata = module.metadata;
-                        const isHorizontal = metadata.type === 'horizontal';
-                        const isVertical = metadata.type === 'vertical';
-                        return html`
-                          <button
-                            class="module-type-btn layout-module ${isHorizontal
-                              ? 'horizontal-layout'
-                              : ''} ${isVertical ? 'vertical-layout' : ''}"
-                            @click=${() => this._addModule(metadata.type)}
-                            title="${metadata.description}"
-                          >
-                            <ha-icon icon="${metadata.icon}"></ha-icon>
-                            <div class="module-info">
-                              <span class="module-title">${metadata.title}</span>
-                              <span class="module-description">${metadata.description}</span>
-                            </div>
-                          </button>
-                        `;
-                      })}
-                    </div>
-                  </div>
-                `
-              : ''}
-            ${contentModules.length > 0
-              ? html`
-                  <div class="module-category">
-                    <h4 class="category-title">Content Modules</h4>
-                    <p class="category-description">Add content and interactive elements</p>
-                    <div class="module-types content-modules">
-                      ${contentModules.map(module => {
-                        const metadata = module.metadata;
-                        return html`
-                          <button
-                            class="module-type-btn content-module"
-                            @click=${() => this._addModule(metadata.type)}
-                            title="${metadata.description}"
-                          >
-                            <ha-icon icon="${metadata.icon}"></ha-icon>
-                            <div class="module-info">
-                              <span class="module-title">${metadata.title}</span>
-                              <span class="module-description">${metadata.description}</span>
-                            </div>
-                          </button>
-                        `;
-                      })}
-                    </div>
-                  </div>
-                `
-              : ''}
-              `}
-        `}
+                  ${allowedLayoutModules.length > 0
+                    ? html`
+                        <div class="module-category layout-containers">
+                          <h4 class="category-title">Layout Containers</h4>
+                          <p class="category-description">
+                            ${isAddingToLayoutModule
+                              ? nestingDepth < 2
+                                ? `Add layout modules (${2 - nestingDepth} more level${2 - nestingDepth !== 1 ? 's' : ''} allowed)`
+                                : 'Maximum nesting depth reached - only content modules allowed'
+                              : 'Create containers to organize your modules'}
+                          </p>
+                          <div class="module-types layout-modules">
+                            ${allowedLayoutModules.map(module => {
+                              const metadata = module.metadata;
+                              const isHorizontal = metadata.type === 'horizontal';
+                              const isVertical = metadata.type === 'vertical';
+                              return html`
+                                <button
+                                  class="module-type-btn layout-module ${isHorizontal
+                                    ? 'horizontal-layout'
+                                    : ''} ${isVertical ? 'vertical-layout' : ''}"
+                                  @click=${() => this._addModule(metadata.type)}
+                                  title="${metadata.description}"
+                                >
+                                  <ha-icon icon="${metadata.icon}"></ha-icon>
+                                  <div class="module-info">
+                                    <span class="module-title">${metadata.title}</span>
+                                    <span class="module-description">${metadata.description}</span>
+                                  </div>
+                                </button>
+                              `;
+                            })}
+                          </div>
+                        </div>
+                      `
+                    : ''}
+                  ${contentModules.length > 0
+                    ? html`
+                        <div class="module-category">
+                          <h4 class="category-title">Content Modules</h4>
+                          <p class="category-description">Add content and interactive elements</p>
+                          <div class="module-types content-modules">
+                            ${contentModules.map(module => {
+                              const metadata = module.metadata;
+                              return html`
+                                <button
+                                  class="module-type-btn content-module"
+                                  @click=${() => this._addModule(metadata.type)}
+                                  title="${metadata.description}"
+                                >
+                                  <ha-icon icon="${metadata.icon}"></ha-icon>
+                                  <div class="module-info">
+                                    <span class="module-title">${metadata.title}</span>
+                                    <span class="module-description">${metadata.description}</span>
+                                  </div>
+                                </button>
+                              `;
+                            })}
+                          </div>
+                        </div>
+                      `
+                    : ''}
+                `}
+          `}
     `;
   }
 
@@ -17994,7 +20441,11 @@ export class LayoutTab extends LitElement {
     const images: string[] = [];
 
     // Add featured image first if it exists (check all possible property locations)
-    const featuredImage = preset.featured_image || preset.thumbnail || preset.metadata?.featured_image || wpPreset.featured_image;
+    const featuredImage =
+      preset.featured_image ||
+      preset.thumbnail ||
+      preset.metadata?.featured_image ||
+      wpPreset.featured_image;
     if (featuredImage && typeof featuredImage === 'string') {
       images.push(featuredImage);
     }
@@ -18021,7 +20472,7 @@ export class LayoutTab extends LitElement {
     // If only one image, show simple thumbnail
     if (images.length === 1) {
       return html`
-        <div 
+        <div
           class="preset-thumbnail"
           @click=${(e: Event) => {
             e.stopPropagation();
@@ -18030,8 +20481,8 @@ export class LayoutTab extends LitElement {
           style="cursor: pointer;"
           title="Click to view full image"
         >
-          <img 
-            src="${images[0]}" 
+          <img
+            src="${images[0]}"
             alt="${preset.name} preview"
             @error=${(e: Event) => {
               // Fallback to icon if image fails to load
@@ -18055,7 +20506,7 @@ export class LayoutTab extends LitElement {
         >
           ${images.map(
             (image, index) => html`
-              <div 
+              <div
                 class="preset-slider-image"
                 @click=${(e: Event) => {
                   e.stopPropagation();
@@ -18229,12 +20680,12 @@ export class LayoutTab extends LitElement {
 
     // Check if there's a search query
     const hasSearchQuery = this._presetSearchQuery.trim() !== '';
-    
+
     // Filter presets if searching
     let presets = hasSearchQuery
       ? this._filterPresetsBySearch(allPresets, this._presetSearchQuery)
       : allPresets;
-    
+
     // Sort presets based on selected criteria
     presets = this._sortPresets(presets, this._presetSortBy, this._presetSortDirection);
 
@@ -18242,40 +20693,50 @@ export class LayoutTab extends LitElement {
       <div class="presets-container">
         <!-- Search Bar -->
         ${this._renderPresetSearchBar()}
-
         ${!hasSearchQuery
           ? html`
               <!-- Header with Source Filter -->
               <div class="presets-header">
                 <div class="preset-categories">
-            ${sources.map(
-              source => html`
-                <button
-                  class="category-btn ${this._selectedPresetSource === source ? 'active' : ''}"
-                  @click=${() => (this._selectedPresetSource = source)}
+                  ${sources.map(
+                    source => html`
+                      <button
+                        class="category-btn ${this._selectedPresetSource === source
+                          ? 'active'
+                          : ''}"
+                        @click=${() => (this._selectedPresetSource = source)}
+                      >
+                        <ha-icon
+                          icon="${source === 'all'
+                            ? 'mdi:view-grid'
+                            : source === 'standard'
+                              ? 'mdi:shield-check'
+                              : 'mdi:account-group'}"
+                        ></ha-icon>
+                        <span>${source.charAt(0).toUpperCase() + source.slice(1)}</span>
+                      </button>
+                    `
+                  )}
+                </div>
+
+                <!-- Sort Controls -->
+                <div
+                  class="preset-sort-controls"
+                  style="display: flex; align-items: center; gap: 8px; margin-top: 12px;"
                 >
-                  <ha-icon
-                    icon="${source === 'all'
-                      ? 'mdi:view-grid'
-                      : source === 'standard'
-                        ? 'mdi:shield-check'
-                        : 'mdi:account-group'}"
-                  ></ha-icon>
-                  <span>${source.charAt(0).toUpperCase() + source.slice(1)}</span>
-                </button>
-              `
-            )}
-          </div>
-          
-          <!-- Sort Controls -->
-          <div class="preset-sort-controls" style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
-            <span style="font-size: 12px; color: var(--secondary-text-color); font-weight: 500;">Sort by:</span>
-            <select
-              .value=${this._presetSortBy}
-              @change=${(e: Event) => {
-                this._presetSortBy = (e.target as HTMLSelectElement).value as 'name' | 'date' | 'rating';
-              }}
-              style="
+                  <span
+                    style="font-size: 12px; color: var(--secondary-text-color); font-weight: 500;"
+                    >Sort by:</span
+                  >
+                  <select
+                    .value=${this._presetSortBy}
+                    @change=${(e: Event) => {
+                      this._presetSortBy = (e.target as HTMLSelectElement).value as
+                        | 'name'
+                        | 'date'
+                        | 'rating';
+                    }}
+                    style="
                 padding: 6px 8px;
                 border-radius: 4px;
                 border: 1px solid var(--divider-color);
@@ -18284,17 +20745,18 @@ export class LayoutTab extends LitElement {
                 font-size: 12px;
                 cursor: pointer;
               "
-            >
-              <option value="name">Name</option>
-              <option value="date">Date</option>
-              <option value="rating">Top Rated</option>
-            </select>
-            <button
-              @click=${() => {
-                this._presetSortDirection = this._presetSortDirection === 'asc' ? 'desc' : 'asc';
-              }}
-              title="${this._presetSortDirection === 'asc' ? 'Ascending' : 'Descending'}"
-              style="
+                  >
+                    <option value="name">Name</option>
+                    <option value="date">Date</option>
+                    <option value="rating">Top Rated</option>
+                  </select>
+                  <button
+                    @click=${() => {
+                      this._presetSortDirection =
+                        this._presetSortDirection === 'asc' ? 'desc' : 'asc';
+                    }}
+                    title="${this._presetSortDirection === 'asc' ? 'Ascending' : 'Descending'}"
+                    style="
                 padding: 6px 8px;
                 border-radius: 4px;
                 border: 1px solid var(--divider-color);
@@ -18306,14 +20768,14 @@ export class LayoutTab extends LitElement {
                 gap: 4px;
                 font-size: 12px;
               "
-            >
-              <ha-icon
-                icon="mdi:${this._presetSortDirection === 'asc' ? 'arrow-up' : 'arrow-down'}"
-                style="--mdc-icon-size: 16px;"
-              ></ha-icon>
-              <span>${this._presetSortDirection === 'asc' ? 'A→Z' : 'Z→A'}</span>
-            </button>
-          </div>
+                  >
+                    <ha-icon
+                      icon="mdi:${this._presetSortDirection === 'asc' ? 'arrow-up' : 'arrow-down'}"
+                      style="--mdc-icon-size: 16px;"
+                    ></ha-icon>
+                    <span>${this._presetSortDirection === 'asc' ? 'A→Z' : 'Z→A'}</span>
+                  </button>
+                </div>
 
                 ${wpStatus.error
                   ? html`
@@ -18402,7 +20864,10 @@ export class LayoutTab extends LitElement {
                                     window.open(wpPreset.preset_url, '_blank');
                                   }
                                 }}
-                                title="Click to rate this preset (${(preset.metadata?.rating || 0).toFixed(1)}/5 - ${wpPreset.rating_count || 0} ${(wpPreset.rating_count || 0) === 1 ? 'review' : 'reviews'})"
+                                title="Click to rate this preset (${(
+                                  preset.metadata?.rating || 0
+                                ).toFixed(1)}/5 - ${wpPreset.rating_count ||
+                                0} ${(wpPreset.rating_count || 0) === 1 ? 'review' : 'reviews'})"
                                 style="cursor: pointer; display: flex; align-items: center; gap: 4px;"
                               >
                                 ${[1, 2, 3, 4, 5].map(starNum => {
@@ -18411,14 +20876,20 @@ export class LayoutTab extends LitElement {
                                   const isHalf = !isFilled && starNum - 0.5 <= rating && rating > 0;
                                   return html`
                                     <ha-icon
-                                      icon="mdi:star${isFilled ? '' : isHalf ? '-half-full' : '-outline'}"
-                                      style="color: ${isFilled || isHalf ? '#ffc107' : '#666'}; --mdc-icon-size: 14px;"
+                                      icon="mdi:star${isFilled
+                                        ? ''
+                                        : isHalf
+                                          ? '-half-full'
+                                          : '-outline'}"
+                                      style="color: ${isFilled || isHalf
+                                        ? '#ffc107'
+                                        : '#666'}; --mdc-icon-size: 14px;"
                                     ></ha-icon>
                                   `;
                                 })}
                                 <span
-                                      class="rating-count"
-                                      style="font-size: 11px; color: var(--secondary-text-color); margin-left: 2px;"
+                                  class="rating-count"
+                                  style="font-size: 11px; color: var(--secondary-text-color); margin-left: 2px;"
                                   >(${wpPreset.rating_count || 0})</span
                                 >
                               </div>
@@ -19301,7 +21772,7 @@ export class LayoutTab extends LitElement {
     const filteredNativeCards = hasSearchQuery
       ? this._filterCardsBySearch(nativeCards, this._cardSearchQuery)
       : nativeCards;
-    
+
     const filteredAvailableCards = hasSearchQuery
       ? this._filterCardsBySearch(
           availableCards.map(c => ({
@@ -19335,18 +21806,14 @@ export class LayoutTab extends LitElement {
           <div class="info-content">
             <strong>How to use:</strong>
             <p>
-              Click any card to add it to your selected column. Native HA cards and 3rd party
-              cards will use their native editors when available.
+              Click any card to add it to your selected column. Native HA cards and 3rd party cards
+              will use their native editors when available.
             </p>
           </div>
         </div>
 
         ${hasSearchQuery
-          ? this._renderCardSearchResults(
-              filteredNativeCards,
-              filteredAvailableCards,
-              isPro
-            )
+          ? this._renderCardSearchResults(filteredNativeCards, filteredAvailableCards, isPro)
           : html`
 
         <!-- SECTION 1: Native Home Assistant Cards (Unlimited) -->
@@ -19362,36 +21829,49 @@ export class LayoutTab extends LitElement {
             </div>
           </div>
 
-          ${nativeCards.length > 0
-            ? html`
-                <div class="cards-grid">
-                  ${nativeCards.map(
-                    (card: { type: string; name: string; icon?: string; description?: string }) => html`
-                      <div
-                        class="card-item native-card-item ${card.type === CUSTOM_YAML_CARD_TYPE ? 'yaml-card-item' : ''}"
-                        @click=${async () => await this._addNativeCard(card.type)}
-                      >
-                        <div class="card-icon ${card.type === CUSTOM_YAML_CARD_TYPE ? 'yaml-icon' : 'native-icon'}">
-                          <ha-icon icon="${card.icon || 'mdi:home-assistant'}"></ha-icon>
+          ${
+            nativeCards.length > 0
+              ? html`
+                  <div class="cards-grid">
+                    ${nativeCards.map(
+                      (card: {
+                        type: string;
+                        name: string;
+                        icon?: string;
+                        description?: string;
+                      }) => html`
+                        <div
+                          class="card-item native-card-item ${card.type === CUSTOM_YAML_CARD_TYPE
+                            ? 'yaml-card-item'
+                            : ''}"
+                          @click=${async () => await this._addNativeCard(card.type)}
+                        >
+                          <div
+                            class="card-icon ${card.type === CUSTOM_YAML_CARD_TYPE
+                              ? 'yaml-icon'
+                              : 'native-icon'}"
+                          >
+                            <ha-icon icon="${card.icon || 'mdi:home-assistant'}"></ha-icon>
+                          </div>
+                          <div class="card-info">
+                            <div class="card-name">${card.name}</div>
+                            <div class="card-type">${card.description || card.type}</div>
+                          </div>
+                          <div class="card-add-hint">
+                            <ha-icon icon="mdi:plus-circle"></ha-icon>
+                          </div>
                         </div>
-                        <div class="card-info">
-                          <div class="card-name">${card.name}</div>
-                          <div class="card-type">${card.description || card.type}</div>
-                        </div>
-                        <div class="card-add-hint">
-                          <ha-icon icon="mdi:plus-circle"></ha-icon>
-                        </div>
-                      </div>
-                    `
-                  )}
-                </div>
-              `
-            : html`
-                <div class="empty-state-mini">
-                  <ha-icon icon="mdi:information-outline"></ha-icon>
-                  <p>No native cards detected</p>
-                </div>
-              `}
+                      `
+                    )}
+                  </div>
+                `
+              : html`
+                  <div class="empty-state-mini">
+                    <ha-icon icon="mdi:information-outline"></ha-icon>
+                    <p>No native cards detected</p>
+                  </div>
+                `
+          }
         </div>
 
         <!-- SECTION 2: Community & 3rd Party Cards (Pro Gated) -->
@@ -19401,33 +21881,33 @@ export class LayoutTab extends LitElement {
               <ha-icon icon="mdi:puzzle"></ha-icon>
               <h5>Community & 3rd Party</h5>
             </div>
-            ${!isPro
-              ? html`
-                  <div class="limit-badge">
-                    <ha-icon icon="mdi:information-outline"></ha-icon>
-                    <span
-                      >${Math.min(this._globalExternalCardCount, 5)} / 5 used</span
-                    >
-                  </div>
-                `
-              : html`
-                  <div class="pro-badge-mini">
-                    <ha-icon icon="mdi:crown"></ha-icon>
-                    <span>Unlimited</span>
-                  </div>
-                `}
+            ${
+              !isPro
+                ? html`
+                    <div class="limit-badge">
+                      <ha-icon icon="mdi:information-outline"></ha-icon>
+                      <span>${Math.min(this._globalExternalCardCount, 5)} / 5 used</span>
+                    </div>
+                  `
+                : html`
+                    <div class="pro-badge-mini">
+                      <ha-icon icon="mdi:crown"></ha-icon>
+                      <span>Unlimited</span>
+                    </div>
+                  `
+            }
           </div>
 
-          ${!isPro
-            ? html`
-                <div class="upgrade-notice">
-                  <span>Want unlimited 3rd party cards?</span>
-                  <button class="get-pro-btn-mini" @click=${this._openProPage}>
-                    Get Pro
-                  </button>
-                </div>
-              `
-            : ''}
+          ${
+            !isPro
+              ? html`
+                  <div class="upgrade-notice">
+                    <span>Want unlimited 3rd party cards?</span>
+                    <button class="get-pro-btn-mini" @click=${this._openProPage}>Get Pro</button>
+                  </div>
+                `
+              : ''
+          }
 
           <div class="thirdparty-notebox">
             <ha-icon icon="mdi:alert-circle"></ha-icon>
@@ -19437,40 +21917,42 @@ export class LayoutTab extends LitElement {
             </div>
           </div>
 
-          ${availableCards.length > 0
-            ? html`
-                <div class="cards-grid">
-                  ${availableCards.map(
-                    card => html`
-                      <div
-                        class="card-item"
-                        @click=${async () => await this._addCardFromTab(card.type)}
-                      >
-                        <div class="card-icon">
-                          <ha-icon icon="mdi:card-bulleted"></ha-icon>
+          ${
+            availableCards.length > 0
+              ? html`
+                  <div class="cards-grid">
+                    ${availableCards.map(
+                      card => html`
+                        <div
+                          class="card-item"
+                          @click=${async () => await this._addCardFromTab(card.type)}
+                        >
+                          <div class="card-icon">
+                            <ha-icon icon="mdi:card-bulleted"></ha-icon>
+                          </div>
+                          <div class="card-info">
+                            <div class="card-name">${card.name}</div>
+                            <div class="card-type">${card.type}</div>
+                            ${card.version
+                              ? html`<div class="card-version">v${card.version}</div>`
+                              : ''}
+                          </div>
+                          <div class="card-add-hint">
+                            <ha-icon icon="mdi:plus-circle"></ha-icon>
+                          </div>
                         </div>
-                        <div class="card-info">
-                          <div class="card-name">${card.name}</div>
-                          <div class="card-type">${card.type}</div>
-                          ${card.version
-                            ? html`<div class="card-version">v${card.version}</div>`
-                            : ''}
-                        </div>
-                        <div class="card-add-hint">
-                          <ha-icon icon="mdi:plus-circle"></ha-icon>
-                        </div>
-                      </div>
-                    `
-                  )}
-                </div>
-              `
-            : html`
-                <div class="empty-state-mini">
-                  <ha-icon icon="mdi:card-off"></ha-icon>
-                  <p>No 3rd party cards installed</p>
-                  <p class="empty-hint">Install custom cards via HACS</p>
-                </div>
-              `}
+                      `
+                    )}
+                  </div>
+                `
+              : html`
+                  <div class="empty-state-mini">
+                    <ha-icon icon="mdi:card-off"></ha-icon>
+                    <p>No 3rd party cards installed</p>
+                    <p class="empty-hint">Install custom cards via HACS</p>
+                  </div>
+                `
+          }
 
         </div>
       </div>
@@ -19927,6 +22409,7 @@ export class LayoutTab extends LitElement {
         }
       </style>
           `}
+      </div>
     `;
   }
 
@@ -19969,24 +22452,26 @@ export class LayoutTab extends LitElement {
                   <ha-icon icon="mdi:home-assistant"></ha-icon>
                   <span>Native Home Assistant Cards</span>
                 </div>
-                ${nativeCards.map(card => html`
-                  <div
-                    class="search-result-item"
-                    @click=${async () => await this._addNativeCard(card.type)}
-                  >
-                    <div class="search-result-icon">
-                      <ha-icon icon="${card.icon || 'mdi:home-assistant'}"></ha-icon>
-                    </div>
-                    <div class="search-result-content">
-                      <div class="search-result-header-row">
-                        <span class="search-result-title">${card.name}</span>
-                        <span class="search-result-tier standard">Native</span>
+                ${nativeCards.map(
+                  card => html`
+                    <div
+                      class="search-result-item"
+                      @click=${async () => await this._addNativeCard(card.type)}
+                    >
+                      <div class="search-result-icon">
+                        <ha-icon icon="${card.icon || 'mdi:home-assistant'}"></ha-icon>
                       </div>
-                      <p class="search-result-description">${card.description || card.type}</p>
+                      <div class="search-result-content">
+                        <div class="search-result-header-row">
+                          <span class="search-result-title">${card.name}</span>
+                          <span class="search-result-tier standard">Native</span>
+                        </div>
+                        <p class="search-result-description">${card.description || card.type}</p>
+                      </div>
+                      <ha-icon class="add-icon" icon="mdi:plus-circle"></ha-icon>
                     </div>
-                    <ha-icon class="add-icon" icon="mdi:plus-circle"></ha-icon>
-                  </div>
-                `)}
+                  `
+                )}
               `
             : ''}
           ${thirdPartyCards.length > 0
@@ -19999,7 +22484,7 @@ export class LayoutTab extends LitElement {
                   const actualCard = ucExternalCardsService
                     .getAvailableCards()
                     .find(c => c.type === card.type);
-                  
+
                   return html`
                     <div
                       class="search-result-item"
@@ -20048,32 +22533,31 @@ export class LayoutTab extends LitElement {
 
     // Route to appropriate handler based on card type
     const isNativeCard = cardType.startsWith('hui-');
-    
+
     try {
       if (isNativeCard) {
         await this._addNativeCard(cardType);
       } else {
         // For 3rd party cards, check Pro limits
-    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-    const isPro =
-      integrationUser?.subscription?.tier === 'pro' &&
-      integrationUser?.subscription?.status === 'active';
+        const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+        const isPro =
+          integrationUser?.subscription?.tier === 'pro' &&
+          integrationUser?.subscription?.status === 'active';
 
-    const currentCount = this._countExternalCardModules();
-    const limit = 5;
+        const currentCount = this._countExternalCardModules();
+        const limit = 5;
 
-    if (!isPro && currentCount >= limit) {
-      this._showToast(
-        `Free users are limited to ${limit} 3rd party cards. Upgrade to Pro for unlimited cards!`,
-        'error'
-      );
-      return;
-    }
+        if (!isPro && currentCount >= limit) {
+          this._showToast(
+            `Free users are limited to ${limit} 3rd party cards. Upgrade to Pro for unlimited cards!`,
+            'error'
+          );
+          return;
+        }
 
-      await this._add3rdPartyCard(cardType);
+        await this._add3rdPartyCard(cardType);
       }
     } catch (error) {
-      console.error('[UC] Failed to add card:', error);
       this._showToast(`Failed to add card: ${error?.message || 'Unknown error'}`, 'error');
     }
   }
@@ -20137,7 +22621,7 @@ export class LayoutTab extends LitElement {
         @confirm=${(e: CustomEvent) => {
           // Handle card-specific variables from the mapping dialog
           const cardVarsToCreate = e.detail?.cardVarsToCreate || [];
-          
+
           if (cardVarsToCreate.length > 0) {
             // Add variables to card config as card-specific
             const currentCardVars = this.config._customVariables || [];
@@ -20151,20 +22635,22 @@ export class LayoutTab extends LitElement {
               created: new Date().toISOString(),
               isGlobal: false, // Card-specific, not global
             }));
-            
+
             // Update config with new card-specific variables
-            this.dispatchEvent(new CustomEvent('config-changed', {
-              detail: { 
-                config: { 
-                  ...this.config, 
-                  _customVariables: [...currentCardVars, ...newCardVars] 
-                } 
-              },
-              bubbles: true,
-              composed: true,
-            }));
+            this.dispatchEvent(
+              new CustomEvent('config-changed', {
+                detail: {
+                  config: {
+                    ...this.config,
+                    _customVariables: [...currentCardVars, ...newCardVars],
+                  },
+                },
+                bubbles: true,
+                composed: true,
+              })
+            );
           }
-          
+
           this._showVariableMappingDialog = false;
           this._missingVariables = [];
           this._showToast('Variables created successfully!', 'success');
@@ -20239,7 +22725,6 @@ export class LayoutTab extends LitElement {
     rowName: string
   ): void {
     if (this._entityMappingOpen) {
-      console.warn('Entity mapping dialog already open - ignoring duplicate open request');
       return;
     }
     this._entityMappingOpen = true;
@@ -20250,12 +22735,10 @@ export class LayoutTab extends LitElement {
       `Map Entities for "${rowName}"`,
       entityReferences,
       (mappings: EntityMapping[]) => {
-        console.log('✅ Apply row import mappings:', mappings);
         this._entityMappingOpen = false;
         this._addImportedRowWithMappings(rowData, mappings, rowName);
       },
       () => {
-        console.log('❌ Cancel row import mapping');
         this._entityMappingOpen = false;
         // Cancel - add row with original entities (no mappings)
         this._addImportedRow(rowData, rowName);
@@ -20273,7 +22756,7 @@ export class LayoutTab extends LitElement {
 
     this._updateLayout(layout);
     this._showToast(`Row "${rowName}" imported successfully!`, 'success');
-    
+
     // Check for missing variables in the imported row
     const missingVars = findMissingVariables(newRow);
     if (missingVars.length > 0) {
@@ -20303,7 +22786,7 @@ export class LayoutTab extends LitElement {
       `Row "${rowName}" imported successfully with ${mappings.length} entity mapping(s)!`,
       'success'
     );
-    
+
     // Check for missing variables in the imported row
     const missingVars = findMissingVariables(newRow);
     if (missingVars.length > 0) {
@@ -20472,13 +22955,11 @@ export class LayoutTab extends LitElement {
           const result = (cardConstructor as any).getStubConfig(this.hass);
           stubConfigPromise = Promise.resolve(result);
         } catch (staticError) {
-          console.warn(`[UC] Static getStubConfig threw error:`, staticError);
           // If static fails, try without parameters (some cards don't expect parameters)
           try {
             const result = (cardConstructor as any).getStubConfig();
             stubConfigPromise = Promise.resolve(result);
           } catch (noParamError) {
-            console.warn(`[UC] Static getStubConfig (no params) also failed:`, noParamError);
             stubConfigPromise = null;
           }
         }
@@ -20515,14 +22996,12 @@ export class LayoutTab extends LitElement {
         return null;
       }
     } catch (error) {
-      console.warn(`[UC] getStubConfig failed for ${cardType}:`, error);
       return null;
     }
   }
 
   private async _add3rdPartyCard(cardType: string, skipProCheck: boolean = false): Promise<void> {
     if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
-      console.error('No row or column selected');
       return;
     }
 
@@ -20531,22 +23010,22 @@ export class LayoutTab extends LitElement {
 
     // Check Pro access (integration only) - skip for native cards
     if (!skipProCheck && !isNativeCard) {
-    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-    const isPro =
-      integrationUser?.subscription?.tier === 'pro' &&
-      integrationUser?.subscription?.status === 'active';
+      const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+      const isPro =
+        integrationUser?.subscription?.tier === 'pro' &&
+        integrationUser?.subscription?.status === 'active';
 
-    // For non-Pro users, check the global limit
-    if (!isPro) {
-      const currentGlobalCount = await this._countAllExternalCardModulesGlobally();
+      // For non-Pro users, check the global limit
+      if (!isPro) {
+        const currentGlobalCount = await this._countAllExternalCardModulesGlobally();
 
-      if (currentGlobalCount >= 5) {
-        // Show error toast
-        this._showToast(
-          'You have reached the maximum of 5 external cards across your dashboard. Upgrade to Ultra Card Pro for unlimited external cards.',
-          'error'
-        );
-        return;
+        if (currentGlobalCount >= 5) {
+          // Show error toast
+          this._showToast(
+            'You have reached the maximum of 5 external cards across your dashboard. Upgrade to Ultra Card Pro for unlimited external cards.',
+            'error'
+          );
+          return;
         }
       }
     }
@@ -20562,9 +23041,7 @@ export class LayoutTab extends LitElement {
     }
 
     // Determine the YAML config type (hui-* cards use their short HA type)
-    const yamlConfigType = isNativeCard
-      ? normalizeNativeCardConfigType(cardType)
-      : fullCardType;
+    const yamlConfigType = isNativeCard ? normalizeNativeCardConfigType(cardType) : fullCardType;
 
     // Get card info for better display name
     let cardName: string;
@@ -20574,7 +23051,7 @@ export class LayoutTab extends LitElement {
       cardName = nativeCard ? nativeCard.name : cardType;
     } else {
       // For 3rd party cards, use the external cards service
-    const cardInfo = ucExternalCardsService.getCardInfo(cardType);
+      const cardInfo = ucExternalCardsService.getCardInfo(cardType);
       cardName = cardInfo ? cardInfo.name : cardType;
     }
 
@@ -20668,14 +23145,17 @@ export class LayoutTab extends LitElement {
   /**
    * Get the current layout for a specific breakpoint
    */
-  private _getBreakpointLayout(row: CardRow, breakpoint: DeviceBreakpoint): { layout: string; custom?: string } {
+  private _getBreakpointLayout(
+    row: CardRow,
+    breakpoint: DeviceBreakpoint
+  ): { layout: string; custom?: string } {
     if (breakpoint === 'desktop') {
       return {
         layout: row.column_layout || '1-col',
         custom: row.custom_column_sizing,
       };
     }
-    
+
     const responsiveLayouts = row.responsive_column_layouts;
     if (!responsiveLayouts || !responsiveLayouts[breakpoint]) {
       // Inherit from desktop
@@ -20684,7 +23164,7 @@ export class LayoutTab extends LitElement {
         custom: row.custom_column_sizing,
       };
     }
-    
+
     return {
       layout: responsiveLayouts[breakpoint]!.layout,
       custom: responsiveLayouts[breakpoint]!.custom_sizing,
@@ -20696,7 +23176,7 @@ export class LayoutTab extends LitElement {
    */
   private _hasBreakpointOverride(row: CardRow, breakpoint: DeviceBreakpoint): boolean {
     if (breakpoint === 'desktop') return true; // Desktop is always "set"
-    return !!(row.responsive_column_layouts?.[breakpoint]);
+    return !!row.responsive_column_layouts?.[breakpoint];
   }
 
   /**
@@ -20712,7 +23192,7 @@ export class LayoutTab extends LitElement {
       // Desktop can use any layout
       return this.COLUMN_LAYOUTS;
     }
-    
+
     // Non-desktop breakpoints can only use layouts where desktop columns
     // evenly divide by the layout's column count (columns wrap properly)
     // e.g., 4 columns: 4, 2, 1 are valid (4%4=0, 4%2=0, 4%1=0)
@@ -20725,22 +23205,33 @@ export class LayoutTab extends LitElement {
     const currentRow = layout.rows[this._selectedRowForLayout];
     const desktopColumnCount = currentRow ? currentRow.columns.length : 1;
     const breakpoint = this._columnLayoutBreakpoint;
-    
+
     // Get the current layout for the selected breakpoint
-    const { layout: currentLayoutId, custom: currentCustomSizing } = this._getBreakpointLayout(currentRow, breakpoint);
+    const { layout: currentLayoutId, custom: currentCustomSizing } = this._getBreakpointLayout(
+      currentRow,
+      breakpoint
+    );
     const migratedLayoutId = this._migrateLegacyLayoutId(currentLayoutId);
     const isCustomLayout = currentLayoutId === 'custom';
     const hasOverride = this._hasBreakpointOverride(currentRow, breakpoint);
 
     // For desktop: show layouts for current column count (can add/remove columns)
     // For other breakpoints: show layouts up to desktop column count
-    const availableLayouts = breakpoint === 'desktop'
-      ? this._getLayoutsForColumnCount(desktopColumnCount)
-      : this._getAvailableLayoutsForBreakpoint(desktopColumnCount, breakpoint);
+    const availableLayouts =
+      breakpoint === 'desktop'
+        ? this._getLayoutsForColumnCount(desktopColumnCount)
+        : this._getAvailableLayoutsForBreakpoint(desktopColumnCount, breakpoint);
 
     // Breakpoint info for display
-    const breakpointLabels: Record<DeviceBreakpoint, { label: string; icon: string; description: string }> = {
-      desktop: { label: 'Desktop', icon: 'mdi:monitor', description: '≥1381px - Sets the base column structure' },
+    const breakpointLabels: Record<
+      DeviceBreakpoint,
+      { label: string; icon: string; description: string }
+    > = {
+      desktop: {
+        label: 'Desktop',
+        icon: 'mdi:monitor',
+        description: '≥1381px - Sets the base column structure',
+      },
       laptop: { label: 'Laptop', icon: 'mdi:laptop', description: '1025px - 1380px' },
       tablet: { label: 'Tablet', icon: 'mdi:tablet', description: '601px - 1024px' },
       mobile: { label: 'Mobile', icon: 'mdi:cellphone', description: '≤600px' },
@@ -20748,10 +23239,13 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div class="column-layout-selector-popup">
-        <div class="popup-overlay" @click=${() => {
-          this._showColumnLayoutSelector = false;
-          this._columnLayoutBreakpoint = 'desktop'; // Reset to desktop on close
-        }}></div>
+        <div
+          class="popup-overlay"
+          @click=${() => {
+            this._showColumnLayoutSelector = false;
+            this._columnLayoutBreakpoint = 'desktop'; // Reset to desktop on close
+          }}
+        ></div>
         <div class="selector-content draggable-popup" id="column-layout-selector-popup">
           <div
             class="selector-header"
@@ -20771,7 +23265,10 @@ export class LayoutTab extends LitElement {
               const bpHasOverride = this._hasBreakpointOverride(currentRow, bp);
               return html`
                 <button
-                  class="breakpoint-tab ${breakpoint === bp ? 'active' : ''} ${bpHasOverride && bp !== 'desktop' ? 'has-override' : ''}"
+                  class="breakpoint-tab ${breakpoint === bp ? 'active' : ''} ${bpHasOverride &&
+                  bp !== 'desktop'
+                    ? 'has-override'
+                    : ''}"
                   @click=${() => {
                     this._columnLayoutBreakpoint = bp;
                     // Reset custom sizing input when switching breakpoints
@@ -20790,7 +23287,9 @@ export class LayoutTab extends LitElement {
                 >
                   <ha-icon icon="${info.icon}"></ha-icon>
                   <span class="tab-label">${info.label}</span>
-                  ${bpHasOverride && bp !== 'desktop' ? html`<span class="override-dot"></span>` : ''}
+                  ${bpHasOverride && bp !== 'desktop'
+                    ? html`<span class="override-dot"></span>`
+                    : ''}
                 </button>
               `;
             })}
@@ -20802,34 +23301,44 @@ export class LayoutTab extends LitElement {
               <ha-icon icon="${breakpointLabels[breakpoint].icon}"></ha-icon>
               <div class="breakpoint-details">
                 <div class="breakpoint-label">${breakpointLabels[breakpoint].label}</div>
-                <div class="breakpoint-description">${breakpointLabels[breakpoint].description}</div>
+                <div class="breakpoint-description">
+                  ${breakpointLabels[breakpoint].description}
+                </div>
               </div>
-              ${breakpoint !== 'desktop' && hasOverride ? html`
-                <button 
-                  class="clear-override-btn"
-                  @click=${() => this._clearBreakpointLayout(breakpoint)}
-                  title="Clear override and inherit from desktop"
-                >
-                  <ha-icon icon="mdi:close"></ha-icon>
-                  Clear
-                </button>
-              ` : ''}
+              ${breakpoint !== 'desktop' && hasOverride
+                ? html`
+                    <button
+                      class="clear-override-btn"
+                      @click=${() => this._clearBreakpointLayout(breakpoint)}
+                      title="Clear override and inherit from desktop"
+                    >
+                      <ha-icon icon="mdi:close"></ha-icon>
+                      Clear
+                    </button>
+                  `
+                : ''}
             </div>
 
-            ${breakpoint === 'desktop' ? html`
-              <div class="desktop-note">
-                <ha-icon icon="mdi:information-outline"></ha-icon>
-                <span>Desktop defines the number of columns. Other breakpoints can rearrange them differently.</span>
-              </div>
-            ` : html`
-              <div class="inherit-note ${!hasOverride ? 'active' : ''}">
-                <ha-icon icon="${hasOverride ? 'mdi:pencil' : 'mdi:link-variant'}"></ha-icon>
-                <span>${hasOverride 
-                  ? 'Custom layout set for this breakpoint' 
-                  : `Inheriting from desktop (${desktopColumnCount} column${desktopColumnCount !== 1 ? 's' : ''})`
-                }</span>
-              </div>
-            `}
+            ${breakpoint === 'desktop'
+              ? html`
+                  <div class="desktop-note">
+                    <ha-icon icon="mdi:information-outline"></ha-icon>
+                    <span
+                      >Desktop defines the number of columns. Other breakpoints can rearrange them
+                      differently.</span
+                    >
+                  </div>
+                `
+              : html`
+                  <div class="inherit-note ${!hasOverride ? 'active' : ''}">
+                    <ha-icon icon="${hasOverride ? 'mdi:pencil' : 'mdi:link-variant'}"></ha-icon>
+                    <span
+                      >${hasOverride
+                        ? 'Custom layout set for this breakpoint'
+                        : `Inheriting from desktop (${desktopColumnCount} column${desktopColumnCount !== 1 ? 's' : ''})`}</span
+                    >
+                  </div>
+                `}
 
             <div class="layout-options">
               ${availableLayouts.map(
@@ -20840,7 +23349,10 @@ export class LayoutTab extends LitElement {
                       ? 'current'
                       : ''}"
                     @click=${() => this._setBreakpointLayout(breakpoint, layoutOpt.id)}
-                    title="${layoutOpt.name} (${layoutOpt.columnCount} column${layoutOpt.columnCount !== 1 ? 's' : ''})"
+                    title="${layoutOpt.name} (${layoutOpt.columnCount} column${layoutOpt.columnCount !==
+                    1
+                      ? 's'
+                      : ''})"
                   >
                     <div class="layout-visual">
                       <div class="layout-icon-large">
@@ -20848,7 +23360,9 @@ export class LayoutTab extends LitElement {
                       </div>
                     </div>
                     <div class="layout-name">${layoutOpt.name}</div>
-                    <div class="layout-columns">${layoutOpt.columnCount} col${layoutOpt.columnCount !== 1 ? 's' : ''}</div>
+                    <div class="layout-columns">
+                      ${layoutOpt.columnCount} col${layoutOpt.columnCount !== 1 ? 's' : ''}
+                    </div>
                     ${layoutOpt.id === currentLayoutId || layoutOpt.id === migratedLayoutId
                       ? html`<div class="current-badge">Current</div>`
                       : ''}
@@ -20861,11 +23375,11 @@ export class LayoutTab extends LitElement {
             <div class="custom-sizing-section">
               <div class="custom-sizing-title">Custom Sizing</div>
               <div class="custom-sizing-description">
-                Enter custom CSS grid sizing (e.g., "${this._getCustomSizingPlaceholder(desktopColumnCount)}").
-                ${breakpoint === 'desktop' 
+                Enter custom CSS grid sizing (e.g.,
+                "${this._getCustomSizingPlaceholder(desktopColumnCount)}").
+                ${breakpoint === 'desktop'
                   ? `Must have exactly ${desktopColumnCount} value${desktopColumnCount !== 1 ? 's' : ''}.`
-                  : `Valid column counts: ${this._getValidColumnCountsForBreakpoint(desktopColumnCount).join(', ')} (must divide evenly into ${desktopColumnCount}).`
-                }
+                  : `Valid column counts: ${this._getValidColumnCountsForBreakpoint(desktopColumnCount).join(', ')} (must divide evenly into ${desktopColumnCount}).`}
               </div>
 
               <input
@@ -20873,7 +23387,8 @@ export class LayoutTab extends LitElement {
                 class="custom-sizing-input ${this._customSizingError ? 'has-error' : ''}"
                 placeholder="${this._getCustomSizingPlaceholder(desktopColumnCount)}"
                 .value="${this._customSizingInput || currentCustomSizing || ''}"
-                @input=${(e: Event) => this._onCustomSizingInputBreakpoint(e, breakpoint, desktopColumnCount)}
+                @input=${(e: Event) =>
+                  this._onCustomSizingInputBreakpoint(e, breakpoint, desktopColumnCount)}
                 @keydown=${(e: KeyboardEvent) => {
                   if (e.key === 'Enter' && this._customSizingValid) {
                     this._applyCustomSizingBreakpoint(breakpoint);
@@ -20988,7 +23503,7 @@ export class LayoutTab extends LitElement {
 
     if (targetRow.responsive_column_layouts?.[breakpoint]) {
       delete targetRow.responsive_column_layouts[breakpoint];
-      
+
       // Clean up empty object
       if (Object.keys(targetRow.responsive_column_layouts).length === 0) {
         delete targetRow.responsive_column_layouts;
@@ -21014,7 +23529,11 @@ export class LayoutTab extends LitElement {
   /**
    * Handle custom sizing input for a specific breakpoint
    */
-  private _onCustomSizingInputBreakpoint(e: Event, breakpoint: DeviceBreakpoint, desktopColumnCount: number): void {
+  private _onCustomSizingInputBreakpoint(
+    e: Event,
+    breakpoint: DeviceBreakpoint,
+    desktopColumnCount: number
+  ): void {
     const input = e.target as HTMLInputElement;
     this._customSizingInput = input.value;
 
@@ -21026,7 +23545,11 @@ export class LayoutTab extends LitElement {
     } else {
       // Non-desktop must have a count that evenly divides desktop columns
       const validCounts = this._getValidColumnCountsForBreakpoint(desktopColumnCount);
-      const validation = this._validateCustomColumnSizingDivisible(input.value, desktopColumnCount, validCounts);
+      const validation = this._validateCustomColumnSizingDivisible(
+        input.value,
+        desktopColumnCount,
+        validCounts
+      );
       this._customSizingValid = validation.valid;
       this._customSizingError = validation.error || '';
     }
@@ -21043,14 +23566,21 @@ export class LayoutTab extends LitElement {
       return { valid: false, error: undefined };
     }
 
-    const values = value.trim().split(/\s+/).filter(v => v);
-    
+    const values = value
+      .trim()
+      .split(/\s+/)
+      .filter(v => v);
+
     if (values.length !== exactCount) {
-      return { valid: false, error: `Must have exactly ${exactCount} value${exactCount !== 1 ? 's' : ''}` };
+      return {
+        valid: false,
+        error: `Must have exactly ${exactCount} value${exactCount !== 1 ? 's' : ''}`,
+      };
     }
 
     // Validate each value is a valid CSS grid value
-    const validPattern = /^(\d+(\.\d+)?(fr|px|%|em|rem|vh|vw)|auto|minmax\(.+\)|min-content|max-content)$/i;
+    const validPattern =
+      /^(\d+(\.\d+)?(fr|px|%|em|rem|vh|vw)|auto|minmax\(.+\)|min-content|max-content)$/i;
     for (const v of values) {
       if (!validPattern.test(v)) {
         return { valid: false, error: `Invalid value: ${v}` };
@@ -21073,18 +23603,22 @@ export class LayoutTab extends LitElement {
       return { valid: false, error: undefined };
     }
 
-    const values = value.trim().split(/\s+/).filter(v => v);
-    
+    const values = value
+      .trim()
+      .split(/\s+/)
+      .filter(v => v);
+
     if (!validCounts.includes(values.length)) {
       const validStr = validCounts.join(', ');
-      return { 
-        valid: false, 
-        error: `Must have ${validStr} value${validCounts.length > 1 || validCounts[0] !== 1 ? 's' : ''} (must divide evenly into ${desktopColumnCount})` 
+      return {
+        valid: false,
+        error: `Must have ${validStr} value${validCounts.length > 1 || validCounts[0] !== 1 ? 's' : ''} (must divide evenly into ${desktopColumnCount})`,
       };
     }
 
     // Validate each value is a valid CSS grid value
-    const validPattern = /^(\d+(\.\d+)?(fr|px|%|em|rem|vh|vw)|auto|minmax\(.+\)|min-content|max-content)$/i;
+    const validPattern =
+      /^(\d+(\.\d+)?(fr|px|%|em|rem|vh|vw)|auto|minmax\(.+\)|min-content|max-content)$/i;
     for (const v of values) {
       if (!validPattern.test(v)) {
         return { valid: false, error: `Invalid value: ${v}` };
@@ -21164,6 +23698,1145 @@ export class LayoutTab extends LitElement {
         --accent-color: var(--orange-color, #ff9800);
         --orange-color: #ff9800;
         --secondary-color: var(--orange-color, #ff9800);
+        --tree-line-color: var(--divider-color, rgba(127, 127, 127, 0.3));
+        --tree-dot-color: var(--primary-color, #03a9f4);
+        --tree-dot-size: 8px;
+        --tree-indent: 16px;
+        --tree-line-width: 1px;
+      }
+
+      /* ========================================
+         BREADCRUMB NAVIGATION STYLES
+         ======================================== */
+      .tree-breadcrumbs {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 12px;
+        margin-bottom: 12px;
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.05));
+        border-radius: 6px;
+        flex-wrap: wrap;
+        overflow-x: auto;
+      }
+
+      .breadcrumb-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        background: none;
+        border: none;
+        border-radius: 4px;
+        color: var(--primary-text-color);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .breadcrumb-item:hover {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.1);
+        color: var(--primary-color);
+      }
+
+      .breadcrumb-item.active {
+        background: var(--primary-color);
+        color: white;
+        cursor: default;
+      }
+
+      .breadcrumb-item.active:hover {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .breadcrumb-root {
+        padding: 4px 6px;
+      }
+
+      .breadcrumb-root ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      .breadcrumb-separator {
+        color: var(--secondary-text-color);
+        opacity: 0.5;
+      }
+
+      .breadcrumb-separator ha-icon {
+        --mdc-icon-size: 14px;
+      }
+
+      /* ========================================
+         TREE VIEW CONTAINER STYLES
+         ======================================== */
+      .tree-view-container {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 8px 4px 8px 12px;
+      }
+
+      .tree-add-row-container {
+        padding: 8px 0 0 0;
+      }
+
+      .tree-add-row-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 12px 16px;
+        background: transparent;
+        border: 2px dashed var(--divider-color);
+        border-radius: 8px;
+        color: var(--secondary-text-color);
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tree-add-row-btn:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.05);
+      }
+
+      .tree-add-row-btn ha-icon {
+        --mdc-icon-size: 20px;
+      }
+
+      /* ========================================
+         TREE NODE STYLES
+         ======================================== */
+      .tree-node {
+        position: relative;
+        padding-left: 0;
+        margin-bottom: 6px;
+        --tree-level-color: var(--divider-color);
+      }
+
+      /* Each level gets a unique color variable */
+      .tree-row {
+        --tree-level-color: var(--primary-color, #03a9f4);
+      }
+
+      .tree-column {
+        --tree-level-color: #ff9800;
+      }
+
+      .tree-layout-module,
+      .tree-nested-layout {
+        --tree-level-color: #4caf50;
+      }
+
+      /* Tree node line - no longer used, lines drawn with pseudo-elements */
+      .tree-node-line {
+        display: none;
+      }
+
+      /* Tree dot indicator - hidden */
+      .tree-node-dot {
+        display: none;
+      }
+
+      /* Track collapse button - positioned next to first child */
+      .tree-track-collapse {
+        position: absolute;
+        left: 12px; /* Center of track line */
+        top: 28px; /* Aligned with center of first child header (8px padding + ~20px half header) */
+        transform: translateX(-50%);
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--tree-level-color);
+        border: 2px solid var(--card-background-color);
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tree-track-collapse:hover {
+        transform: translateX(-50%) scale(1.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .tree-track-collapse .track-chevron {
+        color: white;
+        --mdc-icon-size: 14px;
+        transition: transform 0.2s ease;
+      }
+
+      .tree-node.collapsed .tree-track-collapse .track-chevron {
+        transform: rotate(-90deg);
+      }
+
+      /* Row's track collapse (blue) - on the blue line going to columns */
+      .tree-row > .tree-node-children > .tree-track-collapse {
+        background: var(--primary-color, #03a9f4);
+      }
+
+      /* Column's track collapse (orange) - on the orange line going to modules */
+      .tree-column > .tree-node-children > .tree-track-collapse {
+        background: #ff9800;
+      }
+
+      /* Layout module's track collapse (green) */
+      .tree-layout-module > .tree-node-children > .tree-track-collapse,
+      .tree-nested-layout > .tree-node-children > .tree-track-collapse {
+        background: #4caf50;
+      }
+
+      /* Tree node content - full width for rows, indented for nested */
+      .tree-node-content {
+        margin-left: 0;
+        background: var(--card-background-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        overflow: visible;
+        transition: all 0.2s ease;
+      }
+
+      /* Nested items (columns, modules) need left margin for track line */
+      .tree-node-children > .tree-node > .tree-node-content {
+        margin-left: 0;
+      }
+
+      .tree-node-content:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Row has no border so only show shadow on hover */
+      .tree-row > .tree-node-content:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      /* Column has no border so only show shadow on hover */
+      .tree-column > .tree-node-content:hover {
+        border-color: transparent;
+        box-shadow: 0 4px 12px rgba(255, 152, 0, 0.2);
+      }
+
+      /* Layout module has no border so only show shadow on hover */
+      .tree-layout-module > .tree-node-content:hover {
+        border-color: transparent;
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+      }
+
+      .tree-node.drop-target .tree-node-content {
+        border-color: var(--primary-color);
+        border-style: dashed;
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.05);
+      }
+
+      /* Tree node header */
+      .tree-node-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.03));
+        min-height: 40px;
+      }
+
+      /* Row header - primary color with no border on content */
+      .tree-row > .tree-node-content {
+        border: none;
+      }
+
+      .tree-row > .tree-node-content > .tree-node-header {
+        background: var(--primary-color);
+        color: white;
+        border-radius: 8px;
+      }
+
+      /* Column header - orange background */
+      .tree-column > .tree-node-content > .tree-node-header {
+        background: #ff9800;
+        color: white;
+      }
+
+      .tree-column .tree-node-drag-handle,
+      .tree-column .tree-collapse-btn,
+      .tree-column .tree-overflow-btn {
+        color: white;
+      }
+
+      .tree-column .tree-collapse-btn:hover,
+      .tree-column .tree-overflow-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* Layout module header - solid green to match nested layouts */
+      .tree-layout-module > .tree-node-content > .tree-node-header {
+        background: #4caf50;
+        color: white;
+        border-radius: 8px;
+      }
+
+      .tree-node-drag-handle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        color: inherit;
+        opacity: 0.5;
+        transition: opacity 0.2s ease;
+        --mdc-icon-size: 18px;
+      }
+
+      .tree-node-drag-handle:hover {
+        opacity: 1;
+      }
+
+      .tree-node-drag-handle:active {
+        cursor: grabbing;
+      }
+
+      .tree-row .tree-node-drag-handle {
+        color: white;
+      }
+
+      /* Collapse button */
+      .tree-collapse-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        background: none;
+        border: none;
+        border-radius: 4px;
+        color: inherit;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        --mdc-icon-size: 18px;
+      }
+
+      .tree-collapse-btn:hover {
+        background: rgba(0, 0, 0, 0.1);
+      }
+
+      .tree-row .tree-collapse-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* Column collapse - white tint on hover (orange header) */
+      .tree-column .tree-collapse-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* Layout module collapse - green tint on hover */
+      .tree-layout-module .tree-collapse-btn:hover {
+        background: rgba(76, 175, 80, 0.15);
+      }
+
+      .tree-collapse-spacer {
+        width: 24px;
+        height: 24px;
+      }
+
+      /* Tree node icon */
+      .tree-node-icon {
+        --mdc-icon-size: 20px;
+        opacity: 0.8;
+      }
+
+      .tree-row .tree-node-icon {
+        color: white;
+      }
+
+      /* Tree node title and info */
+      .tree-node-title {
+        font-weight: 500;
+        font-size: 14px;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .tree-node-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .tree-node-subtitle {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .tree-node-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .tree-row .tree-node-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+
+      /* Column badge - white on orange header */
+      .tree-column .tree-node-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+
+      /* Layout module badge - green tint */
+      .tree-layout-module .tree-node-badge {
+        background: rgba(76, 175, 80, 0.2);
+        color: var(--primary-text-color);
+      }
+
+      /* Action buttons container */
+      .tree-action-buttons {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: auto;
+      }
+
+      /* Action button base styles */
+      .tree-action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        padding: 0;
+        background: rgba(255, 255, 255, 0.15);
+        border: none;
+        border-radius: 4px;
+        color: inherit;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        --mdc-icon-size: 15px;
+      }
+
+      .tree-action-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+      }
+
+      /* Add button - green tint */
+      .tree-action-btn.add-btn:hover {
+        background: rgba(76, 175, 80, 0.3);
+      }
+
+      /* Edit button - blue tint */
+      .tree-action-btn.edit-btn:hover {
+        background: rgba(3, 169, 244, 0.3);
+      }
+
+      /* Delete button - red tint */
+      .tree-action-btn.delete-btn:hover {
+        background: rgba(244, 67, 54, 0.3);
+        color: #ff5252;
+      }
+
+      /* For dark backgrounds (modules, layout children) */
+      .tree-module .tree-action-btn,
+      .tree-layout-child .tree-action-btn,
+      .tree-deep-child .tree-action-btn {
+        background: rgba(0, 0, 0, 0.1);
+        color: var(--primary-text-color);
+      }
+
+      .tree-module .tree-action-btn:hover,
+      .tree-layout-child .tree-action-btn:hover,
+      .tree-deep-child .tree-action-btn:hover {
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .tree-module .tree-action-btn.add-btn:hover,
+      .tree-layout-child .tree-action-btn.add-btn:hover,
+      .tree-deep-child .tree-action-btn.add-btn:hover {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+      }
+
+      .tree-module .tree-action-btn.edit-btn:hover,
+      .tree-layout-child .tree-action-btn.edit-btn:hover,
+      .tree-deep-child .tree-action-btn.edit-btn:hover {
+        background: rgba(3, 169, 244, 0.2);
+        color: var(--primary-color);
+      }
+
+      .tree-module .tree-action-btn.delete-btn:hover,
+      .tree-layout-child .tree-action-btn.delete-btn:hover,
+      .tree-deep-child .tree-action-btn.delete-btn:hover {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+      }
+
+      /* Legacy edit button (for backwards compatibility) */
+      .tree-edit-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        background: var(--primary-color);
+        border: none;
+        border-radius: 4px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        --mdc-icon-size: 16px;
+      }
+
+      .tree-edit-btn:hover {
+        background: var(--primary-color);
+        filter: brightness(1.1);
+        transform: scale(1.05);
+      }
+
+      /* ========================================
+         OVERFLOW MENU STYLES
+         ======================================== */
+      .tree-overflow-container {
+        position: relative;
+      }
+
+      .tree-overflow-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        background: none;
+        border: none;
+        border-radius: 4px;
+        color: inherit;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        --mdc-icon-size: 18px;
+      }
+
+      .tree-overflow-btn:hover {
+        background: rgba(0, 0, 0, 0.1);
+      }
+
+      .tree-row .tree-overflow-btn {
+        color: white;
+      }
+
+      .tree-row .tree-overflow-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .tree-overflow-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        min-width: 180px;
+        background: var(--card-background-color, var(--ha-card-background, #1c1c1c));
+        /* Ensure solid background - no transparency */
+        background-color: var(--card-background-color, var(--ha-card-background, #1c1c1c));
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        z-index: 9999;
+        overflow: visible;
+        animation: menuSlideIn 0.15s ease;
+        isolation: isolate;
+      }
+
+      /* Ensure overflow container creates stacking context */
+      .tree-overflow-container {
+        position: relative;
+        z-index: 10;
+      }
+
+      /* When menu is open, boost z-index even higher */
+      .tree-overflow-container:has(.tree-overflow-menu) {
+        z-index: 9999;
+      }
+
+      /* When menu is open, lift the entire tree-node above siblings */
+      .tree-node:has(.tree-overflow-menu) {
+        z-index: 100;
+        position: relative;
+      }
+
+      @keyframes menuSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .tree-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 10px 14px;
+        background: transparent;
+        background-color: transparent;
+        border: none;
+        color: var(--primary-text-color);
+        font-size: 13px;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        pointer-events: auto;
+        position: relative;
+        z-index: 1;
+      }
+
+      .tree-menu-item:hover {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.15);
+        background-color: rgba(var(--rgb-primary-color, 3, 169, 244), 0.15);
+        color: var(--primary-color);
+      }
+
+      .tree-menu-item ha-icon {
+        --mdc-icon-size: 18px;
+        opacity: 0.7;
+      }
+
+      .tree-menu-item:hover ha-icon {
+        opacity: 1;
+      }
+
+      .tree-menu-item.destructive {
+        color: var(--error-color, #f44336);
+      }
+
+      .tree-menu-item.destructive:hover {
+        background: rgba(244, 67, 54, 0.1);
+        color: var(--error-color, #f44336);
+      }
+
+      .menu-divider {
+        margin: 4px 0;
+        border: none;
+        border-top: 1px solid var(--divider-color);
+      }
+
+      /* ========================================
+         TREE NODE CHILDREN STYLES
+         ======================================== */
+      .tree-node-children {
+        position: relative;
+        padding: 8px 0 4px 32px; /* Padding-left for indentation */
+        margin-left: 0;
+        min-height: 48px; /* Minimum height for collapse button */
+      }
+
+      /* Vertical line (The Track) - matches parent header color */
+      .tree-node-children::before {
+        content: '';
+        position: absolute;
+        left: 12px; /* Aligned with track collapse button center */
+        top: 0;
+        bottom: 0; /* Extend full height */
+        width: 2px;
+        background: var(--tree-level-color); /* Inherits parent's level color */
+        border-radius: 1px;
+        z-index: 1;
+      }
+
+      /* When collapsed, reduce track line but keep minimum for button */
+      .tree-node.collapsed > .tree-node-children::before {
+        bottom: auto;
+        height: 100%;
+      }
+
+      /* Row's track line (blue) */
+      .tree-row > .tree-node-children::before {
+        background: var(--primary-color, #03a9f4);
+      }
+
+      /* Column's track line (orange) */
+      .tree-column > .tree-node-children::before {
+        background: #ff9800;
+      }
+
+      /* Layout's track line (green) */
+      .tree-layout-module > .tree-node-children::before,
+      .tree-nested-layout > .tree-node-children::before {
+        background: #4caf50;
+      }
+
+      /* Horizontal station connector - hidden for cleaner look */
+      .tree-node-children > .tree-node::after {
+        display: none;
+      }
+
+      /* Remove extra overlapping lines */
+      .tree-node-children > .tree-node:first-child::before {
+        display: none;
+      }
+
+      /* Hide Row horizontal connectors (Rows are top-level) */
+      .tree-row::after {
+        display: none;
+      }
+
+      .tree-node-children > .tree-node {
+        margin-bottom: 6px;
+        /* Expand animation - slide in from left */
+        animation: slideInFromLeft 0.25s ease-out forwards;
+        opacity: 0;
+      }
+
+      /* Staggered animation delays for children */
+      .tree-node-children > .tree-node:nth-child(1) {
+        animation-delay: 0.02s;
+      }
+      .tree-node-children > .tree-node:nth-child(2) {
+        animation-delay: 0.06s;
+      }
+      .tree-node-children > .tree-node:nth-child(3) {
+        animation-delay: 0.1s;
+      }
+      .tree-node-children > .tree-node:nth-child(4) {
+        animation-delay: 0.14s;
+      }
+      .tree-node-children > .tree-node:nth-child(5) {
+        animation-delay: 0.18s;
+      }
+      .tree-node-children > .tree-node:nth-child(6) {
+        animation-delay: 0.22s;
+      }
+      .tree-node-children > .tree-node:nth-child(7) {
+        animation-delay: 0.26s;
+      }
+      .tree-node-children > .tree-node:nth-child(8) {
+        animation-delay: 0.3s;
+      }
+      .tree-node-children > .tree-node:nth-child(n + 9) {
+        animation-delay: 0.34s;
+      }
+
+      /* Add button also animates in */
+      .tree-node-children > .tree-add-button-container {
+        animation: slideInFromLeft 0.2s ease-out forwards;
+        opacity: 0;
+        animation-delay: 0.15s;
+      }
+
+      @keyframes slideInFromLeft {
+        from {
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      /* Collapse animation - animate entire container for smooth transition */
+      .tree-node-children.collapsing {
+        animation: collapseContainer 0.2s ease-in forwards;
+        overflow: hidden;
+      }
+
+      /* Override child animations during collapse - no individual animations */
+      .tree-node-children.collapsing > .tree-node,
+      .tree-node-children.collapsing > .tree-add-button-container {
+        animation: none;
+        opacity: 1;
+      }
+
+      @keyframes collapseContainer {
+        from {
+          opacity: 1;
+          transform: translateX(0);
+          max-height: 2000px;
+        }
+        to {
+          opacity: 0;
+          transform: translateX(-15px);
+          max-height: 0;
+        }
+      }
+
+      /* ========== Drag & Drop Visual Feedback ========== */
+
+      /* Drop target indicator - applied when dragging over a valid target */
+      .tree-node.drag-over > .tree-node-content > .tree-node-header,
+      .tree-nested-layout.drag-over > .tree-node-content > .tree-node-header,
+      .tree-layout-child.drag-over > .tree-node-content > .tree-node-header,
+      .tree-deep-child.drag-over > .tree-node-content > .tree-node-header {
+        animation: dragOverPulse 1s ease-in-out infinite;
+        box-shadow:
+          0 0 0 3px var(--primary-color),
+          0 0 20px rgba(var(--rgb-primary-color, 3, 169, 244), 0.5);
+        transform: scale(1.02);
+        position: relative;
+        z-index: 50;
+        border-radius: 8px;
+      }
+
+      /* Add a "swap" indicator icon overlay */
+      .tree-node.drag-over > .tree-node-content > .tree-node-header::after,
+      .tree-nested-layout.drag-over > .tree-node-content > .tree-node-header::after,
+      .tree-layout-child.drag-over > .tree-node-content > .tree-node-header::after,
+      .tree-deep-child.drag-over > .tree-node-content > .tree-node-header::after {
+        content: '⇄';
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 20px;
+        color: var(--primary-color);
+        text-shadow: 0 0 8px var(--primary-color);
+        animation: swapIconBounce 0.5s ease-in-out infinite alternate;
+        z-index: 51;
+      }
+
+      /* Pulsing glow animation */
+      @keyframes dragOverPulse {
+        0%,
+        100% {
+          box-shadow:
+            0 0 0 3px var(--primary-color),
+            0 0 15px rgba(var(--rgb-primary-color, 3, 169, 244), 0.4);
+        }
+        50% {
+          box-shadow:
+            0 0 0 4px var(--primary-color),
+            0 0 25px rgba(var(--rgb-primary-color, 3, 169, 244), 0.7);
+        }
+      }
+
+      /* Swap icon bounce animation */
+      @keyframes swapIconBounce {
+        from {
+          transform: translateY(-50%) translateX(0);
+        }
+        to {
+          transform: translateY(-50%) translateX(3px);
+        }
+      }
+
+      /* Being dragged state - make it semi-transparent */
+      .tree-node.being-dragged,
+      .tree-nested-layout.being-dragged,
+      .tree-layout-child.being-dragged,
+      .tree-deep-child.being-dragged {
+        opacity: 0.5;
+        transform: scale(0.98);
+      }
+
+      .tree-node-children > .tree-node:last-child {
+        margin-bottom: 0;
+      }
+
+      .tree-add-button-container {
+        padding: 4px 0 4px var(--tree-indent);
+        position: relative;
+      }
+
+      /* Hide the vertical line next to add buttons by masking it */
+      .tree-add-button-container::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 24px;
+        background: var(--card-background-color, var(--ha-card-background, #1c1c1c));
+        z-index: 2;
+      }
+
+      .tree-add-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: transparent;
+        border: 1px dashed var(--divider-color);
+        border-radius: 6px;
+        color: var(--secondary-text-color);
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        z-index: 3;
+      }
+
+      .tree-add-btn:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.05);
+      }
+
+      .tree-add-btn ha-icon {
+        --mdc-icon-size: 16px;
+      }
+
+      /* ========================================
+         MODULE-SPECIFIC TREE STYLES
+         ======================================== */
+      /* Regular modules - transparent background */
+      .tree-module .tree-node-header.module-header {
+        background: transparent;
+      }
+
+      /* Layout child modules - transparent background */
+      .tree-layout-child .tree-node-header.child-header {
+        background: transparent;
+        padding: 8px 10px;
+      }
+
+      /* Nested layout modules inside other layouts - green header */
+      .tree-nested-layout > .tree-node-content {
+        border: none;
+      }
+
+      .tree-nested-layout > .tree-node-content > .tree-node-header {
+        background: #4caf50;
+        color: white;
+        border-radius: 8px;
+      }
+
+      /* Layout header class - same green as nested layouts */
+      .tree-node-header.layout-header {
+        background: #4caf50 !important;
+        color: white;
+        border-radius: 8px;
+      }
+
+      .tree-node-header.layout-header .tree-node-drag-handle,
+      .tree-node-header.layout-header .tree-collapse-btn,
+      .tree-node-header.layout-header .tree-overflow-btn,
+      .tree-node-header.layout-header .tree-action-btn {
+        color: white;
+      }
+
+      /* Pagebreak module - green dashed border */
+      .tree-pagebreak .tree-node-header.pagebreak-header,
+      .tree-pagebreak .tree-node-content > .tree-node-header {
+        border: 2px dashed #4caf50 !important;
+        border-radius: 8px !important;
+        background: rgba(76, 175, 80, 0.1) !important;
+      }
+
+      .tree-pagebreak .tree-node-icon {
+        color: #4caf50 !important;
+      }
+
+      .tree-nested-layout .tree-node-drag-handle,
+      .tree-nested-layout .tree-collapse-btn,
+      .tree-nested-layout .tree-overflow-btn {
+        color: white;
+      }
+
+      .tree-nested-layout .tree-collapse-btn:hover,
+      .tree-nested-layout .tree-overflow-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .tree-nested-layout .tree-node-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+
+      .tree-nested-layout > .tree-node-content:hover {
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+      }
+
+      /* Deep nested children - transparent background */
+      .tree-deep-child .tree-node-header.child-header {
+        background: transparent;
+        padding: 8px 10px;
+      }
+
+      /* Layout module content area - no border */
+      .tree-layout-module > .tree-node-content {
+        border: none;
+      }
+
+      .tree-layout-module > .tree-node-content > .tree-node-header {
+        border-radius: 8px;
+      }
+
+      /* Column content area - no border */
+      .tree-column > .tree-node-content {
+        border: none;
+      }
+
+      .tree-column > .tree-node-content > .tree-node-header {
+        border-radius: 8px;
+      }
+
+      /* ========================================
+         COLLAPSE/EXPAND ANIMATION STYLES
+         ======================================== */
+      .tree-node-children {
+        animation: expandIn 0.2s ease;
+      }
+
+      @keyframes expandIn {
+        from {
+          opacity: 0;
+          max-height: 0;
+          transform: translateY(-8px);
+        }
+        to {
+          opacity: 1;
+          max-height: 2000px;
+          transform: translateY(0);
+        }
+      }
+
+      /* Visual indicator for collapsed state - show count badge more prominently */
+      .tree-node.collapsed .tree-node-badge {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      /* Keep line solid even when collapsed - line still connects to siblings */
+      .tree-node.collapsed::before {
+        /* Line continues to connect siblings even when node is collapsed */
+      }
+
+      /* Collapsed node has subtle visual difference */
+      .tree-node.collapsed > .tree-node-content {
+        opacity: 0.9;
+      }
+
+      /* Collapsed row maintains solid header but shows dotted border */
+      .tree-row.collapsed > .tree-node-content {
+        border-style: dashed;
+      }
+
+      /* Pulse animation for newly expanded items */
+      .tree-node-children .tree-node:first-child .tree-node-content {
+        animation: pulseHighlight 0.3s ease;
+      }
+
+      @keyframes pulseHighlight {
+        0% {
+          box-shadow: 0 0 0 2px transparent;
+        }
+        50% {
+          box-shadow: 0 0 0 2px var(--primary-color);
+        }
+        100% {
+          box-shadow: 0 0 0 2px transparent;
+        }
+      }
+
+      /* Chevron rotation transition (already inline but adding fallback) */
+      .tree-collapse-btn ha-icon {
+        transition: transform 0.2s ease;
+      }
+
+      /* ========================================
+         MOBILE RESPONSIVE STYLES
+         ======================================== */
+      @media (max-width: 600px) {
+        .tree-breadcrumbs {
+          padding: 6px 8px;
+        }
+
+        .breadcrumb-item {
+          padding: 3px 6px;
+          font-size: 12px;
+        }
+
+        .tree-node-header {
+          padding: 8px 10px;
+          gap: 6px;
+        }
+
+        .tree-node-title {
+          font-size: 13px;
+        }
+
+        .tree-node-badge {
+          font-size: 10px;
+          padding: 1px 6px;
+        }
+
+        .tree-overflow-menu {
+          min-width: 160px;
+        }
+
+        .tree-menu-item {
+          padding: 8px 12px;
+          font-size: 12px;
+        }
+
+        /* Hide action buttons on mobile - they're in overflow menu */
+        .tree-action-buttons {
+          display: none;
+        }
+
+        /* Make overflow button more prominent on mobile */
+        .tree-overflow-btn {
+          width: 32px;
+          height: 32px;
+          background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Ensure overflow button is visible on modules and layout modules */
+        .tree-module .tree-overflow-btn,
+        .tree-layout-module .tree-overflow-btn,
+        .tree-layout-child .tree-overflow-btn,
+        .tree-deep-child .tree-overflow-btn,
+        .tree-nested-layout .tree-overflow-btn {
+          background: rgba(0, 0, 0, 0.15);
+          color: var(--primary-text-color);
+        }
+
+        .tree-module .tree-overflow-btn:hover,
+        .tree-layout-module .tree-overflow-btn:hover,
+        .tree-layout-child .tree-overflow-btn:hover,
+        .tree-deep-child .tree-overflow-btn:hover,
+        .tree-nested-layout .tree-overflow-btn:hover {
+          background: rgba(0, 0, 0, 0.25);
+        }
+
+        /* Reduce indent on mobile */
+        :host {
+          --tree-indent: 12px;
+        }
+
+        /* Smaller track collapse on mobile */
+        .tree-track-collapse {
+          width: 20px;
+          height: 20px;
+        }
+
+        .tree-track-collapse .track-chevron {
+          --mdc-icon-size: 12px;
+        }
+
+        /* Reduce children padding on mobile */
+        .tree-node-children {
+          padding-left: 24px;
+        }
       }
 
       .layout-builder {
@@ -21278,7 +24951,8 @@ export class LayoutTab extends LitElement {
       }
 
       @keyframes pulse-glow {
-        0%, 100% {
+        0%,
+        100% {
           box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
         }
         50% {
@@ -22321,13 +25995,13 @@ export class LayoutTab extends LitElement {
         /* Ensure flex container properly calculates available space */
         min-height: 0;
       }
-      
+
       :host(.is-safari) .selector-body {
         /* Force Safari to respect flex constraints */
         min-height: 0;
         max-height: 100%;
       }
-      
+
       :host(.is-safari) .selector-header-wrapper {
         /* Disable sticky on Safari - use static positioning instead */
         position: static !important; /* Override sticky to prevent Safari expansion issues */
@@ -22336,12 +26010,12 @@ export class LayoutTab extends LitElement {
         overflow-x: visible;
         overflow-y: hidden;
       }
-      
+
       :host(.is-safari) .selector-header {
         height: auto;
         max-height: fit-content;
       }
-      
+
       :host(.is-safari) .module-selector-tabs {
         height: auto;
         max-height: 48px;
@@ -22656,7 +26330,7 @@ export class LayoutTab extends LitElement {
         display: flex;
         gap: 4px;
         padding: 12px 16px;
-        background: var(--secondary-background-color, rgba(0,0,0,0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
         border-bottom: 1px solid var(--divider-color);
       }
 
@@ -22801,7 +26475,7 @@ export class LayoutTab extends LitElement {
         align-items: center;
         gap: 8px;
         padding: 10px 12px;
-        background: var(--secondary-background-color, rgba(0,0,0,0.05));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.05));
         border-radius: 6px;
         margin-bottom: 16px;
         font-size: 13px;
@@ -22827,7 +26501,7 @@ export class LayoutTab extends LitElement {
       .layout-columns {
         font-size: 10px;
         color: var(--secondary-text-color);
-        background: var(--secondary-background-color, rgba(0,0,0,0.05));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.05));
         padding: 2px 6px;
         border-radius: 4px;
         margin-top: 2px;
@@ -22844,7 +26518,7 @@ export class LayoutTab extends LitElement {
         justify-content: flex-end;
         padding: 16px;
         border-top: 1px solid var(--divider-color);
-        background: var(--secondary-background-color, rgba(0,0,0,0.05));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.05));
       }
 
       .close-selector-btn {
@@ -22985,7 +26659,9 @@ export class LayoutTab extends LitElement {
         font-family: monospace;
         margin-bottom: 8px;
         box-sizing: border-box;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        transition:
+          border-color 0.2s ease,
+          box-shadow 0.2s ease;
       }
 
       .custom-sizing-input:focus {
@@ -25076,15 +28752,16 @@ export class LayoutTab extends LitElement {
         background: rgba(var(--rgb-primary-color), 0.1);
       }
 
-      /* Layout Module Styles - Column-like appearance */
+      /* Layout Module Styles - No borders, full-width headers */
       .layout-module-container {
-        border: 2px solid var(--success-color, #4caf50);
-        border-radius: 6px;
-        background: var(--card-background-color);
+        border: none;
+        border-radius: 0;
+        background: transparent;
         width: 100%;
         box-sizing: border-box;
         overflow: visible;
         margin-bottom: 8px;
+        margin-left: 0;
       }
 
       .layout-module-header {
@@ -25096,8 +28773,9 @@ export class LayoutTab extends LitElement {
         padding: 8px 12px;
         background: var(--success-color, #4caf50);
         color: white;
-        border-bottom: 2px solid var(--success-color, #4caf50);
-        border-radius: 0px;
+        border-radius: 6px 6px 0 0;
+        position: relative;
+        z-index: 1;
       }
 
       .layout-module-title {
@@ -25161,26 +28839,70 @@ export class LayoutTab extends LitElement {
         color: white;
       }
 
+      /* Level 2: Nested layout module - blue header for depth */
+      .nested-layout-module-container.layout-module-container {
+        margin-left: 0;
+      }
+
+      .nested-layout-module-container .nested-layout-module-header {
+        background: #2196f3;
+        border-radius: 6px 6px 0 0;
+      }
+
+      /* Level 3: Deep nested layout module - purple header for depth */
+      .deep-nested-layout-module.layout-module-container {
+        margin-left: 0;
+      }
+
+      .deep-nested-layout-module .nested-layout-module-header {
+        background: #9c27b0;
+        border-radius: 6px 6px 0 0;
+      }
+
+      /* Level 1: Base container - green semi-transparent background */
       .layout-modules-container {
-        background: var(--card-background-color);
-        border: 2px dashed var(--divider-color);
-        border-radius: 4px;
-        margin: 8px;
+        background: rgba(76, 175, 80, 0.5);
+        border: none;
+        border-radius: 0 0 6px 6px;
+        margin: 0;
+        padding: 8px;
         transition: all 0.2s ease;
         position: relative;
       }
 
       .layout-modules-container:hover {
-        border-color: var(--success-color, #4caf50);
-        background: rgba(76, 175, 80, 0.05);
+        background: rgba(76, 175, 80, 0.6);
       }
 
       .layout-modules-container.layout-drop-target {
-        border-color: var(--primary-color) !important;
-        border-width: 3px !important;
-        border-style: dashed !important;
-        background: rgba(var(--rgb-primary-color), 0.1) !important;
-        box-shadow: 0 0 20px rgba(var(--rgb-primary-color), 0.3) !important;
+        background: rgba(var(--rgb-primary-color), 0.5) !important;
+        box-shadow: inset 0 0 0 2px var(--primary-color) !important;
+      }
+
+      /* Level 2: Nested layout container - blue semi-transparent background */
+      .nested-layout-modules-container {
+        background: rgba(33, 150, 243, 0.5);
+        border: none;
+        border-radius: 0 0 6px 6px;
+        margin: 0;
+        padding: 8px;
+      }
+
+      .nested-layout-modules-container:hover {
+        background: rgba(33, 150, 243, 0.6);
+      }
+
+      /* Level 3: Deep nested container - purple semi-transparent background */
+      .deep-nested-drop-zone {
+        background: rgba(156, 39, 176, 0.5);
+        border: none;
+        border-radius: 0 0 6px 6px;
+        margin: 0;
+        padding: 8px;
+      }
+
+      .deep-nested-drop-zone:hover {
+        background: rgba(156, 39, 176, 0.6);
       }
 
       .layout-module-empty {
@@ -25220,22 +28942,24 @@ export class LayoutTab extends LitElement {
         cursor: grabbing;
       }
 
-      /* Simplified layout child module styling */
+      /* Simplified layout child module styling - clean rounded borders */
       .layout-child-simplified-module {
         width: 100%;
         background: var(--card-background-color);
         border: 1px solid var(--divider-color);
-        border-radius: 4px;
+        border-radius: 8px;
         transition: all 0.2s ease;
         cursor: pointer;
         box-sizing: border-box;
         margin-bottom: 8px;
+        min-height: 60px;
+        padding: 8px;
       }
 
       .layout-child-simplified-module:hover {
+        background: var(--card-background-color);
+        filter: brightness(1.1);
         border-color: var(--primary-color);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        transform: translateY(-1px);
       }
 
       .layout-child-simplified-module:hover .layout-child-content {
@@ -25245,6 +28969,178 @@ export class LayoutTab extends LitElement {
       .layout-child-simplified-module:active {
         cursor: grabbing;
         transform: scale(0.98);
+      }
+
+      /* Pagebreak module specific styling - visible separator */
+      .layout-child-simplified-module.pagebreak-module {
+        background: var(--secondary-background-color, #f5f5f5);
+        border: 1px dashed var(--primary-color, #03a9f4);
+        border-left: 4px solid var(--primary-color, #03a9f4);
+      }
+
+      .layout-child-simplified-module.pagebreak-module:hover {
+        background: var(--secondary-background-color, #f5f5f5);
+        filter: brightness(1.05);
+        border-color: var(--primary-color, #03a9f4);
+      }
+
+      .layout-child-simplified-module.pagebreak-module .layout-child-icon {
+        background: var(--primary-color, #03a9f4);
+        color: white;
+        border-radius: 4px;
+        padding: 4px;
+      }
+
+      /* Compact 2-row layout for deeply nested modules */
+      .layout-child-simplified-module.layout-child-compact {
+        padding: 0;
+        overflow: hidden;
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+      }
+
+      .layout-child-simplified-module.layout-child-compact:hover {
+        background: var(--card-background-color);
+        filter: brightness(1.1);
+        border-color: var(--primary-color);
+      }
+
+      .layout-child-compact-wrapper {
+        display: flex;
+        align-items: stretch;
+        min-height: 100%;
+        overflow: hidden;
+        width: 100%;
+      }
+
+      .layout-child-compact .layout-child-drag-handle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        flex-shrink: 0;
+        align-self: center;
+        width: 28px;
+        height: 28px;
+        --mdc-icon-size: 20px;
+        opacity: 0.7;
+      }
+
+      .layout-child-compact-content {
+        flex: 1;
+        display: grid;
+        grid-template-rows: auto auto;
+        min-width: 0;
+        padding: 10px 12px 10px 4px;
+        gap: 6px;
+        overflow: hidden;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .layout-child-compact-row1 {
+        display: flex;
+        align-items: center;
+        padding: 2px 0;
+        position: relative;
+        z-index: 1;
+        pointer-events: none;
+        overflow: hidden;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .layout-child-compact-row1-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 6px;
+        border-radius: 4px;
+        transition: background 0.2s ease;
+        pointer-events: none;
+        position: relative;
+        z-index: 1;
+        overflow: hidden;
+        width: 100%;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .layout-child-compact-row1-content:hover {
+        background: none;
+      }
+
+      .layout-child-compact-row1 .layout-child-icon {
+        --mdc-icon-size: 20px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+      }
+
+      .layout-child-compact-row1 .layout-child-content {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .layout-child-compact-row1 .layout-child-title {
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .layout-child-compact-row1 .layout-child-info {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Compact action buttons - row 2 */
+      .layout-child-compact-actions {
+        display: flex;
+        gap: 0;
+        margin: 0;
+        padding: 6px 0 4px;
+        width: 100%;
+        isolation: isolate;
+        position: relative;
+        z-index: 3;
+        pointer-events: auto;
+        margin-top: 2px;
+        align-self: stretch;
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+
+      .layout-child-compact-actions .layout-child-action-btn {
+        padding: 8px;
+        min-width: 40px;
+        min-height: 36px;
+        flex: 1;
+        border-radius: 4px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--secondary-text-color);
+        transition: all 0.2s ease;
+        --mdc-icon-size: 18px;
+      }
+
+      .layout-child-compact-actions .layout-child-action-btn:first-child {
+        padding-left: 8px;
+      }
+
+      .layout-child-compact-actions .layout-child-action-btn:last-child {
+        padding-right: 8px;
+      }
+
+      .layout-child-compact-actions .layout-child-action-btn ha-icon {
+        pointer-events: none;
       }
 
       .layout-child-module-header {
@@ -25265,6 +29161,9 @@ export class LayoutTab extends LitElement {
       .layout-child-content {
         flex: 1;
         min-width: 0;
+        overflow: hidden;
+        position: relative;
+        z-index: 1;
       }
 
       .layout-child-title {
@@ -25307,8 +29206,16 @@ export class LayoutTab extends LitElement {
 
       .layout-child-actions {
         display: flex;
-        gap: 4px;
-        align-items: center;
+        gap: 0;
+        align-items: stretch;
+        position: relative;
+        z-index: 10;
+        pointer-events: auto;
+        flex-shrink: 0;
+        /* Extend to fill header height and capture all clicks in this area */
+        margin: -8px -12px -8px 0;
+        padding: 0;
+        align-self: stretch;
       }
 
       .layout-child-action-btn {
@@ -25316,18 +29223,41 @@ export class LayoutTab extends LitElement {
         border: none;
         color: var(--secondary-text-color);
         cursor: pointer;
-        padding: 4px;
-        border-radius: 4px;
+        padding: 8px 8px;
+        border-radius: 0;
         transition: all 0.2s ease;
-        --mdc-icon-size: 14px;
-        width: 24px;
-        height: 24px;
+        --mdc-icon-size: 16px;
+        min-width: 32px;
         display: flex;
         align-items: center;
         justify-content: center;
+        position: relative;
+        z-index: 11;
+        pointer-events: auto;
+        box-sizing: border-box;
+        flex: 1;
+      }
+
+      .layout-child-action-btn:first-child {
+        padding-left: 12px;
+      }
+
+      .layout-child-action-btn:last-child {
+        padding-right: 12px;
+        border-radius: 0 4px 4px 0;
+      }
+
+      /* Make ha-icon inside action buttons pass-through for clicks */
+      .layout-child-action-btn ha-icon {
+        pointer-events: none;
       }
 
       .layout-child-action-btn.edit-btn:hover {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .layout-child-action-btn.duplicate-btn:hover {
         background: var(--primary-color);
         color: white;
       }
@@ -25486,12 +29416,12 @@ export class LayoutTab extends LitElement {
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         transform: translateY(-1px);
       }
-      
+
       .preset-card.default-preset:hover,
       .preset-card.builtin-preset:hover {
         border-color: var(--primary-color);
       }
-      
+
       .preset-card.community-preset:hover {
         border-color: rgba(var(--rgb-secondary-color, 255, 152, 0), 1);
       }
@@ -25797,7 +29727,7 @@ export class LayoutTab extends LitElement {
         opacity: 0;
         transition: opacity 0.2s ease;
       }
-      
+
       .preset-image-slider:hover .preset-slider-dots {
         opacity: 1;
       }
@@ -26843,7 +30773,6 @@ export class LayoutTab extends LitElement {
         background_image_type: 'upload' as const,
       });
     } catch (error) {
-      console.error('Background image upload failed:', error);
       alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

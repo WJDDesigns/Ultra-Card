@@ -77,6 +77,8 @@ export declare class LayoutTab extends LitElement {
     private _shouldRestoreScroll;
     private _entityMappingOpen;
     private _previewBreakpoint;
+    private _breadcrumbPath;
+    private _openOverflowMenuKey;
     connectedCallback(): void;
     /** Detect Safari browser and add class for Safari-specific CSS fixes */
     private _detectSafari;
@@ -92,6 +94,21 @@ export declare class LayoutTab extends LitElement {
     private _toggleConditionExpanded;
     private _toggleRowCollapsed;
     private _toggleColumnCollapsed;
+    private _toggleLayoutModuleCollapsed;
+    private _toggleOverflowMenu;
+    private _navigateBreadcrumb;
+    private _pushBreadcrumb;
+    private _clearBreadcrumbs;
+    private _renderBreadcrumbs;
+    private _renderTreeOverflowMenu;
+    private _renderLayoutChildOverflowMenu;
+    private _renderTreeRow;
+    private _renderTreeColumn;
+    private _renderTreeModule;
+    private _renderTreeLayoutModule;
+    private _renderTreeLayoutChild;
+    private _renderTreeNestedLayoutChild;
+    private _renderTreeDeepNestedChild;
     private _reorderArray;
     private _onConditionDragStart;
     private _onConditionDragOver;
@@ -100,6 +117,10 @@ export declare class LayoutTab extends LitElement {
     private _draggedItem;
     private _dropTarget;
     private _intendedDragTarget;
+    private _dragExpandedRows;
+    private _dragExpandedColumns;
+    private _dragExpandedModules;
+    private _dragExpandTimeout;
     private _selectedLayoutModuleIndex;
     private _selectedNestedChildIndex;
     private _selectedNestedNestedChildIndex;
@@ -175,6 +196,11 @@ export declare class LayoutTab extends LitElement {
     private _cloneRowWithNewIds;
     private _toggleMoreMenu;
     private _copyModule;
+    /**
+     * Generic method to copy any module directly to clipboard
+     * Works for nested modules where we already have the module object
+     */
+    private _copyModuleToClipboard;
     private _pasteModule;
     private _copyColumn;
     private _pasteColumn;
@@ -241,11 +267,17 @@ export declare class LayoutTab extends LitElement {
     private _closeLayoutChildSettings;
     private _closeTabsSectionChildSettings;
     private _onDragStart;
+    private _onTreeLayoutChildDragStart;
+    private _onTreeDeepNestedChildDragStart;
     private _onDragEnd;
     private _onDragOver;
     private _onDragEnter;
+    private _autoExpandOnDragOver;
     private _onDragLeave;
     private _onDrop;
+    private _onTreeLayoutChildDrop;
+    private _onTreeDeepNestedChildDrop;
+    private _clearDragExpandedItems;
     private _isValidDropTarget;
     private _performMove;
     private _moveModule;

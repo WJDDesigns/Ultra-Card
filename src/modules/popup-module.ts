@@ -50,8 +50,7 @@ const {
   manuallyOpened: manuallyOpenedPopups,
   timerEnabled: popupTimerEnabled,
   needsRefresh: popupNeedsRefresh,
-} =
-  getPopupStore();
+} = getPopupStore();
 
 // Helper to restore HA editor overlays after popup closes
 const restoreHAEditorOverlays = () => {
@@ -85,14 +84,14 @@ export class UltraPopupModule extends BaseUltraModule {
       id: id || this.generateId('popup'),
       type: 'popup',
       modules: [],
-      
+
       // Title configuration
       show_title: false,
       title_mode: 'custom',
       title_text: 'Popup Title',
       title_entity: '',
       show_entity_name: false,
-      
+
       // Trigger configuration
       trigger_type: 'button',
       trigger_module_id: '', // ID of the module that triggers this popup (for 'module' trigger type)
@@ -102,21 +101,21 @@ export class UltraPopupModule extends BaseUltraModule {
       trigger_image_url: '',
       trigger_image_entity: '',
       trigger_icon: 'mdi:information',
-      
+
       // Trigger styling
       trigger_alignment: 'center',
       trigger_button_full_width: false,
       trigger_image_full_width: false,
-      
+
       // Layout settings
       layout: 'default',
       animation: 'fade',
-      
+
       // Popup styling
       popup_width: '600px',
       popup_padding: '5%',
       popup_border_radius: '8px',
-      
+
       // Close button configuration
       close_button_position: 'inside',
       close_button_color: '#ffffff',
@@ -124,11 +123,11 @@ export class UltraPopupModule extends BaseUltraModule {
       close_button_icon: 'mdi:close',
       close_button_offset_x: '0px',
       close_button_offset_y: '0px',
-      
+
       // Auto-close timer
       auto_close_timer_enabled: false,
       auto_close_timer_seconds: 30,
-      
+
       // Colors
       title_background_color: 'var(--primary-color)',
       title_text_color: '#ffffff',
@@ -136,15 +135,15 @@ export class UltraPopupModule extends BaseUltraModule {
       popup_text_color: 'var(--primary-text-color)',
       show_overlay: true,
       overlay_background: 'rgba(0,0,0,0.85)',
-      
+
       // Trigger Logic
       trigger_mode: 'manual',
       trigger_conditions: [],
       auto_close: true,
-      
+
       // Default state
       default_open: false,
-      
+
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
@@ -352,7 +351,11 @@ export class UltraPopupModule extends BaseUltraModule {
                 <!-- Close Button Color -->
                 <div style="margin-bottom: 16px;">
                   <ultra-color-picker
-                    .label=${localize('editor.popup.design.close_button_color', lang, 'Close Button')}
+                    .label=${localize(
+                      'editor.popup.design.close_button_color',
+                      lang,
+                      'Close Button'
+                    )}
                     .value=${popupModule.close_button_color || ''}
                     .defaultValue=${'#ffffff'}
                     .hass=${hass}
@@ -479,15 +482,24 @@ export class UltraPopupModule extends BaseUltraModule {
               data: { trigger_type: popupModule.trigger_type || 'button' },
               schema: [
                 this.selectField('trigger_type', [
-                  { value: 'button', label: localize('editor.popup.trigger.button', lang, 'Button') },
+                  {
+                    value: 'button',
+                    label: localize('editor.popup.trigger.button', lang, 'Button'),
+                  },
                   { value: 'image', label: localize('editor.popup.trigger.image', lang, 'Image') },
                   { value: 'icon', label: localize('editor.popup.trigger.icon', lang, 'Icon') },
-                  { value: 'module', label: localize('editor.popup.trigger.module', lang, 'Module') },
+                  {
+                    value: 'module',
+                    label: localize('editor.popup.trigger.module', lang, 'Module'),
+                  },
                   {
                     value: 'page_load',
                     label: localize('editor.popup.trigger.page_load', lang, 'Page Load'),
                   },
-                  { value: 'logic', label: localize('editor.popup.trigger.logic', lang, 'Logic Conditions') },
+                  {
+                    value: 'logic',
+                    label: localize('editor.popup.trigger.logic', lang, 'Logic Conditions'),
+                  },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -544,29 +556,31 @@ export class UltraPopupModule extends BaseUltraModule {
                         }, 50);
                       }
                     )}
-                    ${this.renderSettingsSection(
-                      '',
-                      '',
-                      [
-                        {
-                          title: localize('editor.popup.trigger.button_full_width', lang, 'Full Width'),
-                          description: localize(
-                            'editor.popup.trigger.button_full_width_desc',
-                            lang,
-                            'Make the button span the full width of the container.'
-                          ),
-                          hass,
-                          data: { trigger_button_full_width: popupModule.trigger_button_full_width || false },
-                          schema: [this.booleanField('trigger_button_full_width')],
-                          onChange: (e: CustomEvent) => {
-                            updateModule(e.detail.value);
-                            setTimeout(() => {
-                              this.triggerPreviewUpdate();
-                            }, 50);
-                          },
+                    ${this.renderSettingsSection('', '', [
+                      {
+                        title: localize(
+                          'editor.popup.trigger.button_full_width',
+                          lang,
+                          'Full Width'
+                        ),
+                        description: localize(
+                          'editor.popup.trigger.button_full_width_desc',
+                          lang,
+                          'Make the button span the full width of the container.'
+                        ),
+                        hass,
+                        data: {
+                          trigger_button_full_width: popupModule.trigger_button_full_width || false,
                         },
-                      ]
-                    )}
+                        schema: [this.booleanField('trigger_button_full_width')],
+                        onChange: (e: CustomEvent) => {
+                          updateModule(e.detail.value);
+                          setTimeout(() => {
+                            this.triggerPreviewUpdate();
+                          }, 50);
+                        },
+                      },
+                    ])}
                   `
                 )}
               </div>
@@ -580,49 +594,71 @@ export class UltraPopupModule extends BaseUltraModule {
                 ${this.renderConditionalFieldsGroup(
                   localize('editor.popup.trigger.image', lang, 'Image'),
                   html`
-                    ${this.renderSettingsSection(
-                      '',
-                      '',
-                      [
-                        {
-                          title: localize('editor.popup.trigger.image_type', lang, 'Image Type'),
-                          description: localize(
-                            'editor.popup.trigger.image_type_desc',
-                            lang,
-                            'Choose how to provide the image for the trigger.'
-                          ),
-                          hass,
-                          data: { trigger_image_type: popupModule.trigger_image_type || 'url' },
-                          schema: [
-                            this.selectField('trigger_image_type', [
-                              { value: 'upload', label: localize('editor.design.bg_upload', lang, 'Upload Image') },
-                              { value: 'entity', label: localize('editor.design.bg_entity', lang, 'Entity Image') },
-                              { value: 'url', label: localize('editor.design.bg_url', lang, 'Image URL') },
-                            ]),
-                          ],
-                          onChange: (e: CustomEvent) => {
-                            const next = e.detail.value.trigger_image_type;
-                            const prev = popupModule.trigger_image_type || 'url';
-                            if (next === prev) return;
-                            updateModule(e.detail.value);
-                            setTimeout(() => {
-                              this.triggerPreviewUpdate();
-                            }, 50);
-                          },
+                    ${this.renderSettingsSection('', '', [
+                      {
+                        title: localize('editor.popup.trigger.image_type', lang, 'Image Type'),
+                        description: localize(
+                          'editor.popup.trigger.image_type_desc',
+                          lang,
+                          'Choose how to provide the image for the trigger.'
+                        ),
+                        hass,
+                        data: { trigger_image_type: popupModule.trigger_image_type || 'url' },
+                        schema: [
+                          this.selectField('trigger_image_type', [
+                            {
+                              value: 'upload',
+                              label: localize('editor.design.bg_upload', lang, 'Upload Image'),
+                            },
+                            {
+                              value: 'entity',
+                              label: localize('editor.design.bg_entity', lang, 'Entity Image'),
+                            },
+                            {
+                              value: 'url',
+                              label: localize('editor.design.bg_url', lang, 'Image URL'),
+                            },
+                          ]),
+                        ],
+                        onChange: (e: CustomEvent) => {
+                          const next = e.detail.value.trigger_image_type;
+                          const prev = popupModule.trigger_image_type || 'url';
+                          if (next === prev) return;
+                          updateModule(e.detail.value);
+                          setTimeout(() => {
+                            this.triggerPreviewUpdate();
+                          }, 50);
                         },
-                      ]
-                    )}
+                      },
+                    ])}
                     ${popupModule.trigger_image_type === 'upload'
                       ? html`
                           <div style="margin-bottom: 16px;">
-                            <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--primary-text-color);">
+                            <div
+                              style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--primary-text-color);"
+                            >
                               ${localize('editor.design.upload_bg_image', lang, 'Upload Image')}
                             </div>
                             <div class="upload-container">
-                              <div class="file-upload-row" style="display: flex; align-items: center; gap: 12px;">
-                                <label class="file-upload-button" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--primary-color); color: white; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
-                                  <ha-icon icon="mdi:upload" style="--mdc-icon-size: 20px;"></ha-icon>
-                                  <span>${localize('editor.design.choose_file', lang, 'Choose File')}</span>
+                              <div
+                                class="file-upload-row"
+                                style="display: flex; align-items: center; gap: 12px;"
+                              >
+                                <label
+                                  class="file-upload-button"
+                                  style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--primary-color); color: white; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;"
+                                >
+                                  <ha-icon
+                                    icon="mdi:upload"
+                                    style="--mdc-icon-size: 20px;"
+                                  ></ha-icon>
+                                  <span
+                                    >${localize(
+                                      'editor.design.choose_file',
+                                      lang,
+                                      'Choose File'
+                                    )}</span
+                                  >
                                   <input
                                     type="file"
                                     accept="image/*"
@@ -631,26 +667,37 @@ export class UltraPopupModule extends BaseUltraModule {
                                       const file = input.files?.[0];
                                       if (!file || !hass) return;
                                       try {
-                                        const { uploadImage } = await import('../utils/image-upload');
+                                        const { uploadImage } = await import(
+                                          '../utils/image-upload'
+                                        );
                                         const imagePath = await uploadImage(hass, file);
-                                        updateModule({ trigger_image_url: imagePath, trigger_image_type: 'upload' });
+                                        updateModule({
+                                          trigger_image_url: imagePath,
+                                          trigger_image_type: 'upload',
+                                        });
                                         setTimeout(() => {
                                           this.triggerPreviewUpdate();
                                         }, 50);
                                       } catch (error) {
                                         console.error('Image upload failed:', error);
-                                        alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                                        alert(
+                                          `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+                                        );
                                       }
                                     }}
                                     style="display: none"
                                   />
                                 </label>
-                                <div style="flex: 1; color: var(--secondary-text-color); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                  ${popupModule.trigger_image_url && popupModule.trigger_image_url.startsWith('/api/image/serve/')
-                                    ? popupModule.trigger_image_url.split('/').pop() || 'Uploaded image'
+                                <div
+                                  style="flex: 1; color: var(--secondary-text-color); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                >
+                                  ${popupModule.trigger_image_url &&
+                                  popupModule.trigger_image_url.startsWith('/api/image/serve/')
+                                    ? popupModule.trigger_image_url.split('/').pop() ||
+                                      'Uploaded image'
                                     : popupModule.trigger_image_url
-                                    ? 'Image selected'
-                                    : 'No file chosen'}
+                                      ? 'Image selected'
+                                      : 'No file chosen'}
                                 </div>
                               </div>
                             </div>
@@ -699,29 +746,31 @@ export class UltraPopupModule extends BaseUltraModule {
                           )}
                         `
                       : ''}
-                    ${this.renderSettingsSection(
-                      '',
-                      '',
-                      [
-                        {
-                          title: localize('editor.popup.trigger.image_full_width', lang, 'Full Width'),
-                          description: localize(
-                            'editor.popup.trigger.image_full_width_desc',
-                            lang,
-                            'Make the image span the full width of the container.'
-                          ),
-                          hass,
-                          data: { trigger_image_full_width: popupModule.trigger_image_full_width || false },
-                          schema: [this.booleanField('trigger_image_full_width')],
-                          onChange: (e: CustomEvent) => {
-                            updateModule(e.detail.value);
-                            setTimeout(() => {
-                              this.triggerPreviewUpdate();
-                            }, 50);
-                          },
+                    ${this.renderSettingsSection('', '', [
+                      {
+                        title: localize(
+                          'editor.popup.trigger.image_full_width',
+                          lang,
+                          'Full Width'
+                        ),
+                        description: localize(
+                          'editor.popup.trigger.image_full_width_desc',
+                          lang,
+                          'Make the image span the full width of the container.'
+                        ),
+                        hass,
+                        data: {
+                          trigger_image_full_width: popupModule.trigger_image_full_width || false,
                         },
-                      ]
-                    )}
+                        schema: [this.booleanField('trigger_image_full_width')],
+                        onChange: (e: CustomEvent) => {
+                          updateModule(e.detail.value);
+                          setTimeout(() => {
+                            this.triggerPreviewUpdate();
+                          }, 50);
+                        },
+                      },
+                    ])}
                   `
                 )}
               </div>
@@ -765,7 +814,13 @@ export class UltraPopupModule extends BaseUltraModule {
                 ${this.renderConditionalFieldsGroup(
                   localize('editor.popup.trigger.module_config', lang, 'Module Trigger'),
                   html`
-                    ${this._renderModuleTriggerConfig(popupModule, hass, config, updateModule, lang)}
+                    ${this._renderModuleTriggerConfig(
+                      popupModule,
+                      hass,
+                      config,
+                      updateModule,
+                      lang
+                    )}
                   `
                 )}
               </div>
@@ -778,9 +833,7 @@ export class UltraPopupModule extends BaseUltraModule {
               <div style="margin-top: -16px; margin-bottom: 32px;">
                 ${this.renderConditionalFieldsGroup(
                   localize('editor.popup.trigger.logic_config', lang, 'Logic Configuration'),
-                  html`
-                    ${this._renderTriggerLogic(popupModule, hass, updateModule)}
-                  `
+                  html` ${this._renderTriggerLogic(popupModule, hass, updateModule)} `
                 )}
               </div>
             `
@@ -811,7 +864,10 @@ export class UltraPopupModule extends BaseUltraModule {
                     schema: [
                       this.selectField('trigger_alignment', [
                         { value: 'left', label: localize('editor.common.left', lang, 'Left') },
-                        { value: 'center', label: localize('editor.common.center', lang, 'Center') },
+                        {
+                          value: 'center',
+                          label: localize('editor.common.center', lang, 'Center'),
+                        },
                         { value: 'right', label: localize('editor.common.right', lang, 'Right') },
                       ]),
                     ],
@@ -866,38 +922,39 @@ export class UltraPopupModule extends BaseUltraModule {
                 ${this.renderConditionalFieldsGroup(
                   localize('editor.popup.title.configuration', lang, 'Title Configuration'),
                   html`
-                    ${this.renderSettingsSection(
-                      '',
-                      '',
-                      [
-                        {
-                          title: localize('editor.popup.title.mode', lang, 'Title Mode'),
-                          description: localize(
-                            'editor.popup.title.mode_desc',
-                            lang,
-                            'Choose whether to use custom text or entity state as title.'
-                          ),
-                          hass,
-                          data: { title_mode: popupModule.title_mode || 'custom' },
-                          schema: [
-                            this.selectField('title_mode', [
-                              { value: 'custom', label: localize('editor.common.custom_text', lang, 'Custom Text') },
-                              { value: 'entity', label: localize('editor.common.entity_state', lang, 'Entity State') },
-                            ]),
-                          ],
-                          onChange: (e: CustomEvent) => {
-                            const next = e.detail.value.title_mode;
-                            const prev = popupModule.title_mode || 'custom';
-                            if (next === prev) return;
-                            updateModule(e.detail.value);
-                            setTimeout(() => {
-                              this.triggerPreviewUpdate();
-                            }, 50);
-                          },
+                    ${this.renderSettingsSection('', '', [
+                      {
+                        title: localize('editor.popup.title.mode', lang, 'Title Mode'),
+                        description: localize(
+                          'editor.popup.title.mode_desc',
+                          lang,
+                          'Choose whether to use custom text or entity state as title.'
+                        ),
+                        hass,
+                        data: { title_mode: popupModule.title_mode || 'custom' },
+                        schema: [
+                          this.selectField('title_mode', [
+                            {
+                              value: 'custom',
+                              label: localize('editor.common.custom_text', lang, 'Custom Text'),
+                            },
+                            {
+                              value: 'entity',
+                              label: localize('editor.common.entity_state', lang, 'Entity State'),
+                            },
+                          ]),
+                        ],
+                        onChange: (e: CustomEvent) => {
+                          const next = e.detail.value.title_mode;
+                          const prev = popupModule.title_mode || 'custom';
+                          if (next === prev) return;
+                          updateModule(e.detail.value);
+                          setTimeout(() => {
+                            this.triggerPreviewUpdate();
+                          }, 50);
                         },
-                      ]
-                    )}
-
+                      },
+                    ])}
                     ${popupModule.title_mode === 'custom'
                       ? html`
                           ${this.renderFieldSection(
@@ -933,29 +990,29 @@ export class UltraPopupModule extends BaseUltraModule {
                               }, 50);
                             }
                           )}
-                          ${this.renderSettingsSection(
-                            '',
-                            '',
-                            [
-                              {
-                                title: localize('editor.popup.title.show_entity_name', lang, 'Show Entity Name'),
-                                description: localize(
-                                  'editor.popup.title.show_entity_name_desc',
-                                  lang,
-                                  'Display the entity friendly name before the state value.'
-                                ),
-                                hass,
-                                data: { show_entity_name: popupModule.show_entity_name || false },
-                                schema: [this.booleanField('show_entity_name')],
-                                onChange: (e: CustomEvent) => {
-                                  updateModule(e.detail.value);
-                                  setTimeout(() => {
-                                    this.triggerPreviewUpdate();
-                                  }, 50);
-                                },
+                          ${this.renderSettingsSection('', '', [
+                            {
+                              title: localize(
+                                'editor.popup.title.show_entity_name',
+                                lang,
+                                'Show Entity Name'
+                              ),
+                              description: localize(
+                                'editor.popup.title.show_entity_name_desc',
+                                lang,
+                                'Display the entity friendly name before the state value.'
+                              ),
+                              hass,
+                              data: { show_entity_name: popupModule.show_entity_name || false },
+                              schema: [this.booleanField('show_entity_name')],
+                              onChange: (e: CustomEvent) => {
+                                updateModule(e.detail.value);
+                                setTimeout(() => {
+                                  this.triggerPreviewUpdate();
+                                }, 50);
                               },
-                            ]
-                          )}
+                            },
+                          ])}
                         `}
                   `
                 )}
@@ -983,7 +1040,10 @@ export class UltraPopupModule extends BaseUltraModule {
               data: { layout: popupModule.layout || 'default' },
               schema: [
                 this.selectField('layout', [
-                  { value: 'default', label: localize('editor.popup.layout.default', lang, 'Default') },
+                  {
+                    value: 'default',
+                    label: localize('editor.popup.layout.default', lang, 'Default'),
+                  },
                   {
                     value: 'full_screen',
                     label: localize('editor.popup.layout.full_screen', lang, 'Full Screen'),
@@ -996,7 +1056,10 @@ export class UltraPopupModule extends BaseUltraModule {
                     value: 'right_panel',
                     label: localize('editor.popup.layout.right_panel', lang, 'Right Panel'),
                   },
-                  { value: 'top_panel', label: localize('editor.popup.layout.top_panel', lang, 'Top Panel') },
+                  {
+                    value: 'top_panel',
+                    label: localize('editor.popup.layout.top_panel', lang, 'Top Panel'),
+                  },
                   {
                     value: 'bottom_panel',
                     label: localize('editor.popup.layout.bottom_panel', lang, 'Bottom Panel'),
@@ -1047,7 +1110,11 @@ export class UltraPopupModule extends BaseUltraModule {
                   },
                   {
                     value: 'slide_bottom',
-                    label: localize('editor.popup.animation.slide_bottom', lang, 'Slide from Bottom'),
+                    label: localize(
+                      'editor.popup.animation.slide_bottom',
+                      lang,
+                      'Slide from Bottom'
+                    ),
                   },
                 ]),
               ],
@@ -1104,7 +1171,6 @@ export class UltraPopupModule extends BaseUltraModule {
             updateModule(e.detail.value);
           }
         )}
-
         ${this.renderFieldSection(
           localize('editor.popup.popup_padding', lang, 'Popup Padding'),
           localize(
@@ -1119,7 +1185,6 @@ export class UltraPopupModule extends BaseUltraModule {
             updateModule(e.detail.value);
           }
         )}
-
         ${this.renderFieldSection(
           localize('editor.popup.popup_border_radius', lang, 'Popup Border Radius'),
           localize(
@@ -1159,7 +1224,10 @@ export class UltraPopupModule extends BaseUltraModule {
                     value: 'inside',
                     label: localize('editor.popup.close_button.inside', lang, 'Inside the Popup'),
                   },
-                  { value: 'none', label: localize('editor.popup.close_button.none', lang, 'None') },
+                  {
+                    value: 'none',
+                    label: localize('editor.popup.close_button.none', lang, 'None'),
+                  },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -1185,7 +1253,11 @@ export class UltraPopupModule extends BaseUltraModule {
           ),
           [
             {
-              title: localize('editor.popup.auto_close_timer.enabled', lang, 'Enable Auto-Close Timer'),
+              title: localize(
+                'editor.popup.auto_close_timer.enabled',
+                lang,
+                'Enable Auto-Close Timer'
+              ),
               description: localize(
                 'editor.popup.auto_close_timer.enabled_desc',
                 lang,
@@ -1209,10 +1281,18 @@ export class UltraPopupModule extends BaseUltraModule {
           ? html`
               <div style="margin-top: -16px; margin-bottom: 32px;">
                 ${this.renderConditionalFieldsGroup(
-                  localize('editor.popup.auto_close_timer.configuration', lang, 'Timer Configuration'),
+                  localize(
+                    'editor.popup.auto_close_timer.configuration',
+                    lang,
+                    'Timer Configuration'
+                  ),
                   html`
                     ${this.renderFieldSection(
-                      localize('editor.popup.auto_close_timer.seconds', lang, 'Close After (Seconds)'),
+                      localize(
+                        'editor.popup.auto_close_timer.seconds',
+                        lang,
+                        'Close After (Seconds)'
+                      ),
                       localize(
                         'editor.popup.auto_close_timer.seconds_desc',
                         lang,
@@ -1274,23 +1354,23 @@ export class UltraPopupModule extends BaseUltraModule {
     config?: UltraCardConfig
   ): Array<{ value: string; label: string }> {
     const modules: Array<{ value: string; label: string }> = [];
-    
+
     if (!config || !config.layout || !config.layout.rows) return modules;
 
     // Helper to recursively collect modules from rows/columns/containers
     const collectModules = (items: any[], depth = 0): void => {
       if (!items || !Array.isArray(items)) return;
-      
+
       for (const item of items) {
         // Skip if it's the current popup module
         if (item.id === currentPopupId) continue;
-        
+
         // Skip popup modules (can't trigger a popup from another popup)
         if (item.type === 'popup') continue;
-        
+
         // Skip pagebreak modules
         if (item.type === 'pagebreak') continue;
-        
+
         // Handle rows - recurse into columns
         if (item.columns && Array.isArray(item.columns)) {
           for (const column of item.columns) {
@@ -1300,16 +1380,16 @@ export class UltraPopupModule extends BaseUltraModule {
           }
           continue;
         }
-        
+
         // Check if this is a module with a type (not a row/column container)
         if (item.type) {
           // Add this module as an option
           const moduleType = item.type.charAt(0).toUpperCase() + item.type.slice(1);
-          
+
           // Get the best available name for this module based on its type
           // Check name property first - ensure it's a non-empty string
           let moduleName: string | null = null;
-          
+
           // Primary: Check the custom module_name field (set in Module Settings)
           if (item.module_name && typeof item.module_name === 'string' && item.module_name.trim()) {
             moduleName = item.module_name.trim();
@@ -1318,7 +1398,7 @@ export class UltraPopupModule extends BaseUltraModule {
           else if (item.name && typeof item.name === 'string' && item.name.trim()) {
             moduleName = item.name.trim();
           }
-          
+
           // Tertiary: Type-specific fallbacks (entity names, labels, etc.)
           if (!moduleName) {
             switch (item.type) {
@@ -1345,9 +1425,10 @@ export class UltraPopupModule extends BaseUltraModule {
               case 'climate':
               case 'light':
               case 'slider':
-                moduleName = (item.label && item.label.trim()) || 
-                             (item.title && item.title.trim()) || 
-                             (item.entity ? item.entity.split('.').pop() : null);
+                moduleName =
+                  (item.label && item.label.trim()) ||
+                  (item.title && item.title.trim()) ||
+                  (item.entity ? item.entity.split('.').pop() : null);
                 break;
               case 'image':
                 moduleName = (item.title && item.title.trim()) || null;
@@ -1361,12 +1442,14 @@ export class UltraPopupModule extends BaseUltraModule {
                 moduleName = (item.title && item.title.trim()) || null;
                 break;
               default:
-                moduleName = (item.title && item.title.trim()) || 
-                             (item.title_text && item.title_text.trim()) || 
-                             (item.trigger_button_text && item.trigger_button_text.trim()) || null;
+                moduleName =
+                  (item.title && item.title.trim()) ||
+                  (item.title_text && item.title_text.trim()) ||
+                  (item.trigger_button_text && item.trigger_button_text.trim()) ||
+                  null;
             }
           }
-          
+
           // Final fallback: Show truncated ID
           if (!moduleName) {
             // Extract just the timestamp part for a shorter display
@@ -1377,15 +1460,15 @@ export class UltraPopupModule extends BaseUltraModule {
               moduleName = `ID: ${item.id.slice(-12)}`;
             }
           }
-          
+
           const label = `${moduleType}: ${moduleName}`;
-          
+
           modules.push({
             value: item.id,
             label: label,
           });
         }
-        
+
         // Recurse into nested modules for containers like horizontal, vertical, accordion, slider
         if (item.modules && Array.isArray(item.modules)) {
           collectModules(item.modules, depth + 1);
@@ -1449,7 +1532,14 @@ export class UltraPopupModule extends BaseUltraModule {
                 { trigger_module_id: selectedModuleId },
                 [
                   this.selectField('trigger_module_id', [
-                    { value: '', label: localize('editor.popup.trigger.no_module', lang, '-- Select a Module --') },
+                    {
+                      value: '',
+                      label: localize(
+                        'editor.popup.trigger.no_module',
+                        lang,
+                        '-- Select a Module --'
+                      ),
+                    },
                     ...availableModules,
                   ]),
                 ],
@@ -1463,14 +1553,18 @@ export class UltraPopupModule extends BaseUltraModule {
                   }, 50);
                 }
               )}
-
               ${selectedModule
                 ? html`
                     <div
                       style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-success-color, 76, 175, 80), 0.1); border-left: 3px solid var(--success-color, #4caf50); border-radius: 4px; font-size: 13px; line-height: 1.5;"
                     >
-                      <div style="font-weight: 600; margin-bottom: 4px; color: var(--success-color, #4caf50);">
-                        <ha-icon icon="mdi:check-circle" style="--mdc-icon-size: 16px; vertical-align: middle;"></ha-icon>
+                      <div
+                        style="font-weight: 600; margin-bottom: 4px; color: var(--success-color, #4caf50);"
+                      >
+                        <ha-icon
+                          icon="mdi:check-circle"
+                          style="--mdc-icon-size: 16px; vertical-align: middle;"
+                        ></ha-icon>
                         ${localize('editor.popup.trigger.module_linked', lang, 'Module Linked')}
                       </div>
                       <div style="color: var(--primary-text-color);">
@@ -1488,9 +1582,18 @@ export class UltraPopupModule extends BaseUltraModule {
               <div
                 style="padding: 16px; background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.1); border-left: 3px solid var(--warning-color, #ff9800); border-radius: 4px; font-size: 13px; line-height: 1.5;"
               >
-                <div style="font-weight: 600; margin-bottom: 4px; color: var(--warning-color, #ff9800);">
-                  <ha-icon icon="mdi:alert" style="--mdc-icon-size: 16px; vertical-align: middle;"></ha-icon>
-                  ${localize('editor.popup.trigger.no_modules_available', lang, 'No Modules Available')}
+                <div
+                  style="font-weight: 600; margin-bottom: 4px; color: var(--warning-color, #ff9800);"
+                >
+                  <ha-icon
+                    icon="mdi:alert"
+                    style="--mdc-icon-size: 16px; vertical-align: middle;"
+                  ></ha-icon>
+                  ${localize(
+                    'editor.popup.trigger.no_modules_available',
+                    lang,
+                    'No Modules Available'
+                  )}
                 </div>
                 <div style="color: var(--primary-text-color);">
                   ${localize(
@@ -1538,7 +1641,10 @@ export class UltraPopupModule extends BaseUltraModule {
           style="margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-info-color, 3, 169, 244), 0.1); border-left: 3px solid var(--info-color, #03a9f4); border-radius: 4px; font-size: 13px; line-height: 1.5;"
         >
           <div style="font-weight: 600; margin-bottom: 4px; color: var(--info-color, #03a9f4);">
-            <ha-icon icon="mdi:information" style="--mdc-icon-size: 16px; vertical-align: middle;"></ha-icon>
+            <ha-icon
+              icon="mdi:information"
+              style="--mdc-icon-size: 16px; vertical-align: middle;"
+            ></ha-icon>
             ${localize('editor.popup.trigger_logic.note_title', lang, 'Important Note')}
           </div>
           <div style="color: var(--primary-text-color);">
@@ -1578,7 +1684,11 @@ export class UltraPopupModule extends BaseUltraModule {
               },
               {
                 value: 'any',
-                label: localize('editor.popup.trigger_logic.mode_any', lang, 'Open if ANY condition is met'),
+                label: localize(
+                  'editor.popup.trigger_logic.mode_any',
+                  lang,
+                  'Open if ANY condition is met'
+                ),
               },
             ]),
           ],
@@ -1592,29 +1702,25 @@ export class UltraPopupModule extends BaseUltraModule {
 
         <!-- Auto Close Toggle (for logic triggers) -->
         ${triggerMode !== 'manual'
-          ? this.renderSettingsSection(
-              '',
-              '',
-              [
-                {
-                  title: localize('editor.popup.trigger_logic.auto_close', lang, 'Auto Close'),
-                  description: localize(
-                    'editor.popup.trigger_logic.auto_close_desc',
-                    lang,
-                    'Automatically close popup when conditions become false.'
-                  ),
-                  hass,
-                  data: { auto_close: popupModule.auto_close !== false },
-                  schema: [this.booleanField('auto_close')],
-                  onChange: (e: CustomEvent) => {
-                    updateModule(e.detail.value);
-                    setTimeout(() => {
-                      this.triggerPreviewUpdate();
-                    }, 50);
-                  },
+          ? this.renderSettingsSection('', '', [
+              {
+                title: localize('editor.popup.trigger_logic.auto_close', lang, 'Auto Close'),
+                description: localize(
+                  'editor.popup.trigger_logic.auto_close_desc',
+                  lang,
+                  'Automatically close popup when conditions become false.'
+                ),
+                hass,
+                data: { auto_close: popupModule.auto_close !== false },
+                schema: [this.booleanField('auto_close')],
+                onChange: (e: CustomEvent) => {
+                  updateModule(e.detail.value);
+                  setTimeout(() => {
+                    this.triggerPreviewUpdate();
+                  }, 50);
                 },
-              ]
-            )
+              },
+            ])
           : ''}
 
         <!-- Conditions List -->
@@ -1653,7 +1759,9 @@ export class UltraPopupModule extends BaseUltraModule {
                         <div
                           style="padding: 20px; background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.1); border: 1px dashed var(--warning-color, #ff9800); border-radius: 8px;"
                         >
-                          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                          <div
+                            style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"
+                          >
                             <ha-icon
                               icon="mdi:alert-circle-outline"
                               style="--mdc-icon-size: 24px; color: var(--warning-color, #ff9800);"
@@ -1666,7 +1774,9 @@ export class UltraPopupModule extends BaseUltraModule {
                               )}
                             </span>
                           </div>
-                          <div style="color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 12px;">
+                          <div
+                            style="color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 12px;"
+                          >
                             ${localize(
                               'editor.popup.trigger_logic.no_conditions',
                               lang,
@@ -1813,7 +1923,11 @@ export class UltraPopupModule extends BaseUltraModule {
                     this.selectField('type', [
                       {
                         value: 'entity_state',
-                        label: localize('editor.popup.trigger_logic.type_entity_state', lang, 'Entity State'),
+                        label: localize(
+                          'editor.popup.trigger_logic.type_entity_state',
+                          lang,
+                          'Entity State'
+                        ),
                       },
                       {
                         value: 'entity_attribute',
@@ -1829,7 +1943,11 @@ export class UltraPopupModule extends BaseUltraModule {
                       },
                       {
                         value: 'template',
-                        label: localize('editor.popup.trigger_logic.type_template', lang, 'Template'),
+                        label: localize(
+                          'editor.popup.trigger_logic.type_template',
+                          lang,
+                          'Template'
+                        ),
                       },
                     ]),
                   ],
@@ -1962,7 +2080,10 @@ export class UltraPopupModule extends BaseUltraModule {
 
                   return html`
                     <div class="field-container" style="margin-bottom: 16px;">
-                      <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
+                      <div
+                        class="field-title"
+                        style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
+                      >
                         ${localize('editor.popup.trigger_logic.template', lang, 'Template')}
                       </div>
                       <div
@@ -2041,16 +2162,21 @@ export class UltraPopupModule extends BaseUltraModule {
         // Don't auto-open if no conditions are configured yet
         // This prevents blocking the editor when user first switches to logic mode
         const conditions = popupModule.trigger_conditions || [];
-        
+
         // Check if we have any CONFIGURED conditions (not just empty placeholders)
         const hasConfiguredConditions = conditions.some((cond: any) => {
           if (!cond || !cond.type) return false;
-          
+
           switch (cond.type) {
             case 'entity_state':
               return cond.entity && cond.entity.trim() !== '';
             case 'entity_attribute':
-              return cond.entity && cond.entity.trim() !== '' && cond.attribute && cond.attribute.trim() !== '';
+              return (
+                cond.entity &&
+                cond.entity.trim() !== '' &&
+                cond.attribute &&
+                cond.attribute.trim() !== ''
+              );
             case 'time':
               return cond.time_from && cond.time_to;
             case 'template':
@@ -2059,14 +2185,11 @@ export class UltraPopupModule extends BaseUltraModule {
               return false;
           }
         });
-        
+
         if (hasConfiguredConditions) {
           // Use logic service to evaluate trigger conditions
           logicService.setHass(hass);
-          const conditionsResult = logicService.evaluateDisplayConditions(
-            conditions,
-            triggerMode
-          );
+          const conditionsResult = logicService.evaluateDisplayConditions(conditions, triggerMode);
           logicDeterminedState = conditionsResult;
         } else {
           // No configured conditions yet - keep popup closed so user can configure
@@ -2088,32 +2211,36 @@ export class UltraPopupModule extends BaseUltraModule {
       const initialState =
         logicDeterminedState !== null ? logicDeterminedState : popupModule.default_open || false;
       popupStates.set(uniquePopupKey, initialState);
-      
+
       // Track initial logic state
       if (logicDeterminedState !== null) {
         lastLogicStates.set(uniquePopupKey, logicDeterminedState);
       }
-      
+
       // Start auto-close timer if popup opens initially and timer is enabled
       if (initialState && popupModule.auto_close_timer_enabled) {
         this._startAutoCloseTimer(popupModule, uniquePopupKey);
       }
-    } else if (logicDeterminedState !== null && triggerType === 'logic' && popupModule.auto_close !== false) {
+    } else if (
+      logicDeterminedState !== null &&
+      triggerType === 'logic' &&
+      popupModule.auto_close !== false
+    ) {
       // Only update state for logic triggers with auto_close enabled
       // Key fix: Only react to logic STATE CHANGES, not constant true/false values
       const lastLogicState = lastLogicStates.get(uniquePopupKey);
       const logicStateChanged = lastLogicState !== logicDeterminedState;
-      
+
       // Update tracked logic state
       lastLogicStates.set(uniquePopupKey, logicDeterminedState);
-      
+
       // Only update popup state if logic condition actually changed
       // IMPORTANT: Don't overwrite manually opened popups - they should stay open until user closes them
       const isManuallyOpened = manuallyOpenedPopups.has(uniquePopupKey);
       if (logicStateChanged && !isManuallyOpened) {
         const wasOpen = popupStates.get(uniquePopupKey) || false;
         popupStates.set(uniquePopupKey, logicDeterminedState);
-        
+
         // Handle timer based on state change
         if (!wasOpen && logicDeterminedState && popupModule.auto_close_timer_enabled) {
           // Popup just opened - start timer
@@ -2128,7 +2255,7 @@ export class UltraPopupModule extends BaseUltraModule {
     // Read popup state, but if manually opened, ensure it stays true
     let isOpen = popupStates.get(uniquePopupKey) || false;
     const isManuallyOpened = manuallyOpenedPopups.has(uniquePopupKey);
-    
+
     // If manually opened, force state to true (protects against re-render resets)
     if (isManuallyOpened && !isOpen) {
       popupStates.set(uniquePopupKey, true);
@@ -2145,13 +2272,13 @@ export class UltraPopupModule extends BaseUltraModule {
     // causing multiple listeners to be added but never removed, resulting in multiple popups opening
     const listenerKey = `__ultraPopupOpenListener_${popupModule.id}`;
     const w = window as any;
-    
+
     // Always remove existing listener before adding new one (handles cardInstanceId changes during editing)
     if (w[listenerKey]) {
       window.removeEventListener('ultra-popup-open', w[listenerKey]);
       delete w[listenerKey];
     }
-    
+
     const handleExternalOpen = (e: Event) => {
       const customEvent = e as CustomEvent;
       const eventPopupId = customEvent.detail?.popupId;
@@ -2181,6 +2308,32 @@ export class UltraPopupModule extends BaseUltraModule {
     window.addEventListener('ultra-popup-open', handleExternalOpen);
     w[listenerKey] = handleExternalOpen;
 
+    // Register listener for child module updates (for tabs, graphs, etc. inside popup)
+    // When a child module triggers an update, the popup needs to re-render its content
+    const childUpdateListenerKey = `__ultraPopupChildUpdateListener_${popupModule.id}`;
+
+    // Always remove existing listener before adding new one
+    if (w[childUpdateListenerKey]) {
+      window.removeEventListener('ultra-card-template-update', w[childUpdateListenerKey]);
+      delete w[childUpdateListenerKey];
+    }
+
+    const handleChildUpdate = (e: Event) => {
+      // Only refresh if popup is currently open
+      if (popupStates.get(uniquePopupKey) && popupPortals.has(uniquePopupKey)) {
+        // Mark popup for refresh so its content will be re-rendered
+        popupNeedsRefresh.set(uniquePopupKey, true);
+        // Re-render the portal directly (don't wait for another card render cycle)
+        setTimeout(() => {
+          if (renderPopupToPortal && popupStates.get(uniquePopupKey)) {
+            renderPopupToPortal(false);
+          }
+        }, 10);
+      }
+    };
+    window.addEventListener('ultra-card-template-update', handleChildUpdate);
+    w[childUpdateListenerKey] = handleChildUpdate;
+
     // Handle trigger click
     const handleTriggerClick = (e: Event) => {
       e.stopPropagation();
@@ -2191,15 +2344,15 @@ export class UltraPopupModule extends BaseUltraModule {
       popupStates.set(uniquePopupKey, true);
       // Mark as manually opened - popup will stay open until explicitly closed
       manuallyOpenedPopups.add(uniquePopupKey);
-      
+
       // Start auto-close timer if enabled
       if (popupModule.auto_close_timer_enabled) {
         this._startAutoCloseTimer(popupModule, uniquePopupKey);
       }
-      
+
       // Render popup immediately
       renderPopupToPortal(false);
-      
+
       // TEMPLATE FIX: Schedule a card update after templates have had time to evaluate
       // This handles the "Template processing..." issue on first open
       // Portal-rendered popups don't get automatic re-renders from hass updates
@@ -2216,18 +2369,18 @@ export class UltraPopupModule extends BaseUltraModule {
     const handleClose = (e: Event) => {
       e.stopPropagation();
       e.preventDefault();
-      
+
       // Close the popup
       popupStates.set(uniquePopupKey, false);
       // Remove from manually opened set so re-renders don't keep it open
       manuallyOpenedPopups.delete(uniquePopupKey);
-      
+
       // Clear auto-close timer
       this._clearAutoCloseTimer(uniquePopupKey);
-      
+
       // Restore HA editor overlays (works in all contexts, does nothing if none were hidden)
       restoreHAEditorOverlays();
-      
+
       // Directly remove the portal element to ensure immediate close
       // This is necessary because Live Preview contexts may not re-render properly
       const portal = popupPortals.get(uniquePopupKey);
@@ -2240,11 +2393,11 @@ export class UltraPopupModule extends BaseUltraModule {
         portal.remove();
         popupPortals.delete(uniquePopupKey);
       }
-      
+
       // Note: We don't update lastLogicStates here
       // This allows the popup to stay closed even if logic conditions are still true
       // Popup will only reopen when conditions change from false -> true (rising edge)
-      
+
       this.triggerPreviewUpdate(true);
     };
 
@@ -2304,18 +2457,22 @@ export class UltraPopupModule extends BaseUltraModule {
               e.stopPropagation();
               handleTriggerClick(e);
             }}
-            style="display: flex; align-items: center; justify-content: center; gap: ${buttonIcon ? '8px' : '0'}; padding: 12px 24px; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; ${isFullWidth
+            style="display: flex; align-items: center; justify-content: center; gap: ${buttonIcon
+              ? '8px'
+              : '0'}; padding: 12px 24px; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; ${isFullWidth
               ? 'width: 100%;'
               : ''}"
           >
-            ${buttonIcon ? html`<ha-icon icon="${buttonIcon}" style="--mdc-icon-size: 24px;"></ha-icon>` : ''}
+            ${buttonIcon
+              ? html`<ha-icon icon="${buttonIcon}" style="--mdc-icon-size: 24px;"></ha-icon>`
+              : ''}
             ${buttonText}
           </button>
         `;
       } else if (triggerType === 'image') {
         const imageType = popupModule.trigger_image_type || 'url';
         const isFullWidth = popupModule.trigger_image_full_width || false;
-        
+
         // Get image URL based on type
         let imageUrl = '';
         if (imageType === 'upload' || imageType === 'url') {
@@ -2333,7 +2490,12 @@ export class UltraPopupModule extends BaseUltraModule {
               const baseUrl = (hass as any).hassUrl ? (hass as any).hassUrl() : '';
               imageUrl = `${baseUrl.replace(/\/$/, '')}${imageUrl}`;
             }
-          } else if (entityState?.state && (entityState.state.startsWith('http') || entityState.state.startsWith('/') || entityState.state.startsWith('data:'))) {
+          } else if (
+            entityState?.state &&
+            (entityState.state.startsWith('http') ||
+              entityState.state.startsWith('/') ||
+              entityState.state.startsWith('data:'))
+          ) {
             imageUrl = entityState.state;
             if (imageUrl.startsWith('/')) {
               const baseUrl = (hass as any).hassUrl ? (hass as any).hassUrl() : '';
@@ -2344,7 +2506,9 @@ export class UltraPopupModule extends BaseUltraModule {
 
         if (!imageUrl) {
           triggerElement = html`
-            <div style="padding: 24px; text-align: center; color: var(--secondary-text-color); border: 1px dashed var(--divider-color); border-radius: 8px;">
+            <div
+              style="padding: 24px; text-align: center; color: var(--secondary-text-color); border: 1px dashed var(--divider-color); border-radius: 8px;"
+            >
               ${localize('editor.popup.trigger.no_image', lang, 'No image configured')}
             </div>
           `;
@@ -2403,7 +2567,13 @@ export class UltraPopupModule extends BaseUltraModule {
       // CRITICAL: Add swiper-no-swiping class to container to prevent swipe interference
       // pointer-events: auto ensures clicks work in preview contexts where parent may have pointer-events: none
       return html`
-        <div class="swiper-no-swiping" style="display: inline-flex; justify-content: ${justifyContent}; width: ${alignment === 'left' || alignment === 'right' ? 'auto' : '100%'}; pointer-events: auto;">
+        <div
+          class="swiper-no-swiping"
+          style="display: inline-flex; justify-content: ${justifyContent}; width: ${alignment ===
+            'left' || alignment === 'right'
+            ? 'auto'
+            : '100%'}; pointer-events: auto;"
+        >
           ${triggerElement}
         </div>
       `;
@@ -2431,7 +2601,8 @@ export class UltraPopupModule extends BaseUltraModule {
 
     if (layout === 'full_screen') {
       popupLayoutClass = 'ultra-popup-layout-full_screen';
-      popupPositionStyle = 'width: 100vw; height: 100vh; max-width: 100vw; max-height: 100vh; border-radius: 0;';
+      popupPositionStyle =
+        'width: 100vw; height: 100vh; max-width: 100vw; max-height: 100vh; border-radius: 0;';
     } else if (layout === 'left_panel') {
       popupLayoutClass = 'ultra-popup-layout-left_panel';
       popupPositionStyle = `width: ${popupModule.popup_width || '600px'}; height: 100vh; max-height: 100vh; margin: 0; position: absolute; left: 0; top: 0; border-radius: 0;`;
@@ -2440,10 +2611,12 @@ export class UltraPopupModule extends BaseUltraModule {
       popupPositionStyle = `width: ${popupModule.popup_width || '600px'}; height: 100vh; max-height: 100vh; margin: 0; position: absolute; right: 0; top: 0; border-radius: 0;`;
     } else if (layout === 'top_panel') {
       popupLayoutClass = 'ultra-popup-layout-top_panel';
-      popupPositionStyle = 'width: 100vw; max-width: 100vw; margin: 0; position: absolute; top: 0; left: 0; border-radius: 0;';
+      popupPositionStyle =
+        'width: 100vw; max-width: 100vw; margin: 0; position: absolute; top: 0; left: 0; border-radius: 0;';
     } else if (layout === 'bottom_panel') {
       popupLayoutClass = 'ultra-popup-layout-bottom_panel';
-      popupPositionStyle = 'width: 100vw; max-width: 100vw; margin: 0; position: absolute; bottom: 0; left: 0; border-radius: 0;';
+      popupPositionStyle =
+        'width: 100vw; max-width: 100vw; margin: 0; position: absolute; bottom: 0; left: 0; border-radius: 0;';
     } else {
       // Default centered
       popupPositionStyle = `width: ${popupModule.popup_width || '600px'}; max-width: 90vw;`;
@@ -2526,15 +2699,15 @@ export class UltraPopupModule extends BaseUltraModule {
       // Use uniquePopupKey from parent scope (includes card instance ID)
       const portalId = `ultra-popup-portal-${uniquePopupKey}`;
       let portal = popupPortals.get(uniquePopupKey);
-      
+
       // CRITICAL: Check if manually opened FIRST - this takes precedence over everything
       // Manually opened popups should NEVER close from re-renders, logic triggers, or any other automatic mechanism
       // They can ONLY be closed by: 1) User clicking close, 2) Auto-close timer (if enabled)
       const isManuallyOpenedCheck = manuallyOpenedPopups.has(uniquePopupKey);
-      
+
       // Read current state directly from the Map (not the closure variable)
       let currentlyOpen = popupStates.get(uniquePopupKey) || false;
-      
+
       // If manually opened, FORCE state to true - this is non-negotiable
       if (isManuallyOpenedCheck) {
         // Always set state to true if manually opened, regardless of what it currently is
@@ -2542,7 +2715,7 @@ export class UltraPopupModule extends BaseUltraModule {
         popupStates.set(uniquePopupKey, true);
         currentlyOpen = true;
       }
-      
+
       // Only close if NOT manually opened AND state is false
       if (!currentlyOpen && !isManuallyOpenedCheck) {
         // If closing, remove the portal and restore HA overlays
@@ -2558,16 +2731,16 @@ export class UltraPopupModule extends BaseUltraModule {
         }
         return;
       }
-      
+
       // At this point, we know the popup should be open (either manually opened or state is true)
       // Ensure state is definitely true
       if (!currentlyOpen) {
         popupStates.set(uniquePopupKey, true);
       }
-      
+
       // Track if this is a new portal creation
       const isNewPortal = !portal;
-      
+
       // Create portal container if it doesn't exist
       if (!portal) {
         portal = document.createElement('div');
@@ -2586,11 +2759,11 @@ export class UltraPopupModule extends BaseUltraModule {
         document.body.appendChild(portal);
         popupPortals.set(uniquePopupKey, portal);
       }
-      
+
       // Always ensure portal is not inert on every render
       // Browser extensions or HA might add inert attribute
       portal.removeAttribute('inert');
-      
+
       // Re-apply critical styles every render (in case they get overwritten)
       portal.style.position = 'fixed';
       portal.style.top = '0';
@@ -2599,11 +2772,11 @@ export class UltraPopupModule extends BaseUltraModule {
       portal.style.height = '100%';
       portal.style.pointerEvents = 'auto';
       portal.style.zIndex = '2147483647';
-      
+
       // Add mutation observer to watch for inert being added by browser extensions
       // This is critical - some extensions add inert to all fixed elements
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
+      const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
           if (mutation.type === 'attributes' && mutation.attributeName === 'inert') {
             if (portal.hasAttribute('inert')) {
               portal.removeAttribute('inert');
@@ -2612,7 +2785,7 @@ export class UltraPopupModule extends BaseUltraModule {
         });
       });
       observer.observe(portal, { attributes: true, attributeFilter: ['inert'] });
-      
+
       // Store observer for cleanup
       (portal as any)._ultraInertObserver = observer;
 
@@ -2626,26 +2799,28 @@ export class UltraPopupModule extends BaseUltraModule {
       // We need to temporarily hide them while our popup is visible
       if (isPreviewContext) {
         // Find and hide HA's editor overlay elements
-        document.querySelectorAll('.edit-mode, ha-card[edit-mode], [data-edit-mode]').forEach((el: Element) => {
-          const htmlEl = el as HTMLElement;
-          if (!htmlEl.dataset.ultraPopupOriginalZIndex) {
-            htmlEl.dataset.ultraPopupOriginalZIndex = htmlEl.style.zIndex || '';
-          }
-          htmlEl.style.zIndex = '-1';
-          htmlEl.style.pointerEvents = 'none';
-        });
+        document
+          .querySelectorAll('.edit-mode, ha-card[edit-mode], [data-edit-mode]')
+          .forEach((el: Element) => {
+            const htmlEl = el as HTMLElement;
+            if (!htmlEl.dataset.ultraPopupOriginalZIndex) {
+              htmlEl.dataset.ultraPopupOriginalZIndex = htmlEl.style.zIndex || '';
+            }
+            htmlEl.style.zIndex = '-1';
+            htmlEl.style.pointerEvents = 'none';
+          });
       }
 
       // Check if we need to re-render content
       // Only clear and re-render if: portal is new OR refresh is explicitly requested
       const needsRefreshFlag = popupNeedsRefresh.get(uniquePopupKey) === true;
       const needsContentRender = isNewPortal || needsRefreshFlag;
-      
+
       // Clear the refresh flag after checking
       if (needsRefreshFlag) {
         popupNeedsRefresh.delete(uniquePopupKey);
       }
-      
+
       // Skip re-render if portal already exists and no refresh needed
       if (!needsContentRender) {
         return;
@@ -2661,40 +2836,94 @@ export class UltraPopupModule extends BaseUltraModule {
       const popupContent = html`
         <style>
           @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
           }
           @keyframes zoomIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
+            from {
+              opacity: 0;
+              transform: scale(0.9);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
           }
           @keyframes zoomOut {
-            from { opacity: 0; transform: scale(1.1); }
-            to { opacity: 1; transform: scale(1); }
+            from {
+              opacity: 0;
+              transform: scale(1.1);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
           }
           @keyframes slideInDown {
-            from { opacity: 0; transform: translateY(-50px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+              opacity: 0;
+              transform: translateY(-50px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
           }
           @keyframes slideInUp {
-            from { opacity: 0; transform: translateY(50px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+              opacity: 0;
+              transform: translateY(50px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
           }
           @keyframes slideInLeft {
-            from { opacity: 0; transform: translateX(-50px); }
-            to { opacity: 1; transform: translateX(0); }
+            from {
+              opacity: 0;
+              transform: translateX(-50px);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
           }
           @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(50px); }
-            to { opacity: 1; transform: translateX(0); }
+            from {
+              opacity: 0;
+              transform: translateX(50px);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
           }
-          .animation-fadeIn { animation-name: fadeIn; }
-          .animation-zoomIn { animation-name: zoomIn; }
-          .animation-zoomOut { animation-name: zoomOut; }
-          .animation-slideInDown { animation-name: slideInDown; }
-          .animation-slideInUp { animation-name: slideInUp; }
-          .animation-slideInLeft { animation-name: slideInLeft; }
-          .animation-slideInRight { animation-name: slideInRight; }
+          .animation-fadeIn {
+            animation-name: fadeIn;
+          }
+          .animation-zoomIn {
+            animation-name: zoomIn;
+          }
+          .animation-zoomOut {
+            animation-name: zoomOut;
+          }
+          .animation-slideInDown {
+            animation-name: slideInDown;
+          }
+          .animation-slideInUp {
+            animation-name: slideInUp;
+          }
+          .animation-slideInLeft {
+            animation-name: slideInLeft;
+          }
+          .animation-slideInRight {
+            animation-name: slideInRight;
+          }
         </style>
         <div
           class="ultra-popup-overlay"
@@ -2709,7 +2938,9 @@ export class UltraPopupModule extends BaseUltraModule {
             align-items: center;
             justify-content: center;
             z-index: ${overlayZIndex};
-            background: ${popupModule.show_overlay !== false ? (popupModule.overlay_background || 'rgba(0,0,0,0.85)') : 'transparent'};
+            background: ${popupModule.show_overlay !== false
+            ? popupModule.overlay_background || 'rgba(0,0,0,0.85)'
+            : 'transparent'};
             ${popupModule.show_overlay !== false ? 'backdrop-filter: blur(2px);' : ''}
             animation: fadeIn 0.3s ease both;
             pointer-events: auto !important;
@@ -2725,7 +2956,9 @@ export class UltraPopupModule extends BaseUltraModule {
               overflow-y: auto;
               background: ${popupModule.popup_background_color || 'var(--card-background-color)'};
               color: ${popupModule.popup_text_color || 'var(--primary-text-color)'};
-              border-radius: ${layout === 'default' ? popupModule.popup_border_radius || '8px' : '0'};
+              border-radius: ${layout === 'default'
+              ? popupModule.popup_border_radius || '8px'
+              : '0'};
               box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
               animation-duration: 0.4s;
               animation-fill-mode: both;
@@ -2736,7 +2969,6 @@ export class UltraPopupModule extends BaseUltraModule {
             "
           >
             ${renderCloseButton()}
-
             ${popupModule.show_title
               ? html`
                   <div
@@ -2762,7 +2994,7 @@ export class UltraPopupModule extends BaseUltraModule {
               "
             >
               ${hasChildren
-                ? popupModule.modules.map((childModule) => {
+                ? popupModule.modules.map(childModule => {
                     const childModuleHandler = registry.getModule(childModule.type);
                     if (!childModuleHandler) {
                       return html`<div>Unknown module type: ${childModule.type}</div>`;
@@ -2798,10 +3030,35 @@ export class UltraPopupModule extends BaseUltraModule {
                       `;
                     }
 
+                    // Build design styles from child module config
+                    // Use type assertion to access dynamic properties that may be present on modules
+                    const childAny = childModule as any;
+                    const childDesign = childAny.design || {};
+                    const bgColor = childAny.background_color || childDesign.background_color || '';
+                    const borderRadius = childAny.border_radius || childDesign.border_radius || '';
+                    const border = childAny.border || childDesign.border || null;
+                    const backdropFilter =
+                      childAny.backdrop_filter || childDesign.backdrop_filter || '';
+
+                    let childDesignStyle = 'margin-bottom: 8px;';
+                    if (bgColor) childDesignStyle += ` background: ${bgColor};`;
+                    if (borderRadius) childDesignStyle += ` border-radius: ${borderRadius};`;
+                    if (border && border.style && border.style !== 'none') {
+                      childDesignStyle += ` border: ${border.width || '1px'} ${border.style} ${border.color || 'var(--divider-color)'};`;
+                      if (border.radius)
+                        childDesignStyle += ` border-radius: ${typeof border.radius === 'number' ? border.radius + 'px' : border.radius};`;
+                    }
+                    if (backdropFilter) childDesignStyle += ` backdrop-filter: ${backdropFilter};`;
+
                     // Render child module
                     return html`
-                      <div class="popup-child-module" style="margin-bottom: 8px;">
-                        ${childModuleHandler.renderPreview(childModule, hass, config, previewContext)}
+                      <div class="popup-child-module" style="${childDesignStyle}">
+                        ${childModuleHandler.renderPreview(
+                          childModule,
+                          hass,
+                          config,
+                          previewContext
+                        )}
                       </div>
                     `;
                   })
@@ -2877,7 +3134,6 @@ export class UltraPopupModule extends BaseUltraModule {
             e.stopPropagation();
           });
         }
-
       });
     };
 
@@ -2886,10 +3142,10 @@ export class UltraPopupModule extends BaseUltraModule {
     const portalExists = popupPortals.has(uniquePopupKey);
     const isManuallyOpen = manuallyOpenedPopups.has(uniquePopupKey);
     const needsRefresh = popupNeedsRefresh.get(uniquePopupKey) === true;
-    
+
     // Determine if popup should be open
     const shouldBeOpen = currentState || isManuallyOpen;
-    
+
     // Only render portal if:
     // 1. Popup should be open AND portal doesn't exist yet (first creation)
     // 2. OR popup should be open AND refresh is needed (template update)
@@ -2909,17 +3165,18 @@ export class UltraPopupModule extends BaseUltraModule {
         popupPortals.delete(uniquePopupKey);
       }
     }
-    
+
     // If there's no visible trigger (logic, page_load, or module), wrap in a zero-height container
     // so it doesn't take up any space on the dashboard
-    const hasVisibleTrigger = triggerType !== 'page_load' && triggerType !== 'logic' && triggerType !== 'module';
-    
+    const hasVisibleTrigger =
+      triggerType !== 'page_load' && triggerType !== 'logic' && triggerType !== 'module';
+
     if (!hasVisibleTrigger) {
       // No visible trigger - render as completely invisible (takes no space)
       // The popup content is rendered via portal to document.body
       return html`<div style="display: contents;"></div>`;
     }
-    
+
     // Has visible trigger - render normally
     // The popup content is rendered via portal to document.body
     return html`${renderTrigger()}`;
@@ -2936,11 +3193,19 @@ export class UltraPopupModule extends BaseUltraModule {
     }
 
     // Validate title configuration
-    if (popupModule.show_title && popupModule.title_mode === 'custom' && !popupModule.title_text?.trim()) {
+    if (
+      popupModule.show_title &&
+      popupModule.title_mode === 'custom' &&
+      !popupModule.title_text?.trim()
+    ) {
       errors.push('Title text is required when using custom title mode');
     }
 
-    if (popupModule.show_title && popupModule.title_mode === 'entity' && !popupModule.title_entity?.trim()) {
+    if (
+      popupModule.show_title &&
+      popupModule.title_mode === 'entity' &&
+      !popupModule.title_entity?.trim()
+    ) {
       errors.push('Title entity is required when using entity title mode');
     }
 
@@ -2980,7 +3245,9 @@ export class UltraPopupModule extends BaseUltraModule {
           if (layoutChild.modules && layoutChild.modules.length > 0) {
             for (const nestedModule of layoutChild.modules) {
               if (nestedModule.type === 'popup') {
-                errors.push('Popup modules cannot be nested inside other layout modules within a popup');
+                errors.push(
+                  'Popup modules cannot be nested inside other layout modules within a popup'
+                );
               }
 
               if (
@@ -3020,11 +3287,11 @@ export class UltraPopupModule extends BaseUltraModule {
   private _startAutoCloseTimer(popupModule: PopupModule, uniquePopupKey: string): void {
     // Clear any existing timer
     this._clearAutoCloseTimer(uniquePopupKey);
-    
+
     // Get timer duration in milliseconds
     const seconds = popupModule.auto_close_timer_seconds || 30;
     const milliseconds = seconds * 1000;
-    
+
     // Set new timer
     const timerId = window.setTimeout(() => {
       // If the timer has been disabled since this timeout was scheduled, do nothing.
@@ -3037,10 +3304,10 @@ export class UltraPopupModule extends BaseUltraModule {
       // Remove from manually opened set so the popup can close
       manuallyOpenedPopups.delete(uniquePopupKey);
       popupTimers.delete(uniquePopupKey);
-      
+
       // Restore HA editor overlays
       restoreHAEditorOverlays();
-      
+
       // Directly remove the portal for immediate close
       const portal = popupPortals.get(uniquePopupKey);
       if (portal) {
@@ -3052,10 +3319,10 @@ export class UltraPopupModule extends BaseUltraModule {
         portal.remove();
         popupPortals.delete(uniquePopupKey);
       }
-      
+
       this.triggerPreviewUpdate(true);
     }, milliseconds);
-    
+
     popupTimers.set(uniquePopupKey, timerId);
   }
 
@@ -3067,4 +3334,3 @@ export class UltraPopupModule extends BaseUltraModule {
     }
   }
 }
-
