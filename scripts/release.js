@@ -102,75 +102,301 @@ function ask(rl, question) {
 }
 
 /**
- * Categorize and enhance a changelog entry
+ * Description expansions for professional changelog entries
+ * Maps keywords to expanded, user-friendly descriptions
  */
-function categorizeEntry(entry) {
-  const lowerEntry = entry.toLowerCase();
+const descriptionExpansions = {
+  // Module-related
+  module: 'Enhanced module functionality for better user experience',
+  popup: 'Improved popup behavior and display reliability',
+  slider: 'Better slider control and smoother interaction',
+  dropdown: 'Enhanced dropdown functionality and responsiveness',
+  gauge: 'Improved gauge display accuracy and visual appeal',
+  graph: 'Enhanced graph visualization and data rendering',
+  camera: 'Improved camera feed handling and reliability',
+  icon: 'Enhanced icon display and customization options',
+  text: 'Improved text rendering and styling capabilities',
+  button: 'Enhanced button interaction and visual feedback',
+  toggle: 'Improved toggle state handling and reliability',
+  bar: 'Enhanced bar visualization and progress display',
+  calendar: 'Improved calendar display and event handling',
+  climate: 'Enhanced climate control interface and usability',
+  light: 'Improved light control functionality and color handling',
+  media: 'Enhanced media player controls and playback',
+  weather: 'Improved weather visualization and data display',
+  vacuum: 'Enhanced vacuum control interface and status display',
+  grid: 'Improved grid layout system and flexibility',
+  separator: 'Enhanced separator styling and spacing options',
+  spinbox: 'Improved spinbox controls and value handling',
+  markdown: 'Enhanced markdown rendering and formatting',
+  image: 'Improved image handling and display options',
+  video: 'Enhanced video playback and background support',
+  accordion: 'Improved accordion behavior and styling',
+  tabs: 'Enhanced tab navigation and content display',
 
-  // Feature keywords
-  if (lowerEntry.match(/^(add|new|implement|create|introduce|support)/)) {
-    return { category: '🚀 New Features', entry: enhanceEntry(entry) };
-  }
-
-  // Bug fix keywords
-  if (lowerEntry.match(/^(fix|resolve|correct|repair|patch|bug)/)) {
-    return { category: '🐛 Bug Fixes', entry: enhanceEntry(entry) };
-  }
-
-  // Improvement keywords
-  if (lowerEntry.match(/^(improve|enhance|update|optimize|refactor|clean|upgrade)/)) {
-    return { category: '🔧 Improvements', entry: enhanceEntry(entry) };
-  }
-
-  // Breaking change keywords
-  if (lowerEntry.match(/^(break|remove|deprecate|drop)/)) {
-    return { category: '⚠️ Breaking Changes', entry: enhanceEntry(entry) };
-  }
-
-  // Documentation keywords
-  if (lowerEntry.match(/^(doc|readme|comment)/)) {
-    return { category: '📝 Documentation', entry: enhanceEntry(entry) };
-  }
-
-  // Default to improvement
-  return { category: '🔧 Improvements', entry: enhanceEntry(entry) };
-}
+  // Feature-related
+  breakpoint: 'Create unique designs for different screen sizes with responsive breakpoint system',
+  responsive: 'Better adaptation to different screen sizes and devices',
+  preview: 'Test your changes directly in the editor preview',
+  'live preview': 'Test your responsive designs directly in the editor preview',
+  template: 'Enhanced template processing and dynamic content evaluation',
+  animation: 'Smoother animations and visual transitions',
+  color: 'Enhanced color handling and customization options',
+  gradient: 'Improved gradient rendering and color transitions',
+  layout: 'Better layout handling and organization',
+  design: 'Enhanced design customization options',
+  style: 'Improved styling and visual appearance',
+  action: 'Enhanced action handling and user interaction response',
+  entity: 'Better entity state handling and real-time display',
+  state: 'Improved state tracking and automatic updates',
+  variable: 'Enhanced variable handling and value evaluation',
+  preset: 'Improved preset loading and management',
+  backup: 'Enhanced backup and restore functionality',
+  sync: 'Improved synchronization across devices and sessions',
+  mobile: 'Better mobile device support and touch interaction handling',
+  performance: 'Improved performance and responsiveness',
+  size: 'More granular control over sizing options',
+  spacing: 'Better spacing and margin control',
+  border: 'Enhanced border customization options',
+  shadow: 'Improved shadow effects and visual depth',
+  font: 'Enhanced typography and font options',
+  'z-index': 'Fixed layering and element overlap issues',
+  overflow: 'Resolved content overflow and clipping issues',
+  scroll: 'Improved scrolling behavior and smoothness',
+  touch: 'Better touch handling on mobile devices',
+  click: 'Improved click and tap interaction handling',
+  hover: 'Enhanced hover effects and visual feedback',
+  focus: 'Improved focus handling and keyboard navigation',
+  tracking: 'Resolved state tracking and synchronization issues',
+  favorites: 'Improved favorites functionality and storage',
+  window: 'Better multi-window support and handling',
+  operator: 'Fixed comparison operator handling in conditions',
+  column: 'Improved column layout and responsive behavior',
+  row: 'Enhanced row layout and organization',
+  viewport: 'Better viewport detection and responsive layouts',
+  'pro user': 'Enhanced Pro user features and customization options',
+  'default module': 'Better control over default module behavior',
+};
 
 /**
- * Enhance a single changelog entry
+ * Find the best description expansion for the entry
  */
-function enhanceEntry(entry) {
-  // Clean up the entry
-  let enhanced = entry.trim();
+function findDescriptionExpansion(entry) {
+  const lowerEntry = entry.toLowerCase();
 
-  // Remove leading dash or bullet if present
-  enhanced = enhanced.replace(/^[-•*]\s*/, '');
+  // Find matching keywords, preferring longer/more specific matches
+  let bestMatch = null;
+  let bestLength = 0;
 
-  // Capitalize first letter
-  enhanced = enhanced.charAt(0).toUpperCase() + enhanced.slice(1);
-
-  // Extract the main action and description
-  const actionMatch = enhanced.match(
-    /^(Added?|Fixed?|Improved?|Updated?|Removed?|Changed?|Enhanced?|Implemented?|Created?|Resolved?)\s+/i
-  );
-
-  if (actionMatch) {
-    const action = actionMatch[1];
-    const rest = enhanced.slice(actionMatch[0].length);
-
-    // Format as "**Action description** - Additional details"
-    // Try to find a natural break point
-    const breakMatch = rest.match(/^([^.!?-]+)(?:\s*[-–—]\s*|\.\s*|:\s*)(.+)?$/);
-
-    if (breakMatch && breakMatch[2]) {
-      return `**${action} ${breakMatch[1].trim()}** - ${breakMatch[2].trim()}`;
-    } else {
-      return `**${action} ${rest.trim()}**`;
+  for (const [keyword, description] of Object.entries(descriptionExpansions)) {
+    if (lowerEntry.includes(keyword) && keyword.length > bestLength) {
+      bestMatch = description;
+      bestLength = keyword.length;
     }
   }
 
-  // If no action word found, just bold the whole thing
-  return `**${enhanced}**`;
+  return bestMatch;
+}
+
+/**
+ * Generate a professional description based on the entry and category
+ */
+function generateDescription(entry, category) {
+  const lowerEntry = entry.toLowerCase();
+
+  // First try to find a specific expansion from our dictionary
+  const expansion = findDescriptionExpansion(entry);
+  if (expansion) {
+    return expansion;
+  }
+
+  // Generic descriptions based on category
+  if (category.includes('New Features')) {
+    if (lowerEntry.includes('support')) return 'Expanded compatibility and configuration options';
+    if (lowerEntry.includes('option')) return 'More flexibility and customization choices';
+    if (lowerEntry.includes('control')) return 'Enhanced user control and interaction options';
+    return 'New capability for improved dashboard customization';
+  }
+
+  if (category.includes('Bug Fixes')) {
+    if (lowerEntry.includes('issue')) return 'Resolved reported problems for better reliability';
+    if (lowerEntry.includes('not working')) return 'Restored proper functionality';
+    if (lowerEntry.includes('crash')) return 'Improved stability and error handling';
+    return 'Corrected behavior for more reliable operation';
+  }
+
+  if (category.includes('Improvements')) {
+    if (lowerEntry.includes('better')) return 'Enhanced for improved user experience';
+    if (lowerEntry.includes('faster')) return 'Optimized for better performance';
+    if (lowerEntry.includes('cleaner')) return 'Refined interface and code quality';
+    return 'Refined functionality for smoother operation';
+  }
+
+  if (category.includes('Warning')) {
+    return '';
+  }
+
+  return 'Enhanced functionality and reliability';
+}
+
+/**
+ * Categorize a changelog entry based on keywords
+ */
+function categorizeEntry(entry) {
+  const lowerEntry = entry.toLowerCase();
+  let category;
+
+  // Feature keywords
+  if (lowerEntry.match(/^(add|new|implement|create|introduce|support)/)) {
+    category = '🚀 New Features';
+  }
+  // Bug fix keywords
+  else if (lowerEntry.match(/^(fix|resolve|correct|repair|patch|bug)/)) {
+    category = '🐛 Bug Fixes';
+  }
+  // Improvement keywords
+  else if (lowerEntry.match(/^(improve|enhance|update|optimize|refactor|clean|upgrade)/)) {
+    category = '🔧 Improvements';
+  }
+  // Breaking change keywords
+  else if (lowerEntry.match(/^(break|remove|deprecate|drop)/)) {
+    category = '⚠️ Breaking Changes';
+  }
+  // Documentation keywords
+  else if (lowerEntry.match(/^(doc|readme|comment)/)) {
+    category = '📝 Documentation';
+  }
+  // Warning keywords
+  else if (lowerEntry.match(/^(warn|caution|note|important|probably)/)) {
+    category = '⚠️ Warning';
+  }
+  // Default to improvement
+  else {
+    category = '🔧 Improvements';
+  }
+
+  return { category, entry: enhanceEntry(entry, category) };
+}
+
+/**
+ * Normalize action words to past tense with proper capitalization
+ */
+function normalizeAction(action) {
+  const normalized = {
+    add: 'Added',
+    added: 'Added',
+    fix: 'Fixed',
+    fixed: 'Fixed',
+    improve: 'Improved',
+    improved: 'Improved',
+    update: 'Updated',
+    updated: 'Updated',
+    remove: 'Removed',
+    removed: 'Removed',
+    change: 'Changed',
+    changed: 'Changed',
+    enhance: 'Enhanced',
+    enhanced: 'Enhanced',
+    implement: 'Implemented',
+    implemented: 'Implemented',
+    create: 'Created',
+    created: 'Created',
+    resolve: 'Resolved',
+    resolved: 'Resolved',
+    new: 'Added new',
+    support: 'Added support for',
+    supports: 'Added support for',
+    supported: 'Added support for',
+  };
+
+  return normalized[action.toLowerCase()] || capitalizeFirst(action);
+}
+
+/**
+ * Capitalize first letter of a string
+ */
+function capitalizeFirst(str) {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+/**
+ * Expand common abbreviations
+ */
+function expandAbbreviations(text) {
+  const expansions = {
+    ui: 'UI',
+    ux: 'UX',
+    css: 'CSS',
+    html: 'HTML',
+    api: 'API',
+    ha: 'Home Assistant',
+    hass: 'Home Assistant',
+    uc: 'Ultra Card',
+  };
+
+  let expanded = text;
+  for (const [abbr, full] of Object.entries(expansions)) {
+    const regex = new RegExp(`\\b${abbr}\\b`, 'gi');
+    expanded = expanded.replace(regex, full);
+  }
+
+  return expanded;
+}
+
+/**
+ * Enhance a single changelog entry to be professional and descriptive
+ */
+function enhanceEntry(entry, category) {
+  // Clean up the entry
+  let cleaned = entry.trim();
+
+  // Remove leading dash or bullet if present
+  cleaned = cleaned.replace(/^[-•*]\s*/, '');
+
+  // Handle warning category specially - just return the text as-is
+  if (category.includes('Warning')) {
+    return capitalizeFirst(cleaned);
+  }
+
+  // Check if user already provided a description with a separator
+  const separatorMatch = cleaned.match(/^(.+?)\s*[-–—:]\s+(.{15,})$/);
+  if (separatorMatch) {
+    // User provided their own description, format it nicely
+    const title = expandAbbreviations(capitalizeFirst(separatorMatch[1].trim()));
+    const desc = capitalizeFirst(separatorMatch[2].trim());
+    return `**${title}** - ${desc}`;
+  }
+
+  // Extract the action word and subject
+  const actionMatch = cleaned.match(
+    /^(added?|fixed?|improved?|updated?|removed?|changed?|enhanced?|implemented?|created?|resolved?|new|support(?:ed|s)?)\s+/i
+  );
+
+  let action = '';
+  let subject = cleaned;
+
+  if (actionMatch) {
+    action = normalizeAction(actionMatch[1]);
+    subject = cleaned.slice(actionMatch[0].length);
+  }
+
+  // Expand abbreviations and clean up the subject
+  subject = expandAbbreviations(subject);
+  subject = capitalizeFirst(subject);
+
+  // Build the title
+  const title = action ? `${action} ${subject}` : subject;
+
+  // Generate a professional description
+  const description = generateDescription(cleaned, category);
+
+  // If no description could be generated, return just the title
+  if (!description) {
+    return capitalizeFirst(cleaned);
+  }
+
+  return `**${title}** - ${description}`;
 }
 
 /**
@@ -227,13 +453,14 @@ function generateChangelog(version, entries) {
   // Build the changelog markdown
   let changelog = `## Version ${version}\n\n`;
 
-  // Order: Features, Improvements, Bug Fixes, Breaking Changes, Documentation
+  // Order: Features, Improvements, Bug Fixes, Breaking Changes, Documentation, Warning
   const order = [
     '🚀 New Features',
     '🔧 Improvements',
     '🐛 Bug Fixes',
     '⚠️ Breaking Changes',
     '📝 Documentation',
+    '⚠️ Warning',
   ];
 
   for (const category of order) {

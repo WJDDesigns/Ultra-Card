@@ -609,16 +609,15 @@ export class UltraColorPicker extends LitElement {
 
     // Convert CSS variables and other formats to hex for native input
     if (displayValue.startsWith('var(--')) {
-      // Try to resolve CSS variable to actual color
-      const tempElement = document.createElement('div');
-      tempElement.style.color = displayValue;
-      document.body.appendChild(tempElement);
-      const computedColor = getComputedStyle(tempElement).color;
-      document.body.removeChild(tempElement);
+      // Use backgroundColor to preserve alpha (color property may strip it)
+      const resolvedColor = this._resolveCSSColor(displayValue);
 
-      // Convert rgb to hex if needed
-      if (computedColor && computedColor.startsWith('rgb')) {
-        const rgbMatch = computedColor.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+      // Convert rgb/rgba to hex
+      if (resolvedColor && resolvedColor.startsWith('rgb')) {
+        // Match both rgb() and rgba() formats
+        const rgbMatch = resolvedColor.match(
+          /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*[\d.]+)?\s*\)/
+        );
         if (rgbMatch) {
           const [_, r, g, b] = rgbMatch;
           const toHex = (n: number) => n.toString(16).padStart(2, '0');
@@ -630,6 +629,28 @@ export class UltraColorPicker extends LitElement {
       if (displayValue.includes('--primary-color')) return '#03a9f4';
       if (displayValue.includes('--primary-text-color')) return '#ffffff';
       return '#000000';
+    }
+
+    // Handle rgba format - convert to hex (native picker doesn't support alpha)
+    if (displayValue.startsWith('rgba')) {
+      const rgbaMatch = displayValue.match(
+        /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*[\d.]+\s*\)/
+      );
+      if (rgbaMatch) {
+        const [_, r, g, b] = rgbaMatch;
+        const toHex = (n: number) => n.toString(16).padStart(2, '0');
+        return `#${toHex(parseInt(r))}${toHex(parseInt(g))}${toHex(parseInt(b))}`;
+      }
+    }
+
+    // Handle rgb format - convert to hex
+    if (displayValue.startsWith('rgb(')) {
+      const rgbMatch = displayValue.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+      if (rgbMatch) {
+        const [_, r, g, b] = rgbMatch;
+        const toHex = (n: number) => n.toString(16).padStart(2, '0');
+        return `#${toHex(parseInt(r))}${toHex(parseInt(g))}${toHex(parseInt(b))}`;
+      }
     }
 
     return displayValue.startsWith('#') ? displayValue : '#000000';
@@ -670,6 +691,38 @@ export class UltraColorPicker extends LitElement {
   }
 
   /**
+   * Resolve a CSS variable or color to its computed RGBA value.
+   * This preserves alpha transparency from theme variables.
+   */
+  private _resolveCSSColor(color: string): string {
+    if (!color) return color;
+    const trimmed = color.trim();
+
+    // Fast-path: concrete colors (hex, rgb, rgba) don't need resolution
+    if (trimmed.startsWith('#') || trimmed.startsWith('rgb')) {
+      return trimmed;
+    }
+
+    // Resolve CSS variables and named colors via a temporary element
+    try {
+      const probe = document.createElement('span');
+      // Use backgroundColor to preserve alpha (color property may not preserve it)
+      probe.style.backgroundColor = trimmed;
+      document.body.appendChild(probe);
+      const computed = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+
+      // Return computed value if valid, otherwise return original
+      if (computed && computed !== 'rgba(0, 0, 0, 0)') {
+        return computed;
+      }
+      return trimmed;
+    } catch {
+      return trimmed;
+    }
+  }
+
+  /**
    * Extract transparency from a color value (0-100, where 100 is fully opaque)
    */
   private _extractTransparency(color?: string): number {
@@ -680,33 +733,41 @@ export class UltraColorPicker extends LitElement {
       return 100;
     }
 
-    // Check for RGBA format
-    const rgbaMatch = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)/);
+    // Resolve CSS variables to get actual color value with alpha
+    const resolvedColor = color.startsWith('var(--') ? this._resolveCSSColor(color) : color;
+
+    // Check for RGBA format (handles both "rgba(...)" and "rgb(...)" with 4 values)
+    const rgbaMatch = resolvedColor.match(
+      /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/
+    );
     if (rgbaMatch) {
-      const alpha = parseFloat(rgbaMatch[4]);
+      // If alpha value exists, use it; otherwise default to 1 (fully opaque)
+      const alpha = rgbaMatch[4] ? parseFloat(rgbaMatch[4]) : 1;
       return Math.round(alpha * 100);
     }
 
     // Check for 8-digit hex with alpha (#RRGGBBAA)
-    const hexAlphaMatch = color.match(/^#[0-9A-Fa-f]{8}$/);
+    const hexAlphaMatch = resolvedColor.match(/^#[0-9A-Fa-f]{8}$/);
     if (hexAlphaMatch) {
-      const alpha = parseInt(color.substring(7, 9), 16) / 255;
+      const alpha = parseInt(resolvedColor.substring(7, 9), 16) / 255;
       return Math.round(alpha * 100);
     }
 
     // Check for HSLA format
-    const hslaMatch = color.match(/hsla?\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*,\s*([\d.]+)\s*\)/);
+    const hslaMatch = resolvedColor.match(
+      /hsla?\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*(?:,\s*([\d.]+))?\s*\)/
+    );
     if (hslaMatch) {
-      const alpha = parseFloat(hslaMatch[4]);
+      const alpha = hslaMatch[4] ? parseFloat(hslaMatch[4]) : 1;
       return Math.round(alpha * 100);
     }
 
     // For transparent keyword
-    if (color === 'transparent') {
+    if (resolvedColor === 'transparent') {
       return 0;
     }
 
-    // Default to fully opaque for hex, rgb, hsl, named colors, and CSS variables
+    // Default to fully opaque for hex, rgb, hsl, named colors
     return 100;
   }
 
@@ -735,8 +796,20 @@ export class UltraColorPicker extends LitElement {
       return color;
     }
 
+    // Resolve CSS variables first to get actual color values
+    let colorToProcess = color;
+    if (color.startsWith('var(--')) {
+      colorToProcess = this._resolveCSSColor(color);
+      // If resolution failed, return original
+      if (colorToProcess === color || colorToProcess.startsWith('var(--')) {
+        return color;
+      }
+    }
+
     // Extract RGB from RGBA
-    const rgbaMatch = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*[\d.]+)?\s*\)/);
+    const rgbaMatch = colorToProcess.match(
+      /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*[\d.]+)?\s*\)/
+    );
     if (rgbaMatch) {
       const [_, r, g, b] = rgbaMatch;
       const toHex = (n: string) => parseInt(n).toString(16).padStart(2, '0');
@@ -744,12 +817,12 @@ export class UltraColorPicker extends LitElement {
     }
 
     // Extract from 8-digit hex
-    if (color.match(/^#[0-9A-Fa-f]{8}$/)) {
-      return color.substring(0, 7);
+    if (colorToProcess.match(/^#[0-9A-Fa-f]{8}$/)) {
+      return colorToProcess.substring(0, 7);
     }
 
     // Extract HSL from HSLA
-    const hslaMatch = color.match(
+    const hslaMatch = colorToProcess.match(
       /hsla?\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*(?:,\s*[\d.]+)?\s*\)/
     );
     if (hslaMatch) {
@@ -758,12 +831,12 @@ export class UltraColorPicker extends LitElement {
     }
 
     // For transparent, return white
-    if (color === 'transparent') {
+    if (colorToProcess === 'transparent') {
       return '#FFFFFF';
     }
 
-    // Return as-is for hex, named colors, CSS variables
-    return color;
+    // Return as-is for hex, named colors
+    return colorToProcess;
   }
 
   /**
@@ -775,7 +848,7 @@ export class UltraColorPicker extends LitElement {
       return baseColor;
     }
 
-    // At 100% transparency, use hex format
+    // At 100% transparency, use the color as-is (preserves CSS variables)
     if (transparency === 100) {
       return baseColor;
     }
@@ -787,34 +860,64 @@ export class UltraColorPicker extends LitElement {
 
     const alpha = (transparency / 100).toFixed(2);
 
-    // Handle CSS variables - wrap in rgba if not 100%
+    // Resolve CSS variables to actual color values first
+    // This is necessary because rgba(var(--...), alpha) is invalid CSS
+    let colorToProcess = baseColor;
     if (baseColor.startsWith('var(--')) {
-      return `rgba(${baseColor}, ${alpha})`;
+      colorToProcess = this._resolveCSSColor(baseColor);
+      // If resolution failed, return the original variable (browser will handle it)
+      if (colorToProcess === baseColor || colorToProcess.startsWith('var(--')) {
+        return baseColor;
+      }
     }
 
     // Handle hex colors
-    if (baseColor.startsWith('#')) {
-      const rgb = this._hexToRgb(baseColor);
+    if (colorToProcess.startsWith('#')) {
+      const rgb = this._hexToRgb(colorToProcess);
       if (rgb) {
         return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
       }
     }
 
+    // Handle RGBA format - replace existing alpha
+    const rgbaMatch = colorToProcess.match(
+      /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*[\d.]+\s*\)/
+    );
+    if (rgbaMatch) {
+      const [_, r, g, b] = rgbaMatch;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
     // Handle RGB format
-    const rgbMatch = baseColor.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    const rgbMatch = colorToProcess.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
     if (rgbMatch) {
       const [_, r, g, b] = rgbMatch;
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
     // Handle HSL format
-    const hslMatch = baseColor.match(/hsl\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/);
+    const hslMatch = colorToProcess.match(/hsl\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/);
     if (hslMatch) {
       const [_, h, s, l] = hslMatch;
       return `hsla(${h}, ${s}%, ${l}%, ${alpha})`;
     }
 
-    // For named colors, convert to rgba (approximation - may not work for all named colors)
+    // Handle HSLA format - replace existing alpha
+    const hslaMatch = colorToProcess.match(
+      /hsla\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*,\s*[\d.]+\s*\)/
+    );
+    if (hslaMatch) {
+      const [_, h, s, l] = hslaMatch;
+      return `hsla(${h}, ${s}%, ${l}%, ${alpha})`;
+    }
+
+    // For named colors, try to resolve and convert
+    const resolvedNamed = this._resolveCSSColor(colorToProcess);
+    if (resolvedNamed !== colorToProcess) {
+      return this._applyTransparency(resolvedNamed, transparency);
+    }
+
+    // Fallback: return original color if we can't process it
     return baseColor;
   }
 

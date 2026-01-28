@@ -39,6 +39,11 @@ export declare class UltraColorPicker extends LitElement {
     private _isDefaultValue;
     private _getContrastColor;
     /**
+     * Resolve a CSS variable or color to its computed RGBA value.
+     * This preserves alpha transparency from theme variables.
+     */
+    private _resolveCSSColor;
+    /**
      * Extract transparency from a color value (0-100, where 100 is fully opaque)
      */
     private _extractTransparency;

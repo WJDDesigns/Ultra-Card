@@ -50,7 +50,7 @@ export class ResponsiveDesignService {
   private _updateCurrentBreakpoint(): void {
     const width = window.innerWidth;
     const newBreakpoint = this._getBreakpointFromWidth(width);
-    
+
     if (newBreakpoint !== this.currentBreakpoint) {
       this.currentBreakpoint = newBreakpoint;
       // Notify all listeners
@@ -97,11 +97,11 @@ export class ResponsiveDesignService {
     if (!design) {
       return { base: {} };
     }
-    
+
     if (isResponsiveDesign(design)) {
       return design;
     }
-    
+
     // Flat design - keep root-level properties AND wrap in base for backwards compatibility
     // This ensures both design.border_radius AND design.base.border_radius work
     const flatDesign = design as SharedDesignProperties;
@@ -118,21 +118,29 @@ export class ResponsiveDesignService {
     breakpoint: DeviceBreakpoint
   ): SharedDesignProperties {
     if (!design) return {};
-    
+
     const normalized = this.normalizeDesign(design);
     const base = normalized.base || {};
     const deviceOverrides = normalized[breakpoint] || {};
-    
+
     // Extract top-level design properties (excluding responsive keys)
     // These are for backward compatibility with flat design objects
-    const responsiveKeys = ['base', 'desktop', 'laptop', 'tablet', 'mobile', '_effectiveBreakpoint', '_effectiveDesign'];
+    const responsiveKeys = [
+      'base',
+      'desktop',
+      'laptop',
+      'tablet',
+      'mobile',
+      '_effectiveBreakpoint',
+      '_effectiveDesign',
+    ];
     const topLevelProps: Record<string, any> = {};
     for (const [key, value] of Object.entries(design)) {
       if (!responsiveKeys.includes(key) && value !== undefined) {
         topLevelProps[key] = value;
       }
     }
-    
+
     // Merge: top-level → base → device-specific (later values win)
     return { ...topLevelProps, ...base, ...deviceOverrides };
   }
@@ -146,11 +154,11 @@ export class ResponsiveDesignService {
     device: DeviceBreakpoint | 'base'
   ): Partial<SharedDesignProperties> {
     const normalized = this.normalizeDesign(design);
-    
+
     if (device === 'base') {
       return normalized.base || {};
     }
-    
+
     return normalized[device] || {};
   }
 
@@ -160,9 +168,9 @@ export class ResponsiveDesignService {
   public hasDeviceOverrides(design: DesignConfig | undefined, device: DeviceBreakpoint): boolean {
     const normalized = this.normalizeDesign(design);
     const deviceDesign = normalized[device];
-    
+
     if (!deviceDesign) return false;
-    
+
     // Check if there are any non-empty values
     return Object.entries(deviceDesign).some(([, value]) => {
       return value !== undefined && value !== null && value !== '';
@@ -178,9 +186,9 @@ export class ResponsiveDesignService {
   ): string[] {
     const normalized = this.normalizeDesign(design);
     const deviceDesign = normalized[device];
-    
+
     if (!deviceDesign) return [];
-    
+
     return Object.entries(deviceDesign)
       .filter(([, value]) => value !== undefined && value !== null && value !== '')
       .map(([key]) => key);
@@ -197,21 +205,21 @@ export class ResponsiveDesignService {
     value: any
   ): ResponsiveDesignProperties {
     const normalized = this.normalizeDesign(design);
-    
+
     const targetKey = device === 'base' ? 'base' : device;
     const currentDeviceDesign = normalized[targetKey] || {};
-    
+
     // Create new device design with updated property
     const updatedDeviceDesign: Partial<SharedDesignProperties> = {
       ...currentDeviceDesign,
       [property]: value,
     };
-    
+
     // Remove empty values
     if (value === '' || value === undefined || value === null) {
       delete updatedDeviceDesign[property];
     }
-    
+
     return {
       ...normalized,
       [targetKey]: updatedDeviceDesign,
@@ -229,11 +237,11 @@ export class ResponsiveDesignService {
   ): ResponsiveDesignProperties {
     const normalized = this.normalizeDesign(design);
     const deviceDesign = normalized[device];
-    
+
     if (!deviceDesign) return normalized;
-    
+
     const { [property]: _, ...rest } = deviceDesign;
-    
+
     return {
       ...normalized,
       [device]: Object.keys(rest).length > 0 ? rest : undefined,
@@ -249,49 +257,61 @@ export class ResponsiveDesignService {
     device: DeviceBreakpoint
   ): ResponsiveDesignProperties {
     const normalized = this.normalizeDesign(design);
-    
+
     const { [device]: _, ...rest } = normalized;
-    
+
     return rest as ResponsiveDesignProperties;
   }
 
   /**
    * Generate CSS with media queries for responsive design.
    * Device-specific overrides use !important to override inline styles.
-   * 
-   * Text properties (color, font-size, etc.) target ALL descendants to reach nested text elements.
-   * Box properties (background, border, etc.) target only direct children (the module container).
+   *
+   * Three selector strategies for different property types:
+   * - Self properties (overflow, clip-path): target the element itself
+   * - Box properties (background, border, etc.): target direct children (the module container)
+   * - Text properties (color, font-size, etc.): target ALL descendants to reach nested text elements
    */
-  public generateResponsiveCSS(
-    elementSelector: string,
-    design: DesignConfig | undefined
-  ): string {
+  public generateResponsiveCSS(elementSelector: string, design: DesignConfig | undefined): string {
     const normalized = this.normalizeDesign(design);
     const cssRules: string[] = [];
 
-    // Two selectors for different property types:
+    // Three selectors for different property types:
+    // - Self properties: target the element itself (overflow shouldn't cascade to children)
     // - Box properties: target direct children (module container with inline styles)
     // - Text properties: target ALL descendants (text is in deeply nested elements)
+    const selfSelector = elementSelector;
     const boxSelector = `${elementSelector} > *`;
     const textSelector = `${elementSelector} *`;
 
     // Helper to generate rules for a device's design
-    const generateDeviceRules = (deviceDesign: Partial<SharedDesignProperties>, useImportant: boolean, mediaQuery?: string) => {
+    const generateDeviceRules = (
+      deviceDesign: Partial<SharedDesignProperties>,
+      useImportant: boolean,
+      mediaQuery?: string
+    ) => {
+      const selfCSS = this._generateSelfCSSProperties(deviceDesign, useImportant);
       const textCSS = this._generateTextCSSProperties(deviceDesign, useImportant);
       const boxCSS = this._generateBoxCSSProperties(deviceDesign, useImportant);
-      
+
       const rules: string[] = [];
-      
+
+      // Self properties (overflow, clip-path) apply to the element itself
+      if (selfCSS) {
+        const selfRule = `${selfSelector} { ${selfCSS} }`;
+        rules.push(mediaQuery ? `${mediaQuery} { ${selfRule} }` : selfRule);
+      }
+
       if (textCSS) {
         const textRule = `${textSelector} { ${textCSS} }`;
         rules.push(mediaQuery ? `${mediaQuery} { ${textRule} }` : textRule);
       }
-      
+
       if (boxCSS) {
         const boxRule = `${boxSelector} { ${boxCSS} }`;
         rules.push(mediaQuery ? `${mediaQuery} { ${boxRule} }` : boxRule);
       }
-      
+
       return rules;
     };
 
@@ -302,22 +322,46 @@ export class ResponsiveDesignService {
 
     // Desktop overrides (≥1381px) - use !important to override inline styles
     if (normalized.desktop && Object.keys(normalized.desktop).length > 0) {
-      cssRules.push(...generateDeviceRules(normalized.desktop, true, `@media (min-width: ${DEVICE_BREAKPOINTS.desktop.minWidth}px)`));
+      cssRules.push(
+        ...generateDeviceRules(
+          normalized.desktop,
+          true,
+          `@media (min-width: ${DEVICE_BREAKPOINTS.desktop.minWidth}px)`
+        )
+      );
     }
 
     // Laptop overrides (1025px - 1380px) - use !important to override inline styles
     if (normalized.laptop && Object.keys(normalized.laptop).length > 0) {
-      cssRules.push(...generateDeviceRules(normalized.laptop, true, `@media (min-width: ${DEVICE_BREAKPOINTS.laptop.minWidth}px) and (max-width: ${DEVICE_BREAKPOINTS.laptop.maxWidth}px)`));
+      cssRules.push(
+        ...generateDeviceRules(
+          normalized.laptop,
+          true,
+          `@media (min-width: ${DEVICE_BREAKPOINTS.laptop.minWidth}px) and (max-width: ${DEVICE_BREAKPOINTS.laptop.maxWidth}px)`
+        )
+      );
     }
 
     // Tablet overrides (601px - 1024px) - use !important to override inline styles
     if (normalized.tablet && Object.keys(normalized.tablet).length > 0) {
-      cssRules.push(...generateDeviceRules(normalized.tablet, true, `@media (min-width: ${DEVICE_BREAKPOINTS.tablet.minWidth}px) and (max-width: ${DEVICE_BREAKPOINTS.tablet.maxWidth}px)`));
+      cssRules.push(
+        ...generateDeviceRules(
+          normalized.tablet,
+          true,
+          `@media (min-width: ${DEVICE_BREAKPOINTS.tablet.minWidth}px) and (max-width: ${DEVICE_BREAKPOINTS.tablet.maxWidth}px)`
+        )
+      );
     }
 
     // Mobile overrides (≤600px) - use !important to override inline styles
     if (normalized.mobile && Object.keys(normalized.mobile).length > 0) {
-      cssRules.push(...generateDeviceRules(normalized.mobile, true, `@media (max-width: ${DEVICE_BREAKPOINTS.mobile.maxWidth}px)`));
+      cssRules.push(
+        ...generateDeviceRules(
+          normalized.mobile,
+          true,
+          `@media (max-width: ${DEVICE_BREAKPOINTS.mobile.maxWidth}px)`
+        )
+      );
     }
 
     return cssRules.join('\n');
@@ -335,19 +379,27 @@ export class ResponsiveDesignService {
     const cssRules: string[] = [];
 
     if (hiddenOnDevices.includes('desktop')) {
-      cssRules.push(`@media (min-width: ${DEVICE_BREAKPOINTS.desktop.minWidth}px) { ${elementSelector} { display: none !important; } }`);
+      cssRules.push(
+        `@media (min-width: ${DEVICE_BREAKPOINTS.desktop.minWidth}px) { ${elementSelector} { display: none !important; } }`
+      );
     }
 
     if (hiddenOnDevices.includes('laptop')) {
-      cssRules.push(`@media (min-width: ${DEVICE_BREAKPOINTS.laptop.minWidth}px) and (max-width: ${DEVICE_BREAKPOINTS.laptop.maxWidth}px) { ${elementSelector} { display: none !important; } }`);
+      cssRules.push(
+        `@media (min-width: ${DEVICE_BREAKPOINTS.laptop.minWidth}px) and (max-width: ${DEVICE_BREAKPOINTS.laptop.maxWidth}px) { ${elementSelector} { display: none !important; } }`
+      );
     }
 
     if (hiddenOnDevices.includes('tablet')) {
-      cssRules.push(`@media (min-width: ${DEVICE_BREAKPOINTS.tablet.minWidth}px) and (max-width: ${DEVICE_BREAKPOINTS.tablet.maxWidth}px) { ${elementSelector} { display: none !important; } }`);
+      cssRules.push(
+        `@media (min-width: ${DEVICE_BREAKPOINTS.tablet.minWidth}px) and (max-width: ${DEVICE_BREAKPOINTS.tablet.maxWidth}px) { ${elementSelector} { display: none !important; } }`
+      );
     }
 
     if (hiddenOnDevices.includes('mobile')) {
-      cssRules.push(`@media (max-width: ${DEVICE_BREAKPOINTS.mobile.maxWidth}px) { ${elementSelector} { display: none !important; } }`);
+      cssRules.push(
+        `@media (max-width: ${DEVICE_BREAKPOINTS.mobile.maxWidth}px) { ${elementSelector} { display: none !important; } }`
+      );
     }
 
     return cssRules.join('\n');
@@ -358,23 +410,26 @@ export class ResponsiveDesignService {
    * These need to target ALL descendants because text is in deeply nested elements.
    * Includes: color, font-*, text-*, line-height, letter-spacing, white-space
    */
-  private _generateTextCSSProperties(design: Partial<SharedDesignProperties>, useImportant: boolean = false): string {
+  private _generateTextCSSProperties(
+    design: Partial<SharedDesignProperties>,
+    useImportant: boolean = false
+  ): string {
     const cssProps: string[] = [];
     const imp = useImportant ? ' !important' : '';
 
     // Text color
     if (design.color) cssProps.push(`color: ${design.color}${imp}`);
-    
+
     // Text alignment and transform
     if (design.text_align) cssProps.push(`text-align: ${design.text_align}${imp}`);
     if (design.text_transform) cssProps.push(`text-transform: ${design.text_transform}${imp}`);
-    
+
     // Font properties
     if (design.font_size) cssProps.push(`font-size: ${design.font_size}${imp}`);
     if (design.font_family) cssProps.push(`font-family: ${design.font_family}${imp}`);
     if (design.font_weight) cssProps.push(`font-weight: ${design.font_weight}${imp}`);
     if (design.font_style) cssProps.push(`font-style: ${design.font_style}${imp}`);
-    
+
     // Line/letter spacing
     if (design.line_height) cssProps.push(`line-height: ${design.line_height}${imp}`);
     if (design.letter_spacing) cssProps.push(`letter-spacing: ${design.letter_spacing}${imp}`);
@@ -393,21 +448,19 @@ export class ResponsiveDesignService {
   }
 
   /**
-   * Generate CSS for BOX properties only.
-   * These apply to the container element (direct child of wrapper).
-   * Includes: background-*, border-*, padding-*, margin-*, size, position, box-shadow
+   * Generate CSS for BOX LAYOUT properties only.
+   * These apply to child containers and affect layout/sizing.
+   * Includes: size, spacing (margin/padding), position
+   *
+   * Note: Visual properties (background, border, box-shadow) are in _generateSelfCSSProperties
+   * because they define the container's appearance and shouldn't cascade to children.
    */
-  private _generateBoxCSSProperties(design: Partial<SharedDesignProperties>, useImportant: boolean = false): string {
+  private _generateBoxCSSProperties(
+    design: Partial<SharedDesignProperties>,
+    useImportant: boolean = false
+  ): string {
     const cssProps: string[] = [];
     const imp = useImportant ? ' !important' : '';
-
-    // Background properties
-    if (design.background_color) cssProps.push(`background-color: ${design.background_color}${imp}`);
-    if (design.background_image) cssProps.push(`background-image: url(${design.background_image})${imp}`);
-    if (design.background_repeat) cssProps.push(`background-repeat: ${design.background_repeat}${imp}`);
-    if (design.background_position) cssProps.push(`background-position: ${design.background_position}${imp}`);
-    if (design.background_size) cssProps.push(`background-size: ${design.background_size}${imp}`);
-    if (design.backdrop_filter) cssProps.push(`backdrop-filter: ${design.backdrop_filter}${imp}`);
 
     // Size properties
     if (design.width) cssProps.push(`width: ${design.width}${imp}`);
@@ -427,14 +480,6 @@ export class ResponsiveDesignService {
     if (design.padding_left) cssProps.push(`padding-left: ${design.padding_left}${imp}`);
     if (design.padding_right) cssProps.push(`padding-right: ${design.padding_right}${imp}`);
 
-    // Border properties
-    if (design.border_radius) cssProps.push(`border-radius: ${design.border_radius}${imp}`);
-    if (design.border_style && design.border_style !== 'none') {
-      cssProps.push(`border-style: ${design.border_style}${imp}`);
-    }
-    if (design.border_width) cssProps.push(`border-width: ${design.border_width}${imp}`);
-    if (design.border_color) cssProps.push(`border-color: ${design.border_color}${imp}`);
-
     // Position properties
     if (design.position) cssProps.push(`position: ${design.position}${imp}`);
     if (design.top) cssProps.push(`top: ${design.top}${imp}`);
@@ -443,8 +488,55 @@ export class ResponsiveDesignService {
     if (design.right) cssProps.push(`right: ${design.right}${imp}`);
     if (design.z_index) cssProps.push(`z-index: ${design.z_index}${imp}`);
 
-    // Box shadow
-    if (design.box_shadow_h || design.box_shadow_v || design.box_shadow_blur || design.box_shadow_spread) {
+    return cssProps.join('; ');
+  }
+
+  /**
+   * Generate CSS for SELF properties only.
+   * These apply to the element itself (not children) because they define
+   * the container's visual appearance or clipping behavior.
+   *
+   * Includes:
+   * - Visual: background-*, border-*, box-shadow, backdrop-filter
+   * - Clipping: overflow, clip-path
+   *
+   * IMPORTANT: These properties should NOT cascade to children via `> *` selector
+   * because a column's background/border should not repeat on every child module.
+   */
+  private _generateSelfCSSProperties(
+    design: Partial<SharedDesignProperties>,
+    useImportant: boolean = false
+  ): string {
+    const cssProps: string[] = [];
+    const imp = useImportant ? ' !important' : '';
+
+    // Background properties - define the container's visual background
+    if (design.background_color)
+      cssProps.push(`background-color: ${design.background_color}${imp}`);
+    if (design.background_image)
+      cssProps.push(`background-image: url(${design.background_image})${imp}`);
+    if (design.background_repeat)
+      cssProps.push(`background-repeat: ${design.background_repeat}${imp}`);
+    if (design.background_position)
+      cssProps.push(`background-position: ${design.background_position}${imp}`);
+    if (design.background_size) cssProps.push(`background-size: ${design.background_size}${imp}`);
+    if (design.backdrop_filter) cssProps.push(`backdrop-filter: ${design.backdrop_filter}${imp}`);
+
+    // Border properties - define the container's border appearance
+    if (design.border_radius) cssProps.push(`border-radius: ${design.border_radius}${imp}`);
+    if (design.border_style && design.border_style !== 'none') {
+      cssProps.push(`border-style: ${design.border_style}${imp}`);
+    }
+    if (design.border_width) cssProps.push(`border-width: ${design.border_width}${imp}`);
+    if (design.border_color) cssProps.push(`border-color: ${design.border_color}${imp}`);
+
+    // Box shadow - visual effect on the container itself
+    if (
+      design.box_shadow_h ||
+      design.box_shadow_v ||
+      design.box_shadow_blur ||
+      design.box_shadow_spread
+    ) {
       const h = design.box_shadow_h || '0';
       const v = design.box_shadow_v || '0';
       const blur = design.box_shadow_blur || '0';
@@ -453,8 +545,11 @@ export class ResponsiveDesignService {
       cssProps.push(`box-shadow: ${h}px ${v}px ${blur}px ${spread}px ${color}${imp}`);
     }
 
-    // Other box properties
+    // Overflow applies to the element itself - controls how it clips its content
+    // Should not be applied to children as that would prevent nested overflow:visible
     if (design.overflow) cssProps.push(`overflow: ${design.overflow}${imp}`);
+
+    // Clip-path applies to the element itself
     if (design.clip_path) cssProps.push(`clip-path: ${design.clip_path}${imp}`);
 
     return cssProps.join('; ');

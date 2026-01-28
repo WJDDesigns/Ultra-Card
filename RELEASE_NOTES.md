@@ -4,6 +4,16 @@
 
 ### 🐛 Bug Fixes
 
+- **Fixed Column inheritance issues** - Improved column layout and responsive behavior
+- **Fixed Overflow of children in columns** - Resolved content overflow and clipping issues
+- **Fixed Theme color and opacity issues** - Enhanced color handling and customization options
+
+---
+
+## Version 2.3.0-beta25
+
+### 🐛 Bug Fixes
+
 - **Fixed issue with nested tab module inside popup module inside new builder**
 - **Fixed icon module template json issue**
 
