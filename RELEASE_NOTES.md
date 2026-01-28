@@ -1,5 +1,15 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta26
+
+### 🐛 Bug Fixes
+
+- **Fixed Column inheritance issues** - Improved column layout and responsive behavior
+- **Fixed Overflow of children in columns** - Resolved content overflow and clipping issues
+- **Fixed Theme color and opacity issues** - Enhanced color handling and customization options
+
+---
+
 ## Version 2.3.0-beta25
 
 ### 🐛 Bug Fixes
