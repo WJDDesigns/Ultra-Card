@@ -310,12 +310,24 @@ function checkGitStatus() {
 }
 
 /**
- * Check if tag already exists
+ * Check if tag already exists locally
  */
-function tagExists(tag) {
+function tagExistsLocally(tag) {
   try {
-    run(`git rev-parse ${tag}`, { silent: true, ignoreError: true });
-    return true;
+    const result = run(`git tag -l "${tag}"`, { silent: true });
+    return result.trim() === tag;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if tag already exists on remote
+ */
+function tagExistsOnRemote(tag) {
+  try {
+    const result = run(`git ls-remote --tags origin "refs/tags/${tag}"`, { silent: true });
+    return result.trim().length > 0;
   } catch {
     return false;
   }
@@ -343,28 +355,47 @@ function buildProject() {
 function createGitTag(version) {
   const tag = `v${version}`;
 
-  if (tagExists(tag)) {
-    log.warn(`Tag ${tag} already exists`);
-    return tag;
+  const existsLocally = tagExistsLocally(tag);
+  const existsOnRemote = tagExistsOnRemote(tag);
+
+  if (existsLocally && existsOnRemote) {
+    log.warn(`Tag ${tag} already exists locally and on remote`);
+    return { tag, alreadyOnRemote: true };
+  }
+
+  if (existsOnRemote && !existsLocally) {
+    log.warn(`Tag ${tag} exists on remote but not locally - fetching it`);
+    run(`git fetch origin tag ${tag}`, { silent: true });
+    return { tag, alreadyOnRemote: true };
+  }
+
+  if (existsLocally && !existsOnRemote) {
+    log.info(`Tag ${tag} exists locally but not on remote - will push it`);
+    return { tag, alreadyOnRemote: false };
   }
 
   log.step(`Creating git tag: ${tag}`);
   run(`git tag -a ${tag} -m "Release ${version}"`);
   log.success(`Created tag: ${tag}`);
 
-  return tag;
+  return { tag, alreadyOnRemote: false };
 }
 
 /**
  * Push to GitHub
  */
-function pushToGitHub(tag) {
+function pushToGitHub(tag, alreadyOnRemote = false) {
   log.step('Pushing to GitHub...');
 
   try {
     run('git push origin HEAD');
-    run(`git push origin ${tag}`);
-    log.success('Pushed to GitHub');
+
+    if (!alreadyOnRemote) {
+      run(`git push origin ${tag}`);
+      log.success('Pushed commits and tag to GitHub');
+    } else {
+      log.success('Pushed commits to GitHub (tag already exists on remote)');
+    }
   } catch (error) {
     log.error('Failed to push to GitHub');
     throw error;
@@ -523,16 +554,31 @@ async function main() {
   }
 
   // Create git tag
-  const tag = createGitTag(version);
+  const { tag, alreadyOnRemote } = createGitTag(version);
 
   // Push to GitHub
   if (!skipPush) {
-    pushToGitHub(tag);
+    pushToGitHub(tag, alreadyOnRemote);
 
-    // Create GitHub release
+    // Create GitHub release (only if tag wasn't already on remote, or force it)
     // Extract just the changelog content for the release (without the header)
     const releaseChangelog = changelog.replace(/^## Version .+\n\n/, '');
-    createGitHubRelease(version, releaseChangelog, isPrerelease);
+
+    if (alreadyOnRemote) {
+      log.warn(`Tag ${tag} already exists on remote - checking if release exists...`);
+      // Check if release already exists
+      try {
+        run(`gh release view ${tag}`, { silent: true });
+        log.warn(`Release ${tag} already exists on GitHub - skipping release creation`);
+        log.info(`To update the release, delete it first: gh release delete ${tag}`);
+      } catch {
+        // Release doesn't exist, create it
+        log.info('Release does not exist yet - creating it...');
+        createGitHubRelease(version, releaseChangelog, isPrerelease);
+      }
+    } else {
+      createGitHubRelease(version, releaseChangelog, isPrerelease);
+    }
   } else {
     log.warn('Skipping push (--skip-push flag)');
     log.info(`To push manually:\n  git push origin HEAD\n  git push origin ${tag}`);
