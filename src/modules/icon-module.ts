@@ -3121,10 +3121,13 @@ export class UltraIconModule extends BaseUltraModule {
 
     // Ensure animations/styles exist globally
     this._injectGlobalStyles();
+    // Ensure keyframes exist inside ha-icon shadow roots for Live Preview animations
+    this._injectKeyframesForAllSplitPreviewIcons();
 
-    // Inject into local shadow DOM once
+    // Inject into local shadow DOM once - include keyframes for animations to work in shadow DOM context
     const localStyle = !this._localStylesInjected
       ? html`<style>
+          ${UltraIconModule._ANIMATION_KEYFRAMES}
           ${this.getStyles()}
         </style>`
       : html``;
@@ -3239,6 +3242,11 @@ export class UltraIconModule extends BaseUltraModule {
               if (icon.unified_template_mode && icon.unified_template) {
                 if (!this._templateService && hass) {
                   this._templateService = new TemplateService(hass);
+                } else if (this._templateService && hass) {
+                  // CRITICAL: Update the template service's hass reference to ensure
+                  // template results are stored in the same hass object we read from.
+                  // Without this, results may be stored in an old hass reference.
+                  this._templateService.updateHass(hass);
                 }
 
                 const templateHash = this._hashString(icon.unified_template);
@@ -3305,6 +3313,9 @@ export class UltraIconModule extends BaseUltraModule {
                 // Initialize template service if needed
                 if (!this._templateService && hass) {
                   this._templateService = new TemplateService(hass);
+                } else if (this._templateService && hass) {
+                  // CRITICAL: Update the template service's hass reference
+                  this._templateService.updateHass(hass);
                 }
 
                 const templateHash = this._hashString(icon.dynamic_icon_template);
@@ -3357,6 +3368,9 @@ export class UltraIconModule extends BaseUltraModule {
                 // Initialize template service if needed
                 if (!this._templateService && hass) {
                   this._templateService = new TemplateService(hass);
+                } else if (this._templateService && hass) {
+                  // CRITICAL: Update the template service's hass reference
+                  this._templateService.updateHass(hass);
                 }
 
                 const templateHash = this._hashString(icon.dynamic_color_template);
@@ -3729,7 +3743,12 @@ export class UltraIconModule extends BaseUltraModule {
                                   ) || 26}px;
                                     border-radius: 50%;
                                     object-fit: cover;
+                                    ${animationClass && animationClass !== 'none'
+                                    ? `animation: ${this._getInlineAnimation(animationClass)} !important;`
+                                    : ''}
                                   "
+                                  data-animation-debug="${animationClass || 'none'}"
+                                  data-is-active="${isActive}"
                                   alt="Entity picture"
                                 />
                               `
@@ -3744,7 +3763,12 @@ export class UltraIconModule extends BaseUltraModule {
                                       ? icon.active_icon_size || icon.icon_size
                                       : icon.inactive_icon_size || icon.icon_size
                                   ) || 26}px;
+                                    ${animationClass && animationClass !== 'none'
+                                    ? `animation: ${this._getInlineAnimation(animationClass)} !important;`
+                                    : ''}
                                   "
+                                  data-animation-debug="${animationClass || 'none'}"
+                                  data-is-active="${isActive}"
                                 ></ha-icon>
                               `}
                         </div>
@@ -5538,6 +5562,10 @@ export class UltraIconModule extends BaseUltraModule {
       // Template controls both display AND state logic
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
+      } else if (this._templateService && hass) {
+        // CRITICAL: Update the template service's hass reference to ensure
+        // template results are stored in the same hass object we read from.
+        this._templateService.updateHass(hass);
       }
 
       const templateHash = this._hashString(icon.unified_template);
@@ -5593,6 +5621,9 @@ export class UltraIconModule extends BaseUltraModule {
       // Initialize template service if needed
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
+      } else if (this._templateService && hass) {
+        // CRITICAL: Update the template service's hass reference
+        this._templateService.updateHass(hass);
       }
 
       const templateHash = this._hashString(icon.template);

@@ -1,5 +1,19 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta27
+
+### 🚀 New Features
+
+- **Additional fix for themed color opacity issues** - Enhanced color handling and customization options
+
+### 🐛 Bug Fixes
+
+- **Fixed Left side of bar module to use the new template input system** - Enhanced template processing and dynamic content evaluation
+- **Fixed Overlaps of UI for maps module** - Enhanced module functionality for better user experience
+- **Fixed Issues with json and template for icon module** - Enhanced template processing and dynamic content evaluation
+
+---
+
 ## Version 2.3.0-beta26
 
 ### 🐛 Bug Fixes

@@ -27162,13 +27162,16 @@ export class LayoutTab extends LitElement {
         box-shadow: none;
       }
 
-      /* Import button uses secondary/accent color */
+      /* Import button - neutral/secondary styling */
       .import-card-btn {
-        background: var(--secondary-text-color, #888);
+        background: rgba(128, 128, 128, 0.3);
+        border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.4));
+        color: var(--primary-text-color);
       }
 
       .import-card-btn:hover {
-        background: var(--text-primary-color, #666);
+        background: rgba(128, 128, 128, 0.5);
+        border-color: var(--divider-color, rgba(128, 128, 128, 0.6));
       }
 
       /* Import button "lights up" when clipboard has valid card data */

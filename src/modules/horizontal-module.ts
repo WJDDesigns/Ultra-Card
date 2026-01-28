@@ -11,6 +11,7 @@ import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { generateCSSVariables } from '../utils/css-variable-utils';
+import { computeBackgroundStyles } from '../utils/uc-color-utils';
 // Use the existing HorizontalModule and VerticalModule interfaces from types
 import { HorizontalModule, VerticalModule } from '../types';
 
@@ -294,13 +295,21 @@ export class UltraHorizontalModule extends BaseUltraModule {
     // Calculate margins - only use user-set margins, no auto-positioning logic
     const contentMargin = this.getMarginCSS(effective);
 
+    // Use computeBackgroundStyles for consistent background handling (fixes themed colors with opacity)
+    // This utility properly sets both 'background' and 'backgroundColor' which ensures
+    // CSS variables like var(--ha-card-background) with rgba values render correctly
+    const bgResult = computeBackgroundStyles({
+      color: effective.background_color,
+      fallback: 'transparent',
+      image: this.getBackgroundImageCSS(effective, hass),
+      imageSize: effective.background_size || 'cover',
+      imagePosition: effective.background_position || 'center',
+      imageRepeat: effective.background_repeat || 'no-repeat',
+    });
+
     const containerStyles: any = {
       padding: this.getPaddingCSS(effective),
-      background: this.getBackgroundCSS(effective),
-      backgroundImage: this.getBackgroundImageCSS(effective, hass),
-      backgroundSize: effective.background_size || 'cover',
-      backgroundPosition: effective.background_position || 'center',
-      backgroundRepeat: effective.background_repeat || 'no-repeat',
+      ...bgResult.styles,
       border: effective.border_width ? this.getBorderCSS(effective) : 'none',
       borderRadius: this.addPixelUnit(effective.border_radius) || '0',
       // Respect explicit positioning/z-index so the entire row can overlay siblings (e.g., camera)
@@ -783,13 +792,21 @@ export class UltraHorizontalModule extends BaseUltraModule {
     if (horizontalModule.modules && horizontalModule.modules.length > 0) {
       for (const childModule of horizontalModule.modules) {
         // Allow horizontal, vertical, and accordion modules at level 1
-        if (childModule.type === 'horizontal' || childModule.type === 'vertical' || childModule.type === 'accordion') {
+        if (
+          childModule.type === 'horizontal' ||
+          childModule.type === 'vertical' ||
+          childModule.type === 'accordion'
+        ) {
           const layoutChild = childModule as HorizontalModule | VerticalModule;
 
           // Check level 2 nesting - allow layout modules but prevent level 3
           if (layoutChild.modules && layoutChild.modules.length > 0) {
             for (const nestedModule of layoutChild.modules) {
-              if (nestedModule.type === 'horizontal' || nestedModule.type === 'vertical' || nestedModule.type === 'accordion') {
+              if (
+                nestedModule.type === 'horizontal' ||
+                nestedModule.type === 'vertical' ||
+                nestedModule.type === 'accordion'
+              ) {
                 const deepLayoutModule = nestedModule as HorizontalModule | VerticalModule;
 
                 // Check level 3 nesting - prevent any layout modules at this level
@@ -890,9 +907,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
       ];
       const explicitWidthValue = widthCandidates.find(
         candidate =>
-          candidate !== undefined &&
-          candidate !== null &&
-          String(candidate).trim() !== ''
+          candidate !== undefined && candidate !== null && String(candidate).trim() !== ''
       );
 
       if (explicitWidthValue !== undefined && explicitWidthValue !== null) {
@@ -1005,10 +1020,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
       const separator = childModule as any;
 
       // Check design width first
-      const widthCandidates = [
-        separator?.design?.width,
-        separator?.width_percent,
-      ];
+      const widthCandidates = [separator?.design?.width, separator?.width_percent];
 
       for (const candidate of widthCandidates) {
         if (candidate === undefined || candidate === null || String(candidate).trim() === '') {
@@ -1034,9 +1046,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
     return null;
   }
 
-  private normalizeSizeValue(
-    value: string | number
-  ): { value: number; unit: '%' | 'px' } | null {
+  private normalizeSizeValue(value: string | number): { value: number; unit: '%' | 'px' } | null {
     if (typeof value === 'number') {
       return { value, unit: '%' };
     }

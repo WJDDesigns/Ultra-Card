@@ -566,7 +566,11 @@ export class UltraBarModule extends BaseUltraModule {
           ${
             barModule.percentage_type === 'time_progress'
               ? this.renderConditionalFieldsGroup(
-                  localize('editor.bar.time_progress_config.title', lang, 'Time Progress Configuration'),
+                  localize(
+                    'editor.bar.time_progress_config.title',
+                    lang,
+                    'Time Progress Configuration'
+                  ),
                   html`
                     ${this.renderSettingsSection(
                       localize(
@@ -678,7 +682,9 @@ export class UltraBarModule extends BaseUltraModule {
                             time_progress_update_interval:
                               (barModule as any).time_progress_update_interval || 1000,
                           },
-                          schema: [this.numberField('time_progress_update_interval', 100, 10000, 100)],
+                          schema: [
+                            this.numberField('time_progress_update_interval', 100, 10000, 100),
+                          ],
                           onChange: (e: CustomEvent) =>
                             updateModule({
                               time_progress_update_interval:
@@ -702,7 +708,10 @@ export class UltraBarModule extends BaseUltraModule {
                     <div
                       style="font-size: 14px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;"
                     >
-                      <ha-icon icon="mdi:arrow-expand-horizontal" style="color: var(--primary-color);"></ha-icon>
+                      <ha-icon
+                        icon="mdi:arrow-expand-horizontal"
+                        style="color: var(--primary-color);"
+                      ></ha-icon>
                       ${localize('editor.bar.range.title', lang, 'Value Range (Min/Max)')}
                     </div>
                     <div
@@ -711,18 +720,21 @@ export class UltraBarModule extends BaseUltraModule {
                       ${localize(
                         'editor.bar.range.desc',
                         lang,
-                        'Override auto-detected range. Enter a number or use a Jinja2 template (e.g., {{ states(\'sensor.max\') }}).'
+                        "Override auto-detected range. Enter a number or use a Jinja2 template (e.g., {{ states('sensor.max') }})."
                       )}
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                       <!-- Min Value -->
                       <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <span style="font-size: 13px; font-weight: 500; color: var(--primary-text-color);">
+                        <span
+                          style="font-size: 13px; font-weight: 500; color: var(--primary-text-color);"
+                        >
                           ${localize('editor.bar.range.min', lang, 'Minimum')}
                         </span>
                         <ha-textfield
-                          .value=${barModule.percentage_min_template_mode && barModule.percentage_min_template
+                          .value=${barModule.percentage_min_template_mode &&
+                          barModule.percentage_min_template
                             ? barModule.percentage_min_template
                             : barModule.percentage_min !== undefined
                               ? String(barModule.percentage_min)
@@ -760,22 +772,29 @@ export class UltraBarModule extends BaseUltraModule {
                           }}
                           style="width: 100%;"
                         ></ha-textfield>
-                        ${barModule.percentage_min_template_mode && 
-                          barModule.percentage_min_template && 
-                          (barModule.percentage_min_template.includes('{{') || barModule.percentage_min_template.includes('{%'))
-                          ? html`<span style="font-size: 10px; color: var(--primary-color); margin-top: 2px;">
-                              <ha-icon icon="mdi:code-braces" style="font-size: 10px;"></ha-icon> Template
+                        ${barModule.percentage_min_template_mode &&
+                        barModule.percentage_min_template &&
+                        (barModule.percentage_min_template.includes('{{') ||
+                          barModule.percentage_min_template.includes('{%'))
+                          ? html`<span
+                              style="font-size: 10px; color: var(--primary-color); margin-top: 2px;"
+                            >
+                              <ha-icon icon="mdi:code-braces" style="font-size: 10px;"></ha-icon>
+                              Template
                             </span>`
                           : ''}
                       </div>
 
                       <!-- Max Value -->
                       <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <span style="font-size: 13px; font-weight: 500; color: var(--primary-text-color);">
+                        <span
+                          style="font-size: 13px; font-weight: 500; color: var(--primary-text-color);"
+                        >
                           ${localize('editor.bar.range.max', lang, 'Maximum')}
                         </span>
                         <ha-textfield
-                          .value=${barModule.percentage_max_template_mode && barModule.percentage_max_template
+                          .value=${barModule.percentage_max_template_mode &&
+                          barModule.percentage_max_template
                             ? barModule.percentage_max_template
                             : barModule.percentage_max !== undefined
                               ? String(barModule.percentage_max)
@@ -813,11 +832,15 @@ export class UltraBarModule extends BaseUltraModule {
                           }}
                           style="width: 100%;"
                         ></ha-textfield>
-                        ${barModule.percentage_max_template_mode && 
-                          barModule.percentage_max_template && 
-                          (barModule.percentage_max_template.includes('{{') || barModule.percentage_max_template.includes('{%'))
-                          ? html`<span style="font-size: 10px; color: var(--primary-color); margin-top: 2px;">
-                              <ha-icon icon="mdi:code-braces" style="font-size: 10px;"></ha-icon> Template
+                        ${barModule.percentage_max_template_mode &&
+                        barModule.percentage_max_template &&
+                        (barModule.percentage_max_template.includes('{{') ||
+                          barModule.percentage_max_template.includes('{%'))
+                          ? html`<span
+                              style="font-size: 10px; color: var(--primary-color); margin-top: 2px;"
+                            >
+                              <ha-icon icon="mdi:code-braces" style="font-size: 10px;"></ha-icon>
+                              Template
                             </span>`
                           : ''}
                       </div>
@@ -856,25 +879,23 @@ export class UltraBarModule extends BaseUltraModule {
                       ],
                       (e: CustomEvent) => updateModule({ entity: e.detail.value.entity })
                     )}
-                    ${
-                      !barModule.entity
-                        ? html`
-                            <div
-                              style="color: var(--warning-color); font-size: 12px; margin-top: 4px; font-style: italic;"
-                            >
-                              <ha-icon
-                                icon="mdi:information-outline"
-                                style="font-size: 14px; margin-right: 4px;"
-                              ></ha-icon>
-                              ${localize(
-                                'editor.bar.entity.no_entity_warning',
-                                lang,
-                                'No entity selected - Please choose a sensor with values between 0-100'
-                              )}
-                            </div>
-                          `
-                        : ''
-                    }
+                    ${!barModule.entity
+                      ? html`
+                          <div
+                            style="color: var(--warning-color); font-size: 12px; margin-top: 4px; font-style: italic;"
+                          >
+                            <ha-icon
+                              icon="mdi:information-outline"
+                              style="font-size: 14px; margin-right: 4px;"
+                            ></ha-icon>
+                            ${localize(
+                              'editor.bar.entity.no_entity_warning',
+                              lang,
+                              'No entity selected - Please choose a sensor with values between 0-100'
+                            )}
+                          </div>
+                        `
+                      : ''}
                   </div>
                 `
               : ''
@@ -2281,50 +2302,75 @@ export class UltraBarModule extends BaseUltraModule {
                           )}
                         </div>
                         <div class="field-group" style="margin-bottom: 0;">
-                          <ha-form
-                            .hass=${hass}
-                            .data=${{ left_template: barModule.left_template || '' }}
-                            .schema=${[
-                              {
-                                name: 'left_template',
-                                label: localize(
-                                  'editor.bar.left.value_template',
-                                  lang,
-                                  'Value Template'
-                                ),
-                                description: localize(
-                                  'editor.bar.left.value_template_desc',
-                                  lang,
-                                  'Template to format the left-side value using Jinja2 syntax'
-                                ),
-                                selector: { text: { multiline: true } },
-                              },
-                            ]}
-                            .computeLabel=${(schema: any) => schema.label || schema.name}
-                            .computeDescription=${(schema: any) => schema.description || ''}
-                            @value-changed=${(e: CustomEvent) => {
-                              updateModule({ left_template: e.detail.value.left_template });
+                          <div
+                            class="field-title"
+                            style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
+                          >
+                            ${localize('editor.bar.left.value_template', lang, 'Value Template')}
+                          </div>
+                          <div
+                            class="field-description"
+                            style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
+                          >
+                            ${localize(
+                              'editor.bar.left.value_template_desc',
+                              lang,
+                              'Template to format the left-side value using Jinja2 syntax'
+                            )}
+                          </div>
+                          <div
+                            @mousedown=${(e: Event) => {
+                              // Only stop propagation for drag operations, not clicks on the editor
+                              const target = e.target as HTMLElement;
+                              if (
+                                !target.closest('ultra-template-editor') &&
+                                !target.closest('.cm-editor')
+                              ) {
+                                e.stopPropagation();
+                              }
                             }}
-                          ></ha-form>
+                            @dragstart=${(e: Event) => e.stopPropagation()}
+                          >
+                            <ultra-template-editor
+                              .hass=${hass}
+                              .value=${barModule.left_template || ''}
+                              .placeholder=${"{{ states('sensor.example') }}"}
+                              .minHeight=${100}
+                              .maxHeight=${300}
+                              @value-changed=${(e: CustomEvent) =>
+                                updateModule({ left_template: e.detail.value })}
+                            ></ultra-template-editor>
+                          </div>
                         </div>
                       `
                     : ''}
 
                   <!-- Left Side Actions -->
-                  <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);">
+                  <div
+                    style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);"
+                  >
                     <div
                       class="field-title"
                       style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--primary-color);"
                     >
                       ${localize('editor.bar.left.actions', lang, 'Left Side Actions')}
                     </div>
-                    <div class="field-description" style="font-size: 12px; margin-bottom: 12px; color: var(--secondary-text-color);">
-                      ${localize('editor.bar.left.actions_desc', lang, 'Configure what happens when tapping the left side info')}
+                    <div
+                      class="field-description"
+                      style="font-size: 12px; margin-bottom: 12px; color: var(--secondary-text-color);"
+                    >
+                      ${localize(
+                        'editor.bar.left.actions_desc',
+                        lang,
+                        'Configure what happens when tapping the left side info'
+                      )}
                     </div>
                     <div style="margin-bottom: 12px;">
                       <ha-form
                         .hass=${hass}
-                        .data=${{ left_tap_action: barModule.left_tap_action || { action: 'default' } }}
+                        .data=${{
+                          left_tap_action: barModule.left_tap_action || { action: 'default' },
+                        }}
                         .schema=${[
                           {
                             name: 'left_tap_action',
@@ -2340,7 +2386,9 @@ export class UltraBarModule extends BaseUltraModule {
                     <div style="margin-bottom: 12px;">
                       <ha-form
                         .hass=${hass}
-                        .data=${{ left_hold_action: barModule.left_hold_action || { action: 'nothing' } }}
+                        .data=${{
+                          left_hold_action: barModule.left_hold_action || { action: 'nothing' },
+                        }}
                         .schema=${[
                           {
                             name: 'left_hold_action',
@@ -2356,7 +2404,11 @@ export class UltraBarModule extends BaseUltraModule {
                     <div>
                       <ha-form
                         .hass=${hass}
-                        .data=${{ left_double_tap_action: barModule.left_double_tap_action || { action: 'nothing' } }}
+                        .data=${{
+                          left_double_tap_action: barModule.left_double_tap_action || {
+                            action: 'nothing',
+                          },
+                        }}
                         .schema=${[
                           {
                             name: 'left_double_tap_action',
@@ -2366,7 +2418,9 @@ export class UltraBarModule extends BaseUltraModule {
                         .computeLabel=${(schema: any) =>
                           hass.localize('ui.panel.lovelace.editor.card.generic.double_tap_action')}
                         @value-changed=${(e: CustomEvent) =>
-                          updateModule({ left_double_tap_action: e.detail.value.left_double_tap_action })}
+                          updateModule({
+                            left_double_tap_action: e.detail.value.left_double_tap_action,
+                          })}
                       ></ha-form>
                     </div>
                   </div>
@@ -2621,7 +2675,10 @@ export class UltraBarModule extends BaseUltraModule {
                             @mousedown=${(e: Event) => {
                               // Only stop propagation for drag operations, not clicks on the editor
                               const target = e.target as HTMLElement;
-                              if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                              if (
+                                !target.closest('ultra-template-editor') &&
+                                !target.closest('.cm-editor')
+                              ) {
                                 e.stopPropagation();
                               }
                             }}
@@ -2642,20 +2699,31 @@ export class UltraBarModule extends BaseUltraModule {
                     : ''}
 
                   <!-- Right Side Actions -->
-                  <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);">
+                  <div
+                    style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);"
+                  >
                     <div
                       class="field-title"
                       style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--primary-color);"
                     >
                       ${localize('editor.bar.right.actions', lang, 'Right Side Actions')}
                     </div>
-                    <div class="field-description" style="font-size: 12px; margin-bottom: 12px; color: var(--secondary-text-color);">
-                      ${localize('editor.bar.right.actions_desc', lang, 'Configure what happens when tapping the right side info')}
+                    <div
+                      class="field-description"
+                      style="font-size: 12px; margin-bottom: 12px; color: var(--secondary-text-color);"
+                    >
+                      ${localize(
+                        'editor.bar.right.actions_desc',
+                        lang,
+                        'Configure what happens when tapping the right side info'
+                      )}
                     </div>
                     <div style="margin-bottom: 12px;">
                       <ha-form
                         .hass=${hass}
-                        .data=${{ right_tap_action: barModule.right_tap_action || { action: 'default' } }}
+                        .data=${{
+                          right_tap_action: barModule.right_tap_action || { action: 'default' },
+                        }}
                         .schema=${[
                           {
                             name: 'right_tap_action',
@@ -2671,7 +2739,9 @@ export class UltraBarModule extends BaseUltraModule {
                     <div style="margin-bottom: 12px;">
                       <ha-form
                         .hass=${hass}
-                        .data=${{ right_hold_action: barModule.right_hold_action || { action: 'nothing' } }}
+                        .data=${{
+                          right_hold_action: barModule.right_hold_action || { action: 'nothing' },
+                        }}
                         .schema=${[
                           {
                             name: 'right_hold_action',
@@ -2687,7 +2757,11 @@ export class UltraBarModule extends BaseUltraModule {
                     <div>
                       <ha-form
                         .hass=${hass}
-                        .data=${{ right_double_tap_action: barModule.right_double_tap_action || { action: 'nothing' } }}
+                        .data=${{
+                          right_double_tap_action: barModule.right_double_tap_action || {
+                            action: 'nothing',
+                          },
+                        }}
                         .schema=${[
                           {
                             name: 'right_double_tap_action',
@@ -2697,7 +2771,9 @@ export class UltraBarModule extends BaseUltraModule {
                         .computeLabel=${(schema: any) =>
                           hass.localize('ui.panel.lovelace.editor.card.generic.double_tap_action')}
                         @value-changed=${(e: CustomEvent) =>
-                          updateModule({ right_double_tap_action: e.detail.value.right_double_tap_action })}
+                          updateModule({
+                            right_double_tap_action: e.detail.value.right_double_tap_action,
+                          })}
                       ></ha-form>
                     </div>
                   </div>
@@ -3939,7 +4015,7 @@ export class UltraBarModule extends BaseUltraModule {
     // PRIORITY 2: Legacy percentage calculations (only if unified template didn't set percentage)
     if (!barModule.unified_template_mode) {
       const pctType = (barModule as any).percentage_type || 'entity';
-      
+
       // PRIORITY 2.5: Time Progress calculation (real-time frontend calculation)
       if (pctType === 'time_progress') {
         const startEntity = (barModule as any).time_progress_start_entity;
@@ -3976,7 +4052,7 @@ export class UltraBarModule extends BaseUltraModule {
               // Remaining time: (end - now) / (end - start) * 100
               const remaining = endTime - now;
               percentage = Math.min(100, Math.max(0, (remaining / totalDuration) * 100));
-              
+
               // Format remaining time for display
               if (remaining > 0) {
                 timeProgressDisplay = this._formatDuration(remaining);
@@ -3987,7 +4063,7 @@ export class UltraBarModule extends BaseUltraModule {
               // Elapsed time: (now - start) / (end - start) * 100
               const elapsed = now - startTime;
               percentage = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
-              
+
               // Format elapsed time for display
               if (elapsed >= totalDuration) {
                 timeProgressDisplay = 'Complete';
@@ -4072,7 +4148,8 @@ export class UltraBarModule extends BaseUltraModule {
             percentage = clampPercent(num);
           } else if (st?.attributes?.max) {
             const max = parseFloat(String(st.attributes.max));
-            const min = st?.attributes?.min !== undefined ? parseFloat(String(st.attributes.min)) : 0;
+            const min =
+              st?.attributes?.min !== undefined ? parseFloat(String(st.attributes.min)) : 0;
             percentage = calculatePercentageWithRange(num, min, max);
           } else {
             // Assume direct percent
@@ -4086,7 +4163,7 @@ export class UltraBarModule extends BaseUltraModule {
         const totalId = (barModule as any).percentage_total_entity;
         const curr = currId ? parseFloat(String(hass?.states[currId]?.state ?? '0')) : 0;
         const total = totalId ? parseFloat(String(hass?.states[totalId]?.state ?? '0')) : 0;
-        
+
         if (manualMin !== undefined || manualMax !== undefined) {
           // If manual range is set, use current value against that range
           percentage = calculatePercentageWithRange(curr, 0, total, manualMin, manualMax);
@@ -4382,7 +4459,7 @@ export class UltraBarModule extends BaseUltraModule {
     // Calculate the display text for the bar
     // Store percentage in a separate const to ensure it's captured correctly
     const displayPercentage = Math.round(percentage);
-    
+
     const percentageDisplayText = (() => {
       if (!showPercentageText) {
         return '';
@@ -5176,13 +5253,13 @@ export class UltraBarModule extends BaseUltraModule {
         style=${this.styleObjectToCss(containerStyles)}
         ${ref((el?: Element) => {
           if (!el) return;
-          
+
           // After render, check if parent wrapper has flex constraint
           // If constrained, ensure bar uses 100% to fill the constrained wrapper
           setTimeout(() => {
             const parent = el.parentElement;
             const isFlexConstrained = parent?.getAttribute('data-flex-constrained') === 'true';
-            
+
             if (isFlexConstrained) {
               const barContainer = el.querySelector('.bar-container') as HTMLElement;
               if (barContainer) {
@@ -5793,7 +5870,10 @@ export class UltraBarModule extends BaseUltraModule {
                           leftHoldTimeout = setTimeout(() => {
                             leftIsHolding = true;
                             // Execute hold action
-                            if (barModule.left_hold_action && barModule.left_hold_action.action !== 'nothing') {
+                            if (
+                              barModule.left_hold_action &&
+                              barModule.left_hold_action.action !== 'nothing'
+                            ) {
                               UltraLinkComponent.handleAction(
                                 barModule.left_hold_action as any,
                                 hass,
@@ -5827,7 +5907,10 @@ export class UltraBarModule extends BaseUltraModule {
                               leftClickTimeout = null;
                             }
                             leftClickCount = 0;
-                            if (barModule.left_double_tap_action && barModule.left_double_tap_action.action !== 'nothing') {
+                            if (
+                              barModule.left_double_tap_action &&
+                              barModule.left_double_tap_action.action !== 'nothing'
+                            ) {
                               UltraLinkComponent.handleAction(
                                 barModule.left_double_tap_action as any,
                                 hass,
@@ -5844,7 +5927,10 @@ export class UltraBarModule extends BaseUltraModule {
                             leftClickTimeout = setTimeout(() => {
                               leftClickCount = 0;
                               // Execute tap action
-                              if (!barModule.left_tap_action || barModule.left_tap_action.action !== 'nothing') {
+                              if (
+                                !barModule.left_tap_action ||
+                                barModule.left_tap_action.action !== 'nothing'
+                              ) {
                                 UltraLinkComponent.handleAction(
                                   (barModule.left_tap_action as any) || { action: 'default' },
                                   hass,
@@ -5859,45 +5945,45 @@ export class UltraBarModule extends BaseUltraModule {
                         };
 
                         return html`
-                        <div
-                          class="left-side-below"
-                          style="text-align: left; flex: 1; min-width: 0; overflow: hidden; cursor: pointer;"
-                          @pointerdown=${leftHandlePointerDown}
-                          @pointerup=${leftHandlePointerUp}
-                          @pointercancel=${() => {
-                            if (leftHoldTimeout) clearTimeout(leftHoldTimeout);
-                            leftIsHolding = false;
-                          }}
-                        >
-                          ${barModule.left_title && barModule.left_title.trim()
-                            ? html`
-                                <span
-                                  style="font-size: ${designProperties.font_size
-                                    ? `${Math.min(designProperties.font_size, 16)}px`
-                                    : `${Math.min(barModule.left_title_size || 14, 16)}px`}; color: ${designProperties.color ||
-                                  barModule.left_title_color ||
-                                  moduleWithDesign.color ||
-                                  'var(--primary-text-color)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                >
-                                  ${barModule.left_title}:
-                                </span>
-                              `
-                            : ''}
-                          <span
-                            style="font-size: ${designProperties.font_size
-                              ? `${Math.min(designProperties.font_size, 16)}px`
-                              : `${Math.min(barModule.left_value_size || 14, 16)}px`}; font-weight: 600; color: ${designProperties.color ||
-                            barModule.left_value_color ||
-                            moduleWithDesign.color ||
-                            'var(--primary-text-color)'}; margin-left: ${barModule.left_title &&
-                            barModule.left_title.trim()
-                              ? '4px'
-                              : '0'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                          <div
+                            class="left-side-below"
+                            style="text-align: left; flex: 1; min-width: 0; overflow: hidden; cursor: pointer;"
+                            @pointerdown=${leftHandlePointerDown}
+                            @pointerup=${leftHandlePointerUp}
+                            @pointercancel=${() => {
+                              if (leftHoldTimeout) clearTimeout(leftHoldTimeout);
+                              leftIsHolding = false;
+                            }}
                           >
-                            ${leftDisplay}
-                          </span>
-                        </div>
-                      `;
+                            ${barModule.left_title && barModule.left_title.trim()
+                              ? html`
+                                  <span
+                                    style="font-size: ${designProperties.font_size
+                                      ? `${Math.min(designProperties.font_size, 16)}px`
+                                      : `${Math.min(barModule.left_title_size || 14, 16)}px`}; color: ${designProperties.color ||
+                                    barModule.left_title_color ||
+                                    moduleWithDesign.color ||
+                                    'var(--primary-text-color)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                  >
+                                    ${barModule.left_title}:
+                                  </span>
+                                `
+                              : ''}
+                            <span
+                              style="font-size: ${designProperties.font_size
+                                ? `${Math.min(designProperties.font_size, 16)}px`
+                                : `${Math.min(barModule.left_value_size || 14, 16)}px`}; font-weight: 600; color: ${designProperties.color ||
+                              barModule.left_value_color ||
+                              moduleWithDesign.color ||
+                              'var(--primary-text-color)'}; margin-left: ${barModule.left_title &&
+                              barModule.left_title.trim()
+                                ? '4px'
+                                : '0'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                            >
+                              ${leftDisplay}
+                            </span>
+                          </div>
+                        `;
                       })()
                     : html`<div></div>`}
                   ${barModule.right_enabled
@@ -5915,7 +6001,10 @@ export class UltraBarModule extends BaseUltraModule {
                           rightHoldTimeout = setTimeout(() => {
                             rightIsHolding = true;
                             // Execute hold action
-                            if (barModule.right_hold_action && barModule.right_hold_action.action !== 'nothing') {
+                            if (
+                              barModule.right_hold_action &&
+                              barModule.right_hold_action.action !== 'nothing'
+                            ) {
                               UltraLinkComponent.handleAction(
                                 barModule.right_hold_action as any,
                                 hass,
@@ -5949,7 +6038,10 @@ export class UltraBarModule extends BaseUltraModule {
                               rightClickTimeout = null;
                             }
                             rightClickCount = 0;
-                            if (barModule.right_double_tap_action && barModule.right_double_tap_action.action !== 'nothing') {
+                            if (
+                              barModule.right_double_tap_action &&
+                              barModule.right_double_tap_action.action !== 'nothing'
+                            ) {
                               UltraLinkComponent.handleAction(
                                 barModule.right_double_tap_action as any,
                                 hass,
@@ -5966,7 +6058,10 @@ export class UltraBarModule extends BaseUltraModule {
                             rightClickTimeout = setTimeout(() => {
                               rightClickCount = 0;
                               // Execute tap action
-                              if (!barModule.right_tap_action || barModule.right_tap_action.action !== 'nothing') {
+                              if (
+                                !barModule.right_tap_action ||
+                                barModule.right_tap_action.action !== 'nothing'
+                              ) {
                                 UltraLinkComponent.handleAction(
                                   (barModule.right_tap_action as any) || { action: 'default' },
                                   hass,
@@ -5981,45 +6076,45 @@ export class UltraBarModule extends BaseUltraModule {
                         };
 
                         return html`
-                        <div
-                          class="right-side-below"
-                          style="text-align: right; flex: 1; min-width: 0; overflow: hidden; cursor: pointer;"
-                          @pointerdown=${rightHandlePointerDown}
-                          @pointerup=${rightHandlePointerUp}
-                          @pointercancel=${() => {
-                            if (rightHoldTimeout) clearTimeout(rightHoldTimeout);
-                            rightIsHolding = false;
-                          }}
-                        >
-                          ${barModule.right_title && barModule.right_title.trim()
-                            ? html`
-                                <span
-                                  style="font-size: ${designProperties.font_size
-                                    ? `${Math.min(designProperties.font_size, 16)}px`
-                                    : `${Math.min(barModule.right_title_size || 14, 16)}px`}; color: ${designProperties.color ||
-                                  barModule.right_title_color ||
-                                  moduleWithDesign.color ||
-                                  'var(--primary-text-color)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                >
-                                  ${barModule.right_title}:
-                                </span>
-                              `
-                            : ''}
-                          <span
-                            style="font-size: ${designProperties.font_size
-                              ? `${Math.min(designProperties.font_size, 16)}px`
-                              : `${Math.min(barModule.right_value_size || 14, 16)}px`}; font-weight: 600; color: ${designProperties.color ||
-                            barModule.right_value_color ||
-                            moduleWithDesign.color ||
-                            'var(--primary-text-color)'}; margin-left: ${barModule.right_title &&
-                            barModule.right_title.trim()
-                              ? '4px'
-                              : '0'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                          <div
+                            class="right-side-below"
+                            style="text-align: right; flex: 1; min-width: 0; overflow: hidden; cursor: pointer;"
+                            @pointerdown=${rightHandlePointerDown}
+                            @pointerup=${rightHandlePointerUp}
+                            @pointercancel=${() => {
+                              if (rightHoldTimeout) clearTimeout(rightHoldTimeout);
+                              rightIsHolding = false;
+                            }}
                           >
-                            ${rightDisplay}
-                          </span>
-                        </div>
-                      `;
+                            ${barModule.right_title && barModule.right_title.trim()
+                              ? html`
+                                  <span
+                                    style="font-size: ${designProperties.font_size
+                                      ? `${Math.min(designProperties.font_size, 16)}px`
+                                      : `${Math.min(barModule.right_title_size || 14, 16)}px`}; color: ${designProperties.color ||
+                                    barModule.right_title_color ||
+                                    moduleWithDesign.color ||
+                                    'var(--primary-text-color)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                  >
+                                    ${barModule.right_title}:
+                                  </span>
+                                `
+                              : ''}
+                            <span
+                              style="font-size: ${designProperties.font_size
+                                ? `${Math.min(designProperties.font_size, 16)}px`
+                                : `${Math.min(barModule.right_value_size || 14, 16)}px`}; font-weight: 600; color: ${designProperties.color ||
+                              barModule.right_value_color ||
+                              moduleWithDesign.color ||
+                              'var(--primary-text-color)'}; margin-left: ${barModule.right_title &&
+                              barModule.right_title.trim()
+                                ? '4px'
+                                : '0'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                            >
+                              ${rightDisplay}
+                            </span>
+                          </div>
+                        `;
                       })()
                     : html`<div></div>`}
                 </div>
@@ -7325,5 +7420,4 @@ export class UltraBarModule extends BaseUltraModule {
     // Otherwise return as-is (already has units like px, em, %, etc.)
     return value;
   }
-
 }

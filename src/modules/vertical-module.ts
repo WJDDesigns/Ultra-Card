@@ -10,6 +10,7 @@ import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { generateCSSVariables } from '../utils/css-variable-utils';
+import { computeBackgroundStyles } from '../utils/uc-color-utils';
 
 // Use the existing VerticalModule and HorizontalModule interfaces from types
 import { VerticalModule, HorizontalModule } from '../types';
@@ -239,15 +240,29 @@ export class UltraVerticalModule extends BaseUltraModule {
 
     // Container styles for positioning and effects
     const gapValue = verticalModule.gap !== undefined ? verticalModule.gap : 1.2;
+
+    // Use computeBackgroundStyles for consistent background handling (fixes themed colors with opacity)
+    // This utility properly sets both 'background' and 'backgroundColor' which ensures
+    // CSS variables like var(--ha-card-background) with rgba values render correctly
+    const bgResult = computeBackgroundStyles({
+      color: effective.background_color,
+      fallback: 'transparent',
+      image: this.getBackgroundImageCSS(effective, hass),
+      imageSize: effective.background_size || 'cover',
+      imagePosition: effective.background_position || 'center',
+      imageRepeat: effective.background_repeat || 'no-repeat',
+    });
+
     const containerStyles: any = {
       padding: this.getPaddingCSS(effective),
       margin: this.getMarginCSS(effective),
-      background: this.getBackgroundCSS(effective),
-      backgroundImage: this.getBackgroundImageOrGradient(effective, hass),
-      backgroundSize: effective.background_size || 'cover',
-      backgroundPosition: effective.background_position || 'center',
-      backgroundRepeat: effective.background_repeat || 'no-repeat',
-      border: (effective.border_width || effective.border_color || (effective.border_style && effective.border_style !== 'none')) ? this.getBorderCSS(effective) : 'none',
+      ...bgResult.styles,
+      border:
+        effective.border_width ||
+        effective.border_color ||
+        (effective.border_style && effective.border_style !== 'none')
+          ? this.getBorderCSS(effective)
+          : 'none',
       borderRadius: this.addPixelUnit(effective.border_radius) || '0',
       // Respect explicit positioning/z-index so the entire column can overlay siblings
       // If a z-index is provided but no position, use relative so z-index takes effect
@@ -665,13 +680,21 @@ export class UltraVerticalModule extends BaseUltraModule {
     if (verticalModule.modules && verticalModule.modules.length > 0) {
       for (const childModule of verticalModule.modules) {
         // Allow horizontal, vertical, and accordion modules at level 1
-        if (childModule.type === 'horizontal' || childModule.type === 'vertical' || childModule.type === 'accordion') {
+        if (
+          childModule.type === 'horizontal' ||
+          childModule.type === 'vertical' ||
+          childModule.type === 'accordion'
+        ) {
           const layoutChild = childModule as HorizontalModule | VerticalModule;
 
           // Check level 2 nesting - allow layout modules but prevent level 3
           if (layoutChild.modules && layoutChild.modules.length > 0) {
             for (const nestedModule of layoutChild.modules) {
-              if (nestedModule.type === 'horizontal' || nestedModule.type === 'vertical' || nestedModule.type === 'accordion') {
+              if (
+                nestedModule.type === 'horizontal' ||
+                nestedModule.type === 'vertical' ||
+                nestedModule.type === 'accordion'
+              ) {
                 const deepLayoutModule = nestedModule as HorizontalModule | VerticalModule;
 
                 // Check level 3 nesting - prevent any layout modules at this level
@@ -746,7 +769,10 @@ export class UltraVerticalModule extends BaseUltraModule {
   private getBackgroundCSS(moduleWithDesign: any): string {
     const bgColor = moduleWithDesign.background_color || '';
     // If it's a gradient, return transparent so backgroundImage can be used instead
-    if (bgColor && (bgColor.includes('gradient') || bgColor.includes('linear-') || bgColor.includes('radial-'))) {
+    if (
+      bgColor &&
+      (bgColor.includes('gradient') || bgColor.includes('linear-') || bgColor.includes('radial-'))
+    ) {
       return 'transparent';
     }
     return bgColor || 'transparent';
@@ -755,7 +781,10 @@ export class UltraVerticalModule extends BaseUltraModule {
   private getBackgroundImageOrGradient(moduleWithDesign: any, hass: HomeAssistant): string {
     // Check if background_color is actually a gradient
     const bgColor = moduleWithDesign.background_color || '';
-    if (bgColor && (bgColor.includes('gradient') || bgColor.includes('linear-') || bgColor.includes('radial-'))) {
+    if (
+      bgColor &&
+      (bgColor.includes('gradient') || bgColor.includes('linear-') || bgColor.includes('radial-'))
+    ) {
       return bgColor;
     }
     // Otherwise use the regular background image logic
