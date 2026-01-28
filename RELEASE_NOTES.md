@@ -1,5 +1,14 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta25
+
+### 🐛 Bug Fixes
+
+- **Fixed issue with nested tab module inside popup module inside new builder**
+- **Fixed icon module template json issue**
+
+---
+
 ## Version 2.3.0-beta22
 
 ### 🚀 New Features

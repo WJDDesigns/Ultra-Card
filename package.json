@@ -1,6 +1,6 @@
 {
   "name": "ultra-card",
-  "version": "2.3.0-beta24",
+  "version": "2.3.0-beta25",
   "description": "Ultra Card - A modular card builder for Home Assistant",
   "main": "dist/ultra-card.js",
   "scripts": {
@@ -8,6 +8,9 @@
     "build": "webpack --mode production",
     "postbuild": "cp dist/ultra-card.js . && cp dist/ultra-card.js.LICENSE.txt .",
     "build:deploy": "npm run build && node deploy.js",
+    "build:release": "node scripts/release.js",
+    "build:prerelease": "node scripts/release.js --prerelease",
+    "release": "node scripts/release.js --skip-build",
     "deploy": "node deploy.js",
     "watch": "webpack --watch --mode development",
     "start": "webpack serve --mode development --open",

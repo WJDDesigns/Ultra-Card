@@ -110,6 +110,8 @@ export declare class LayoutTab extends LitElement {
     private _renderTreeTabsSectionChild;
     private _renderTreeLayoutChild;
     private _renderTreeNestedLayoutChild;
+    private _renderTreeNestedTabsSection;
+    private _renderTreeNestedTabsSectionChild;
     private _renderTreeDeepNestedChild;
     private _reorderArray;
     private _onConditionDragStart;
@@ -391,10 +393,15 @@ export declare class LayoutTab extends LitElement {
     private _tabsSectionContext;
     private _tabsSectionNestedLayoutContext;
     private _tabsSectionDeeplyNestedLayoutContext;
+    private _nestedTabsSectionContext;
     /**
      * Adds a module to a specific tabs section
      */
     private _addModuleToTabsSection;
+    /**
+     * Adds a module to a tabs section inside a nested layout (like popup)
+     */
+    private _addModuleToNestedTabsSection;
     /**
      * Adds a module to a nested layout inside a tabs section
      */
@@ -468,6 +475,43 @@ export declare class LayoutTab extends LitElement {
      * Clears all drag-related styles from the shadow DOM
      */
     private _clearAllDragStyles;
+    /**
+     * Drag start for nested tabs section
+     */
+    private _onNestedTabsSectionDragStart;
+    /**
+     * Drop handler for nested tabs section (reordering sections)
+     */
+    private _onNestedTabsSectionDrop;
+    /**
+     * Drop handler for nested tabs section content (dropping modules into a section)
+     */
+    private _onNestedTabsSectionContentDrop;
+    /**
+     * Drag start for child module inside nested tabs section
+     */
+    private _onNestedTabsSectionChildDragStart;
+    /**
+     * Drop handler for child module inside nested tabs section
+     */
+    private _onNestedTabsSectionChildDrop;
+    /**
+     * Open module selector for nested tabs section
+     */
+    private _openNestedTabsSectionModuleSelector;
+    /**
+     * Open settings for a child module inside nested tabs section
+     * Delegates to _openTabsSectionChildSettings with nested=true
+     */
+    private _openNestedTabsSectionChildSettings;
+    /**
+     * Duplicate a child module inside nested tabs section
+     */
+    private _duplicateNestedTabsSectionChild;
+    /**
+     * Delete a child module inside nested tabs section
+     */
+    private _deleteNestedTabsSectionChild;
     /**
      * Handles drop on a specific child module within a tabs section (for reordering)
      */

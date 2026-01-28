@@ -351,14 +351,18 @@ export class UltraIconModule extends BaseUltraModule {
         <div class="settings-section" style="margin-bottom: 32px;">
           <div class="section-title">SIZE CONTROLS</div>
           <div class="section-description" style="margin-bottom: 16px;">
-            Control the default text and icon sizes for this module. Design tab overrides these settings.
+            Control the default text and icon sizes for this module. Design tab overrides these
+            settings.
           </div>
-          
+
           <!-- Text Size Control -->
           <div class="field-container" style="margin-bottom: 16px;">
             <div class="field-title">Text Size (${iconModule.text_size || 16}px)</div>
             <div class="field-description">Default size for all text elements (name, state)</div>
-            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
+            <div
+              class="gap-control-container"
+              style="display: flex; align-items: center; gap: 12px;"
+            >
               <input
                 type="range"
                 class="gap-slider"
@@ -405,7 +409,11 @@ export class UltraIconModule extends BaseUltraModule {
                   updateModule({ text_size: undefined });
                   setTimeout(() => this.triggerPreviewUpdate(), 50);
                 }}
-                title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '16')}"
+                title="${localize(
+                  'editor.fields.reset_default_value',
+                  lang,
+                  'Reset to default ({value})'
+                ).replace('{value}', '16')}"
               >
                 <ha-icon icon="mdi:refresh"></ha-icon>
               </button>
@@ -416,7 +424,10 @@ export class UltraIconModule extends BaseUltraModule {
           <div class="field-container" style="margin-bottom: 16px;">
             <div class="field-title">Icon Size (${iconModule.icon_size || 24}px)</div>
             <div class="field-description">Default size for all icons</div>
-            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
+            <div
+              class="gap-control-container"
+              style="display: flex; align-items: center; gap: 12px;"
+            >
               <input
                 type="range"
                 class="gap-slider"
@@ -463,7 +474,11 @@ export class UltraIconModule extends BaseUltraModule {
                   updateModule({ icon_size: undefined });
                   setTimeout(() => this.triggerPreviewUpdate(), 50);
                 }}
-                title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '24')}"
+                title="${localize(
+                  'editor.fields.reset_default_value',
+                  lang,
+                  'Reset to default ({value})'
+                ).replace('{value}', '24')}"
               >
                 <ha-icon icon="mdi:refresh"></ha-icon>
               </button>
@@ -494,10 +509,16 @@ export class UltraIconModule extends BaseUltraModule {
                     style="
                       flex: 1;
                       padding: 12px 16px;
-                      border: 2px solid ${(icon.icon_mode || 'entity') === 'entity' ? 'var(--primary-color)' : 'var(--divider-color)'};
+                      border: 2px solid ${(icon.icon_mode || 'entity') === 'entity'
+                      ? 'var(--primary-color)'
+                      : 'var(--divider-color)'};
                       border-radius: 8px;
-                      background: ${(icon.icon_mode || 'entity') === 'entity' ? 'var(--primary-color)' : 'transparent'};
-                      color: ${(icon.icon_mode || 'entity') === 'entity' ? 'var(--text-primary-color, #fff)' : 'var(--primary-text-color)'};
+                      background: ${(icon.icon_mode || 'entity') === 'entity'
+                      ? 'var(--primary-color)'
+                      : 'transparent'};
+                      color: ${(icon.icon_mode || 'entity') === 'entity'
+                      ? 'var(--text-primary-color, #fff)'
+                      : 'var(--primary-text-color)'};
                       font-weight: 500;
                       cursor: pointer;
                       transition: all 0.2s ease;
@@ -518,10 +539,16 @@ export class UltraIconModule extends BaseUltraModule {
                     style="
                       flex: 1;
                       padding: 12px 16px;
-                      border: 2px solid ${icon.icon_mode === 'static' ? 'var(--primary-color)' : 'var(--divider-color)'};
+                      border: 2px solid ${icon.icon_mode === 'static'
+                      ? 'var(--primary-color)'
+                      : 'var(--divider-color)'};
                       border-radius: 8px;
-                      background: ${icon.icon_mode === 'static' ? 'var(--primary-color)' : 'transparent'};
-                      color: ${icon.icon_mode === 'static' ? 'var(--text-primary-color, #fff)' : 'var(--primary-text-color)'};
+                      background: ${icon.icon_mode === 'static'
+                      ? 'var(--primary-color)'
+                      : 'transparent'};
+                      color: ${icon.icon_mode === 'static'
+                      ? 'var(--text-primary-color, #fff)'
+                      : 'var(--primary-text-color)'};
                       font-weight: 500;
                       cursor: pointer;
                       transition: all 0.2s ease;
@@ -544,1219 +571,1251 @@ export class UltraIconModule extends BaseUltraModule {
               ${icon.icon_mode === 'static'
                 ? html`
                     <!-- Static Icon Configuration -->
-                    ${this._renderStaticIconSettings(icon, index, iconModule, hass, lang, updateModule)}
+                    ${this._renderStaticIconSettings(
+                      icon,
+                      index,
+                      iconModule,
+                      hass,
+                      lang,
+                      updateModule
+                    )}
                   `
                 : html`
-              <!-- Entity Configuration -->
-              ${this.renderSettingsSection(
-                localize('editor.icon.entity_config.title', lang, 'ENTITY CONFIGURATION'),
-                localize(
-                  'editor.icon.entity_config.desc',
-                  lang,
-                  'Configure the entity and active/inactive states'
-                ),
-                [
-                  {
-                    title: localize('editor.icon.entity', lang, 'Entity'),
-                    description: localize(
-                      'editor.icon.entity_desc',
-                      lang,
-                      'Select the entity this icon represents'
-                    ),
-                    hass,
-                    data: { entity: icon.entity || '' },
-                    schema: [this.entityField('entity')],
-                    onChange: (e: CustomEvent) => {
-                      this._handleEntitySelection(icon, index, iconModule, e.detail.value.entity, hass, updateModule);
-                    },
-                  },
-                  {
-                    title: localize('editor.icon.inactive_state', lang, 'Inactive State'),
-                    description: localize(
-                      'editor.icon.inactive_state_desc',
-                      lang,
-                      'State value considered "inactive" (leave blank to use actual entity state)'
-                    ),
-                    hass,
-                    data: { inactive_state: icon.inactive_state || '' },
-                    schema: [this.textField('inactive_state')],
-                    onChange: (e: CustomEvent) =>
-                      this._updateIcon(
-                        iconModule,
-                        index,
-                        { inactive_state: e.detail.value.inactive_state },
-                        updateModule
+                    <!-- Entity Configuration -->
+                    ${this.renderSettingsSection(
+                      localize('editor.icon.entity_config.title', lang, 'ENTITY CONFIGURATION'),
+                      localize(
+                        'editor.icon.entity_config.desc',
+                        lang,
+                        'Configure the entity and active/inactive states'
                       ),
-                  },
-                  {
-                    title: localize('editor.icon.active_state', lang, 'Active State'),
-                    description: localize(
-                      'editor.icon.active_state_desc',
-                      lang,
-                      'State value considered "active" (leave blank to use actual entity state)'
-                    ),
-                    hass,
-                    data: { active_state: icon.active_state || '' },
-                    schema: [this.textField('active_state')],
-                    onChange: (e: CustomEvent) =>
-                      this._updateIcon(
-                        iconModule,
-                        index,
-                        { active_state: e.detail.value.active_state },
-                        updateModule
-                      ),
-                  },
-                ]
-              )}
-
-              <!-- Attributes Section -->
-              <div class="settings-section" style="margin-bottom: 24px;">
-                <div class="section-title">
-                  ${localize('editor.icon.attributes_section.title', lang, 'ATTRIBUTES')}
-                </div>
-                <div
-                  class="section-description"
-                  style="margin-bottom: 16px; font-size: 13px; color: var(--secondary-text-color); opacity: 0.8;"
-                >
-                  ${localize(
-                    'editor.icon.attributes_section.desc',
-                    lang,
-                    'Select entity attributes to use instead of the main entity state for determining active/inactive conditions'
-                  )}
-                </div>
-
-                <!-- Inactive Attribute -->
-                <div class="field-container" style="margin-bottom: 16px;">
-                  <div class="field-title">
-                    ${localize('editor.icon.inactive_attribute', lang, 'Inactive Attribute')}
-                  </div>
-                  <div class="field-description">
-                    ${localize(
-                      'editor.icon.inactive_attribute_desc',
-                      lang,
-                      'Entity attribute to check for inactive state (e.g., "condition" for weather)'
-                    )}
-                  </div>
-                  ${this.renderUcForm(
-                    hass,
-                    { inactive_attribute: icon.inactive_attribute || '' },
-                    [
-                      this.selectField(
-                        'inactive_attribute',
-                        this._getEntityAttributes(icon.entity, hass)
-                      ),
-                    ],
-                    (e: CustomEvent) => {
-                      const next = e.detail.value.inactive_attribute;
-                      const prev = iconModule.icons[index].inactive_attribute || '';
-                      if (next === prev) return;
-                      this._updateIcon(
-                        iconModule,
-                        index,
-                        { inactive_attribute: next },
-                        updateModule
-                      );
-                      setTimeout(() => {
-                        this._triggerPreviewUpdate();
-                      }, 50);
-                    },
-                    false
-                  )}
-                </div>
-
-                <!-- Active Attribute -->
-                <div class="field-container">
-                  <div class="field-title">
-                    ${localize('editor.icon.active_attribute', lang, 'Active Attribute')}
-                  </div>
-                  <div class="field-description">
-                    ${localize(
-                      'editor.icon.active_attribute_desc',
-                      lang,
-                      'Entity attribute to check for active state (e.g., "condition" for weather)'
-                    )}
-                  </div>
-                  ${this.renderUcForm(
-                    hass,
-                    { active_attribute: icon.active_attribute || '' },
-                    [
-                      this.selectField(
-                        'active_attribute',
-                        this._getEntityAttributes(icon.entity, hass)
-                      ),
-                    ],
-                    (e: CustomEvent) => {
-                      const next = e.detail.value.active_attribute;
-                      const prev = iconModule.icons[index].active_attribute || '';
-                      if (next === prev) return;
-                      this._updateIcon(iconModule, index, { active_attribute: next }, updateModule);
-                      setTimeout(() => {
-                        this._triggerPreviewUpdate();
-                      }, 50);
-                    },
-                    false
-                  )}
-                </div>
-              </div>
-
-              <!-- Icon Section -->
-              <div class="settings-section" style="margin-bottom: 24px;">
-                <div class="section-title">
-                  <div style="display: flex; align-items: center; gap: 12px;">
-                    <span>${localize('editor.icon.icon_section.title', lang, 'Icon')}</span>
-                    <ha-switch
-                      .checked=${icon.show_icon_when_active !== false &&
-                      icon.show_icon_when_inactive !== false}
-                      @change=${(e: Event) => {
-                        const target = e.target as any;
-                        const enabled = target.checked;
-                        this._updateIcon(
-                          iconModule,
-                          index,
-                          {
-                            show_icon_when_active: enabled,
-                            show_icon_when_inactive: enabled,
+                      [
+                        {
+                          title: localize('editor.icon.entity', lang, 'Entity'),
+                          description: localize(
+                            'editor.icon.entity_desc',
+                            lang,
+                            'Select the entity this icon represents'
+                          ),
+                          hass,
+                          data: { entity: icon.entity || '' },
+                          schema: [this.entityField('entity')],
+                          onChange: (e: CustomEvent) => {
+                            this._handleEntitySelection(
+                              icon,
+                              index,
+                              iconModule,
+                              e.detail.value.entity,
+                              hass,
+                              updateModule
+                            );
                           },
-                          updateModule
-                        );
-                      }}
-                    ></ha-switch>
-                  </div>
-                </div>
+                        },
+                        {
+                          title: localize('editor.icon.inactive_state', lang, 'Inactive State'),
+                          description: localize(
+                            'editor.icon.inactive_state_desc',
+                            lang,
+                            'State value considered "inactive" (leave blank to use actual entity state)'
+                          ),
+                          hass,
+                          data: { inactive_state: icon.inactive_state || '' },
+                          schema: [this.textField('inactive_state')],
+                          onChange: (e: CustomEvent) =>
+                            this._updateIcon(
+                              iconModule,
+                              index,
+                              { inactive_state: e.detail.value.inactive_state },
+                              updateModule
+                            ),
+                        },
+                        {
+                          title: localize('editor.icon.active_state', lang, 'Active State'),
+                          description: localize(
+                            'editor.icon.active_state_desc',
+                            lang,
+                            'State value considered "active" (leave blank to use actual entity state)'
+                          ),
+                          hass,
+                          data: { active_state: icon.active_state || '' },
+                          schema: [this.textField('active_state')],
+                          onChange: (e: CustomEvent) =>
+                            this._updateIcon(
+                              iconModule,
+                              index,
+                              { active_state: e.detail.value.active_state },
+                              updateModule
+                            ),
+                        },
+                      ]
+                    )}
 
-                ${icon.show_icon_when_active !== false || icon.show_icon_when_inactive !== false
-                  ? html`
-                      <!-- Inactive Icon Section -->
-                      <div style="margin-top: 16px;">
-                        <details
-                          style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
-                          @toggle=${(e: Event) => {
-                            const details = e.target as HTMLDetailsElement;
-                            const icon = details.querySelector('ha-icon') as HTMLElement;
-                            if (icon) {
-                              icon.style.transform = details.open
-                                ? 'rotate(90deg)'
-                                : 'rotate(0deg)';
-                            }
-                          }}
-                        >
-                          <summary
-                            style="padding: 16px; font-size: 16px; font-weight: 600; color: var(--primary-color); cursor: pointer; background: var(--secondary-background-color); border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px;"
-                          >
-                            <ha-icon
-                              icon="mdi:chevron-right"
-                              style="transition: transform 0.2s;"
-                            ></ha-icon>
-                            ${localize('editor.icon.inactive_icon', lang, 'Inactive Icon')}
-                          </summary>
-                          <div style="padding: 16px;">
-                            ${this.renderSettingsSection(
-                              localize(
-                                'editor.icon.inactive_icon_config',
-                                lang,
-                                'Inactive Icon Configuration'
-                              ),
-                              localize(
-                                'editor.icon.inactive_icon_config_desc',
-                                lang,
-                                'Configure the inactive icon settings'
-                              ),
-                              [
+                    <!-- Attributes Section -->
+                    <div class="settings-section" style="margin-bottom: 24px;">
+                      <div class="section-title">
+                        ${localize('editor.icon.attributes_section.title', lang, 'ATTRIBUTES')}
+                      </div>
+                      <div
+                        class="section-description"
+                        style="margin-bottom: 16px; font-size: 13px; color: var(--secondary-text-color); opacity: 0.8;"
+                      >
+                        ${localize(
+                          'editor.icon.attributes_section.desc',
+                          lang,
+                          'Select entity attributes to use instead of the main entity state for determining active/inactive conditions'
+                        )}
+                      </div>
+
+                      <!-- Inactive Attribute -->
+                      <div class="field-container" style="margin-bottom: 16px;">
+                        <div class="field-title">
+                          ${localize('editor.icon.inactive_attribute', lang, 'Inactive Attribute')}
+                        </div>
+                        <div class="field-description">
+                          ${localize(
+                            'editor.icon.inactive_attribute_desc',
+                            lang,
+                            'Entity attribute to check for inactive state (e.g., "condition" for weather)'
+                          )}
+                        </div>
+                        ${this.renderUcForm(
+                          hass,
+                          { inactive_attribute: icon.inactive_attribute || '' },
+                          [
+                            this.selectField(
+                              'inactive_attribute',
+                              this._getEntityAttributes(icon.entity, hass)
+                            ),
+                          ],
+                          (e: CustomEvent) => {
+                            const next = e.detail.value.inactive_attribute;
+                            const prev = iconModule.icons[index].inactive_attribute || '';
+                            if (next === prev) return;
+                            this._updateIcon(
+                              iconModule,
+                              index,
+                              { inactive_attribute: next },
+                              updateModule
+                            );
+                            setTimeout(() => {
+                              this._triggerPreviewUpdate();
+                            }, 50);
+                          },
+                          false
+                        )}
+                      </div>
+
+                      <!-- Active Attribute -->
+                      <div class="field-container">
+                        <div class="field-title">
+                          ${localize('editor.icon.active_attribute', lang, 'Active Attribute')}
+                        </div>
+                        <div class="field-description">
+                          ${localize(
+                            'editor.icon.active_attribute_desc',
+                            lang,
+                            'Entity attribute to check for active state (e.g., "condition" for weather)'
+                          )}
+                        </div>
+                        ${this.renderUcForm(
+                          hass,
+                          { active_attribute: icon.active_attribute || '' },
+                          [
+                            this.selectField(
+                              'active_attribute',
+                              this._getEntityAttributes(icon.entity, hass)
+                            ),
+                          ],
+                          (e: CustomEvent) => {
+                            const next = e.detail.value.active_attribute;
+                            const prev = iconModule.icons[index].active_attribute || '';
+                            if (next === prev) return;
+                            this._updateIcon(
+                              iconModule,
+                              index,
+                              { active_attribute: next },
+                              updateModule
+                            );
+                            setTimeout(() => {
+                              this._triggerPreviewUpdate();
+                            }, 50);
+                          },
+                          false
+                        )}
+                      </div>
+                    </div>
+
+                    <!-- Icon Section -->
+                    <div class="settings-section" style="margin-bottom: 24px;">
+                      <div class="section-title">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                          <span>${localize('editor.icon.icon_section.title', lang, 'Icon')}</span>
+                          <ha-switch
+                            .checked=${icon.show_icon_when_active !== false &&
+                            icon.show_icon_when_inactive !== false}
+                            @change=${(e: Event) => {
+                              const target = e.target as any;
+                              const enabled = target.checked;
+                              this._updateIcon(
+                                iconModule,
+                                index,
                                 {
-                                  title: localize(
-                                    'editor.icon.inactive_icon',
-                                    lang,
-                                    'Inactive Icon'
-                                  ),
-                                  description: localize(
-                                    'editor.icon.inactive_icon_desc',
-                                    lang,
-                                    'Icon to show when inactive'
-                                  ),
-                                  hass,
-                                  data: { icon_inactive: icon.icon_inactive || '' },
-                                  schema: [this.iconField('icon_inactive')],
-                                  onChange: (e: CustomEvent) =>
-                                    this._updateIconWithLockSync(
-                                      iconModule,
-                                      index,
-                                      'icon_inactive',
-                                      e.detail.value.icon_inactive,
-                                      updateModule
-                                    ),
+                                  show_icon_when_active: enabled,
+                                  show_icon_when_inactive: enabled,
                                 },
-                              ]
-                            )}
+                                updateModule
+                              );
+                            }}
+                          ></ha-switch>
+                        </div>
+                      </div>
 
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.inactive_icon_color',
-                                  lang,
-                                  'Inactive Icon Color'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.icon_color_inactive',
-                                  lang,
-                                  'Color when inactive'
-                                )}
-                              </div>
-                              <ultra-color-picker
-                                .value=${icon.inactive_icon_color || 'var(--secondary-text-color)'}
-                                @value-changed=${(e: CustomEvent) =>
-                                  this._debouncedUpdateIconWithLockSync(
-                                    iconModule,
-                                    index,
-                                    'inactive_icon_color',
-                                    e.detail.value,
-                                    updateModule,
-                                    50
-                                  )}
-                              ></ultra-color-picker>
-                            </div>
-
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.use_state_color_inactive',
-                                  lang,
-                                  'Use State Color'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.use_state_color_inactive_desc',
-                                  lang,
-                                  'Use the entity state color (RGB attributes) for inactive icon color'
-                                )}
-                              </div>
-                              <ha-switch
-                                .checked=${icon.use_state_color_for_inactive_icon || false}
-                                @change=${(e: Event) => {
-                                  const target = e.target as any;
-                                  this._updateIcon(
-                                    iconModule,
-                                    index,
-                                    { use_state_color_for_inactive_icon: target.checked },
-                                    updateModule
-                                  );
+                      ${icon.show_icon_when_active !== false ||
+                      icon.show_icon_when_inactive !== false
+                        ? html`
+                            <!-- Inactive Icon Section -->
+                            <div style="margin-top: 16px;">
+                              <details
+                                style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
+                                @toggle=${(e: Event) => {
+                                  const details = e.target as HTMLDetailsElement;
+                                  const icon = details.querySelector('ha-icon') as HTMLElement;
+                                  if (icon) {
+                                    icon.style.transform = details.open
+                                      ? 'rotate(90deg)'
+                                      : 'rotate(0deg)';
+                                  }
                                 }}
-                              ></ha-switch>
-                            </div>
-
-                            ${this.renderSettingsSection(
-                              localize(
-                                'editor.icon.background_section.title',
-                                lang,
-                                'Inactive Background'
-                              ),
-                              localize(
-                                'editor.icon.background_section.desc',
-                                lang,
-                                'Configure the inactive background settings'
-                              ),
-                              [
-                                {
-                                  title: localize(
-                                    'editor.icon.inactive_icon_background',
-                                    lang,
-                                    'Inactive Background Shape'
-                                  ),
-                                  description: localize(
-                                    'editor.icon.background_shape_inactive',
-                                    lang,
-                                    'Background shape when inactive'
-                                  ),
-                                  hass,
-                                  data: {
-                                    inactive_icon_background:
-                                      icon.inactive_icon_background || 'none',
-                                  },
-                                  schema: [
-                                    this.selectField('inactive_icon_background', [
-                                      { value: 'none', label: 'None' },
-                                      { value: 'circle', label: 'Circle' },
-                                      { value: 'square', label: 'Square' },
-                                      { value: 'rounded-square', label: 'Rounded Square' },
-                                    ]),
-                                  ],
-                                  onChange: (e: CustomEvent) => {
-                                    const next = e.detail.value.inactive_icon_background;
-                                    const prev =
-                                      iconModule.icons[index].inactive_icon_background || 'none';
-                                    if (next === prev) return;
-                                    const updates: any = {
-                                      inactive_icon_background: next,
-                                    };
-                                    if (next && next !== 'none') {
-                                      updates.inactive_icon_background_color =
-                                        'var(--divider-color)';
-                                    }
-                                    this._updateIcon(iconModule, index, updates, updateModule);
-                                  },
-                                },
-                              ]
-                            )}
-
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.inactive_icon_background_color',
-                                  lang,
-                                  'Inactive Background Color'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.background_color_inactive',
-                                  lang,
-                                  'Background color when inactive'
-                                )}
-                              </div>
-                              <ultra-color-picker
-                                .value=${icon.inactive_icon_background_color || 'transparent'}
-                                @value-changed=${(e: CustomEvent) =>
-                                  this._debouncedUpdateIconWithLockSync(
-                                    iconModule,
-                                    index,
-                                    'inactive_icon_background_color',
-                                    e.detail.value,
-                                    updateModule,
-                                    50
+                              >
+                                <summary
+                                  style="padding: 16px; font-size: 16px; font-weight: 600; color: var(--primary-color); cursor: pointer; background: var(--secondary-background-color); border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px;"
+                                >
+                                  <ha-icon
+                                    icon="mdi:chevron-right"
+                                    style="transition: transform 0.2s;"
+                                  ></ha-icon>
+                                  ${localize('editor.icon.inactive_icon', lang, 'Inactive Icon')}
+                                </summary>
+                                <div style="padding: 16px;">
+                                  ${this.renderSettingsSection(
+                                    localize(
+                                      'editor.icon.inactive_icon_config',
+                                      lang,
+                                      'Inactive Icon Configuration'
+                                    ),
+                                    localize(
+                                      'editor.icon.inactive_icon_config_desc',
+                                      lang,
+                                      'Configure the inactive icon settings'
+                                    ),
+                                    [
+                                      {
+                                        title: localize(
+                                          'editor.icon.inactive_icon',
+                                          lang,
+                                          'Inactive Icon'
+                                        ),
+                                        description: localize(
+                                          'editor.icon.inactive_icon_desc',
+                                          lang,
+                                          'Icon to show when inactive'
+                                        ),
+                                        hass,
+                                        data: { icon_inactive: icon.icon_inactive || '' },
+                                        schema: [this.iconField('icon_inactive')],
+                                        onChange: (e: CustomEvent) =>
+                                          this._updateIconWithLockSync(
+                                            iconModule,
+                                            index,
+                                            'icon_inactive',
+                                            e.detail.value.icon_inactive,
+                                            updateModule
+                                          ),
+                                      },
+                                    ]
                                   )}
-                              ></ultra-color-picker>
-                            </div>
 
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.inactive_icon_background_padding',
-                                  lang,
-                                  'Inactive Background Padding'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.background_padding_inactive',
-                                  lang,
-                                  'Padding between icon and background when inactive'
-                                )}
-                              </div>
-                              ${this._renderSizeControl(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'inactive_icon_background_padding',
-                                icon.inactive_icon_background_padding ?? 8,
-                                0,
-                                50,
-                                8
-                              )}
-                            </div>
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.inactive_icon_color',
+                                        lang,
+                                        'Inactive Icon Color'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.icon_color_inactive',
+                                        lang,
+                                        'Color when inactive'
+                                      )}
+                                    </div>
+                                    <ultra-color-picker
+                                      .value=${icon.inactive_icon_color ||
+                                      'var(--secondary-text-color)'}
+                                      @value-changed=${(e: CustomEvent) =>
+                                        this._debouncedUpdateIconWithLockSync(
+                                          iconModule,
+                                          index,
+                                          'inactive_icon_color',
+                                          e.detail.value,
+                                          updateModule,
+                                          50
+                                        )}
+                                    ></ultra-color-picker>
+                                  </div>
 
-                            <div class="field-container">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.inactive_icon_size',
-                                  lang,
-                                  'Inactive Icon Size'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.icon_size_inactive',
-                                  lang,
-                                  'Icon size when inactive'
-                                )}
-                              </div>
-                              ${this._renderSizeControl(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'inactive_icon_size',
-                                icon.inactive_icon_size || 26,
-                                0,
-                                200,
-                                26
-                              )}
-                            </div>
-                          </div>
-                        </details>
-                      </div>
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.use_state_color_inactive',
+                                        lang,
+                                        'Use State Color'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.use_state_color_inactive_desc',
+                                        lang,
+                                        'Use the entity state color (RGB attributes) for inactive icon color'
+                                      )}
+                                    </div>
+                                    <ha-switch
+                                      .checked=${icon.use_state_color_for_inactive_icon || false}
+                                      @change=${(e: Event) => {
+                                        const target = e.target as any;
+                                        this._updateIcon(
+                                          iconModule,
+                                          index,
+                                          { use_state_color_for_inactive_icon: target.checked },
+                                          updateModule
+                                        );
+                                      }}
+                                    ></ha-switch>
+                                  </div>
 
-                      <!-- Active Icon Section -->
-                      <div style="margin-top: 16px;">
-                        <details
-                          style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
-                          @toggle=${(e: Event) => {
-                            const details = e.target as HTMLDetailsElement;
-                            const icon = details.querySelector('ha-icon') as HTMLElement;
-                            if (icon) {
-                              icon.style.transform = details.open
-                                ? 'rotate(90deg)'
-                                : 'rotate(0deg)';
-                            }
-                          }}
-                        >
-                          <summary
-                            style="padding: 16px; font-size: 16px; font-weight: 600; color: var(--primary-color); cursor: pointer; background: var(--secondary-background-color); border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px;"
-                          >
-                            <ha-icon
-                              icon="mdi:chevron-right"
-                              style="transition: transform 0.2s;"
-                            ></ha-icon>
-                            ${localize('editor.icon.active_icon', lang, 'Active Icon')}
-                          </summary>
-                          <div style="padding: 16px;">
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize('editor.icon.active_icon', lang, 'Active Icon')}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.active_icon_desc',
-                                  lang,
-                                  'Icon to show when active'
-                                )}
-                              </div>
-                              ${this._renderFieldWithLock(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'active_icon_locked',
-                                'icon_active',
-                                'icon_inactive',
-                                icon.icon_active || icon.icon_inactive || '',
-                                'icon',
-                                hass
-                              )}
-                            </div>
+                                  ${this.renderSettingsSection(
+                                    localize(
+                                      'editor.icon.background_section.title',
+                                      lang,
+                                      'Inactive Background'
+                                    ),
+                                    localize(
+                                      'editor.icon.background_section.desc',
+                                      lang,
+                                      'Configure the inactive background settings'
+                                    ),
+                                    [
+                                      {
+                                        title: localize(
+                                          'editor.icon.inactive_icon_background',
+                                          lang,
+                                          'Inactive Background Shape'
+                                        ),
+                                        description: localize(
+                                          'editor.icon.background_shape_inactive',
+                                          lang,
+                                          'Background shape when inactive'
+                                        ),
+                                        hass,
+                                        data: {
+                                          inactive_icon_background:
+                                            icon.inactive_icon_background || 'none',
+                                        },
+                                        schema: [
+                                          this.selectField('inactive_icon_background', [
+                                            { value: 'none', label: 'None' },
+                                            { value: 'circle', label: 'Circle' },
+                                            { value: 'square', label: 'Square' },
+                                            { value: 'rounded-square', label: 'Rounded Square' },
+                                          ]),
+                                        ],
+                                        onChange: (e: CustomEvent) => {
+                                          const next = e.detail.value.inactive_icon_background;
+                                          const prev =
+                                            iconModule.icons[index].inactive_icon_background ||
+                                            'none';
+                                          if (next === prev) return;
+                                          const updates: any = {
+                                            inactive_icon_background: next,
+                                          };
+                                          if (next && next !== 'none') {
+                                            updates.inactive_icon_background_color =
+                                              'var(--divider-color)';
+                                          }
+                                          this._updateIcon(
+                                            iconModule,
+                                            index,
+                                            updates,
+                                            updateModule
+                                          );
+                                        },
+                                      },
+                                    ]
+                                  )}
 
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.active_icon_color',
-                                  lang,
-                                  'Active Icon Color'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.icon_color_active',
-                                  lang,
-                                  'Color when active'
-                                )}
-                              </div>
-                              ${this._renderFieldWithLock(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'active_icon_color_locked',
-                                'active_icon_color',
-                                'inactive_icon_color',
-                                icon.active_icon_color || 'var(--primary-color)',
-                                'color',
-                                hass
-                              )}
-                            </div>
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.inactive_icon_background_color',
+                                        lang,
+                                        'Inactive Background Color'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.background_color_inactive',
+                                        lang,
+                                        'Background color when inactive'
+                                      )}
+                                    </div>
+                                    <ultra-color-picker
+                                      .value=${icon.inactive_icon_background_color || 'transparent'}
+                                      @value-changed=${(e: CustomEvent) =>
+                                        this._debouncedUpdateIconWithLockSync(
+                                          iconModule,
+                                          index,
+                                          'inactive_icon_background_color',
+                                          e.detail.value,
+                                          updateModule,
+                                          50
+                                        )}
+                                    ></ultra-color-picker>
+                                  </div>
 
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.use_state_color_active',
-                                  lang,
-                                  'Use State Color'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.use_state_color_active_desc',
-                                  lang,
-                                  'Use the entity state color (RGB attributes) for active icon color'
-                                )}
-                              </div>
-                              ${this._renderFieldWithLock(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'active_state_color_locked',
-                                'use_state_color_for_active_icon',
-                                'use_state_color_for_inactive_icon',
-                                icon.use_state_color_for_active_icon || false,
-                                'toggle',
-                                hass
-                              )}
-                            </div>
-
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.active_icon_background',
-                                  lang,
-                                  'Active Background Shape'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.background_shape_active',
-                                  lang,
-                                  'Background shape when active'
-                                )}
-                              </div>
-                              ${this._renderFieldWithLock(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'active_icon_background_locked',
-                                'active_icon_background',
-                                'inactive_icon_background',
-                                icon.active_icon_background || 'none',
-                                'select',
-                                hass,
-                                [
-                                  { value: 'none', label: 'None' },
-                                  { value: 'circle', label: 'Circle' },
-                                  { value: 'square', label: 'Square' },
-                                  { value: 'rounded-square', label: 'Rounded Square' },
-                                ]
-                              )}
-                            </div>
-
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.active_icon_background_color',
-                                  lang,
-                                  'Active Background Color'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.background_color_active',
-                                  lang,
-                                  'Background color when active'
-                                )}
-                              </div>
-                              ${this._renderFieldWithLock(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'active_icon_background_color_locked',
-                                'active_icon_background_color',
-                                'inactive_icon_background_color',
-                                icon.active_icon_background_color || 'transparent',
-                                'color',
-                                hass
-                              )}
-                            </div>
-
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.active_icon_background_padding',
-                                  lang,
-                                  'Active Background Padding'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.background_padding_active',
-                                  lang,
-                                  'Padding between icon and background when active'
-                                )}
-                              </div>
-                              ${this._renderSizeControlWithLock(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'active_icon_background_padding_locked',
-                                'active_icon_background_padding',
-                                'inactive_icon_background_padding',
-                                icon.active_icon_background_padding ?? 8,
-                                0,
-                                50,
-                                8
-                              )}
-                            </div>
-
-                            <div class="field-container">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.active_icon_size',
-                                  lang,
-                                  'Active Icon Size'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.icon_size_active',
-                                  lang,
-                                  'Icon size when active'
-                                )}
-                              </div>
-                              ${this._renderSizeControlWithLock(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'icon_size',
-                                'active_icon_size',
-                                'inactive_icon_size',
-                                icon.active_icon_size || 26,
-                                0,
-                                200,
-                                26
-                              )}
-                            </div>
-                          </div>
-                        </details>
-                      </div>
-                    `
-                  : ''}
-              </div>
-
-              <!-- Name Section -->
-              <div class="settings-section" style="margin-bottom: 24px;">
-                <div class="section-title">
-                  <div style="display: flex; align-items: center; gap: 12px;">
-                    <span>${localize('editor.icon.name_section.title', lang, 'Name')}</span>
-                    <ha-switch
-                      .checked=${icon.show_name_when_active !== false &&
-                      icon.show_name_when_inactive !== false}
-                      @change=${(e: Event) => {
-                        const target = e.target as any;
-                        const enabled = target.checked;
-                        this._updateIcon(
-                          iconModule,
-                          index,
-                          {
-                            show_name_when_active: enabled,
-                            show_name_when_inactive: enabled,
-                          },
-                          updateModule
-                        );
-                      }}
-                    ></ha-switch>
-                  </div>
-                </div>
-
-                ${icon.show_name_when_active !== false || icon.show_name_when_inactive !== false
-                  ? html`
-                      <!-- Inactive Name Section -->
-                      <div style="margin-top: 16px;">
-                        <details
-                          style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
-                          @toggle=${(e: Event) => {
-                            const details = e.target as HTMLDetailsElement;
-                            const icon = details.querySelector('ha-icon') as HTMLElement;
-                            if (icon) {
-                              icon.style.transform = details.open
-                                ? 'rotate(90deg)'
-                                : 'rotate(0deg)';
-                            }
-                          }}
-                        >
-                          <summary
-                            style="padding: 16px; font-size: 16px; font-weight: 600; color: var(--primary-color); cursor: pointer; background: var(--secondary-background-color); border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px;"
-                          >
-                            <ha-icon
-                              icon="mdi:chevron-right"
-                              style="transition: transform 0.2s;"
-                            ></ha-icon>
-                            ${localize('editor.icon.inactive_name', lang, 'Inactive Name')}
-                          </summary>
-                          <div style="padding: 16px;">
-                            ${this.renderSettingsSection(
-                              localize(
-                                'editor.icon.inactive_name_config',
-                                lang,
-                                'Inactive Name Configuration'
-                              ),
-                              localize(
-                                'editor.icon.inactive_name_config_desc',
-                                lang,
-                                'Configure the inactive name settings'
-                              ),
-                              [
-                                {
-                                  title: localize(
-                                    'editor.icon.custom_inactive_name',
-                                    lang,
-                                    'Custom Inactive Name'
-                                  ),
-                                  description: localize(
-                                    'editor.icon.custom_inactive_name_desc',
-                                    lang,
-                                    'Override entity name when inactive (leave empty to use entity name)'
-                                  ),
-                                  hass,
-                                  data: {
-                                    custom_inactive_name_text: icon.custom_inactive_name_text || '',
-                                  },
-                                  schema: [this.textField('custom_inactive_name_text')],
-                                  onChange: (e: CustomEvent) =>
-                                    this._updateIcon(
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.inactive_icon_background_padding',
+                                        lang,
+                                        'Inactive Background Padding'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.background_padding_inactive',
+                                        lang,
+                                        'Padding between icon and background when inactive'
+                                      )}
+                                    </div>
+                                    ${this._renderSizeControl(
                                       iconModule,
                                       index,
-                                      {
-                                        custom_inactive_name_text:
-                                          e.detail.value.custom_inactive_name_text,
-                                      },
-                                      updateModule
-                                    ),
-                                },
-                              ]
-                            )}
+                                      updateModule,
+                                      'inactive_icon_background_padding',
+                                      icon.inactive_icon_background_padding ?? 8,
+                                      0,
+                                      50,
+                                      8
+                                    )}
+                                  </div>
 
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.inactive_name_color',
-                                  lang,
-                                  'Inactive Name Color'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.name_color_inactive',
-                                  lang,
-                                  'Name color when inactive'
-                                )}
-                              </div>
-                              <ultra-color-picker
-                                .value=${icon.inactive_name_color || 'var(--primary-text-color)'}
-                                @value-changed=${(e: CustomEvent) =>
-                                  this._debouncedUpdateIconWithLockSync(
-                                    iconModule,
-                                    index,
-                                    'inactive_name_color',
-                                    e.detail.value,
-                                    updateModule,
-                                    50
-                                  )}
-                              ></ultra-color-picker>
-                            </div>
-
-                            <div class="field-container">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.inactive_name_size',
-                                  lang,
-                                  'Inactive Name Size'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.name_size_inactive',
-                                  lang,
-                                  'Name text size when inactive'
-                                )}
-                              </div>
-                              ${this._renderSizeControl(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'inactive_text_size',
-                                icon.inactive_text_size || 14,
-                                0,
-                                50,
-                                14
-                              )}
-                            </div>
-                          </div>
-                        </details>
-                      </div>
-
-                      <!-- Active Name Section -->
-                      <div style="margin-top: 16px;">
-                        <details
-                          style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
-                          @toggle=${(e: Event) => {
-                            const details = e.target as HTMLDetailsElement;
-                            const icon = details.querySelector('ha-icon') as HTMLElement;
-                            if (icon) {
-                              icon.style.transform = details.open
-                                ? 'rotate(90deg)'
-                                : 'rotate(0deg)';
-                            }
-                          }}
-                        >
-                          <summary
-                            style="padding: 16px; font-size: 16px; font-weight: 600; color: var(--primary-color); cursor: pointer; background: var(--secondary-background-color); border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px;"
-                          >
-                            <ha-icon
-                              icon="mdi:chevron-right"
-                              style="transition: transform 0.2s;"
-                            ></ha-icon>
-                            ${localize('editor.icon.active_name', lang, 'Active Name')}
-                          </summary>
-                          <div style="padding: 16px;">
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.custom_active_name',
-                                  lang,
-                                  'Custom Active Name'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.custom_active_name_desc',
-                                  lang,
-                                  'Override entity name when active (leave empty to use entity name)'
-                                )}
-                              </div>
-                              ${this._renderFieldWithLock(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'active_name_locked',
-                                'custom_active_name_text',
-                                'custom_inactive_name_text',
-                                icon.custom_active_name_text || '',
-                                'text',
-                                hass
-                              )}
-                            </div>
-
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.active_name_color',
-                                  lang,
-                                  'Active Name Color'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.name_color_active',
-                                  lang,
-                                  'Name color when active'
-                                )}
-                              </div>
-                              ${this._renderFieldWithLock(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'active_name_color_locked',
-                                'active_name_color',
-                                'inactive_name_color',
-                                icon.active_name_color || 'var(--primary-text-color)',
-                                'color',
-                                hass
-                              )}
-                            </div>
-
-                            <div class="field-container">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.active_name_size',
-                                  lang,
-                                  'Active Name Size'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.name_size_active',
-                                  lang,
-                                  'Name text size when active'
-                                )}
-                              </div>
-                              ${this._renderSizeControlWithLock(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'text_size',
-                                'active_text_size',
-                                'inactive_text_size',
-                                icon.active_text_size || icon.inactive_text_size || 14,
-                                0,
-                                50,
-                                12
-                              )}
-                            </div>
-                          </div>
-                        </details>
-                      </div>
-                    `
-                  : ''}
-              </div>
-
-              <!-- State Section -->
-              <div class="settings-section" style="margin-bottom: 24px;">
-                <div class="section-title">
-                  <div style="display: flex; align-items: center; gap: 12px;">
-                    <span>${localize('editor.icon.state_section.title', lang, 'State')}</span>
-                    <ha-switch
-                      .checked=${icon.show_state_when_active !== false &&
-                      icon.show_state_when_inactive !== false}
-                      @change=${(e: Event) => {
-                        const target = e.target as any;
-                        const enabled = target.checked;
-                        this._updateIcon(
-                          iconModule,
-                          index,
-                          {
-                            show_state_when_active: enabled,
-                            show_state_when_inactive: enabled,
-                          },
-                          updateModule
-                        );
-                      }}
-                    ></ha-switch>
-                  </div>
-                </div>
-
-                ${icon.show_state_when_active !== false || icon.show_state_when_inactive !== false
-                  ? html`
-                      <!-- Inactive State Section -->
-                      <div style="margin-top: 16px;">
-                        <details
-                          style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
-                          @toggle=${(e: Event) => {
-                            const details = e.target as HTMLDetailsElement;
-                            const icon = details.querySelector('ha-icon') as HTMLElement;
-                            if (icon) {
-                              icon.style.transform = details.open
-                                ? 'rotate(90deg)'
-                                : 'rotate(0deg)';
-                            }
-                          }}
-                        >
-                          <summary
-                            style="padding: 16px; font-size: 16px; font-weight: 600; color: var(--primary-color); cursor: pointer; background: var(--secondary-background-color); border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px;"
-                          >
-                            <ha-icon
-                              icon="mdi:chevron-right"
-                              style="transition: transform 0.2s;"
-                            ></ha-icon>
-                            ${localize('editor.icon.inactive_state', lang, 'Inactive State')}
-                          </summary>
-                          <div style="padding: 16px;">
-                            ${this.renderSettingsSection(
-                              localize(
-                                'editor.icon.inactive_state_config',
-                                lang,
-                                'Inactive State Configuration'
-                              ),
-                              localize(
-                                'editor.icon.inactive_state_config_desc',
-                                lang,
-                                'Configure the inactive state settings'
-                              ),
-                              [
-                                {
-                                  title: localize(
-                                    'editor.icon.custom_inactive_state',
-                                    lang,
-                                    'Custom Inactive State'
-                                  ),
-                                  description: localize(
-                                    'editor.icon.custom_inactive_state_desc',
-                                    lang,
-                                    'Custom text when inactive (leave empty to use actual state)'
-                                  ),
-                                  hass,
-                                  data: {
-                                    custom_inactive_state_text:
-                                      icon.custom_inactive_state_text || '',
-                                  },
-                                  schema: [this.textField('custom_inactive_state_text')],
-                                  onChange: (e: CustomEvent) =>
-                                    this._updateIcon(
+                                  <div class="field-container">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.inactive_icon_size',
+                                        lang,
+                                        'Inactive Icon Size'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.icon_size_inactive',
+                                        lang,
+                                        'Icon size when inactive'
+                                      )}
+                                    </div>
+                                    ${this._renderSizeControl(
                                       iconModule,
                                       index,
-                                      {
-                                        custom_inactive_state_text:
-                                          e.detail.value.custom_inactive_state_text,
-                                      },
-                                      updateModule
-                                    ),
+                                      updateModule,
+                                      'inactive_icon_size',
+                                      icon.inactive_icon_size || 26,
+                                      0,
+                                      200,
+                                      26
+                                    )}
+                                  </div>
+                                </div>
+                              </details>
+                            </div>
+
+                            <!-- Active Icon Section -->
+                            <div style="margin-top: 16px;">
+                              <details
+                                style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
+                                @toggle=${(e: Event) => {
+                                  const details = e.target as HTMLDetailsElement;
+                                  const icon = details.querySelector('ha-icon') as HTMLElement;
+                                  if (icon) {
+                                    icon.style.transform = details.open
+                                      ? 'rotate(90deg)'
+                                      : 'rotate(0deg)';
+                                  }
+                                }}
+                              >
+                                <summary
+                                  style="padding: 16px; font-size: 16px; font-weight: 600; color: var(--primary-color); cursor: pointer; background: var(--secondary-background-color); border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px;"
+                                >
+                                  <ha-icon
+                                    icon="mdi:chevron-right"
+                                    style="transition: transform 0.2s;"
+                                  ></ha-icon>
+                                  ${localize('editor.icon.active_icon', lang, 'Active Icon')}
+                                </summary>
+                                <div style="padding: 16px;">
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize('editor.icon.active_icon', lang, 'Active Icon')}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.active_icon_desc',
+                                        lang,
+                                        'Icon to show when active'
+                                      )}
+                                    </div>
+                                    ${this._renderFieldWithLock(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'active_icon_locked',
+                                      'icon_active',
+                                      'icon_inactive',
+                                      icon.icon_active || icon.icon_inactive || '',
+                                      'icon',
+                                      hass
+                                    )}
+                                  </div>
+
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.active_icon_color',
+                                        lang,
+                                        'Active Icon Color'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.icon_color_active',
+                                        lang,
+                                        'Color when active'
+                                      )}
+                                    </div>
+                                    ${this._renderFieldWithLock(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'active_icon_color_locked',
+                                      'active_icon_color',
+                                      'inactive_icon_color',
+                                      icon.active_icon_color || 'var(--primary-color)',
+                                      'color',
+                                      hass
+                                    )}
+                                  </div>
+
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.use_state_color_active',
+                                        lang,
+                                        'Use State Color'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.use_state_color_active_desc',
+                                        lang,
+                                        'Use the entity state color (RGB attributes) for active icon color'
+                                      )}
+                                    </div>
+                                    ${this._renderFieldWithLock(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'active_state_color_locked',
+                                      'use_state_color_for_active_icon',
+                                      'use_state_color_for_inactive_icon',
+                                      icon.use_state_color_for_active_icon || false,
+                                      'toggle',
+                                      hass
+                                    )}
+                                  </div>
+
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.active_icon_background',
+                                        lang,
+                                        'Active Background Shape'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.background_shape_active',
+                                        lang,
+                                        'Background shape when active'
+                                      )}
+                                    </div>
+                                    ${this._renderFieldWithLock(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'active_icon_background_locked',
+                                      'active_icon_background',
+                                      'inactive_icon_background',
+                                      icon.active_icon_background || 'none',
+                                      'select',
+                                      hass,
+                                      [
+                                        { value: 'none', label: 'None' },
+                                        { value: 'circle', label: 'Circle' },
+                                        { value: 'square', label: 'Square' },
+                                        { value: 'rounded-square', label: 'Rounded Square' },
+                                      ]
+                                    )}
+                                  </div>
+
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.active_icon_background_color',
+                                        lang,
+                                        'Active Background Color'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.background_color_active',
+                                        lang,
+                                        'Background color when active'
+                                      )}
+                                    </div>
+                                    ${this._renderFieldWithLock(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'active_icon_background_color_locked',
+                                      'active_icon_background_color',
+                                      'inactive_icon_background_color',
+                                      icon.active_icon_background_color || 'transparent',
+                                      'color',
+                                      hass
+                                    )}
+                                  </div>
+
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.active_icon_background_padding',
+                                        lang,
+                                        'Active Background Padding'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.background_padding_active',
+                                        lang,
+                                        'Padding between icon and background when active'
+                                      )}
+                                    </div>
+                                    ${this._renderSizeControlWithLock(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'active_icon_background_padding_locked',
+                                      'active_icon_background_padding',
+                                      'inactive_icon_background_padding',
+                                      icon.active_icon_background_padding ?? 8,
+                                      0,
+                                      50,
+                                      8
+                                    )}
+                                  </div>
+
+                                  <div class="field-container">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.active_icon_size',
+                                        lang,
+                                        'Active Icon Size'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.icon_size_active',
+                                        lang,
+                                        'Icon size when active'
+                                      )}
+                                    </div>
+                                    ${this._renderSizeControlWithLock(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'icon_size',
+                                      'active_icon_size',
+                                      'inactive_icon_size',
+                                      icon.active_icon_size || 26,
+                                      0,
+                                      200,
+                                      26
+                                    )}
+                                  </div>
+                                </div>
+                              </details>
+                            </div>
+                          `
+                        : ''}
+                    </div>
+
+                    <!-- Name Section -->
+                    <div class="settings-section" style="margin-bottom: 24px;">
+                      <div class="section-title">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                          <span>${localize('editor.icon.name_section.title', lang, 'Name')}</span>
+                          <ha-switch
+                            .checked=${icon.show_name_when_active !== false &&
+                            icon.show_name_when_inactive !== false}
+                            @change=${(e: Event) => {
+                              const target = e.target as any;
+                              const enabled = target.checked;
+                              this._updateIcon(
+                                iconModule,
+                                index,
+                                {
+                                  show_name_when_active: enabled,
+                                  show_name_when_inactive: enabled,
                                 },
-                              ]
-                            )}
+                                updateModule
+                              );
+                            }}
+                          ></ha-switch>
+                        </div>
+                      </div>
 
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.inactive_state_color',
-                                  lang,
-                                  'Inactive State Color'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.state_color_inactive',
-                                  lang,
-                                  'State color when inactive'
-                                )}
-                              </div>
-                              <ultra-color-picker
-                                .value=${icon.inactive_state_color || 'var(--secondary-text-color)'}
-                                @value-changed=${(e: CustomEvent) =>
-                                  this._debouncedUpdateIconWithLockSync(
-                                    iconModule,
-                                    index,
-                                    'inactive_state_color',
-                                    e.detail.value,
-                                    updateModule,
-                                    50
+                      ${icon.show_name_when_active !== false ||
+                      icon.show_name_when_inactive !== false
+                        ? html`
+                            <!-- Inactive Name Section -->
+                            <div style="margin-top: 16px;">
+                              <details
+                                style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
+                                @toggle=${(e: Event) => {
+                                  const details = e.target as HTMLDetailsElement;
+                                  const icon = details.querySelector('ha-icon') as HTMLElement;
+                                  if (icon) {
+                                    icon.style.transform = details.open
+                                      ? 'rotate(90deg)'
+                                      : 'rotate(0deg)';
+                                  }
+                                }}
+                              >
+                                <summary
+                                  style="padding: 16px; font-size: 16px; font-weight: 600; color: var(--primary-color); cursor: pointer; background: var(--secondary-background-color); border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px;"
+                                >
+                                  <ha-icon
+                                    icon="mdi:chevron-right"
+                                    style="transition: transform 0.2s;"
+                                  ></ha-icon>
+                                  ${localize('editor.icon.inactive_name', lang, 'Inactive Name')}
+                                </summary>
+                                <div style="padding: 16px;">
+                                  ${this.renderSettingsSection(
+                                    localize(
+                                      'editor.icon.inactive_name_config',
+                                      lang,
+                                      'Inactive Name Configuration'
+                                    ),
+                                    localize(
+                                      'editor.icon.inactive_name_config_desc',
+                                      lang,
+                                      'Configure the inactive name settings'
+                                    ),
+                                    [
+                                      {
+                                        title: localize(
+                                          'editor.icon.custom_inactive_name',
+                                          lang,
+                                          'Custom Inactive Name'
+                                        ),
+                                        description: localize(
+                                          'editor.icon.custom_inactive_name_desc',
+                                          lang,
+                                          'Override entity name when inactive (leave empty to use entity name)'
+                                        ),
+                                        hass,
+                                        data: {
+                                          custom_inactive_name_text:
+                                            icon.custom_inactive_name_text || '',
+                                        },
+                                        schema: [this.textField('custom_inactive_name_text')],
+                                        onChange: (e: CustomEvent) =>
+                                          this._updateIcon(
+                                            iconModule,
+                                            index,
+                                            {
+                                              custom_inactive_name_text:
+                                                e.detail.value.custom_inactive_name_text,
+                                            },
+                                            updateModule
+                                          ),
+                                      },
+                                    ]
                                   )}
-                              ></ultra-color-picker>
+
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.inactive_name_color',
+                                        lang,
+                                        'Inactive Name Color'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.name_color_inactive',
+                                        lang,
+                                        'Name color when inactive'
+                                      )}
+                                    </div>
+                                    <ultra-color-picker
+                                      .value=${icon.inactive_name_color ||
+                                      'var(--primary-text-color)'}
+                                      @value-changed=${(e: CustomEvent) =>
+                                        this._debouncedUpdateIconWithLockSync(
+                                          iconModule,
+                                          index,
+                                          'inactive_name_color',
+                                          e.detail.value,
+                                          updateModule,
+                                          50
+                                        )}
+                                    ></ultra-color-picker>
+                                  </div>
+
+                                  <div class="field-container">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.inactive_name_size',
+                                        lang,
+                                        'Inactive Name Size'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.name_size_inactive',
+                                        lang,
+                                        'Name text size when inactive'
+                                      )}
+                                    </div>
+                                    ${this._renderSizeControl(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'inactive_text_size',
+                                      icon.inactive_text_size || 14,
+                                      0,
+                                      50,
+                                      14
+                                    )}
+                                  </div>
+                                </div>
+                              </details>
                             </div>
 
-                            <div class="field-container">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.inactive_state_size',
-                                  lang,
-                                  'Inactive State Size'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.state_size_inactive',
-                                  lang,
-                                  'State text size when inactive'
-                                )}
-                              </div>
-                              ${this._renderSizeControl(
+                            <!-- Active Name Section -->
+                            <div style="margin-top: 16px;">
+                              <details
+                                style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
+                                @toggle=${(e: Event) => {
+                                  const details = e.target as HTMLDetailsElement;
+                                  const icon = details.querySelector('ha-icon') as HTMLElement;
+                                  if (icon) {
+                                    icon.style.transform = details.open
+                                      ? 'rotate(90deg)'
+                                      : 'rotate(0deg)';
+                                  }
+                                }}
+                              >
+                                <summary
+                                  style="padding: 16px; font-size: 16px; font-weight: 600; color: var(--primary-color); cursor: pointer; background: var(--secondary-background-color); border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px;"
+                                >
+                                  <ha-icon
+                                    icon="mdi:chevron-right"
+                                    style="transition: transform 0.2s;"
+                                  ></ha-icon>
+                                  ${localize('editor.icon.active_name', lang, 'Active Name')}
+                                </summary>
+                                <div style="padding: 16px;">
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.custom_active_name',
+                                        lang,
+                                        'Custom Active Name'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.custom_active_name_desc',
+                                        lang,
+                                        'Override entity name when active (leave empty to use entity name)'
+                                      )}
+                                    </div>
+                                    ${this._renderFieldWithLock(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'active_name_locked',
+                                      'custom_active_name_text',
+                                      'custom_inactive_name_text',
+                                      icon.custom_active_name_text || '',
+                                      'text',
+                                      hass
+                                    )}
+                                  </div>
+
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.active_name_color',
+                                        lang,
+                                        'Active Name Color'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.name_color_active',
+                                        lang,
+                                        'Name color when active'
+                                      )}
+                                    </div>
+                                    ${this._renderFieldWithLock(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'active_name_color_locked',
+                                      'active_name_color',
+                                      'inactive_name_color',
+                                      icon.active_name_color || 'var(--primary-text-color)',
+                                      'color',
+                                      hass
+                                    )}
+                                  </div>
+
+                                  <div class="field-container">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.active_name_size',
+                                        lang,
+                                        'Active Name Size'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.name_size_active',
+                                        lang,
+                                        'Name text size when active'
+                                      )}
+                                    </div>
+                                    ${this._renderSizeControlWithLock(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'text_size',
+                                      'active_text_size',
+                                      'inactive_text_size',
+                                      icon.active_text_size || icon.inactive_text_size || 14,
+                                      0,
+                                      50,
+                                      12
+                                    )}
+                                  </div>
+                                </div>
+                              </details>
+                            </div>
+                          `
+                        : ''}
+                    </div>
+
+                    <!-- State Section -->
+                    <div class="settings-section" style="margin-bottom: 24px;">
+                      <div class="section-title">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                          <span>${localize('editor.icon.state_section.title', lang, 'State')}</span>
+                          <ha-switch
+                            .checked=${icon.show_state_when_active !== false &&
+                            icon.show_state_when_inactive !== false}
+                            @change=${(e: Event) => {
+                              const target = e.target as any;
+                              const enabled = target.checked;
+                              this._updateIcon(
                                 iconModule,
                                 index,
-                                updateModule,
-                                'inactive_state_size',
-                                icon.inactive_state_size || 10,
-                                0,
-                                50,
-                                10
-                              )}
-                            </div>
-                          </div>
-                        </details>
+                                {
+                                  show_state_when_active: enabled,
+                                  show_state_when_inactive: enabled,
+                                },
+                                updateModule
+                              );
+                            }}
+                          ></ha-switch>
+                        </div>
                       </div>
 
-                      <!-- Active State Section -->
-                      <div style="margin-top: 16px;">
-                        <details
-                          style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
-                          @toggle=${(e: Event) => {
-                            const details = e.target as HTMLDetailsElement;
-                            const icon = details.querySelector('ha-icon') as HTMLElement;
-                            if (icon) {
-                              icon.style.transform = details.open
-                                ? 'rotate(90deg)'
-                                : 'rotate(0deg)';
-                            }
-                          }}
-                        >
-                          <summary
-                            style="padding: 16px; font-size: 16px; font-weight: 600; color: var(--primary-color); cursor: pointer; background: var(--secondary-background-color); border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px;"
-                          >
-                            <ha-icon
-                              icon="mdi:chevron-right"
-                              style="transition: transform 0.2s;"
-                            ></ha-icon>
-                            ${localize('editor.icon.active_state', lang, 'Active State')}
-                          </summary>
-                          <div style="padding: 16px;">
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.custom_active_state',
-                                  lang,
-                                  'Custom Active State'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.custom_active_state_desc',
-                                  lang,
-                                  'Custom text when active (leave empty to use actual state)'
-                                )}
-                              </div>
-                              ${this._renderFieldWithLock(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'active_state_locked',
-                                'custom_active_state_text',
-                                'custom_inactive_state_text',
-                                icon.custom_active_state_text || '',
-                                'text',
-                                hass
-                              )}
+                      ${icon.show_state_when_active !== false ||
+                      icon.show_state_when_inactive !== false
+                        ? html`
+                            <!-- Inactive State Section -->
+                            <div style="margin-top: 16px;">
+                              <details
+                                style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
+                                @toggle=${(e: Event) => {
+                                  const details = e.target as HTMLDetailsElement;
+                                  const icon = details.querySelector('ha-icon') as HTMLElement;
+                                  if (icon) {
+                                    icon.style.transform = details.open
+                                      ? 'rotate(90deg)'
+                                      : 'rotate(0deg)';
+                                  }
+                                }}
+                              >
+                                <summary
+                                  style="padding: 16px; font-size: 16px; font-weight: 600; color: var(--primary-color); cursor: pointer; background: var(--secondary-background-color); border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px;"
+                                >
+                                  <ha-icon
+                                    icon="mdi:chevron-right"
+                                    style="transition: transform 0.2s;"
+                                  ></ha-icon>
+                                  ${localize('editor.icon.inactive_state', lang, 'Inactive State')}
+                                </summary>
+                                <div style="padding: 16px;">
+                                  ${this.renderSettingsSection(
+                                    localize(
+                                      'editor.icon.inactive_state_config',
+                                      lang,
+                                      'Inactive State Configuration'
+                                    ),
+                                    localize(
+                                      'editor.icon.inactive_state_config_desc',
+                                      lang,
+                                      'Configure the inactive state settings'
+                                    ),
+                                    [
+                                      {
+                                        title: localize(
+                                          'editor.icon.custom_inactive_state',
+                                          lang,
+                                          'Custom Inactive State'
+                                        ),
+                                        description: localize(
+                                          'editor.icon.custom_inactive_state_desc',
+                                          lang,
+                                          'Custom text when inactive (leave empty to use actual state)'
+                                        ),
+                                        hass,
+                                        data: {
+                                          custom_inactive_state_text:
+                                            icon.custom_inactive_state_text || '',
+                                        },
+                                        schema: [this.textField('custom_inactive_state_text')],
+                                        onChange: (e: CustomEvent) =>
+                                          this._updateIcon(
+                                            iconModule,
+                                            index,
+                                            {
+                                              custom_inactive_state_text:
+                                                e.detail.value.custom_inactive_state_text,
+                                            },
+                                            updateModule
+                                          ),
+                                      },
+                                    ]
+                                  )}
+
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.inactive_state_color',
+                                        lang,
+                                        'Inactive State Color'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.state_color_inactive',
+                                        lang,
+                                        'State color when inactive'
+                                      )}
+                                    </div>
+                                    <ultra-color-picker
+                                      .value=${icon.inactive_state_color ||
+                                      'var(--secondary-text-color)'}
+                                      @value-changed=${(e: CustomEvent) =>
+                                        this._debouncedUpdateIconWithLockSync(
+                                          iconModule,
+                                          index,
+                                          'inactive_state_color',
+                                          e.detail.value,
+                                          updateModule,
+                                          50
+                                        )}
+                                    ></ultra-color-picker>
+                                  </div>
+
+                                  <div class="field-container">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.inactive_state_size',
+                                        lang,
+                                        'Inactive State Size'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.state_size_inactive',
+                                        lang,
+                                        'State text size when inactive'
+                                      )}
+                                    </div>
+                                    ${this._renderSizeControl(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'inactive_state_size',
+                                      icon.inactive_state_size || 10,
+                                      0,
+                                      50,
+                                      10
+                                    )}
+                                  </div>
+                                </div>
+                              </details>
                             </div>
 
-                            <div class="field-container" style="margin-bottom: 16px;">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.active_state_color',
-                                  lang,
-                                  'Active State Color'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.state_color_active',
-                                  lang,
-                                  'State color when active'
-                                )}
-                              </div>
-                              ${this._renderFieldWithLock(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'active_state_color_locked',
-                                'active_state_color',
-                                'inactive_state_color',
-                                icon.active_state_color || 'var(--secondary-text-color)',
-                                'color',
-                                hass
-                              )}
-                            </div>
+                            <!-- Active State Section -->
+                            <div style="margin-top: 16px;">
+                              <details
+                                style="border: 1px solid var(--divider-color); border-radius: 8px; background: var(--card-background-color);"
+                                @toggle=${(e: Event) => {
+                                  const details = e.target as HTMLDetailsElement;
+                                  const icon = details.querySelector('ha-icon') as HTMLElement;
+                                  if (icon) {
+                                    icon.style.transform = details.open
+                                      ? 'rotate(90deg)'
+                                      : 'rotate(0deg)';
+                                  }
+                                }}
+                              >
+                                <summary
+                                  style="padding: 16px; font-size: 16px; font-weight: 600; color: var(--primary-color); cursor: pointer; background: var(--secondary-background-color); border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 8px;"
+                                >
+                                  <ha-icon
+                                    icon="mdi:chevron-right"
+                                    style="transition: transform 0.2s;"
+                                  ></ha-icon>
+                                  ${localize('editor.icon.active_state', lang, 'Active State')}
+                                </summary>
+                                <div style="padding: 16px;">
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.custom_active_state',
+                                        lang,
+                                        'Custom Active State'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.custom_active_state_desc',
+                                        lang,
+                                        'Custom text when active (leave empty to use actual state)'
+                                      )}
+                                    </div>
+                                    ${this._renderFieldWithLock(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'active_state_locked',
+                                      'custom_active_state_text',
+                                      'custom_inactive_state_text',
+                                      icon.custom_active_state_text || '',
+                                      'text',
+                                      hass
+                                    )}
+                                  </div>
 
-                            <div class="field-container">
-                              <div class="field-title">
-                                ${localize(
-                                  'editor.icon.active_state_size',
-                                  lang,
-                                  'Active State Size'
-                                )}
-                              </div>
-                              <div class="field-description">
-                                ${localize(
-                                  'editor.icon.state_size_active',
-                                  lang,
-                                  'State text size when active'
-                                )}
-                              </div>
-                              ${this._renderSizeControlWithLock(
-                                iconModule,
-                                index,
-                                updateModule,
-                                'state_size',
-                                'active_state_size',
-                                'inactive_state_size',
-                                icon.active_state_size || 10,
-                                0,
-                                50,
-                                10
-                              )}
-                            </div>
-                          </div>
-                        </details>
-                      </div>
-                    `
-                  : ''}
-              </div>
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.active_state_color',
+                                        lang,
+                                        'Active State Color'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.state_color_active',
+                                        lang,
+                                        'State color when active'
+                                      )}
+                                    </div>
+                                    ${this._renderFieldWithLock(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'active_state_color_locked',
+                                      'active_state_color',
+                                      'inactive_state_color',
+                                      icon.active_state_color || 'var(--secondary-text-color)',
+                                      'color',
+                                      hass
+                                    )}
+                                  </div>
 
-              <!-- Migration Banner (if legacy templates detected) -->
-              ${shouldShowMigrationPrompt(icon)
-                ? html`
-                    <div
-                      class="migration-banner"
-                      style="
+                                  <div class="field-container">
+                                    <div class="field-title">
+                                      ${localize(
+                                        'editor.icon.active_state_size',
+                                        lang,
+                                        'Active State Size'
+                                      )}
+                                    </div>
+                                    <div class="field-description">
+                                      ${localize(
+                                        'editor.icon.state_size_active',
+                                        lang,
+                                        'State text size when active'
+                                      )}
+                                    </div>
+                                    ${this._renderSizeControlWithLock(
+                                      iconModule,
+                                      index,
+                                      updateModule,
+                                      'state_size',
+                                      'active_state_size',
+                                      'inactive_state_size',
+                                      icon.active_state_size || 10,
+                                      0,
+                                      50,
+                                      10
+                                    )}
+                                  </div>
+                                </div>
+                              </details>
+                            </div>
+                          `
+                        : ''}
+                    </div>
+
+                    <!-- Migration Banner (if legacy templates detected) -->
+                    ${shouldShowMigrationPrompt(icon)
+                      ? html`
+                          <div
+                            class="migration-banner"
+                            style="
                         background: linear-gradient(135deg, rgba(var(--rgb-primary-color), 0.1), rgba(var(--rgb-primary-color), 0.05));
                         border: 2px solid var(--primary-color);
                         border-radius: 12px;
@@ -1764,34 +1823,34 @@ export class UltraIconModule extends BaseUltraModule {
                         margin-bottom: 24px;
                         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                       "
-                    >
-                      <div style="display: flex; align-items: start; gap: 16px;">
-                        <ha-icon
-                          icon="mdi:lightbulb-on-outline"
-                          style="color: var(--primary-color); font-size: 32px; flex-shrink: 0;"
-                        ></ha-icon>
-                        <div style="flex: 1;">
-                          <div
-                            style="font-size: 18px; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;"
                           >
-                            ${localize(
-                              'editor.icon.migration_title',
-                              lang,
-                              'Template Migration Available'
-                            )}
-                          </div>
-                          <div
-                            style="font-size: 14px; color: var(--primary-text-color); margin-bottom: 12px; line-height: 1.5;"
-                          >
-                            ${localize(
-                              'editor.icon.migration_desc',
-                              lang,
-                              `You have ${detectLegacyTemplates(icon).templateCount} separate template(s). Combine them into one unified template for easier editing and better entity remapping support.`
-                            )}
-                          </div>
-                          <div style="display: flex; gap: 12px;">
-                            <button
-                              style="
+                            <div style="display: flex; align-items: start; gap: 16px;">
+                              <ha-icon
+                                icon="mdi:lightbulb-on-outline"
+                                style="color: var(--primary-color); font-size: 32px; flex-shrink: 0;"
+                              ></ha-icon>
+                              <div style="flex: 1;">
+                                <div
+                                  style="font-size: 18px; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;"
+                                >
+                                  ${localize(
+                                    'editor.icon.migration_title',
+                                    lang,
+                                    'Template Migration Available'
+                                  )}
+                                </div>
+                                <div
+                                  style="font-size: 14px; color: var(--primary-text-color); margin-bottom: 12px; line-height: 1.5;"
+                                >
+                                  ${localize(
+                                    'editor.icon.migration_desc',
+                                    lang,
+                                    `You have ${detectLegacyTemplates(icon).templateCount} separate template(s). Combine them into one unified template for easier editing and better entity remapping support.`
+                                  )}
+                                </div>
+                                <div style="display: flex; gap: 12px;">
+                                  <button
+                                    style="
                                 background: var(--primary-color);
                                 color: white;
                                 border: none;
@@ -1803,202 +1862,211 @@ export class UltraIconModule extends BaseUltraModule {
                                 transition: all 0.2s ease;
                                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
                               "
-                              @click=${() => {
-                                const migration = migrateToUnified(icon);
+                                    @click=${() => {
+                                      const migration = migrateToUnified(icon);
+                                      this._updateIcon(
+                                        iconModule,
+                                        index,
+                                        {
+                                          unified_template_mode: migration.unified_template_mode,
+                                          unified_template: migration.unified_template,
+                                          ignore_entity_state_config:
+                                            migration.ignore_entity_state_config,
+                                          // Disable legacy templates after migration
+                                          template_mode: false,
+                                          dynamic_icon_template_mode: false,
+                                          dynamic_color_template_mode: false,
+                                        },
+                                        updateModule
+                                      );
+                                    }}
+                                    @mouseover=${(e: Event) => {
+                                      const btn = e.target as HTMLElement;
+                                      btn.style.transform = 'translateY(-2px)';
+                                      btn.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+                                    }}
+                                    @mouseout=${(e: Event) => {
+                                      const btn = e.target as HTMLElement;
+                                      btn.style.transform = 'translateY(0)';
+                                      btn.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
+                                    }}
+                                  >
+                                    ${localize(
+                                      'editor.icon.migrate_button',
+                                      lang,
+                                      'Migrate to Unified Template'
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        `
+                      : ''}
+
+                    <!-- Unified Template Section (New Preferred Method) -->
+                    <div class="template-section" style="margin-bottom: 24px;">
+                      <div class="template-header">
+                        <div class="switch-container">
+                          <label class="switch-label"
+                            >${localize(
+                              'editor.icon.unified_template_section.title',
+                              lang,
+                              'Template Mode'
+                            )}</label
+                          >
+                          <label class="switch">
+                            <input
+                              type="checkbox"
+                              .checked=${icon.unified_template_mode || false}
+                              @change=${(e: Event) => {
+                                const checked = (e.target as HTMLInputElement).checked;
                                 this._updateIcon(
                                   iconModule,
                                   index,
-                                  {
-                                    unified_template_mode: migration.unified_template_mode,
-                                    unified_template: migration.unified_template,
-                                    ignore_entity_state_config:
-                                      migration.ignore_entity_state_config,
-                                    // Disable legacy templates after migration
-                                    template_mode: false,
-                                    dynamic_icon_template_mode: false,
-                                    dynamic_color_template_mode: false,
-                                  },
+                                  { unified_template_mode: checked },
                                   updateModule
                                 );
                               }}
-                              @mouseover=${(e: Event) => {
-                                const btn = e.target as HTMLElement;
-                                btn.style.transform = 'translateY(-2px)';
-                                btn.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-                              }}
-                              @mouseout=${(e: Event) => {
-                                const btn = e.target as HTMLElement;
-                                btn.style.transform = 'translateY(0)';
-                                btn.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
-                              }}
-                            >
-                              ${localize(
-                                'editor.icon.migrate_button',
-                                lang,
-                                'Migrate to Unified Template'
-                              )}
-                            </button>
-                          </div>
+                            />
+                            <span class="slider round"></span>
+                          </label>
+                        </div>
+                        <div class="template-description">
+                          ${localize(
+                            'editor.icon.unified_template_section.desc',
+                            lang,
+                            'Use Jinja2 templates to control icon and color dynamically. Return simple string for icon-only, or JSON object for multiple properties. Uses entity context variables (entity, state, name, attributes) for seamless entity remapping.'
+                          )}
                         </div>
                       </div>
+
+                      ${icon.unified_template_mode
+                        ? html`
+                            <!-- Ignore Entity State Config Toggle -->
+                            <div
+                              style="margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.1); border-radius: 8px; border-left: 4px solid var(--warning-color, #FF9800);"
+                            >
+                              <div style="display: flex; align-items: center; gap: 12px;">
+                                <ha-switch
+                                  .checked=${icon.ignore_entity_state_config || false}
+                                  @change=${(e: Event) => {
+                                    const target = e.target as any;
+                                    this._updateIcon(
+                                      iconModule,
+                                      index,
+                                      { ignore_entity_state_config: target.checked },
+                                      updateModule
+                                    );
+                                  }}
+                                ></ha-switch>
+                                <div style="flex: 1;">
+                                  <div style="font-weight: 600; margin-bottom: 4px;">
+                                    ${localize(
+                                      'editor.icon.ignore_entity_state',
+                                      lang,
+                                      'Ignore Entity State Config'
+                                    )}
+                                  </div>
+                                  <div style="font-size: 12px; color: var(--secondary-text-color);">
+                                    ${localize(
+                                      'editor.icon.ignore_entity_state_desc',
+                                      lang,
+                                      'When enabled, entity state settings above will be ignored and template will control active/inactive state for animations'
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div
+                              class="template-content"
+                              @mousedown=${(e: Event) => {
+                                // Only stop propagation for drag operations, not clicks on the editor
+                                const target = e.target as HTMLElement;
+                                if (
+                                  !target.closest('ultra-template-editor') &&
+                                  !target.closest('.cm-editor')
+                                ) {
+                                  e.stopPropagation();
+                                }
+                              }}
+                              @dragstart=${(e: Event) => e.stopPropagation()}
+                            >
+                              <ultra-template-editor
+                                .hass=${hass}
+                                .value=${icon.unified_template || ''}
+                                .placeholder=${'{% set level = state | int %}\n{\n  "icon": "mdi:battery-{{ (level / 10) | round(0) * 10 }}",\n  "icon_color": "{% if level <= 20 %}red{% else %}green{% endif %}"\n}'}
+                                .minHeight=${200}
+                                .maxHeight=${500}
+                                @value-changed=${(e: CustomEvent) => {
+                                  this._updateIcon(
+                                    iconModule,
+                                    index,
+                                    { unified_template: e.detail.value },
+                                    updateModule
+                                  );
+                                }}
+                              ></ultra-template-editor>
+                              <div class="template-help">
+                                <p><strong>Return simple string for icon-only:</strong></p>
+                                <ul>
+                                  <li><code>mdi:fire</code> → Changes icon only</li>
+                                  <li>
+                                    <code
+                                      >{% if state|int > 25 %}mdi:fire{% else %}mdi:snowflake{%
+                                      endif %}</code
+                                    >
+                                  </li>
+                                </ul>
+                                <p><strong>Return JSON for multiple properties:</strong></p>
+                                <ul>
+                                  <li>
+                                    <code>{ "icon": "mdi:fire", "icon_color": "#FF0000" }</code>
+                                  </li>
+                                  <li>
+                                    Available properties: <code>icon</code>, <code>icon_color</code>
+                                  </li>
+                                </ul>
+                                <p>
+                                  <strong
+                                    >Entity context variables (no need to hardcode entity
+                                    ID):</strong
+                                  >
+                                </p>
+                                <ul>
+                                  <li><code>entity</code> → Entity ID (${icon.entity})</li>
+                                  <li><code>state</code> → Current state value</li>
+                                  <li><code>name</code> → Entity name</li>
+                                  <li><code>attributes</code> → All entity attributes</li>
+                                  <li><code>unit</code> → Unit of measurement</li>
+                                  <li>
+                                    <code>domain</code> → Entity domain (e.g., 'sensor', 'light')
+                                  </li>
+                                  <li><code>device_class</code> → Device class</li>
+                                </ul>
+                                <p><strong>Example - Works with ANY battery entity:</strong></p>
+                                <code
+                                  style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-size: 11px;"
+                                >
+                                  {% set level = state | int %}<br />
+                                  {<br />
+                                  &nbsp;&nbsp;"icon": "mdi:battery-{{ (level / 10) | round(0) * 10
+                                  }}",<br />
+                                  &nbsp;&nbsp;"icon_color": "{% if level <= 20 %}#FF0000{% elif
+                                  level <= 50 %}#FF8800{% else %}#00CC00{% endif %}"<br />
+                                  }
+                                </code>
+                              </div>
+                            </div>
+                          `
+                        : ''}
                     </div>
-                  `
-                : ''}
 
-              <!-- Unified Template Section (New Preferred Method) -->
-              <div class="template-section" style="margin-bottom: 24px;">
-                <div class="template-header">
-                  <div class="switch-container">
-                    <label class="switch-label"
-                      >${localize(
-                        'editor.icon.unified_template_section.title',
-                        lang,
-                        'Template Mode'
-                      )}</label
-                    >
-                    <label class="switch">
-                      <input
-                        type="checkbox"
-                        .checked=${icon.unified_template_mode || false}
-                        @change=${(e: Event) => {
-                          const checked = (e.target as HTMLInputElement).checked;
-                          this._updateIcon(
-                            iconModule,
-                            index,
-                            { unified_template_mode: checked },
-                            updateModule
-                          );
-                        }}
-                      />
-                      <span class="slider round"></span>
-                    </label>
-                  </div>
-                  <div class="template-description">
-                    ${localize(
-                      'editor.icon.unified_template_section.desc',
-                      lang,
-                      'Use Jinja2 templates to control icon and color dynamically. Return simple string for icon-only, or JSON object for multiple properties. Uses entity context variables (entity, state, name, attributes) for seamless entity remapping.'
-                    )}
-                  </div>
-                </div>
-
-                ${icon.unified_template_mode
-                  ? html`
-                      <!-- Ignore Entity State Config Toggle -->
-                      <div
-                        style="margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.1); border-radius: 8px; border-left: 4px solid var(--warning-color, #FF9800);"
-                      >
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                          <ha-switch
-                            .checked=${icon.ignore_entity_state_config || false}
-                            @change=${(e: Event) => {
-                              const target = e.target as any;
-                              this._updateIcon(
-                                iconModule,
-                                index,
-                                { ignore_entity_state_config: target.checked },
-                                updateModule
-                              );
-                            }}
-                          ></ha-switch>
-                          <div style="flex: 1;">
-                            <div style="font-weight: 600; margin-bottom: 4px;">
-                              ${localize(
-                                'editor.icon.ignore_entity_state',
-                                lang,
-                                'Ignore Entity State Config'
-                              )}
-                            </div>
-                            <div style="font-size: 12px; color: var(--secondary-text-color);">
-                              ${localize(
-                                'editor.icon.ignore_entity_state_desc',
-                                lang,
-                                'When enabled, entity state settings above will be ignored and template will control active/inactive state for animations'
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div 
-                        class="template-content"
-                        @mousedown=${(e: Event) => {
-                          // Only stop propagation for drag operations, not clicks on the editor
-                          const target = e.target as HTMLElement;
-                          if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
-                            e.stopPropagation();
-                          }
-                        }}
-                        @dragstart=${(e: Event) => e.stopPropagation()}
-                      >
-                        <ultra-template-editor
-                          .hass=${hass}
-                          .value=${icon.unified_template || ''}
-                          .placeholder=${'{% set level = state | int %}\n{\n  "icon": "mdi:battery-{{ (level / 10) | round(0) * 10 }}",\n  "icon_color": "{% if level <= 20 %}red{% else %}green{% endif %}"\n}'}
-                          .minHeight=${200}
-                          .maxHeight=${500}
-                          @value-changed=${(e: CustomEvent) => {
-                            this._updateIcon(
-                              iconModule,
-                              index,
-                              { unified_template: e.detail.value },
-                              updateModule
-                            );
-                          }}
-                        ></ultra-template-editor>
-                        <div class="template-help">
-                          <p><strong>Return simple string for icon-only:</strong></p>
-                          <ul>
-                            <li><code>mdi:fire</code> → Changes icon only</li>
-                            <li>
-                              <code
-                                >{% if state|int > 25 %}mdi:fire{% else %}mdi:snowflake{% endif
-                                %}</code
-                              >
-                            </li>
-                          </ul>
-                          <p><strong>Return JSON for multiple properties:</strong></p>
-                          <ul>
-                            <li><code>{ "icon": "mdi:fire", "icon_color": "#FF0000" }</code></li>
-                            <li>
-                              Available properties: <code>icon</code>, <code>icon_color</code>
-                            </li>
-                          </ul>
-                          <p>
-                            <strong
-                              >Entity context variables (no need to hardcode entity ID):</strong
-                            >
-                          </p>
-                          <ul>
-                            <li><code>entity</code> → Entity ID (${icon.entity})</li>
-                            <li><code>state</code> → Current state value</li>
-                            <li><code>name</code> → Entity name</li>
-                            <li><code>attributes</code> → All entity attributes</li>
-                            <li><code>unit</code> → Unit of measurement</li>
-                            <li><code>domain</code> → Entity domain (e.g., 'sensor', 'light')</li>
-                            <li><code>device_class</code> → Device class</li>
-                          </ul>
-                          <p><strong>Example - Works with ANY battery entity:</strong></p>
-                          <code
-                            style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-size: 11px;"
-                          >
-                            {% set level = state | int %}<br />
-                            {<br />
-                            &nbsp;&nbsp;"icon": "mdi:battery-{{ (level / 10) | round(0) * 10 }}",<br />
-                            &nbsp;&nbsp;"icon_color": "{% if level <= 20 %}#FF0000{% elif level <=
-                            50 %}#FF8800{% else %}#00CC00{% endif %}"<br />
-                            }
-                          </code>
-                        </div>
-                      </div>
-                    `
-                  : ''}
-              </div>
-
-              <!-- Advanced Template Mode Section (Deprecated - Legacy) -->
-              <details style="margin-bottom: 24px;" ${icon.template_mode ? 'open' : ''}>
-                <summary
-                  style="
+                    <!-- Advanced Template Mode Section (Deprecated - Legacy) -->
+                    <details style="margin-bottom: 24px;" ${icon.template_mode ? 'open' : ''}>
+                      <summary
+                        style="
                   padding: 12px 16px;
                   background: var(--secondary-background-color);
                   border: 1px solid var(--divider-color);
@@ -2010,480 +2078,507 @@ export class UltraIconModule extends BaseUltraModule {
                   align-items: center;
                   gap: 8px;
                 "
-                >
-                  <ha-icon icon="mdi:alpha-a-box-outline" style="opacity: 0.6;"></ha-icon>
-                  ${localize('editor.icon.legacy_templates', lang, 'Legacy Templates (Deprecated)')}
-                  ${icon.template_mode ||
-                  icon.dynamic_icon_template_mode ||
-                  icon.dynamic_color_template_mode
-                    ? html`<span
-                        style="background: var(--warning-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700;"
-                        >IN USE</span
-                      >`
-                    : ''}
-                </summary>
-                <div
-                  style="padding: 16px; background: var(--card-background-color); border: 1px solid var(--divider-color); border-top: none; border-radius: 0 0 8px 8px;"
-                >
-                  <!-- Advanced Template Mode Section -->
-                  <div class="template-section" style="margin-bottom: 24px;">
-                    <div class="template-header">
-                      <div class="switch-container">
-                        <label class="switch-label"
-                          >${localize(
-                            'editor.icon.template_section.title',
-                            lang,
-                            'Advanced Template Mode'
-                          )}</label
-                        >
-                        <label class="switch">
-                          <input
-                            type="checkbox"
-                            .checked=${icon.template_mode || false}
-                            @change=${(e: Event) => {
-                              const checked = (e.target as HTMLInputElement).checked;
-                              this._updateIcon(
-                                iconModule,
-                                index,
-                                { template_mode: checked },
-                                updateModule
-                              );
-                            }}
-                          />
-                          <span class="slider round"></span>
-                        </label>
-                      </div>
-                      <div class="template-description">
+                      >
+                        <ha-icon icon="mdi:alpha-a-box-outline" style="opacity: 0.6;"></ha-icon>
                         ${localize(
-                          'editor.icon.template_section.desc',
+                          'editor.icon.legacy_templates',
                           lang,
-                          'Use Jinja2 templates for advanced icon control. Templates can control visibility (true/false to show/hide icons) and customize state text. Return custom text for Active State, return actual entity state for Inactive State.'
+                          'Legacy Templates (Deprecated)'
                         )}
-                      </div>
-                    </div>
-
-                    ${icon.template_mode
-                      ? html`
-                          <div 
-                            class="template-content"
-                            @mousedown=${(e: Event) => {
-                              // Only stop propagation for drag operations, not clicks on the editor
-                              const target = e.target as HTMLElement;
-                              if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
-                                e.stopPropagation();
-                              }
-                            }}
-                            @dragstart=${(e: Event) => e.stopPropagation()}
-                          >
-                            <ultra-template-editor
-                              .hass=${hass}
-                              .value=${icon.template || ''}
-                              .placeholder=${"{% if states('binary_sensor.example') == 'on' %}true{% else %}false{% endif %}"}
-                              .minHeight=${150}
-                              .maxHeight=${400}
-                              @value-changed=${(e: CustomEvent) => {
-                                this._updateIcon(
-                                  iconModule,
-                                  index,
-                                  { template: e.detail.value },
-                                  updateModule
-                                );
-                              }}
-                            ></ultra-template-editor>
-                            <div class="template-help">
-                              <p><strong>For visibility control, return a boolean:</strong></p>
-                              <ul>
-                                <li>
-                                  <code>true</code>, <code>on</code>, <code>yes</code>,
-                                  <code>1</code> → Show icon (Active State)
-                                </li>
-                                <li>
-                                  <code>false</code>, <code>off</code>, <code>no</code>,
-                                  <code>0</code> → Hide icon (Inactive State)
-                                </li>
-                              </ul>
-                              <p><strong>For custom state text, return a string:</strong></p>
-                              <ul>
-                                <li>
-                                  <code
-                                    >{% if states('weather.forecast_home') == 'cloudy' %}About to
-                                    Rain{% else %}{{ states('weather.forecast_home') }}{% endif
-                                    %}</code
-                                  >
-                                  → When cloudy: shows "About to Rain" (Active), when not cloudy:
-                                  shows actual state (Inactive)
-                                </li>
-                                <li>
-                                  <code>{{ states('sensor.temperature') | round(1) }}°F</code> →
-                                  Shows formatted temperature and Active State is current
-                                </li>
-                              </ul>
-                              <p>
-                                <strong>Note:</strong> Use the same entity name throughout your
-                                template to avoid "unknown" states
-                              </p>
+                        ${icon.template_mode ||
+                        icon.dynamic_icon_template_mode ||
+                        icon.dynamic_color_template_mode
+                          ? html`<span
+                              style="background: var(--warning-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700;"
+                              >IN USE</span
+                            >`
+                          : ''}
+                      </summary>
+                      <div
+                        style="padding: 16px; background: var(--card-background-color); border: 1px solid var(--divider-color); border-top: none; border-radius: 0 0 8px 8px;"
+                      >
+                        <!-- Advanced Template Mode Section -->
+                        <div class="template-section" style="margin-bottom: 24px;">
+                          <div class="template-header">
+                            <div class="switch-container">
+                              <label class="switch-label"
+                                >${localize(
+                                  'editor.icon.template_section.title',
+                                  lang,
+                                  'Advanced Template Mode'
+                                )}</label
+                              >
+                              <label class="switch">
+                                <input
+                                  type="checkbox"
+                                  .checked=${icon.template_mode || false}
+                                  @change=${(e: Event) => {
+                                    const checked = (e.target as HTMLInputElement).checked;
+                                    this._updateIcon(
+                                      iconModule,
+                                      index,
+                                      { template_mode: checked },
+                                      updateModule
+                                    );
+                                  }}
+                                />
+                                <span class="slider round"></span>
+                              </label>
+                            </div>
+                            <div class="template-description">
+                              ${localize(
+                                'editor.icon.template_section.desc',
+                                lang,
+                                'Use Jinja2 templates for advanced icon control. Templates can control visibility (true/false to show/hide icons) and customize state text. Return custom text for Active State, return actual entity state for Inactive State.'
+                              )}
                             </div>
                           </div>
-                        `
-                      : ''}
-                  </div>
 
-                  <!-- Dynamic Icon Color Template Section -->
-                  <div class="template-section" style="margin-bottom: 24px;">
-                    <div class="template-header">
-                      <div class="switch-container">
-                        <label class="switch-label"
-                          >${localize(
-                            'editor.icon.dynamic_color_template_section.title',
-                            lang,
-                            'Dynamic Icon Color Template'
-                          )}</label
-                        >
-                        <label class="switch">
-                          <input
-                            type="checkbox"
-                            .checked=${icon.dynamic_color_template_mode || false}
-                            @change=${(e: Event) => {
-                              const checked = (e.target as HTMLInputElement).checked;
-                              this._updateIcon(
-                                iconModule,
-                                index,
-                                { dynamic_color_template_mode: checked },
-                                updateModule
-                              );
-                            }}
-                          />
-                          <span class="slider round"></span>
-                        </label>
-                      </div>
-                      <div class="template-description">
-                        ${localize(
-                          'editor.icon.dynamic_color_template_section.desc',
-                          lang,
-                          'Use Jinja2 templates to dynamically change icon color based on conditions. Return a valid CSS color value (e.g., #FF0000, rgb(255,0,0), red) or empty for default color.'
-                        )}
-                      </div>
-                    </div>
-
-                    ${icon.dynamic_color_template_mode
-                      ? html`
-                          <div 
-                            class="template-content"
-                            @mousedown=${(e: Event) => {
-                              // Only stop propagation for drag operations, not clicks on the editor
-                              const target = e.target as HTMLElement;
-                              if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
-                                e.stopPropagation();
-                              }
-                            }}
-                            @dragstart=${(e: Event) => e.stopPropagation()}
-                          >
-                            <ultra-template-editor
-                              .hass=${hass}
-                              .value=${icon.dynamic_color_template || ''}
-                              .placeholder=${"{% if states('binary_sensor.example') == 'on' %}#FF0000{% else %}#00FF00{% endif %}"}
-                              .minHeight=${100}
-                              .maxHeight=${300}
-                              @value-changed=${(e: CustomEvent) => {
-                                this._updateIcon(
-                                  iconModule,
-                                  index,
-                                  { dynamic_color_template: e.detail.value },
-                                  updateModule
-                                );
-                              }}
-                            ></ultra-template-editor>
-                            <div class="template-help">
-                              <p><strong>Return a CSS color value:</strong></p>
-                              <ul>
-                                <li><code>#FF0000</code> → Red color in hex</li>
-                                <li><code>rgb(255, 0, 0)</code> → Red color in RGB</li>
-                                <li><code>red</code> → Red color by name</li>
-                                <li>
-                                  <code
-                                    >{{ states.light.living_room.attributes.rgb_color | join(',') |
-                                    format('rgb(%s)') }}</code
-                                  >
-                                  → Use entity RGB color
-                                </li>
-                              </ul>
-                              <p>
-                                <strong>Example:</strong>
-                                <code
-                                  >{% if states('sensor.temperature') | int > 25 %}#FF4444{% else
-                                  %}#4444FF{% endif %}</code
+                          ${icon.template_mode
+                            ? html`
+                                <div
+                                  class="template-content"
+                                  @mousedown=${(e: Event) => {
+                                    // Only stop propagation for drag operations, not clicks on the editor
+                                    const target = e.target as HTMLElement;
+                                    if (
+                                      !target.closest('ultra-template-editor') &&
+                                      !target.closest('.cm-editor')
+                                    ) {
+                                      e.stopPropagation();
+                                    }
+                                  }}
+                                  @dragstart=${(e: Event) => e.stopPropagation()}
                                 >
-                              </p>
+                                  <ultra-template-editor
+                                    .hass=${hass}
+                                    .value=${icon.template || ''}
+                                    .placeholder=${"{% if states('binary_sensor.example') == 'on' %}true{% else %}false{% endif %}"}
+                                    .minHeight=${150}
+                                    .maxHeight=${400}
+                                    @value-changed=${(e: CustomEvent) => {
+                                      this._updateIcon(
+                                        iconModule,
+                                        index,
+                                        { template: e.detail.value },
+                                        updateModule
+                                      );
+                                    }}
+                                  ></ultra-template-editor>
+                                  <div class="template-help">
+                                    <p>
+                                      <strong>For visibility control, return a boolean:</strong>
+                                    </p>
+                                    <ul>
+                                      <li>
+                                        <code>true</code>, <code>on</code>, <code>yes</code>,
+                                        <code>1</code> → Show icon (Active State)
+                                      </li>
+                                      <li>
+                                        <code>false</code>, <code>off</code>, <code>no</code>,
+                                        <code>0</code> → Hide icon (Inactive State)
+                                      </li>
+                                    </ul>
+                                    <p><strong>For custom state text, return a string:</strong></p>
+                                    <ul>
+                                      <li>
+                                        <code
+                                          >{% if states('weather.forecast_home') == 'cloudy' %}About
+                                          to Rain{% else %}{{ states('weather.forecast_home') }}{%
+                                          endif %}</code
+                                        >
+                                        → When cloudy: shows "About to Rain" (Active), when not
+                                        cloudy: shows actual state (Inactive)
+                                      </li>
+                                      <li>
+                                        <code>{{ states('sensor.temperature') | round(1) }}°F</code>
+                                        → Shows formatted temperature and Active State is current
+                                      </li>
+                                    </ul>
+                                    <p>
+                                      <strong>Note:</strong> Use the same entity name throughout
+                                      your template to avoid "unknown" states
+                                    </p>
+                                  </div>
+                                </div>
+                              `
+                            : ''}
+                        </div>
+
+                        <!-- Dynamic Icon Color Template Section -->
+                        <div class="template-section" style="margin-bottom: 24px;">
+                          <div class="template-header">
+                            <div class="switch-container">
+                              <label class="switch-label"
+                                >${localize(
+                                  'editor.icon.dynamic_color_template_section.title',
+                                  lang,
+                                  'Dynamic Icon Color Template'
+                                )}</label
+                              >
+                              <label class="switch">
+                                <input
+                                  type="checkbox"
+                                  .checked=${icon.dynamic_color_template_mode || false}
+                                  @change=${(e: Event) => {
+                                    const checked = (e.target as HTMLInputElement).checked;
+                                    this._updateIcon(
+                                      iconModule,
+                                      index,
+                                      { dynamic_color_template_mode: checked },
+                                      updateModule
+                                    );
+                                  }}
+                                />
+                                <span class="slider round"></span>
+                              </label>
+                            </div>
+                            <div class="template-description">
+                              ${localize(
+                                'editor.icon.dynamic_color_template_section.desc',
+                                lang,
+                                'Use Jinja2 templates to dynamically change icon color based on conditions. Return a valid CSS color value (e.g., #FF0000, rgb(255,0,0), red) or empty for default color.'
+                              )}
                             </div>
                           </div>
-                        `
-                      : ''}
-                  </div>
 
-                  <!-- Dynamic Icon Template Section -->
-                  <div class="template-section" style="margin-bottom: 24px;">
-                    <div class="template-header">
-                      <div class="switch-container">
-                        <label class="switch-label"
-                          >${localize(
-                            'editor.icon.dynamic_icon_template_section.title',
-                            lang,
-                            'Dynamic Icon Template'
-                          )}</label
-                        >
-                        <label class="switch">
-                          <input
-                            type="checkbox"
-                            .checked=${icon.dynamic_icon_template_mode || false}
-                            @change=${(e: Event) => {
-                              const checked = (e.target as HTMLInputElement).checked;
-                              this._updateIcon(
-                                iconModule,
-                                index,
-                                { dynamic_icon_template_mode: checked },
-                                updateModule
-                              );
-                            }}
-                          />
-                          <span class="slider round"></span>
-                        </label>
-                      </div>
-                      <div class="template-description">
-                        ${localize(
-                          'editor.icon.dynamic_icon_template_section.desc',
-                          lang,
-                          'Use Jinja2 templates to dynamically change the icon based on conditions. Return a valid icon name (e.g., mdi:weather-sunny, mdi:home, mdi:lightbulb) or empty for default icon.'
-                        )}
-                      </div>
-                    </div>
-
-                    ${icon.dynamic_icon_template_mode
-                      ? html`
-                          <div 
-                            class="template-content"
-                            @mousedown=${(e: Event) => {
-                              // Only stop propagation for drag operations, not clicks on the editor
-                              const target = e.target as HTMLElement;
-                              if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
-                                e.stopPropagation();
-                              }
-                            }}
-                            @dragstart=${(e: Event) => e.stopPropagation()}
-                          >
-                            <ultra-template-editor
-                              .hass=${hass}
-                              .value=${icon.dynamic_icon_template || ''}
-                              .placeholder=${"{% if states('binary_sensor.example') == 'on' %}mdi:lightbulb-on{% else %}mdi:lightbulb-off{% endif %}"}
-                              .minHeight=${100}
-                              .maxHeight=${300}
-                              @value-changed=${(e: CustomEvent) => {
-                                this._updateIcon(
-                                  iconModule,
-                                  index,
-                                  { dynamic_icon_template: e.detail.value },
-                                  updateModule
-                                );
-                              }}
-                            ></ultra-template-editor>
-                            <div class="template-help">
-                              <p><strong>Return an icon name:</strong></p>
-                              <ul>
-                                <li><code>mdi:weather-sunny</code> → Weather icon</li>
-                                <li><code>mdi:home</code> → Home icon</li>
-                                <li><code>mdi:lightbulb</code> → Light icon</li>
-                                <li>
-                                  <code>{{ states.light.living_room.attributes.icon }}</code>
-                                  → Use entity's current icon
-                                </li>
-                              </ul>
-                              <p>
-                                <strong>Example:</strong>
-                                <code
-                                  >{% if states('sensor.temperature') | int > 25 %}mdi:thermometer{%
-                                  else %}mdi:snowflake{% endif %}</code
+                          ${icon.dynamic_color_template_mode
+                            ? html`
+                                <div
+                                  class="template-content"
+                                  @mousedown=${(e: Event) => {
+                                    // Only stop propagation for drag operations, not clicks on the editor
+                                    const target = e.target as HTMLElement;
+                                    if (
+                                      !target.closest('ultra-template-editor') &&
+                                      !target.closest('.cm-editor')
+                                    ) {
+                                      e.stopPropagation();
+                                    }
+                                  }}
+                                  @dragstart=${(e: Event) => e.stopPropagation()}
                                 >
-                              </p>
+                                  <ultra-template-editor
+                                    .hass=${hass}
+                                    .value=${icon.dynamic_color_template || ''}
+                                    .placeholder=${"{% if states('binary_sensor.example') == 'on' %}#FF0000{% else %}#00FF00{% endif %}"}
+                                    .minHeight=${100}
+                                    .maxHeight=${300}
+                                    @value-changed=${(e: CustomEvent) => {
+                                      this._updateIcon(
+                                        iconModule,
+                                        index,
+                                        { dynamic_color_template: e.detail.value },
+                                        updateModule
+                                      );
+                                    }}
+                                  ></ultra-template-editor>
+                                  <div class="template-help">
+                                    <p><strong>Return a CSS color value:</strong></p>
+                                    <ul>
+                                      <li><code>#FF0000</code> → Red color in hex</li>
+                                      <li><code>rgb(255, 0, 0)</code> → Red color in RGB</li>
+                                      <li><code>red</code> → Red color by name</li>
+                                      <li>
+                                        <code
+                                          >{{ states.light.living_room.attributes.rgb_color |
+                                          join(',') | format('rgb(%s)') }}</code
+                                        >
+                                        → Use entity RGB color
+                                      </li>
+                                    </ul>
+                                    <p>
+                                      <strong>Example:</strong>
+                                      <code
+                                        >{% if states('sensor.temperature') | int > 25 %}#FF4444{%
+                                        else %}#4444FF{% endif %}</code
+                                      >
+                                    </p>
+                                  </div>
+                                </div>
+                              `
+                            : ''}
+                        </div>
+
+                        <!-- Dynamic Icon Template Section -->
+                        <div class="template-section" style="margin-bottom: 24px;">
+                          <div class="template-header">
+                            <div class="switch-container">
+                              <label class="switch-label"
+                                >${localize(
+                                  'editor.icon.dynamic_icon_template_section.title',
+                                  lang,
+                                  'Dynamic Icon Template'
+                                )}</label
+                              >
+                              <label class="switch">
+                                <input
+                                  type="checkbox"
+                                  .checked=${icon.dynamic_icon_template_mode || false}
+                                  @change=${(e: Event) => {
+                                    const checked = (e.target as HTMLInputElement).checked;
+                                    this._updateIcon(
+                                      iconModule,
+                                      index,
+                                      { dynamic_icon_template_mode: checked },
+                                      updateModule
+                                    );
+                                  }}
+                                />
+                                <span class="slider round"></span>
+                              </label>
+                            </div>
+                            <div class="template-description">
+                              ${localize(
+                                'editor.icon.dynamic_icon_template_section.desc',
+                                lang,
+                                'Use Jinja2 templates to dynamically change the icon based on conditions. Return a valid icon name (e.g., mdi:weather-sunny, mdi:home, mdi:lightbulb) or empty for default icon.'
+                              )}
                             </div>
                           </div>
-                        `
-                      : ''}
-                  </div>
-                </div>
-              </details>
 
-              <!-- Icon Animation Section -->
-              ${this.renderSettingsSection(
-                localize('editor.icon.animation_section.title', lang, 'Icon Animation'),
-                localize(
-                  'editor.icon.animation_section.desc',
-                  lang,
-                  'Configure animations for active and inactive states'
-                ),
-                [
-                  {
-                    title: localize('editor.icon.active_animation', lang, 'Active Animation'),
-                    description: localize(
-                      'editor.icon.active_animation_desc',
-                      lang,
-                      'Animation when icon is active'
-                    ),
-                    hass,
-                    data: { active_icon_animation: icon.active_icon_animation || 'none' },
-                    schema: [
-                      this.selectField('active_icon_animation', [
+                          ${icon.dynamic_icon_template_mode
+                            ? html`
+                                <div
+                                  class="template-content"
+                                  @mousedown=${(e: Event) => {
+                                    // Only stop propagation for drag operations, not clicks on the editor
+                                    const target = e.target as HTMLElement;
+                                    if (
+                                      !target.closest('ultra-template-editor') &&
+                                      !target.closest('.cm-editor')
+                                    ) {
+                                      e.stopPropagation();
+                                    }
+                                  }}
+                                  @dragstart=${(e: Event) => e.stopPropagation()}
+                                >
+                                  <ultra-template-editor
+                                    .hass=${hass}
+                                    .value=${icon.dynamic_icon_template || ''}
+                                    .placeholder=${"{% if states('binary_sensor.example') == 'on' %}mdi:lightbulb-on{% else %}mdi:lightbulb-off{% endif %}"}
+                                    .minHeight=${100}
+                                    .maxHeight=${300}
+                                    @value-changed=${(e: CustomEvent) => {
+                                      this._updateIcon(
+                                        iconModule,
+                                        index,
+                                        { dynamic_icon_template: e.detail.value },
+                                        updateModule
+                                      );
+                                    }}
+                                  ></ultra-template-editor>
+                                  <div class="template-help">
+                                    <p><strong>Return an icon name:</strong></p>
+                                    <ul>
+                                      <li><code>mdi:weather-sunny</code> → Weather icon</li>
+                                      <li><code>mdi:home</code> → Home icon</li>
+                                      <li><code>mdi:lightbulb</code> → Light icon</li>
+                                      <li>
+                                        <code>{{ states.light.living_room.attributes.icon }}</code>
+                                        → Use entity's current icon
+                                      </li>
+                                    </ul>
+                                    <p>
+                                      <strong>Example:</strong>
+                                      <code
+                                        >{% if states('sensor.temperature') | int > 25
+                                        %}mdi:thermometer{% else %}mdi:snowflake{% endif %}</code
+                                      >
+                                    </p>
+                                  </div>
+                                </div>
+                              `
+                            : ''}
+                        </div>
+                      </div>
+                    </details>
+
+                    <!-- Icon Animation Section -->
+                    ${this.renderSettingsSection(
+                      localize('editor.icon.animation_section.title', lang, 'Icon Animation'),
+                      localize(
+                        'editor.icon.animation_section.desc',
+                        lang,
+                        'Configure animations for active and inactive states'
+                      ),
+                      [
                         {
-                          value: 'none',
-                          label: localize('editor.icon.animation_none', lang, 'None'),
-                        },
-                        {
-                          value: 'pulse',
-                          label: localize('editor.icon.animation_pulse', lang, 'Pulse'),
-                        },
-                        {
-                          value: 'spin',
-                          label: localize('editor.icon.animation_spin', lang, 'Spin'),
-                        },
-                        {
-                          value: 'bounce',
-                          label: localize('editor.icon.animation_bounce', lang, 'Bounce'),
-                        },
-                        {
-                          value: 'flash',
-                          label: localize('editor.icon.animation_flash', lang, 'Flash'),
-                        },
-                        {
-                          value: 'shake',
-                          label: localize('editor.icon.animation_shake', lang, 'Shake'),
-                        },
-                        {
-                          value: 'vibrate',
-                          label: localize('editor.icon.animation_vibrate', lang, 'Vibrate'),
-                        },
-                        {
-                          value: 'rotate-left',
-                          label: localize('editor.icon.animation_rotate_left', lang, 'Rotate Left'),
-                        },
-                        {
-                          value: 'rotate-right',
-                          label: localize(
-                            'editor.icon.animation_rotate_right',
+                          title: localize('editor.icon.active_animation', lang, 'Active Animation'),
+                          description: localize(
+                            'editor.icon.active_animation_desc',
                             lang,
-                            'Rotate Right'
+                            'Animation when icon is active'
                           ),
+                          hass,
+                          data: { active_icon_animation: icon.active_icon_animation || 'none' },
+                          schema: [
+                            this.selectField('active_icon_animation', [
+                              {
+                                value: 'none',
+                                label: localize('editor.icon.animation_none', lang, 'None'),
+                              },
+                              {
+                                value: 'pulse',
+                                label: localize('editor.icon.animation_pulse', lang, 'Pulse'),
+                              },
+                              {
+                                value: 'spin',
+                                label: localize('editor.icon.animation_spin', lang, 'Spin'),
+                              },
+                              {
+                                value: 'bounce',
+                                label: localize('editor.icon.animation_bounce', lang, 'Bounce'),
+                              },
+                              {
+                                value: 'flash',
+                                label: localize('editor.icon.animation_flash', lang, 'Flash'),
+                              },
+                              {
+                                value: 'shake',
+                                label: localize('editor.icon.animation_shake', lang, 'Shake'),
+                              },
+                              {
+                                value: 'vibrate',
+                                label: localize('editor.icon.animation_vibrate', lang, 'Vibrate'),
+                              },
+                              {
+                                value: 'rotate-left',
+                                label: localize(
+                                  'editor.icon.animation_rotate_left',
+                                  lang,
+                                  'Rotate Left'
+                                ),
+                              },
+                              {
+                                value: 'rotate-right',
+                                label: localize(
+                                  'editor.icon.animation_rotate_right',
+                                  lang,
+                                  'Rotate Right'
+                                ),
+                              },
+                              {
+                                value: 'fade',
+                                label: localize('editor.icon.animation_fade', lang, 'Fade'),
+                              },
+                              {
+                                value: 'scale',
+                                label: localize('editor.icon.animation_scale', lang, 'Scale'),
+                              },
+                              {
+                                value: 'tada',
+                                label: localize('editor.icon.animation_tada', lang, 'Tada'),
+                              },
+                            ]),
+                          ],
+                          onChange: (e: CustomEvent) => {
+                            const next = e.detail.value.active_icon_animation;
+                            const prev = iconModule.icons[index].active_icon_animation || 'none';
+                            if (next === prev) return;
+                            this._updateIcon(
+                              iconModule,
+                              index,
+                              { active_icon_animation: next },
+                              updateModule
+                            );
+                            // Trigger re-render to update dropdown UI
+                            setTimeout(() => {
+                              this._triggerPreviewUpdate();
+                            }, 50);
+                          },
                         },
                         {
-                          value: 'fade',
-                          label: localize('editor.icon.animation_fade', lang, 'Fade'),
-                        },
-                        {
-                          value: 'scale',
-                          label: localize('editor.icon.animation_scale', lang, 'Scale'),
-                        },
-                        {
-                          value: 'tada',
-                          label: localize('editor.icon.animation_tada', lang, 'Tada'),
-                        },
-                      ]),
-                    ],
-                    onChange: (e: CustomEvent) => {
-                      const next = e.detail.value.active_icon_animation;
-                      const prev = iconModule.icons[index].active_icon_animation || 'none';
-                      if (next === prev) return;
-                      this._updateIcon(
-                        iconModule,
-                        index,
-                        { active_icon_animation: next },
-                        updateModule
-                      );
-                      // Trigger re-render to update dropdown UI
-                      setTimeout(() => {
-                        this._triggerPreviewUpdate();
-                      }, 50);
-                    },
-                  },
-                  {
-                    title: localize('editor.icon.inactive_animation', lang, 'Inactive Animation'),
-                    description: localize(
-                      'editor.icon.inactive_animation_desc',
-                      lang,
-                      'Animation when icon is inactive'
-                    ),
-                    hass,
-                    data: { inactive_icon_animation: icon.inactive_icon_animation || 'none' },
-                    schema: [
-                      this.selectField('inactive_icon_animation', [
-                        {
-                          value: 'none',
-                          label: localize('editor.icon.animation_none', lang, 'None'),
-                        },
-                        {
-                          value: 'pulse',
-                          label: localize('editor.icon.animation_pulse', lang, 'Pulse'),
-                        },
-                        {
-                          value: 'spin',
-                          label: localize('editor.icon.animation_spin', lang, 'Spin'),
-                        },
-                        {
-                          value: 'bounce',
-                          label: localize('editor.icon.animation_bounce', lang, 'Bounce'),
-                        },
-                        {
-                          value: 'flash',
-                          label: localize('editor.icon.animation_flash', lang, 'Flash'),
-                        },
-                        {
-                          value: 'shake',
-                          label: localize('editor.icon.animation_shake', lang, 'Shake'),
-                        },
-                        {
-                          value: 'vibrate',
-                          label: localize('editor.icon.animation_vibrate', lang, 'Vibrate'),
-                        },
-                        {
-                          value: 'rotate-left',
-                          label: localize('editor.icon.animation_rotate_left', lang, 'Rotate Left'),
-                        },
-                        {
-                          value: 'rotate-right',
-                          label: localize(
-                            'editor.icon.animation_rotate_right',
+                          title: localize(
+                            'editor.icon.inactive_animation',
                             lang,
-                            'Rotate Right'
+                            'Inactive Animation'
                           ),
+                          description: localize(
+                            'editor.icon.inactive_animation_desc',
+                            lang,
+                            'Animation when icon is inactive'
+                          ),
+                          hass,
+                          data: { inactive_icon_animation: icon.inactive_icon_animation || 'none' },
+                          schema: [
+                            this.selectField('inactive_icon_animation', [
+                              {
+                                value: 'none',
+                                label: localize('editor.icon.animation_none', lang, 'None'),
+                              },
+                              {
+                                value: 'pulse',
+                                label: localize('editor.icon.animation_pulse', lang, 'Pulse'),
+                              },
+                              {
+                                value: 'spin',
+                                label: localize('editor.icon.animation_spin', lang, 'Spin'),
+                              },
+                              {
+                                value: 'bounce',
+                                label: localize('editor.icon.animation_bounce', lang, 'Bounce'),
+                              },
+                              {
+                                value: 'flash',
+                                label: localize('editor.icon.animation_flash', lang, 'Flash'),
+                              },
+                              {
+                                value: 'shake',
+                                label: localize('editor.icon.animation_shake', lang, 'Shake'),
+                              },
+                              {
+                                value: 'vibrate',
+                                label: localize('editor.icon.animation_vibrate', lang, 'Vibrate'),
+                              },
+                              {
+                                value: 'rotate-left',
+                                label: localize(
+                                  'editor.icon.animation_rotate_left',
+                                  lang,
+                                  'Rotate Left'
+                                ),
+                              },
+                              {
+                                value: 'rotate-right',
+                                label: localize(
+                                  'editor.icon.animation_rotate_right',
+                                  lang,
+                                  'Rotate Right'
+                                ),
+                              },
+                              {
+                                value: 'fade',
+                                label: localize('editor.icon.animation_fade', lang, 'Fade'),
+                              },
+                              {
+                                value: 'scale',
+                                label: localize('editor.icon.animation_scale', lang, 'Scale'),
+                              },
+                              {
+                                value: 'tada',
+                                label: localize('editor.icon.animation_tada', lang, 'Tada'),
+                              },
+                            ]),
+                          ],
+                          onChange: (e: CustomEvent) => {
+                            const next = e.detail.value.inactive_icon_animation;
+                            const prev = iconModule.icons[index].inactive_icon_animation || 'none';
+                            if (next === prev) return;
+                            this._updateIcon(
+                              iconModule,
+                              index,
+                              { inactive_icon_animation: next },
+                              updateModule
+                            );
+                            // Trigger re-render to update dropdown UI
+                            setTimeout(() => {
+                              this._triggerPreviewUpdate();
+                            }, 50);
+                          },
                         },
-                        {
-                          value: 'fade',
-                          label: localize('editor.icon.animation_fade', lang, 'Fade'),
-                        },
-                        {
-                          value: 'scale',
-                          label: localize('editor.icon.animation_scale', lang, 'Scale'),
-                        },
-                        {
-                          value: 'tada',
-                          label: localize('editor.icon.animation_tada', lang, 'Tada'),
-                        },
-                      ]),
-                    ],
-                    onChange: (e: CustomEvent) => {
-                      const next = e.detail.value.inactive_icon_animation;
-                      const prev = iconModule.icons[index].inactive_icon_animation || 'none';
-                      if (next === prev) return;
-                      this._updateIcon(
-                        iconModule,
-                        index,
-                        { inactive_icon_animation: next },
-                        updateModule
-                      );
-                      // Trigger re-render to update dropdown UI
-                      setTimeout(() => {
-                        this._triggerPreviewUpdate();
-                      }, 50);
-                    },
-                  },
-                ]
-              )}
+                      ]
+                    )}
                   `}
             </div>
           `
@@ -2523,9 +2618,7 @@ export class UltraIconModule extends BaseUltraModule {
 
         <!-- Icon Picker -->
         <div class="field-container" style="margin-bottom: 16px;">
-          <div class="field-title">
-            ${localize('editor.icon.icon', lang, 'Icon')}
-          </div>
+          <div class="field-title">${localize('editor.icon.icon', lang, 'Icon')}</div>
           <div class="field-description">
             ${localize('editor.icon.icon_desc', lang, 'Select an MDI icon')}
           </div>
@@ -2550,9 +2643,7 @@ export class UltraIconModule extends BaseUltraModule {
 
         <!-- Icon Size -->
         <div class="field-container" style="margin-bottom: 16px;">
-          <div class="field-title">
-            ${localize('editor.icon.icon_size', lang, 'Icon Size')}
-          </div>
+          <div class="field-title">${localize('editor.icon.icon_size', lang, 'Icon Size')}</div>
           <div class="field-description">
             ${localize('editor.icon.icon_size_desc', lang, 'Size of the icon in pixels')}
           </div>
@@ -2570,9 +2661,7 @@ export class UltraIconModule extends BaseUltraModule {
 
         <!-- Icon Color -->
         <div class="field-container" style="margin-bottom: 16px;">
-          <div class="field-title">
-            ${localize('editor.icon.icon_color', lang, 'Icon Color')}
-          </div>
+          <div class="field-title">${localize('editor.icon.icon_color', lang, 'Icon Color')}</div>
           <div class="field-description">
             ${localize('editor.icon.icon_color_desc', lang, 'Color of the icon')}
           </div>
@@ -2644,7 +2733,11 @@ export class UltraIconModule extends BaseUltraModule {
                   ${localize('editor.icon.background_color', lang, 'Background Color')}
                 </div>
                 <div class="field-description">
-                  ${localize('editor.icon.background_color_desc', lang, 'Color of the background shape')}
+                  ${localize(
+                    'editor.icon.background_color_desc',
+                    lang,
+                    'Color of the background shape'
+                  )}
                 </div>
                 <ultra-color-picker
                   .value=${icon.inactive_icon_background_color || 'var(--divider-color)'}
@@ -2688,9 +2781,7 @@ export class UltraIconModule extends BaseUltraModule {
 
         <!-- Animation -->
         <div class="field-container" style="margin-bottom: 16px;">
-          <div class="field-title">
-            ${localize('editor.icon.animation', lang, 'Animation')}
-          </div>
+          <div class="field-title">${localize('editor.icon.animation', lang, 'Animation')}</div>
           <div class="field-description">
             ${localize('editor.icon.animation_desc', lang, 'Continuous animation for the icon')}
           </div>
@@ -2702,10 +2793,16 @@ export class UltraIconModule extends BaseUltraModule {
                 { value: 'none', label: localize('editor.icon.animation_none', lang, 'None') },
                 { value: 'pulse', label: localize('editor.icon.animation_pulse', lang, 'Pulse') },
                 { value: 'spin', label: localize('editor.icon.animation_spin', lang, 'Spin') },
-                { value: 'bounce', label: localize('editor.icon.animation_bounce', lang, 'Bounce') },
+                {
+                  value: 'bounce',
+                  label: localize('editor.icon.animation_bounce', lang, 'Bounce'),
+                },
                 { value: 'flash', label: localize('editor.icon.animation_flash', lang, 'Flash') },
                 { value: 'shake', label: localize('editor.icon.animation_shake', lang, 'Shake') },
-                { value: 'vibrate', label: localize('editor.icon.animation_vibrate', lang, 'Vibrate') },
+                {
+                  value: 'vibrate',
+                  label: localize('editor.icon.animation_vibrate', lang, 'Vibrate'),
+                },
                 {
                   value: 'rotate-left',
                   label: localize('editor.icon.animation_rotate_left', lang, 'Rotate Left'),
@@ -2742,7 +2839,11 @@ export class UltraIconModule extends BaseUltraModule {
             ${localize('editor.icon.hover_effect', lang, 'Hover Effect')}
           </div>
           <div class="field-description">
-            ${localize('editor.icon.hover_effect_desc', lang, 'Enable hover animation on mouse over')}
+            ${localize(
+              'editor.icon.hover_effect_desc',
+              lang,
+              'Enable hover animation on mouse over'
+            )}
           </div>
           <ha-switch
             .checked=${icon.enable_hover_effect || false}
@@ -2908,10 +3009,7 @@ export class UltraIconModule extends BaseUltraModule {
         }
 
         // Subscribe to template if not already subscribed (needed for template evaluation)
-        if (
-          this._templateService &&
-          !this._templateService.hasTemplateSubscription(templateKey)
-        ) {
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
           const context = this._getEntityContext(icon, hass);
           this._templateService.subscribeToTemplate(
             icon.unified_template,
@@ -3178,7 +3276,11 @@ export class UltraIconModule extends BaseUltraModule {
                   const parsed = parseUnifiedTemplate(unifiedResult);
                   if (!hasTemplateError(parsed)) {
                     if (parsed.icon) displayIcon = parsed.icon;
-                    if (parsed.icon_color) displayColor = parsed.icon_color;
+                    // Only apply template icon_color when ignore_entity_state_config is true
+                    // This allows users to use templates for dynamic icons while keeping active/inactive colors
+                    if (parsed.icon_color && icon.ignore_entity_state_config) {
+                      displayColor = parsed.icon_color;
+                    }
                     // Store template name, state_text, and colors for later use
                     if (parsed.name) {
                       (icon as any)._template_name = parsed.name;
@@ -3446,8 +3548,8 @@ export class UltraIconModule extends BaseUltraModule {
                 : icon.inactive_icon_background_color || icon.icon_background_color;
 
               const iconBackgroundPadding = isActive
-                ? icon.active_icon_background_padding ?? icon.icon_background_padding ?? 8
-                : icon.inactive_icon_background_padding ?? icon.icon_background_padding ?? 8;
+                ? (icon.active_icon_background_padding ?? icon.icon_background_padding ?? 8)
+                : (icon.inactive_icon_background_padding ?? icon.icon_background_padding ?? 8);
 
               const iconBackgroundStyle = (() => {
                 if (iconBackground === 'none') {
@@ -3509,19 +3611,21 @@ export class UltraIconModule extends BaseUltraModule {
                 justifyContent: icon.vertical_alignment || 'center',
                 // Apply padding from design properties if set, otherwise use 0
                 padding:
-                  designProperties.padding_top || designProperties.padding_bottom || designProperties.padding_left || designProperties.padding_right
+                  designProperties.padding_top ||
+                  designProperties.padding_bottom ||
+                  designProperties.padding_left ||
+                  designProperties.padding_right
                     ? `${this.addPixelUnit(designProperties.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left) || '0px'}`
                     : '0',
-                borderRadius:
-                  designProperties.border_radius
-                    ? this.addPixelUnit(designProperties.border_radius) || '0'
-                    : icon.container_background_shape === 'circle'
-                      ? '50%'
-                      : icon.container_background_shape === 'rounded'
-                        ? '8px'
-                        : icon.container_background_shape === 'square'
-                          ? '0'
-                          : '0',
+                borderRadius: designProperties.border_radius
+                  ? this.addPixelUnit(designProperties.border_radius) || '0'
+                  : icon.container_background_shape === 'circle'
+                    ? '50%'
+                    : icon.container_background_shape === 'rounded'
+                      ? '8px'
+                      : icon.container_background_shape === 'square'
+                        ? '0'
+                        : '0',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 width: icon.container_width ? `${icon.container_width}%` : 'auto',
@@ -3533,9 +3637,7 @@ export class UltraIconModule extends BaseUltraModule {
               if (hasContainerBackground) {
                 // Priority: template result > configured container_background_color > default
                 const containerBgColor =
-                  templateContainerBgColor ||
-                  icon.container_background_color ||
-                  '#808080';
+                  templateContainerBgColor || icon.container_background_color || '#808080';
                 const { styles: backgroundStyles } = computeBackgroundStyles({
                   color: containerBgColor,
                   fallback: containerBgColor,
@@ -3552,7 +3654,8 @@ export class UltraIconModule extends BaseUltraModule {
                   containerStyles.background = templateContainerBgColor;
                   // Apply border-radius from design properties when template background is used
                   if (designProperties.border_radius) {
-                    containerStyles.borderRadius = this.addPixelUnit(designProperties.border_radius) || '0';
+                    containerStyles.borderRadius =
+                      this.addPixelUnit(designProperties.border_radius) || '0';
                   }
                 } else {
                   containerStyles.background = 'transparent';
@@ -4088,7 +4191,11 @@ export class UltraIconModule extends BaseUltraModule {
         const parsed = parseUnifiedTemplate(unifiedResult);
         if (!hasTemplateError(parsed)) {
           if (parsed.icon) displayIcon = parsed.icon;
-          if (parsed.icon_color) displayColor = parsed.icon_color;
+          // Only apply template icon_color when ignore_entity_state_config is true
+          // This allows users to use templates for dynamic icons while keeping active/inactive colors
+          if (parsed.icon_color && icon.ignore_entity_state_config) {
+            displayColor = parsed.icon_color;
+          }
           // Store template name, state_text, and colors for later use
           if (parsed.name) {
             (icon as any)._template_name = parsed.name;
@@ -4328,8 +4435,8 @@ export class UltraIconModule extends BaseUltraModule {
       : icon.inactive_icon_background_color || icon.icon_background_color;
 
     const iconBackgroundPadding = isActiveState
-      ? icon.active_icon_background_padding ?? icon.icon_background_padding ?? 8
-      : icon.inactive_icon_background_padding ?? icon.icon_background_padding ?? 8;
+      ? (icon.active_icon_background_padding ?? icon.icon_background_padding ?? 8)
+      : (icon.inactive_icon_background_padding ?? icon.icon_background_padding ?? 8);
 
     const iconBackgroundStyle = (() => {
       if (iconBackground === 'none') {
@@ -4378,19 +4485,21 @@ export class UltraIconModule extends BaseUltraModule {
       justifyContent: icon.vertical_alignment || 'center',
       // Apply padding from design properties if set, otherwise use 0
       padding:
-        designProperties?.padding_top || designProperties?.padding_bottom || designProperties?.padding_left || designProperties?.padding_right
+        designProperties?.padding_top ||
+        designProperties?.padding_bottom ||
+        designProperties?.padding_left ||
+        designProperties?.padding_right
           ? `${this.addPixelUnit(designProperties.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left) || '0px'}`
           : '0',
-      borderRadius:
-        designProperties?.border_radius
-          ? this.addPixelUnit(designProperties.border_radius) || '0'
-          : icon.container_background_shape === 'circle'
-            ? '50%'
-            : icon.container_background_shape === 'rounded'
-              ? '8px'
-              : icon.container_background_shape === 'square'
-                ? '0'
-                : '8px',
+      borderRadius: designProperties?.border_radius
+        ? this.addPixelUnit(designProperties.border_radius) || '0'
+        : icon.container_background_shape === 'circle'
+          ? '50%'
+          : icon.container_background_shape === 'rounded'
+            ? '8px'
+            : icon.container_background_shape === 'square'
+              ? '0'
+              : '8px',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
       width: icon.container_width ? `${icon.container_width}%` : 'auto',
@@ -4403,9 +4512,7 @@ export class UltraIconModule extends BaseUltraModule {
     if (hasContainerBackground) {
       // Priority: template result > configured container_background_color > default
       const containerBgColor =
-        templateContainerBgColor ||
-        icon.container_background_color ||
-        '#808080';
+        templateContainerBgColor || icon.container_background_color || '#808080';
       const { styles: backgroundStyles } = computeBackgroundStyles({
         color: containerBgColor,
         fallback: containerBgColor,
@@ -4681,7 +4788,10 @@ export class UltraIconModule extends BaseUltraModule {
               hass.__uvc_template_strings = {};
             }
 
-            if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+            if (
+              this._templateService &&
+              !this._templateService.hasTemplateSubscription(templateKey)
+            ) {
               const context = this._getEntityContext(icon, hass);
               this._templateService.subscribeToTemplate(
                 icon.unified_template,
@@ -4703,7 +4813,8 @@ export class UltraIconModule extends BaseUltraModule {
                 if (parsed.icon) (icon as any)._template_icon = parsed.icon;
                 if (parsed.icon_color) (icon as any)._template_icon_color = parsed.icon_color;
                 if (parsed.name) (icon as any)._template_name = parsed.name;
-                if (parsed.state_text !== undefined) (icon as any)._template_state_text = parsed.state_text;
+                if (parsed.state_text !== undefined)
+                  (icon as any)._template_state_text = parsed.state_text;
                 if (parsed.name_color) (icon as any)._template_name_color = parsed.name_color;
                 if (parsed.state_color) (icon as any)._template_state_color = parsed.state_color;
                 if (parsed.container_background_color) {
@@ -4809,8 +4920,8 @@ export class UltraIconModule extends BaseUltraModule {
             : icon.inactive_icon_background_color || icon.icon_background_color;
 
           const iconBackgroundPadding = isActive
-            ? icon.active_icon_background_padding ?? icon.icon_background_padding ?? 8
-            : icon.inactive_icon_background_padding ?? icon.icon_background_padding ?? 8;
+            ? (icon.active_icon_background_padding ?? icon.icon_background_padding ?? 8)
+            : (icon.inactive_icon_background_padding ?? icon.icon_background_padding ?? 8);
 
           const iconBackgroundStyle = (() => {
             if (iconBackground === 'none') {
@@ -4893,9 +5004,7 @@ export class UltraIconModule extends BaseUltraModule {
           if (hasContainerBackground) {
             // Priority: template result > configured container_background_color > default
             const containerBgColor =
-              templateContainerBgColor ||
-              icon.container_background_color ||
-              '#808080';
+              templateContainerBgColor || icon.container_background_color || '#808080';
             const { styles: backgroundStyles } = computeBackgroundStyles({
               color: containerBgColor,
               fallback: containerBgColor,
@@ -5241,11 +5350,11 @@ export class UltraIconModule extends BaseUltraModule {
     if (comparisonMatch) {
       const operator = comparisonMatch[1];
       const targetValueStr = comparisonMatch[2].trim();
-      
+
       // Try numeric comparison first
       const actualNum = parseFloat(actualValue);
       const targetNum = parseFloat(targetValueStr);
-      
+
       if (!isNaN(actualNum) && !isNaN(targetNum)) {
         switch (operator) {
           case '>':
@@ -7758,21 +7867,27 @@ export class UltraIconModule extends BaseUltraModule {
    */
   private addPixelUnit(value: string | number | undefined): string | undefined {
     if (!value && value !== 0) return value as string | undefined;
-    
+
     // Convert number to string
     const valueStr = String(value);
-    
+
     // Handle special CSS values
-    if (valueStr === 'auto' || valueStr === 'none' || valueStr === 'inherit' || valueStr === 'initial' || valueStr === 'unset') {
+    if (
+      valueStr === 'auto' ||
+      valueStr === 'none' ||
+      valueStr === 'inherit' ||
+      valueStr === 'initial' ||
+      valueStr === 'unset'
+    ) {
       return valueStr;
     }
-    
+
     // Normalize "x" to "px" (common typo when users can't type "px")
     if (valueStr.endsWith('x') && !valueStr.endsWith('px')) {
       const normalized = valueStr.replace(/x$/, 'px');
       return normalized;
     }
-    
+
     // Check if value already has valid CSS units
     if (
       valueStr.includes('px') ||
@@ -7788,12 +7903,12 @@ export class UltraIconModule extends BaseUltraModule {
     ) {
       return valueStr;
     }
-    
+
     // If value is just a number (with optional decimal), add px
     if (/^\d+(\.\d+)?$/.test(valueStr)) {
       return `${valueStr}px`;
     }
-    
+
     // If value is multiple numbers separated by spaces, add px to each
     if (/^[\d\.\s]+$/.test(valueStr)) {
       return valueStr
@@ -7801,7 +7916,7 @@ export class UltraIconModule extends BaseUltraModule {
         .map(v => (v.trim() && /^\d+(\.\d+)?$/.test(v.trim()) ? `${v.trim()}px` : v.trim()))
         .join(' ');
     }
-    
+
     // Otherwise return as-is (might be a CSS variable, calc(), etc.)
     return valueStr;
   }

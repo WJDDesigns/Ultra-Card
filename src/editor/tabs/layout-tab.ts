@@ -2380,7 +2380,10 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const layoutModule = module as any;
-    const hasChildren = layoutModule.modules && layoutModule.modules.length > 0;
+    const isTabs = module.type === 'tabs';
+    const hasChildren = isTabs
+      ? layoutModule.sections && layoutModule.sections.length > 0
+      : layoutModule.modules && layoutModule.modules.length > 0;
     const isLastChild = childIndex === totalChildren - 1;
     const moduleKey = `nested-layout-${rowIndex}-${columnIndex}-${parentModuleIndex}-${childIndex}`;
     const isCollapsed = this._collapsedPreviewModules.has(moduleKey);
@@ -2399,9 +2402,9 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div
-        class="tree-node tree-nested-layout ${isLastChild ? 'last-node' : ''} ${isCollapsed
-          ? 'collapsed'
-          : ''}"
+        class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${isLastChild
+          ? 'last-node'
+          : ''} ${isCollapsed ? 'collapsed' : ''}"
         draggable="true"
         @dragstart=${(e: DragEvent) =>
           this._onTreeLayoutChildDragStart(e, rowIndex, columnIndex, parentModuleIndex, childIndex)}
@@ -2427,29 +2430,13 @@ export class LayoutTab extends LitElement {
             ></ha-icon>
             <span class="tree-node-title">${layoutTitle}</span>
             <div class="tree-action-buttons">
-              <button
-                class="tree-action-btn add-btn"
-                @click=${(e: Event) => {
-                  e.stopPropagation();
-                  this._openNestedLayoutModuleSelector(
-                    rowIndex,
-                    columnIndex,
-                    parentModuleIndex,
-                    childIndex
-                  );
-                }}
-                @mousedown=${(e: Event) => e.stopPropagation()}
-                title="${localize('editor.layout.add_module', lang, 'Add Module')}"
-              >
-                <ha-icon icon="mdi:plus"></ha-icon>
-              </button>
-              ${this._hasModuleClipboard
+              ${!isTabs
                 ? html`
                     <button
-                      class="tree-action-btn paste-btn"
+                      class="tree-action-btn add-btn"
                       @click=${(e: Event) => {
                         e.stopPropagation();
-                        this._pasteModuleToNestedLayoutModule(
+                        this._openNestedLayoutModuleSelector(
                           rowIndex,
                           columnIndex,
                           parentModuleIndex,
@@ -2457,10 +2444,30 @@ export class LayoutTab extends LitElement {
                         );
                       }}
                       @mousedown=${(e: Event) => e.stopPropagation()}
-                      title="${localize('editor.layout.paste', lang, 'Paste')}"
+                      title="${localize('editor.layout.add_module', lang, 'Add Module')}"
                     >
-                      <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
+                      <ha-icon icon="mdi:plus"></ha-icon>
                     </button>
+                    ${this._hasModuleClipboard
+                      ? html`
+                          <button
+                            class="tree-action-btn paste-btn"
+                            @click=${(e: Event) => {
+                              e.stopPropagation();
+                              this._pasteModuleToNestedLayoutModule(
+                                rowIndex,
+                                columnIndex,
+                                parentModuleIndex,
+                                childIndex
+                              );
+                            }}
+                            @mousedown=${(e: Event) => e.stopPropagation()}
+                            title="${localize('editor.layout.paste', lang, 'Paste')}"
+                          >
+                            <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
+                          </button>
+                        `
+                      : ''}
                   `
                 : ''}
               <button
@@ -2546,17 +2553,229 @@ export class LayoutTab extends LitElement {
           </div>
           ${!isCollapsed
             ? html`
-                ${hasChildren
+                ${isTabs
                   ? html`
-                      ${layoutModule.modules.map((nestedChild: CardModule, nestedIndex: number) =>
-                        this._renderTreeDeepNestedChild(
-                          nestedChild,
+                      ${hasChildren
+                        ? html`
+                            ${(layoutModule.sections || []).map(
+                              (section: any, sectionIndex: number) =>
+                                this._renderTreeNestedTabsSection(
+                                  section,
+                                  sectionIndex,
+                                  rowIndex,
+                                  columnIndex,
+                                  parentModuleIndex,
+                                  childIndex,
+                                  layoutModule.sections.length
+                                )
+                            )}
+                          `
+                        : html`
+                            <div
+                              style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                            >
+                              ${localize(
+                                'editor.layout.tabs_no_sections',
+                                lang,
+                                'No sections. Open settings to add sections.'
+                              )}
+                            </div>
+                          `}
+                    `
+                  : html`
+                      ${hasChildren
+                        ? html`
+                            ${layoutModule.modules.map(
+                              (nestedChild: CardModule, nestedIndex: number) =>
+                                this._renderTreeDeepNestedChild(
+                                  nestedChild,
+                                  rowIndex,
+                                  columnIndex,
+                                  parentModuleIndex,
+                                  childIndex,
+                                  nestedIndex,
+                                  layoutModule.modules.length
+                                )
+                            )}
+                          `
+                        : ''}
+                      <div class="tree-add-button-container">
+                        <button
+                          class="tree-add-btn"
+                          @click=${(e: Event) => {
+                            e.stopPropagation();
+                            this._openNestedLayoutModuleSelector(
+                              rowIndex,
+                              columnIndex,
+                              parentModuleIndex,
+                              childIndex
+                            );
+                          }}
+                        >
+                          <ha-icon icon="mdi:plus"></ha-icon>
+                          <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
+                        </button>
+                      </div>
+                    `}
+              `
+            : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // Render a tabs section inside a nested tabs layout (tabs inside another layout like popup)
+  private _renderTreeNestedTabsSection(
+    section: any,
+    sectionIndex: number,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedTabsIndex: number,
+    totalSections: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const sectionModules = section.modules || [];
+    const hasModules = sectionModules.length > 0;
+    const sectionTitle = section.title || `Section ${sectionIndex + 1}`;
+    const isLastSection = sectionIndex === totalSections - 1;
+    const sectionKey = `nested-tabs-section-${rowIndex}-${columnIndex}-${parentModuleIndex}-${nestedTabsIndex}-${sectionIndex}`;
+    const isCollapsed = this._collapsedPreviewModules.has(sectionKey);
+
+    return html`
+      <div
+        class="tree-node tree-tabs-section ${isLastSection ? 'last-node' : ''} ${isCollapsed
+          ? 'collapsed'
+          : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) => {
+          e.stopPropagation();
+          this._onNestedTabsSectionDragStart(
+            e,
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedTabsIndex,
+            sectionIndex
+          );
+        }}
+        @dragend=${(e: DragEvent) => this._onDragEnd(e)}
+        @dragover=${(e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        @dragenter=${(e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        @dragleave=${(e: DragEvent) => this._onDragLeave(e)}
+        @drop=${(e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this._onNestedTabsSectionDrop(
+            e,
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedTabsIndex,
+            sectionIndex
+          );
+        }}
+      >
+        <div class="tree-node-content">
+          <div
+            class="tree-node-header section-header"
+            style="background: rgba(var(--rgb-primary-color), 0.15); border-left: 3px solid var(--primary-color);"
+          >
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_reorder', lang, 'Drag to reorder')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
+            ${section.icon
+              ? html`<ha-icon icon="${section.icon}" class="tree-node-icon"></ha-icon>`
+              : html`<ha-icon icon="mdi:tab" class="tree-node-icon"></ha-icon>`}
+            <span class="tree-node-title">${sectionTitle}</span>
+            <div class="tree-action-buttons">
+              <button
+                class="tree-action-btn add-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openNestedTabsSectionModuleSelector(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    nestedTabsIndex,
+                    sectionIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize(
+                  'editor.layout.add_module_to_section',
+                  lang,
+                  'Add Module to Section'
+                )}"
+              >
+                <ha-icon icon="mdi:plus"></ha-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div
+          class="tree-node-children tree-tabs-section-children"
+          style="margin-left: 16px;"
+          @dragover=${(e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          @dragenter=${(e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const target = e.currentTarget as HTMLElement;
+            if (target) target.classList.add('drag-over');
+          }}
+          @dragleave=${(e: DragEvent) => this._onDragLeave(e)}
+          @drop=${(e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const target = e.currentTarget as HTMLElement;
+            if (target) target.classList.remove('drag-over');
+            this._onNestedTabsSectionContentDrop(
+              e,
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              nestedTabsIndex,
+              sectionIndex
+            );
+          }}
+        >
+          <div
+            class="tree-track-collapse"
+            @click=${(e: Event) => this._toggleLayoutModuleCollapsed(sectionKey, e)}
+            title="${isCollapsed ? 'Expand' : 'Collapse'}"
+          >
+            <ha-icon
+              icon="mdi:chevron-down"
+              class="track-chevron"
+              style="transform: rotate(${isCollapsed ? '-90deg' : '0deg'});"
+            ></ha-icon>
+          </div>
+          ${!isCollapsed
+            ? html`
+                ${hasModules
+                  ? html`
+                      ${sectionModules.map((childModule: any, childIndex: number) =>
+                        this._renderTreeNestedTabsSectionChild(
+                          childModule,
                           rowIndex,
                           columnIndex,
                           parentModuleIndex,
+                          nestedTabsIndex,
+                          sectionIndex,
                           childIndex,
-                          nestedIndex,
-                          layoutModule.modules.length
+                          sectionModules.length
                         )
                       )}
                     `
@@ -2566,13 +2785,15 @@ export class LayoutTab extends LitElement {
                     class="tree-add-btn"
                     @click=${(e: Event) => {
                       e.stopPropagation();
-                      this._openNestedLayoutModuleSelector(
+                      this._openNestedTabsSectionModuleSelector(
                         rowIndex,
                         columnIndex,
                         parentModuleIndex,
-                        childIndex
+                        nestedTabsIndex,
+                        sectionIndex
                       );
                     }}
+                    style="border: 1px dashed var(--primary-color); background: rgba(var(--rgb-primary-color), 0.05);"
                   >
                     <ha-icon icon="mdi:plus"></ha-icon>
                     <span>${localize('editor.layout.add_module', lang, 'Add Module')}</span>
@@ -2580,6 +2801,147 @@ export class LayoutTab extends LitElement {
                 </div>
               `
             : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // Render a child module inside a nested tabs section
+  private _renderTreeNestedTabsSectionChild(
+    childModule: any,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedTabsIndex: number,
+    sectionIndex: number,
+    childIndex: number,
+    totalChildren: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(childModule.type);
+    const metadata = moduleHandler?.metadata || {
+      icon: 'mdi:help-circle',
+      title: 'Unknown',
+    };
+    const isLastChild = childIndex === totalChildren - 1;
+    const moduleTitle = this._getModuleDisplayName(childModule);
+    const moduleInfo = this._generateModuleInfo(childModule);
+
+    return html`
+      <div
+        class="tree-node tree-module ${isLastChild ? 'last-node' : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) => {
+          e.stopPropagation();
+          this._onNestedTabsSectionChildDragStart(
+            e,
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedTabsIndex,
+            sectionIndex,
+            childIndex
+          );
+        }}
+        @dragend=${(e: DragEvent) => this._onLayoutChildDragEnd(e)}
+        @dragover=${(e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        @dragenter=${(e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const target = e.currentTarget as HTMLElement;
+          if (target) target.style.borderTop = '2px solid var(--primary-color)';
+        }}
+        @dragleave=${(e: DragEvent) => this._onDragLeave(e)}
+        @drop=${(e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const target = e.currentTarget as HTMLElement;
+          if (target) target.style.borderTop = '';
+          this._onNestedTabsSectionChildDrop(
+            e,
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedTabsIndex,
+            sectionIndex,
+            childIndex
+          );
+        }}
+      >
+        <div class="tree-node-content">
+          <div class="tree-node-header module-header">
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_reorder', lang, 'Drag to reorder')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
+            <ha-icon icon="${metadata.icon}" class="tree-node-icon"></ha-icon>
+            <div class="tree-node-info">
+              <span class="tree-node-title">${moduleTitle}</span>
+              <span class="tree-node-subtitle">${moduleInfo}</span>
+            </div>
+            <div class="tree-action-buttons">
+              <button
+                class="tree-action-btn edit-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openNestedTabsSectionChildSettings(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    nestedTabsIndex,
+                    sectionIndex,
+                    childIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.edit', lang, 'Edit')}"
+              >
+                <ha-icon icon="mdi:pencil"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn duplicate-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._duplicateNestedTabsSectionChild(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    nestedTabsIndex,
+                    sectionIndex,
+                    childIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
+              >
+                <ha-icon icon="mdi:content-copy"></ha-icon>
+              </button>
+              <button
+                class="tree-action-btn delete-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._deleteNestedTabsSectionChild(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    nestedTabsIndex,
+                    sectionIndex,
+                    childIndex
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize('editor.layout.delete', lang, 'Delete')}"
+              >
+                <ha-icon icon="mdi:delete"></ha-icon>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -3916,6 +4278,13 @@ export class LayoutTab extends LitElement {
     // Check if adding to a nested layout inside a tabs section
     if (this._tabsSectionNestedLayoutContext) {
       this._addModuleToTabsSectionNestedLayout(type);
+      this._showModuleSelector = false;
+      return;
+    }
+
+    // Check if adding to a tabs section inside a nested layout (like popup)
+    if (this._nestedTabsSectionContext) {
+      this._addModuleToNestedTabsSection(type);
       this._showModuleSelector = false;
       return;
     }
@@ -11852,6 +12221,15 @@ export class LayoutTab extends LitElement {
     isNested: boolean;
   } | null = null;
 
+  // Context storage for nested tabs section (tabs inside another layout like popup)
+  private _nestedTabsSectionContext: {
+    rowIndex?: number;
+    columnIndex?: number;
+    parentModuleIndex?: number;
+    nestedTabsIndex?: number;
+    sectionIndex?: number;
+  } | null = null;
+
   /**
    * Adds a module to a specific tabs section
    */
@@ -11919,6 +12297,76 @@ export class LayoutTab extends LitElement {
         tabsModule.sections[sectionIndex].modules.length - 1,
         parentLayoutChildIndex,
         isNested
+      );
+    }, 100);
+  }
+
+  /**
+   * Adds a module to a tabs section inside a nested layout (like popup)
+   */
+  private _addModuleToNestedTabsSection(moduleType: string): void {
+    if (!this._nestedTabsSectionContext) return;
+
+    const { rowIndex, columnIndex, parentModuleIndex, nestedTabsIndex, sectionIndex } =
+      this._nestedTabsSectionContext;
+
+    if (
+      rowIndex === undefined ||
+      columnIndex === undefined ||
+      parentModuleIndex === undefined ||
+      nestedTabsIndex === undefined ||
+      sectionIndex === undefined
+    ) {
+      return;
+    }
+
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+
+    const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[
+      parentModuleIndex
+    ] as any;
+    const tabsModule = parentLayout?.modules?.[nestedTabsIndex] as any;
+
+    if (!tabsModule?.sections?.[sectionIndex]) {
+      return;
+    }
+
+    // Initialize modules array if needed
+    if (!tabsModule.sections[sectionIndex].modules) {
+      tabsModule.sections[sectionIndex].modules = [];
+    }
+
+    // Create new module
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(moduleType);
+    let newModule: any;
+
+    if (moduleHandler?.createDefault) {
+      newModule = moduleHandler.createDefault(undefined, this.hass);
+    } else {
+      newModule = {
+        id: `${moduleType}-${Date.now()}`,
+        type: moduleType,
+      };
+    }
+
+    // Add to section
+    tabsModule.sections[sectionIndex].modules.push(newModule);
+    this._updateLayout(newLayout);
+
+    // Clear context
+    this._nestedTabsSectionContext = null;
+
+    // Open module settings
+    setTimeout(() => {
+      this._openNestedTabsSectionChildSettings(
+        rowIndex,
+        columnIndex,
+        parentModuleIndex,
+        nestedTabsIndex,
+        sectionIndex,
+        tabsModule.sections[sectionIndex].modules.length - 1
       );
     }, 100);
   }
@@ -12966,6 +13414,409 @@ export class LayoutTab extends LitElement {
       (el as HTMLElement).style.borderTop = '';
       (el as HTMLElement).style.borderBottom = '';
     });
+  }
+
+  // ========== NESTED TABS SECTION HANDLERS (for tabs inside other layouts like popup) ==========
+
+  /**
+   * Drag start for nested tabs section
+   */
+  private _onNestedTabsSectionDragStart(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedTabsIndex: number,
+    sectionIndex: number
+  ): void {
+    e.stopPropagation();
+
+    const layout = this._ensureLayout();
+    const parentLayout = layout.rows[rowIndex]?.columns[columnIndex]?.modules[
+      parentModuleIndex
+    ] as any;
+    const tabsModule = parentLayout?.modules?.[nestedTabsIndex] as any;
+    const sectionData = tabsModule?.sections?.[sectionIndex];
+
+    if (!sectionData) return;
+
+    this._draggedItem = {
+      type: 'nested-tabs-section' as any,
+      data: sectionData,
+      rowIndex,
+      columnIndex,
+      parentModuleIndex,
+      nestedTabsIndex,
+      sectionIndex,
+    } as any;
+
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'nested-tabs-section' }));
+    }
+
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.opacity = '0.5';
+    }
+  }
+
+  /**
+   * Drop handler for nested tabs section (reordering sections)
+   */
+  private _onNestedTabsSectionDrop(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedTabsIndex: number,
+    targetSectionIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    this._clearAllDragStyles();
+
+    if (!this._draggedItem) return;
+
+    const draggedItem = this._draggedItem as any;
+
+    // Only handle nested-tabs-section type for reordering
+    if (
+      draggedItem.type === 'nested-tabs-section' &&
+      draggedItem.rowIndex === rowIndex &&
+      draggedItem.columnIndex === columnIndex &&
+      draggedItem.parentModuleIndex === parentModuleIndex &&
+      draggedItem.nestedTabsIndex === nestedTabsIndex
+    ) {
+      const sourceSectionIndex = draggedItem.sectionIndex;
+
+      if (sourceSectionIndex === targetSectionIndex) {
+        this._draggedItem = null;
+        this._dropTarget = null;
+        return;
+      }
+
+      const layout = this._ensureLayout();
+      const newLayout = JSON.parse(JSON.stringify(layout));
+      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[
+        parentModuleIndex
+      ] as any;
+      const tabsModule = parentLayout.modules[nestedTabsIndex] as any;
+
+      if (!tabsModule?.sections) {
+        this._draggedItem = null;
+        this._dropTarget = null;
+        return;
+      }
+
+      const [movedSection] = tabsModule.sections.splice(sourceSectionIndex, 1);
+      const adjustedTargetIndex =
+        targetSectionIndex > sourceSectionIndex ? targetSectionIndex - 1 : targetSectionIndex;
+      tabsModule.sections.splice(adjustedTargetIndex, 0, movedSection);
+
+      this._updateLayout(newLayout);
+    }
+
+    this._draggedItem = null;
+    this._dropTarget = null;
+  }
+
+  /**
+   * Drop handler for nested tabs section content (dropping modules into a section)
+   */
+  private _onNestedTabsSectionContentDrop(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedTabsIndex: number,
+    sectionIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    this._clearAllDragStyles();
+
+    if (!this._draggedItem) return;
+
+    const draggedItem = this._draggedItem as any;
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+
+    const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[
+      parentModuleIndex
+    ] as any;
+    const targetTabsModule = parentLayout?.modules?.[nestedTabsIndex] as any;
+
+    if (!targetTabsModule?.sections?.[sectionIndex]) {
+      this._draggedItem = null;
+      this._dropTarget = null;
+      return;
+    }
+
+    if (!targetTabsModule.sections[sectionIndex].modules) {
+      targetTabsModule.sections[sectionIndex].modules = [];
+    }
+
+    let movedModule: any = null;
+
+    if (draggedItem.type === 'nested-tabs-section-child') {
+      // Moving from another section in the same nested tabs
+      const sourceTabsModule = newLayout.rows[draggedItem.rowIndex].columns[draggedItem.columnIndex]
+        .modules[draggedItem.parentModuleIndex].modules[draggedItem.nestedTabsIndex] as any;
+
+      if (!sourceTabsModule?.sections?.[draggedItem.sectionIndex]?.modules) {
+        this._draggedItem = null;
+        this._dropTarget = null;
+        return;
+      }
+
+      // Check if same section
+      if (
+        draggedItem.rowIndex === rowIndex &&
+        draggedItem.columnIndex === columnIndex &&
+        draggedItem.parentModuleIndex === parentModuleIndex &&
+        draggedItem.nestedTabsIndex === nestedTabsIndex &&
+        draggedItem.sectionIndex === sectionIndex
+      ) {
+        this._draggedItem = null;
+        this._dropTarget = null;
+        return;
+      }
+
+      [movedModule] = sourceTabsModule.sections[draggedItem.sectionIndex].modules.splice(
+        draggedItem.childIndex,
+        1
+      );
+    } else if (draggedItem.type === 'module') {
+      // Moving from a column
+      const sourceColumn = newLayout.rows[draggedItem.rowIndex].columns[draggedItem.columnIndex];
+      if (sourceColumn?.modules?.[draggedItem.moduleIndex]) {
+        [movedModule] = sourceColumn.modules.splice(draggedItem.moduleIndex, 1);
+      }
+    } else if (draggedItem.data) {
+      movedModule = JSON.parse(JSON.stringify(draggedItem.data));
+    }
+
+    if (movedModule) {
+      targetTabsModule.sections[sectionIndex].modules.push(movedModule);
+      this._updateLayout(newLayout);
+    }
+
+    this._draggedItem = null;
+    this._dropTarget = null;
+  }
+
+  /**
+   * Drag start for child module inside nested tabs section
+   */
+  private _onNestedTabsSectionChildDragStart(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedTabsIndex: number,
+    sectionIndex: number,
+    childIndex: number
+  ): void {
+    e.stopPropagation();
+
+    const layout = this._ensureLayout();
+    const parentLayout = layout.rows[rowIndex]?.columns[columnIndex]?.modules[
+      parentModuleIndex
+    ] as any;
+    const tabsModule = parentLayout?.modules?.[nestedTabsIndex] as any;
+    const moduleData = tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex];
+
+    if (!moduleData) return;
+
+    this._draggedItem = {
+      type: 'nested-tabs-section-child' as any,
+      data: moduleData,
+      rowIndex,
+      columnIndex,
+      parentModuleIndex,
+      nestedTabsIndex,
+      sectionIndex,
+      childIndex,
+    } as any;
+
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'nested-tabs-section-child' }));
+    }
+
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.opacity = '0.5';
+    }
+  }
+
+  /**
+   * Drop handler for child module inside nested tabs section
+   */
+  private _onNestedTabsSectionChildDrop(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedTabsIndex: number,
+    sectionIndex: number,
+    targetChildIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    this._clearAllDragStyles();
+
+    if (!this._draggedItem) return;
+
+    const draggedItem = this._draggedItem as any;
+
+    if (draggedItem.type !== 'nested-tabs-section-child') {
+      this._draggedItem = null;
+      this._dropTarget = null;
+      return;
+    }
+
+    // Check if reordering within same section
+    if (
+      draggedItem.rowIndex === rowIndex &&
+      draggedItem.columnIndex === columnIndex &&
+      draggedItem.parentModuleIndex === parentModuleIndex &&
+      draggedItem.nestedTabsIndex === nestedTabsIndex &&
+      draggedItem.sectionIndex === sectionIndex
+    ) {
+      const sourceChildIndex = draggedItem.childIndex;
+
+      if (sourceChildIndex === targetChildIndex) {
+        this._draggedItem = null;
+        this._dropTarget = null;
+        return;
+      }
+
+      const layout = this._ensureLayout();
+      const newLayout = JSON.parse(JSON.stringify(layout));
+      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[
+        parentModuleIndex
+      ] as any;
+      const tabsModule = parentLayout.modules[nestedTabsIndex] as any;
+      const modules = tabsModule.sections[sectionIndex].modules;
+
+      const [movedModule] = modules.splice(sourceChildIndex, 1);
+      let newIndex = targetChildIndex;
+      if (sourceChildIndex < targetChildIndex) {
+        newIndex = targetChildIndex - 1;
+      }
+      modules.splice(newIndex, 0, movedModule);
+
+      this._updateLayout(newLayout);
+    }
+
+    this._draggedItem = null;
+    this._dropTarget = null;
+  }
+
+  /**
+   * Open module selector for nested tabs section
+   */
+  private _openNestedTabsSectionModuleSelector(
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedTabsIndex: number,
+    sectionIndex: number
+  ): void {
+    this._nestedTabsSectionContext = {
+      rowIndex,
+      columnIndex,
+      parentModuleIndex,
+      nestedTabsIndex,
+      sectionIndex,
+    };
+    this._showModuleSelector = true;
+    this.requestUpdate();
+  }
+
+  /**
+   * Open settings for a child module inside nested tabs section
+   * Delegates to _openTabsSectionChildSettings with nested=true
+   */
+  private _openNestedTabsSectionChildSettings(
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedTabsIndex: number,
+    sectionIndex: number,
+    childIndex: number
+  ): void {
+    // Use existing tabs section child settings with isNested=true
+    // moduleIndex = parent layout module (e.g., popup)
+    // parentLayoutChildIndex = nested tabs module index within the parent layout
+    this._openTabsSectionChildSettings(
+      rowIndex,
+      columnIndex,
+      parentModuleIndex, // The parent layout module (popup, etc.)
+      sectionIndex,
+      childIndex,
+      nestedTabsIndex, // The tabs module index inside the parent layout
+      true // isNested = true
+    );
+  }
+
+  /**
+   * Duplicate a child module inside nested tabs section
+   */
+  private _duplicateNestedTabsSectionChild(
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedTabsIndex: number,
+    sectionIndex: number,
+    childIndex: number
+  ): void {
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+    const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[
+      parentModuleIndex
+    ] as any;
+    const tabsModule = parentLayout?.modules?.[nestedTabsIndex] as any;
+
+    if (!tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex]) return;
+
+    const moduleToDuplicate = tabsModule.sections[sectionIndex].modules[childIndex];
+    const duplicatedModule = JSON.parse(JSON.stringify(moduleToDuplicate));
+
+    // Generate new ID
+    duplicatedModule.id = `${moduleToDuplicate.type}-${Date.now()}`;
+
+    tabsModule.sections[sectionIndex].modules.splice(childIndex + 1, 0, duplicatedModule);
+    this._updateLayout(newLayout);
+  }
+
+  /**
+   * Delete a child module inside nested tabs section
+   */
+  private _deleteNestedTabsSectionChild(
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedTabsIndex: number,
+    sectionIndex: number,
+    childIndex: number
+  ): void {
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+    const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[
+      parentModuleIndex
+    ] as any;
+    const tabsModule = parentLayout?.modules?.[nestedTabsIndex] as any;
+
+    if (!tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex]) return;
+
+    tabsModule.sections[sectionIndex].modules.splice(childIndex, 1);
+    this._updateLayout(newLayout);
   }
 
   /**
@@ -25775,6 +26626,28 @@ export class LayoutTab extends LitElement {
       .tree-layout-module.tabs-layout .tree-node {
         animation: none !important;
         opacity: 1 !important;
+      }
+
+      /* ========== NESTED TABS LAYOUT (tabs inside popup or other layout) ========== */
+      /* Nested tabs layouts and all their contents should never animate */
+      .tree-nested-layout.tabs-layout,
+      .tree-nested-layout.tabs-layout .tree-node-children,
+      .tree-nested-layout.tabs-layout .tree-node-children > *,
+      .tree-nested-layout.tabs-layout .tree-node,
+      .tree-nested-layout.tabs-layout .tree-tabs-section,
+      .tree-nested-layout.tabs-layout .tree-tabs-section-children,
+      .tree-nested-layout.tabs-layout .tree-tabs-section-children > *,
+      .tree-nested-layout.tabs-layout .tree-tabs-section-children * {
+        animation: none !important;
+        opacity: 1 !important;
+      }
+
+      /* Disable pulsing for nested tabs when dragged over */
+      .tree-nested-layout.tabs-layout.drag-over,
+      .tree-nested-layout.tabs-layout.drag-over > .tree-node-content > .tree-node-header,
+      .tree-nested-layout.tabs-layout.drag-over > .tree-node-content > .tree-node-header::after {
+        animation: none !important;
+        box-shadow: none !important;
       }
 
       /* Tabs section drop zone styling */
