@@ -307,11 +307,21 @@ export class UltraHorizontalModule extends BaseUltraModule {
       imageRepeat: effective.background_repeat || 'no-repeat',
     });
 
+    // Get border radius from multiple possible sources:
+    // 1. design.border_radius (via effective spread)
+    // 2. module root border_radius
+    // 3. border.radius nested object (from module or design)
+    const borderRadiusValue =
+      effective.border_radius ||
+      moduleWithDesign.border_radius ||
+      (effective.border?.radius !== undefined ? effective.border.radius : undefined) ||
+      (moduleWithDesign.border?.radius !== undefined ? moduleWithDesign.border.radius : undefined);
+
     const containerStyles: any = {
       padding: this.getPaddingCSS(effective),
       ...bgResult.styles,
       border: effective.border_width ? this.getBorderCSS(effective) : 'none',
-      borderRadius: this.addPixelUnit(effective.border_radius) || '0',
+      borderRadius: this.addPixelUnit(borderRadiusValue) || '0',
       // Respect explicit positioning/z-index so the entire row can overlay siblings (e.g., camera)
       // If a z-index is provided but no position, use relative so z-index takes effect
       position: (effective as any).position || ((effective as any).z_index ? 'relative' : 'static'),
@@ -343,8 +353,26 @@ export class UltraHorizontalModule extends BaseUltraModule {
       // Allow fully collapsed layouts when designers set 0 padding/margin
       // Only set min-height if explicitly specified by user, otherwise let content determine height
       minHeight: (effective as any).min_height || 'auto',
-      // Respect overflow settings from design properties (defaults to visible for negative margin overlaps)
-      overflow: (effective as any).overflow || 'visible',
+      // Respect overflow settings from design properties
+      // Default to 'hidden' when border-radius is set to clip children to rounded corners
+      // Otherwise default to 'visible' for negative margin overlaps
+      overflow: (() => {
+        const explicitOverflow = (effective as any).overflow;
+        // Respect explicit non-visible overflow settings
+        if (explicitOverflow && explicitOverflow !== 'visible') {
+          return explicitOverflow;
+        }
+        // If there's a border-radius, use hidden to clip corners
+        if (
+          borderRadiusValue &&
+          String(borderRadiusValue) !== '0' &&
+          String(borderRadiusValue) !== '0px'
+        ) {
+          return 'hidden';
+        }
+        // Default to visible for negative margin overlaps
+        return explicitOverflow || 'visible';
+      })(),
       boxSizing: 'border-box',
     };
 

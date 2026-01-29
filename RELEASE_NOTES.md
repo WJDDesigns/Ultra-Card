@@ -1,5 +1,14 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta28
+
+### 🐛 Bug Fixes
+
+- **Fixed Issue where overflow menu did not show on modules** - Resolved content overflow and clipping issues
+- **Fixed Border radius and background inside layout module issue** - Enhanced module functionality for better user experience
+
+---
+
 ## Version 2.3.0-beta27
 
 ### 🚀 New Features

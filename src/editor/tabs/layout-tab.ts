@@ -1599,9 +1599,9 @@ export class LayoutTab extends LitElement {
         @dragend=${this._onDragEnd}
         @dragover=${this._onDragOver}
         @dragenter=${(e: DragEvent) =>
-          this._onDragEnter(e, 'module', rowIndex, columnIndex, moduleIndex)}
+          this._onDragEnter(e, 'layout', rowIndex, columnIndex, moduleIndex)}
         @dragleave=${this._onDragLeave}
-        @drop=${(e: DragEvent) => this._onDrop(e, 'module', rowIndex, columnIndex, moduleIndex)}
+        @drop=${(e: DragEvent) => this._onDrop(e, 'layout', rowIndex, columnIndex, moduleIndex)}
       >
         <div class="tree-node-content">
           <div class="tree-node-header layout-header">

@@ -523,7 +523,10 @@ export class ResponsiveDesignService {
     if (design.backdrop_filter) cssProps.push(`backdrop-filter: ${design.backdrop_filter}${imp}`);
 
     // Border properties - define the container's border appearance
-    if (design.border_radius) cssProps.push(`border-radius: ${design.border_radius}${imp}`);
+    const normalizedBorderRadius = this._normalizeLengthValue(design.border_radius);
+    if (normalizedBorderRadius) {
+      cssProps.push(`border-radius: ${normalizedBorderRadius}${imp}`);
+    }
     if (design.border_style && design.border_style !== 'none') {
       cssProps.push(`border-style: ${design.border_style}${imp}`);
     }
@@ -553,6 +556,27 @@ export class ResponsiveDesignService {
     if (design.clip_path) cssProps.push(`clip-path: ${design.clip_path}${imp}`);
 
     return cssProps.join('; ');
+  }
+
+  private _normalizeLengthValue(value: unknown): string | undefined {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'number') return `${value}px`;
+
+    const stringValue = String(value).trim();
+    if (!stringValue) return undefined;
+
+    if (/^\d+$/.test(stringValue)) {
+      return `${stringValue}px`;
+    }
+
+    if (/^[\d\s]+$/.test(stringValue)) {
+      return stringValue
+        .split(' ')
+        .map(token => (token.trim() ? `${token.trim()}px` : token))
+        .join(' ');
+    }
+
+    return stringValue;
   }
 
   /**

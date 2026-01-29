@@ -166,6 +166,8 @@ export interface BaseModule {
     color?: string;
     radius?: number;
   };
+  // Direct border radius property (alternative to border.radius)
+  border_radius?: string | number;
   custom_css?: string;
   // Animation properties (for easy access)
   intro_animation?:
@@ -1554,7 +1556,16 @@ export interface TabsModule extends BaseModule {
 
   // Orientation and style
   orientation?: 'horizontal' | 'vertical';
-  style?: 'default' | 'simple' | 'simple_2' | 'simple_3' | 'switch_1' | 'switch_2' | 'switch_3' | 'modern' | 'trendy';
+  style?:
+    | 'default'
+    | 'simple'
+    | 'simple_2'
+    | 'simple_3'
+    | 'switch_1'
+    | 'switch_2'
+    | 'switch_3'
+    | 'modern'
+    | 'trendy';
   alignment?: 'left' | 'center' | 'right' | 'stretch';
   tab_position?: 'top' | 'bottom' | 'left' | 'right';
 
@@ -3744,18 +3755,18 @@ export interface TogglePoint {
   id: string;
   label: string;
   icon?: string;
-  
+
   // Action configuration (uses HA's native action system)
   tap_action?: ModuleActionConfig;
-  
+
   // Entity state matching (for auto-selection)
   match_entity?: string;
   match_state?: string | string[]; // Can match multiple states
-  
+
   // Template-based matching (for advanced conditions like ranges)
   match_template_mode?: boolean; // Enable template mode instead of simple entity/state matching
   match_template?: string; // Jinja2 template that evaluates to true/false
-  
+
   // Styling
   background_color?: string;
   text_color?: string;
@@ -3771,7 +3782,13 @@ export interface ToggleModule extends BaseModule {
   // Toggle points
   toggle_points: TogglePoint[];
   // Visual style
-  visual_style: 'ios_toggle' | 'segmented' | 'button_group' | 'slider_track' | 'minimal' | 'timeline';
+  visual_style:
+    | 'ios_toggle'
+    | 'segmented'
+    | 'button_group'
+    | 'slider_track'
+    | 'minimal'
+    | 'timeline';
   // Tracking
   tracking_entity?: string; // Entity to watch for state changes
   // Display
@@ -4051,7 +4068,9 @@ export interface ResponsiveDesignProperties extends SharedDesignProperties {
 }
 
 // Type guard to check if design has responsive overrides (has device-specific keys)
-export function isResponsiveDesign(design: SharedDesignProperties | ResponsiveDesignProperties | undefined): design is ResponsiveDesignProperties {
+export function isResponsiveDesign(
+  design: SharedDesignProperties | ResponsiveDesignProperties | undefined
+): design is ResponsiveDesignProperties {
   if (!design) return false;
   return (
     'base' in design ||
@@ -4603,7 +4622,17 @@ export interface VacuumModule extends BaseModule {
   battery_threshold_low?: number; // Percentage threshold for low (default: 20)
 
   // Integration Detection
-  detected_integration?: 'generic' | 'xiaomi' | 'roborock' | 'valetudo' | 'ecovacs' | 'neato' | 'roomba' | 'eufy' | 'shark' | 'tuya';
+  detected_integration?:
+    | 'generic'
+    | 'xiaomi'
+    | 'roborock'
+    | 'valetudo'
+    | 'ecovacs'
+    | 'neato'
+    | 'roomba'
+    | 'eufy'
+    | 'shark'
+    | 'tuya';
 
   // Rooms/Segments Configuration (integration-specific)
   rooms?: VacuumRoom[];
@@ -4655,18 +4684,18 @@ export interface VacuumDisplaySection {
     show_graph?: boolean;
     show_percentage?: boolean;
     show_title?: boolean; // Section title visibility
-    
+
     // Sizing
     icon_size?: number;
     font_size?: number;
     bar_height?: number;
-    
+
     // Spacing/Margins
     margin_top?: number;
     margin_right?: number;
     margin_bottom?: number;
     margin_left?: number;
-    
+
     // Colors
     icon_color?: string;
     label_color?: string;
@@ -4676,10 +4705,10 @@ export interface VacuumDisplaySection {
     color?: string; // Generic color for icons/elements
     error_color?: string; // Error section color
     button_color?: string; // Button color for DND, quick controls
-    
+
     // Entity override (allows manual entity selection)
     entity_override?: string;
-    
+
     // Section-specific settings
     // Component life specific
     show_filter?: boolean;
@@ -4690,7 +4719,7 @@ export interface VacuumDisplaySection {
     main_brush_entity_override?: string;
     side_brush_entity_override?: string;
     sensor_entity_override?: string;
-    
+
     // Quick controls specific
     show_start?: boolean;
     show_pause?: boolean;
@@ -4698,13 +4727,13 @@ export interface VacuumDisplaySection {
     show_dock?: boolean;
     show_locate?: boolean;
     control_layout?: 'row' | 'grid' | 'compact';
-    
+
     // Vacuum image specific
     custom_image?: string;
-    
+
     // Map section specific
     display_mode?: 'below_vacuum' | 'replace_vacuum' | 'swipe';
-    
+
     // Fan speed specific
     style?: 'default' | 'speed_only' | 'compact';
   };
@@ -4731,13 +4760,7 @@ export interface VacuumZone {
 // ========================================
 
 // Calendar view types
-export type CalendarViewType =
-  | 'compact_list'
-  | 'month'
-  | 'week'
-  | 'day'
-  | 'table'
-  | 'grid';
+export type CalendarViewType = 'compact_list' | 'month' | 'week' | 'day' | 'table' | 'grid';
 
 // First day of week options
 export type FirstDayOfWeek = 'sunday' | 'monday' | 'saturday';
@@ -4809,9 +4832,9 @@ export interface CalendarModule extends BaseModule {
   compact_show_all_day_events?: boolean;
   compact_hide_empty_days?: boolean;
   // Auto-fit to height options
-  compact_auto_fit_height?: boolean;  // Enable height-based fitting instead of count
-  compact_height?: string;            // Container height (e.g., "300px", "50vh")
-  compact_overflow?: 'scroll' | 'hidden';  // Overflow behavior
+  compact_auto_fit_height?: boolean; // Enable height-based fitting instead of count
+  compact_height?: string; // Container height (e.g., "300px", "50vh")
+  compact_overflow?: 'scroll' | 'hidden'; // Overflow behavior
   compact_show_nav_buttons?: boolean; // Show scroll navigation buttons when overflow is hidden
 
   // Month view
@@ -4964,7 +4987,7 @@ export interface SportsGameData {
   // Game identification
   gameId: string;
   league: SportsLeague;
-  
+
   // Team information
   homeTeam: {
     id: string;
@@ -4984,24 +5007,24 @@ export interface SportsGameData {
     record?: string;
     color?: string;
   };
-  
+
   // Game status
   status: SportsGameStatus;
   statusDetail?: string; // e.g., "4th Quarter", "Top 7th"
   clock?: string; // e.g., "5:32", "3rd Period"
   period?: number | string;
-  
+
   // Schedule information
   gameTime: Date | null;
   venue?: string;
   broadcast?: string; // e.g., "ESPN", "FOX"
-  
+
   // Odds (if available)
   odds?: {
     spread?: string;
     overUnder?: string;
   };
-  
+
   // Metadata
   lastUpdated: Date;
 }
@@ -5019,18 +5042,18 @@ export interface SportsTeamInfo {
 // Sports score module configuration
 export interface SportsScoreModule extends BaseModule {
   type: 'sports_score';
-  
+
   // Data source configuration
   data_source: 'ha_sensor' | 'espn_api';
   sensor_entity?: string; // For HA sensor mode
   league?: SportsLeague; // For ESPN API mode
   team_id?: string; // ESPN team ID for API mode
   team_name?: string; // Display name for reference
-  
+
   // Display configuration
   display_style: SportsDisplayStyle;
   refresh_interval: number; // Minutes (1-60)
-  
+
   // Element visibility
   show_team_logos: boolean;
   show_team_names: boolean;
@@ -5041,7 +5064,7 @@ export interface SportsScoreModule extends BaseModule {
   show_score: boolean;
   show_odds: boolean;
   show_status_detail: boolean;
-  
+
   // Styling options
   home_team_color?: string;
   away_team_color?: string;
@@ -5051,26 +5074,26 @@ export interface SportsScoreModule extends BaseModule {
   in_progress_color?: string;
   scheduled_color?: string;
   text_color?: string; // Custom text color override for better readability
-  
+
   // Font sizes
   team_name_font_size?: string;
   score_font_size?: string;
   detail_font_size?: string;
-  
+
   // Layout options
   logo_size?: string; // e.g., "48px"
   compact_mode?: boolean;
-  
+
   // Logo BG style options
   show_logo_background?: boolean; // Show/hide watermark logos in Logo BG style
   logo_background_size?: string; // Size of background logo watermarks (e.g., "80px")
   logo_background_opacity?: number; // Opacity of background logos (0-100)
-  
+
   // Actions
   tap_action?: ModuleActionConfig;
   hold_action?: ModuleActionConfig;
   double_tap_action?: ModuleActionConfig;
-  
+
   // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;
@@ -5178,7 +5201,14 @@ export type GridSortBy = 'name' | 'last_updated' | 'state' | 'custom' | 'domain'
 export type GridPaginationStyle = 'numbers' | 'buttons' | 'both';
 
 // Grid load animations
-export type GridLoadAnimation = 'fadeIn' | 'slideUp' | 'zoomIn' | 'slideDown' | 'slideLeft' | 'slideRight' | 'none';
+export type GridLoadAnimation =
+  | 'fadeIn'
+  | 'slideUp'
+  | 'zoomIn'
+  | 'slideDown'
+  | 'slideLeft'
+  | 'slideRight'
+  | 'none';
 
 // Metro size options
 export type MetroSize = 'small' | 'medium' | 'large';
@@ -5319,14 +5349,14 @@ export interface GridModule extends BaseModule {
 // Media Player Module - Full-featured media player controls
 export interface MediaPlayerModule extends BaseModule {
   type: 'media_player';
-  
+
   // Entity
   entity: string;
-  
+
   // Layout
   layout?: 'compact' | 'card' | 'mini';
   card_size?: number; // For card layout album art size (default: 280)
-  
+
   // Display Toggles
   show_name?: boolean;
   show_album_art?: boolean;
@@ -5341,12 +5371,12 @@ export interface MediaPlayerModule extends BaseModule {
   show_sound_mode?: boolean;
   show_stop_button?: boolean;
   show_album_name?: boolean;
-  
+
   // Behavior
   enable_seek?: boolean;
   auto_hide_when_off?: boolean;
   expandable?: boolean;
-  
+
   // Visual
   dynamic_colors?: boolean;
   blurred_background?: boolean;
@@ -5354,8 +5384,18 @@ export interface MediaPlayerModule extends BaseModule {
   blur_opacity?: number;
   blur_expand?: boolean;
   animated_visuals?: boolean;
-  visualizer_type?: 'rings' | 'bars' | 'wave' | 'dots' | 'spectrum' | 'pulse' | 'orbit' | 'spiral' | 'equalizer' | 'particles';
-  
+  visualizer_type?:
+    | 'rings'
+    | 'bars'
+    | 'wave'
+    | 'dots'
+    | 'spectrum'
+    | 'pulse'
+    | 'orbit'
+    | 'spiral'
+    | 'equalizer'
+    | 'particles';
+
   // Customization
   fallback_icon?: string;
   play_icon?: string;
@@ -5370,7 +5410,7 @@ export interface MediaPlayerModule extends BaseModule {
   volume_low_icon?: string;
   volume_medium_icon?: string;
   volume_high_icon?: string;
-  
+
   // Colors (when not using dynamic colors)
   background_color?: string;
   text_color?: string;
@@ -5379,7 +5419,7 @@ export interface MediaPlayerModule extends BaseModule {
   button_color?: string;
   button_active_color?: string;
   album_art_border_radius?: string;
-  
+
   // Standard Ultra Card properties
   tap_action?: {
     action:

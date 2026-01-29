@@ -77,6 +77,7 @@ export interface BaseModule {
         color?: string;
         radius?: number;
     };
+    border_radius?: string | number;
     custom_css?: string;
     intro_animation?: 'none' | 'fadeIn' | 'slideInUp' | 'slideInDown' | 'slideInLeft' | 'slideInRight' | 'zoomIn' | 'bounceIn' | 'flipInX' | 'flipInY' | 'rotateIn';
     outro_animation?: 'none' | 'fadeOut' | 'slideOutUp' | 'slideOutDown' | 'slideOutLeft' | 'slideOutRight' | 'zoomOut' | 'bounceOut' | 'flipOutX' | 'flipOutY' | 'rotateOut';

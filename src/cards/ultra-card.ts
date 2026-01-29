@@ -621,7 +621,9 @@ export class UltraCard extends LitElement {
       if (sessionStorage.getItem(UltraCard.SKIP_DEFAULT_MODULES_KEY) === 'true') {
         return true;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     // Finally check localStorage
     try {
       return localStorage.getItem(UltraCard.SKIP_DEFAULT_MODULES_KEY) === 'true';
@@ -714,15 +716,16 @@ export class UltraCard extends LitElement {
     const onlyInvisibleModules =
       allModules.length > 0 && allModules.every(m => invisibleTypes.includes(m.type));
 
-    const onlyPopupModules =
-      allModules.length > 0 && allModules.every(m => m.type === 'popup');
+    const onlyPopupModules = allModules.length > 0 && allModules.every(m => m.type === 'popup');
 
     // Check if all popups have invisible triggers (logic or page_load)
-    const allPopupsInvisible = onlyPopupModules && allModules.every(m => {
-      const popup = m as any;
-      const triggerType = popup.trigger_type || 'button';
-      return triggerType === 'logic' || triggerType === 'page_load';
-    });
+    const allPopupsInvisible =
+      onlyPopupModules &&
+      allModules.every(m => {
+        const popup = m as any;
+        const triggerType = popup.trigger_type || 'button';
+        return triggerType === 'logic' || triggerType === 'page_load';
+      });
 
     // Check if we're in the card editor (not just dashboard edit mode)
     const isInCardEditor = !!document.querySelector('hui-dialog-edit-card');
@@ -755,9 +758,7 @@ export class UltraCard extends LitElement {
     // Popups need to render their triggers, but still need the card background styling
     if (onlyPopupModules && !isInCardEditor) {
       return html`
-        <div style="${cardStyle}">
-          ${this.config.layout.rows.map(row => this._renderRow(row))}
-        </div>
+        <div style="${cardStyle}">${this.config.layout.rows.map(row => this._renderRow(row))}</div>
       `;
     }
 
@@ -786,11 +787,11 @@ export class UltraCard extends LitElement {
       // Re-register video background modules when config changes
       this._registerVideoBgModules();
 
-    // Re-register dynamic weather modules when config changes
-    this._registerDynamicWeatherModules();
+      // Re-register dynamic weather modules when config changes
+      this._registerDynamicWeatherModules();
 
-    // Re-register background modules when config changes
-    this._registerBackgroundModules();
+      // Re-register background modules when config changes
+      this._registerBackgroundModules();
     }
 
     // Also re-register weather modules when hass changes (for automatic mode updates)
@@ -1341,7 +1342,9 @@ export class UltraCard extends LitElement {
       .filter(Boolean)
       .join('\n');
     const responsiveStyleTag = allResponsiveCSS
-      ? html`<style>${allResponsiveCSS}</style>`
+      ? html`<style>
+          ${allResponsiveCSS}
+        </style>`
       : '';
 
     // Check if row has actions configured
@@ -1371,7 +1374,7 @@ export class UltraCard extends LitElement {
 
     const rowContent = html`
       ${responsiveStyleTag}
-      <div 
+      <div
         class="card-row responsive-row-${rowId} ${hoverEffectClass} ${filterClass} ${hasRowActions
           ? 'has-row-actions'
           : ''}"
@@ -1531,9 +1534,12 @@ export class UltraCard extends LitElement {
     const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
 
     // Include responsive CSS if any device-specific settings or hide rules exist
-    const colResponsiveStyleTag = (hideOnDevicesCSS || responsiveCSS)
-      ? html`<style>${hideOnDevicesCSS}${responsiveCSS}</style>`
-      : '';
+    const colResponsiveStyleTag =
+      hideOnDevicesCSS || responsiveCSS
+        ? html`<style>
+            ${hideOnDevicesCSS}${responsiveCSS}
+          </style>`
+        : '';
 
     // Check if column has actions configured
     const columnWithActions = column as any;
@@ -1563,7 +1569,7 @@ export class UltraCard extends LitElement {
 
     const columnContent = html`
       ${colResponsiveStyleTag}
-      <div 
+      <div
         class="card-column responsive-col-${colId} ${hoverEffectClass} ${filterClass} ${hasColumnActions
           ? 'has-column-actions'
           : ''}"
@@ -1632,9 +1638,29 @@ export class UltraCard extends LitElement {
     );
 
     // Generate responsive design CSS if device-specific overrides exist
+    // Merge root-level styling properties (like border_radius) with design object
+    // so they're included in the responsive CSS generation
+    const effectiveBorderRadius =
+      (module as any).design?.border_radius ||
+      (module as any).border_radius ||
+      (module as any).border?.radius;
+    const mergedDesignForCSS = {
+      ...(module as any).design,
+      // Include root-level styling properties if not already in design
+      border_radius: effectiveBorderRadius,
+      // Add overflow:hidden when border-radius is set to clip content to rounded corners
+      overflow:
+        (module as any).design?.overflow ||
+        (effectiveBorderRadius &&
+        effectiveBorderRadius !== '0' &&
+        effectiveBorderRadius !== '0px' &&
+        effectiveBorderRadius !== 0
+          ? 'hidden'
+          : undefined),
+    };
     const moduleResponsiveCSS = responsiveDesignService.generateResponsiveCSS(
       `.responsive-mod-${moduleId}`,
-      (module as any).design
+      mergedDesignForCSS
     );
     const isAnimating = this._animatingModules.has(moduleId);
 
@@ -1783,12 +1809,36 @@ export class UltraCard extends LitElement {
     const cssVarPrefix = (module as any).design?.css_variable_prefix;
 
     // Generate CSS variables for Shadow DOM styling
-    const cssVarStyles = cssVarPrefix 
+    const cssVarStyles = cssVarPrefix
       ? this._styleObjectToCss(generateCSSVariables(cssVarPrefix, (module as any).design))
       : '';
 
-    // Always include border reset to prevent inheritance from parent elements
-    const moduleWrapStyles = cssVarStyles ? `${cssVarStyles}; border: none;` : 'border: none;';
+    const normalizedBorderRadius = this._addPixelUnit(
+      effectiveBorderRadius !== undefined ? String(effectiveBorderRadius) : undefined
+    );
+    const explicitOverflow =
+      (module as any).design?.overflow !== undefined
+        ? (module as any).design?.overflow
+        : (module as any).overflow;
+    const shouldClip =
+      normalizedBorderRadius &&
+      normalizedBorderRadius !== '0' &&
+      normalizedBorderRadius !== '0px' &&
+      (!explicitOverflow || explicitOverflow === 'visible');
+    const overflowStyle =
+      explicitOverflow && explicitOverflow !== 'visible'
+        ? explicitOverflow
+        : shouldClip
+          ? 'hidden'
+          : undefined;
+
+    const moduleWrapStyleParts = [
+      cssVarStyles,
+      'border: none',
+      normalizedBorderRadius ? `border-radius: ${normalizedBorderRadius}` : '',
+      overflowStyle ? `overflow: ${overflowStyle}` : '',
+    ].filter(Boolean);
+    const moduleWrapStyles = moduleWrapStyleParts.join('; ');
 
     // If this is a pro module and user doesn't have access, show overlay
     if (shouldShowProOverlay) {
@@ -1830,14 +1880,19 @@ export class UltraCard extends LitElement {
     }
 
     // Include responsive CSS if any device-specific settings or hide rules exist
-    const moduleResponsiveStyleTag = (moduleHideOnDevicesCSS || moduleResponsiveCSS)
-      ? html`<style>${moduleHideOnDevicesCSS}${moduleResponsiveCSS}</style>`
-      : '';
+    const moduleResponsiveStyleTag =
+      moduleHideOnDevicesCSS || moduleResponsiveCSS
+        ? html`<style>
+            ${moduleHideOnDevicesCSS}${moduleResponsiveCSS}
+          </style>`
+        : '';
 
     // Return module content without forcing DOM replacement
     return html`
       ${moduleResponsiveStyleTag}
-      <div class="uc-module-wrap responsive-mod-${moduleId}" style=${moduleWrapStyles}>${moduleContent}</div>
+      <div class="uc-module-wrap responsive-mod-${moduleId}" style=${moduleWrapStyles}>
+        ${moduleContent}
+      </div>
     `;
   }
 
@@ -1868,21 +1923,30 @@ export class UltraCard extends LitElement {
 
     // Collect from rows
     this.config.layout?.rows?.forEach(row => {
-      const effectiveDesign = responsiveDesignService.getEffectiveDesign(row.design, currentBreakpoint);
+      const effectiveDesign = responsiveDesignService.getEffectiveDesign(
+        row.design,
+        currentBreakpoint
+      );
       if (effectiveDesign.hover_effect) {
         configs.push(effectiveDesign.hover_effect);
       }
 
       // Collect from columns
       row.columns?.forEach(column => {
-        const colEffectiveDesign = responsiveDesignService.getEffectiveDesign(column.design, currentBreakpoint);
+        const colEffectiveDesign = responsiveDesignService.getEffectiveDesign(
+          column.design,
+          currentBreakpoint
+        );
         if (colEffectiveDesign.hover_effect) {
           configs.push(colEffectiveDesign.hover_effect);
         }
 
         // Collect from modules
         column.modules?.forEach(module => {
-          const modEffectiveDesign = responsiveDesignService.getEffectiveDesign((module as any).design, currentBreakpoint);
+          const modEffectiveDesign = responsiveDesignService.getEffectiveDesign(
+            (module as any).design,
+            currentBreakpoint
+          );
           if (modEffectiveDesign.hover_effect) {
             configs.push(modEffectiveDesign.hover_effect);
           }
@@ -2016,7 +2080,11 @@ export class UltraCard extends LitElement {
   /**
    * Convert column layout ID to CSS grid template columns
    */
-  private _getGridTemplateColumns(layout: string, columnCount: number, customSizing?: string): string {
+  private _getGridTemplateColumns(
+    layout: string,
+    columnCount: number,
+    customSizing?: string
+  ): string {
     // Handle custom layout - return the custom CSS value directly
     if (layout === 'custom' && customSizing) {
       return customSizing;
@@ -3597,8 +3665,8 @@ export class UltraCard extends LitElement {
       /* Ensure popup appears above HA edit outlines in preview contexts */
       ha-preview .ultra-popup-overlay,
       .live-preview .ultra-popup-overlay,
-      [data-preview-context="ha-preview"] .ultra-popup-overlay,
-      [data-preview-context="live"] .ultra-popup-overlay {
+      [data-preview-context='ha-preview'] .ultra-popup-overlay,
+      [data-preview-context='live'] .ultra-popup-overlay {
         z-index: 2147483647 !important;
       }
 
@@ -3611,7 +3679,9 @@ export class UltraCard extends LitElement {
 
       .ultra-popup-close-button {
         cursor: pointer;
-        transition: transform 0.2s ease, opacity 0.2s ease;
+        transition:
+          transform 0.2s ease,
+          opacity 0.2s ease;
         user-select: none;
       }
 
