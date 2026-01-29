@@ -1638,14 +1638,47 @@ export class UltraCard extends LitElement {
     );
 
     // Generate responsive design CSS if device-specific overrides exist
-    // Merge root-level styling properties (like border_radius) with design object
-    // so they're included in the responsive CSS generation
+    // IMPORTANT: Only include border_radius and overflow on the wrapper for clipping purposes.
+    // Do NOT include background_color on the wrapper - it should only be on the content div.
+    // Otherwise, when the content has margin, the wrapper's background shows through.
     const effectiveBorderRadius =
       (module as any).design?.border_radius ||
       (module as any).border_radius ||
       (module as any).border?.radius;
+
+    // Create a design object for the wrapper that excludes background properties
+    // The wrapper only needs border-radius and overflow for proper corner clipping
+    const {
+      background_color: _bgColor,
+      background_image: _bgImage,
+      background_size: _bgSize,
+      background_position: _bgPos,
+      background_repeat: _bgRepeat,
+      backdrop_filter: _backdrop,
+      base: originalBase,
+      ...wrapperDesignWithoutBackground
+    } = (module as any).design || {};
+
+    // Also remove background properties from the base object if it exists
+    const cleanedBase = originalBase
+      ? (() => {
+          const {
+            background_color: _baseBgColor,
+            background_image: _baseBgImage,
+            background_size: _baseBgSize,
+            background_position: _baseBgPos,
+            background_repeat: _baseBgRepeat,
+            backdrop_filter: _baseBackdrop,
+            ...baseWithoutBackground
+          } = originalBase;
+          return baseWithoutBackground;
+        })()
+      : undefined;
+
     const mergedDesignForCSS = {
-      ...(module as any).design,
+      ...wrapperDesignWithoutBackground,
+      // Include cleaned base without background properties
+      ...(cleanedBase && Object.keys(cleanedBase).length > 0 ? { base: cleanedBase } : {}),
       // Include root-level styling properties if not already in design
       border_radius: effectiveBorderRadius,
       // Add overflow:hidden when border-radius is set to clip content to rounded corners
@@ -1658,6 +1691,7 @@ export class UltraCard extends LitElement {
           ? 'hidden'
           : undefined),
     };
+
     const moduleResponsiveCSS = responsiveDesignService.generateResponsiveCSS(
       `.responsive-mod-${moduleId}`,
       mergedDesignForCSS

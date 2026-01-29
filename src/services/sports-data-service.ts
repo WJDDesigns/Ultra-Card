@@ -110,15 +110,15 @@ class SportsDataService {
    */
   private normalizeHASensorData(state: any): SportsGameData {
     const attrs = state.attributes || {};
-    
+
     // Map Team Tracker state to our status
     const statusMap: Record<string, SportsGameStatus> = {
-      'PRE': 'scheduled',
-      'IN': 'in_progress',
-      'POST': 'final',
-      'NOT_FOUND': 'scheduled',
-      'BYE': 'scheduled',
-      'HALF': 'halftime',
+      PRE: 'scheduled',
+      IN: 'in_progress',
+      POST: 'final',
+      NOT_FOUND: 'scheduled',
+      BYE: 'scheduled',
+      HALF: 'halftime',
     };
 
     const status = statusMap[state.state] || 'scheduled';
@@ -132,8 +132,10 @@ class SportsDataService {
       else if (leagueLower.includes('mlb')) league = 'mlb';
       else if (leagueLower.includes('nhl')) league = 'nhl';
       else if (leagueLower.includes('mls')) league = 'mls';
-      else if (leagueLower.includes('ncaaf') || leagueLower.includes('college football')) league = 'ncaaf';
-      else if (leagueLower.includes('ncaab') || leagueLower.includes('college basketball')) league = 'ncaab';
+      else if (leagueLower.includes('ncaaf') || leagueLower.includes('college football'))
+        league = 'ncaaf';
+      else if (leagueLower.includes('ncaab') || leagueLower.includes('college basketball'))
+        league = 'ncaab';
       else if (leagueLower.includes('premier')) league = 'premier_league';
     }
 
@@ -150,22 +152,26 @@ class SportsDataService {
       homeTeam: {
         id: attrs.team_homeaway === 'home' ? attrs.team_id || '' : attrs.opponent_id || '',
         name: attrs.team_homeaway === 'home' ? attrs.team_name || '' : attrs.opponent_name || '',
-        abbreviation: attrs.team_homeaway === 'home' ? attrs.team_abbr || '' : attrs.opponent_abbr || '',
+        abbreviation:
+          attrs.team_homeaway === 'home' ? attrs.team_abbr || '' : attrs.opponent_abbr || '',
         logo: attrs.team_homeaway === 'home' ? attrs.team_logo || '' : attrs.opponent_logo || '',
-        score: attrs.team_homeaway === 'home' 
-          ? parseScore(attrs.team_score)
-          : parseScore(attrs.opponent_score),
+        score:
+          attrs.team_homeaway === 'home'
+            ? parseScore(attrs.team_score)
+            : parseScore(attrs.opponent_score),
         record: attrs.team_homeaway === 'home' ? attrs.team_record : attrs.opponent_record,
         color: attrs.team_homeaway === 'home' ? attrs.team_colors?.[0] : attrs.opponent_colors?.[0],
       },
       awayTeam: {
         id: attrs.team_homeaway === 'away' ? attrs.team_id || '' : attrs.opponent_id || '',
         name: attrs.team_homeaway === 'away' ? attrs.team_name || '' : attrs.opponent_name || '',
-        abbreviation: attrs.team_homeaway === 'away' ? attrs.team_abbr || '' : attrs.opponent_abbr || '',
+        abbreviation:
+          attrs.team_homeaway === 'away' ? attrs.team_abbr || '' : attrs.opponent_abbr || '',
         logo: attrs.team_homeaway === 'away' ? attrs.team_logo || '' : attrs.opponent_logo || '',
-        score: attrs.team_homeaway === 'away'
-          ? parseScore(attrs.team_score)
-          : parseScore(attrs.opponent_score),
+        score:
+          attrs.team_homeaway === 'away'
+            ? parseScore(attrs.team_score)
+            : parseScore(attrs.opponent_score),
         record: attrs.team_homeaway === 'away' ? attrs.team_record : attrs.opponent_record,
         color: attrs.team_homeaway === 'away' ? attrs.team_colors?.[0] : attrs.opponent_colors?.[0],
       },
@@ -176,10 +182,12 @@ class SportsDataService {
       gameTime: attrs.date ? new Date(attrs.date) : null,
       venue: attrs.venue || attrs.location,
       broadcast: attrs.broadcast || attrs.tv_network,
-      odds: attrs.odds ? {
-        spread: attrs.odds,
-        overUnder: attrs.overunder,
-      } : undefined,
+      odds: attrs.odds
+        ? {
+            spread: attrs.odds,
+            overUnder: attrs.overunder,
+          }
+        : undefined,
       lastUpdated: new Date(),
     };
   }
@@ -188,22 +196,15 @@ class SportsDataService {
    * Get game data from ESPN API
    * Tries scoreboard first (has full data), falls back to team schedule
    */
-  async getFromESPN(
-    league?: SportsLeague,
-    teamId?: string
-  ): Promise<SportsGameData | null> {
-    console.log(`[Sports Service] getFromESPN called - league: ${league}, teamId: ${teamId}`);
-    
+  async getFromESPN(league?: SportsLeague, teamId?: string): Promise<SportsGameData | null> {
     if (!league || !teamId) {
-      console.log('[Sports Service] Missing league or teamId, returning null');
       return null;
     }
 
     const cacheKey = `espn_${league}_${teamId}`;
     const cached = this._cache.get(cacheKey);
-    
+
     if (cached && Date.now() - cached.timestamp < this._cacheTTL) {
-      console.log('[Sports Service] Returning cached data');
       return cached.data as SportsGameData;
     }
 
@@ -214,18 +215,14 @@ class SportsDataService {
         return null;
       }
 
-      console.log('[Sports Service] Checking scoreboard...');
       // First, try the scoreboard endpoint (has full game data including scores and logos)
       let gameData = await this.findTeamGameInScoreboard(league, teamId);
-      
+
       // If no game found in scoreboard, try the team's schedule for upcoming games
       if (!gameData) {
-        console.log('[Sports Service] No scoreboard data, checking team schedule...');
         gameData = await this.fetchTeamSchedule(league, teamId);
       }
 
-      console.log(`[Sports Service] Final result: ${gameData ? 'Found game data' : 'No data found'}`);
-      
       if (gameData) {
         this._cache.set(cacheKey, { data: gameData, timestamp: Date.now() });
       }
@@ -248,9 +245,9 @@ class SportsDataService {
       const path = LEAGUE_PATHS[league];
       const url = `${ESPN_BASE}/${path}/scoreboard`;
       console.debug(`Sports module: Fetching scoreboard from ${url}`);
-      
+
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         console.debug(`Sports module: Scoreboard request failed with status ${response.status}`);
         return null;
@@ -295,32 +292,32 @@ class SportsDataService {
   ): Promise<SportsGameData | null> {
     try {
       const path = LEAGUE_PATHS[league];
-      
+
       // First try to get the team info with next event
       const teamUrl = `${ESPN_BASE}/${path}/teams/${teamId}`;
       const teamResponse = await fetch(teamUrl);
-      
+
       if (teamResponse.ok) {
         const teamData = await teamResponse.json();
         const nextEvents = teamData?.team?.nextEvent || [];
-        
+
         if (nextEvents.length > 0) {
           const gameData = this.normalizeESPNEvent(nextEvents[0], league);
           if (gameData) return gameData;
         }
       }
-      
+
       // Fall back to schedule endpoint for more games
       const scheduleUrl = `${ESPN_BASE}/${path}/teams/${teamId}/schedule`;
       const scheduleResponse = await fetch(scheduleUrl);
-      
+
       if (!scheduleResponse.ok) {
         return null;
       }
 
       const scheduleData = await scheduleResponse.json();
       const events = scheduleData?.events || [];
-      
+
       if (!events.length) {
         return null;
       }
@@ -378,7 +375,7 @@ class SportsDataService {
   async getScoreboard(league: SportsLeague): Promise<SportsGameData[]> {
     const cacheKey = `espn_scoreboard_${league}`;
     const cached = this._cache.get(cacheKey);
-    
+
     if (cached && Date.now() - cached.timestamp < this._cacheTTL) {
       return cached.data as SportsGameData[];
     }
@@ -391,7 +388,7 @@ class SportsDataService {
 
       const url = `${ESPN_BASE}/${path}/scoreboard`;
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         return [];
       }
@@ -410,10 +407,7 @@ class SportsDataService {
   /**
    * Parse ESPN scoreboard response
    */
-  private parseESPNScoreboardResponse(
-    data: any,
-    league: SportsLeague
-  ): SportsGameData[] {
+  private parseESPNScoreboardResponse(data: any, league: SportsLeague): SportsGameData[] {
     const events = data?.events || [];
     return events.map((event: any) => this.normalizeESPNEvent(event, league)).filter(Boolean);
   }
@@ -438,7 +432,7 @@ class SportsDataService {
     // Map ESPN status to our status
     const espnStatus = competition.status?.type?.name || '';
     let status: SportsGameStatus = 'scheduled';
-    
+
     if (espnStatus.includes('IN_PROGRESS')) status = 'in_progress';
     else if (espnStatus.includes('HALFTIME')) status = 'halftime';
     else if (espnStatus.includes('FINAL') || espnStatus.includes('END')) status = 'final';
@@ -474,22 +468,24 @@ class SportsDataService {
         console.debug('Sports module: No team data for logo extraction');
         return '';
       }
-      
+
       // Try direct logo property first
       if (team.logo) {
         console.debug(`Sports module: Found direct logo: ${team.logo}`);
         return team.logo;
       }
-      
+
       // Try logos array (ESPN often uses this format)
       if (team.logos && team.logos.length > 0) {
         // Prefer the default/primary logo
-        const defaultLogo = team.logos.find((l: any) => l.rel?.includes('default') || l.rel?.includes('full'));
+        const defaultLogo = team.logos.find(
+          (l: any) => l.rel?.includes('default') || l.rel?.includes('full')
+        );
         const logoUrl = defaultLogo?.href || team.logos[0]?.href || '';
         console.debug(`Sports module: Found logo from array: ${logoUrl}`);
         return logoUrl;
       }
-      
+
       console.debug(`Sports module: No logo found for team ${team.abbreviation || team.name}`);
       return '';
     };
@@ -499,28 +495,30 @@ class SportsDataService {
       // Try records array first (most common for US sports)
       if (teamData.records && teamData.records.length > 0) {
         // Look for overall record first
-        const overallRecord = teamData.records.find((r: any) => 
-          r.type === 'total' || r.type === 'overall' || r.name === 'overall'
+        const overallRecord = teamData.records.find(
+          (r: any) => r.type === 'total' || r.type === 'overall' || r.name === 'overall'
         );
         if (overallRecord?.summary) return overallRecord.summary;
         // Fall back to first record
         if (teamData.records[0]?.summary) return teamData.records[0].summary;
       }
-      
+
       // Try form (soccer/football recent results like "WWDLW")
       if (teamData.form) return teamData.form;
-      
+
       // Try statistics for league standings (soccer)
       const stats = teamData.statistics || teamData.team?.statistics;
       if (stats && stats.length > 0) {
         // Look for standings-related stats
         const points = stats.find((s: any) => s.name === 'points' || s.abbreviation === 'PTS');
-        const gamesPlayed = stats.find((s: any) => s.name === 'gamesPlayed' || s.abbreviation === 'GP');
+        const gamesPlayed = stats.find(
+          (s: any) => s.name === 'gamesPlayed' || s.abbreviation === 'GP'
+        );
         if (points && gamesPlayed) {
           return `${gamesPlayed.value}GP, ${points.value}Pts`;
         }
       }
-      
+
       return undefined;
     };
 
@@ -538,7 +536,7 @@ class SportsDataService {
         }
         if (allBroadcasts.length > 0) return allBroadcasts.join(', ');
       }
-      
+
       // Try geoBroadcasts
       if (competition.geoBroadcasts && competition.geoBroadcasts.length > 0) {
         const names = competition.geoBroadcasts
@@ -546,7 +544,7 @@ class SportsDataService {
           .map((gb: any) => gb.media.shortName);
         if (names.length > 0) return [...new Set(names)].join(', ');
       }
-      
+
       return '';
     };
 
@@ -590,7 +588,7 @@ class SportsDataService {
     // Check cache first
     const cacheKey = `teams_${league}`;
     const cached = this._teamCache.get(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -603,7 +601,7 @@ class SportsDataService {
 
       const url = `${ESPN_BASE}/${path}/teams?limit=100`;
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         return [];
       }
@@ -652,10 +650,11 @@ class SportsDataService {
   async searchTeams(league: SportsLeague, query: string): Promise<SportsTeamInfo[]> {
     const teams = await this.getTeams(league);
     const lowerQuery = query.toLowerCase();
-    
-    return teams.filter(team => 
-      team.name.toLowerCase().includes(lowerQuery) ||
-      team.abbreviation.toLowerCase().includes(lowerQuery)
+
+    return teams.filter(
+      team =>
+        team.name.toLowerCase().includes(lowerQuery) ||
+        team.abbreviation.toLowerCase().includes(lowerQuery)
     );
   }
 
@@ -766,4 +765,3 @@ export const sportsDataService = new SportsDataService();
 
 // Export class for testing or custom instances
 export { SportsDataService };
-

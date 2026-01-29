@@ -1166,6 +1166,117 @@ export class LayoutTab extends LitElement {
     `;
   }
 
+  // Render overflow menu for tabs section children (modules inside tabs sections)
+  private _renderTabsSectionChildOverflowMenu(
+    rowIndex?: number,
+    columnIndex?: number,
+    moduleIndex?: number,
+    sectionIndex?: number,
+    childIndex?: number,
+    parentLayoutChildIndex?: number,
+    isNested: boolean = false
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const menuKey = `tabs-section-child-${rowIndex}-${columnIndex}-${moduleIndex}-${sectionIndex}-${childIndex}-${parentLayoutChildIndex ?? 'top'}-${isNested}`;
+    const isOpen = this._openOverflowMenuKey === menuKey;
+
+    const menuItems: { icon: string; label: string; action: () => void; destructive?: boolean }[] =
+      [
+        {
+          icon: 'mdi:pencil',
+          label: localize('editor.layout.edit', lang, 'Edit'),
+          action: () =>
+            this._openTabsSectionChildSettings(
+              rowIndex,
+              columnIndex,
+              moduleIndex,
+              sectionIndex,
+              childIndex,
+              parentLayoutChildIndex,
+              isNested
+            ),
+        },
+        {
+          icon: 'mdi:content-copy',
+          label: localize('editor.layout.duplicate', lang, 'Duplicate'),
+          action: () =>
+            this._duplicateTabsSectionChild(
+              rowIndex,
+              columnIndex,
+              moduleIndex,
+              sectionIndex,
+              childIndex,
+              parentLayoutChildIndex,
+              isNested
+            ),
+        },
+        {
+          icon: 'mdi:clipboard-arrow-up',
+          label: localize('editor.layout.copy', lang, 'Copy'),
+          action: () =>
+            this._copyTabsSectionChild(
+              rowIndex,
+              columnIndex,
+              moduleIndex,
+              sectionIndex,
+              childIndex,
+              parentLayoutChildIndex,
+              isNested
+            ),
+        },
+        {
+          icon: 'mdi:delete',
+          label: localize('editor.layout.delete', lang, 'Delete'),
+          action: () =>
+            this._deleteTabsSectionChild(
+              rowIndex,
+              columnIndex,
+              moduleIndex,
+              sectionIndex,
+              childIndex,
+              parentLayoutChildIndex,
+              isNested
+            ),
+          destructive: true,
+        },
+      ];
+
+    return html`
+      <div class="tree-overflow-container tabs-section-child-overflow">
+        <button
+          class="tree-overflow-btn"
+          @click=${(e: Event) => this._toggleOverflowMenu(menuKey, e)}
+          @mousedown=${(e: Event) => e.stopPropagation()}
+          @dragstart=${(e: Event) => e.preventDefault()}
+          title="${localize('editor.layout.more_actions', lang, 'More actions')}"
+        >
+          <ha-icon icon="mdi:dots-horizontal"></ha-icon>
+        </button>
+        ${isOpen
+          ? html`
+              <div class="tree-overflow-menu" @click=${(e: Event) => e.stopPropagation()}>
+                ${menuItems.map(
+                  (item, index) => html`
+                    ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
+                    <button
+                      class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
+                      @click=${() => {
+                        item.action();
+                        this._openOverflowMenuKey = null;
+                      }}
+                    >
+                      <ha-icon icon="${item.icon}"></ha-icon>
+                      <span>${item.label}</span>
+                    </button>
+                  `
+                )}
+              </div>
+            `
+          : ''}
+      </div>
+    `;
+  }
+
   // Render a tree node for a row
   private _renderTreeRow(row: CardRow, rowIndex: number, totalRows: number): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
@@ -2095,6 +2206,15 @@ export class LayoutTab extends LitElement {
                   <ha-icon icon="mdi:delete"></ha-icon>
                 </button>
               </div>
+              ${this._renderTabsSectionChildOverflowMenu(
+                rowIndex,
+                columnIndex,
+                moduleIndex,
+                sectionIndex,
+                childIndex,
+                undefined,
+                false
+              )}
             </div>
           </div>
         </div>
@@ -2221,6 +2341,15 @@ export class LayoutTab extends LitElement {
                 <ha-icon icon="mdi:delete"></ha-icon>
               </button>
             </div>
+            ${this._renderTabsSectionChildOverflowMenu(
+              rowIndex,
+              columnIndex,
+              moduleIndex,
+              sectionIndex,
+              childIndex,
+              undefined,
+              false
+            )}
           </div>
         </div>
       </div>
@@ -10982,7 +11111,7 @@ export class LayoutTab extends LitElement {
             <div class="layout-child-title">${moduleTitle}</div>
             <div class="layout-child-info">${moduleInfo}</div>
           </div>
-          <div class="layout-child-actions">
+          <div class="layout-child-actions tabs-section-child-actions">
             <button
               class="layout-child-action-btn edit-btn"
               @click=${(e: Event) => {
@@ -11068,6 +11197,15 @@ export class LayoutTab extends LitElement {
               <ha-icon icon="mdi:delete"></ha-icon>
             </button>
           </div>
+          ${this._renderTabsSectionChildOverflowMenu(
+            rowIndex,
+            columnIndex,
+            moduleIndex,
+            sectionIndex,
+            childIndex,
+            parentLayoutChildIndex,
+            isNested
+          )}
         </div>
       </div>
     `;
@@ -15990,6 +16128,10 @@ export class LayoutTab extends LitElement {
    * Example: "animated_clock" -> "Animated Clock"
    */
   private _formatModuleTypeName(moduleType: string): string {
+    // Guard against undefined or null moduleType
+    if (!moduleType || typeof moduleType !== 'string') {
+      return 'Unknown';
+    }
     return moduleType
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -16033,6 +16175,11 @@ export class LayoutTab extends LitElement {
     return `${localize('editor.layout.module_settings_title', lang, 'Module Settings')} - ${this._formatModuleTypeName(module.type)}`;
   }
   private _getModuleDisplayName(module: CardModule): string {
+    // Guard against null/undefined module or missing type
+    if (!module || !module.type) {
+      return 'Unknown Module';
+    }
+
     // Check for custom module name first (for editor organization)
     const moduleAny = module as any;
     if (moduleAny.module_name && moduleAny.module_name.trim()) {
@@ -27025,6 +27172,16 @@ export class LayoutTab extends LitElement {
           display: none;
         }
 
+        /* Hide tabs section child actions on mobile - use overflow menu instead */
+        .tabs-section-child-actions {
+          display: none !important;
+        }
+
+        /* Show tabs section child overflow menu on mobile */
+        .tabs-section-child-overflow {
+          display: flex !important;
+        }
+
         /* Make overflow button more prominent on mobile */
         .tree-overflow-btn {
           width: 32px;
@@ -27037,7 +27194,8 @@ export class LayoutTab extends LitElement {
         .tree-layout-module .tree-overflow-btn,
         .tree-layout-child .tree-overflow-btn,
         .tree-deep-child .tree-overflow-btn,
-        .tree-nested-layout .tree-overflow-btn {
+        .tree-nested-layout .tree-overflow-btn,
+        .tabs-section-child-overflow .tree-overflow-btn {
           background: rgba(0, 0, 0, 0.15);
           color: var(--primary-text-color);
         }
@@ -27046,7 +27204,8 @@ export class LayoutTab extends LitElement {
         .tree-layout-module .tree-overflow-btn:hover,
         .tree-layout-child .tree-overflow-btn:hover,
         .tree-deep-child .tree-overflow-btn:hover,
-        .tree-nested-layout .tree-overflow-btn:hover {
+        .tree-nested-layout .tree-overflow-btn:hover,
+        .tabs-section-child-overflow .tree-overflow-btn:hover {
           background: rgba(0, 0, 0, 0.25);
         }
 
@@ -31509,6 +31668,28 @@ export class LayoutTab extends LitElement {
       .layout-child-action-btn.copy-btn:hover {
         background: var(--success-color, #4caf50);
         color: white;
+      }
+
+      /* Tabs section child overflow menu - hidden on desktop by default */
+      .tabs-section-child-overflow {
+        display: none;
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .tabs-section-child-overflow .tree-overflow-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        margin: -4px -8px -4px 0;
+      }
+
+      .tabs-section-child-overflow .tree-overflow-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 4px;
+        z-index: 1000;
       }
 
       /* Drag handle for touch devices */

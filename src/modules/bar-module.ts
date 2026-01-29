@@ -113,7 +113,7 @@ export class UltraBarModule extends BaseUltraModule {
       left_title_color: '',
       left_value_color: '',
       left_enabled: false,
-      left_tap_action: { action: 'default' },
+      left_tap_action: { action: 'nothing' },
       left_hold_action: { action: 'nothing' },
       left_double_tap_action: { action: 'nothing' },
 
@@ -130,7 +130,7 @@ export class UltraBarModule extends BaseUltraModule {
       right_value_size: 14,
       right_title_color: '',
       right_value_color: '',
-      right_tap_action: { action: 'default' },
+      right_tap_action: { action: 'nothing' },
       right_hold_action: { action: 'nothing' },
       right_double_tap_action: { action: 'nothing' },
 
@@ -2369,7 +2369,7 @@ export class UltraBarModule extends BaseUltraModule {
                       <ha-form
                         .hass=${hass}
                         .data=${{
-                          left_tap_action: barModule.left_tap_action || { action: 'default' },
+                          left_tap_action: barModule.left_tap_action || { action: 'nothing' },
                         }}
                         .schema=${[
                           {
@@ -2722,7 +2722,7 @@ export class UltraBarModule extends BaseUltraModule {
                       <ha-form
                         .hass=${hass}
                         .data=${{
-                          right_tap_action: barModule.right_tap_action || { action: 'default' },
+                          right_tap_action: barModule.right_tap_action || { action: 'nothing' },
                         }}
                         .schema=${[
                           {

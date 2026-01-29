@@ -1,5 +1,19 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta29
+
+### 🚀 New Features
+
+- **Added Default Home Assistant font as the default font not browser's font** - Enhanced typography and font options
+
+### 🐛 Bug Fixes
+
+- **Fix issue with double background in horizontal and vertical modules** - Enhanced module functionality for better user experience
+- **Fix for icon module template animation issue** - Smoother animations and visual transitions
+- **Fix for tabs module overflow of nested modules** - Resolved content overflow and clipping issues
+
+---
+
 ## Version 2.3.0-beta28
 
 ### 🐛 Bug Fixes

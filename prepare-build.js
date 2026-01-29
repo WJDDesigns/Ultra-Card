@@ -11,6 +11,39 @@ const path = require('path');
 console.log('🔄 Running pre-build checks...\n');
 
 /**
+ * Function to sync version from version.ts to package.json
+ * version.ts is the single source of truth for the version
+ */
+function syncVersion() {
+  console.log('📦 Syncing version from version.ts...');
+  const versionTsPath = path.resolve(__dirname, 'src/version.ts');
+  const packageJsonPath = path.resolve(__dirname, 'package.json');
+
+  try {
+    const versionTsContent = fs.readFileSync(versionTsPath, 'utf8');
+    const versionMatch = versionTsContent.match(/VERSION\s*=\s*['"]([^'"]+)['"]/);
+
+    if (!versionMatch) {
+      console.error('❌ Could not extract version from version.ts');
+      return;
+    }
+
+    const version = versionMatch[1];
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+    if (packageJson.version !== version) {
+      packageJson.version = version;
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
+      console.log(`   ✅ Updated package.json version to ${version}`);
+    } else {
+      console.log(`   ✅ package.json version already at ${version}`);
+    }
+  } catch (error) {
+    console.error('❌ Error syncing version:', error);
+  }
+}
+
+/**
  * Function to synchronize translation files
  * This ensures all keys present in the English file exist in all other language files
  */
@@ -103,5 +136,6 @@ function syncTranslationFiles() {
 }
 
 // Run the synchronization
+syncVersion();
 syncTranslationFiles();
 console.log('\n✨ Pre-build checks complete!\n');

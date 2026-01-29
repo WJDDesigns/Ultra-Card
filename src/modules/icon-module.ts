@@ -5559,7 +5559,10 @@ export class UltraIconModule extends BaseUltraModule {
 
     // PRIORITY 1: Check unified template with ignore_entity_state_config flag
     if (icon.unified_template_mode && icon.unified_template && icon.ignore_entity_state_config) {
-      // Template controls both display AND state logic
+      // Template controls display properties (icon, color, name, etc.)
+      // For active/inactive state (animations), we check:
+      // 1. If template returns an explicit "active" property in JSON, use that
+      // 2. Otherwise, fall back to entity state evaluation (active_state/inactive_state config)
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
       } else if (this._templateService && hass) {
@@ -5594,24 +5597,49 @@ export class UltraIconModule extends BaseUltraModule {
 
       const templateResult = hass?.__uvc_template_strings?.[templateKey];
       if (templateResult !== undefined) {
-        const result = String(templateResult).toLowerCase();
+        const resultStr = String(templateResult).trim();
+        const resultLower = resultStr.toLowerCase();
+
+        // Check if result is a simple boolean value
         const isBooleanResult = ['true', 'false', 'on', 'off', 'yes', 'no', '0', '1'].includes(
-          result
+          resultLower
         );
 
         if (isBooleanResult) {
           return (
-            ['true', 'on', 'yes', '1'].includes(result) ||
-            (parseFloat(result) > 0 && !isNaN(parseFloat(result)))
+            ['true', 'on', 'yes', '1'].includes(resultLower) ||
+            (parseFloat(resultLower) > 0 && !isNaN(parseFloat(resultLower)))
           );
-        } else if (String(templateResult).trim() !== '') {
-          // Template returned custom text - active condition met
+        }
+
+        // Check if result is JSON with an explicit "active" property
+        if (resultStr.startsWith('{') && resultStr.endsWith('}')) {
+          try {
+            const parsed = JSON.parse(resultStr);
+            // If JSON has explicit "active" or "is_active" property, use that
+            if (parsed.active !== undefined) {
+              return Boolean(parsed.active);
+            }
+            if (parsed.is_active !== undefined) {
+              return Boolean(parsed.is_active);
+            }
+            // JSON without explicit active property - fall through to entity state evaluation
+          } catch {
+            // Not valid JSON - treat as text
+            if (resultStr !== '') {
+              return true; // Non-empty text = active
+            }
+          }
+        } else if (resultStr !== '') {
+          // Template returned non-JSON, non-boolean text - active condition met
           return true;
         } else {
           // Template returned empty - inactive
           return false;
         }
       }
+
+      // Fall through to entity state evaluation below (for JSON templates without explicit "active" property)
     }
 
     // PRIORITY 2: Check legacy template_mode (deprecated)

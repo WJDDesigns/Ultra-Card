@@ -102,6 +102,7 @@ export declare class LayoutTab extends LitElement {
     private _renderBreadcrumbs;
     private _renderTreeOverflowMenu;
     private _renderLayoutChildOverflowMenu;
+    private _renderTabsSectionChildOverflowMenu;
     private _renderTreeRow;
     private _renderTreeColumn;
     private _renderTreeModule;
