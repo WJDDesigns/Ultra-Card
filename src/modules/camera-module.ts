@@ -84,7 +84,7 @@ export class UltraCameraModule extends BaseUltraModule {
 
       // Camera controls
       show_controls: false,
-      
+
       // Stream mode - controls camera feed behavior:
       // 'auto': HA default - lightweight snapshots with tap-to-live upgrade (low data usage)
       // 'live': Always streaming live feed (high data usage, real-time)
@@ -1293,7 +1293,10 @@ export class UltraCameraModule extends BaseUltraModule {
                     @mousedown=${(e: Event) => {
                       // Only stop propagation for drag operations, not clicks on the editor
                       const target = e.target as HTMLElement;
-                      if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                      if (
+                        !target.closest('ultra-template-editor') &&
+                        !target.closest('.cm-editor')
+                      ) {
                         e.stopPropagation();
                       }
                     }}
@@ -1448,10 +1451,7 @@ export class UltraCameraModule extends BaseUltraModule {
         const templateHash = this._hashString(cameraModule.template);
         const templateKey = `camera_${cameraModule.id}_${templateHash}`;
 
-        if (
-          this._templateService &&
-          !this._templateService.hasTemplateSubscription(templateKey)
-        ) {
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
           const context = buildEntityContext(cameraModule.entity || '', hass, {
             camera_name: cameraModule.camera_name,
             live_view: cameraModule.live_view,
@@ -1517,7 +1517,7 @@ export class UltraCameraModule extends BaseUltraModule {
     // Determine camera view mode based on view_mode setting
     const viewMode = cameraModule.view_mode || 'auto';
     let desiredCameraView: 'auto' | 'live';
-    
+
     if (viewMode === 'live') {
       // Always live streaming
       desiredCameraView = 'live';
@@ -1530,10 +1530,15 @@ export class UltraCameraModule extends BaseUltraModule {
     // We render using last applied props and schedule a debounced apply for desired props
     if ((this as any)._isEditorOpen()) {
       const effectiveEntity = this._lastAppliedEntity ?? cameraEntity;
-      const effectiveCameraView = this._lastAppliedLive ?? (desiredCameraView === 'live');
+      const effectiveCameraView = this._lastAppliedLive ?? desiredCameraView === 'live';
       // Schedule an atomic update to desired props (200ms debounce)
       if (cameraEntity) {
-        (this as any)._scheduleCameraUpdate(cameraEntity, desiredCameraView === 'live', cameraModule, hass);
+        (this as any)._scheduleCameraUpdate(
+          cameraEntity,
+          desiredCameraView === 'live',
+          cameraModule,
+          hass
+        );
       }
       cameraEntity = effectiveEntity || '';
       // Note: We will pass desired camera view to hui-image below via effectiveCameraView
@@ -1684,13 +1689,13 @@ export class UltraCameraModule extends BaseUltraModule {
     // Camera content
     const isDashboardView = previewContext === 'dashboard';
     const isLiveMode = (cameraModule.view_mode || 'auto') === 'live';
-    
+
     const handleUserInteraction = (event: Event) => {
       // Only handle audio in live mode
       if (!isLiveMode) {
         return;
       }
-      
+
       const isAudioActive = this._isAudioActive(cameraModule, isDashboardView);
       if (!isAudioActive) {
         return;
@@ -1810,12 +1815,12 @@ export class UltraCameraModule extends BaseUltraModule {
                           );
                         }, 100);
                       }
-                      
+
                       // Ensure audio is properly enabled/disabled on the video element (only in live mode)
                       if (isLiveMode) {
                         this._ensureAudioState(e.target as any, cameraModule, audioActive);
                       }
-                      
+
                       // Setup snapshot refresh timer for snapshot mode
                       if ((cameraModule.view_mode || 'auto') === 'snapshot') {
                         this._setupSnapshotRefresh(cameraModule, cameraEntity || '', hass);
@@ -2073,7 +2078,14 @@ export class UltraCameraModule extends BaseUltraModule {
         module.tap_action.action === 'default'
           ? { action: 'more-info', entity: module.entity }
           : module.tap_action;
-      UltraLinkComponent.handleAction(action as any, hass, event.target as HTMLElement, config, module.entity, module);
+      UltraLinkComponent.handleAction(
+        action as any,
+        hass,
+        event.target as HTMLElement,
+        config,
+        module.entity,
+        module
+      );
     } else if (module.entity) {
       // Default action for cameras: show more-info
       UltraLinkComponent.handleAction(
@@ -2358,12 +2370,12 @@ export class UltraCameraModule extends BaseUltraModule {
           // Fullscreen always upgrades to live for best quality
           (huiImage as any).cameraView = 'live';
           (huiImage as any).muted = !fullscreenAudioActive;
-          
+
           // Ensure audio state is applied after element is added to DOM
           huiImage.addEventListener('load', () => {
             (this as any)._ensureAudioState(huiImage, module, fullscreenAudioActive);
           });
-          
+
           // Also try after a delay to catch video element creation
           setTimeout(() => {
             (this as any)._ensureAudioState(huiImage, module, fullscreenAudioActive);
@@ -3067,12 +3079,12 @@ export class UltraCameraModule extends BaseUltraModule {
         // In fullscreen, enable audio if audio_enabled is true (for both auto and live modes)
         const fullscreenAudioActive = module.audio_enabled === true;
         (cameraImg as any).muted = !fullscreenAudioActive;
-        
+
         // Ensure audio state is applied after element is added to DOM
         cameraImg.addEventListener('load', () => {
           (this as any)._ensureAudioState(cameraImg, module, fullscreenAudioActive);
         });
-        
+
         // Also try after a delay to catch video element creation
         setTimeout(() => {
           (this as any)._ensureAudioState(cameraImg, module, fullscreenAudioActive);
@@ -3587,7 +3599,8 @@ export class UltraCameraModule extends BaseUltraModule {
     designProperties: any = {},
     templateOverlayColor?: string
   ): Record<string, string> {
-    const baseStyles = {
+    // Base styles shared by all positions
+    const baseStyles: Record<string, string> = {
       position: 'absolute',
       padding: '6px 12px', // Fixed padding for camera name overlay
       background: 'rgba(0, 0, 0, 0.7)', // Fixed background for camera name overlay
@@ -3600,25 +3613,44 @@ export class UltraCameraModule extends BaseUltraModule {
       fontWeight: designProperties.font_weight || this.getTextWeight(moduleWithDesign),
       fontFamily: designProperties.font_family || this.getTextFont(moduleWithDesign),
       borderRadius: '4px', // Fixed small border radius for camera name overlay
-      textTransform: designProperties.text_transform || undefined,
-      letterSpacing: designProperties.letter_spacing || undefined,
-      lineHeight: designProperties.line_height || undefined,
-      zIndex: '10',
+      zIndex: '0',
       pointerEvents: 'none',
       backdropFilter: 'blur(4px)',
-      maxWidth: 'calc(100% - 20px)',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
       whiteSpace: 'nowrap',
       textShadow: designProperties.text_shadow || '0 1px 2px rgba(0, 0, 0, 0.8)',
       transition: 'all 0.2s ease',
+      boxSizing: 'border-box',
     };
 
+    // Add optional style properties only if defined
+    if (designProperties.text_transform) {
+      baseStyles.textTransform = designProperties.text_transform;
+    }
+    if (designProperties.letter_spacing) {
+      baseStyles.letterSpacing = designProperties.letter_spacing;
+    }
+    if (designProperties.line_height) {
+      baseStyles.lineHeight = designProperties.line_height;
+    }
+
+    // Position-specific styles with appropriate maxWidth to prevent overflow
     switch (position) {
       case 'top-left':
-        return { ...baseStyles, top: '8px', left: '8px' };
+        return {
+          ...baseStyles,
+          top: '8px',
+          left: '8px',
+          maxWidth: 'calc(100% - 16px)', // 8px margin on each side
+        };
       case 'top-right':
-        return { ...baseStyles, top: '8px', right: '8px' };
+        return {
+          ...baseStyles,
+          top: '8px',
+          right: '8px',
+          maxWidth: 'calc(100% - 16px)', // 8px margin on each side
+        };
       case 'top-middle':
         return {
           ...baseStyles,
@@ -3626,6 +3658,7 @@ export class UltraCameraModule extends BaseUltraModule {
           left: '50%',
           transform: 'translateX(-50%)',
           textAlign: 'center',
+          maxWidth: 'calc(100% - 24px)', // Extra margin for centered positioning
         };
       case 'center':
         return {
@@ -3634,9 +3667,15 @@ export class UltraCameraModule extends BaseUltraModule {
           left: '50%',
           transform: 'translate(-50%, -50%)',
           textAlign: 'center',
+          maxWidth: 'calc(100% - 24px)', // Extra margin for centered positioning
         };
       case 'bottom-left':
-        return { ...baseStyles, bottom: '8px', left: '8px' };
+        return {
+          ...baseStyles,
+          bottom: '8px',
+          left: '8px',
+          maxWidth: 'calc(100% - 16px)', // 8px margin on each side
+        };
       case 'bottom-middle':
         return {
           ...baseStyles,
@@ -3644,11 +3683,22 @@ export class UltraCameraModule extends BaseUltraModule {
           left: '50%',
           transform: 'translateX(-50%)',
           textAlign: 'center',
+          maxWidth: 'calc(100% - 24px)', // Extra margin for centered positioning
         };
       case 'bottom-right':
-        return { ...baseStyles, bottom: '8px', right: '8px' };
+        return {
+          ...baseStyles,
+          bottom: '8px',
+          right: '8px',
+          maxWidth: 'calc(100% - 16px)', // 8px margin on each side
+        };
       default:
-        return { ...baseStyles, top: '8px', left: '8px' };
+        return {
+          ...baseStyles,
+          top: '8px',
+          left: '8px',
+          maxWidth: 'calc(100% - 16px)',
+        };
     }
   }
 
@@ -3907,17 +3957,21 @@ export class UltraCameraModule extends BaseUltraModule {
     });
   }
 
-  private _setupSnapshotRefresh(cameraModule: CameraModule, entity: string, hass: HomeAssistant): void {
+  private _setupSnapshotRefresh(
+    cameraModule: CameraModule,
+    entity: string,
+    hass: HomeAssistant
+  ): void {
     // Clear any existing timer first
     this._clearSnapshotRefresh(cameraModule.id);
-    
+
     const interval = (cameraModule.refresh_interval || 10) * 1000; // Convert to milliseconds
-    
+
     // Setup recurring refresh timer
     const timerId = setInterval(() => {
       this.refreshCamera(entity, hass);
     }, interval);
-    
+
     this._snapshotRefreshTimers.set(cameraModule.id, timerId);
   }
 
@@ -4399,6 +4453,14 @@ export class UltraCameraModule extends BaseUltraModule {
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
         transition: all 0.2s ease;
+        box-sizing: border-box;
+        word-break: break-word;
+        hyphens: auto;
+      }
+      
+      /* Ensure camera name doesn't overflow container boundaries */
+      .camera-image-container > .camera-name-overlay {
+        contain: layout style;
       }
       
       .camera-image-container {

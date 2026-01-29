@@ -108,10 +108,10 @@ export class UltraCardEditor extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    
+
     // Initialize Pro settings from localStorage
     this._skipDefaultModules = UltraCardEditor.getSkipDefaultModulesSetting();
-    
+
     try {
       (window as any).__UC_PREVIEW_SUPPRESS_LOCKS = true;
       window.dispatchEvent(
@@ -1322,7 +1322,7 @@ export class UltraCardEditor extends LitElement {
               </p>
             </div>
 
-            <uc-custom-variables-manager 
+            <uc-custom-variables-manager
               .hass=${this.hass}
               .config=${this.config}
               @card-variables-changed=${this._handleCardVariablesChanged}
@@ -1352,7 +1352,9 @@ export class UltraCardEditor extends LitElement {
       if (sessionStorage.getItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY) === 'true') {
         return true;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     // Finally check localStorage
     try {
       return localStorage.getItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY) === 'true';
@@ -1369,21 +1371,25 @@ export class UltraCardEditor extends LitElement {
     // Always set window fallback (works even when all storage is full)
     (window as any)[UltraCardEditor.SKIP_DEFAULT_MODULES_WINDOW_KEY] = enabled;
     this._skipDefaultModules = enabled;
-    
+
     let savedTo = 'memory only';
-    
+
     // Try sessionStorage first (separate quota, persists during browser session)
     try {
       sessionStorage.setItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY, enabled ? 'true' : 'false');
       savedTo = 'sessionStorage';
-    } catch { /* sessionStorage full or unavailable */ }
-    
+    } catch {
+      /* sessionStorage full or unavailable */
+    }
+
     // Also try localStorage for persistence across browser restarts
     try {
       localStorage.setItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY, enabled ? 'true' : 'false');
       savedTo = 'localStorage';
-    } catch { /* localStorage full */ }
-    
+    } catch {
+      /* localStorage full */
+    }
+
     console.log(`[Ultra Card Pro] Skip default modules setting saved to ${savedTo}:`, enabled);
   }
 
@@ -1496,6 +1502,29 @@ export class UltraCardEditor extends LitElement {
       /* Global styles for hiding preview in full screen */
       :host {
         --ultra-editor-transition: all 0.3s ease;
+      }
+
+      /* Fix for ha-select dropdowns appearing behind other UI elements */
+      ha-select,
+      ha-form ha-select,
+      .settings-section ha-select,
+      .field-section ha-select {
+        --mdc-menu-z-index: 9999;
+        --mdc-select-z-index: 9999;
+        position: relative;
+      }
+
+      /* Ensure settings sections and field sections allow dropdown overflow */
+      .settings-section,
+      .field-section,
+      .tab-content {
+        overflow: visible;
+      }
+
+      /* Ensure mwc-menu surfaces have high z-index */
+      mwc-menu,
+      mwc-menu-surface {
+        z-index: 9999 !important;
       }
 
       .card-config {
@@ -3639,21 +3668,30 @@ export class UltraCardEditor extends LitElement {
 
     // Collect from rows
     this.config.layout?.rows?.forEach(row => {
-      const effectiveDesign = responsiveDesignService.getEffectiveDesign(row.design, currentBreakpoint);
+      const effectiveDesign = responsiveDesignService.getEffectiveDesign(
+        row.design,
+        currentBreakpoint
+      );
       if (effectiveDesign.hover_effect) {
         configs.push(effectiveDesign.hover_effect);
       }
 
       // Collect from columns
       row.columns?.forEach(column => {
-        const colEffectiveDesign = responsiveDesignService.getEffectiveDesign(column.design, currentBreakpoint);
+        const colEffectiveDesign = responsiveDesignService.getEffectiveDesign(
+          column.design,
+          currentBreakpoint
+        );
         if (colEffectiveDesign.hover_effect) {
           configs.push(colEffectiveDesign.hover_effect);
         }
 
         // Collect from modules
         column.modules?.forEach(module => {
-          const modEffectiveDesign = responsiveDesignService.getEffectiveDesign((module as any).design, currentBreakpoint);
+          const modEffectiveDesign = responsiveDesignService.getEffectiveDesign(
+            (module as any).design,
+            currentBreakpoint
+          );
           if (modEffectiveDesign.hover_effect) {
             configs.push(modEffectiveDesign.hover_effect);
           }
@@ -5044,7 +5082,13 @@ export class UltraCardEditor extends LitElement {
           </div>
           <div class="header-content">
             <h3>${localize('editor.pro_settings.title', lang, 'Pro Settings')}</h3>
-            <p>${localize('editor.pro_settings.description', lang, 'Exclusive settings for Ultra Card Pro subscribers')}</p>
+            <p>
+              ${localize(
+                'editor.pro_settings.description',
+                lang,
+                'Exclusive settings for Ultra Card Pro subscribers'
+              )}
+            </p>
           </div>
         </div>
 
@@ -5055,8 +5099,20 @@ export class UltraCardEditor extends LitElement {
               <ha-icon icon="mdi:card-remove-outline"></ha-icon>
             </div>
             <div class="setting-content">
-              <h4>${localize('editor.pro_settings.skip_default_modules', lang, 'Start with Empty Card')}</h4>
-              <p>${localize('editor.pro_settings.skip_default_modules_desc', lang, 'When adding a new Ultra Card, start with an empty layout instead of the default text and image modules')}</p>
+              <h4>
+                ${localize(
+                  'editor.pro_settings.skip_default_modules',
+                  lang,
+                  'Start with Empty Card'
+                )}
+              </h4>
+              <p>
+                ${localize(
+                  'editor.pro_settings.skip_default_modules_desc',
+                  lang,
+                  'When adding a new Ultra Card, start with an empty layout instead of the default text and image modules'
+                )}
+              </p>
             </div>
             <div class="setting-toggle">
               <ha-switch
@@ -5178,12 +5234,12 @@ export class UltraCardEditor extends LitElement {
 
   private async _handleExport() {
     const lang = this.hass?.locale?.language || 'en';
-    
+
     try {
       // Automatically scan for variables used in the config and include them
       const usedVarNames = scanConfigForVariables(this.config);
       const variablesToExport: CustomVariable[] = [];
-      
+
       for (const varName of usedVarNames) {
         // Check card-specific variables first (they take priority)
         const cardVar = this.config._customVariables?.find(
@@ -5193,27 +5249,31 @@ export class UltraCardEditor extends LitElement {
           variablesToExport.push({ ...cardVar, isGlobal: false });
           continue;
         }
-        
+
         // Check global variables
         const globalVar = ucCustomVariablesService.getVariableByName(varName);
         if (globalVar) {
           variablesToExport.push({ ...globalVar, isGlobal: true });
         }
       }
-      
+
       // Create export config with variables automatically included
       const exportConfig = { ...this.config };
       if (variablesToExport.length > 0) {
         (exportConfig as any)._customVariables = variablesToExport;
       }
-      
+
       // Use new encoded format (compressed + Base64)
       UcConfigEncoder.exportToFile(
         exportConfig,
         `${(this.config.card_name || 'ultra-card').replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${Date.now()}.txt`
       );
 
-      let successMsg = localize('editor.ultra_card_pro.export_success', lang, 'Card configuration exported!');
+      let successMsg = localize(
+        'editor.ultra_card_pro.export_success',
+        lang,
+        'Card configuration exported!'
+      );
       if (variablesToExport.length > 0) {
         successMsg += ` (including ${variablesToExport.length} variable(s))`;
       }
@@ -5263,7 +5323,7 @@ export class UltraCardEditor extends LitElement {
         // Check for custom variables in import
         const importedVariables = config._customVariables;
         let shouldImportVariables = false;
-        
+
         if (importedVariables && Array.isArray(importedVariables) && importedVariables.length > 0) {
           // Ask user if they want to import the variables
           shouldImportVariables = confirm(
@@ -5279,18 +5339,21 @@ export class UltraCardEditor extends LitElement {
           // Remove the _customVariables from config before saving (it's metadata, not card config)
           const cleanConfig = { ...config };
           delete cleanConfig._customVariables;
-          
+
           // Import variables if user confirmed - always as card-specific (local)
           // User can change to global later if needed
           if (shouldImportVariables && importedVariables) {
             const currentCardVars: CustomVariable[] = [];
             const exportData = { customVariables: importedVariables } as any;
-            const varResult = ucExportImportService.importVariablesAsCardSpecific(exportData, currentCardVars);
-            
+            const varResult = ucExportImportService.importVariablesAsCardSpecific(
+              exportData,
+              currentCardVars
+            );
+
             // Add imported variables to the clean config as card-specific
             if (varResult.cardVarsToAdd.length > 0) {
               cleanConfig._customVariables = varResult.cardVarsToAdd;
-              
+
               // Show summary
               const { summary } = varResult;
               let message = `Imported ${summary.added} variable(s) as card-specific`;
@@ -5304,14 +5367,14 @@ export class UltraCardEditor extends LitElement {
               alert(message);
             }
           }
-          
+
           this._updateConfig(cleanConfig);
-          
+
           // Scan imported config for variables that are used but not yet defined
           // This handles cases where the user received a config that uses variables
           // but didn't have the variable definitions included in the export
           const missingVars = findMissingVariables(cleanConfig);
-          
+
           if (missingVars.length > 0) {
             // Show the variable mapping dialog to let user create missing variables
             this._missingVariables = missingVars;
@@ -5337,10 +5400,10 @@ export class UltraCardEditor extends LitElement {
 
   private _handleVariableMappingConfirm(e: CustomEvent): void {
     const lang = this.hass?.locale?.language || 'en';
-    
+
     // Handle card-specific variables from the mapping dialog
     const cardVarsToCreate = e.detail?.cardVarsToCreate || [];
-    
+
     if (cardVarsToCreate.length > 0) {
       // Add variables to card config as card-specific
       const currentCardVars = this.config._customVariables || [];
@@ -5354,18 +5417,22 @@ export class UltraCardEditor extends LitElement {
         created: new Date().toISOString(),
         isGlobal: false, // Card-specific, not global
       }));
-      
+
       // Update config with new card-specific variables
-      this._updateConfig({ 
-        _customVariables: [...currentCardVars, ...newCardVars] 
+      this._updateConfig({
+        _customVariables: [...currentCardVars, ...newCardVars],
       });
     }
-    
+
     this._showVariableMappingDialog = false;
     this._missingVariables = [];
     this._pendingImportConfig = null;
     alert(
-      localize('editor.ultra_card_pro.import_success', lang, 'Card configuration imported! Variables have been created.')
+      localize(
+        'editor.ultra_card_pro.import_success',
+        lang,
+        'Card configuration imported! Variables have been created.'
+      )
     );
   }
 
@@ -5374,9 +5441,7 @@ export class UltraCardEditor extends LitElement {
     this._showVariableMappingDialog = false;
     this._missingVariables = [];
     this._pendingImportConfig = null;
-    alert(
-      localize('editor.ultra_card_pro.import_success', lang, 'Card configuration imported!')
-    );
+    alert(localize('editor.ultra_card_pro.import_success', lang, 'Card configuration imported!'));
   }
 
   private _handleSnapshotImport(snapshotData: any) {

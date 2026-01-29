@@ -1,5 +1,18 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta32
+
+### 🚀 New Features
+
+- **Added Default title/value size in graph module and added text size for them** - Enhanced module functionality for better user experience
+
+### 🐛 Bug Fixes
+
+- **Fixed Z-index issue in Graph Module where some dropdowns appear under other UI** - Enhanced dropdown functionality and responsiveness
+- **Fixed Camera title overlaying over UI** - Improved camera feed handling and reliability
+
+---
+
 ## Version 2.3.0-beta31
 
 ### 🐛 Bug Fixes

@@ -64,7 +64,9 @@ export class UcFormUtils {
       // For boolean fields, put title and toggle on the same line
       return html`
         <div class="field-section boolean-field" style="margin-bottom: 16px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px;">
+          <div
+            style="display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px;"
+          >
             <div style="flex: 1;">
               ${title
                 ? html`<div
@@ -264,7 +266,7 @@ export class UcFormUtils {
     config: UltraCardConfig | undefined
   ): TemplateResult {
     const varInfo = ucCustomVariablesService.getVariableInfo(value, config);
-    
+
     if (!varInfo.isVariable) {
       return html``;
     }
@@ -274,7 +276,9 @@ export class UcFormUtils {
     const scopeLabel = isGlobal ? 'Global' : 'Card';
 
     return html`
-      <div class="uc-variable-indicator" style="
+      <div
+        class="uc-variable-indicator"
+        style="
         display: flex;
         align-items: center;
         gap: 8px;
@@ -284,18 +288,22 @@ export class UcFormUtils {
         border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.3);
         border-radius: 8px;
         font-size: 12px;
-      ">
-        <span style="
+      "
+      >
+        <span
+          style="
           display: flex;
           align-items: center;
           gap: 4px;
           color: var(--primary-color);
           font-weight: 600;
-        ">
+        "
+        >
           <ha-icon icon="mdi:link-variant" style="--mdc-icon-size: 16px;"></ha-icon>
           Using Variable
         </span>
-        <span style="
+        <span
+          style="
           display: flex;
           align-items: center;
           gap: 6px;
@@ -303,17 +311,28 @@ export class UcFormUtils {
           background: var(--card-background-color, #1c1c1c);
           border-radius: 12px;
           font-family: var(--code-font-family, monospace);
-        ">
-          <ha-icon icon="${scopeIcon}" style="--mdc-icon-size: 14px; color: var(--secondary-text-color);"></ha-icon>
-          <span style="color: var(--primary-color); font-weight: 500;">${varInfo.variableName}</span>
+        "
+        >
+          <ha-icon
+            icon="${scopeIcon}"
+            style="--mdc-icon-size: 14px; color: var(--secondary-text-color);"
+          ></ha-icon>
+          <span style="color: var(--primary-color); font-weight: 500;"
+            >${varInfo.variableName}</span
+          >
           <span style="color: var(--secondary-text-color);">→</span>
-          <span style="color: var(--primary-text-color);">${varInfo.resolvedEntity || 'not found'}</span>
+          <span style="color: var(--primary-text-color);"
+            >${varInfo.resolvedEntity || 'not found'}</span
+          >
         </span>
-        <span style="
+        <span
+          style="
           font-size: 10px;
           color: var(--secondary-text-color);
           margin-left: auto;
-        ">${scopeLabel}</span>
+        "
+          >${scopeLabel}</span
+        >
       </div>
     `;
   }
@@ -336,44 +355,51 @@ export class UcFormUtils {
     }
   ): TemplateResult {
     const varInfo = ucCustomVariablesService.getVariableInfo(currentValue, config);
-    
+
     // If using a variable, show the resolved entity in the picker
     // The variable indicator above shows what variable is actually being used
-    const displayValue = varInfo.isVariable ? (varInfo.resolvedEntity || '') : (currentValue || '');
-    
+    const displayValue = varInfo.isVariable ? varInfo.resolvedEntity || '' : currentValue || '';
+
     return html`
       ${UcFormUtils.renderVariableIndicator(currentValue, config)}
-      <div class="${varInfo.isVariable ? 'uc-entity-field-with-variable' : ''}" style="${varInfo.isVariable ? `
+      <div
+        class="${varInfo.isVariable ? 'uc-entity-field-with-variable' : ''}"
+        style="${varInfo.isVariable
+          ? `
         position: relative;
-      ` : ''}">
-        ${varInfo.isVariable ? html`
-          <style>
-            .uc-entity-field-with-variable ha-entity-picker,
-            .uc-entity-field-with-variable ha-selector-entity {
-              opacity: 0.7;
-              pointer-events: none;
-            }
-            .uc-entity-field-with-variable::after {
-              content: 'Click to change';
-              position: absolute;
-              right: 12px;
-              top: 50%;
-              transform: translateY(-50%);
-              font-size: 10px;
-              color: var(--secondary-text-color);
-              pointer-events: none;
-            }
-          </style>
-          <div 
-            style="position: absolute; inset: 0; cursor: pointer; z-index: 1;"
-            @click=${(e: Event) => {
-              e.stopPropagation();
-              // Clear the variable to allow selecting a new entity
-              onChange('');
-            }}
-            title="Click to clear variable and select a different entity"
-          ></div>
-        ` : ''}
+      `
+          : ''}"
+      >
+        ${varInfo.isVariable
+          ? html`
+              <style>
+                .uc-entity-field-with-variable ha-entity-picker,
+                .uc-entity-field-with-variable ha-selector-entity {
+                  opacity: 0.7;
+                  pointer-events: none;
+                }
+                .uc-entity-field-with-variable::after {
+                  content: 'Click to change';
+                  position: absolute;
+                  right: 12px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  font-size: 10px;
+                  color: var(--secondary-text-color);
+                  pointer-events: none;
+                }
+              </style>
+              <div
+                style="position: absolute; inset: 0; cursor: pointer; z-index: 1;"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  // Clear the variable to allow selecting a new entity
+                  onChange('');
+                }}
+                title="Click to clear variable and select a different entity"
+              ></div>
+            `
+          : ''}
         ${UcFormUtils.renderForm(
           hass,
           { [fieldName]: displayValue },
@@ -412,16 +438,18 @@ export class UcFormUtils {
   ): TemplateResult {
     const globalVars = ucCustomVariablesService.getVariables();
     const cardVars = config ? ucCustomVariablesService.getCardSpecificVariables(config) : [];
-    
+
     // Don't render anything if no variables exist
     if (globalVars.length === 0 && cardVars.length === 0) {
       return html``;
     }
 
     const allVars = [...globalVars, ...cardVars];
-    
+
     return html`
-      <div class="uc-variable-chips" style="
+      <div
+        class="uc-variable-chips"
+        style="
         display: flex;
         flex-wrap: wrap;
         align-items: center;
@@ -431,8 +459,10 @@ export class UcFormUtils {
         background: var(--secondary-background-color);
         border-radius: 8px;
         border: 1px solid var(--divider-color);
-      ">
-        <span style="
+      "
+      >
+        <span
+          style="
           font-size: 11px;
           color: var(--primary-color);
           font-weight: 600;
@@ -440,7 +470,8 @@ export class UcFormUtils {
           align-items: center;
           gap: 4px;
           margin-right: 4px;
-        ">
+        "
+        >
           <ha-icon icon="mdi:variable" style="--mdc-icon-size: 14px;"></ha-icon>
           Variables:
         </span>
@@ -448,7 +479,7 @@ export class UcFormUtils {
           const isSelected = currentValue === v.entity;
           const resolvedValue = UcFormUtils._getVariableResolvedValue(v, hass);
           const isGlobal = v.isGlobal !== false;
-          
+
           return html`
             <button
               type="button"
@@ -468,7 +499,9 @@ export class UcFormUtils {
                 gap: 4px;
                 white-space: nowrap;
               "
-              title="${isGlobal ? '🌐 Global' : '📋 Card'}: $${v.name} → ${v.entity}${resolvedValue ? ` (${resolvedValue})` : ''}"
+              title="${isGlobal ? '🌐 Global' : '📋 Card'}: $${v.name} → ${v.entity}${resolvedValue
+                ? ` (${resolvedValue})`
+                : ''}"
               @click=${() => onSelect(v.entity)}
             >
               <span style="opacity: 0.7;">${isGlobal ? '🌐' : '📋'}</span>
@@ -525,7 +558,7 @@ export class UcFormUtils {
     if (!hass) return '';
     const entityState = hass.states[variable.entity];
     if (!entityState) return 'unavailable';
-    
+
     switch (variable.value_type) {
       case 'entity_id':
         return variable.entity;
@@ -586,12 +619,35 @@ export class UcFormUtils {
         margin-bottom: 16px;
         max-width: 100%;
         box-sizing: border-box;
+        overflow: visible;
+        position: relative;
+      }
+
+      /* Fix for ha-select dropdowns appearing behind other elements */
+      .field-section {
+        position: relative;
+        overflow: visible;
+      }
+
+      /* Ensure ha-select dropdowns have high z-index */
+      ha-select,
+      ha-form ha-select {
+        --mdc-menu-z-index: 9999;
+        --mdc-select-z-index: 9999;
+        position: relative;
+      }
+
+      /* Ensure mwc-menu surfaces can overflow their containers */
+      mwc-menu,
+      mwc-menu-surface {
+        z-index: 9999 !important;
       }
 
       /* Ensure form elements are properly sized */
       ha-form {
         display: block;
         width: 100%;
+        overflow: visible;
       }
 
       ha-form ha-select,

@@ -175,6 +175,9 @@ export class UltraGraphsModule extends BaseUltraModule {
       show_display_name: true,
       show_entity_value: true,
       info_position: 'top_left',
+      // Title and value font sizes (in pixels)
+      title_font_size: 12,
+      value_font_size: 16,
 
       // Chart options
       show_legend: true,
@@ -1179,6 +1182,158 @@ export class UltraGraphsModule extends BaseUltraModule {
                 </div>`
               : ''}
 
+            <!-- Title Font Size -->
+            ${(graphsModule as any).show_title !== false
+              ? html`<div>
+                  <label
+                    style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
+                  >
+                    ${localize('editor.graphs.display.title_font_size', lang, 'Title Font Size')}
+                  </label>
+                  <div
+                    style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; box-sizing: border-box; width: 100%;"
+                  >
+                    <input
+                      type="range"
+                      min="8"
+                      max="32"
+                      step="1"
+                      .value=${(graphsModule as any).title_font_size ?? 12}
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const val = parseInt(target.value);
+                        updateModule({ title_font_size: val } as any);
+                      }}
+                      style="
+                        width: 100%;
+                        height: 4px;
+                        background: var(--divider-color);
+                        border-radius: 2px;
+                        outline: none;
+                        -webkit-appearance: none;
+                      "
+                    />
+                    <span
+                      style="font-size: 13px; color: var(--secondary-text-color); min-width: 56px; text-align: right;"
+                      >${(graphsModule as any).title_font_size ?? 12}px</span
+                    >
+                    <button
+                      @click=${() => updateModule({ title_font_size: 12 } as any)}
+                      title="${localize(
+                        'editor.fields.reset_default_value',
+                        lang,
+                        'Reset to default ({value})'
+                      ).replace('{value}', '12px')}"
+                      style="
+                        width: 32px;
+                        height: 32px;
+                        padding: 0;
+                        border: 1px solid var(--divider-color);
+                        border-radius: 4px;
+                        background: var(--secondary-background-color);
+                        color: var(--primary-text-color);
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: all 0.2s ease;
+                        flex-shrink: 0;
+                      "
+                      @mouseenter=${(e: Event) => {
+                        const btn = e.target as HTMLButtonElement;
+                        btn.style.background = 'var(--primary-color)';
+                        btn.style.color = 'var(--text-primary-color)';
+                        btn.style.borderColor = 'var(--primary-color)';
+                      }}
+                      @mouseleave=${(e: Event) => {
+                        const btn = e.target as HTMLButtonElement;
+                        btn.style.background = 'var(--secondary-background-color)';
+                        btn.style.color = 'var(--primary-text-color)';
+                        btn.style.borderColor = 'var(--divider-color)';
+                      }}
+                    >
+                      <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
+                    </button>
+                  </div>
+                </div>`
+              : ''}
+
+            <!-- Value Font Size -->
+            ${(graphsModule as any).show_entity_value !== false
+              ? html`<div>
+                  <label
+                    style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
+                  >
+                    ${localize('editor.graphs.display.value_font_size', lang, 'Value Font Size')}
+                  </label>
+                  <div
+                    style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; box-sizing: border-box; width: 100%;"
+                  >
+                    <input
+                      type="range"
+                      min="10"
+                      max="48"
+                      step="1"
+                      .value=${(graphsModule as any).value_font_size ?? 16}
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const val = parseInt(target.value);
+                        updateModule({ value_font_size: val } as any);
+                      }}
+                      style="
+                        width: 100%;
+                        height: 4px;
+                        background: var(--divider-color);
+                        border-radius: 2px;
+                        outline: none;
+                        -webkit-appearance: none;
+                      "
+                    />
+                    <span
+                      style="font-size: 13px; color: var(--secondary-text-color); min-width: 56px; text-align: right;"
+                      >${(graphsModule as any).value_font_size ?? 16}px</span
+                    >
+                    <button
+                      @click=${() => updateModule({ value_font_size: 16 } as any)}
+                      title="${localize(
+                        'editor.fields.reset_default_value',
+                        lang,
+                        'Reset to default ({value})'
+                      ).replace('{value}', '16px')}"
+                      style="
+                        width: 32px;
+                        height: 32px;
+                        padding: 0;
+                        border: 1px solid var(--divider-color);
+                        border-radius: 4px;
+                        background: var(--secondary-background-color);
+                        color: var(--primary-text-color);
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: all 0.2s ease;
+                        flex-shrink: 0;
+                      "
+                      @mouseenter=${(e: Event) => {
+                        const btn = e.target as HTMLButtonElement;
+                        btn.style.background = 'var(--primary-color)';
+                        btn.style.color = 'var(--text-primary-color)';
+                        btn.style.borderColor = 'var(--primary-color)';
+                      }}
+                      @mouseleave=${(e: Event) => {
+                        const btn = e.target as HTMLButtonElement;
+                        btn.style.background = 'var(--secondary-background-color)';
+                        btn.style.color = 'var(--primary-text-color)';
+                        btn.style.borderColor = 'var(--divider-color)';
+                      }}
+                    >
+                      <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
+                    </button>
+                  </div>
+                </div>`
+              : ''}
+
             <!-- Time Period (History Mode Only) -->
             ${graphsModule.data_source !== 'forecast'
               ? this.renderFieldSection(
@@ -1847,7 +2002,7 @@ export class UltraGraphsModule extends BaseUltraModule {
             )}
 
             <!-- Background Color -->
-            <div style="position: relative; overflow: visible; z-index: 9999;">
+            <div style="position: relative; overflow: visible;">
               <label
                 style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
               >
@@ -2476,7 +2631,8 @@ export class UltraGraphsModule extends BaseUltraModule {
                   class="graph-title"
                   style="
                     ${composeTextStyle({
-                    fontSize: resolvedFontSize || '18px',
+                    fontSize:
+                      resolvedFontSize || `${(graphsModule as any).title_font_size || 12}px`,
                   })}; 
                     font-weight: 600; 
                     ${designProperties.text_align
@@ -2495,7 +2651,8 @@ export class UltraGraphsModule extends BaseUltraModule {
                   class="graph-value"
                   style="
                     ${composeTextStyle({
-                    fontSize: resolvedFontSize || '28px',
+                    fontSize:
+                      resolvedFontSize || `${(graphsModule as any).value_font_size || 16}px`,
                   })}; 
                     line-height: 1.1; 
                     font-weight: 600; 
@@ -5792,7 +5949,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         box-sizing: border-box;
       }
 
-      /* Specific fix for ha-select dropdowns */
+      /* Specific fix for ha-select dropdowns z-index and width */
       .settings-section ha-select,
       .settings-section ha-textfield,
       .settings-section input,
@@ -5800,6 +5957,21 @@ export class UltraGraphsModule extends BaseUltraModule {
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
+      }
+
+      /* Fix ha-select dropdown menu z-index to appear above other UI elements */
+      ha-select,
+      .settings-section ha-select,
+      .field-section ha-select {
+        --mdc-menu-z-index: 9999;
+        --mdc-select-z-index: 9999;
+        position: relative;
+      }
+
+      /* Ensure mwc-menu surfaces can overflow containers */
+      mwc-menu,
+      mwc-menu-surface {
+        z-index: 9999 !important;
       }
       .settings-section ultra-color-picker {
         width: 100%;

@@ -313,7 +313,11 @@ export class UltraToggleModule extends BaseUltraModule {
           ${this.renderSettingsSection('', '', [
             {
               title: localize('editor.toggle.title', lang, 'Title'),
-              description: localize('editor.toggle.title_desc', lang, 'Title to display above the toggle'),
+              description: localize(
+                'editor.toggle.title_desc',
+                lang,
+                'Title to display above the toggle'
+              ),
               hass,
               data: { title: toggleModule.title || 'Toggle' },
               schema: [this.textField('title')],
@@ -321,14 +325,17 @@ export class UltraToggleModule extends BaseUltraModule {
             },
             {
               title: localize('editor.toggle.show_title', lang, 'Show Title'),
-              description: localize('editor.toggle.show_title_desc', lang, 'Display the title above the toggle'),
+              description: localize(
+                'editor.toggle.show_title_desc',
+                lang,
+                'Display the title above the toggle'
+              ),
               hass,
               data: { show_title: toggleModule.show_title },
               schema: [this.booleanField('show_title')],
               onChange: (e: CustomEvent) => updateModule({ show_title: e.detail.value.show_title }),
             },
           ])}
-
           ${this.renderFieldSection(
             localize('editor.toggle.visual_style', lang, 'Visual Style'),
             localize('editor.toggle.visual_style_desc', lang, 'How the toggle should be displayed'),
@@ -352,7 +359,6 @@ export class UltraToggleModule extends BaseUltraModule {
               setTimeout(() => this.triggerPreviewUpdate(), 50);
             }
           )}
-
           ${this.renderFieldSection(
             localize('editor.toggle.orientation', lang, 'Orientation'),
             localize('editor.toggle.orientation_desc', lang, 'Layout direction of toggle points'),
@@ -372,10 +378,13 @@ export class UltraToggleModule extends BaseUltraModule {
               setTimeout(() => this.triggerPreviewUpdate(), 50);
             }
           )}
-
           ${this.renderFieldSection(
             localize('editor.toggle.alignment', lang, 'Alignment'),
-            localize('editor.toggle.alignment_desc', lang, 'How the toggle is aligned within its container'),
+            localize(
+              'editor.toggle.alignment_desc',
+              lang,
+              'How the toggle is aligned within its container'
+            ),
             hass,
             { alignment: toggleModule.alignment || 'center' },
             [
@@ -394,7 +403,6 @@ export class UltraToggleModule extends BaseUltraModule {
               setTimeout(() => this.triggerPreviewUpdate(), 50);
             }
           )}
-
           ${this.renderFieldSection(
             localize('editor.toggle.size', lang, 'Size'),
             localize('editor.toggle.size_desc', lang, 'Size of the toggle control'),
@@ -420,10 +428,16 @@ export class UltraToggleModule extends BaseUltraModule {
             <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
               ${localize('editor.toggle.spacing', lang, 'Spacing')}
             </div>
-            <div class="field-description" style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;">
+            <div
+              class="field-description"
+              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;"
+            >
               ${localize('editor.toggle.spacing_desc', lang, 'Gap between toggle points in pixels')}
             </div>
-            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
+            <div
+              class="gap-control-container"
+              style="display: flex; align-items: center; gap: 12px;"
+            >
               <input
                 type="range"
                 class="gap-slider"
@@ -494,21 +508,27 @@ export class UltraToggleModule extends BaseUltraModule {
               // Don't update the module yet, just store the selection
             }
           )}
-
           ${this._quickSetupEntity
             ? html`
                 <button
                   class="add-toggle-point-btn"
                   style="margin-top: 12px; background: var(--success-color);"
                   @click=${() => {
-                    this.quickSetupFromEntity(this._quickSetupEntity!, toggleModule, hass, updateModule);
+                    this.quickSetupFromEntity(
+                      this._quickSetupEntity!,
+                      toggleModule,
+                      hass,
+                      updateModule
+                    );
                     this._quickSetupEntity = undefined;
                   }}
                 >
                   <ha-icon icon="mdi:auto-fix"></ha-icon>
                   ${localize('editor.toggle.create_toggle_points', lang, 'Create Toggle Points')}
                 </button>
-                <div style="font-size: 11px; color: var(--warning-color); margin-top: 8px; padding: 8px; background: rgba(var(--rgb-warning-color), 0.1); border-radius: 4px;">
+                <div
+                  style="font-size: 11px; color: var(--warning-color); margin-top: 8px; padding: 8px; background: rgba(var(--rgb-warning-color), 0.1); border-radius: 4px;"
+                >
                   <ha-icon icon="mdi:alert" style="--mdc-icon-size: 14px;"></ha-icon>
                   ${localize(
                     'editor.toggle.quick_setup_warning',
@@ -556,14 +576,17 @@ export class UltraToggleModule extends BaseUltraModule {
           ${this.renderSettingsSection('', '', [
             {
               title: localize('editor.toggle.show_icons', lang, 'Show Icons'),
-              description: localize('editor.toggle.show_icons_desc', lang, 'Display icons on toggle points'),
+              description: localize(
+                'editor.toggle.show_icons_desc',
+                lang,
+                'Display icons on toggle points'
+              ),
               hass,
               data: { show_icons: toggleModule.show_icons },
               schema: [this.booleanField('show_icons')],
               onChange: (e: CustomEvent) => updateModule({ show_icons: e.detail.value.show_icons }),
             },
           ])}
-
           ${toggleModule.show_icons
             ? html`
                 ${UcFormUtils.renderFieldSection(
@@ -576,7 +599,11 @@ export class UltraToggleModule extends BaseUltraModule {
                 )}
                 ${this.renderFieldSection(
                   localize('editor.toggle.icon_position', lang, 'Icon Position'),
-                  localize('editor.toggle.icon_position_desc', lang, 'Position of icons relative to labels'),
+                  localize(
+                    'editor.toggle.icon_position_desc',
+                    lang,
+                    'Position of icons relative to labels'
+                  ),
                   hass,
                   { icon_position: toggleModule.icon_position || 'left' },
                   [
@@ -627,7 +654,8 @@ export class UltraToggleModule extends BaseUltraModule {
               .value=${toggleModule.default_text_color || 'var(--primary-text-color)'}
               .defaultValue=${'var(--primary-text-color)'}
               .hass=${hass}
-              @value-changed=${(e: CustomEvent) => updateModule({ default_text_color: e.detail.value })}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ default_text_color: e.detail.value })}
             ></ultra-color-picker>
 
             <ultra-color-picker
@@ -644,7 +672,11 @@ export class UltraToggleModule extends BaseUltraModule {
             ></ultra-color-picker>
 
             <ultra-color-picker
-              .label=${localize('editor.toggle.default_active_text_color', lang, 'Active Text Color')}
+              .label=${localize(
+                'editor.toggle.default_active_text_color',
+                lang,
+                'Active Text Color'
+              )}
               .value=${toggleModule.default_active_text_color || 'white'}
               .defaultValue=${'white'}
               .hass=${hass}
@@ -693,7 +725,9 @@ export class UltraToggleModule extends BaseUltraModule {
 
     return html`
       <div
-        class="toggle-point-row ${this._draggedItem?.id === point.id ? 'dragging' : ''} ${isActive ? 'currently-active' : ''}"
+        class="toggle-point-row ${this._draggedItem?.id === point.id ? 'dragging' : ''} ${isActive
+          ? 'currently-active'
+          : ''}"
         draggable="true"
         @dragstart=${(e: DragEvent) => this.handleDragStart(e, point)}
         @dragend=${() => this.handleDragEnd()}
@@ -701,15 +735,25 @@ export class UltraToggleModule extends BaseUltraModule {
         @drop=${(e: DragEvent) => this.handleDrop(e, index, module, updateModule)}
       >
         <ha-icon icon="mdi:drag" class="drag-handle"></ha-icon>
-        ${isActive 
-          ? html`<ha-icon icon="mdi:check-circle" style="color: var(--success-color); flex-shrink: 0;"></ha-icon>`
-          : html`<ha-icon icon="mdi:circle-outline" style="color: var(--disabled-text-color); flex-shrink: 0; opacity: 0.5;"></ha-icon>`
-        }
+        ${isActive
+          ? html`<ha-icon
+              icon="mdi:check-circle"
+              style="color: var(--success-color); flex-shrink: 0;"
+            ></ha-icon>`
+          : html`<ha-icon
+              icon="mdi:circle-outline"
+              style="color: var(--disabled-text-color); flex-shrink: 0; opacity: 0.5;"
+            ></ha-icon>`}
         <div class="toggle-point-info ${!point.label ? 'no-label' : ''}">
           ${point.label || 'No label set'}
-          ${point.match_entity 
-            ? html`<div style="font-size: 11px; color: var(--secondary-text-color); margin-top: 2px;">
-                ${point.match_entity} = ${Array.isArray(point.match_state) ? point.match_state.join(', ') : point.match_state || 'any'}
+          ${point.match_entity
+            ? html`<div
+                style="font-size: 11px; color: var(--secondary-text-color); margin-top: 2px;"
+              >
+                ${point.match_entity} =
+                ${Array.isArray(point.match_state)
+                  ? point.match_state.join(', ')
+                  : point.match_state || 'any'}
               </div>`
             : ''}
         </div>
@@ -751,16 +795,17 @@ export class UltraToggleModule extends BaseUltraModule {
         hass,
         { label: point.label || '' },
         [UcFormUtils.text('label')],
-        (e: CustomEvent) => this.updateTogglePoint(index, { label: e.detail.value.label }, module, updateModule)
+        (e: CustomEvent) =>
+          this.updateTogglePoint(index, { label: e.detail.value.label }, module, updateModule)
       )}
-
       ${UcFormUtils.renderFieldSection(
         localize('editor.toggle.point_icon', lang, 'Icon'),
         localize('editor.toggle.point_icon_desc', lang, 'Icon to display for this toggle point'),
         hass,
         { icon: point.icon || '' },
         [UcFormUtils.icon('icon')],
-        (e: CustomEvent) => this.updateTogglePoint(index, { icon: e.detail.value.icon }, module, updateModule)
+        (e: CustomEvent) =>
+          this.updateTogglePoint(index, { icon: e.detail.value.icon }, module, updateModule)
       )}
 
       <div style="margin-top: 16px; margin-bottom: 16px;">
@@ -787,15 +832,21 @@ export class UltraToggleModule extends BaseUltraModule {
           { match_mode: point.match_template_mode ? 'template' : 'entity' },
           [
             this.selectField('match_mode', [
-              { value: 'entity', label: localize('editor.toggle.match_mode_entity', lang, 'Entity State') },
-              { value: 'template', label: localize('editor.toggle.match_mode_template', lang, 'Template (Advanced)') },
+              {
+                value: 'entity',
+                label: localize('editor.toggle.match_mode_entity', lang, 'Entity State'),
+              },
+              {
+                value: 'template',
+                label: localize('editor.toggle.match_mode_template', lang, 'Template (Advanced)'),
+              },
             ]),
           ],
           (e: CustomEvent) => {
             const mode = e.detail.value.match_mode;
             const isCurrentlyTemplate = point.match_template_mode || false;
             if ((mode === 'template') === isCurrentlyTemplate) return;
-            
+
             // Update the point based on selected mode
             if (mode === 'entity') {
               this.updateTogglePoint(
@@ -815,11 +866,12 @@ export class UltraToggleModule extends BaseUltraModule {
             setTimeout(() => this.triggerPreviewUpdate(), 50);
           }
         )}
-
         ${point.match_template_mode
           ? html`
               <!-- Template Mode UI -->
-              <div style="border-left: 3px solid var(--primary-color); padding-left: 12px; margin-top: 12px;">
+              <div
+                style="border-left: 3px solid var(--primary-color); padding-left: 12px; margin-top: 12px;"
+              >
                 ${UcFormUtils.renderFieldSection(
                   localize('editor.toggle.point_match_template', lang, 'Match Template'),
                   localize(
@@ -852,7 +904,8 @@ export class UltraToggleModule extends BaseUltraModule {
                   <code style="font-size: 10px;"
                     >{{ state_attr('light.living_room', 'brightness') | int > 200 }}</code
                   ><br />
-                  • ${localize('editor.toggle.template_example_multi', lang, 'Multiple conditions')}:
+                  •
+                  ${localize('editor.toggle.template_example_multi', lang, 'Multiple conditions')}:
                   <code style="font-size: 10px;"
                     >{{ states('climate.hvac') == 'heat' and state_attr('climate.hvac',
                     'temperature') > 20 }}</code
@@ -862,7 +915,9 @@ export class UltraToggleModule extends BaseUltraModule {
             `
           : html`
               <!-- Entity State Mode UI -->
-              <div style="border-left: 3px solid var(--primary-color); padding-left: 12px; margin-top: 12px;">
+              <div
+                style="border-left: 3px solid var(--primary-color); padding-left: 12px; margin-top: 12px;"
+              >
                 ${UcFormUtils.renderFieldSection(
                   localize('editor.toggle.point_match_entity', lang, 'Match Entity'),
                   localize('editor.toggle.point_match_entity_desc', lang, 'Entity to match'),
@@ -877,7 +932,6 @@ export class UltraToggleModule extends BaseUltraModule {
                       updateModule
                     )
                 )}
-
                 ${UcFormUtils.renderFieldSection(
                   localize('editor.toggle.point_match_state', lang, 'Match State'),
                   localize(
@@ -886,17 +940,20 @@ export class UltraToggleModule extends BaseUltraModule {
                     'State value to match (e.g., "on", "off", "heat", "cool")'
                   ),
                   hass,
-                  { 
-                    match_state: Array.isArray(point.match_state) 
-                      ? point.match_state.join(', ') 
-                      : (point.match_state || '')
+                  {
+                    match_state: Array.isArray(point.match_state)
+                      ? point.match_state.join(', ')
+                      : point.match_state || '',
                   },
                   [UcFormUtils.text('match_state')],
                   (e: CustomEvent) => {
                     const value = e.detail.value.match_state;
                     // Support comma-separated values for multiple states
-                    const stateValue = value.includes(',') 
-                      ? value.split(',').map((s: string) => s.trim()).filter(Boolean)
+                    const stateValue = value.includes(',')
+                      ? value
+                          .split(',')
+                          .map((s: string) => s.trim())
+                          .filter(Boolean)
                       : value;
                     this.updateTogglePoint(
                       index,
@@ -909,11 +966,11 @@ export class UltraToggleModule extends BaseUltraModule {
                 <div
                   style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px; padding: 8px; background: var(--card-background-color); border-radius: 4px;"
                 >
-                  <strong>Tip:</strong> Use comma-separated values to match multiple states (e.g., "on, open")
+                  <strong>Tip:</strong> Use comma-separated values to match multiple states (e.g.,
+                  "on, open")
                 </div>
               </div>
-            `
-        }
+            `}
       </div>
 
       <div style="margin-top: 16px; margin-bottom: 16px;">
@@ -928,7 +985,12 @@ export class UltraToggleModule extends BaseUltraModule {
             .defaultValue=${module.default_background_color || 'var(--secondary-background-color)'}
             .hass=${hass}
             @value-changed=${(e: CustomEvent) =>
-              this.updateTogglePoint(index, { background_color: e.detail.value }, module, updateModule)}
+              this.updateTogglePoint(
+                index,
+                { background_color: e.detail.value },
+                module,
+                updateModule
+              )}
           ></ultra-color-picker>
 
           <ultra-color-picker
@@ -941,12 +1003,21 @@ export class UltraToggleModule extends BaseUltraModule {
           ></ultra-color-picker>
 
           <ultra-color-picker
-            .label=${localize('editor.toggle.point_active_background_color', lang, 'Active Background Color')}
+            .label=${localize(
+              'editor.toggle.point_active_background_color',
+              lang,
+              'Active Background Color'
+            )}
             .value=${point.active_background_color || module.default_active_background_color || ''}
             .defaultValue=${module.default_active_background_color || 'var(--primary-color)'}
             .hass=${hass}
             @value-changed=${(e: CustomEvent) =>
-              this.updateTogglePoint(index, { active_background_color: e.detail.value }, module, updateModule)}
+              this.updateTogglePoint(
+                index,
+                { active_background_color: e.detail.value },
+                module,
+                updateModule
+              )}
           ></ultra-color-picker>
 
           <ultra-color-picker
@@ -955,7 +1026,12 @@ export class UltraToggleModule extends BaseUltraModule {
             .defaultValue=${module.default_active_text_color || 'white'}
             .hass=${hass}
             @value-changed=${(e: CustomEvent) =>
-              this.updateTogglePoint(index, { active_text_color: e.detail.value }, module, updateModule)}
+              this.updateTogglePoint(
+                index,
+                { active_text_color: e.detail.value },
+                module,
+                updateModule
+              )}
           ></ultra-color-picker>
         </div>
       </div>
@@ -972,7 +1048,7 @@ export class UltraToggleModule extends BaseUltraModule {
           )}
         </div>
 
-        <div style="position: relative; overflow: visible; z-index: 9999;">
+        <div style="position: relative; overflow: visible;">
           <ha-form
             .hass=${hass}
             .data=${{ tap_action: point.tap_action || { action: 'nothing' } }}
@@ -994,7 +1070,7 @@ export class UltraToggleModule extends BaseUltraModule {
               e.stopImmediatePropagation();
 
               const newAction = e.detail.value.tap_action;
-              
+
               // Check if the action actually changed
               const currentAction = point.tap_action;
               if (JSON.stringify(currentAction) === JSON.stringify(newAction)) {
@@ -1004,7 +1080,7 @@ export class UltraToggleModule extends BaseUltraModule {
               // Set guard and update
               this._actionFormChangeGuard = true;
               this.updateTogglePoint(index, { tap_action: newAction }, module, updateModule);
-              
+
               // Clear guard and trigger preview update
               setTimeout(() => {
                 this._actionFormChangeGuard = false;
@@ -1066,7 +1142,12 @@ export class UltraToggleModule extends BaseUltraModule {
           {
             id: this.generateId('toggle_point'),
             label: 'Off',
-            icon: domain === 'light' ? 'mdi:lightbulb-off' : domain === 'fan' ? 'mdi:fan-off' : 'mdi:power-off',
+            icon:
+              domain === 'light'
+                ? 'mdi:lightbulb-off'
+                : domain === 'fan'
+                  ? 'mdi:fan-off'
+                  : 'mdi:power-off',
             match_entity: entityId,
             match_state: 'off',
             tap_action: { action: 'toggle', entity: entityId },
@@ -1078,7 +1159,8 @@ export class UltraToggleModule extends BaseUltraModule {
           {
             id: this.generateId('toggle_point'),
             label: 'On',
-            icon: domain === 'light' ? 'mdi:lightbulb-on' : domain === 'fan' ? 'mdi:fan' : 'mdi:power',
+            icon:
+              domain === 'light' ? 'mdi:lightbulb-on' : domain === 'fan' ? 'mdi:fan' : 'mdi:power',
             match_entity: entityId,
             match_state: 'on',
             tap_action: { action: 'toggle', entity: entityId },
@@ -1099,7 +1181,11 @@ export class UltraToggleModule extends BaseUltraModule {
             icon: 'mdi:power-off',
             match_entity: entityId,
             match_state: 'off',
-            tap_action: { action: 'perform-action', perform_action: 'climate.set_hvac_mode', data: { entity_id: entityId, hvac_mode: 'off' } },
+            tap_action: {
+              action: 'perform-action',
+              perform_action: 'climate.set_hvac_mode',
+              data: { entity_id: entityId, hvac_mode: 'off' },
+            },
             background_color: module.default_background_color,
             text_color: module.default_text_color,
             active_background_color: 'var(--disabled-text-color)',
@@ -1111,7 +1197,11 @@ export class UltraToggleModule extends BaseUltraModule {
             icon: 'mdi:fire',
             match_entity: entityId,
             match_state: 'heat',
-            tap_action: { action: 'perform-action', perform_action: 'climate.set_hvac_mode', data: { entity_id: entityId, hvac_mode: 'heat' } },
+            tap_action: {
+              action: 'perform-action',
+              perform_action: 'climate.set_hvac_mode',
+              data: { entity_id: entityId, hvac_mode: 'heat' },
+            },
             background_color: module.default_background_color,
             text_color: module.default_text_color,
             active_background_color: 'var(--error-color)',
@@ -1123,7 +1213,11 @@ export class UltraToggleModule extends BaseUltraModule {
             icon: 'mdi:snowflake',
             match_entity: entityId,
             match_state: 'cool',
-            tap_action: { action: 'perform-action', perform_action: 'climate.set_hvac_mode', data: { entity_id: entityId, hvac_mode: 'cool' } },
+            tap_action: {
+              action: 'perform-action',
+              perform_action: 'climate.set_hvac_mode',
+              data: { entity_id: entityId, hvac_mode: 'cool' },
+            },
             background_color: module.default_background_color,
             text_color: module.default_text_color,
             active_background_color: 'var(--info-color)',
@@ -1135,7 +1229,11 @@ export class UltraToggleModule extends BaseUltraModule {
             icon: 'mdi:autorenew',
             match_entity: entityId,
             match_state: 'auto',
-            tap_action: { action: 'perform-action', perform_action: 'climate.set_hvac_mode', data: { entity_id: entityId, hvac_mode: 'auto' } },
+            tap_action: {
+              action: 'perform-action',
+              perform_action: 'climate.set_hvac_mode',
+              data: { entity_id: entityId, hvac_mode: 'auto' },
+            },
             background_color: module.default_background_color,
             text_color: module.default_text_color,
             active_background_color: 'var(--primary-color)',
@@ -1153,7 +1251,11 @@ export class UltraToggleModule extends BaseUltraModule {
             icon: 'mdi:window-shutter',
             match_entity: entityId,
             match_state: 'closed',
-            tap_action: { action: 'perform-action', perform_action: 'cover.close_cover', data: { entity_id: entityId } },
+            tap_action: {
+              action: 'perform-action',
+              perform_action: 'cover.close_cover',
+              data: { entity_id: entityId },
+            },
             background_color: module.default_background_color,
             text_color: module.default_text_color,
             active_background_color: 'var(--disabled-text-color)',
@@ -1165,7 +1267,11 @@ export class UltraToggleModule extends BaseUltraModule {
             icon: 'mdi:window-shutter-open',
             match_entity: entityId,
             match_state: 'open',
-            tap_action: { action: 'perform-action', perform_action: 'cover.open_cover', data: { entity_id: entityId } },
+            tap_action: {
+              action: 'perform-action',
+              perform_action: 'cover.open_cover',
+              data: { entity_id: entityId },
+            },
             background_color: module.default_background_color,
             text_color: module.default_text_color,
             active_background_color: 'var(--primary-color)',
@@ -1183,7 +1289,11 @@ export class UltraToggleModule extends BaseUltraModule {
             icon: 'mdi:power-off',
             match_entity: entityId,
             match_state: 'off',
-            tap_action: { action: 'perform-action', perform_action: 'media_player.turn_off', data: { entity_id: entityId } },
+            tap_action: {
+              action: 'perform-action',
+              perform_action: 'media_player.turn_off',
+              data: { entity_id: entityId },
+            },
             background_color: module.default_background_color,
             text_color: module.default_text_color,
             active_background_color: 'var(--disabled-text-color)',
@@ -1195,7 +1305,11 @@ export class UltraToggleModule extends BaseUltraModule {
             icon: 'mdi:play',
             match_entity: entityId,
             match_state: 'playing',
-            tap_action: { action: 'perform-action', perform_action: 'media_player.media_play', data: { entity_id: entityId } },
+            tap_action: {
+              action: 'perform-action',
+              perform_action: 'media_player.media_play',
+              data: { entity_id: entityId },
+            },
             background_color: module.default_background_color,
             text_color: module.default_text_color,
             active_background_color: 'var(--primary-color)',
@@ -1207,7 +1321,11 @@ export class UltraToggleModule extends BaseUltraModule {
             icon: 'mdi:pause',
             match_entity: entityId,
             match_state: 'paused',
-            tap_action: { action: 'perform-action', perform_action: 'media_player.media_pause', data: { entity_id: entityId } },
+            tap_action: {
+              action: 'perform-action',
+              perform_action: 'media_player.media_pause',
+              data: { entity_id: entityId },
+            },
             background_color: module.default_background_color,
             text_color: module.default_text_color,
             active_background_color: 'var(--warning-color)',
@@ -1225,10 +1343,19 @@ export class UltraToggleModule extends BaseUltraModule {
           icon: '',
           match_entity: entityId,
           match_state: option,
-          tap_action: { action: 'perform-action', perform_action: 'input_select.select_option', data: { entity_id: entityId, option } },
+          tap_action: {
+            action: 'perform-action',
+            perform_action: 'input_select.select_option',
+            data: { entity_id: entityId, option },
+          },
           background_color: module.default_background_color,
           text_color: module.default_text_color,
-          active_background_color: index === 0 ? 'var(--primary-color)' : index === 1 ? 'var(--info-color)' : 'var(--success-color)',
+          active_background_color:
+            index === 0
+              ? 'var(--primary-color)'
+              : index === 1
+                ? 'var(--info-color)'
+                : 'var(--success-color)',
           active_text_color: 'white',
         }));
         break;
@@ -1264,14 +1391,14 @@ export class UltraToggleModule extends BaseUltraModule {
     }
 
     // Update module with new toggle points
-    updateModule({ 
+    updateModule({
       toggle_points: newPoints,
-      tracking_entity: entityId
+      tracking_entity: entityId,
     });
 
     // Expand all newly created points for immediate configuration
     newPoints.forEach(point => this._expandedTogglePoints.add(point.id));
-    
+
     // Trigger preview update
     setTimeout(() => this.triggerPreviewUpdate(), 50);
   }
@@ -1310,7 +1437,6 @@ export class UltraToggleModule extends BaseUltraModule {
       window.dispatchEvent(new CustomEvent('ultra-card-module-update'));
     }
   }
-
 
   // Drag and drop methods
   private handleDragStart(e: DragEvent, point: TogglePoint): void {
@@ -1372,14 +1498,14 @@ export class UltraToggleModule extends BaseUltraModule {
     // Determine active toggle point
     // Priority: Always check entity state first, then fall back to clicked state
     let activePointId: string | undefined;
-    
+
     // Check if any entity tracking is configured (including template mode)
-    const hasEntityTracking = toggleModule.tracking_entity || 
-      toggleModule.toggle_points.some(p => 
-        (p.match_entity && p.match_state) || 
-        (p.match_template_mode && p.match_template)
+    const hasEntityTracking =
+      toggleModule.tracking_entity ||
+      toggleModule.toggle_points.some(
+        p => (p.match_entity && p.match_state) || (p.match_template_mode && p.match_template)
       );
-    
+
     if (hasEntityTracking) {
       // When entity tracking is configured, always determine from entity state
       // This ensures the toggle reacts to external state changes
@@ -1399,7 +1525,9 @@ export class UltraToggleModule extends BaseUltraModule {
     if (hasEntityTracking && console.debug) {
       const activePoint = toggleModule.toggle_points.find(p => p.id === activePointId);
       if (activePoint) {
-        console.debug(`[Toggle Module] Active point: "${activePoint.label}" (entity tracking enabled)`);
+        console.debug(
+          `[Toggle Module] Active point: "${activePoint.label}" (entity tracking enabled)`
+        );
       }
     }
 
@@ -1467,20 +1595,23 @@ export class UltraToggleModule extends BaseUltraModule {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     return Math.abs(hash).toString(36);
   }
 
-  private determineActiveTogglePoint(module: ToggleModule, hass: HomeAssistant): string | undefined {
+  private determineActiveTogglePoint(
+    module: ToggleModule,
+    hass: HomeAssistant
+  ): string | undefined {
     // PRIORITY 1: Check template-based matching first
     // Templates allow for more complex conditions (ranges, attributes, etc.)
     for (const point of module.toggle_points) {
       if (point.match_template_mode && point.match_template) {
         const templateHash = this._hashString(point.match_template);
         const templateKey = `toggle_match_${module.id}_${point.id}_${templateHash}`;
-        
+
         // Check the rendered template result
         const renderedResult = hass.__uvc_template_strings?.[templateKey];
         if (renderedResult !== undefined) {
@@ -1500,7 +1631,7 @@ export class UltraToggleModule extends BaseUltraModule {
       const matchingPoint = module.toggle_points.find(point => {
         // Skip template-mode points (already checked above)
         if (point.match_template_mode) return false;
-        
+
         if (point.match_entity === module.tracking_entity) {
           return this._matchesState(point.match_state, entityState);
         }
@@ -1516,7 +1647,7 @@ export class UltraToggleModule extends BaseUltraModule {
     for (const point of module.toggle_points) {
       // Skip template-mode points (already checked above)
       if (point.match_template_mode) continue;
-      
+
       if (point.match_entity && hass.states[point.match_entity]) {
         const entityState = hass.states[point.match_entity].state;
         if (this._matchesState(point.match_state, entityState)) {
@@ -1539,7 +1670,9 @@ export class UltraToggleModule extends BaseUltraModule {
 
     // Handle array of possible states
     if (Array.isArray(matchState)) {
-      return matchState.some(state => String(state).toLowerCase() === String(entityState).toLowerCase());
+      return matchState.some(
+        state => String(state).toLowerCase() === String(entityState).toLowerCase()
+      );
     }
 
     // Handle single state (case-insensitive comparison)
@@ -1596,22 +1729,31 @@ export class UltraToggleModule extends BaseUltraModule {
     if (point.tap_action && point.tap_action.action !== 'nothing') {
       // For perform-action with explicit data, don't inject tracking entity
       // Services like device_tracker.see use dev_id, not entity_id
-      const isPerformActionWithData = point.tap_action.action === 'perform-action' && 
+      const isPerformActionWithData =
+        point.tap_action.action === 'perform-action' &&
         (point.tap_action.data || point.tap_action.service_data);
-      
+
       // Determine the entity to use for the action
       // Priority: 1. Action's own entity, 2. Toggle point's match_entity, 3. Module's tracking_entity
       // Skip auto-injection for perform-action with explicit data to avoid unwanted entity_id
       const actionEntity = isPerformActionWithData
         ? point.tap_action.entity
-        : (point.tap_action.entity || point.match_entity || module.tracking_entity);
-      
+        : point.tap_action.entity || point.match_entity || module.tracking_entity;
+
       // Build the action config with entity injected if needed
-      const actionConfig = actionEntity && !point.tap_action.entity
-        ? { ...point.tap_action, entity: actionEntity }
-        : point.tap_action;
-      
-      this.handleModuleAction(actionConfig, hass, event.target as HTMLElement, undefined, actionEntity, module);
+      const actionConfig =
+        actionEntity && !point.tap_action.entity
+          ? { ...point.tap_action, entity: actionEntity }
+          : point.tap_action;
+
+      this.handleModuleAction(
+        actionConfig,
+        hass,
+        event.target as HTMLElement,
+        undefined,
+        actionEntity,
+        module
+      );
     }
   }
 
@@ -1651,10 +1793,10 @@ export class UltraToggleModule extends BaseUltraModule {
           display: flex;
           flex-direction: column;
           align-items: ${module.alignment === 'left'
-            ? 'flex-start'
-            : module.alignment === 'right'
-              ? 'flex-end'
-              : 'center'};
+          ? 'flex-start'
+          : module.alignment === 'right'
+            ? 'flex-end'
+            : 'center'};
           padding: 8px;
           gap: 8px;
         }
@@ -1673,18 +1815,18 @@ export class UltraToggleModule extends BaseUltraModule {
           cursor: pointer;
           transition: background-color 0.3s ease;
           background-color: ${isPoint1Active
-            ? point1.active_background_color || module.default_active_background_color
-            : point2.active_background_color || module.default_active_background_color};
+          ? point1.active_background_color || module.default_active_background_color
+          : point2.active_background_color || module.default_active_background_color};
         }
 
         .ios-toggle-thumb {
           position: absolute;
           ${isVertical
-            ? `
+          ? `
             left: 50%;
             transform: translateX(-50%) ${isPoint1Active ? 'translateY(3px)' : `translateY(calc(${trackHeight} - ${size.thumbSize} - 3px))`};
           `
-            : `
+          : `
             top: 50%;
             transform: translateY(-50%) ${isPoint1Active ? 'translateX(3px)' : `translateX(calc(${trackWidth} - ${size.thumbSize} - 3px))`};
           `}
@@ -1801,17 +1943,19 @@ export class UltraToggleModule extends BaseUltraModule {
                 class="segmented-button ${activePointId === point.id ? 'active' : ''}"
                 style="
                   background-color: ${activePointId === point.id
-                    ? point.active_background_color ||
-                      module.default_active_background_color ||
-                      'var(--primary-color)'
-                    : point.background_color || module.default_background_color || 'transparent'};
+                  ? point.active_background_color ||
+                    module.default_active_background_color ||
+                    'var(--primary-color)'
+                  : point.background_color || module.default_background_color || 'transparent'};
                   color: ${activePointId === point.id
-                    ? point.active_text_color || module.default_active_text_color || 'white'
-                    : point.text_color || module.default_text_color || 'var(--primary-text-color)'};
+                  ? point.active_text_color || module.default_active_text_color || 'white'
+                  : point.text_color || module.default_text_color || 'var(--primary-text-color)'};
                 "
                 @click=${(e: Event) => this.handleTogglePointClick(point, module, hass, e)}
               >
-                ${module.show_icons && point.icon ? html`<ha-icon icon="${point.icon}"></ha-icon>` : ''}
+                ${module.show_icons && point.icon
+                  ? html`<ha-icon icon="${point.icon}"></ha-icon>`
+                  : ''}
                 <span>${point.label}</span>
               </button>
             `
@@ -1910,18 +2054,24 @@ export class UltraToggleModule extends BaseUltraModule {
                 class="group-button ${activePointId === point.id ? 'active' : ''}"
                 style="
                   background-color: ${activePointId === point.id
-                    ? point.active_background_color ||
-                      module.default_active_background_color ||
-                      'var(--primary-color)'
-                    : point.background_color || module.default_background_color || 'var(--secondary-background-color)'};
+                  ? point.active_background_color ||
+                    module.default_active_background_color ||
+                    'var(--primary-color)'
+                  : point.background_color ||
+                    module.default_background_color ||
+                    'var(--secondary-background-color)'};
                   color: ${activePointId === point.id
-                    ? point.active_text_color || module.default_active_text_color || 'white'
-                    : point.text_color || module.default_text_color || 'var(--primary-text-color)'};
-                  border-color: ${activePointId === point.id ? 'var(--primary-color)' : 'var(--divider-color)'};
+                  ? point.active_text_color || module.default_active_text_color || 'white'
+                  : point.text_color || module.default_text_color || 'var(--primary-text-color)'};
+                  border-color: ${activePointId === point.id
+                  ? 'var(--primary-color)'
+                  : 'var(--divider-color)'};
                 "
                 @click=${(e: Event) => this.handleTogglePointClick(point, module, hass, e)}
               >
-                ${module.show_icons && point.icon ? html`<ha-icon icon="${point.icon}"></ha-icon>` : ''}
+                ${module.show_icons && point.icon
+                  ? html`<ha-icon icon="${point.icon}"></ha-icon>`
+                  : ''}
                 <span>${point.label}</span>
               </button>
             `
@@ -1937,18 +2087,18 @@ export class UltraToggleModule extends BaseUltraModule {
     activePointId?: string
   ): TemplateResult {
     const activeIndex = module.toggle_points.findIndex(p => p.id === activePointId);
-    const progressPercent = module.toggle_points.length > 1
-      ? (activeIndex / (module.toggle_points.length - 1)) * 100
-      : 0;
+    const progressPercent =
+      module.toggle_points.length > 1 ? (activeIndex / (module.toggle_points.length - 1)) * 100 : 0;
     const isVertical = module.orientation === 'vertical';
-    
+
     // Calculate dynamic track size based on number of points and spacing
     const baseMarkerSize = 40; // Base size per marker
     const spacing = module.spacing || 0;
     const numPoints = module.toggle_points.length;
-    const dynamicSize = module.alignment === 'justify' 
-      ? '100%' 
-      : `${baseMarkerSize * numPoints + spacing * (numPoints + 1)}px`;
+    const dynamicSize =
+      module.alignment === 'justify'
+        ? '100%'
+        : `${baseMarkerSize * numPoints + spacing * (numPoints + 1)}px`;
 
     return html`
       <style>
@@ -1956,10 +2106,10 @@ export class UltraToggleModule extends BaseUltraModule {
           display: flex;
           flex-direction: column;
           align-items: ${module.alignment === 'left'
-            ? 'flex-start'
-            : module.alignment === 'right'
-              ? 'flex-end'
-              : 'center'};
+          ? 'flex-start'
+          : module.alignment === 'right'
+            ? 'flex-end'
+            : 'center'};
           padding: 8px;
           gap: 12px;
           width: ${module.alignment === 'justify' ? '100%' : 'auto'};
@@ -1974,11 +2124,11 @@ export class UltraToggleModule extends BaseUltraModule {
         .slider-track-wrapper {
           position: relative;
           ${isVertical
-            ? `
+          ? `
             width: 40px;
             height: ${dynamicSize};
           `
-            : `
+          : `
             width: ${dynamicSize};
             height: 40px;
           `}
@@ -1993,13 +2143,13 @@ export class UltraToggleModule extends BaseUltraModule {
           transition: ${isVertical ? 'height' : 'width'} 0.3s ease;
           border-radius: 20px;
           ${isVertical
-            ? `
+          ? `
             top: 0;
             left: 0;
             width: 100%;
             height: ${progressPercent}%;
           `
-            : `
+          : `
             top: 0;
             left: 0;
             height: 100%;
@@ -2091,10 +2241,10 @@ export class UltraToggleModule extends BaseUltraModule {
           display: flex;
           flex-direction: column;
           align-items: ${module.alignment === 'left'
-            ? 'flex-start'
-            : module.alignment === 'right'
-              ? 'flex-end'
-              : 'center'};
+          ? 'flex-start'
+          : module.alignment === 'right'
+            ? 'flex-end'
+            : 'center'};
           padding: 8px;
           gap: 12px;
           width: ${module.alignment === 'justify' ? '100%' : 'auto'};
@@ -2119,13 +2269,13 @@ export class UltraToggleModule extends BaseUltraModule {
           background: var(--divider-color);
           z-index: 0;
           ${isVertical
-            ? `
+          ? `
             left: 16%;
             top: calc(${size.dotSize} / 2);
             bottom: calc(${size.dotSize} / 2);
             width: ${size.lineThickness};
           `
-            : `
+          : `
             top: calc(17px / 2 - 3px / 2);
             left: calc(${size.dotSize} / 2);
             right: calc(${size.dotSize} / 2);
@@ -2294,7 +2444,9 @@ export class UltraToggleModule extends BaseUltraModule {
       </style>
 
       <div class="minimal-container">
-        ${module.show_title && module.title ? html`<div class="minimal-title">${module.title}</div>` : ''}
+        ${module.show_title && module.title
+          ? html`<div class="minimal-title">${module.title}</div>`
+          : ''}
         <div class="minimal-options">
           ${module.toggle_points.map(
             point => html`
@@ -2302,12 +2454,16 @@ export class UltraToggleModule extends BaseUltraModule {
                 class="minimal-option ${activePointId === point.id ? 'active' : ''}"
                 style="
                   color: ${activePointId === point.id
-                    ? point.active_text_color || module.default_active_text_color || 'var(--primary-color)'
-                    : point.text_color || module.default_text_color || 'var(--primary-text-color)'};
+                  ? point.active_text_color ||
+                    module.default_active_text_color ||
+                    'var(--primary-color)'
+                  : point.text_color || module.default_text_color || 'var(--primary-text-color)'};
                 "
                 @click=${(e: Event) => this.handleTogglePointClick(point, module, hass, e)}
               >
-                ${module.show_icons && point.icon ? html`<ha-icon icon="${point.icon}"></ha-icon>` : ''}
+                ${module.show_icons && point.icon
+                  ? html`<ha-icon icon="${point.icon}"></ha-icon>`
+                  : ''}
                 <span>${point.label}</span>
               </button>
             `
@@ -2317,4 +2473,3 @@ export class UltraToggleModule extends BaseUltraModule {
     `;
   }
 }
-

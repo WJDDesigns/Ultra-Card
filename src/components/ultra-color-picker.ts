@@ -1211,7 +1211,8 @@ export class UltraColorPicker extends LitElement {
         max-width: 100%;
         position: relative;
         box-sizing: border-box;
-        z-index: ${Z_INDEX.COLOR_PICKER_CONTAINER};
+        /* Remove z-index to prevent creating stacking context that blocks dropdown menus */
+        z-index: auto;
       }
 
       .color-label {
@@ -1233,7 +1234,8 @@ export class UltraColorPicker extends LitElement {
         /* Allow palette dropdown to overflow vertically, but clip horizontally */
         overflow-x: hidden;
         overflow-y: visible;
-        z-index: ${Z_INDEX.MODULE_CONTENT};
+        /* Remove z-index to prevent blocking dropdown menus from other components */
+        z-index: auto;
       }
 
       .color-input-field {
