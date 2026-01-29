@@ -79,8 +79,9 @@ export class UltraSliderControlModule extends BaseUltraModule {
       const cover = entityIds.find(id => id.startsWith('cover.'));
       const fan = entityIds.find(id => id.startsWith('fan.'));
       const inputNumber = entityIds.find(id => id.startsWith('input_number.'));
+      const number = entityIds.find(id => id.startsWith('number.'));
 
-      const autoEntity = light || cover || fan || inputNumber || '';
+      const autoEntity = light || cover || fan || inputNumber || number || '';
 
       if (autoEntity) {
         // Auto-detect entity capabilities and create appropriate bars
@@ -2522,9 +2523,10 @@ export class UltraSliderControlModule extends BaseUltraModule {
         }
       }
 
-      const livePercentage = this.interactingBars.has(sliderKey) || this.localSliderValues.has(sliderKey)
-        ? (this.localSliderValues.get(sliderKey) ?? percentage)
-        : percentage;
+      const livePercentage =
+        this.interactingBars.has(sliderKey) || this.localSliderValues.has(sliderKey)
+          ? (this.localSliderValues.get(sliderKey) ?? percentage)
+          : percentage;
 
       // Apply direction inversion if enabled
       const shouldInvert = bar.invert_direction ?? sliderControl.invert_direction ?? false;
@@ -2678,7 +2680,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
       const handleSliderInput = (e: Event) => {
         const input = e.target as HTMLInputElement;
         const visualInput = parseFloat(input.value);
-        
+
         // Convert visual input back to actual percentage if inverted
         const newPercentage = shouldInvert ? 100 - visualInput : visualInput;
 
@@ -2778,11 +2780,11 @@ export class UltraSliderControlModule extends BaseUltraModule {
                   percentage: Math.round(newPercentage),
                 });
               }
-            } else if (domain === 'input_number') {
+            } else if (domain === 'input_number' || domain === 'number') {
               const min = bar.min_value ?? 0;
               const max = bar.max_value ?? 100;
               const newValue = (newPercentage / 100) * (max - min) + min;
-              homeAssistant.callService('input_number', 'set_value', {
+              homeAssistant.callService(domain, 'set_value', {
                 entity_id: bar.entity,
                 value: newValue,
               });
@@ -2986,7 +2988,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                                     { entity_id: bar.entity }
                                   );
                                 }
-                                
+
                                 // Clear cached slider value after toggle to ensure slider reflects new state
                                 this.localSliderValues.delete(sliderKey);
                                 this.localSliderValues = new Map(this.localSliderValues);
@@ -3158,7 +3160,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                                       { entity_id: bar.entity }
                                     );
                                   }
-                                  
+
                                   // Clear cached slider value after toggle to ensure slider reflects new state
                                   this.localSliderValues.delete(sliderKey);
                                   this.localSliderValues = new Map(this.localSliderValues);
@@ -3429,7 +3431,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                       entity_id: bar.entity,
                     });
                   }
-                  
+
                   // Clear cached slider value after toggle to ensure slider reflects new state
                   this.localSliderValues.delete(barSliderKey);
                   this.localSliderValues = new Map(this.localSliderValues);
@@ -3597,7 +3599,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                       entity_id: bar.entity,
                     });
                   }
-                  
+
                   // Clear cached slider value after toggle to ensure slider reflects new state
                   this.localSliderValues.delete(barSliderKey);
                   this.localSliderValues = new Map(this.localSliderValues);
@@ -3873,7 +3875,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                       entity_id: bar.entity,
                     });
                   }
-                  
+
                   // Clear cached slider value after toggle to ensure slider reflects new state
                   this.localSliderValues.delete(barSliderKey);
                   this.localSliderValues = new Map(this.localSliderValues);

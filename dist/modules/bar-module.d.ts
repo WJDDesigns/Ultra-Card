@@ -5,6 +5,7 @@ import { CardModule, BarModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
 import '../components/uc-gradient-editor';
 import '../components/ultra-template-editor';
+import '../components/bar-side-actions';
 export declare class UltraBarModule extends BaseUltraModule {
     metadata: ModuleMetadata;
     private _templateService?;

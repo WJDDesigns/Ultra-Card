@@ -10,6 +10,7 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import '../components/ultra-color-picker';
 import '../components/uc-gradient-editor';
 import '../components/ultra-template-editor';
+import '../components/bar-side-actions';
 import { formatEntityState } from '../utils/number-format';
 import { TemplateService } from '../services/template-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
@@ -2345,85 +2346,18 @@ export class UltraBarModule extends BaseUltraModule {
                       `
                     : ''}
 
-                  <!-- Left Side Actions -->
-                  <div
-                    style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);"
-                  >
-                    <div
-                      class="field-title"
-                      style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--primary-color);"
-                    >
-                      ${localize('editor.bar.left.actions', lang, 'Left Side Actions')}
-                    </div>
-                    <div
-                      class="field-description"
-                      style="font-size: 12px; margin-bottom: 12px; color: var(--secondary-text-color);"
-                    >
-                      ${localize(
-                        'editor.bar.left.actions_desc',
-                        lang,
-                        'Configure what happens when tapping the left side info'
-                      )}
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                      <ha-form
-                        .hass=${hass}
-                        .data=${{
-                          left_tap_action: barModule.left_tap_action || { action: 'nothing' },
-                        }}
-                        .schema=${[
-                          {
-                            name: 'left_tap_action',
-                            selector: { ui_action: {} },
-                          },
-                        ]}
-                        .computeLabel=${(schema: any) =>
-                          hass.localize('ui.panel.lovelace.editor.card.generic.tap_action')}
-                        @value-changed=${(e: CustomEvent) =>
-                          updateModule({ left_tap_action: e.detail.value.left_tap_action })}
-                      ></ha-form>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                      <ha-form
-                        .hass=${hass}
-                        .data=${{
-                          left_hold_action: barModule.left_hold_action || { action: 'nothing' },
-                        }}
-                        .schema=${[
-                          {
-                            name: 'left_hold_action',
-                            selector: { ui_action: {} },
-                          },
-                        ]}
-                        .computeLabel=${(schema: any) =>
-                          hass.localize('ui.panel.lovelace.editor.card.generic.hold_action')}
-                        @value-changed=${(e: CustomEvent) =>
-                          updateModule({ left_hold_action: e.detail.value.left_hold_action })}
-                      ></ha-form>
-                    </div>
-                    <div>
-                      <ha-form
-                        .hass=${hass}
-                        .data=${{
-                          left_double_tap_action: barModule.left_double_tap_action || {
-                            action: 'nothing',
-                          },
-                        }}
-                        .schema=${[
-                          {
-                            name: 'left_double_tap_action',
-                            selector: { ui_action: {} },
-                          },
-                        ]}
-                        .computeLabel=${(schema: any) =>
-                          hass.localize('ui.panel.lovelace.editor.card.generic.double_tap_action')}
-                        @value-changed=${(e: CustomEvent) =>
-                          updateModule({
-                            left_double_tap_action: e.detail.value.left_double_tap_action,
-                          })}
-                      ></ha-form>
-                    </div>
-                  </div>
+                  <!-- Left Side Actions (isolated component) -->
+                  <bar-side-actions
+                    .hass=${hass}
+                    .side=${'left'}
+                    .tapAction=${barModule.left_tap_action}
+                    .holdAction=${barModule.left_hold_action}
+                    .doubleTapAction=${barModule.left_double_tap_action}
+                    @actions-changed=${(e: CustomEvent) => {
+                      e.stopPropagation();
+                      updateModule(e.detail.updates);
+                    }}
+                  ></bar-side-actions>
                 `
               : html`
                   <div
@@ -2698,85 +2632,18 @@ export class UltraBarModule extends BaseUltraModule {
                       `
                     : ''}
 
-                  <!-- Right Side Actions -->
-                  <div
-                    style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);"
-                  >
-                    <div
-                      class="field-title"
-                      style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--primary-color);"
-                    >
-                      ${localize('editor.bar.right.actions', lang, 'Right Side Actions')}
-                    </div>
-                    <div
-                      class="field-description"
-                      style="font-size: 12px; margin-bottom: 12px; color: var(--secondary-text-color);"
-                    >
-                      ${localize(
-                        'editor.bar.right.actions_desc',
-                        lang,
-                        'Configure what happens when tapping the right side info'
-                      )}
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                      <ha-form
-                        .hass=${hass}
-                        .data=${{
-                          right_tap_action: barModule.right_tap_action || { action: 'nothing' },
-                        }}
-                        .schema=${[
-                          {
-                            name: 'right_tap_action',
-                            selector: { ui_action: {} },
-                          },
-                        ]}
-                        .computeLabel=${(schema: any) =>
-                          hass.localize('ui.panel.lovelace.editor.card.generic.tap_action')}
-                        @value-changed=${(e: CustomEvent) =>
-                          updateModule({ right_tap_action: e.detail.value.right_tap_action })}
-                      ></ha-form>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                      <ha-form
-                        .hass=${hass}
-                        .data=${{
-                          right_hold_action: barModule.right_hold_action || { action: 'nothing' },
-                        }}
-                        .schema=${[
-                          {
-                            name: 'right_hold_action',
-                            selector: { ui_action: {} },
-                          },
-                        ]}
-                        .computeLabel=${(schema: any) =>
-                          hass.localize('ui.panel.lovelace.editor.card.generic.hold_action')}
-                        @value-changed=${(e: CustomEvent) =>
-                          updateModule({ right_hold_action: e.detail.value.right_hold_action })}
-                      ></ha-form>
-                    </div>
-                    <div>
-                      <ha-form
-                        .hass=${hass}
-                        .data=${{
-                          right_double_tap_action: barModule.right_double_tap_action || {
-                            action: 'nothing',
-                          },
-                        }}
-                        .schema=${[
-                          {
-                            name: 'right_double_tap_action',
-                            selector: { ui_action: {} },
-                          },
-                        ]}
-                        .computeLabel=${(schema: any) =>
-                          hass.localize('ui.panel.lovelace.editor.card.generic.double_tap_action')}
-                        @value-changed=${(e: CustomEvent) =>
-                          updateModule({
-                            right_double_tap_action: e.detail.value.right_double_tap_action,
-                          })}
-                      ></ha-form>
-                    </div>
-                  </div>
+                  <!-- Right Side Actions (isolated component) -->
+                  <bar-side-actions
+                    .hass=${hass}
+                    .side=${'right'}
+                    .tapAction=${barModule.right_tap_action}
+                    .holdAction=${barModule.right_hold_action}
+                    .doubleTapAction=${barModule.right_double_tap_action}
+                    @actions-changed=${(e: CustomEvent) => {
+                      e.stopPropagation();
+                      updateModule(e.detail.updates);
+                    }}
+                  ></bar-side-actions>
                 `
               : html`
                   <div

@@ -1,5 +1,14 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta31
+
+### 🐛 Bug Fixes
+
+- **Fix issue where the Left and Right action  areas of the bar module caused crashes** - Enhanced module functionality for better user experience
+- **Fix issue with number entities not being properly displayed in slider module** - Enhanced module functionality for better user experience
+
+---
+
 ## Version 2.3.0-beta29
 
 ### 🚀 New Features
