@@ -7,7 +7,7 @@ export interface UltraLinkConfig {
     double_tap_action?: TapActionConfig;
 }
 export interface TapActionConfig {
-    action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+    action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing' | 'none';
     entity?: string;
     navigation_path?: string;
     url_path?: string;

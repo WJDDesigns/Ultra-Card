@@ -123,7 +123,8 @@ export interface BaseModule {
     | 'grid'
     | 'badge_of_honor'
     | 'vacuum'
-    | 'media_player';
+    | 'media_player'
+    | 'people';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -614,7 +615,7 @@ export interface BarModule extends BaseModule {
   name?: string;
 
   // Percentage Calculation
-  percentage_type?: 'entity' | 'attribute' | 'difference' | 'template' | 'time_progress';
+  percentage_type?: 'entity' | 'attribute' | 'difference' | 'template' | 'time_progress' | 'range';
   percentage_entity?: string;
 
   // Entity Attribute mode
@@ -633,6 +634,15 @@ export interface BarModule extends BaseModule {
   time_progress_end_entity?: string;
   time_progress_direction?: 'forward' | 'backward';
   time_progress_update_interval?: number;
+
+  // Range mode (visualize a range between start and end values)
+  range_start_entity?: string;
+  range_start_attribute?: string;
+  range_end_entity?: string;
+  range_end_attribute?: string;
+  range_current_entity?: string; // Optional: show current value marker
+  range_current_attribute?: string;
+  range_current_color?: string; // Color for current value marker
 
   // Manual Min/Max Range (overrides auto-detection)
   percentage_min?: number;
@@ -743,6 +753,14 @@ export interface BarModule extends BaseModule {
   // Limit Indicator
   limit_entity?: string;
   limit_color?: string;
+
+  // Scale/Tick Marks
+  show_scale?: boolean;
+  scale_divisions?: number; // Number of tick marks (e.g., 5 = marks at 0%, 25%, 50%, 75%, 100%)
+  scale_show_labels?: boolean; // Show numeric labels on ticks
+  scale_label_size?: number;
+  scale_label_color?: string;
+  scale_position?: 'above' | 'below'; // Position relative to bar
 
   // Animation & Templates
   animation?: boolean;
@@ -3857,7 +3875,8 @@ export type CardModule =
   | SportsScoreModule
   | GridModule
   | BadgeOfHonorModule
-  | MediaPlayerModule;
+  | MediaPlayerModule
+  | PeopleModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {
@@ -5469,4 +5488,197 @@ export interface MediaPlayerModule extends BaseModule {
     service?: string;
     service_data?: Record<string, any>;
   };
+}
+
+// ============================================
+// PEOPLE MODULE TYPES
+// ============================================
+
+// Layout styles for the People module
+export type PeopleLayoutStyle =
+  | 'compact' // Centered avatar, name, location below
+  | 'banner' // Background image with avatar overlay
+  | 'horizontal_compact' // Avatar and info side-by-side
+  | 'horizontal_detailed' // Avatar with multiple data rows
+  | 'header' // Horizontal with icons and badges
+  | 'music_overlay'; // Shows currently playing media
+
+// Status badge positions
+export type StatusBadgePosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+
+// Data item types for the People module
+export type PeopleDataItemType =
+  | 'location' // Current zone/location
+  | 'battery' // Phone battery level
+  | 'time_info' // Time at location, ETA, duration
+  | 'media' // Currently playing music/podcast
+  | 'sensor' // Custom sensor entity
+  | 'device_state' // Device connectivity (WiFi, VPN, Bluetooth)
+  | 'attribute' // Person or device tracker attribute
+  | 'toggle'; // Toggle switch for an entity
+
+// Individual data item configuration
+export interface PeopleDataItem {
+  id: string;
+  type: PeopleDataItemType;
+  label?: string; // Custom label override
+  entity?: string; // For sensor/device_state/toggle types
+  attribute?: string; // For attribute type
+  icon?: string; // Custom icon override
+  show_icon: boolean;
+  show_label: boolean;
+  show_value: boolean;
+  format?: string; // Template for custom formatting
+  // Styling
+  icon_color?: string;
+  label_color?: string;
+  value_color?: string;
+  icon_size?: number;
+  font_size?: number;
+  // Time info specific
+  time_format?: 'relative' | 'absolute' | 'duration';
+  // Toggle specific
+  toggle_on_color?: string;
+  toggle_off_color?: string;
+}
+
+// Avatar settings for the People module
+export interface PeopleAvatarSettings {
+  size: number; // Avatar size in pixels
+  border_color?: string; // Border color (can use state-based colors)
+  border_width: number; // Border width in pixels
+  show_status_badge: boolean; // Show home/away status badge
+  status_badge_position: StatusBadgePosition;
+  status_badge_home_color?: string; // Color when home
+  status_badge_away_color?: string; // Color when away
+  use_state_color: boolean; // Use dynamic border color based on location
+  state_home_color?: string; // Border color when home
+  state_away_color?: string; // Border color when away
+  fallback_icon?: string; // Icon when no avatar is available
+  show_entity_picture: boolean; // Use entity_picture from person entity
+  custom_image?: string; // URL to custom avatar image
+  image_fit?: 'cover' | 'contain' | 'fill';
+}
+
+// Banner settings for banner layout style
+export interface PeopleBannerSettings {
+  background_type: 'image' | 'gradient' | 'color' | 'entity';
+  background_image?: string; // URL to background image
+  background_entity?: string; // Entity with entity_picture attribute
+  background_color?: string; // Solid color background
+  gradient_start?: string; // Gradient start color
+  gradient_end?: string; // Gradient end color
+  gradient_direction?: 'to-bottom' | 'to-right' | 'to-bottom-right' | 'to-bottom-left';
+  background_blur: number; // Blur amount (0-20)
+  background_opacity: number; // Opacity (0-100)
+  overlay_color?: string; // Color overlay on background
+  overlay_opacity?: number; // Overlay opacity (0-100)
+  banner_height?: number; // Banner height in pixels
+  border_radius?: number; // Border radius for all corners (in pixels) - used when corners are linked
+  border_radius_top_left?: number; // Individual top-left corner radius
+  border_radius_top_right?: number; // Individual top-right corner radius
+  border_radius_bottom_left?: number; // Individual bottom-left corner radius
+  border_radius_bottom_right?: number; // Individual bottom-right corner radius
+  corners_linked?: boolean; // Whether all corners use the same radius
+}
+
+// Name settings for the People module
+export interface PeopleNameSettings {
+  show: boolean;
+  use_friendly_name: boolean; // Use entity's friendly_name
+  custom_name?: string; // Override name
+  font_size: number;
+  font_weight: string;
+  color?: string;
+  alignment?: 'left' | 'center' | 'right';
+}
+
+// Location display settings
+export interface PeopleLocationSettings {
+  show: boolean;
+  show_icon: boolean;
+  icon?: string;
+  icon_color?: string;
+  font_size: number;
+  color?: string;
+  show_duration: boolean; // Show time at current location
+  duration_format?: 'relative' | 'absolute';
+}
+
+// People Module - Full configuration
+export interface PeopleModule extends BaseModule {
+  type: 'people';
+
+  // Entity Configuration
+  person_entity: string; // person.* entity
+
+  // Layout Style
+  layout_style: PeopleLayoutStyle;
+
+  // Data Items (user-orderable) - per layout for independent customization
+  data_items: PeopleDataItem[]; // Legacy/fallback
+  data_items_compact?: PeopleDataItem[];
+  data_items_banner?: PeopleDataItem[];
+  data_items_horizontal_compact?: PeopleDataItem[];
+  data_items_horizontal_detailed?: PeopleDataItem[];
+  data_items_header?: PeopleDataItem[];
+  data_items_music_overlay?: PeopleDataItem[];
+
+  // Avatar Settings
+  avatar_settings: PeopleAvatarSettings;
+
+  // Banner Settings (for banner layout)
+  banner_settings?: PeopleBannerSettings;
+
+  // Name Settings
+  name_settings: PeopleNameSettings;
+
+  // Location Settings (for quick access, also available in data_items)
+  location_settings: PeopleLocationSettings;
+
+  // Associated Entities (for data items to reference)
+  battery_entity?: string; // Device tracker or sensor with battery
+  media_player_entity?: string; // Media player for music display
+
+  // Element Visibility Toggles
+  show_location_badge?: boolean; // Show location badge beside avatar
+  show_battery_badge?: boolean; // Show battery badge beside avatar
+  show_avatar?: boolean; // Show avatar image
+
+  // Layout & Spacing
+  gap: number; // Gap between elements
+  data_items_gap: number; // Gap between data items
+  data_area_height?: number; // Height of data items area (0 for auto)
+  data_items_direction: 'row' | 'column'; // Layout direction for data items
+  alignment: 'left' | 'center' | 'right';
+  vertical_alignment: 'top' | 'center' | 'bottom';
+
+  // Header style specific (compact info row)
+  header_show_badges: boolean;
+  header_badges_position: 'top' | 'bottom';
+
+  // Music overlay specific
+  music_show_progress: boolean;
+  music_show_album_art: boolean;
+  music_blur_background: boolean;
+  music_album_blur?: number; // Blur amount for album art (0-20)
+  music_album_opacity?: number; // Opacity for album art background (0-100)
+
+  // Actions
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_effect?: 'none' | 'scale' | 'glow' | 'lift' | 'color';
+  hover_scale?: number;
+  hover_background_color?: string;
+  hover_glow_color?: string;
+
+  // Template support
+  template_mode?: boolean;
+  template?: string;
+  unified_template_mode?: boolean;
+  unified_template?: string;
 }

@@ -39,6 +39,7 @@ import { UltraGridModule } from './grid-module';
 import { UltraBadgeOfHonorModule } from './badge-of-honor-module';
 import { UltraVacuumModule } from './vacuum-module';
 import { UltraMediaPlayerModule } from './media-player-module';
+import { UltraPeopleModule } from './people-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -115,6 +116,8 @@ export class ModuleRegistry {
     this.registerModule(new UltraVacuumModule());
     // Register media player module
     this.registerModule(new UltraMediaPlayerModule());
+    // Register people module
+    this.registerModule(new UltraPeopleModule());
   }
 
   // Register a new module (for core modules or third-party modules)

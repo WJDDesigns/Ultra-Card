@@ -7,6 +7,9 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UcFormUtils } from '../utils/uc-form-utils';
 import { UltraLinkComponent, TapActionConfig } from '../components/ultra-link';
 import { ucGestureService, GestureConfig } from '../services/uc-gesture-service';
+import { computeBackgroundStyles } from '../utils/uc-color-utils';
+import { getImageUrl } from '../utils/image-upload';
+import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 
 // Module metadata interface
 export interface ModuleMetadata {
@@ -163,22 +166,25 @@ export abstract class BaseUltraModule implements UltraModule {
    * Resolve an entity field that may contain a variable reference
    * If the value starts with $, it resolves to the variable's entity
    * Otherwise returns the value as-is
-   * 
+   *
    * Use this in render methods to support variable indirection:
    * - User selects $myvar in the entity picker
-   * - Config stores "$myvar" 
+   * - Config stores "$myvar"
    * - At render time, this resolves to the actual entity ID
    * - User can change $myvar's entity in settings, all uses update
-   * 
+   *
    * @param entityValue The entity field value (could be "$varname" or "sensor.temp")
    * @param config The card configuration
    * @returns The resolved entity ID
    */
-  protected resolveEntity(entityValue: string | undefined, config?: UltraCardConfig): string | undefined {
+  protected resolveEntity(
+    entityValue: string | undefined,
+    config?: UltraCardConfig
+  ): string | undefined {
     if (!entityValue) {
       return entityValue;
     }
-    
+
     // Import dynamically to avoid circular dependencies
     const { ucCustomVariablesService } = require('../services/uc-custom-variables-service');
     return ucCustomVariablesService.resolveEntityField(entityValue, config);
@@ -195,7 +201,7 @@ export abstract class BaseUltraModule implements UltraModule {
    * Centralized action handler for all modules
    * This ensures confirmation dialogs work consistently across all modules
    * Modules should use this method instead of calling UltraLinkComponent.handleAction directly
-   * 
+   *
    * @param action The action to execute
    * @param hass Home Assistant instance
    * @param element The element that triggered the action
@@ -212,32 +218,25 @@ export abstract class BaseUltraModule implements UltraModule {
     module?: CardModule
   ): Promise<void> {
     // Always pass the module to ensure confirmation dialogs work
-    await UltraLinkComponent.handleAction(
-      action,
-      hass,
-      element,
-      config,
-      moduleEntity,
-      module
-    );
+    await UltraLinkComponent.handleAction(action, hass, element, config, moduleEntity, module);
   }
 
   /**
    * Create gesture handlers for module interactions
-   * 
+   *
    * This is a convenience wrapper around ucGestureService.createGestureHandlers
    * that all modules can use for consistent gesture handling.
-   * 
+   *
    * Prevents double-click bugs by properly handling event propagation and timing.
-   * 
+   *
    * @param elementId - Unique identifier for this element (use module.id or icon.id)
    * @param gestureConfig - Configuration including tap_action, hold_action, double_tap_action
    * @param hass - Home Assistant instance
    * @param cardConfig - Ultra Card configuration
    * @param excludeSelectors - Additional CSS selectors to exclude from gesture handling
-   * 
+   *
    * @returns Object with onPointerDown, onPointerUp, onPointerLeave, and onPointerCancel handlers
-   * 
+   *
    * @example
    * ```typescript
    * const handlers = this.createGestureHandlers(
@@ -252,7 +251,7 @@ export abstract class BaseUltraModule implements UltraModule {
    *   hass,
    *   config
    * );
-   * 
+   *
    * return html`
    *   <div
    *     @pointerdown=${handlers.onPointerDown}
@@ -617,7 +616,16 @@ export abstract class BaseUltraModule implements UltraModule {
     onChange: (value: string) => void,
     domain?: string[],
     label?: string
-  ) => UcFormUtils.renderEntityPickerWithVariables(hass, config, fieldName, currentValue, onChange, domain, label);
+  ) =>
+    UcFormUtils.renderEntityPickerWithVariables(
+      hass,
+      config,
+      fieldName,
+      currentValue,
+      onChange,
+      domain,
+      label
+    );
 
   /**
    * Trigger a preview update event
@@ -809,6 +817,499 @@ export abstract class BaseUltraModule implements UltraModule {
         color: var(--primary-color);
         --mdc-icon-size: 18px;
       }
+    `;
+  }
+
+  // ============================================
+  // DESIGN PROPERTY UTILITIES
+  // ============================================
+
+  /**
+   * Convert a style object to an inline CSS string
+   * Use this for converting buildDesignStyles() output to a style attribute string
+   * @param styles - Object with camelCase or kebab-case property names
+   * @returns CSS string suitable for style attribute
+   */
+  protected buildStyleString(styles: Record<string, string | number | undefined>): string {
+    return Object.entries(styles)
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
+      .map(([key, value]) => {
+        const cssKey = this._camelToKebab(key);
+        return `${cssKey}: ${value}`;
+      })
+      .join('; ');
+  }
+
+  /**
+   * Convert camelCase to kebab-case
+   */
+  private _camelToKebab(str: string): string {
+    return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+  }
+
+  /**
+   * Add pixel unit to a value if it's a number
+   */
+  protected _addPixelUnit(value: string | number | undefined): string {
+    if (value === undefined || value === null || value === '') return '';
+    if (typeof value === 'number') return `${value}px`;
+    if (typeof value === 'string' && !isNaN(Number(value))) return `${value}px`;
+    return String(value);
+  }
+
+  /**
+   * Get padding CSS string from module design properties
+   */
+  protected getPaddingCss(effective: any): string {
+    if (
+      effective.padding_top ||
+      effective.padding_right ||
+      effective.padding_bottom ||
+      effective.padding_left
+    ) {
+      const top = this._addPixelUnit(effective.padding_top) || '0';
+      const right = this._addPixelUnit(effective.padding_right) || '0';
+      const bottom = this._addPixelUnit(effective.padding_bottom) || '0';
+      const left = this._addPixelUnit(effective.padding_left) || '0';
+      return `${top} ${right} ${bottom} ${left}`;
+    }
+    return '';
+  }
+
+  /**
+   * Get margin CSS string from module design properties
+   */
+  protected getMarginCss(effective: any): string {
+    if (
+      effective.margin_top ||
+      effective.margin_right ||
+      effective.margin_bottom ||
+      effective.margin_left
+    ) {
+      const top = this._addPixelUnit(effective.margin_top) || '0';
+      const right = this._addPixelUnit(effective.margin_right) || '0';
+      const bottom = this._addPixelUnit(effective.margin_bottom) || '0';
+      const left = this._addPixelUnit(effective.margin_left) || '0';
+      return `${top} ${right} ${bottom} ${left}`;
+    }
+    return '';
+  }
+
+  /**
+   * Get border CSS string from module design properties
+   */
+  protected getBorderCss(effective: any): string {
+    if (effective.border_width) {
+      const width = this._addPixelUnit(effective.border_width) || '0';
+      const style = effective.border_style || 'solid';
+      const color = effective.border_color || 'transparent';
+      return `${width} ${style} ${color}`;
+    }
+    return '';
+  }
+
+  /**
+   * Get background image CSS string from module design properties
+   */
+  protected getBackgroundImageCss(effective: any, hass?: HomeAssistant): string {
+    if (!effective.background_image_type || effective.background_image_type === 'none') {
+      // Fallback to legacy background_image if present
+      if (effective.background_image) {
+        return `url("${effective.background_image}")`;
+      }
+      return 'none';
+    }
+
+    switch (effective.background_image_type) {
+      case 'upload': {
+        if (effective.background_image && hass) {
+          const resolved = getImageUrl(hass, effective.background_image);
+          return `url("${resolved}")`;
+        }
+        break;
+      }
+      case 'url': {
+        if (effective.background_image) {
+          return `url("${effective.background_image}")`;
+        }
+        break;
+      }
+      case 'entity':
+        if (effective.background_image_entity && hass?.states[effective.background_image_entity]) {
+          const entityState = hass.states[effective.background_image_entity];
+          let imageUrl = '';
+
+          if (entityState.attributes?.entity_picture) {
+            imageUrl = entityState.attributes.entity_picture;
+          } else if (entityState.attributes?.image) {
+            imageUrl = entityState.attributes.image;
+          } else if (entityState.state && typeof entityState.state === 'string') {
+            if (entityState.state.startsWith('/') || entityState.state.startsWith('http')) {
+              imageUrl = entityState.state;
+            }
+          }
+
+          if (imageUrl) {
+            const resolved = getImageUrl(hass, imageUrl);
+            return `url("${resolved}")`;
+          }
+        }
+        break;
+    }
+
+    return 'none';
+  }
+
+  /**
+   * Build container styles from module design properties
+   * This is the main method modules should use to apply all Design tab properties
+   *
+   * Handles: background (color, gradient, image, filter), padding, margin, border,
+   * size (width, height, min/max), shadow, backdrop filter, position, overflow
+   *
+   * @param module - The module configuration
+   * @param hass - Home Assistant instance (needed for entity-based images)
+   * @returns Style object ready to be converted to CSS string via buildStyleString()
+   */
+  protected buildDesignStyles(
+    module: CardModule,
+    hass?: HomeAssistant
+  ): Record<string, string | undefined> {
+    const mod = module as any;
+    // Merge design properties with module root properties (design takes precedence)
+    const effective = { ...mod, ...(mod.design || {}) } as any;
+
+    const styles: Record<string, string | undefined> = {};
+
+    // Get background image CSS
+    const bgImage = this.getBackgroundImageCss(effective, hass);
+
+    // Check if background filter is present - requires pseudo-element approach
+    const hasBackgroundFilter =
+      effective.background_filter && effective.background_filter !== 'none';
+
+    if (hasBackgroundFilter) {
+      // Use CSS variables for pseudo-element background filter approach
+      styles.position = 'relative';
+      styles.isolation = 'isolate';
+
+      if (bgImage && bgImage !== 'none') {
+        styles['--bg-image'] = bgImage;
+      }
+      if (effective.background_color) {
+        styles['--bg-color'] = effective.background_color;
+      }
+      styles['--bg-size'] = effective.background_size || 'cover';
+      styles['--bg-position'] = effective.background_position || 'center';
+      styles['--bg-repeat'] = effective.background_repeat || 'no-repeat';
+      styles['--bg-filter'] = effective.background_filter;
+    } else {
+      // Use computeBackgroundStyles for proper gradient and image layer handling
+      const bgResult = computeBackgroundStyles({
+        color: effective.background_color,
+        fallback: 'transparent',
+        image: bgImage !== 'none' ? bgImage : undefined,
+        imageSize: effective.background_size || 'cover',
+        imagePosition: effective.background_position || 'center',
+        imageRepeat: effective.background_repeat || 'no-repeat',
+      });
+
+      // Apply background styles from the utility
+      if (bgResult.styles.background && bgResult.styles.background !== 'transparent') {
+        styles.background = bgResult.styles.background;
+      }
+      if (bgResult.styles.backgroundSize) {
+        styles.backgroundSize = bgResult.styles.backgroundSize;
+      }
+      if (bgResult.styles.backgroundPosition) {
+        styles.backgroundPosition = bgResult.styles.backgroundPosition;
+      }
+      if (bgResult.styles.backgroundRepeat) {
+        styles.backgroundRepeat = bgResult.styles.backgroundRepeat;
+      }
+      if (bgResult.styles.backgroundColor && bgResult.styles.backgroundColor !== 'transparent') {
+        styles.backgroundColor = bgResult.styles.backgroundColor;
+      }
+    }
+
+    // Padding
+    const padding = this.getPaddingCss(effective);
+    if (padding) {
+      styles.padding = padding;
+    }
+
+    // Margin
+    const margin = this.getMarginCss(effective);
+    if (margin) {
+      styles.margin = margin;
+    }
+
+    // Border
+    const border = this.getBorderCss(effective);
+    if (border) {
+      styles.border = border;
+    }
+
+    // Border radius
+    if (effective.border_radius) {
+      styles.borderRadius = this._addPixelUnit(effective.border_radius);
+    }
+
+    // Size properties
+    if (effective.width) {
+      styles.width = this._addPixelUnit(effective.width);
+    }
+    if (effective.height) {
+      styles.height = this._addPixelUnit(effective.height);
+    }
+    if (effective.max_width) {
+      styles.maxWidth = this._addPixelUnit(effective.max_width);
+    }
+    if (effective.max_height) {
+      styles.maxHeight = this._addPixelUnit(effective.max_height);
+    }
+    if (effective.min_width) {
+      styles.minWidth = this._addPixelUnit(effective.min_width);
+    }
+    if (effective.min_height) {
+      styles.minHeight = this._addPixelUnit(effective.min_height);
+    }
+
+    // Backdrop filter
+    if (effective.backdrop_filter) {
+      styles.backdropFilter = effective.backdrop_filter;
+      styles.webkitBackdropFilter = effective.backdrop_filter;
+    }
+
+    // Box shadow (support both h/v naming and x/y naming)
+    const shadowH = effective.box_shadow_h ?? effective.box_shadow_x;
+    const shadowV = effective.box_shadow_v ?? effective.box_shadow_y;
+    if (
+      shadowH !== undefined ||
+      shadowV !== undefined ||
+      effective.box_shadow_blur ||
+      effective.box_shadow_spread ||
+      effective.box_shadow_color
+    ) {
+      const x = shadowH || 0;
+      const y = shadowV || 0;
+      const blur = effective.box_shadow_blur || 0;
+      const spread = effective.box_shadow_spread || 0;
+      const color = effective.box_shadow_color || 'rgba(0,0,0,0.2)';
+      const inset = effective.box_shadow_inset ? 'inset ' : '';
+      styles.boxShadow = `${inset}${x}px ${y}px ${blur}px ${spread}px ${color}`;
+    }
+
+    // Position properties
+    if (effective.position && effective.position !== 'static') {
+      styles.position = effective.position;
+    }
+    if (effective.top !== undefined && effective.top !== '') {
+      styles.top = this._addPixelUnit(effective.top);
+    }
+    if (effective.right !== undefined && effective.right !== '') {
+      styles.right = this._addPixelUnit(effective.right);
+    }
+    if (effective.bottom !== undefined && effective.bottom !== '') {
+      styles.bottom = this._addPixelUnit(effective.bottom);
+    }
+    if (effective.left !== undefined && effective.left !== '') {
+      styles.left = this._addPixelUnit(effective.left);
+    }
+    if (effective.z_index !== undefined && effective.z_index !== '') {
+      styles.zIndex = String(effective.z_index);
+    }
+
+    // Overflow
+    if (effective.overflow) {
+      styles.overflow = effective.overflow;
+    }
+
+    return styles;
+  }
+
+  /**
+   * Get animation configuration if conditions are met
+   * Returns animation class and CSS variables for the animation wrapper, or null if no animation
+   *
+   * Handles:
+   * - animation_type - the animation class (fadeIn, slideUp, pulse, etc.)
+   * - animation_entity - entity to watch for state
+   * - animation_trigger_type - 'state' or 'attribute'
+   * - animation_attribute - attribute name if trigger type is 'attribute'
+   * - animation_state - value to match
+   * - animation_duration, animation_delay, animation_timing - CSS variables
+   * - intro_animation, outro_animation - entry/exit animations
+   *
+   * @param module - The module configuration
+   * @param hass - Home Assistant instance
+   * @returns Object with class and styles, or null if no animation should be applied
+   */
+  protected getAnimationConfig(
+    module: CardModule,
+    hass: HomeAssistant
+  ): { class: string; styles: Record<string, string> } | null {
+    const mod = module as any;
+    const effective = { ...mod, ...(mod.design || {}) } as any;
+
+    // Get animation type (check both root and design)
+    const animationType = effective.animation_type;
+
+    // No animation configured
+    if (!animationType || animationType === 'none') {
+      return null;
+    }
+
+    // Get animation parameters
+    const animationDuration = effective.animation_duration || '2s';
+    const animationDelay = effective.animation_delay || '0s';
+    const animationTiming = effective.animation_timing || 'ease';
+
+    // Entity-based conditional animation
+    const entityId = effective.animation_entity;
+    const triggerType = effective.animation_trigger_type || 'state';
+    const attribute = effective.animation_attribute;
+    const targetState = effective.animation_state;
+
+    // Evaluate if animation should be active
+    let shouldAnimate = false;
+
+    if (!entityId) {
+      // No entity specified - always animate
+      shouldAnimate = true;
+    } else if (targetState && hass && hass.states[entityId]) {
+      const entity = hass.states[entityId];
+      if (triggerType === 'attribute' && attribute) {
+        // Attribute-based trigger
+        shouldAnimate = String(entity.attributes[attribute]) === targetState;
+      } else {
+        // State-based trigger
+        shouldAnimate = entity.state === targetState;
+      }
+    }
+
+    if (!shouldAnimate) {
+      return null;
+    }
+
+    return {
+      class: `animation-${animationType}`,
+      styles: {
+        '--animation-duration': animationDuration,
+        '--animation-delay': animationDelay,
+        '--animation-timing': animationTiming,
+      },
+    };
+  }
+
+  /**
+   * Get intro animation configuration if configured
+   * Returns animation class and CSS variables for intro animation, or null if none
+   *
+   * Intro animations play once on initial render (entry animation)
+   * Uses separate timing properties from continuous animations:
+   * - intro_animation_duration, intro_animation_delay, intro_animation_timing
+   *
+   * @param module - The module configuration
+   * @returns Object with class and styles, or null if no intro animation
+   */
+  protected getIntroAnimationConfig(
+    module: CardModule
+  ): { class: string; styles: Record<string, string> } | null {
+    const mod = module as any;
+    const effective = { ...mod, ...(mod.design || {}) } as any;
+
+    // Get intro animation type
+    const introAnimation = effective.intro_animation;
+
+    // No intro animation configured
+    if (!introAnimation || introAnimation === 'none') {
+      return null;
+    }
+
+    // Get intro animation parameters (separate from continuous animation)
+    const duration = effective.intro_animation_duration || '0.5s';
+    const delay = effective.intro_animation_delay || '0s';
+    const timing = effective.intro_animation_timing || 'ease';
+
+    return {
+      class: `intro-animation-${introAnimation}`,
+      styles: {
+        '--intro-animation-duration': duration,
+        '--intro-animation-delay': delay,
+        '--intro-animation-timing': timing,
+      },
+    };
+  }
+
+  /**
+   * Get hover effect class from module design properties
+   * Uses the UcHoverEffectsService for consistent hover effects across all modules
+   *
+   * @param module - The module configuration
+   * @returns CSS class string for hover effect, or empty string if none
+   */
+  protected getHoverEffectClass(module: CardModule): string {
+    const mod = module as any;
+    const hoverEffect = mod.hover_effect || mod.design?.hover_effect;
+
+    if (!hoverEffect || hoverEffect === 'none') {
+      return '';
+    }
+
+    return UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+  }
+
+  /**
+   * Helper method to wrap content with animation wrapper if animation is configured
+   * Use this in renderPreview() to easily add animation support
+   *
+   * Handles both:
+   * - Continuous animations (animation_type with animation_duration/delay/timing)
+   * - Intro animations (intro_animation with intro_animation_duration/delay/timing)
+   *
+   * @param content - The module content to potentially wrap
+   * @param module - The module configuration
+   * @param hass - Home Assistant instance
+   * @returns The content, optionally wrapped in an animation div
+   *
+   * @example
+   * ```typescript
+   * const content = html`<div class="my-module">...</div>`;
+   * return this.wrapWithAnimation(content, module, hass);
+   * ```
+   */
+  protected wrapWithAnimation(
+    content: TemplateResult,
+    module: CardModule,
+    hass: HomeAssistant
+  ): TemplateResult {
+    const continuousConfig = this.getAnimationConfig(module, hass);
+    const introConfig = this.getIntroAnimationConfig(module);
+
+    // No animations configured
+    if (!continuousConfig && !introConfig) {
+      return content;
+    }
+
+    // Build combined classes and styles
+    const classes: string[] = ['module-animation-wrapper'];
+    const combinedStyles: Record<string, string> = {};
+
+    if (continuousConfig) {
+      classes.push(continuousConfig.class);
+      Object.assign(combinedStyles, continuousConfig.styles);
+    }
+
+    if (introConfig) {
+      classes.push(introConfig.class);
+      Object.assign(combinedStyles, introConfig.styles);
+    }
+
+    return html`
+      <div class="${classes.join(' ')}" style="${this.buildStyleString(combinedStyles)}">
+        ${content}
+      </div>
     `;
   }
 }

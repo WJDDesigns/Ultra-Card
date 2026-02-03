@@ -283,4 +283,111 @@ export declare abstract class BaseUltraModule implements UltraModule {
      * @returns CSS string with gradient error state styles
      */
     protected getGradientErrorStateStyles(): string;
+    /**
+     * Convert a style object to an inline CSS string
+     * Use this for converting buildDesignStyles() output to a style attribute string
+     * @param styles - Object with camelCase or kebab-case property names
+     * @returns CSS string suitable for style attribute
+     */
+    protected buildStyleString(styles: Record<string, string | number | undefined>): string;
+    /**
+     * Convert camelCase to kebab-case
+     */
+    private _camelToKebab;
+    /**
+     * Add pixel unit to a value if it's a number
+     */
+    protected _addPixelUnit(value: string | number | undefined): string;
+    /**
+     * Get padding CSS string from module design properties
+     */
+    protected getPaddingCss(effective: any): string;
+    /**
+     * Get margin CSS string from module design properties
+     */
+    protected getMarginCss(effective: any): string;
+    /**
+     * Get border CSS string from module design properties
+     */
+    protected getBorderCss(effective: any): string;
+    /**
+     * Get background image CSS string from module design properties
+     */
+    protected getBackgroundImageCss(effective: any, hass?: HomeAssistant): string;
+    /**
+     * Build container styles from module design properties
+     * This is the main method modules should use to apply all Design tab properties
+     *
+     * Handles: background (color, gradient, image, filter), padding, margin, border,
+     * size (width, height, min/max), shadow, backdrop filter, position, overflow
+     *
+     * @param module - The module configuration
+     * @param hass - Home Assistant instance (needed for entity-based images)
+     * @returns Style object ready to be converted to CSS string via buildStyleString()
+     */
+    protected buildDesignStyles(module: CardModule, hass?: HomeAssistant): Record<string, string | undefined>;
+    /**
+     * Get animation configuration if conditions are met
+     * Returns animation class and CSS variables for the animation wrapper, or null if no animation
+     *
+     * Handles:
+     * - animation_type - the animation class (fadeIn, slideUp, pulse, etc.)
+     * - animation_entity - entity to watch for state
+     * - animation_trigger_type - 'state' or 'attribute'
+     * - animation_attribute - attribute name if trigger type is 'attribute'
+     * - animation_state - value to match
+     * - animation_duration, animation_delay, animation_timing - CSS variables
+     * - intro_animation, outro_animation - entry/exit animations
+     *
+     * @param module - The module configuration
+     * @param hass - Home Assistant instance
+     * @returns Object with class and styles, or null if no animation should be applied
+     */
+    protected getAnimationConfig(module: CardModule, hass: HomeAssistant): {
+        class: string;
+        styles: Record<string, string>;
+    } | null;
+    /**
+     * Get intro animation configuration if configured
+     * Returns animation class and CSS variables for intro animation, or null if none
+     *
+     * Intro animations play once on initial render (entry animation)
+     * Uses separate timing properties from continuous animations:
+     * - intro_animation_duration, intro_animation_delay, intro_animation_timing
+     *
+     * @param module - The module configuration
+     * @returns Object with class and styles, or null if no intro animation
+     */
+    protected getIntroAnimationConfig(module: CardModule): {
+        class: string;
+        styles: Record<string, string>;
+    } | null;
+    /**
+     * Get hover effect class from module design properties
+     * Uses the UcHoverEffectsService for consistent hover effects across all modules
+     *
+     * @param module - The module configuration
+     * @returns CSS class string for hover effect, or empty string if none
+     */
+    protected getHoverEffectClass(module: CardModule): string;
+    /**
+     * Helper method to wrap content with animation wrapper if animation is configured
+     * Use this in renderPreview() to easily add animation support
+     *
+     * Handles both:
+     * - Continuous animations (animation_type with animation_duration/delay/timing)
+     * - Intro animations (intro_animation with intro_animation_duration/delay/timing)
+     *
+     * @param content - The module content to potentially wrap
+     * @param module - The module configuration
+     * @param hass - Home Assistant instance
+     * @returns The content, optionally wrapped in an animation div
+     *
+     * @example
+     * ```typescript
+     * const content = html`<div class="my-module">...</div>`;
+     * return this.wrapWithAnimation(content, module, hass);
+     * ```
+     */
+    protected wrapWithAnimation(content: TemplateResult, module: CardModule, hass: HomeAssistant): TemplateResult;
 }

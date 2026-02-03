@@ -20,7 +20,8 @@ export interface TapActionConfig {
     | 'url'
     | 'perform-action'
     | 'assist'
-    | 'nothing';
+    | 'nothing'
+    | 'none'; // Legacy/alternative for 'nothing'
   entity?: string;
   navigation_path?: string;
   url_path?: string;
@@ -723,22 +724,22 @@ export class UltraLinkComponent {
       resolvedAction = action;
     }
 
-    // Skip confirmation and execution for 'nothing' actions
-    if (resolvedAction.action === 'nothing') {
+    // Skip confirmation and execution for 'nothing' or 'none' actions
+    if (resolvedAction.action === 'nothing' || resolvedAction.action === 'none') {
       return;
     }
 
     // Check if confirmation is required
     const confirmAction = module?.confirm_action === true;
-    
+
     if (confirmAction) {
       // Set hass for the confirmation service
       ucActionConfirmationService.setHass(hass);
-      
+
       // Show confirmation dialog BEFORE executing the action
       // This will block execution until user confirms or cancels
       const confirmed = await ucActionConfirmationService.showConfirmation(resolvedAction);
-      
+
       // If user cancelled, don't execute the action
       if (!confirmed) {
         return;
@@ -747,10 +748,7 @@ export class UltraLinkComponent {
 
     // Trigger haptic feedback if enabled (default: true)
     const hapticEnabled = config?.haptic_feedback !== false;
-    if (
-      hapticEnabled &&
-      resolvedAction.action !== 'default'
-    ) {
+    if (hapticEnabled && resolvedAction.action !== 'default') {
       // Use appropriate haptic type based on action following HA guidelines
       switch (resolvedAction.action) {
         case 'toggle':

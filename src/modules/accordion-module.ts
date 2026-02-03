@@ -149,8 +149,14 @@ export class UltraAccordionModule extends BaseUltraModule {
               data: { title_mode: accordionModule.title_mode || 'custom' },
               schema: [
                 this.selectField('title_mode', [
-                  { value: 'custom', label: localize('editor.common.custom_text', lang, 'Custom Text') },
-                  { value: 'entity', label: localize('editor.common.entity_state', lang, 'Entity State') },
+                  {
+                    value: 'custom',
+                    label: localize('editor.common.custom_text', lang, 'Custom Text'),
+                  },
+                  {
+                    value: 'entity',
+                    label: localize('editor.common.entity_state', lang, 'Entity State'),
+                  },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -171,9 +177,16 @@ export class UltraAccordionModule extends BaseUltraModule {
           ? html`
               <div style="margin-top: -16px; margin-bottom: 32px;">
                 ${this.renderConditionalFieldsGroup(
-                  localize('editor.accordion.title.custom_config', lang, 'Custom Title Configuration'),
+                  localize(
+                    'editor.accordion.title.custom_config',
+                    lang,
+                    'Custom Title Configuration'
+                  ),
                   html`
-                    <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+                    <div
+                      class="field-title"
+                      style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                    >
                       ${localize('editor.accordion.title.custom_text', lang, 'Title Text')}
                     </div>
                     <div
@@ -206,7 +219,11 @@ export class UltraAccordionModule extends BaseUltraModule {
           ? html`
               <div style="margin-top: -16px; margin-bottom: 32px;">
                 ${this.renderConditionalFieldsGroup(
-                  localize('editor.accordion.title.entity_config', lang, 'Entity Title Configuration'),
+                  localize(
+                    'editor.accordion.title.entity_config',
+                    lang,
+                    'Entity Title Configuration'
+                  ),
                   html`
                     ${this.renderFieldSection(
                       localize('editor.accordion.title.entity', lang, 'Title Entity'),
@@ -225,7 +242,7 @@ export class UltraAccordionModule extends BaseUltraModule {
                         }, 50);
                       }
                     )}
-                    
+
                     <!-- Show Entity Name Toggle -->
                     ${this.renderSettingsSection(
                       localize('editor.accordion.title.show_name', lang, 'Display Options'),
@@ -236,7 +253,11 @@ export class UltraAccordionModule extends BaseUltraModule {
                       ),
                       [
                         {
-                          title: localize('editor.accordion.title.show_entity_name', lang, 'Show Entity Name'),
+                          title: localize(
+                            'editor.accordion.title.show_entity_name',
+                            lang,
+                            'Show Entity Name'
+                          ),
                           description: localize(
                             'editor.accordion.title.show_entity_name_desc',
                             lang,
@@ -317,12 +338,23 @@ export class UltraAccordionModule extends BaseUltraModule {
             </div>
             <div style="display: flex; gap: 8px;">
               ${[
-                { value: 'center', icon: 'mdi:align-horizontal-center', title: localize('editor.common.center', lang, 'Center') },
-                { value: 'apart', icon: 'mdi:arrow-left-right', title: localize('editor.common.apart', lang, 'Apart') },
+                {
+                  value: 'center',
+                  icon: 'mdi:align-horizontal-center',
+                  title: localize('editor.common.center', lang, 'Center'),
+                },
+                {
+                  value: 'apart',
+                  icon: 'mdi:arrow-left-right',
+                  title: localize('editor.common.apart', lang, 'Apart'),
+                },
               ].map(
                 align => html`
                   <button
-                    class="alignment-btn ${(accordionModule.header_alignment || 'apart') === align.value ? 'active' : ''}"
+                    class="alignment-btn ${(accordionModule.header_alignment || 'apart') ===
+                    align.value
+                      ? 'active'
+                      : ''}"
                     @click=${() => {
                       updateModule({ header_alignment: align.value as 'center' | 'apart' });
                       setTimeout(() => {
@@ -330,9 +362,13 @@ export class UltraAccordionModule extends BaseUltraModule {
                       }, 50);
                     }}
                     title="${align.title}"
-                    style="flex: 1; padding: 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${(accordionModule.header_alignment || 'apart') === align.value
+                    style="flex: 1; padding: 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${(accordionModule.header_alignment ||
+                      'apart') === align.value
                       ? 'var(--primary-color)'
-                      : 'var(--card-background-color)'}; color: ${(accordionModule.header_alignment || 'apart') === align.value ? 'white' : 'var(--primary-text-color)'}; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;"
+                      : 'var(--card-background-color)'}; color: ${(accordionModule.header_alignment ||
+                      'apart') === align.value
+                      ? 'white'
+                      : 'var(--primary-text-color)'}; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;"
                   >
                     <ha-icon icon="${align.icon}" style="--mdc-icon-size: 24px;"></ha-icon>
                   </button>
@@ -348,12 +384,22 @@ export class UltraAccordionModule extends BaseUltraModule {
             </div>
             <div style="display: flex; gap: 8px;">
               ${[
-                { value: 'left', icon: 'mdi:arrow-left', title: localize('editor.common.left', lang, 'Left') },
-                { value: 'right', icon: 'mdi:arrow-right', title: localize('editor.common.right', lang, 'Right') },
+                {
+                  value: 'left',
+                  icon: 'mdi:arrow-left',
+                  title: localize('editor.common.left', lang, 'Left'),
+                },
+                {
+                  value: 'right',
+                  icon: 'mdi:arrow-right',
+                  title: localize('editor.common.right', lang, 'Right'),
+                },
               ].map(
                 side => html`
                   <button
-                    class="alignment-btn ${(accordionModule.icon_side || 'right') === side.value ? 'active' : ''}"
+                    class="alignment-btn ${(accordionModule.icon_side || 'right') === side.value
+                      ? 'active'
+                      : ''}"
                     @click=${() => {
                       updateModule({ icon_side: side.value as 'left' | 'right' });
                       setTimeout(() => {
@@ -361,9 +407,13 @@ export class UltraAccordionModule extends BaseUltraModule {
                       }, 50);
                     }}
                     title="${side.title}"
-                    style="flex: 1; padding: 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${(accordionModule.icon_side || 'right') === side.value
+                    style="flex: 1; padding: 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${(accordionModule.icon_side ||
+                      'right') === side.value
                       ? 'var(--primary-color)'
-                      : 'var(--card-background-color)'}; color: ${(accordionModule.icon_side || 'right') === side.value ? 'white' : 'var(--primary-text-color)'}; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;"
+                      : 'var(--card-background-color)'}; color: ${(accordionModule.icon_side ||
+                      'right') === side.value
+                      ? 'white'
+                      : 'var(--primary-text-color)'}; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;"
                   >
                     <ha-icon icon="${side.icon}" style="--mdc-icon-size: 24px;"></ha-icon>
                   </button>
@@ -425,7 +475,11 @@ export class UltraAccordionModule extends BaseUltraModule {
           <!-- Container Background & Border Color Row -->
           <div class="color-row">
             <ultra-color-picker
-              .label=${localize('editor.accordion.design.container_bg_color', lang, 'Background Color')}
+              .label=${localize(
+                'editor.accordion.design.container_bg_color',
+                lang,
+                'Background Color'
+              )}
               .value=${d.container_background_color || ''}
               .defaultValue=${'var(--card-background-color)'}
               .hass=${hass}
@@ -436,7 +490,11 @@ export class UltraAccordionModule extends BaseUltraModule {
             ></ultra-color-picker>
 
             <ultra-color-picker
-              .label=${localize('editor.accordion.design.container_border_color', lang, 'Border Color')}
+              .label=${localize(
+                'editor.accordion.design.container_border_color',
+                lang,
+                'Border Color'
+              )}
               .value=${d.container_border_color || ''}
               .defaultValue=${'var(--divider-color)'}
               .hass=${hass}
@@ -457,7 +515,10 @@ export class UltraAccordionModule extends BaseUltraModule {
                 { container_border_width: d.container_border_width ?? 1 },
                 [this.numberField('container_border_width', 0, 10, 1)],
                 (e: CustomEvent) => {
-                  const design = { ...d, container_border_width: e.detail.value.container_border_width };
+                  const design = {
+                    ...d,
+                    container_border_width: e.detail.value.container_border_width,
+                  };
                   updateModule({ design } as any);
                 }
               )}
@@ -470,7 +531,10 @@ export class UltraAccordionModule extends BaseUltraModule {
                 { container_border_radius: d.container_border_radius ?? 8 },
                 [this.numberField('container_border_radius', 0, 50, 1)],
                 (e: CustomEvent) => {
-                  const design = { ...d, container_border_radius: e.detail.value.container_border_radius };
+                  const design = {
+                    ...d,
+                    container_border_radius: e.detail.value.container_border_radius,
+                  };
                   updateModule({ design } as any);
                 }
               )}
@@ -480,7 +544,11 @@ export class UltraAccordionModule extends BaseUltraModule {
           <!-- Box Shadow -->
           ${this.renderFieldSection(
             localize('editor.accordion.design.container_shadow', lang, 'Box Shadow'),
-            localize('editor.accordion.design.container_shadow_desc', lang, 'CSS box-shadow value (e.g., 0 2px 8px rgba(0,0,0,0.1))'),
+            localize(
+              'editor.accordion.design.container_shadow_desc',
+              lang,
+              'CSS box-shadow value (e.g., 0 2px 8px rgba(0,0,0,0.1))'
+            ),
             hass,
             { container_shadow: d.container_shadow || '' },
             [this.textField('container_shadow')],
@@ -520,7 +588,11 @@ export class UltraAccordionModule extends BaseUltraModule {
             ></ultra-color-picker>
 
             <ultra-color-picker
-              .label=${localize('editor.accordion.design.header_bg_color', lang, 'Background Color')}
+              .label=${localize(
+                'editor.accordion.design.header_bg_color',
+                lang,
+                'Background Color'
+              )}
               .value=${d.header_background_color || ''}
               .defaultValue=${'var(--card-background-color)'}
               .hass=${hass}
@@ -534,7 +606,11 @@ export class UltraAccordionModule extends BaseUltraModule {
           <!-- Header Hover Background -->
           <div class="design-field">
             <ultra-color-picker
-              .label=${localize('editor.accordion.design.header_hover_color', lang, 'Hover Background Color')}
+              .label=${localize(
+                'editor.accordion.design.header_hover_color',
+                lang,
+                'Hover Background Color'
+              )}
               .value=${d.header_hover_color || ''}
               .defaultValue=${'rgba(var(--rgb-primary-color), 0.1)'}
               .hass=${hass}
@@ -615,7 +691,11 @@ export class UltraAccordionModule extends BaseUltraModule {
           <!-- Header Padding -->
           ${this.renderFieldSection(
             localize('editor.accordion.design.header_padding', lang, 'Header Padding'),
-            localize('editor.accordion.design.header_padding_desc', lang, 'Padding inside the header (in pixels).'),
+            localize(
+              'editor.accordion.design.header_padding_desc',
+              lang,
+              'Padding inside the header (in pixels).'
+            ),
             hass,
             { header_padding: d.header_padding ?? 12 },
             [this.numberField('header_padding', 0, 48, 1)],
@@ -628,7 +708,11 @@ export class UltraAccordionModule extends BaseUltraModule {
           <!-- Header Border Bottom -->
           <div class="color-row">
             <ultra-color-picker
-              .label=${localize('editor.accordion.design.header_border_color', lang, 'Border Bottom Color')}
+              .label=${localize(
+                'editor.accordion.design.header_border_color',
+                lang,
+                'Border Bottom Color'
+              )}
               .value=${d.header_border_color || ''}
               .defaultValue=${'var(--divider-color)'}
               .hass=${hass}
@@ -672,7 +756,11 @@ export class UltraAccordionModule extends BaseUltraModule {
           <!-- Content Background Color -->
           <div class="design-field">
             <ultra-color-picker
-              .label=${localize('editor.accordion.design.content_bg_color', lang, 'Background Color')}
+              .label=${localize(
+                'editor.accordion.design.content_bg_color',
+                lang,
+                'Background Color'
+              )}
               .value=${d.content_background_color || ''}
               .defaultValue=${'transparent'}
               .hass=${hass}
@@ -686,7 +774,11 @@ export class UltraAccordionModule extends BaseUltraModule {
           <!-- Content Padding -->
           ${this.renderFieldSection(
             localize('editor.accordion.design.content_padding', lang, 'Content Padding'),
-            localize('editor.accordion.design.content_padding_desc', lang, 'Padding around the content area (in pixels).'),
+            localize(
+              'editor.accordion.design.content_padding_desc',
+              lang,
+              'Padding around the content area (in pixels).'
+            ),
             hass,
             { content_padding: d.content_padding || 16 },
             [this.numberField('content_padding', 0, 48, 1)],
@@ -699,7 +791,11 @@ export class UltraAccordionModule extends BaseUltraModule {
           <!-- Content Border -->
           <div class="color-row">
             <ultra-color-picker
-              .label=${localize('editor.accordion.design.content_border_color', lang, 'Border Color')}
+              .label=${localize(
+                'editor.accordion.design.content_border_color',
+                lang,
+                'Border Color'
+              )}
               .value=${d.content_border_color || ''}
               .defaultValue=${'transparent'}
               .hass=${hass}
@@ -717,7 +813,10 @@ export class UltraAccordionModule extends BaseUltraModule {
                 { content_border_width: d.content_border_width ?? 0 },
                 [this.numberField('content_border_width', 0, 5, 1)],
                 (e: CustomEvent) => {
-                  const design = { ...d, content_border_width: e.detail.value.content_border_width };
+                  const design = {
+                    ...d,
+                    content_border_width: e.detail.value.content_border_width,
+                  };
                   updateModule({ design } as any);
                 }
               )}
@@ -788,7 +887,11 @@ export class UltraAccordionModule extends BaseUltraModule {
               },
               {
                 value: 'any',
-                label: localize('editor.accordion.open_logic.mode_any', lang, 'Open if ANY condition is met'),
+                label: localize(
+                  'editor.accordion.open_logic.mode_any',
+                  lang,
+                  'Open if ANY condition is met'
+                ),
               },
             ]),
           ],
@@ -844,33 +947,35 @@ export class UltraAccordionModule extends BaseUltraModule {
                         </div>
                       `
                     : ''}
-                  ${conditions.map((cond, index) => this._renderOpenCondition(cond, index, conditions, hass, updateModule))}
+                  ${conditions.map((cond, index) =>
+                    this._renderOpenCondition(cond, index, conditions, hass, updateModule)
+                  )}
                 </div>
               </div>
             `
           : openMode === 'always'
-          ? html`
-              <div
-                style="margin-top: 16px; padding: 16px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 8px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
-              >
-                ${localize(
-                  'editor.accordion.open_logic.always_note',
-                  lang,
-                  'Accordion will always remain open. Users can still manually close it, but it will reopen automatically.'
-                )}
-              </div>
-            `
-          : html`
-              <div
-                style="margin-top: 16px; padding: 16px; background: rgba(var(--rgb-secondary-text-color), 0.05); border-radius: 8px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
-              >
-                ${localize(
-                  'editor.accordion.open_logic.manual_note',
-                  lang,
-                  'Accordion state is controlled manually by user clicks. Set Default State above to choose initial state.'
-                )}
-              </div>
-            `}
+            ? html`
+                <div
+                  style="margin-top: 16px; padding: 16px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 8px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                >
+                  ${localize(
+                    'editor.accordion.open_logic.always_note',
+                    lang,
+                    'Accordion will always remain open. Users can still manually close it, but it will reopen automatically.'
+                  )}
+                </div>
+              `
+            : html`
+                <div
+                  style="margin-top: 16px; padding: 16px; background: rgba(var(--rgb-secondary-text-color), 0.05); border-radius: 8px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                >
+                  ${localize(
+                    'editor.accordion.open_logic.manual_note',
+                    lang,
+                    'Accordion state is controlled manually by user clicks. Set Default State above to choose initial state.'
+                  )}
+                </div>
+              `}
       </div>
     `;
   }
@@ -970,7 +1075,11 @@ export class UltraAccordionModule extends BaseUltraModule {
                     this.selectField('type', [
                       {
                         value: 'entity_state',
-                        label: localize('editor.accordion.open_logic.type_entity_state', lang, 'Entity State'),
+                        label: localize(
+                          'editor.accordion.open_logic.type_entity_state',
+                          lang,
+                          'Entity State'
+                        ),
                       },
                       {
                         value: 'entity_attribute',
@@ -982,11 +1091,19 @@ export class UltraAccordionModule extends BaseUltraModule {
                       },
                       {
                         value: 'time',
-                        label: localize('editor.accordion.open_logic.type_time', lang, 'Time Range'),
+                        label: localize(
+                          'editor.accordion.open_logic.type_time',
+                          lang,
+                          'Time Range'
+                        ),
                       },
                       {
                         value: 'template',
-                        label: localize('editor.accordion.open_logic.type_template', lang, 'Template'),
+                        label: localize(
+                          'editor.accordion.open_logic.type_template',
+                          lang,
+                          'Template'
+                        ),
                       },
                     ]),
                   ],
@@ -1119,7 +1236,10 @@ export class UltraAccordionModule extends BaseUltraModule {
 
                   return html`
                     <div class="field-container" style="margin-bottom: 16px;">
-                      <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
+                      <div
+                        class="field-title"
+                        style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
+                      >
                         ${localize('editor.accordion.open_logic.template', lang, 'Template')}
                       </div>
                       <div
@@ -1162,11 +1282,11 @@ export class UltraAccordionModule extends BaseUltraModule {
     const moduleWithDesign = accordionModule as any;
     const d = moduleWithDesign.design || {};
     const lang = hass?.locale?.language || 'en';
-    
+
     // Evaluate open/close logic
     const openMode = accordionModule.open_mode || 'manual';
     let logicDeterminedState: boolean | null = null;
-    
+
     if (openMode === 'always') {
       logicDeterminedState = true;
     } else if (openMode === 'every' || openMode === 'any') {
@@ -1178,26 +1298,32 @@ export class UltraAccordionModule extends BaseUltraModule {
       );
       logicDeterminedState = conditionsResult;
     }
-    
+
     // Initialize accordion state if not exists
     if (!this.accordionStates.has(accordionModule.id)) {
       // Use logic-determined state if available, otherwise use default_open
-      const initialState = logicDeterminedState !== null ? logicDeterminedState : (accordionModule.default_open || false);
+      const initialState =
+        logicDeterminedState !== null
+          ? logicDeterminedState
+          : accordionModule.default_open || false;
       this.accordionStates.set(accordionModule.id, initialState);
     } else if (logicDeterminedState !== null) {
       // If logic determines state, update it (overriding manual state)
       this.accordionStates.set(accordionModule.id, logicDeterminedState);
     }
-    
+
     const isOpen = this.accordionStates.get(accordionModule.id) || false;
-    
+
     // Determine title text
     let titleText = '';
     if (accordionModule.title_mode === 'entity' && accordionModule.title_entity) {
       const entityState = hass?.states[accordionModule.title_entity];
-      const entityName = entityState?.attributes?.friendly_name || accordionModule.title_entity.split('.')[1] || accordionModule.title_entity;
+      const entityName =
+        entityState?.attributes?.friendly_name ||
+        accordionModule.title_entity.split('.')[1] ||
+        accordionModule.title_entity;
       const entityStateValue = entityState?.state || accordionModule.title_entity;
-      
+
       if (accordionModule.show_entity_name) {
         titleText = `${entityName}: ${entityStateValue}`;
       } else {
@@ -1206,17 +1332,17 @@ export class UltraAccordionModule extends BaseUltraModule {
     } else {
       titleText = accordionModule.title_text || 'Accordion Title';
     }
-    
+
     // Get the control icon (chevron)
     const iconToDisplay = accordionModule.icon || 'mdi:chevron-down';
     const headerAlignment = accordionModule.header_alignment || 'apart';
     const iconSide = accordionModule.icon_side || 'right';
-    
+
     // Calculate header layout based on alignment mode and icon side
     let headerJustifyContent = 'space-between';
     let titleOrder = 1;
     let iconOrder = 2;
-    
+
     if (headerAlignment === 'center') {
       // Center mode: icon and text together
       headerJustifyContent = 'center';
@@ -1242,7 +1368,7 @@ export class UltraAccordionModule extends BaseUltraModule {
         iconOrder = 2;
       }
     }
-    
+
     // Container styles - using design properties
     const containerBorderWidth = d.container_border_width ?? 1;
     const containerBorderColor = d.container_border_color || 'var(--divider-color)';
@@ -1255,7 +1381,7 @@ export class UltraAccordionModule extends BaseUltraModule {
       background: containerBackground,
       boxShadow: d.container_shadow || 'none',
     };
-    
+
     // Header styles - using design properties
     const headerPadding = d.header_padding ?? 12;
     const headerBorderWidth = d.header_border_width ?? 1;
@@ -1276,7 +1402,7 @@ export class UltraAccordionModule extends BaseUltraModule {
       userSelect: 'none' as const,
       gap: headerAlignment === 'center' ? '8px' : '0',
     };
-    
+
     // Content styles - using design properties
     const contentBorderWidth = d.content_border_width ?? 0;
     const contentBorderColor = d.content_border_color || 'transparent';
@@ -1287,9 +1413,10 @@ export class UltraAccordionModule extends BaseUltraModule {
       transition: 'max-height 0.3s ease-in-out, padding 0.3s ease-in-out',
       background: contentBackground,
       padding: isOpen ? `${d.content_padding || 16}px` : '0',
-      borderTop: contentBorderWidth > 0 ? `${contentBorderWidth}px solid ${contentBorderColor}` : 'none',
+      borderTop:
+        contentBorderWidth > 0 ? `${contentBorderWidth}px solid ${contentBorderColor}` : 'none',
     };
-    
+
     // Chevron icon styles - using design properties
     const iconSize = d.icon_size ?? 24;
     const iconColor = d.icon_color || 'inherit';
@@ -1300,7 +1427,7 @@ export class UltraAccordionModule extends BaseUltraModule {
       flexShrink: 0,
       color: iconColor,
     };
-    
+
     // Title styles
     const titleStyles = {
       order: titleOrder,
@@ -1310,10 +1437,10 @@ export class UltraAccordionModule extends BaseUltraModule {
       textOverflow: 'ellipsis',
       whiteSpace: 'nowrap' as const,
     };
-    
+
     // Hover color for header
     const headerHoverColor = d.header_hover_color || 'rgba(var(--rgb-primary-color), 0.1)';
-    
+
     // Toggle handler
     const handleToggle = (e: Event) => {
       e.stopPropagation(); // Prevent nested accordion toggles
@@ -1321,42 +1448,44 @@ export class UltraAccordionModule extends BaseUltraModule {
       this.accordionStates.set(accordionModule.id, !currentState);
       this.triggerPreviewUpdate(true);
     };
-    
+
     // Render child modules
     const hasChildren = accordionModule.modules && accordionModule.modules.length > 0;
     const registry = getModuleRegistry();
-    
+
     // Generate unique ID for scoped hover styles
     const accordionId = `accordion-${accordionModule.id.replace(/[^a-zA-Z0-9]/g, '')}`;
-    
+
     return html`
       <style>
         .${accordionId} .ultra-accordion-header:hover {
           background: ${headerHoverColor} !important;
         }
       </style>
-      <div class="ultra-accordion-container ${accordionId}" style=${this.styleObjectToCss(containerStyles)}>
+      <div
+        class="ultra-accordion-container ${accordionId}"
+        style=${this.styleObjectToCss(containerStyles)}
+      >
         <!-- Accordion Header -->
-        <div 
-          class="ultra-accordion-header" 
+        <div
+          class="ultra-accordion-header"
           style=${this.styleObjectToCss(headerStyles)}
           @click=${handleToggle}
         >
           <!-- Title -->
-          <span class="ultra-accordion-title" style=${this.styleObjectToCss(titleStyles)}>${titleText}</span>
-          
+          <span class="ultra-accordion-title" style=${this.styleObjectToCss(titleStyles)}
+            >${titleText}</span
+          >
+
           <!-- Control Icon (Chevron) -->
-          <ha-icon 
-            icon="${iconToDisplay}" 
+          <ha-icon
+            icon="${iconToDisplay}"
             style=${this.styleObjectToCss(chevronStyles) + `; --mdc-icon-size: ${iconSize}px;`}
           ></ha-icon>
         </div>
-        
+
         <!-- Accordion Content -->
-        <div 
-          class="ultra-accordion-content" 
-          style=${this.styleObjectToCss(contentStyles)}
-        >
+        <div class="ultra-accordion-content" style=${this.styleObjectToCss(contentStyles)}>
           ${isOpen && hasChildren
             ? accordionModule.modules.map(childModule => {
                 const childModuleHandler = registry.getModule(childModule.type);
@@ -1402,18 +1531,18 @@ export class UltraAccordionModule extends BaseUltraModule {
                 `;
               })
             : isOpen && !hasChildren
-            ? html`
-                <div
-                  style="padding: 24px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
-                >
-                  ${localize(
-                    'editor.accordion.preview.no_modules',
-                    lang,
-                    'No modules added. Add modules to this accordion in the Layout tab.'
-                  )}
-                </div>
-              `
-            : ''}
+              ? html`
+                  <div
+                    style="padding: 24px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                  >
+                    ${localize(
+                      'editor.accordion.preview.no_modules',
+                      lang,
+                      'No modules added. Add modules to this accordion in the Layout tab.'
+                    )}
+                  </div>
+                `
+              : ''}
         </div>
       </div>
     `;
@@ -1448,45 +1577,11 @@ export class UltraAccordionModule extends BaseUltraModule {
     if (accordionModule.title_mode === 'entity' && !accordionModule.title_entity?.trim()) {
       errors.push('Title entity is required when using entity title mode');
     }
-    
+
     // Note: Removed icon_mode and icon_position validation as they are no longer used
 
-    // Validate nested modules - allow 2 levels of nesting but prevent deeper nesting
-    if (accordionModule.modules && accordionModule.modules.length > 0) {
-      for (const childModule of accordionModule.modules) {
-        // Allow layout modules (horizontal, vertical, accordion) at level 1
-        if (childModule.type === 'horizontal' || childModule.type === 'vertical' || childModule.type === 'accordion') {
-          const layoutChild = childModule as any;
-
-          // Check level 2 nesting - allow layout modules but prevent level 3
-          if (layoutChild.modules && layoutChild.modules.length > 0) {
-            for (const nestedModule of layoutChild.modules) {
-              if (nestedModule.type === 'horizontal' || nestedModule.type === 'vertical' || nestedModule.type === 'accordion') {
-                const deepLayoutModule = nestedModule as any;
-
-                // Check level 3 nesting - prevent any layout modules at this level
-                if (deepLayoutModule.modules && deepLayoutModule.modules.length > 0) {
-                  for (const deepNestedModule of deepLayoutModule.modules) {
-                    if (
-                      deepNestedModule.type === 'horizontal' ||
-                      deepNestedModule.type === 'vertical' ||
-                      deepNestedModule.type === 'accordion'
-                    ) {
-                      errors.push(
-                        'Layout modules cannot be nested more than 2 levels deep. Remove layout modules from the third level.'
-                      );
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+    // Note: Nesting depth validation removed - users can nest layouts as deep as they want
 
     return { valid: errors.length === 0, errors };
   }
 }
-

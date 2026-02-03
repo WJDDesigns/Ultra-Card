@@ -816,48 +816,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
       errors.push('Vertical alignment must be one of: top, center, bottom, stretch, baseline');
     }
 
-    // Validate nested modules - allow 2 levels of nesting but prevent deeper nesting
-    if (horizontalModule.modules && horizontalModule.modules.length > 0) {
-      for (const childModule of horizontalModule.modules) {
-        // Allow horizontal, vertical, and accordion modules at level 1
-        if (
-          childModule.type === 'horizontal' ||
-          childModule.type === 'vertical' ||
-          childModule.type === 'accordion'
-        ) {
-          const layoutChild = childModule as HorizontalModule | VerticalModule;
-
-          // Check level 2 nesting - allow layout modules but prevent level 3
-          if (layoutChild.modules && layoutChild.modules.length > 0) {
-            for (const nestedModule of layoutChild.modules) {
-              if (
-                nestedModule.type === 'horizontal' ||
-                nestedModule.type === 'vertical' ||
-                nestedModule.type === 'accordion'
-              ) {
-                const deepLayoutModule = nestedModule as HorizontalModule | VerticalModule;
-
-                // Check level 3 nesting - prevent any layout modules at this level
-                if (deepLayoutModule.modules && deepLayoutModule.modules.length > 0) {
-                  for (const deepNestedModule of deepLayoutModule.modules) {
-                    if (
-                      deepNestedModule.type === 'horizontal' ||
-                      deepNestedModule.type === 'vertical' ||
-                      deepNestedModule.type === 'accordion'
-                    ) {
-                      errors.push(
-                        'Layout modules cannot be nested more than 2 levels deep. Remove layout modules from the third level.'
-                      );
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+    // Note: Nesting depth validation removed - users can nest layouts as deep as they want
 
     return {
       valid: errors.length === 0,

@@ -14,6 +14,27 @@ export interface GestureConfig {
 }
 
 /**
+ * Check if an action is EXPLICITLY set to "nothing" (should not trigger any action)
+ * Handles 'nothing' and 'none' action types.
+ *
+ * Note: undefined/null actions are NOT considered "nothing" - they should fall through
+ * to use the default action behavior (more-info for the entity).
+ *
+ * @param action - The action configuration to check
+ * @returns true if action is explicitly set to nothing/none, false otherwise
+ */
+function isExplicitNothingAction(action: TapActionConfig | undefined | null): boolean {
+  // No action configured - NOT nothing, should use default
+  if (!action) return false;
+
+  // Check for explicit nothing/none action types
+  const actionType = action.action;
+  if (actionType === 'nothing' || actionType === 'none') return true;
+
+  return false;
+}
+
+/**
  * Gesture state for tracking multi-touch interactions
  */
 interface GestureState {
@@ -26,17 +47,17 @@ interface GestureState {
 
 /**
  * Centralized gesture service for handling tap, hold, and double-tap interactions
- * 
+ *
  * This service provides consistent gesture handling across all Ultra Card modules,
  * preventing double-click bugs and ensuring proper event propagation control.
- * 
+ *
  * Features:
  * - Prevents event bubbling with stopPropagation
  * - Handles touch + pointer event conflicts
  * - Supports tap, hold, and double-tap actions
  * - Smart default action resolution
  * - Consistent timing thresholds (500ms hold, 300ms double-tap)
- * 
+ *
  * Usage:
  * ```typescript
  * const handlers = ucGestureService.createGestureHandlers(
@@ -51,7 +72,7 @@ interface GestureState {
  *   hass,
  *   config
  * );
- * 
+ *
  * return html`
  *   <div
  *     @pointerdown=${handlers.onPointerDown}
@@ -113,13 +134,13 @@ export class UcGestureService {
 
   /**
    * Create gesture handlers for an element
-   * 
+   *
    * @param elementId - Unique identifier for this element (use module.id or icon.id)
    * @param config - Gesture configuration including actions
    * @param hass - Home Assistant instance
    * @param cardConfig - Ultra Card configuration
    * @param excludeSelectors - CSS selectors to exclude from gesture handling (e.g., editor controls)
-   * 
+   *
    * @returns Object with onPointerDown, onPointerUp, onPointerLeave, and onPointerCancel handlers
    */
   createGestureHandlers(
@@ -130,13 +151,7 @@ export class UcGestureService {
     excludeSelectors: string[] = []
   ) {
     const state = this.getGestureState(elementId);
-    const {
-      tap_action,
-      hold_action,
-      double_tap_action,
-      entity,
-      module,
-    } = gestureConfig;
+    const { tap_action, hold_action, double_tap_action, entity, module } = gestureConfig;
 
     // Default exclude selectors for editor controls and interactive elements
     const defaultExcludeSelectors = [
@@ -165,7 +180,7 @@ export class UcGestureService {
     return {
       onPointerDown: (e: PointerEvent) => {
         const target = e.target as HTMLElement;
-        
+
         // Don't handle events on excluded elements (editor controls)
         if (shouldExcludeTarget(target)) {
           return;
@@ -178,9 +193,10 @@ export class UcGestureService {
 
         state.isHolding = false;
 
-        // Start hold timer if hold action is configured
-        if (hold_action !== undefined && hold_action?.action === 'nothing') {
-          // Explicitly set to "nothing", don't start timer
+        // Start hold timer if hold action is configured and not "nothing"
+        // Skip hold timer entirely if hold action is explicitly nothing/none
+        if (isExplicitNothingAction(hold_action)) {
+          // Explicitly set to "nothing" or "none", don't start timer
           return;
         }
 
@@ -200,7 +216,7 @@ export class UcGestureService {
 
       onPointerUp: (e: PointerEvent) => {
         const target = e.target as HTMLElement;
-        
+
         // Don't handle events on excluded elements (editor controls)
         if (shouldExcludeTarget(target)) {
           return;
@@ -235,8 +251,8 @@ export class UcGestureService {
           }
           state.clickCount = 0;
 
-          // Execute double-tap if configured
-          if (double_tap_action === undefined || double_tap_action?.action !== 'nothing') {
+          // Execute double-tap if configured and not explicitly "nothing"
+          if (!isExplicitNothingAction(double_tap_action)) {
             UltraLinkComponent.handleAction(
               double_tap_action || ({ action: 'default', entity } as any),
               hass,
@@ -256,10 +272,11 @@ export class UcGestureService {
             clearTimeout(state.clickTimeout);
           }
 
-          // Only wait for double-tap if it's configured
-          if (!double_tap_action || double_tap_action.action === 'nothing') {
-            // No double-tap configured, execute tap action immediately
-            if (tap_action === undefined || tap_action.action !== 'nothing') {
+          // Only wait for double-tap if it's configured with a real action
+          // If double-tap is not configured or is explicitly "nothing", execute tap immediately
+          if (!double_tap_action || isExplicitNothingAction(double_tap_action)) {
+            // No double-tap configured or set to nothing, execute tap action immediately
+            if (!isExplicitNothingAction(tap_action)) {
               UltraLinkComponent.handleAction(
                 tap_action || ({ action: 'default', entity } as any),
                 hass,
@@ -271,9 +288,9 @@ export class UcGestureService {
             }
             state.clickCount = 0;
           } else {
-            // Double-tap is configured, wait before executing single tap
+            // Double-tap is configured with a real action, wait before executing single tap
             state.clickTimeout = setTimeout(() => {
-              if (state.clickCount === 1 && (tap_action === undefined || tap_action.action !== 'nothing')) {
+              if (state.clickCount === 1 && !isExplicitNothingAction(tap_action)) {
                 UltraLinkComponent.handleAction(
                   tap_action || ({ action: 'default', entity } as any),
                   hass,

@@ -47,7 +47,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum' | 'media_player';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum' | 'media_player' | 'people';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -356,7 +356,7 @@ export interface BarModule extends BaseModule {
     type: 'bar';
     entity: string;
     name?: string;
-    percentage_type?: 'entity' | 'attribute' | 'difference' | 'template' | 'time_progress';
+    percentage_type?: 'entity' | 'attribute' | 'difference' | 'template' | 'time_progress' | 'range';
     percentage_entity?: string;
     percentage_attribute_entity?: string;
     percentage_attribute_name?: string;
@@ -367,6 +367,13 @@ export interface BarModule extends BaseModule {
     time_progress_end_entity?: string;
     time_progress_direction?: 'forward' | 'backward';
     time_progress_update_interval?: number;
+    range_start_entity?: string;
+    range_start_attribute?: string;
+    range_end_entity?: string;
+    range_end_attribute?: string;
+    range_current_entity?: string;
+    range_current_attribute?: string;
+    range_current_color?: string;
     percentage_min?: number;
     percentage_max?: number;
     percentage_min_template_mode?: boolean;
@@ -442,6 +449,12 @@ export interface BarModule extends BaseModule {
     }>;
     limit_entity?: string;
     limit_color?: string;
+    show_scale?: boolean;
+    scale_divisions?: number;
+    scale_show_labels?: boolean;
+    scale_label_size?: number;
+    scale_label_color?: string;
+    scale_position?: 'above' | 'below';
     animation?: boolean;
     template_mode?: boolean;
     template?: string;
@@ -2100,7 +2113,7 @@ export interface ToggleModule extends BaseModule {
     display_mode: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule | MediaPlayerModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule | MediaPlayerModule | PeopleModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;
@@ -3088,4 +3101,128 @@ export interface MediaPlayerModule extends BaseModule {
         service?: string;
         service_data?: Record<string, any>;
     };
+}
+export type PeopleLayoutStyle = 'compact' | 'banner' | 'horizontal_compact' | 'horizontal_detailed' | 'header' | 'music_overlay';
+export type StatusBadgePosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+export type PeopleDataItemType = 'location' | 'battery' | 'time_info' | 'media' | 'sensor' | 'device_state' | 'attribute' | 'toggle';
+export interface PeopleDataItem {
+    id: string;
+    type: PeopleDataItemType;
+    label?: string;
+    entity?: string;
+    attribute?: string;
+    icon?: string;
+    show_icon: boolean;
+    show_label: boolean;
+    show_value: boolean;
+    format?: string;
+    icon_color?: string;
+    label_color?: string;
+    value_color?: string;
+    icon_size?: number;
+    font_size?: number;
+    time_format?: 'relative' | 'absolute' | 'duration';
+    toggle_on_color?: string;
+    toggle_off_color?: string;
+}
+export interface PeopleAvatarSettings {
+    size: number;
+    border_color?: string;
+    border_width: number;
+    show_status_badge: boolean;
+    status_badge_position: StatusBadgePosition;
+    status_badge_home_color?: string;
+    status_badge_away_color?: string;
+    use_state_color: boolean;
+    state_home_color?: string;
+    state_away_color?: string;
+    fallback_icon?: string;
+    show_entity_picture: boolean;
+    custom_image?: string;
+    image_fit?: 'cover' | 'contain' | 'fill';
+}
+export interface PeopleBannerSettings {
+    background_type: 'image' | 'gradient' | 'color' | 'entity';
+    background_image?: string;
+    background_entity?: string;
+    background_color?: string;
+    gradient_start?: string;
+    gradient_end?: string;
+    gradient_direction?: 'to-bottom' | 'to-right' | 'to-bottom-right' | 'to-bottom-left';
+    background_blur: number;
+    background_opacity: number;
+    overlay_color?: string;
+    overlay_opacity?: number;
+    banner_height?: number;
+    border_radius?: number;
+    border_radius_top_left?: number;
+    border_radius_top_right?: number;
+    border_radius_bottom_left?: number;
+    border_radius_bottom_right?: number;
+    corners_linked?: boolean;
+}
+export interface PeopleNameSettings {
+    show: boolean;
+    use_friendly_name: boolean;
+    custom_name?: string;
+    font_size: number;
+    font_weight: string;
+    color?: string;
+    alignment?: 'left' | 'center' | 'right';
+}
+export interface PeopleLocationSettings {
+    show: boolean;
+    show_icon: boolean;
+    icon?: string;
+    icon_color?: string;
+    font_size: number;
+    color?: string;
+    show_duration: boolean;
+    duration_format?: 'relative' | 'absolute';
+}
+export interface PeopleModule extends BaseModule {
+    type: 'people';
+    person_entity: string;
+    layout_style: PeopleLayoutStyle;
+    data_items: PeopleDataItem[];
+    data_items_compact?: PeopleDataItem[];
+    data_items_banner?: PeopleDataItem[];
+    data_items_horizontal_compact?: PeopleDataItem[];
+    data_items_horizontal_detailed?: PeopleDataItem[];
+    data_items_header?: PeopleDataItem[];
+    data_items_music_overlay?: PeopleDataItem[];
+    avatar_settings: PeopleAvatarSettings;
+    banner_settings?: PeopleBannerSettings;
+    name_settings: PeopleNameSettings;
+    location_settings: PeopleLocationSettings;
+    battery_entity?: string;
+    media_player_entity?: string;
+    show_location_badge?: boolean;
+    show_battery_badge?: boolean;
+    show_avatar?: boolean;
+    gap: number;
+    data_items_gap: number;
+    data_area_height?: number;
+    data_items_direction: 'row' | 'column';
+    alignment: 'left' | 'center' | 'right';
+    vertical_alignment: 'top' | 'center' | 'bottom';
+    header_show_badges: boolean;
+    header_badges_position: 'top' | 'bottom';
+    music_show_progress: boolean;
+    music_show_album_art: boolean;
+    music_blur_background: boolean;
+    music_album_blur?: number;
+    music_album_opacity?: number;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    enable_hover_effect?: boolean;
+    hover_effect?: 'none' | 'scale' | 'glow' | 'lift' | 'color';
+    hover_scale?: number;
+    hover_background_color?: string;
+    hover_glow_color?: string;
+    template_mode?: boolean;
+    template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
 }

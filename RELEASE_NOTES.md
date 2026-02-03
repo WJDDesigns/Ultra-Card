@@ -1,5 +1,23 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta33
+
+### 🚀 New Features
+
+- **Added New People module** - Enhanced module functionality for better user experience
+
+### 🔧 Improvements
+
+- **Cleaned up module titles** - Enhanced module functionality for better user experience
+
+### 🐛 Bug Fixes
+
+- **Fixed Issue with tabs modules missing edit buttons** - Enhanced module functionality for better user experience
+- **Fixed Issue with tabs layout nesting issues** - Better layout handling and organization
+- **Fixed Other stuff but by now I forgot... Look its been a long winter and sometimes I forget stuff and yadda yadda yadda just try this beta.** - Corrected behavior for more reliable operation
+
+---
+
 ## Version 2.3.0-beta32
 
 ### 🚀 New Features

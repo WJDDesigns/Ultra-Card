@@ -68,6 +68,9 @@ export interface DesignProperties {
     animation_duration?: string;
     animation_delay?: string;
     animation_timing?: 'ease' | 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'cubic-bezier(0.25,0.1,0.25,1)';
+    intro_animation_duration?: string;
+    intro_animation_delay?: string;
+    intro_animation_timing?: 'ease' | 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'cubic-bezier(0.25,0.1,0.25,1)';
     extra_class?: string;
     element_id?: string;
     css_variable_prefix?: string;

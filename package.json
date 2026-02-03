@@ -1,6 +1,6 @@
 {
   "name": "ultra-card",
-  "version": "2.3.0-beta32",
+  "version": "2.3.0-beta33",
   "description": "Ultra Card - A modular card builder for Home Assistant",
   "main": "dist/ultra-card.js",
   "scripts": {
@@ -13,6 +13,8 @@
     "release": "node scripts/release.js --skip-build",
     "deploy": "node deploy.js",
     "watch": "webpack --watch --mode development",
+    "watch:ha": "echo '\\n🚀 Starting HA development mode...\\n   Auto-deploys to /Volumes/config on each save\\n   Just refresh browser (F5) to see changes!\\n' && webpack --watch --mode development",
+    "dev:ha": "npm run watch:ha",
     "start": "webpack serve --mode development --open",
     "dev": "webpack serve --mode development --open",
     "lint": "eslint src/**/*.ts",

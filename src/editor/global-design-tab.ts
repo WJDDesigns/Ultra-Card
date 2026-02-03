@@ -229,9 +229,20 @@ export interface DesignProperties {
     | 'flipOutX'
     | 'flipOutY'
     | 'rotateOut';
+  // Continuous animation timing
   animation_duration?: string;
   animation_delay?: string;
   animation_timing?:
+    | 'ease'
+    | 'linear'
+    | 'ease-in'
+    | 'ease-out'
+    | 'ease-in-out'
+    | 'cubic-bezier(0.25,0.1,0.25,1)';
+  // Intro/outro animation timing (separate from continuous animation)
+  intro_animation_duration?: string;
+  intro_animation_delay?: string;
+  intro_animation_timing?:
     | 'ease'
     | 'linear'
     | 'ease-in'
@@ -280,25 +291,28 @@ export class GlobalDesignTab extends LitElement {
     // Listen for storage events to sync clipboard across different card instances
     this._storageEventListener = this._handleStorageEvent.bind(this);
     window.addEventListener('storage', this._storageEventListener);
-    
+
     // Auto-enable responsive toggle if there are existing device overrides
     this._checkAndEnableResponsiveMode();
   }
-  
+
   updated(changedProperties: Map<string, unknown>): void {
     super.updated(changedProperties);
-    
+
     // When responsiveDesign property changes, check if we should auto-enable responsive mode
     if (changedProperties.has('responsiveDesign')) {
       this._checkAndEnableResponsiveMode();
     }
   }
-  
+
   /**
    * Auto-enable responsive mode toggle if there are existing device overrides
    */
   private _checkAndEnableResponsiveMode(): void {
-    if (this.responsiveDesign && responsiveDesignService.hasAnyResponsiveOverrides(this.responsiveDesign)) {
+    if (
+      this.responsiveDesign &&
+      responsiveDesignService.hasAnyResponsiveOverrides(this.responsiveDesign)
+    ) {
       if (!this._responsiveEnabled) {
         this._responsiveEnabled = true;
         this.requestUpdate();
@@ -390,27 +404,27 @@ export class GlobalDesignTab extends LitElement {
       // Device-specific update - build the full design object with responsive structure
       const currentDesign = this.responsiveDesign || { base: { ...this.designProperties } };
       const deviceDesign = { ...(currentDesign[this._selectedDevice] || {}) };
-      
+
       if (processedValue === undefined) {
         delete (deviceDesign as any)[property];
       } else {
         (deviceDesign as any)[property] = processedValue;
       }
-      
+
       // Build updated responsive design object
       const updatedResponsiveDesign = {
         ...currentDesign,
         [this._selectedDevice]: deviceDesign,
       };
-      
+
       // Update local state for immediate UI feedback
       this.responsiveDesign = updatedResponsiveDesign;
       this.requestUpdate();
-      
+
       // Send the design update through the standard channels
       // The parent needs to save this to module.design
       const designUpdate = { design: updatedResponsiveDesign };
-      
+
       if (this.onUpdate) {
         this.onUpdate(designUpdate as any);
       } else {
@@ -458,10 +472,10 @@ export class GlobalDesignTab extends LitElement {
         base: baseDesign,
       };
       this.responsiveDesign = updatedResponsiveDesign;
-      
+
       // Include both flat updates AND the design structure
       const combinedUpdates = { ...updates, design: updatedResponsiveDesign };
-      
+
       if (this.onUpdate) {
         this.onUpdate(combinedUpdates as any);
       } else {
@@ -567,23 +581,23 @@ export class GlobalDesignTab extends LitElement {
       // Device-specific spacing update - build the full design object
       const currentDesign = this.responsiveDesign || { base: { ...this.designProperties } };
       const deviceDesign = { ...(currentDesign[this._selectedDevice] || {}), ...updates };
-      
+
       // Remove undefined values
       for (const [key, val] of Object.entries(updates)) {
         if (val === undefined) {
           delete (deviceDesign as any)[key];
         }
       }
-      
+
       const updatedResponsiveDesign = {
         ...currentDesign,
         [this._selectedDevice]: deviceDesign,
       };
-      
+
       this.responsiveDesign = updatedResponsiveDesign;
-      
+
       const designUpdate = { design: updatedResponsiveDesign };
-      
+
       if (this.onUpdate) {
         this.onUpdate(designUpdate as any);
       } else {
@@ -602,22 +616,22 @@ export class GlobalDesignTab extends LitElement {
     if (this._responsiveEnabled) {
       const currentDesign = this.responsiveDesign || { base: {} };
       const baseDesign = { ...(currentDesign.base || {}), ...updates };
-      
+
       // Remove undefined values
       for (const [key, val] of Object.entries(updates)) {
         if (val === undefined) {
           delete (baseDesign as any)[key];
         }
       }
-      
+
       const updatedResponsiveDesign = {
         ...currentDesign,
         base: baseDesign,
       };
       this.responsiveDesign = updatedResponsiveDesign;
-      
+
       const combinedUpdates = { ...updates, design: updatedResponsiveDesign };
-      
+
       if (this.onUpdate) {
         this.onUpdate(combinedUpdates as any);
       } else {
@@ -916,11 +930,15 @@ export class GlobalDesignTab extends LitElement {
         resetProperties.animation_trigger_type = undefined;
         resetProperties.animation_attribute = undefined;
         resetProperties.animation_state = undefined;
-        resetProperties.intro_animation = undefined;
-        resetProperties.outro_animation = undefined;
         resetProperties.animation_duration = undefined;
         resetProperties.animation_delay = undefined;
         resetProperties.animation_timing = undefined;
+        // Intro/outro animation properties
+        resetProperties.intro_animation = undefined;
+        resetProperties.outro_animation = undefined;
+        resetProperties.intro_animation_duration = undefined;
+        resetProperties.intro_animation_delay = undefined;
+        resetProperties.intro_animation_timing = undefined;
         break;
     }
 
@@ -1067,11 +1085,15 @@ export class GlobalDesignTab extends LitElement {
       animation_trigger_type: undefined,
       animation_attribute: undefined,
       animation_state: undefined,
-      intro_animation: undefined,
-      outro_animation: undefined,
       animation_duration: undefined,
       animation_delay: undefined,
       animation_timing: undefined,
+      // Intro/outro animation properties
+      intro_animation: undefined,
+      outro_animation: undefined,
+      intro_animation_duration: undefined,
+      intro_animation_delay: undefined,
+      intro_animation_timing: undefined,
     };
 
     // Update local state immediately so UI reflects the reset
@@ -1111,14 +1133,14 @@ export class GlobalDesignTab extends LitElement {
   private _toggleResponsiveMode(e: Event): void {
     const target = e.target as HTMLInputElement;
     this._responsiveEnabled = target.checked;
-    
+
     // Default to desktop when enabling
     if (this._responsiveEnabled) {
       this._selectedDevice = 'desktop';
     }
-    
+
     this.requestUpdate();
-    
+
     // Dispatch event to notify parent
     this.dispatchEvent(
       new CustomEvent('responsive-mode-changed', {
@@ -1135,7 +1157,7 @@ export class GlobalDesignTab extends LitElement {
   private _handleDeviceChange(e: CustomEvent): void {
     this._selectedDevice = e.detail.device;
     this.requestUpdate();
-    
+
     // Dispatch event to notify parent of device change
     this.dispatchEvent(
       new CustomEvent('device-changed', {
@@ -1151,29 +1173,29 @@ export class GlobalDesignTab extends LitElement {
    */
   private _resetCurrentDeviceOverrides(): void {
     if (this._selectedDevice === 'desktop') return; // Can't reset desktop (it's the base)
-    
+
     // Get the base design without the device overrides
     const clearedDesign = responsiveDesignService.clearDeviceOverrides(
       this.responsiveDesign,
       this._selectedDevice
     );
-    
+
     // IMPORTANT: The parent handler merges by iterating Object.entries(incomingDesign).
     // If the device key is simply missing, it won't be removed from existing design.
     // We must explicitly set the device key to undefined so the parent deletes it.
-    const designUpdate = { 
+    const designUpdate = {
       design: {
         ...clearedDesign,
-        [this._selectedDevice]: undefined  // Explicitly mark for deletion
-      }
+        [this._selectedDevice]: undefined, // Explicitly mark for deletion
+      },
     };
-    
-    // OPTIMISTIC UPDATE: Update local responsiveDesign immediately so the 
+
+    // OPTIMISTIC UPDATE: Update local responsiveDesign immediately so the
     // device selector icons update instantly, before the async config update completes.
     // This provides immediate visual feedback to the user.
     this.responsiveDesign = clearedDesign as ResponsiveDesignProperties;
     this.requestUpdate();
-    
+
     // Update using the same pattern as other update methods
     if (this.onUpdate) {
       this.onUpdate(designUpdate as any);
@@ -1186,7 +1208,7 @@ export class GlobalDesignTab extends LitElement {
         })
       );
     }
-    
+
     // Dispatch device-changed event to notify parent components for UI sync
     this.dispatchEvent(
       new CustomEvent('device-changed', {
@@ -1196,29 +1218,29 @@ export class GlobalDesignTab extends LitElement {
       })
     );
   }
-  
+
   /**
    * Check if a section has device-specific overrides for the current device
    */
   private _sectionHasDeviceOverrides(properties: string[]): boolean {
     if (!this._responsiveEnabled || this._selectedDevice === 'desktop') return false;
     if (!this.responsiveDesign) return false;
-    
+
     const deviceDesign = this.responsiveDesign[this._selectedDevice];
     if (!deviceDesign) return false;
-    
+
     return properties.some(prop => {
       const value = (deviceDesign as any)[prop];
       return value !== undefined && value !== null && value !== '';
     });
   }
-  
+
   /**
    * Check if ANY section has device overrides for non-desktop devices
    */
   private _hasAnyDeviceOverridesForSection(properties: string[]): boolean {
     if (!this.responsiveDesign) return false;
-    
+
     const devices: DeviceBreakpoint[] = ['laptop', 'tablet', 'mobile'];
     return devices.some(device => {
       const deviceDesign = this.responsiveDesign?.[device];
@@ -1269,7 +1291,7 @@ export class GlobalDesignTab extends LitElement {
 
     // For other devices, check for device-specific override
     const deviceValue = this.responsiveDesign?.[this._selectedDevice]?.[property];
-    
+
     // Return device value if it exists (including empty string which means "cleared")
     // Only fall back to base if truly undefined
     if (deviceValue !== undefined) {
@@ -1299,17 +1321,17 @@ export class GlobalDesignTab extends LitElement {
   private _getEffectiveDesignForCurrentDevice(): DesignProperties {
     // Start with the flat designProperties as base
     const base = { ...this.designProperties };
-    
+
     // If we have responsive design data, merge in the base values
     if (this.responsiveDesign?.base) {
       Object.assign(base, this.responsiveDesign.base);
     }
-    
+
     // For desktop, just return the base
     if (this._selectedDevice === 'desktop') {
       return base;
     }
-    
+
     // For other devices, merge in device-specific overrides
     const deviceOverrides = this.responsiveDesign?.[this._selectedDevice];
     if (deviceOverrides) {
@@ -1320,7 +1342,7 @@ export class GlobalDesignTab extends LitElement {
         }
       }
     }
-    
+
     return base;
   }
 
@@ -1526,11 +1548,14 @@ export class GlobalDesignTab extends LitElement {
           hasValue(props.animation_trigger_type) ||
           hasValue(props.animation_attribute) ||
           hasValue(props.animation_state) ||
-          hasValue(props.intro_animation) ||
-          hasValue(props.outro_animation) ||
           hasValue(props.animation_duration) ||
           hasValue(props.animation_delay) ||
-          hasValue(props.animation_timing)
+          hasValue(props.animation_timing) ||
+          hasValue(props.intro_animation) ||
+          hasValue(props.outro_animation) ||
+          hasValue(props.intro_animation_duration) ||
+          hasValue(props.intro_animation_delay) ||
+          hasValue(props.intro_animation_timing)
         );
       case 'custom_targeting':
         return !!hasValue(props.css_variable_prefix);
@@ -1570,7 +1595,7 @@ export class GlobalDesignTab extends LitElement {
   ): TemplateResult {
     const isExpanded = this._expandedSections.has(section);
     const hasEdits = this._hasModifiedProperties(section);
-    
+
     // Determine if we should show the device override indicator:
     // - If on DESKTOP or responsive disabled: show if ANY device has overrides (indicates responsive settings exist)
     // - If on LAPTOP/TABLET/MOBILE: show only if THIS device has overrides
@@ -1590,9 +1615,15 @@ export class GlobalDesignTab extends LitElement {
         <div class="accordion-header ${isExpanded ? 'expanded' : ''}">
           <button class="accordion-toggle" @click=${() => this._toggleSection(section)}>
             <span class="accordion-title">
-              ${title} 
-              ${hasEdits ? html`<span class="edit-indicator" title="Has modifications"></span>` : ''}
-              ${hasDeviceOverrides ? html`<span class="device-override-indicator" title="Has responsive overrides"><ha-icon icon="mdi:cellphone-link"></ha-icon></span>` : ''}
+              ${title}
+              ${hasEdits
+                ? html`<span class="edit-indicator" title="Has modifications"></span>`
+                : ''}
+              ${hasDeviceOverrides
+                ? html`<span class="device-override-indicator" title="Has responsive overrides"
+                    ><ha-icon icon="mdi:cellphone-link"></ha-icon
+                  ></span>`
+                : ''}
             </span>
           </button>
           <div class="accordion-actions">
@@ -1622,11 +1653,13 @@ export class GlobalDesignTab extends LitElement {
 
   protected render(): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
-    const hasAnyDeviceOverrides = this.responsiveDesign && 
+    const hasAnyDeviceOverrides =
+      this.responsiveDesign &&
       responsiveDesignService.hasAnyResponsiveOverrides(this.responsiveDesign);
-    const hasCurrentDeviceOverrides = this._responsiveEnabled && 
+    const hasCurrentDeviceOverrides =
+      this._responsiveEnabled &&
       this._selectedDevice !== 'desktop' &&
-      this.responsiveDesign && 
+      this.responsiveDesign &&
       responsiveDesignService.hasDeviceOverrides(this.responsiveDesign, this._selectedDevice);
 
     // Compute effective design values for the current device
@@ -1692,7 +1725,11 @@ export class GlobalDesignTab extends LitElement {
             <div class="responsive-title">
               <ha-icon icon="mdi:responsive"></ha-icon>
               <span>Responsive Overrides</span>
-              ${hasAnyDeviceOverrides ? html`<span class="has-overrides-badge" title="Has device-specific overrides">●</span>` : ''}
+              ${hasAnyDeviceOverrides
+                ? html`<span class="has-overrides-badge" title="Has device-specific overrides"
+                    >●</span
+                  >`
+                : ''}
             </div>
             <div class="responsive-toggle">
               <ha-switch
@@ -1701,36 +1738,40 @@ export class GlobalDesignTab extends LitElement {
               ></ha-switch>
             </div>
           </div>
-          
-          ${this._responsiveEnabled ? html`
-            <div class="responsive-content">
-              <uc-device-selector
-                .selectedDevice=${this._selectedDevice}
-                .design=${this.responsiveDesign}
-                .showBaseOption=${false}
-                @device-changed=${this._handleDeviceChange}
-              ></uc-device-selector>
-              <div class="responsive-info">
-                ${this._selectedDevice === 'desktop' 
-                  ? 'Desktop is the default. Changes here apply to all devices unless overridden.'
-                  : this._getDeviceInfoText()}
-              </div>
-              ${hasCurrentDeviceOverrides ? html`
-                <button 
-                  class="reset-device-button" 
-                  @click=${this._resetCurrentDeviceOverrides}
-                  title="Clear all overrides for ${this._selectedDevice}"
-                >
-                  <ha-icon icon="mdi:delete-outline"></ha-icon>
-                  Clear ${this._selectedDevice} overrides
-                </button>
-              ` : ''}
-            </div>
-          ` : html`
-            <div class="responsive-disabled-info">
-              Enable to set different styles for laptop, tablet, and mobile devices.
-            </div>
-          `}
+
+          ${this._responsiveEnabled
+            ? html`
+                <div class="responsive-content">
+                  <uc-device-selector
+                    .selectedDevice=${this._selectedDevice}
+                    .design=${this.responsiveDesign}
+                    .showBaseOption=${false}
+                    @device-changed=${this._handleDeviceChange}
+                  ></uc-device-selector>
+                  <div class="responsive-info">
+                    ${this._selectedDevice === 'desktop'
+                      ? 'Desktop is the default. Changes here apply to all devices unless overridden.'
+                      : this._getDeviceInfoText()}
+                  </div>
+                  ${hasCurrentDeviceOverrides
+                    ? html`
+                        <button
+                          class="reset-device-button"
+                          @click=${this._resetCurrentDeviceOverrides}
+                          title="Clear all overrides for ${this._selectedDevice}"
+                        >
+                          <ha-icon icon="mdi:delete-outline"></ha-icon>
+                          Clear ${this._selectedDevice} overrides
+                        </button>
+                      `
+                    : ''}
+                </div>
+              `
+            : html`
+                <div class="responsive-disabled-info">
+                  Enable to set different styles for laptop, tablet, and mobile devices.
+                </div>
+              `}
         </div>
 
         ${this._renderAccordion(
@@ -1758,8 +1799,7 @@ export class GlobalDesignTab extends LitElement {
                 ].map(
                   opt => html`
                     <button
-                      class="property-btn ${(effectiveDesign.text_align || 'inherit') ===
-                      opt.value
+                      class="property-btn ${(effectiveDesign.text_align || 'inherit') === opt.value
                         ? 'active'
                         : ''}"
                       @click=${() =>
@@ -1935,32 +1975,25 @@ export class GlobalDesignTab extends LitElement {
                   </option>
                   <optgroup label="Web-safe Fonts">
                     ${WEB_SAFE_FONTS.map(
-                      font => html`
-                        <option value="${font.value}">${font.label}</option>
-                      `
+                      font => html` <option value="${font.value}">${font.label}</option> `
                     )}
                   </optgroup>
                   <optgroup label="Google Fonts">
                     ${GOOGLE_FONTS.map(
-                      font => html`
-                        <option value="${font.value}">${font.label}</option>
-                      `
+                      font => html` <option value="${font.value}">${font.label}</option> `
                     )}
                   </optgroup>
                 </select>
                 <button
                   class="reset-btn"
                   @click=${() => this._updateProperty('font_family', '')}
-                  title="${localize(
-                    'editor.design.reset_font',
-                    lang,
-                    'Reset font to default'
-                  )}"
+                  title="${localize('editor.design.reset_font', lang, 'Reset font to default')}"
                 >
                   <ha-icon icon="mdi:refresh"></ha-icon>
                 </button>
               </div>
-              ${this.designProperties.font_family && GOOGLE_FONTS.some(font => font.value === this.designProperties.font_family)
+              ${this.designProperties.font_family &&
+              GOOGLE_FONTS.some(font => font.value === this.designProperties.font_family)
                 ? html`
                     <div class="google-fonts-info-box">
                       <ha-icon icon="mdi:information-outline"></ha-icon>
@@ -1968,7 +2001,7 @@ export class GlobalDesignTab extends LitElement {
                         ${localize(
                           'editor.design.google_fonts_warning',
                           lang,
-                          'Google Fonts load dynamically from Google\'s CDN and require an internet connection. They will not be available on local/offline installations.'
+                          "Google Fonts load dynamically from Google's CDN and require an internet connection. They will not be available on local/offline installations."
                         )}
                       </span>
                     </div>
@@ -2142,7 +2175,18 @@ export class GlobalDesignTab extends LitElement {
             </div>
           `,
           'text',
-          ['color', 'text_align', 'font_size', 'line_height', 'letter_spacing', 'font_family', 'font_weight', 'text_transform', 'font_style', 'white_space']
+          [
+            'color',
+            'text_align',
+            'font_size',
+            'line_height',
+            'letter_spacing',
+            'font_family',
+            'font_weight',
+            'text_transform',
+            'font_style',
+            'white_space',
+          ]
         )}
         ${this._renderAccordion(
           localize('editor.design.background_section', lang, 'Background'),
@@ -2267,12 +2311,19 @@ export class GlobalDesignTab extends LitElement {
                     <input
                       type="text"
                       .value=${effectiveDesign.background_image || ''}
-                      @input=${(e: Event) =>
-                        this._updateProperty(
-                          'background_image',
-                          (e.target as HTMLInputElement).value
-                        )}
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const cursorPos = target.selectionStart;
+                        const cursorEnd = target.selectionEnd;
+                        this._updateProperty('background_image', target.value);
+                        requestAnimationFrame(() => {
+                          if (target && typeof cursorPos === 'number') {
+                            target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
+                          }
+                        });
+                      }}
                       placeholder="https://example.com/image.jpg"
+                      autocomplete="off"
                       class="property-input"
                     />
                   </div>
@@ -2313,7 +2364,10 @@ export class GlobalDesignTab extends LitElement {
                               'width'
                             )}
                             @input=${(e: Event) => {
-                              const width = (e.target as HTMLInputElement).value;
+                              const target = e.target as HTMLInputElement;
+                              const cursorPos = target.selectionStart;
+                              const cursorEnd = target.selectionEnd;
+                              const width = target.value;
                               const height = this._getCustomSizeValue(
                                 this.designProperties.background_size,
                                 'height'
@@ -2321,8 +2375,14 @@ export class GlobalDesignTab extends LitElement {
                               const customSize =
                                 width && height ? `${width} ${height}` : width || height || 'auto';
                               this._updateProperty('background_size', customSize);
+                              requestAnimationFrame(() => {
+                                if (target && typeof cursorPos === 'number') {
+                                  target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
+                                }
+                              });
                             }}
                             placeholder="100px, 50%, auto"
+                            autocomplete="off"
                             class="property-input"
                           />
                         </div>
@@ -2335,7 +2395,10 @@ export class GlobalDesignTab extends LitElement {
                               'height'
                             )}
                             @input=${(e: Event) => {
-                              const height = (e.target as HTMLInputElement).value;
+                              const target = e.target as HTMLInputElement;
+                              const cursorPos = target.selectionStart;
+                              const cursorEnd = target.selectionEnd;
+                              const height = target.value;
                               const width = this._getCustomSizeValue(
                                 this.designProperties.background_size,
                                 'width'
@@ -2343,8 +2406,14 @@ export class GlobalDesignTab extends LitElement {
                               const customSize =
                                 width && height ? `${width} ${height}` : width || height || 'auto';
                               this._updateProperty('background_size', customSize);
+                              requestAnimationFrame(() => {
+                                if (target && typeof cursorPos === 'number') {
+                                  target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
+                                }
+                              });
                             }}
                             placeholder="100px, 50%, auto"
+                            autocomplete="off"
                             class="property-input"
                           />
                         </div>
@@ -2405,9 +2474,25 @@ export class GlobalDesignTab extends LitElement {
               <input
                 type="text"
                 .value=${effectiveDesign.backdrop_filter || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('backdrop_filter', (e.target as HTMLInputElement).value)}
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = target.value;
+                  const cursorPosition = target.selectionStart;
+                  const cursorEnd = target.selectionEnd;
+
+                  this._updateProperty('backdrop_filter', value);
+
+                  requestAnimationFrame(() => {
+                    if (target && typeof cursorPosition === 'number') {
+                      target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                    }
+                  });
+                }}
                 placeholder="blur(10px), grayscale(100%), invert(75%)"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
                 class="property-input"
               />
             </div>
@@ -2423,15 +2508,38 @@ export class GlobalDesignTab extends LitElement {
               <input
                 type="text"
                 .value=${effectiveDesign.background_filter || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('background_filter', (e.target as HTMLInputElement).value)}
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = target.value;
+                  const cursorPosition = target.selectionStart;
+                  const cursorEnd = target.selectionEnd;
+
+                  this._updateProperty('background_filter', value);
+
+                  requestAnimationFrame(() => {
+                    if (target && typeof cursorPosition === 'number') {
+                      target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                    }
+                  });
+                }}
                 placeholder="grayscale(100%), blur(10px), brightness(0.5)"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
                 class="property-input"
               />
             </div>
           `,
           'background',
-          ['background_color', 'background_image', 'background_image_type', 'background_image_entity', 'backdrop_filter', 'background_filter']
+          [
+            'background_color',
+            'background_image',
+            'background_image_type',
+            'background_image_entity',
+            'backdrop_filter',
+            'background_filter',
+          ]
         )}
         ${this._renderAccordion(
           localize('editor.design.sizes_section', lang, 'Sizes'),
@@ -2883,7 +2991,16 @@ export class GlobalDesignTab extends LitElement {
             </div>
           `,
           'spacing',
-          ['margin_top', 'margin_bottom', 'margin_left', 'margin_right', 'padding_top', 'padding_bottom', 'padding_left', 'padding_right']
+          [
+            'margin_top',
+            'margin_bottom',
+            'margin_left',
+            'margin_right',
+            'padding_top',
+            'padding_bottom',
+            'padding_left',
+            'padding_right',
+          ]
         )}
         ${this._renderAccordion(
           localize('editor.design.border_section', lang, 'Border'),
@@ -2894,15 +3011,12 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${effectiveDesign.border_radius || ''}
-                  @input=${this._createRobustInputHandler(
-                    'border_radius',
-                    (value: string) => this._updateProperty('border_radius', value)
+                  @input=${this._createRobustInputHandler('border_radius', (value: string) =>
+                    this._updateProperty('border_radius', value)
                   )}
                   @keydown=${(e: KeyboardEvent) =>
-                    this._handleNumericKeydown(
-                      e,
-                      effectiveDesign.border_radius || '',
-                      value => this._updateProperty('border_radius', value)
+                    this._handleNumericKeydown(e, effectiveDesign.border_radius || '', value =>
+                      this._updateProperty('border_radius', value)
                     )}
                   placeholder="5px, 50%, 0.3em, 12px 0"
                   class="property-input"
@@ -3090,48 +3204,88 @@ export class GlobalDesignTab extends LitElement {
                       type="text"
                       placeholder="Top"
                       .value=${effectiveDesign.top || ''}
-                      @input=${(e: Event) =>
-                        this._updateProperty('top', (e.target as HTMLInputElement).value)}
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const cursorPos = target.selectionStart;
+                        const cursorEnd = target.selectionEnd;
+                        this._updateProperty('top', target.value);
+                        requestAnimationFrame(() => {
+                          if (target && typeof cursorPos === 'number') {
+                            target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
+                          }
+                        });
+                      }}
                       @keydown=${(e: KeyboardEvent) =>
                         this._handleNumericKeydown(e, this.designProperties.top || '', value =>
                           this._updateProperty('top', value)
                         )}
+                      autocomplete="off"
                     />
                     <div class="position-row">
                       <input
                         type="text"
                         placeholder="Left"
                         .value=${effectiveDesign.left || ''}
-                        @input=${(e: Event) =>
-                          this._updateProperty('left', (e.target as HTMLInputElement).value)}
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const cursorPos = target.selectionStart;
+                          const cursorEnd = target.selectionEnd;
+                          this._updateProperty('left', target.value);
+                          requestAnimationFrame(() => {
+                            if (target && typeof cursorPos === 'number') {
+                              target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
+                            }
+                          });
+                        }}
                         @keydown=${(e: KeyboardEvent) =>
                           this._handleNumericKeydown(e, this.designProperties.left || '', value =>
                             this._updateProperty('left', value)
                           )}
+                        autocomplete="off"
                       />
                       <div class="position-center">POS</div>
                       <input
                         type="text"
                         placeholder="Right"
                         .value=${effectiveDesign.right || ''}
-                        @input=${(e: Event) =>
-                          this._updateProperty('right', (e.target as HTMLInputElement).value)}
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const cursorPos = target.selectionStart;
+                          const cursorEnd = target.selectionEnd;
+                          this._updateProperty('right', target.value);
+                          requestAnimationFrame(() => {
+                            if (target && typeof cursorPos === 'number') {
+                              target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
+                            }
+                          });
+                        }}
                         @keydown=${(e: KeyboardEvent) =>
                           this._handleNumericKeydown(e, this.designProperties.right || '', value =>
                             this._updateProperty('right', value)
                           )}
+                        autocomplete="off"
                       />
                     </div>
                     <input
                       type="text"
                       placeholder="Bottom"
                       .value=${effectiveDesign.bottom || ''}
-                      @input=${(e: Event) =>
-                        this._updateProperty('bottom', (e.target as HTMLInputElement).value)}
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const cursorPos = target.selectionStart;
+                        const cursorEnd = target.selectionEnd;
+                        this._updateProperty('bottom', target.value);
+                        requestAnimationFrame(() => {
+                          if (target && typeof cursorPos === 'number') {
+                            target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
+                          }
+                        });
+                      }}
                       @keydown=${(e: KeyboardEvent) =>
                         this._handleNumericKeydown(e, this.designProperties.bottom || '', value =>
                           this._updateProperty('bottom', value)
                         )}
+                      autocomplete="off"
                     />
                   </div>
 
@@ -3140,13 +3294,23 @@ export class GlobalDesignTab extends LitElement {
                     <input
                       type="text"
                       .value=${effectiveDesign.z_index || ''}
-                      @input=${(e: Event) =>
-                        this._updateProperty('z_index', (e.target as HTMLInputElement).value)}
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const cursorPos = target.selectionStart;
+                        const cursorEnd = target.selectionEnd;
+                        this._updateProperty('z_index', target.value);
+                        requestAnimationFrame(() => {
+                          if (target && typeof cursorPos === 'number') {
+                            target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
+                          }
+                        });
+                      }}
                       @keydown=${(e: KeyboardEvent) =>
                         this._handleNumericKeydown(e, this.designProperties.z_index || '', value =>
                           this._updateProperty('z_index', value)
                         )}
                       placeholder="-1, 1, 3, 50"
+                      autocomplete="off"
                       class="property-input"
                     />
                   </div>
@@ -3239,8 +3403,17 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${effectiveDesign.text_shadow_blur || ''}
-                  @input=${(e: Event) =>
-                    this._updateProperty('text_shadow_blur', (e.target as HTMLInputElement).value)}
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const cursorPos = target.selectionStart;
+                    const cursorEnd = target.selectionEnd;
+                    this._updateProperty('text_shadow_blur', target.value);
+                    requestAnimationFrame(() => {
+                      if (target && typeof cursorPos === 'number') {
+                        target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
+                      }
+                    });
+                  }}
                   @keydown=${(e: KeyboardEvent) =>
                     this._handleNumericKeydown(
                       e,
@@ -3248,6 +3421,7 @@ export class GlobalDesignTab extends LitElement {
                       value => this._updateProperty('text_shadow_blur', value)
                     )}
                   placeholder="0, 3px, 0.05em, 2rem"
+                  autocomplete="off"
                   class="property-input"
                 />
                 <button
@@ -3353,8 +3527,17 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${effectiveDesign.box_shadow_blur || ''}
-                  @input=${(e: Event) =>
-                    this._updateProperty('box_shadow_blur', (e.target as HTMLInputElement).value)}
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const cursorPos = target.selectionStart;
+                    const cursorEnd = target.selectionEnd;
+                    this._updateProperty('box_shadow_blur', target.value);
+                    requestAnimationFrame(() => {
+                      if (target && typeof cursorPos === 'number') {
+                        target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
+                      }
+                    });
+                  }}
                   @keydown=${(e: KeyboardEvent) =>
                     this._handleNumericKeydown(
                       e,
@@ -3362,6 +3545,7 @@ export class GlobalDesignTab extends LitElement {
                       value => this._updateProperty('box_shadow_blur', value)
                     )}
                   placeholder="0, 3px, 0.05em, 2rem"
+                  autocomplete="off"
                   class="property-input"
                 />
                 <button
@@ -3420,7 +3604,13 @@ export class GlobalDesignTab extends LitElement {
             </div>
           `,
           'box-shadow',
-          ['box_shadow_h', 'box_shadow_v', 'box_shadow_blur', 'box_shadow_spread', 'box_shadow_color']
+          [
+            'box_shadow_h',
+            'box_shadow_v',
+            'box_shadow_blur',
+            'box_shadow_spread',
+            'box_shadow_color',
+          ]
         )}
         ${this._renderAccordion(
           localize('editor.design.overflow_section', lang, 'Overflow'),
@@ -3445,9 +3635,19 @@ export class GlobalDesignTab extends LitElement {
               <input
                 type="text"
                 .value=${effectiveDesign.clip_path || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('clip_path', (e.target as HTMLInputElement).value)}
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const cursorPos = target.selectionStart;
+                  const cursorEnd = target.selectionEnd;
+                  this._updateProperty('clip_path', target.value);
+                  requestAnimationFrame(() => {
+                    if (target && typeof cursorPos === 'number') {
+                      target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
+                    }
+                  });
+                }}
                 placeholder="ellipse(75% 100% at bottom)"
+                autocomplete="off"
                 class="property-input"
               />
               <small class="property-hint"
@@ -3639,10 +3839,10 @@ export class GlobalDesignTab extends LitElement {
                                       type="text"
                                       .value=${effectiveDesign.animation_attribute || ''}
                                       @input=${(e: Event) => {
-                                        const attribute = (e.target as HTMLInputElement).value;
-
-                                        // Reference to the input element for visual feedback
                                         const inputElement = e.target as HTMLInputElement;
+                                        const attribute = inputElement.value;
+                                        const cursorPos = inputElement.selectionStart;
+                                        const cursorEnd = inputElement.selectionEnd;
 
                                         // Visual feedback - temporarily add a success class
                                         inputElement.classList.add('change-success');
@@ -3666,6 +3866,16 @@ export class GlobalDesignTab extends LitElement {
                                           );
                                         }
 
+                                        // Restore cursor position
+                                        requestAnimationFrame(() => {
+                                          if (inputElement && typeof cursorPos === 'number') {
+                                            inputElement.setSelectionRange(
+                                              cursorPos,
+                                              cursorEnd || cursorPos
+                                            );
+                                          }
+                                        });
+
                                         // Progressive UI refresh strategy with cascading timeouts
                                         setTimeout(() => {
                                           this.requestUpdate();
@@ -3687,6 +3897,7 @@ export class GlobalDesignTab extends LitElement {
                                         }, 500);
                                       }}
                                       placeholder="friendly_name, device_class, state, etc."
+                                      autocomplete="off"
                                       class="property-input attribute-mode-input"
                                     />
                                     <small class="property-hint">
@@ -3703,12 +3914,22 @@ export class GlobalDesignTab extends LitElement {
                                     <input
                                       type="text"
                                       .value=${effectiveDesign.animation_state || ''}
-                                      @input=${(e: Event) =>
-                                        this._updateProperty(
-                                          'animation_state',
-                                          (e.target as HTMLInputElement).value
-                                        )}
+                                      @input=${(e: Event) => {
+                                        const target = e.target as HTMLInputElement;
+                                        const cursorPos = target.selectionStart;
+                                        const cursorEnd = target.selectionEnd;
+                                        this._updateProperty('animation_state', target.value);
+                                        requestAnimationFrame(() => {
+                                          if (target && typeof cursorPos === 'number') {
+                                            target.setSelectionRange(
+                                              cursorPos,
+                                              cursorEnd || cursorPos
+                                            );
+                                          }
+                                        });
+                                      }}
                                       placeholder="blue, 255, heating, on, off, etc."
+                                      autocomplete="off"
                                       class="property-input attribute-value-input"
                                     />
                                     <small class="property-hint">
@@ -3735,12 +3956,22 @@ export class GlobalDesignTab extends LitElement {
                                   <input
                                     type="text"
                                     .value=${effectiveDesign.animation_state || ''}
-                                    @input=${(e: Event) =>
-                                      this._updateProperty(
-                                        'animation_state',
-                                        (e.target as HTMLInputElement).value
-                                      )}
+                                    @input=${(e: Event) => {
+                                      const target = e.target as HTMLInputElement;
+                                      const cursorPos = target.selectionStart;
+                                      const cursorEnd = target.selectionEnd;
+                                      this._updateProperty('animation_state', target.value);
+                                      requestAnimationFrame(() => {
+                                        if (target && typeof cursorPos === 'number') {
+                                          target.setSelectionRange(
+                                            cursorPos,
+                                            cursorEnd || cursorPos
+                                          );
+                                        }
+                                      });
+                                    }}
                                     placeholder="on, off, playing, idle, etc."
+                                    autocomplete="off"
                                     class="property-input state-value-input"
                                   />
                                   <small class="property-hint">
@@ -3851,7 +4082,7 @@ export class GlobalDesignTab extends LitElement {
                 </div>
               </div>
 
-              <!-- Animation Settings -->
+              <!-- Intro/Outro Animation Settings (separate from continuous animation) -->
               <div class="three-column-grid">
                 <div class="property-group">
                   <label
@@ -3863,10 +4094,10 @@ export class GlobalDesignTab extends LitElement {
                   >
                   <input
                     type="text"
-                    .value=${effectiveDesign.animation_duration || ''}
+                    .value=${effectiveDesign.intro_animation_duration || ''}
                     @change=${(e: Event) =>
                       this._updateProperty(
-                        'animation_duration',
+                        'intro_animation_duration',
                         (e.target as HTMLInputElement).value
                       )}
                     placeholder="0.3s, 500ms"
@@ -3884,9 +4115,12 @@ export class GlobalDesignTab extends LitElement {
                   >
                   <input
                     type="text"
-                    .value=${effectiveDesign.animation_delay || ''}
+                    .value=${effectiveDesign.intro_animation_delay || ''}
                     @change=${(e: Event) =>
-                      this._updateProperty('animation_delay', (e.target as HTMLInputElement).value)}
+                      this._updateProperty(
+                        'intro_animation_delay',
+                        (e.target as HTMLInputElement).value
+                      )}
                     placeholder="0s, 100ms"
                     class="property-input"
                   />
@@ -3901,10 +4135,10 @@ export class GlobalDesignTab extends LitElement {
                     )}:</label
                   >
                   <select
-                    .value=${effectiveDesign.animation_timing || 'ease'}
+                    .value=${effectiveDesign.intro_animation_timing || 'ease'}
                     @change=${(e: Event) =>
                       this._updateProperty(
-                        'animation_timing',
+                        'intro_animation_timing',
                         (e.target as HTMLSelectElement).value
                       )}
                     class="property-select"
@@ -3923,7 +4157,21 @@ export class GlobalDesignTab extends LitElement {
             </div>
           `,
           'animations',
-          ['animation_type', 'animation_entity', 'animation_trigger_type', 'animation_attribute', 'animation_state', 'intro_animation', 'outro_animation', 'animation_duration', 'animation_delay', 'animation_timing']
+          [
+            'animation_type',
+            'animation_entity',
+            'animation_trigger_type',
+            'animation_attribute',
+            'animation_state',
+            'animation_duration',
+            'animation_delay',
+            'animation_timing',
+            'intro_animation',
+            'outro_animation',
+            'intro_animation_duration',
+            'intro_animation_delay',
+            'intro_animation_timing',
+          ]
         )}
         ${this._renderAccordion(
           localize('editor.design.custom_targeting_section', lang, 'Custom Targeting'),
@@ -3935,9 +4183,19 @@ export class GlobalDesignTab extends LitElement {
               <input
                 type="text"
                 .value=${effectiveDesign.css_variable_prefix || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('css_variable_prefix', (e.target as HTMLInputElement).value)}
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const cursorPos = target.selectionStart;
+                  const cursorEnd = target.selectionEnd;
+                  this._updateProperty('css_variable_prefix', target.value);
+                  requestAnimationFrame(() => {
+                    if (target && typeof cursorPos === 'number') {
+                      target.setSelectionRange(cursorPos, cursorEnd || cursorPos);
+                    }
+                  });
+                }}
                 placeholder="my-row"
+                autocomplete="off"
                 class="property-input"
               />
               <div class="field-description">
@@ -4132,8 +4390,13 @@ export class GlobalDesignTab extends LitElement {
       }
 
       @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
       }
 
       .responsive-content {
@@ -4512,7 +4775,11 @@ export class GlobalDesignTab extends LitElement {
         gap: 12px;
         margin-top: 8px;
         padding: 12px;
-        background: linear-gradient(135deg, rgba(var(--rgb-primary-color, 3, 169, 244), 0.1), rgba(var(--rgb-primary-color, 3, 169, 244), 0.05));
+        background: linear-gradient(
+          135deg,
+          rgba(var(--rgb-primary-color, 3, 169, 244), 0.1),
+          rgba(var(--rgb-primary-color, 3, 169, 244), 0.05)
+        );
         border-left: 3px solid var(--primary-color);
         border-radius: 4px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);

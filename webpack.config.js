@@ -116,6 +116,63 @@ module.exports = (env, argv) => {
           });
         },
       },
+      // Auto-deploy to Home Assistant on build (for development)
+      {
+        apply: compiler => {
+          compiler.hooks.afterEmit.tap('AutoDeployToHA', () => {
+            const haDeployPath =
+              process.env.HA_DEPLOY_PATH || '/Volumes/config/www/community/Ultra-Card';
+            const sourceFile = path.resolve(__dirname, 'dist/ultra-card.js');
+            const targetFile = path.join(haDeployPath, 'ultra-card.js');
+
+            // Only deploy if the HA config directory exists (volume is mounted)
+            if (fs.existsSync(haDeployPath)) {
+              try {
+                fs.copyFileSync(sourceFile, targetFile);
+
+                // Also copy the license file if it exists
+                const licenseSource = path.resolve(__dirname, 'dist/ultra-card.js.LICENSE.txt');
+                if (fs.existsSync(licenseSource)) {
+                  fs.copyFileSync(
+                    licenseSource,
+                    path.join(haDeployPath, 'ultra-card.js.LICENSE.txt')
+                  );
+                }
+
+                // Copy assets folder if it exists
+                const assetsSource = path.resolve(__dirname, 'dist/assets');
+                const assetsTarget = path.join(haDeployPath, 'assets');
+                if (fs.existsSync(assetsSource)) {
+                  if (!fs.existsSync(assetsTarget)) {
+                    fs.mkdirSync(assetsTarget, { recursive: true });
+                  }
+                  const assetFiles = fs.readdirSync(assetsSource);
+                  assetFiles.forEach(file => {
+                    // Skip .DS_Store and other hidden files
+                    if (file.startsWith('.')) return;
+                    try {
+                      fs.copyFileSync(path.join(assetsSource, file), path.join(assetsTarget, file));
+                    } catch (e) {
+                      // Ignore individual file copy errors
+                    }
+                  });
+                }
+
+                console.log(`\x1b[32m✓ Auto-deployed to HA: ${haDeployPath}\x1b[0m`);
+                console.log(
+                  `\x1b[36m  Refresh browser (F5) to see changes - no HA restart needed!\x1b[0m`
+                );
+              } catch (err) {
+                console.log(`\x1b[33m⚠ Could not auto-deploy: ${err.message}\x1b[0m`);
+              }
+            } else {
+              console.log(
+                `\x1b[90m  HA deploy path not found (${haDeployPath}) - skipping auto-deploy\x1b[0m`
+              );
+            }
+          });
+        },
+      },
     ],
     performance: {
       hints: false,

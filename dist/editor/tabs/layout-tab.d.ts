@@ -103,6 +103,26 @@ export declare class LayoutTab extends LitElement {
     private _renderTreeOverflowMenu;
     private _renderLayoutChildOverflowMenu;
     private _renderTabsSectionChildOverflowMenu;
+    private _renderTabsSectionOverflowMenu;
+    private _renderNestedTabsSectionOverflowMenu;
+    /**
+     * Duplicates a section in a nested tabs module (tabs inside another layout like popup)
+     */
+    private _duplicateNestedTabsSection;
+    /**
+     * Deletes a section from a nested tabs module (tabs inside another layout like popup)
+     */
+    private _deleteNestedTabsSection;
+    private _editTabsSection;
+    /**
+     * Duplicates a tabs section (supports both top-level and nested tabs)
+     */
+    private _duplicateTabsSection;
+    /**
+     * Deletes a tabs section (supports both top-level and nested tabs)
+     */
+    private _deleteTabsSection;
+    private _renderNestedTabsSectionChildOverflowMenu;
     private _renderTreeRow;
     private _renderTreeColumn;
     private _renderTreeModule;
@@ -113,8 +133,25 @@ export declare class LayoutTab extends LitElement {
     private _renderTreeNestedLayoutChild;
     private _renderTreeNestedTabsSection;
     private _renderTreeNestedTabsSectionChild;
+    private _renderTreeNestedTabsSectionLayoutChild;
+    private _renderTreeNestedTabsSectionLayoutChildChild;
+    private _renderTreeDeeplyNestedTabsSectionLayoutChild;
+    private _renderTreeDeeplyNestedTabsSection;
     private _renderTreeDeepNestedChild;
     private _reorderArray;
+    private _renderTreeDeeplyNestedLayout;
+    private _renderTreeLevel4Child;
+    private _renderTreeLevel4NestedLayout;
+    private _renderTreeDeepChild;
+    private _renderTreeDeepNestedLayout;
+    private _renderDeepNestedOverflowMenu;
+    private _deepNestedPath;
+    private _openDeepNestedModuleSelector;
+    private _addModuleToDeepNestedLayout;
+    private _openDeepNestedSettings;
+    private _duplicateDeepNestedChild;
+    private _deleteDeepNestedChild;
+    private _renderTreeLevel4TabsSection;
     private _onConditionDragStart;
     private _onConditionDragOver;
     private _onConditionDrop;
@@ -335,8 +372,13 @@ export declare class LayoutTab extends LitElement {
      */
     private _renderDeepNestedLayoutModule;
     /**
-     * Renders a child module inside a deeply nested layout (4th level)
-     * These are rendered as simplified module cards without further nesting capability
+     * Renders a layout module at 5th+ level of nesting (very deep)
+     * Handles unlimited recursive nesting for layout modules
+     */
+    private _renderVeryDeepNestedLayoutModule;
+    /**
+     * Renders a child module inside a deeply nested layout (4th level+)
+     * If the child is a layout module, it will render with full nesting capability
      */
     private _renderDeepNestedChildModule;
     /**
@@ -359,6 +401,14 @@ export declare class LayoutTab extends LitElement {
      * Renders a nested layout module inside a tabs section (horizontal, vertical, slider, etc.)
      */
     private _renderTabsSectionNestedLayout;
+    /**
+     * Renders a tabs section when tabs are nested inside another tabs section
+     */
+    private _renderTabsSectionNestedInTabsSection;
+    /**
+     * Renders a tabs section when tabs are deeply nested (inside a layout inside a tabs section)
+     */
+    private _renderTabsSectionDeeplyNestedInTabsSection;
     /**
      * Renders a child module inside a nested layout that's inside a tabs section
      */
@@ -408,9 +458,49 @@ export declare class LayoutTab extends LitElement {
      */
     private _addModuleToTabsSectionNestedLayout;
     /**
+     * Opens module selector for a layout module inside a nested tabs section (for tree view)
+     * e.g., adding modules to a Horizontal layout that's inside a Tabs section inside a Popup
+     */
+    private _openNestedTabsSectionLayoutChildModuleSelector;
+    private _nestedTabsSectionLayoutChildContext;
+    /**
+     * Adds a module to a layout module inside a nested tabs section (for tree view)
+     */
+    private _addModuleToNestedTabsSectionLayoutChild;
+    /**
      * Opens module selector for a deeply nested layout (layout inside layout inside tabs)
      */
     private _openTabsSectionDeeplyNestedLayoutModuleSelector;
+    private _deeplyNestedLayoutContext;
+    /**
+     * Opens module selector for a deeply nested layout (layout inside layout inside column)
+     */
+    private _openDeeplyNestedLayoutModuleSelector;
+    /**
+     * Adds a module to a deeply nested layout (for tree view)
+     */
+    private _addModuleToDeeplyNestedLayout;
+    private _level4NestedLayoutContext;
+    /**
+     * Opens module selector for a level 4 nested layout
+     */
+    private _openLevel4NestedLayoutModuleSelector;
+    /**
+     * Adds a module to a level 4 nested layout
+     */
+    private _addModuleToLevel4NestedLayout;
+    /**
+     * Opens settings for a level 4 child module
+     */
+    private _openLevel4ChildSettings;
+    /**
+     * Duplicates a level 4 child module
+     */
+    private _duplicateLevel4Child;
+    /**
+     * Deletes a level 4 child module
+     */
+    private _deleteLevel4Child;
     /**
      * Adds a module to a deeply nested layout (layout inside layout inside tabs)
      */

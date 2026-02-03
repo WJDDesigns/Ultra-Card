@@ -24,7 +24,7 @@ export declare class GlobalActionsTab extends LitElement {
     static getClickableStyle(module: any): string;
     /**
      * Resolves 'default' actions to their actual behavior at runtime
-     * 'default' becomes 'more-info' for the module's entity if available, otherwise 'none'
+     * 'default' becomes 'more-info' for the module's entity if available, otherwise 'nothing'
      */
     static resolveAction(action: any, moduleEntity?: string): any;
     static getHoverStyles(): string;

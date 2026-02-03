@@ -3225,60 +3225,16 @@ export class UltraPopupModule extends BaseUltraModule {
       }
     }
 
-    // Validate nested modules - prevent infinite nesting (similar to accordion)
+    // Validate nested modules - only prevent popups inside popups
     if (popupModule.modules && popupModule.modules.length > 0) {
       for (const childModule of popupModule.modules) {
         // Prevent popups inside popups at level 1
         if (childModule.type === 'popup') {
           errors.push('Popup modules cannot contain other popup modules');
         }
-
-        // Allow layout modules (horizontal, vertical, accordion) at level 1
-        if (
-          childModule.type === 'horizontal' ||
-          childModule.type === 'vertical' ||
-          childModule.type === 'accordion'
-        ) {
-          const layoutChild = childModule as any;
-
-          // Check level 2 nesting - prevent popups at this level too
-          if (layoutChild.modules && layoutChild.modules.length > 0) {
-            for (const nestedModule of layoutChild.modules) {
-              if (nestedModule.type === 'popup') {
-                errors.push(
-                  'Popup modules cannot be nested inside other layout modules within a popup'
-                );
-              }
-
-              if (
-                nestedModule.type === 'horizontal' ||
-                nestedModule.type === 'vertical' ||
-                nestedModule.type === 'accordion'
-              ) {
-                const deepLayoutModule = nestedModule as any;
-
-                // Check level 3 nesting - prevent any layout modules at this level
-                if (deepLayoutModule.modules && deepLayoutModule.modules.length > 0) {
-                  for (const deepNestedModule of deepLayoutModule.modules) {
-                    if (
-                      deepNestedModule.type === 'horizontal' ||
-                      deepNestedModule.type === 'vertical' ||
-                      deepNestedModule.type === 'accordion' ||
-                      deepNestedModule.type === 'popup'
-                    ) {
-                      errors.push(
-                        'Layout modules cannot be nested more than 2 levels deep. Remove layout modules from the third level.'
-                      );
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
       }
     }
+    // Note: Nesting depth validation removed - users can nest layouts as deep as they want
 
     return { valid: errors.length === 0, errors };
   }

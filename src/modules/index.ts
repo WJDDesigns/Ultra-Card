@@ -32,6 +32,7 @@ export * from './calendar-module-views';
 export * from './grid-module';
 export * from './badge-of-honor-module';
 export * from './vacuum-module';
+export * from './people-module';
 
 // Export convenience functions
 export { getModuleRegistry } from './module-registry';

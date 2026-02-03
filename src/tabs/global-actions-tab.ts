@@ -845,9 +845,15 @@ export class GlobalActionsTab extends LitElement {
   // Backwards-compatible helpers for clickable wrappers used in modules
   static getClickableClass(module: any): string {
     const hasAction =
-      (module?.tap_action && module.tap_action.action !== 'none') ||
-      (module?.hold_action && module.hold_action.action !== 'none') ||
-      (module?.double_tap_action && module.double_tap_action.action !== 'none');
+      (module?.tap_action &&
+        module.tap_action.action !== 'nothing' &&
+        module.tap_action.action !== 'none') ||
+      (module?.hold_action &&
+        module.hold_action.action !== 'nothing' &&
+        module.hold_action.action !== 'none') ||
+      (module?.double_tap_action &&
+        module.double_tap_action.action !== 'nothing' &&
+        module.double_tap_action.action !== 'none');
     return hasAction ? 'graphs-module-clickable' : '';
   }
 
@@ -858,7 +864,7 @@ export class GlobalActionsTab extends LitElement {
 
   /**
    * Resolves 'default' actions to their actual behavior at runtime
-   * 'default' becomes 'more-info' for the module's entity if available, otherwise 'none'
+   * 'default' becomes 'more-info' for the module's entity if available, otherwise 'nothing'
    */
   static resolveAction(action: any, moduleEntity?: string): any {
     if (!action || action.action !== 'default') {
@@ -869,7 +875,7 @@ export class GlobalActionsTab extends LitElement {
     if (moduleEntity) {
       return { action: 'more-info', entity: moduleEntity };
     } else {
-      return { action: 'none' };
+      return { action: 'nothing' };
     }
   }
 

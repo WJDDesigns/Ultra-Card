@@ -71,6 +71,15 @@ export class UltraBarModule extends BaseUltraModule {
       time_progress_direction: 'forward',
       time_progress_update_interval: 1000,
 
+      // Range mode (visualize a range between start and end values)
+      range_start_entity: '',
+      range_start_attribute: '',
+      range_end_entity: '',
+      range_end_attribute: '',
+      range_current_entity: '',
+      range_current_attribute: '',
+      range_current_color: 'var(--accent-color)',
+
       // Manual Min/Max Range (overrides auto-detection)
       percentage_min: undefined, // undefined = auto-detect
       percentage_max: undefined, // undefined = auto-detect
@@ -161,6 +170,14 @@ export class UltraBarModule extends BaseUltraModule {
       // Limit Indicator
       limit_entity: '',
       limit_color: '',
+
+      // Scale/Tick Marks
+      show_scale: false,
+      scale_divisions: 5,
+      scale_show_labels: true,
+      scale_label_size: 10,
+      scale_label_color: '',
+      scale_position: 'below',
 
       // Animation & Templates
       animation: true,
@@ -347,6 +364,10 @@ export class UltraBarModule extends BaseUltraModule {
           value: 'time_progress',
           label: localize('editor.bar.perc_type.time_progress', lang, 'Time Progress (Real-time)'),
         },
+        {
+          value: 'range',
+          label: localize('editor.bar.perc_type.range', lang, 'Range (Start to End)'),
+        },
       ]),
     ];
 
@@ -529,35 +550,75 @@ export class UltraBarModule extends BaseUltraModule {
               ? this.renderConditionalFieldsGroup(
                   localize('editor.bar.template_config.title', lang, 'Template Configuration'),
                   html`
-                    ${this.renderSettingsSection(
-                      localize('editor.bar.template_config.title', lang, 'Template Configuration'),
-                      localize(
-                        'editor.bar.template_config.desc',
-                        lang,
-                        'Configure template settings'
-                      ),
-                      [
-                        {
-                          title: localize(
+                    <div
+                      style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px;"
+                    >
+                      <div
+                        class="section-title"
+                        style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+                      >
+                        ${localize(
+                          'editor.bar.template_config.title',
+                          lang,
+                          'Template Configuration'
+                        )}
+                      </div>
+                      <div
+                        class="field-description"
+                        style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
+                      >
+                        ${localize(
+                          'editor.bar.template_config.desc',
+                          lang,
+                          'Configure template settings'
+                        )}
+                      </div>
+                      <div class="field-group" style="margin-bottom: 0;">
+                        <div
+                          class="field-title"
+                          style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
+                        >
+                          ${localize(
                             'editor.bar.template_config.percentage_template',
                             lang,
                             'Percentage Template'
-                          ),
-                          description: localize(
+                          )}
+                        </div>
+                        <div
+                          class="field-description"
+                          style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
+                        >
+                          ${localize(
                             'editor.bar.template_config.percentage_template_desc',
                             lang,
                             "Enter a Jinja2 template that returns a number between 0-100 for the percentage. Example: {{ (states('sensor.battery_level') | float) * 100 }}"
-                          ),
-                          hass,
-                          data: barModule,
-                          schema: [this.textField('percentage_template', true)],
-                          onChange: (e: CustomEvent) =>
-                            updateModule({
-                              percentage_template: e.detail.value.percentage_template,
-                            }),
-                        },
-                      ]
-                    )}
+                          )}
+                        </div>
+                        <div
+                          @mousedown=${(e: Event) => {
+                            // Only stop propagation for drag operations, not clicks on the editor
+                            const target = e.target as HTMLElement;
+                            if (
+                              !target.closest('ultra-template-editor') &&
+                              !target.closest('.cm-editor')
+                            ) {
+                              e.stopPropagation();
+                            }
+                          }}
+                          @dragstart=${(e: Event) => e.stopPropagation()}
+                        >
+                          <ultra-template-editor
+                            .hass=${hass}
+                            .value=${barModule.percentage_template || ''}
+                            .placeholder=${"{{ (states('sensor.battery_level') | float) }}"}
+                            .minHeight=${100}
+                            .maxHeight=${300}
+                            @value-changed=${(e: CustomEvent) =>
+                              updateModule({ percentage_template: e.detail.value })}
+                          ></ultra-template-editor>
+                        </div>
+                      </div>
+                    </div>
                   `
                 )
               : ''
@@ -694,6 +755,199 @@ export class UltraBarModule extends BaseUltraModule {
                         },
                       ]
                     )}
+                  `
+                )
+              : ''
+          }
+
+          <!-- Range Mode Configuration -->
+          ${
+            barModule.percentage_type === 'range'
+              ? this.renderConditionalFieldsGroup(
+                  localize('editor.bar.range_config.title', lang, 'Range Configuration'),
+                  html`
+                    ${this.renderSettingsSection(
+                      localize('editor.bar.range_config.title', lang, 'Range Configuration'),
+                      localize(
+                        'editor.bar.range_config.desc',
+                        lang,
+                        'Configure the start and end values for the range visualization.'
+                      ),
+                      [
+                        {
+                          title: localize(
+                            'editor.bar.range_config.start_entity',
+                            lang,
+                            'Range Start Entity'
+                          ),
+                          description: localize(
+                            'editor.bar.range_config.start_entity_desc',
+                            lang,
+                            'Entity that provides the start value of the range (e.g., coldest battery cell temperature).'
+                          ),
+                          hass,
+                          data: {
+                            range_start_entity: (barModule as any).range_start_entity || '',
+                          },
+                          schema: [this.entityField('range_start_entity')],
+                          onChange: (e: CustomEvent) =>
+                            updateModule({
+                              range_start_entity: e.detail.value.range_start_entity,
+                            }),
+                        },
+                        {
+                          title: localize(
+                            'editor.bar.range_config.start_attribute',
+                            lang,
+                            'Start Attribute (Optional)'
+                          ),
+                          description: localize(
+                            'editor.bar.range_config.start_attribute_desc',
+                            lang,
+                            'If the value is in an attribute, enter the attribute name here.'
+                          ),
+                          hass,
+                          data: {
+                            range_start_attribute: (barModule as any).range_start_attribute || '',
+                          },
+                          schema: [this.textField('range_start_attribute')],
+                          onChange: (e: CustomEvent) =>
+                            updateModule({
+                              range_start_attribute: e.detail.value.range_start_attribute,
+                            }),
+                        },
+                        {
+                          title: localize(
+                            'editor.bar.range_config.end_entity',
+                            lang,
+                            'Range End Entity'
+                          ),
+                          description: localize(
+                            'editor.bar.range_config.end_entity_desc',
+                            lang,
+                            'Entity that provides the end value of the range (e.g., hottest battery cell temperature).'
+                          ),
+                          hass,
+                          data: {
+                            range_end_entity: (barModule as any).range_end_entity || '',
+                          },
+                          schema: [this.entityField('range_end_entity')],
+                          onChange: (e: CustomEvent) =>
+                            updateModule({
+                              range_end_entity: e.detail.value.range_end_entity,
+                            }),
+                        },
+                        {
+                          title: localize(
+                            'editor.bar.range_config.end_attribute',
+                            lang,
+                            'End Attribute (Optional)'
+                          ),
+                          description: localize(
+                            'editor.bar.range_config.end_attribute_desc',
+                            lang,
+                            'If the value is in an attribute, enter the attribute name here.'
+                          ),
+                          hass,
+                          data: {
+                            range_end_attribute: (barModule as any).range_end_attribute || '',
+                          },
+                          schema: [this.textField('range_end_attribute')],
+                          onChange: (e: CustomEvent) =>
+                            updateModule({
+                              range_end_attribute: e.detail.value.range_end_attribute,
+                            }),
+                        },
+                      ]
+                    )}
+
+                    <!-- Current Value Marker (Optional) -->
+                    <div
+                      style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 16px; border-left: 3px solid var(--warning-color);"
+                    >
+                      <div
+                        style="font-size: 14px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;"
+                      >
+                        <ha-icon
+                          icon="mdi:map-marker"
+                          style="color: var(--warning-color);"
+                        ></ha-icon>
+                        ${localize(
+                          'editor.bar.range_config.current_marker_title',
+                          lang,
+                          'Current Value Marker (Optional)'
+                        )}
+                      </div>
+                      <div
+                        style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 16px;"
+                      >
+                        ${localize(
+                          'editor.bar.range_config.current_marker_desc',
+                          lang,
+                          'Optionally show a marker indicating the current/average value within the range.'
+                        )}
+                      </div>
+
+                      ${this.renderSettingsSection('', '', [
+                        {
+                          title: localize(
+                            'editor.bar.range_config.current_entity',
+                            lang,
+                            'Current Value Entity'
+                          ),
+                          description: localize(
+                            'editor.bar.range_config.current_entity_desc',
+                            lang,
+                            'Entity for the current value marker (e.g., average battery temperature).'
+                          ),
+                          hass,
+                          data: {
+                            range_current_entity: (barModule as any).range_current_entity || '',
+                          },
+                          schema: [this.entityField('range_current_entity')],
+                          onChange: (e: CustomEvent) =>
+                            updateModule({
+                              range_current_entity: e.detail.value.range_current_entity,
+                            }),
+                        },
+                        {
+                          title: localize(
+                            'editor.bar.range_config.current_attribute',
+                            lang,
+                            'Current Attribute (Optional)'
+                          ),
+                          description: localize(
+                            'editor.bar.range_config.current_attribute_desc',
+                            lang,
+                            'If the value is in an attribute, enter the attribute name here.'
+                          ),
+                          hass,
+                          data: {
+                            range_current_attribute:
+                              (barModule as any).range_current_attribute || '',
+                          },
+                          schema: [this.textField('range_current_attribute')],
+                          onChange: (e: CustomEvent) =>
+                            updateModule({
+                              range_current_attribute: e.detail.value.range_current_attribute,
+                            }),
+                        },
+                      ])}
+
+                      <div style="margin-top: 16px;">
+                        <div
+                          style="font-size: 13px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 8px;"
+                        >
+                          ${localize('editor.bar.range_config.current_color', lang, 'Marker Color')}
+                        </div>
+                        <ultra-color-picker
+                          .hass=${hass}
+                          .value=${(barModule as any).range_current_color || 'var(--accent-color)'}
+                          @value-changed=${(e: CustomEvent) =>
+                            updateModule({ range_current_color: e.detail.value })}
+                        ></ultra-color-picker>
+                      </div>
+                    </div>
                   `
                 )
               : ''
@@ -1494,6 +1748,217 @@ export class UltraBarModule extends BaseUltraModule {
                   </div>
                 `
               : ''
+          }
+        </div>
+
+        <!-- Scale/Tick Marks Configuration Section -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;">
+            <div
+              class="section-title"
+              style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px; margin: 0; display: flex; align-items: center; gap: 8px;"
+            >
+              <ha-icon icon="mdi:ruler" style="color: var(--primary-color);"></ha-icon>
+              ${localize('editor.bar.scale.title', lang, 'Scale / Tick Marks')}
+            </div>
+            <ha-switch
+              .checked=${(barModule as any).show_scale || false}
+              @change=${(e: Event) => updateModule({ show_scale: (e.target as HTMLInputElement).checked })}
+            ></ha-switch>
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 13px; font-weight: 400; margin-bottom: 16px;"
+          >
+            ${localize(
+              'editor.bar.scale.desc',
+              lang,
+              'Add tick marks and labels along the bar to show the scale. Useful for visualizing ranges like temperature or time.'
+            )}
+          </div>
+
+          ${
+            (barModule as any).show_scale
+              ? html`
+                  <!-- Scale Divisions -->
+                  <div class="field-group" style="margin-bottom: 16px;">
+                    <div
+                      class="field-title"
+                      style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                    >
+                      ${localize('editor.bar.scale.divisions', lang, 'Number of Divisions')}
+                    </div>
+                    <div
+                      class="field-description"
+                      style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
+                    >
+                      ${localize(
+                        'editor.bar.scale.divisions_desc',
+                        lang,
+                        'How many segments to divide the scale into (e.g., 4 = marks at 0%, 25%, 50%, 75%, 100%).'
+                      )}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <ha-slider
+                        style="flex: 1;"
+                        .min=${2}
+                        .max=${20}
+                        .step=${1}
+                        .value=${(barModule as any).scale_divisions || 5}
+                        @change=${(e: Event) =>
+                          updateModule({ scale_divisions: parseInt((e.target as any).value, 10) })}
+                      ></ha-slider>
+                      <span style="min-width: 30px; text-align: center; font-weight: 600;">
+                        ${(barModule as any).scale_divisions || 5}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Show Labels Toggle -->
+                  <div
+                    class="field-group"
+                    style="margin-bottom: 16px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
+                  >
+                    <div>
+                      <div
+                        class="field-title"
+                        style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                      >
+                        ${localize('editor.bar.scale.show_labels', lang, 'Show Labels')}
+                      </div>
+                      <div
+                        class="field-description"
+                        style="font-size: 13px !important; font-weight: 400 !important;"
+                      >
+                        ${localize(
+                          'editor.bar.scale.show_labels_desc',
+                          lang,
+                          'Display numeric values at each tick mark.'
+                        )}
+                      </div>
+                    </div>
+                    <ha-switch
+                      .checked=${(barModule as any).scale_show_labels !== false}
+                      @change=${(e: Event) =>
+                        updateModule({ scale_show_labels: (e.target as HTMLInputElement).checked })}
+                    ></ha-switch>
+                  </div>
+
+                  ${(barModule as any).scale_show_labels !== false
+                    ? html`
+                        <!-- Label Size -->
+                        <div class="field-group" style="margin-bottom: 16px;">
+                          <div
+                            class="field-title"
+                            style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                          >
+                            ${localize('editor.bar.scale.label_size', lang, 'Label Size')}
+                          </div>
+                          <div style="display: flex; align-items: center; gap: 12px;">
+                            <ha-slider
+                              style="flex: 1;"
+                              .min=${8}
+                              .max=${16}
+                              .step=${1}
+                              .value=${(barModule as any).scale_label_size || 10}
+                              @change=${(e: Event) =>
+                                updateModule({
+                                  scale_label_size: parseInt((e.target as any).value, 10),
+                                })}
+                            ></ha-slider>
+                            <span style="min-width: 40px; text-align: center; font-weight: 600;">
+                              ${(barModule as any).scale_label_size || 10}px
+                            </span>
+                          </div>
+                        </div>
+
+                        <!-- Label Color -->
+                        <div class="field-group" style="margin-bottom: 16px;">
+                          <div
+                            class="field-title"
+                            style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 8px;"
+                          >
+                            ${localize('editor.bar.scale.label_color', lang, 'Label Color')}
+                          </div>
+                          <ultra-color-picker
+                            .hass=${hass}
+                            .value=${(barModule as any).scale_label_color || ''}
+                            .placeholder=${'var(--secondary-text-color)'}
+                            @value-changed=${(e: CustomEvent) =>
+                              updateModule({ scale_label_color: e.detail.value })}
+                          ></ultra-color-picker>
+                        </div>
+                      `
+                    : ''}
+
+                  <!-- Scale Position -->
+                  <div class="field-group" style="margin-bottom: 0;">
+                    <div
+                      class="field-title"
+                      style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                    >
+                      ${localize('editor.bar.scale.position', lang, 'Scale Position')}
+                    </div>
+                    <div
+                      class="field-description"
+                      style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
+                    >
+                      ${localize(
+                        'editor.bar.scale.position_desc',
+                        lang,
+                        'Position the scale above or below the bar.'
+                      )}
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                      <button
+                        type="button"
+                        style="padding: 8px 16px; border: 2px solid ${(barModule as any)
+                          .scale_position === 'above'
+                          ? 'var(--primary-color)'
+                          : 'var(--divider-color)'}; background: ${(barModule as any)
+                          .scale_position === 'above'
+                          ? 'var(--primary-color)'
+                          : 'transparent'}; color: ${(barModule as any).scale_position === 'above'
+                          ? 'var(--text-primary-color)'
+                          : 'var(--primary-text-color)'}; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px;"
+                        @click=${() => updateModule({ scale_position: 'above' })}
+                      >
+                        <ha-icon icon="mdi:arrow-up" style="--mdc-icon-size: 16px;"></ha-icon>
+                        ${localize('editor.bar.scale.position_above', lang, 'Above')}
+                      </button>
+                      <button
+                        type="button"
+                        style="padding: 8px 16px; border: 2px solid ${(barModule as any)
+                          .scale_position !== 'above'
+                          ? 'var(--primary-color)'
+                          : 'var(--divider-color)'}; background: ${(barModule as any)
+                          .scale_position !== 'above'
+                          ? 'var(--primary-color)'
+                          : 'transparent'}; color: ${(barModule as any).scale_position !== 'above'
+                          ? 'var(--text-primary-color)'
+                          : 'var(--primary-text-color)'}; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px;"
+                        @click=${() => updateModule({ scale_position: 'below' })}
+                      >
+                        <ha-icon icon="mdi:arrow-down" style="--mdc-icon-size: 16px;"></ha-icon>
+                        ${localize('editor.bar.scale.position_below', lang, 'Below')}
+                      </button>
+                    </div>
+                  </div>
+                `
+              : html`
+                  <div
+                    style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
+                  >
+                    ${localize(
+                      'editor.bar.scale.enable_toggle',
+                      lang,
+                      'Enable the toggle above to configure scale settings'
+                    )}
+                  </div>
+                `
           }
         </div>
 
@@ -3701,14 +4166,27 @@ export class UltraBarModule extends BaseUltraModule {
     }
 
     // GRACEFUL RENDERING: Check for incomplete configuration
-    // Time Progress mode doesn't need entity, but other modes do
-    const needsEntity = pctType !== 'time_progress';
+    // Time Progress mode and Range mode don't need main entity
+    const needsEntity = pctType !== 'time_progress' && pctType !== 'range';
     if (needsEntity && (!barModule.entity || barModule.entity.trim() === '')) {
       return this.renderGradientErrorState(
         'Select Entity',
         'Choose an entity in the General tab',
         'mdi:chart-box-outline'
       );
+    }
+
+    // For Range mode, check if start and end entities are configured
+    if (pctType === 'range') {
+      const rangeStartEntity = (barModule as any).range_start_entity;
+      const rangeEndEntity = (barModule as any).range_end_entity;
+      if (!rangeStartEntity || !rangeEndEntity) {
+        return this.renderGradientErrorState(
+          'Configure Range',
+          'Set range start and end entities in the General tab',
+          'mdi:arrow-expand-horizontal'
+        );
+      }
     }
 
     // Resolve bar percentage based on selected percentage calculation mode
@@ -4037,6 +4515,11 @@ export class UltraBarModule extends BaseUltraModule {
         } else {
           percentage = total > 0 ? clampPercent((curr / total) * 100) : 0;
         }
+      } else if (pctType === 'range') {
+        // Range mode: visualize a range between start and end values
+        // This is handled specially in the rendering section below
+        // Just set percentage to 0 here, the actual range values are calculated during rendering
+        percentage = 0;
       } else {
         // Entity-based percentage with min/max support
         const { min: manualMin, max: manualMax } = resolveMinMax();
@@ -4172,6 +4655,89 @@ export class UltraBarModule extends BaseUltraModule {
       // Assume limit values are already in percent unless an entity with max is provided.
       const baseMax = 100; // safe default
       limitPercentage = Math.min(Math.max((limitValue / baseMax) * 100, 0), 100);
+    }
+
+    // Calculate range values for Range mode
+    let rangeStartPercent = 0;
+    let rangeEndPercent = 100;
+    let rangeCurrentPercent = -1; // -1 means not configured
+    let scaleMin = 0;
+    let scaleMax = 100;
+
+    const pctTypeForRange = (barModule as any).percentage_type || 'entity';
+    if (pctTypeForRange === 'range') {
+      const { min: manualMin, max: manualMax } = resolveMinMax();
+      scaleMin = manualMin !== undefined ? manualMin : 0;
+      scaleMax = manualMax !== undefined ? manualMax : 100;
+      const scaleRange = scaleMax - scaleMin;
+
+      // Get range start value
+      const startEntity = (barModule as any).range_start_entity;
+      const startAttr = (barModule as any).range_start_attribute;
+      let rangeStartValue = scaleMin;
+      if (startEntity && hass?.states[startEntity]) {
+        const state = hass.states[startEntity];
+        rangeStartValue =
+          startAttr && state.attributes?.[startAttr] !== undefined
+            ? parseFloat(String(state.attributes[startAttr]))
+            : parseFloat(state.state);
+        if (isNaN(rangeStartValue)) rangeStartValue = scaleMin;
+      }
+
+      // Get range end value
+      const endEntity = (barModule as any).range_end_entity;
+      const endAttr = (barModule as any).range_end_attribute;
+      let rangeEndValue = scaleMax;
+      if (endEntity && hass?.states[endEntity]) {
+        const state = hass.states[endEntity];
+        rangeEndValue =
+          endAttr && state.attributes?.[endAttr] !== undefined
+            ? parseFloat(String(state.attributes[endAttr]))
+            : parseFloat(state.state);
+        if (isNaN(rangeEndValue)) rangeEndValue = scaleMax;
+      }
+
+      // Get current value (optional marker)
+      const currentEntity = (barModule as any).range_current_entity;
+      const currentAttr = (barModule as any).range_current_attribute;
+      if (currentEntity && hass?.states[currentEntity]) {
+        const state = hass.states[currentEntity];
+        const currentValue =
+          currentAttr && state.attributes?.[currentAttr] !== undefined
+            ? parseFloat(String(state.attributes[currentAttr]))
+            : parseFloat(state.state);
+        if (!isNaN(currentValue) && scaleRange > 0) {
+          rangeCurrentPercent = Math.min(
+            100,
+            Math.max(0, ((currentValue - scaleMin) / scaleRange) * 100)
+          );
+        }
+      }
+
+      // Calculate positions as percentages
+      if (scaleRange > 0) {
+        rangeStartPercent = Math.min(
+          100,
+          Math.max(0, ((rangeStartValue - scaleMin) / scaleRange) * 100)
+        );
+        rangeEndPercent = Math.min(
+          100,
+          Math.max(0, ((rangeEndValue - scaleMin) / scaleRange) * 100)
+        );
+
+        // Ensure start is less than end
+        if (rangeStartPercent > rangeEndPercent) {
+          [rangeStartPercent, rangeEndPercent] = [rangeEndPercent, rangeStartPercent];
+        }
+      }
+
+      // For range mode, percentage represents the width of the colored portion
+      percentage = rangeEndPercent - rangeStartPercent;
+    } else {
+      // For non-range modes, use min/max for scale if configured
+      const { min: manualMin, max: manualMax } = resolveMinMax();
+      if (manualMin !== undefined) scaleMin = manualMin;
+      if (manualMax !== undefined) scaleMax = manualMax;
     }
 
     // Apply design properties with priority - design properties override module properties
@@ -5552,11 +6118,21 @@ export class UltraBarModule extends BaseUltraModule {
                     })()
                   : (() => {
                       const isRightToLeft = fillDirection === 'right-to-left';
+                      const isRangeMode = pctTypeForRange === 'range';
+
+                      // For range mode, calculate the fill width and position
+                      const fillWidth = isRangeMode
+                        ? rangeEndPercent - rangeStartPercent
+                        : percentage;
+                      const fillLeft = isRangeMode ? rangeStartPercent : 0;
 
                       // Default rendering for all other styles
                       // Calculate border radius based on direction and percentage
                       let fillBorderRadius = '';
-                      if (percentage >= 99.5) {
+                      if (isRangeMode) {
+                        // For range mode, use rounded ends on both sides of the range segment
+                        fillBorderRadius = `${borderRadius}px`;
+                      } else if (percentage >= 99.5) {
                         fillBorderRadius = `${borderRadius}px`;
                       } else if (isRightToLeft) {
                         fillBorderRadius = `0 ${borderRadius}px ${borderRadius}px 0`;
@@ -5568,16 +6144,22 @@ export class UltraBarModule extends BaseUltraModule {
                         <div
                           class="bar-fill ${animationClass}"
                           style="
-                        width: ${percentage}%;
+                        width: ${fillWidth}%;
                         height: 100%;
                         background: ${barFillBackground};
-                        transition: ${barModule.animation !== false ? 'width 0.3s ease' : 'none'};
+                        transition: ${barModule.animation !== false
+                            ? 'width 0.3s ease, left 0.3s ease'
+                            : 'none'};
                         border-radius: ${fillBorderRadius};
                         position: absolute;
-                        ${isRightToLeft ? 'right: 0;' : 'left: 0;'}
+                        ${isRangeMode
+                            ? `left: ${fillLeft}%;`
+                            : isRightToLeft
+                              ? 'right: 0;'
+                              : 'left: 0;'}
                         top: 0;
                         bottom: 0;
-                        will-change: width;
+                        will-change: width${isRangeMode ? ', left' : ''};
                         backface-visibility: hidden;
                         ${fillStyleCSS}
                       "
@@ -5629,6 +6211,49 @@ export class UltraBarModule extends BaseUltraModule {
                           return `Limit: ${state}`;
                         } catch (_e) {
                           return `Limit`;
+                        }
+                      })()}"
+                    ></div>
+                  `
+                : ''
+            }
+
+            <!-- Range Current Value Marker -->
+            ${
+              pctTypeForRange === 'range' && rangeCurrentPercent >= 0
+                ? html`
+                    <div
+                      class="bar-current-marker"
+                      style="
+                        position: absolute;
+                        top: -4px;
+                        bottom: -4px;
+                        left: ${rangeCurrentPercent}%;
+                        width: 4px;
+                        background: ${(barModule as any).range_current_color ||
+                      'var(--accent-color)'};
+                        border-radius: 2px;
+                        z-index: 6;
+                        transform: translateX(-50%);
+                        box-shadow: 0 0 4px rgba(0,0,0,0.3);
+                        transition: ${barModule.animation !== false ? 'left 0.3s ease' : 'none'};
+                      "
+                      title="${(() => {
+                        try {
+                          const currentEntity = (barModule as any).range_current_entity;
+                          const currentAttr = (barModule as any).range_current_attribute;
+                          if (currentEntity && hass?.states[currentEntity]) {
+                            const state = hass.states[currentEntity];
+                            const value =
+                              currentAttr && state.attributes?.[currentAttr] !== undefined
+                                ? state.attributes[currentAttr]
+                                : state.state;
+                            const unit = state.attributes?.unit_of_measurement || '';
+                            return `Current: ${value}${unit}`;
+                          }
+                          return 'Current';
+                        } catch (_e) {
+                          return 'Current';
                         }
                       })()}"
                     ></div>
@@ -5711,7 +6336,86 @@ export class UltraBarModule extends BaseUltraModule {
           }
         </div>
 
-        
+        <!-- Scale/Tick Marks -->
+        ${
+          (barModule as any).show_scale
+            ? (() => {
+                const scaleDivisions = (barModule as any).scale_divisions || 5;
+                const scaleShowLabels = (barModule as any).scale_show_labels !== false;
+                const scaleLabelSize = (barModule as any).scale_label_size || 10;
+                const scaleLabelColor =
+                  (barModule as any).scale_label_color || 'var(--secondary-text-color)';
+                const scalePosition = (barModule as any).scale_position || 'below';
+                const scaleRange = scaleMax - scaleMin;
+
+                const ticks = Array.from({ length: scaleDivisions + 1 }, (_, i) => {
+                  const value = scaleMin + (scaleRange * i) / scaleDivisions;
+                  const position = (i / scaleDivisions) * 100;
+                  return { value, position };
+                });
+
+                return html`
+                  <div
+                    class="bar-scale"
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      width: ${barWidth};
+                      margin-top: ${scalePosition === 'below' ? '6px' : '0'};
+                      margin-bottom: ${scalePosition === 'above' ? '6px' : '0'};
+                      order: ${scalePosition === 'above' ? '-1' : '1'};
+                      align-self: ${barModule.bar_alignment === 'left'
+                      ? 'flex-start'
+                      : barModule.bar_alignment === 'right'
+                        ? 'flex-end'
+                        : 'center'};
+                    "
+                  >
+                    ${ticks.map(
+                      tick => html`
+                        <div
+                          class="scale-tick"
+                          style="
+                            display: flex;
+                            flex-direction: ${scalePosition === 'above'
+                            ? 'column-reverse'
+                            : 'column'};
+                            align-items: center;
+                            min-width: 0;
+                          "
+                        >
+                          <div
+                            style="
+                              width: 1px;
+                              height: 6px;
+                              background: var(--divider-color);
+                            "
+                          ></div>
+                          ${scaleShowLabels
+                            ? html`
+                                <span
+                                  style="
+                                    font-size: ${scaleLabelSize}px;
+                                    color: ${scaleLabelColor};
+                                    margin-top: ${scalePosition === 'below' ? '2px' : '0'};
+                                    margin-bottom: ${scalePosition === 'above' ? '2px' : '0'};
+                                    white-space: nowrap;
+                                  "
+                                >
+                                  ${Number.isInteger(tick.value)
+                                    ? tick.value
+                                    : tick.value.toFixed(1)}
+                                </span>
+                              `
+                            : ''}
+                        </div>
+                      `
+                    )}
+                  </div>
+                `;
+              })()
+            : ''
+        }
 
         <!-- Left and Right Side Labels (Below Bar) -->
         ${
