@@ -183,6 +183,7 @@ export class UltraGraphsModule extends BaseUltraModule {
       show_legend: true,
       legend_position: 'bottom_left',
       show_grid: true,
+      show_time_intervals: false,
       smooth_curves: true,
       show_tooltips: true,
       // New: pie/donut slice labels
@@ -2164,6 +2165,26 @@ export class UltraGraphsModule extends BaseUltraModule {
                     >
                   </label>`
                 : ''}
+              ${graphsModule.chart_type === 'line'
+                ? html`<label
+                    style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
+                  >
+                    <ha-switch
+                      .checked=${(graphsModule as any).show_time_intervals === true}
+                      @change=${(e: Event) => {
+                        const t = e.target as any;
+                        updateModule({ show_time_intervals: t.checked } as any);
+                      }}
+                    ></ha-switch>
+                    <span
+                      >${localize(
+                        'editor.graphs.display.show_time_intervals',
+                        lang,
+                        'Show Time Intervals'
+                      )}</span
+                    >
+                  </label>`
+                : ''}
               ${['pie', 'donut'].includes(graphsModule.chart_type)
                 ? html`
                     <label
@@ -3320,6 +3341,7 @@ export class UltraGraphsModule extends BaseUltraModule {
     const valueRange = maxValue - minValue;
 
     const grid = module.show_grid !== false;
+    const showTimeIntervals = (module as any).show_time_intervals === true;
     // Get the background color - handle transparent specially
     const moduleWithDesignForBg = module as any;
     const designForBg = (module as any).design || {};
@@ -3391,9 +3413,10 @@ export class UltraGraphsModule extends BaseUltraModule {
     const padLeft = showGridValues ? 28 : 10;
     const padRight = 5;
     const padTop = 12;
-    const padBottom = 8;
+    const padBottom = showTimeIntervals ? 18 : 8;
     const usableWidth = 300 - padLeft - padRight;
     const usableHeight = 100 - padTop - padBottom;
+    const labelStep = Math.max(1, Math.ceil(timePoints.length / 6));
 
     return html`
       <div
@@ -3569,6 +3592,25 @@ export class UltraGraphsModule extends BaseUltraModule {
               </g>`;
             });
           })()}
+          ${showTimeIntervals
+            ? svg`${timePoints.map((timePoint, index) => {
+                const shouldShow = index % labelStep === 0 || index === timePoints.length - 1;
+                if (!shouldShow) return svg``;
+                const x =
+                  timePoints.length > 1
+                    ? padLeft + (index / (timePoints.length - 1)) * usableWidth
+                    : padLeft + usableWidth / 2;
+                const y = padTop + usableHeight + 10;
+                return svg`<text
+                  x="${x}"
+                  y="${y}"
+                  font-size="7"
+                  fill="var(--secondary-text-color)"
+                  opacity="0.8"
+                  text-anchor="middle"
+                >${timePoint}</text>`;
+              })}`
+            : ''}
         </svg>
       </div>
     `;

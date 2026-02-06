@@ -1780,6 +1780,9 @@ export class LayoutTab extends LitElement {
     const isCollapsed = this._collapsedRows.has(rowIndex);
     const rowName = (row as any).row_name || `Row ${rowIndex + 1}`;
     const isLastRow = rowIndex === totalRows - 1;
+    const layoutText = this._getCurrentLayoutText(row);
+    const hasResponsiveOverrides =
+      !!row.responsive_column_layouts && Object.keys(row.responsive_column_layouts).length > 0;
 
     return html`
       <div
@@ -1807,6 +1810,27 @@ export class LayoutTab extends LitElement {
             <ha-icon icon="mdi:view-grid-outline" class="tree-node-icon"></ha-icon>
             <span class="tree-node-title">${rowName}</span>
             <div class="tree-action-buttons">
+              <button
+                class="tree-action-btn layout-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openColumnLayoutSelector(rowIndex);
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                title="${localize(
+                  'editor.layout.column_layout',
+                  lang,
+                  'Column Layout'
+                )}"
+              >
+                <ha-icon icon="mdi:view-column-outline"></ha-icon>
+                <span
+                  class="layout-hover-badge ${hasResponsiveOverrides ? 'has-responsive' : ''}"
+                  title="${layoutText}"
+                >
+                  ${layoutText}
+                </span>
+              </button>
               <button
                 class="tree-action-btn add-btn"
                 @click=${(e: Event) => {
@@ -9107,6 +9131,20 @@ export class LayoutTab extends LitElement {
       }),
     };
 
+    // Dispatch live preview for navigation modules (after newLayout is fully constructed)
+    const updatedModule = newLayout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+    if (updatedModule && (updatedModule as any).type === 'navigation') {
+      window.dispatchEvent(
+        new CustomEvent('uc-navigation-preview-update', {
+          detail: {
+            moduleId: (updatedModule as any).id,
+            module: updatedModule,
+            config: { ...this.config, layout: newLayout },
+          },
+        })
+      );
+    }
+
     this._updateLayout(newLayout);
   }
 
@@ -10538,6 +10576,19 @@ export class LayoutTab extends LitElement {
     }
   }
 
+  private _getModuleDropIndex(e: DragEvent, moduleIndex?: number): number | undefined {
+    if (moduleIndex === undefined) return moduleIndex;
+    const target = e.currentTarget as HTMLElement | null;
+    if (!target) return moduleIndex;
+
+    const rect = target.getBoundingClientRect();
+    if (!rect.height) return moduleIndex;
+
+    const offsetY = e.clientY - rect.top;
+    const insertAfter = offsetY > rect.height / 2;
+    return insertAfter ? moduleIndex + 1 : moduleIndex;
+  }
+
   private _onDrop(
     e: DragEvent,
     type: 'module' | 'column' | 'row' | 'layout' | 'layout-child',
@@ -10569,7 +10620,15 @@ export class LayoutTab extends LitElement {
     // Validate drop target compatibility
     if (!this._isValidDropTarget(this._draggedItem.type, type)) return; // Reject invalid drops
 
-    this._performMove(this._draggedItem, { type, rowIndex, columnIndex, moduleIndex });
+    const resolvedModuleIndex =
+      type === 'module' ? this._getModuleDropIndex(e, moduleIndex) : moduleIndex;
+
+    this._performMove(this._draggedItem, {
+      type,
+      rowIndex,
+      columnIndex,
+      moduleIndex: resolvedModuleIndex,
+    });
 
     // Clear temporarily expanded items on successful drop
     this._clearDragExpandedItems();
@@ -11241,6 +11300,15 @@ export class LayoutTab extends LitElement {
   private _openColumnSettings(rowIndex: number, columnIndex: number): void {
     this._selectedColumnForSettings = { rowIndex, columnIndex };
     this._showColumnSettings = true;
+  }
+
+  private _closeColumnSettings(): void {
+    this._showColumnSettings = false;
+    this._selectedColumnForSettings = null;
+    this._selectedRowForLayout = -1;
+    this._customSizingInput = '';
+    this._customSizingValid = false;
+    this._customSizingError = '';
   }
 
   private _updateColumn(updates: Partial<CardColumn>): void {
@@ -22115,7 +22183,7 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div class="settings-popup">
-        <div class="popup-overlay" @click=${() => (this._showColumnSettings = false)}></div>
+        <div class="popup-overlay" @click=${() => this._closeColumnSettings()}></div>
         <div
           class="popup-content draggable-popup"
           id="column-popup-${this._selectedColumnForSettings?.rowIndex}-${this
@@ -22166,7 +22234,7 @@ export class LayoutTab extends LitElement {
               >
                 <ha-icon icon="mdi:delete"></ha-icon>
               </button>
-              <button class="close-button" @click=${() => (this._showColumnSettings = false)}>
+              <button class="close-button" @click=${() => this._closeColumnSettings()}>
                 ×
               </button>
             </div>
@@ -25419,7 +25487,12 @@ export class LayoutTab extends LitElement {
                               ${column.modules.map(
                                 (module, moduleIndex) => html`
                                   <div
-                                    class="module-item"
+                                    class="module-item ${this._dropTarget?.type === 'module' &&
+                                    this._dropTarget?.rowIndex === rowIndex &&
+                                    this._dropTarget?.columnIndex === columnIndex &&
+                                    this._dropTarget?.moduleIndex === moduleIndex
+                                      ? 'drop-target'
+                                      : ''}"
                                     draggable="true"
                                     @dragstart=${(e: DragEvent) =>
                                       this._onDragStart(
@@ -25442,12 +25515,6 @@ export class LayoutTab extends LitElement {
                                     @dragleave=${this._onDragLeave}
                                     @drop=${(e: DragEvent) =>
                                       this._onDrop(e, 'module', rowIndex, columnIndex, moduleIndex)}
-                                    class="${this._dropTarget?.type === 'module' &&
-                                    this._dropTarget?.rowIndex === rowIndex &&
-                                    this._dropTarget?.columnIndex === columnIndex &&
-                                    this._dropTarget?.moduleIndex === moduleIndex
-                                      ? 'drop-target'
-                                      : ''}"
                                   >
                                     <div
                                       class="module-content"
@@ -30115,6 +30182,44 @@ export class LayoutTab extends LitElement {
         color: white;
       }
 
+      .layout-hover-badge {
+        position: absolute;
+        right: 0;
+        bottom: calc(100% + 8px);
+        max-width: 200px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(4px);
+        transition:
+          opacity 0.15s ease,
+          transform 0.15s ease;
+        z-index: 2;
+      }
+
+      .tree-action-btn.layout-btn:hover .layout-hover-badge {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .layout-hover-badge.has-responsive::after {
+        content: '';
+        width: 6px;
+        height: 6px;
+        margin-left: 6px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+      }
+
       /* Column badge - white on orange header */
       .tree-column .tree-node-badge {
         background: rgba(255, 255, 255, 0.2);
@@ -30150,6 +30255,11 @@ export class LayoutTab extends LitElement {
         cursor: pointer;
         transition: all 0.15s ease;
         --mdc-icon-size: 15px;
+      }
+
+      .tree-action-btn.layout-btn {
+        width: 28px;
+        position: relative;
       }
 
       .tree-action-btn:hover {

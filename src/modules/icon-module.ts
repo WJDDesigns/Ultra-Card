@@ -5558,11 +5558,19 @@ export class UltraIconModule extends BaseUltraModule {
       : currentState;
 
     // PRIORITY 1: Check unified template with ignore_entity_state_config flag
+    // When ignore_entity_state_config is true:
+    // - Template controls display properties (icon, color, name, etc.)
+    // - For active/inactive state (used for animations), we:
+    //   1. Check if template returns an explicit "active" property in JSON - use that
+    //   2. Otherwise, ALWAYS fall back to entity state evaluation (active_state/inactive_state config)
+    // This ensures animations work correctly based on active_state even when using templates
+    let shouldUseEntityStateForActive = false;
+
     if (icon.unified_template_mode && icon.unified_template && icon.ignore_entity_state_config) {
-      // Template controls display properties (icon, color, name, etc.)
-      // For active/inactive state (animations), we check:
-      // 1. If template returns an explicit "active" property in JSON, use that
-      // 2. Otherwise, fall back to entity state evaluation (active_state/inactive_state config)
+      // Default to using entity state for active/inactive determination
+      // This will be overridden only if template explicitly specifies "active" property
+      shouldUseEntityStateForActive = true;
+
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
       } else if (this._templateService && hass) {
@@ -5600,7 +5608,7 @@ export class UltraIconModule extends BaseUltraModule {
         const resultStr = String(templateResult).trim();
         const resultLower = resultStr.toLowerCase();
 
-        // Check if result is a simple boolean value
+        // Check if result is a simple boolean value - use it directly for active state
         const isBooleanResult = ['true', 'false', 'on', 'off', 'yes', 'no', '0', '1'].includes(
           resultLower
         );
@@ -5612,40 +5620,37 @@ export class UltraIconModule extends BaseUltraModule {
           );
         }
 
-        // Check if result is JSON with an explicit "active" property
+        // Check if result is JSON
         if (resultStr.startsWith('{') && resultStr.endsWith('}')) {
           try {
             const parsed = JSON.parse(resultStr);
-            // If JSON has explicit "active" or "is_active" property, use that
+            // If JSON has explicit "active" or "is_active" property, use that for active state
             if (parsed.active !== undefined) {
               return Boolean(parsed.active);
             }
             if (parsed.is_active !== undefined) {
               return Boolean(parsed.is_active);
             }
-            // JSON without explicit active property - fall through to entity state evaluation
+            // JSON without explicit active property - use entity state evaluation
+            // shouldUseEntityStateForActive is already true, so we fall through
           } catch {
-            // Not valid JSON - treat as text
-            if (resultStr !== '') {
-              return true; // Non-empty text = active
-            }
+            // JSON parsing failed - still use entity state evaluation for robustness
+            // shouldUseEntityStateForActive is already true
           }
-        } else if (resultStr !== '') {
-          // Template returned non-JSON, non-boolean text - active condition met
-          return true;
-        } else {
-          // Template returned empty - inactive
-          return false;
         }
+        // For any other template result (non-JSON, non-boolean), use entity state evaluation
+        // shouldUseEntityStateForActive is already true
       }
-
-      // Fall through to entity state evaluation below (for JSON templates without explicit "active" property)
+      // If templateResult is undefined (not yet evaluated), use entity state evaluation
+      // shouldUseEntityStateForActive is already true
     }
 
     // PRIORITY 2: Check legacy template_mode (deprecated)
+    // Skip this if we're using unified template with ignore_entity_state_config
+    // (in that case, shouldUseEntityStateForActive is true and we go straight to entity state evaluation)
     // IMPORTANT: If active_state is explicitly configured, prioritize entity state check over template result
     // Templates should only affect display, not active state evaluation when active_state is set
-    if (icon.template_mode && icon.template) {
+    if (!shouldUseEntityStateForActive && icon.template_mode && icon.template) {
       // Initialize template service if needed
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);

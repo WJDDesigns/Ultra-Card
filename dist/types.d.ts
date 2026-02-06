@@ -26,6 +26,8 @@ export interface ModuleActionConfig {
     service?: string;
     perform_action?: string;
     service_data?: Record<string, any>;
+    pipeline_id?: string;
+    start_listening?: boolean;
     target?: {
         entity_id?: string | string[];
         device_id?: string | string[];
@@ -47,7 +49,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum' | 'media_player' | 'people';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum' | 'media_player' | 'people' | 'navigation';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -1449,6 +1451,7 @@ export interface GraphsModule extends BaseModule {
     legend_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right';
     show_grid?: boolean;
     show_grid_values?: boolean;
+    show_time_intervals?: boolean;
     grid_color?: string;
     background_color?: string;
     chart_width?: string;
@@ -2113,7 +2116,157 @@ export interface ToggleModule extends BaseModule {
     display_mode: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule | MediaPlayerModule | PeopleModule;
+export type NavShowLabels = boolean | 'text_only' | 'routes_only';
+export type NavAlignment = 'start' | 'center' | 'end' | 'space-between' | 'space-around';
+export type NavDeviceMode = 'docked' | 'floating';
+export type NavDesktopPosition = 'top' | 'bottom' | 'left' | 'right';
+export type NavMobilePosition = 'top' | 'bottom';
+export type NavActionConfig = Omit<ModuleActionConfig, 'action'> & {
+    action: ActionType | 'open-popup';
+    /** Popup module ID to open when action is 'open-popup' */
+    popup_id?: string;
+    confirmation?: {
+        text?: string;
+    };
+};
+export interface NavBadgeConfig {
+    mode?: 'static' | 'entity' | 'template';
+    entity?: string;
+    entity_attribute?: string;
+    count_template?: string;
+    count?: string;
+    show?: boolean | string;
+    hide_when_zero?: boolean;
+    color?: string;
+    text_color?: string;
+    textColor?: string;
+}
+export interface NavRoute {
+    id: string;
+    url?: string;
+    icon?: string;
+    icon_selected?: string;
+    icon_color?: string;
+    image?: string;
+    image_selected?: string;
+    badge?: NavBadgeConfig;
+    label?: string;
+    selected?: boolean | string;
+    selected_color?: string;
+    tap_action?: NavActionConfig;
+    hold_action?: NavActionConfig;
+    double_tap_action?: NavActionConfig;
+    hidden?: boolean | string;
+}
+/** A stack item that can contain child routes */
+export interface NavStackItem {
+    id: string;
+    /** Icon for the stack button */
+    icon?: string;
+    icon_color?: string;
+    /** Label for the stack (shown when labels are enabled) */
+    label?: string;
+    /** How the stack opens: 'hover' or 'click' (default: 'click') */
+    open_mode?: 'hover' | 'click';
+    /** Stack layout direction: 'auto' adapts to navbar orientation, or force 'horizontal'/'vertical' */
+    orientation?: 'auto' | 'horizontal' | 'vertical';
+    /** Child routes that appear when the stack is opened */
+    children: NavRoute[];
+    /** Badge configuration */
+    badge?: NavBadgeConfig;
+    hidden?: boolean | string;
+}
+export interface NavDesktopConfig {
+    mode?: NavDeviceMode;
+    show_labels?: NavShowLabels;
+    min_width?: number;
+    position?: NavDesktopPosition;
+    hidden?: boolean | string;
+    /** Offset from edge in pixels for floating mode (0-100, default 16) */
+    offset?: number;
+    /** Horizontal/vertical alignment of items within the dock */
+    alignment?: NavAlignment;
+}
+export interface NavMobileConfig {
+    mode?: NavDeviceMode;
+    show_labels?: NavShowLabels;
+    position?: NavMobilePosition;
+    hidden?: boolean | string;
+    /** Offset from edge in pixels for floating mode (0-100, default 16) */
+    offset?: number;
+    /** Horizontal/vertical alignment of items within the dock */
+    alignment?: NavAlignment;
+}
+export interface NavAutoPaddingConfig {
+    enabled?: boolean;
+    desktop_px?: number;
+    mobile_px?: number;
+    media_player_px?: number;
+}
+export interface NavLayoutConfig {
+    auto_padding?: NavAutoPaddingConfig;
+}
+export interface NavHapticConfig {
+    url?: boolean;
+    tap_action?: boolean;
+    hold_action?: boolean;
+    double_tap_action?: boolean;
+}
+export type NavHapticSetting = boolean | NavHapticConfig;
+export interface NavMediaPlayerConfig {
+    /** Enable media player in navbar */
+    enabled?: boolean;
+    entity?: string;
+    show?: boolean | string;
+    display_mode?: 'widget' | 'icon' | 'icon_hover' | 'icon_click';
+    album_cover_background?: boolean;
+    /** Position of the media player icon within the navbar routes. 'start' = first, 'end' = last, or a number for specific index */
+    icon_position?: 'start' | 'end' | number;
+    /** Where the expanded widget popup appears relative to the icon */
+    widget_position?: 'above' | 'below';
+    desktop_position?: 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+}
+export interface NavigationTemplateConfig {
+    nav_routes?: NavRoute[];
+    nav_desktop?: NavDesktopConfig;
+    nav_mobile?: NavMobileConfig;
+    nav_layout?: NavLayoutConfig;
+    nav_styles?: string;
+    nav_haptic?: NavHapticSetting;
+    nav_media_player?: NavMediaPlayerConfig;
+}
+export interface NavAutohideConfig {
+    /** Enable macOS-style auto-hide: navbar slides off-screen after idle, reappears on edge hover */
+    enabled?: boolean;
+    /** Seconds of inactivity before hiding (default: 3) */
+    delay?: number;
+}
+export interface NavigationModule extends BaseModule {
+    type: 'navigation';
+    nav_routes: NavRoute[];
+    /** Stack items that contain child routes */
+    nav_stacks?: NavStackItem[];
+    /** Controls where the navbar is visible: 'current_view' = only on this view, 'all_views' = on all dashboard views */
+    nav_scope?: 'current_view' | 'all_views';
+    nav_style?: 'uc_modern' | 'uc_minimal' | 'uc_ios_glass' | 'uc_material' | 'uc_floating' | 'uc_docked' | 'uc_neumorphic' | 'uc_gradient' | 'uc_sidebar' | 'uc_compact';
+    nav_desktop?: NavDesktopConfig;
+    nav_mobile?: NavMobileConfig;
+    nav_layout?: NavLayoutConfig;
+    nav_styles?: string;
+    nav_template?: string;
+    nav_haptic?: NavHapticSetting;
+    nav_media_player?: NavMediaPlayerConfig;
+    /** macOS-style auto-hide configuration */
+    nav_autohide?: NavAutohideConfig;
+    /** Custom accent color for the dock background (tints styles) */
+    nav_dock_color?: string;
+    /** Custom accent color for icons */
+    nav_icon_color?: string;
+}
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule | MediaPlayerModule | PeopleModule | NavigationModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;
@@ -2420,6 +2573,7 @@ export interface UltraCardConfig {
     display_conditions?: DisplayCondition[];
     favorite_colors?: FavoriteColor[];
     haptic_feedback?: boolean;
+    nav_templates?: Record<string, NavigationTemplateConfig>;
     card_name?: string;
     responsive_scaling?: boolean;
     _customVariables?: CustomVariable[];

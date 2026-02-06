@@ -2221,12 +2221,7 @@ export class UltraPopupModule extends BaseUltraModule {
       if (initialState && popupModule.auto_close_timer_enabled) {
         this._startAutoCloseTimer(popupModule, uniquePopupKey);
       }
-    } else if (
-      logicDeterminedState !== null &&
-      triggerType === 'logic' &&
-      popupModule.auto_close !== false
-    ) {
-      // Only update state for logic triggers with auto_close enabled
+    } else if (logicDeterminedState !== null && triggerType === 'logic') {
       // Key fix: Only react to logic STATE CHANGES, not constant true/false values
       const lastLogicState = lastLogicStates.get(uniquePopupKey);
       const logicStateChanged = lastLogicState !== logicDeterminedState;
@@ -2239,14 +2234,18 @@ export class UltraPopupModule extends BaseUltraModule {
       const isManuallyOpened = manuallyOpenedPopups.has(uniquePopupKey);
       if (logicStateChanged && !isManuallyOpened) {
         const wasOpen = popupStates.get(uniquePopupKey) || false;
-        popupStates.set(uniquePopupKey, logicDeterminedState);
 
-        // Handle timer based on state change
-        if (!wasOpen && logicDeterminedState && popupModule.auto_close_timer_enabled) {
-          // Popup just opened - start timer
-          this._startAutoCloseTimer(popupModule, uniquePopupKey);
-        } else if (wasOpen && !logicDeterminedState) {
-          // Popup just closed - clear timer
+        if (logicDeterminedState) {
+          // Always allow opening on rising edge
+          popupStates.set(uniquePopupKey, true);
+
+          // Start timer if enabled
+          if (!wasOpen && popupModule.auto_close_timer_enabled) {
+            this._startAutoCloseTimer(popupModule, uniquePopupKey);
+          }
+        } else if (popupModule.auto_close !== false) {
+          // Only close on falling edge when auto_close is enabled
+          popupStates.set(uniquePopupKey, false);
           this._clearAutoCloseTimer(uniquePopupKey);
         }
       }

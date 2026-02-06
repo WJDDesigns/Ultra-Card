@@ -1,0 +1,1768 @@
+import { TemplateResult, html } from 'lit';
+import { HomeAssistant } from 'custom-card-helpers';
+import { BaseUltraModule, ModuleMetadata } from './base-module';
+import {
+  CardModule,
+  NavigationModule,
+  NavRoute,
+  NavPopupItem,
+  NavActionConfig,
+  ModuleActionConfig,
+  UltraCardConfig,
+} from '../types';
+import { UcFormUtils } from '../utils/uc-form-utils';
+import { UltraLinkComponent } from '../components/ultra-link';
+import { localize } from '../localize/localize';
+import '../components/ultra-color-picker';
+import '../components/navigation-picker';
+
+// Navbar style presets (matching UC visual design)
+export type NavbarStylePreset =
+  | 'uc_modern'
+  | 'uc_minimal'
+  | 'uc_ios_glass'
+  | 'uc_material'
+  | 'uc_floating'
+  | 'uc_docked'
+  | 'uc_neumorphic'
+  | 'uc_gradient'
+  | 'uc_sidebar'
+  | 'uc_compact';
+
+interface NavbarStyleConfig {
+  id: NavbarStylePreset;
+  name: string;
+  description: string;
+}
+
+const NAVBAR_STYLE_PRESETS: NavbarStyleConfig[] = [
+  {
+    id: 'uc_modern',
+    name: 'UC Modern',
+    description: 'Clean modern style with rounded buttons and subtle shadows',
+  },
+  {
+    id: 'uc_minimal',
+    name: 'UC Minimal',
+    description: 'Minimal flat design with sharp edges',
+  },
+  {
+    id: 'uc_ios_glass',
+    name: 'iOS Glass',
+    description: 'iOS-style glassmorphism with heavy blur and vibrancy',
+  },
+  {
+    id: 'uc_material',
+    name: 'Material Design',
+    description: 'Material Design 3 elevated surface with tonal colors',
+  },
+  {
+    id: 'uc_floating',
+    name: 'Floating Pill',
+    description: 'Floating pill design with maximum border radius',
+  },
+  {
+    id: 'uc_docked',
+    name: 'Docked Bar',
+    description: 'Edge-to-edge bar without border radius',
+  },
+  {
+    id: 'uc_neumorphic',
+    name: 'Neumorphic',
+    description: 'Soft UI with light and dark shadows',
+  },
+  {
+    id: 'uc_gradient',
+    name: 'Gradient',
+    description: 'Colorful gradient background',
+  },
+  {
+    id: 'uc_sidebar',
+    name: 'Sidebar',
+    description: 'Vertical sidebar optimized for left/right positions',
+  },
+  {
+    id: 'uc_compact',
+    name: 'Compact',
+    description: 'Ultra-compact with smaller icons and tight spacing',
+  },
+];
+
+export class UltraNavigationModule extends BaseUltraModule {
+  metadata: ModuleMetadata = {
+    type: 'navigation',
+    title: 'Navigation',
+    description: 'Add a global navigation bar with routes, popups, and media player controls',
+    author: 'WJD Designs',
+    version: '1.0.0',
+    icon: 'mdi:compass-outline',
+    category: 'layout',
+    tags: ['navigation', 'navbar', 'menu', 'routes', 'layout'],
+  };
+
+  private _expandedRoutes: Set<string> = new Set();
+
+  createDefault(id?: string, hass?: HomeAssistant): NavigationModule {
+    return {
+      id: id || this.generateId('navigation'),
+      type: 'navigation',
+      nav_routes: [
+        {
+          id: this.generateId('nav-route'),
+          icon: 'mdi:home',
+          label: 'Home',
+          url: '/lovelace/home',
+        },
+      ],
+      nav_style: 'uc_modern',
+      nav_desktop: {
+        mode: 'floating',
+        show_labels: true,
+        show_popup_label_backgrounds: false,
+        min_width: 768,
+        position: 'bottom',
+      },
+      nav_mobile: {
+        mode: 'docked',
+        show_labels: false,
+        show_popup_label_backgrounds: false,
+        position: 'bottom',
+      },
+      nav_layout: {
+        reflect_child_state: true,
+        auto_padding: {
+          enabled: true,
+          desktop_px: 100,
+          mobile_px: 80,
+          media_player_px: 100,
+        },
+      },
+      nav_haptic: {
+        url: false,
+        tap_action: true,
+        hold_action: true,
+        double_tap_action: true,
+      },
+      nav_media_player: {
+        entity: '',
+        display_mode: 'widget',
+        album_cover_background: false,
+        desktop_position: 'bottom-center',
+      },
+      nav_styles: '',
+      nav_template: '',
+      display_mode: 'always',
+      display_conditions: [],
+    };
+  }
+
+  renderGeneralTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    const navModule = this.resolveNavigationConfig(module as NavigationModule, config);
+    const routes = navModule.nav_routes || [];
+    const lang = hass?.locale?.language || 'en';
+
+    const styleOptions = NAVBAR_STYLE_PRESETS.map(style => ({
+      value: style.id,
+      label: `${style.name} - ${style.description}`,
+    }));
+
+    return html`
+      ${this.injectUcFormStyles()}
+      <style>
+        ${this.getEditorStyles()}
+      </style>
+
+      <div class="module-settings">
+        <!-- Paths Section -->
+        <div class="settings-section">
+          <div class="section-title">NAVIGATION PATHS</div>
+          <div class="section-description">
+            Configure navigation items that appear in your navbar.
+          </div>
+
+          ${routes.length === 0
+            ? html`
+                <div class="info-box" style="margin-bottom: 16px;">
+                  <ha-icon icon="mdi:information"></ha-icon>
+                  <span>No paths configured. Add your first navigation path to get started.</span>
+                </div>
+              `
+            : html`
+                <div class="routes-list">
+                  ${routes.map((route, index) =>
+                    this.renderRouteRow(route, index, routes, hass, navModule, updateModule)
+                  )}
+                </div>
+              `}
+
+          <button
+            class="add-entity-btn"
+            @click=${() => {
+              const newRoute = this.createDefaultRoute();
+              this._expandedRoutes.add(newRoute.id);
+              updateModule({ nav_routes: [...routes, newRoute] });
+            }}
+          >
+            <ha-icon icon="mdi:plus"></ha-icon>
+            Add Path
+          </button>
+        </div>
+
+        <!-- Style Section -->
+        <div class="settings-section">
+          <div class="section-title">NAVBAR STYLE</div>
+
+          ${UcFormUtils.renderFieldSection(
+            'Visual Preset',
+            'Choose a visual style preset for your navbar.',
+            hass,
+            { nav_style: navModule.nav_style || 'uc_modern' },
+            [UcFormUtils.select('nav_style', styleOptions)],
+            (e: CustomEvent) => {
+              updateModule({ nav_style: e.detail.value.nav_style });
+            }
+          )}
+        </div>
+
+        <!-- Desktop Configuration Section -->
+        ${this.renderSettingsSection(
+          'DESKTOP MODE',
+          'Configure navbar appearance and behavior on desktop devices.',
+          [
+            {
+              title: 'Mode',
+              description: 'Choose floating (centered with margins) or docked (edge-to-edge).',
+              hass,
+              data: { mode: navModule.nav_desktop?.mode || 'floating' },
+              schema: [
+                UcFormUtils.select('mode', [
+                  { value: 'floating', label: 'Floating' },
+                  { value: 'docked', label: 'Docked' },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_desktop: { ...navModule.nav_desktop, mode: e.detail.value.mode },
+                });
+              },
+            },
+            {
+              title: 'Position',
+              description: 'Where the navbar appears on desktop.',
+              hass,
+              data: { position: navModule.nav_desktop?.position || 'bottom' },
+              schema: [
+                UcFormUtils.select('position', [
+                  { value: 'bottom', label: 'Bottom' },
+                  { value: 'top', label: 'Top' },
+                  { value: 'left', label: 'Left' },
+                  { value: 'right', label: 'Right' },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_desktop: { ...navModule.nav_desktop, position: e.detail.value.position },
+                });
+              },
+            },
+            {
+              title: 'Show Labels',
+              description: 'Control label visibility on desktop.',
+              hass,
+              data: {
+                show_labels:
+                  typeof navModule.nav_desktop?.show_labels === 'boolean'
+                    ? navModule.nav_desktop.show_labels
+                      ? 'true'
+                      : 'false'
+                    : (navModule.nav_desktop?.show_labels ?? 'false'),
+              },
+              schema: [
+                UcFormUtils.select('show_labels', [
+                  { value: 'false', label: 'Hidden' },
+                  { value: 'true', label: 'Show all' },
+                  { value: 'routes_only', label: 'Paths only' },
+                  { value: 'popup_only', label: 'Popup only' },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => {
+                const value = e.detail.value.show_labels;
+                updateModule({
+                  nav_desktop: {
+                    ...navModule.nav_desktop,
+                    show_labels: value === 'true' ? true : value === 'false' ? false : value,
+                  },
+                });
+              },
+            },
+            {
+              title: 'Popup Label Backgrounds',
+              description: 'Enable background capsules behind popup labels.',
+              hass,
+              data: {
+                show_popup_label_backgrounds:
+                  navModule.nav_desktop?.show_popup_label_backgrounds ?? false,
+              },
+              schema: [UcFormUtils.boolean('show_popup_label_backgrounds')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_desktop: {
+                    ...navModule.nav_desktop,
+                    show_popup_label_backgrounds: e.detail.value.show_popup_label_backgrounds,
+                  },
+                });
+              },
+            },
+            {
+              title: 'Min Width',
+              description: 'Viewport width (px) that switches to desktop mode.',
+              hass,
+              data: { min_width: navModule.nav_desktop?.min_width ?? 768 },
+              schema: [UcFormUtils.number('min_width', 320, 2560)],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_desktop: {
+                    ...navModule.nav_desktop,
+                    min_width: Number(e.detail.value.min_width),
+                  },
+                });
+              },
+            },
+          ]
+        )}
+
+        <!-- Mobile Configuration Section -->
+        ${this.renderSettingsSection(
+          'MOBILE MODE',
+          'Configure navbar appearance and behavior on mobile devices.',
+          [
+            {
+              title: 'Mode',
+              description: 'Choose docked (default) or floating (desktop-like).',
+              hass,
+              data: { mode: navModule.nav_mobile?.mode || 'docked' },
+              schema: [
+                UcFormUtils.select('mode', [
+                  { value: 'docked', label: 'Docked' },
+                  { value: 'floating', label: 'Floating' },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_mobile: { ...navModule.nav_mobile, mode: e.detail.value.mode },
+                });
+              },
+            },
+            {
+              title: 'Position',
+              description: 'Where the navbar appears on mobile.',
+              hass,
+              data: { position: navModule.nav_mobile?.position || 'bottom' },
+              schema: [
+                UcFormUtils.select('position', [
+                  { value: 'bottom', label: 'Bottom' },
+                  { value: 'top', label: 'Top' },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_mobile: { ...navModule.nav_mobile, position: e.detail.value.position },
+                });
+              },
+            },
+            {
+              title: 'Show Labels',
+              description: 'Control label visibility on mobile.',
+              hass,
+              data: {
+                show_labels:
+                  typeof navModule.nav_mobile?.show_labels === 'boolean'
+                    ? navModule.nav_mobile.show_labels
+                      ? 'true'
+                      : 'false'
+                    : (navModule.nav_mobile?.show_labels ?? 'false'),
+              },
+              schema: [
+                UcFormUtils.select('show_labels', [
+                  { value: 'false', label: 'Hidden' },
+                  { value: 'true', label: 'Show all' },
+                  { value: 'routes_only', label: 'Paths only' },
+                  { value: 'popup_only', label: 'Popup only' },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => {
+                const value = e.detail.value.show_labels;
+                updateModule({
+                  nav_mobile: {
+                    ...navModule.nav_mobile,
+                    show_labels: value === 'true' ? true : value === 'false' ? false : value,
+                  },
+                });
+              },
+            },
+            {
+              title: 'Popup Label Backgrounds',
+              description: 'Enable background capsules behind popup labels.',
+              hass,
+              data: {
+                show_popup_label_backgrounds:
+                  navModule.nav_mobile?.show_popup_label_backgrounds ?? false,
+              },
+              schema: [UcFormUtils.boolean('show_popup_label_backgrounds')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_mobile: {
+                    ...navModule.nav_mobile,
+                    show_popup_label_backgrounds: e.detail.value.show_popup_label_backgrounds,
+                  },
+                });
+              },
+            },
+          ]
+        )}
+
+        <!-- Layout & Padding Section -->
+        ${this.renderSettingsSection('LAYOUT & PADDING', 'Configure spacing and layout behavior.', [
+          {
+            title: 'Auto Padding',
+            description: 'Automatically pad the dashboard to prevent content overlap.',
+            hass,
+            data: { enabled: navModule.nav_layout?.auto_padding?.enabled ?? true },
+            schema: [UcFormUtils.boolean('enabled')],
+            onChange: (e: CustomEvent) => {
+              updateModule({
+                nav_layout: {
+                  ...navModule.nav_layout,
+                  auto_padding: {
+                    ...(navModule.nav_layout?.auto_padding || {}),
+                    enabled: e.detail.value.enabled,
+                  },
+                },
+              });
+            },
+          },
+          {
+            title: 'Desktop Padding (px)',
+            description: 'Padding applied when navbar is visible on desktop.',
+            hass,
+            data: { desktop_px: navModule.nav_layout?.auto_padding?.desktop_px ?? 100 },
+            schema: [UcFormUtils.number('desktop_px', 0, 400)],
+            onChange: (e: CustomEvent) => {
+              updateModule({
+                nav_layout: {
+                  ...navModule.nav_layout,
+                  auto_padding: {
+                    ...(navModule.nav_layout?.auto_padding || {}),
+                    desktop_px: Number(e.detail.value.desktop_px),
+                  },
+                },
+              });
+            },
+          },
+          {
+            title: 'Mobile Padding (px)',
+            description: 'Padding applied when navbar is visible on mobile.',
+            hass,
+            data: { mobile_px: navModule.nav_layout?.auto_padding?.mobile_px ?? 80 },
+            schema: [UcFormUtils.number('mobile_px', 0, 400)],
+            onChange: (e: CustomEvent) => {
+              updateModule({
+                nav_layout: {
+                  ...navModule.nav_layout,
+                  auto_padding: {
+                    ...(navModule.nav_layout?.auto_padding || {}),
+                    mobile_px: Number(e.detail.value.mobile_px),
+                  },
+                },
+              });
+            },
+          },
+          {
+            title: 'Media Player Padding (px)',
+            description: 'Extra padding when media player widget is visible.',
+            hass,
+            data: { media_player_px: navModule.nav_layout?.auto_padding?.media_player_px ?? 100 },
+            schema: [UcFormUtils.number('media_player_px', 0, 400)],
+            onChange: (e: CustomEvent) => {
+              updateModule({
+                nav_layout: {
+                  ...navModule.nav_layout,
+                  auto_padding: {
+                    ...(navModule.nav_layout?.auto_padding || {}),
+                    media_player_px: Number(e.detail.value.media_player_px),
+                  },
+                },
+              });
+            },
+          },
+          {
+            title: 'Reflect Child State',
+            description: 'Highlight routes when a popup child is selected.',
+            hass,
+            data: { reflect_child_state: navModule.nav_layout?.reflect_child_state ?? false },
+            schema: [UcFormUtils.boolean('reflect_child_state')],
+            onChange: (e: CustomEvent) => {
+              updateModule({
+                nav_layout: {
+                  ...navModule.nav_layout,
+                  reflect_child_state: e.detail.value.reflect_child_state,
+                },
+              });
+            },
+          },
+        ])}
+
+        <!-- Haptics Section -->
+        ${this.renderSettingsSection(
+          'HAPTIC FEEDBACK',
+          'Configure haptic feedback for interactions.',
+          [
+            {
+              title: 'Enable Haptics',
+              description: 'Master toggle for all navbar haptic feedback.',
+              hass,
+              data: { enabled: navModule.nav_haptic !== false },
+              schema: [UcFormUtils.boolean('enabled')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_haptic: e.detail.value.enabled ? this.getHapticConfig(navModule) : false,
+                });
+              },
+            },
+            {
+              title: 'URL Navigation',
+              description: 'Trigger haptic when navigating to a URL.',
+              hass,
+              data: { url: this.getHapticConfig(navModule).url ?? false },
+              schema: [UcFormUtils.boolean('url')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_haptic: { ...this.getHapticConfig(navModule), url: e.detail.value.url },
+                });
+              },
+            },
+            {
+              title: 'Tap Action',
+              description: 'Trigger haptic on tap.',
+              hass,
+              data: { tap_action: this.getHapticConfig(navModule).tap_action ?? true },
+              schema: [UcFormUtils.boolean('tap_action')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_haptic: {
+                    ...this.getHapticConfig(navModule),
+                    tap_action: e.detail.value.tap_action,
+                  },
+                });
+              },
+            },
+            {
+              title: 'Hold Action',
+              description: 'Trigger haptic on hold.',
+              hass,
+              data: { hold_action: this.getHapticConfig(navModule).hold_action ?? true },
+              schema: [UcFormUtils.boolean('hold_action')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_haptic: {
+                    ...this.getHapticConfig(navModule),
+                    hold_action: e.detail.value.hold_action,
+                  },
+                });
+              },
+            },
+            {
+              title: 'Double Tap',
+              description: 'Trigger haptic on double tap.',
+              hass,
+              data: {
+                double_tap_action: this.getHapticConfig(navModule).double_tap_action ?? true,
+              },
+              schema: [UcFormUtils.boolean('double_tap_action')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_haptic: {
+                    ...this.getHapticConfig(navModule),
+                    double_tap_action: e.detail.value.double_tap_action,
+                  },
+                });
+              },
+            },
+          ]
+        )}
+
+        <!-- Media Player Section -->
+        ${this.renderSettingsSection(
+          'MEDIA PLAYER WIDGET',
+          'Optional media player widget that appears above the navbar.',
+          [
+            {
+              title: 'Entity',
+              description: 'Media player entity to display.',
+              hass,
+              data: { entity: navModule.nav_media_player?.entity || '' },
+              schema: [UcFormUtils.entity('entity', ['media_player'])],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_media_player: {
+                    ...navModule.nav_media_player,
+                    entity: e.detail.value.entity,
+                  },
+                });
+              },
+            },
+            {
+              title: 'Display Mode',
+              description: 'How the media player is shown.',
+              hass,
+              data: {
+                display_mode: navModule.nav_media_player?.display_mode || 'widget',
+              },
+              schema: [
+                UcFormUtils.select('display_mode', [
+                  { value: 'widget', label: 'Always show widget' },
+                  { value: 'icon', label: 'Show as icon' },
+                  { value: 'icon_hover', label: 'Icon - expand on hover' },
+                  { value: 'icon_click', label: 'Icon - expand on click' },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_media_player: {
+                    ...navModule.nav_media_player,
+                    display_mode: e.detail.value.display_mode,
+                  },
+                });
+              },
+            },
+            {
+              title: 'Album Cover Background',
+              description: 'Use album art as blurred background.',
+              hass,
+              data: {
+                album_cover_background: navModule.nav_media_player?.album_cover_background ?? false,
+              },
+              schema: [UcFormUtils.boolean('album_cover_background')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_media_player: {
+                    ...navModule.nav_media_player,
+                    album_cover_background: e.detail.value.album_cover_background,
+                  },
+                });
+              },
+            },
+            {
+              title: 'Desktop Position',
+              description: 'Where the media player widget appears on desktop.',
+              hass,
+              data: {
+                desktop_position: navModule.nav_media_player?.desktop_position || 'bottom-center',
+              },
+              schema: [
+                UcFormUtils.select('desktop_position', [
+                  { value: 'bottom-center', label: 'Bottom Center' },
+                  { value: 'bottom-left', label: 'Bottom Left' },
+                  { value: 'bottom-right', label: 'Bottom Right' },
+                  { value: 'top-center', label: 'Top Center' },
+                  { value: 'top-left', label: 'Top Left' },
+                  { value: 'top-right', label: 'Top Right' },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  nav_media_player: {
+                    ...navModule.nav_media_player,
+                    desktop_position: e.detail.value.desktop_position,
+                  },
+                });
+              },
+            },
+          ]
+        )}
+
+        <!-- Advanced Section -->
+        <div class="settings-section">
+          <div class="section-title">ADVANCED</div>
+
+          ${UcFormUtils.renderFieldSection(
+            'Template Reference',
+            'Reference a predefined template from nav_templates in your card YAML.',
+            hass,
+            { nav_template: navModule.nav_template || '' },
+            [UcFormUtils.text('nav_template')],
+            (e: CustomEvent) => {
+              updateModule({ nav_template: e.detail.value.nav_template });
+            }
+          )}
+
+          <div class="field-container">
+            <div class="field-title">Custom CSS</div>
+            <div class="field-description">
+              Add custom styles targeting .navbar, .navbar-card, .route, .button, etc.
+            </div>
+            <ha-textfield
+              style="width: 100%;"
+              label="CSS Rules"
+              .value=${navModule.nav_styles || ''}
+              placeholder=".navbar { --navbar-primary-color: red; }"
+              multiline
+              rows="4"
+              @input=${(e: Event) => {
+                updateModule({ nav_styles: (e.target as HTMLInputElement).value });
+              }}
+            ></ha-textfield>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
+  ): TemplateResult {
+    const navModule = this.resolveNavigationConfig(module as NavigationModule, config);
+    const showPreview = previewContext === 'live' || previewContext === 'ha-preview';
+
+    if (!showPreview) {
+      return html``;
+    }
+
+    return html`
+      <div
+        style="border: 1px dashed var(--divider-color); padding: 16px; border-radius: 12px; text-align: center;"
+      >
+        <div style="font-weight: 700; margin-bottom: 8px;">Navigation Preview</div>
+        <div style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
+          ${(navModule.nav_routes || []).map(route => {
+            const label = route.label || 'Route';
+            const icon = route.icon || 'mdi:home';
+            return html`
+              <div
+                style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; background: var(--card-background-color); border-radius: 10px; min-width: 60px;"
+              >
+                <ha-icon icon="${icon}" style="color: var(--primary-color);"></ha-icon>
+                <div style="font-size: 11px;">${label}</div>
+              </div>
+            `;
+          })}
+        </div>
+        <div style="font-size: 11px; color: var(--secondary-text-color); margin-top: 10px;">
+          The navbar overlays the dashboard view. Check your live dashboard to see it in place.
+        </div>
+      </div>
+    `;
+  }
+
+  validate(module: CardModule): { valid: boolean; errors: string[] } {
+    const navModule = module as NavigationModule;
+    const errors: string[] = [];
+
+    if (!navModule.nav_routes || navModule.nav_routes.length === 0) {
+      errors.push('At least one navigation route is required.');
+    }
+
+    navModule.nav_routes?.forEach(route => {
+      const hasAction =
+        !!route.tap_action || !!route.hold_action || !!route.double_tap_action || !!route.popup;
+      if (!route.url && !hasAction) {
+        errors.push(`Route "${route.label || route.id}" must have a URL or an action.`);
+      }
+    });
+
+    return { valid: errors.length === 0, errors };
+  }
+
+  private resolveNavigationConfig(
+    module: NavigationModule,
+    config?: UltraCardConfig
+  ): NavigationModule {
+    if (!config) return module;
+
+    const templateName = module.nav_template?.trim();
+    const templateConfig =
+      templateName && config.nav_templates ? config.nav_templates[templateName] : undefined;
+
+    const mergedRoutes =
+      module.nav_routes && module.nav_routes.length > 0
+        ? module.nav_routes
+        : templateConfig?.nav_routes || [];
+
+    return {
+      ...module,
+      nav_routes: mergedRoutes,
+      nav_desktop: {
+        ...(templateConfig?.nav_desktop || {}),
+        ...(module.nav_desktop || {}),
+      },
+      nav_mobile: {
+        ...(templateConfig?.nav_mobile || {}),
+        ...(module.nav_mobile || {}),
+      },
+      nav_layout: {
+        ...(templateConfig?.nav_layout || {}),
+        ...(module.nav_layout || {}),
+      },
+      nav_haptic: module.nav_haptic ?? templateConfig?.nav_haptic,
+      nav_media_player: {
+        ...(templateConfig?.nav_media_player || {}),
+        ...(module.nav_media_player || {}),
+      },
+      nav_styles: module.nav_styles ?? templateConfig?.nav_styles,
+    };
+  }
+
+  private createDefaultRoute(): NavRoute {
+    return {
+      id: this.generateId('nav-route'),
+      icon: 'mdi:home-outline',
+      label: 'New Path',
+      url: '',
+    };
+  }
+
+  private createDefaultPopupItem(): NavPopupItem {
+    return {
+      id: this.generateId('nav-popup'),
+      icon: 'mdi:star-outline',
+      label: 'Popup Item',
+      url: '',
+    };
+  }
+
+  private renderRouteRow(
+    route: NavRoute,
+    index: number,
+    routes: NavRoute[],
+    hass: HomeAssistant,
+    navModule: NavigationModule,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    const isExpanded = this._expandedRoutes.has(route.id);
+    const label = route.label || `Path ${index + 1}`;
+    const icon = route.icon || 'mdi:compass-outline';
+
+    const updateRoute = (updates: Partial<NavRoute>) => {
+      const nextRoutes = routes.map(r => (r.id === route.id ? { ...r, ...updates } : r));
+      updateModule({ nav_routes: nextRoutes });
+    };
+
+    const removeRoute = () => {
+      const nextRoutes = routes.filter(r => r.id !== route.id);
+      this._expandedRoutes.delete(route.id);
+      updateModule({ nav_routes: nextRoutes });
+    };
+
+    const moveRoute = (direction: number) => {
+      const currentIndex = routes.findIndex(r => r.id === route.id);
+      const targetIndex = currentIndex + direction;
+      if (targetIndex < 0 || targetIndex >= routes.length) return;
+      const nextRoutes = [...routes];
+      const [item] = nextRoutes.splice(currentIndex, 1);
+      nextRoutes.splice(targetIndex, 0, item);
+      updateModule({ nav_routes: nextRoutes });
+    };
+
+    const toggleExpand = () => {
+      if (isExpanded) {
+        this._expandedRoutes.delete(route.id);
+      } else {
+        this._expandedRoutes.add(route.id);
+      }
+      updateModule({}); // Trigger re-render
+    };
+
+    return html`
+      <div class="entity-row ${isExpanded ? 'expanded' : ''}">
+        <div class="entity-header" @click=${toggleExpand}>
+          <div class="entity-info">
+            <ha-icon icon="${icon}" class="entity-icon"></ha-icon>
+            <div class="entity-name">${label}</div>
+            ${route.url ? html` <div class="entity-detail">${route.url}</div> ` : ''}
+          </div>
+          <div class="entity-actions" @click=${(e: Event) => e.stopPropagation()}>
+            <button class="entity-action-btn" @click=${() => moveRoute(-1)} title="Move up">
+              <ha-icon icon="mdi:arrow-up"></ha-icon>
+            </button>
+            <button class="entity-action-btn" @click=${() => moveRoute(1)} title="Move down">
+              <ha-icon icon="mdi:arrow-down"></ha-icon>
+            </button>
+            <button class="entity-action-btn delete" @click=${removeRoute} title="Delete">
+              <ha-icon icon="mdi:delete"></ha-icon>
+            </button>
+            <ha-icon
+              icon="${isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}"
+              class="expand-icon"
+            ></ha-icon>
+          </div>
+        </div>
+
+        ${isExpanded
+          ? html`
+              <div class="entity-expanded">
+                ${UcFormUtils.renderFieldSection(
+                  'Label',
+                  'Text shown below the icon in the navbar.',
+                  hass,
+                  { label: route.label || '' },
+                  [UcFormUtils.text('label')],
+                  (e: CustomEvent) => updateRoute({ label: e.detail.value.label })
+                )}
+                ${UcFormUtils.renderFieldSection(
+                  'Path',
+                  'Dashboard path like /lovelace/home or leave blank to use custom tap action.',
+                  hass,
+                  { url: route.url || '' },
+                  [UcFormUtils.text('url')],
+                  (e: CustomEvent) => updateRoute({ url: e.detail.value.url })
+                )}
+                ${UcFormUtils.renderFieldSection(
+                  'Icon',
+                  'Material Design icon for this path.',
+                  hass,
+                  { icon: route.icon || '' },
+                  [UcFormUtils.icon('icon')],
+                  (e: CustomEvent) => updateRoute({ icon: e.detail.value.icon })
+                )}
+
+                <div class="color-field">
+                  <div class="field-title">Icon Color</div>
+                  <div class="field-description">Custom color for the icon.</div>
+                  <ultra-color-picker
+                    .hass=${hass}
+                    .value=${route.icon_color || ''}
+                    @value-changed=${(e: CustomEvent) =>
+                      updateRoute({ icon_color: e.detail.value })}
+                  ></ultra-color-picker>
+                </div>
+
+                ${UcFormUtils.renderFieldSection(
+                  'Selected Icon (Optional)',
+                  'Different icon shown when this path is active.',
+                  hass,
+                  { icon_selected: route.icon_selected || '' },
+                  [UcFormUtils.icon('icon_selected')],
+                  (e: CustomEvent) => updateRoute({ icon_selected: e.detail.value.icon_selected })
+                )}
+
+                <div class="color-field">
+                  <div class="field-title">Selected Color</div>
+                  <div class="field-description">Color when path is active.</div>
+                  <ultra-color-picker
+                    .hass=${hass}
+                    .value=${route.selected_color || ''}
+                    @value-changed=${(e: CustomEvent) =>
+                      updateRoute({ selected_color: e.detail.value })}
+                  ></ultra-color-picker>
+                </div>
+
+                ${UcFormUtils.renderFieldSection(
+                  'Image URL (Optional)',
+                  'Use custom image instead of icon (e.g., user avatar).',
+                  hass,
+                  { image: route.image || '' },
+                  [UcFormUtils.text('image')],
+                  (e: CustomEvent) => updateRoute({ image: e.detail.value.image })
+                )}
+                ${UcFormUtils.renderFieldSection(
+                  'Selected Image URL (Optional)',
+                  'Different image shown when path is active.',
+                  hass,
+                  { image_selected: route.image_selected || '' },
+                  [UcFormUtils.text('image_selected')],
+                  (e: CustomEvent) => updateRoute({ image_selected: e.detail.value.image_selected })
+                )}
+
+                <!-- Badge Settings -->
+                <div
+                  style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--divider-color);"
+                >
+                  <div class="field-group-title">Badge</div>
+                  ${this.renderBadgeEditor(route, updateRoute)}
+                </div>
+
+                <!-- Popup Settings -->
+                <div
+                  style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--divider-color);"
+                >
+                  <div class="field-group-title">Popup Menu</div>
+                  ${this.renderPopupEditor(route, hass, updateRoute)}
+                </div>
+              </div>
+            `
+          : ''}
+      </div>
+    `;
+  }
+
+  private renderBadgeEditor(route: NavRoute, updateRoute: (updates: Partial<NavRoute>) => void) {
+    const badge = route.badge || {};
+    const showMode = this.getBooleanMode(badge.show);
+
+    const updateBadge = (updates: Partial<NavRoute['badge']>) => {
+      updateRoute({ badge: { ...badge, ...updates } });
+    };
+
+    return html`
+      <div class="field-container">
+        <div class="field-title">Show Badge</div>
+        ${this.renderBooleanModeSelect(showMode, value => updateBadge({ show: value as any }))}
+      </div>
+      ${showMode !== 'false'
+        ? html`
+            <div class="entity-fields-grid">
+              <div class="field-container">
+                <div class="field-title">Badge Count</div>
+                <ha-textfield
+                  style="width: 100%;"
+                  .value=${badge.count || ''}
+                  placeholder="0"
+                  @input=${(e: Event) =>
+                    updateBadge({ count: (e.target as HTMLInputElement).value })}
+                ></ha-textfield>
+              </div>
+              <div class="field-container">
+                <div class="field-title">Badge Color</div>
+                <ultra-color-picker
+                  .value=${badge.color || ''}
+                  @value-changed=${(e: CustomEvent) => updateBadge({ color: e.detail.value })}
+                ></ultra-color-picker>
+              </div>
+              <div class="field-container">
+                <div class="field-title">Text Color</div>
+                <ultra-color-picker
+                  .value=${badge.text_color || badge.textColor || ''}
+                  @value-changed=${(e: CustomEvent) =>
+                    updateBadge({ text_color: e.detail.value, textColor: undefined })}
+                ></ultra-color-picker>
+              </div>
+            </div>
+          `
+        : ''}
+    `;
+  }
+
+  private renderPopupEditor(
+    route: NavRoute,
+    hass: HomeAssistant,
+    updateRoute: (updates: Partial<NavRoute>) => void
+  ) {
+    const popupMode = Array.isArray(route.popup)
+      ? 'list'
+      : typeof route.popup === 'string'
+        ? 'template'
+        : 'none';
+
+    const popupItems = Array.isArray(route.popup) ? route.popup : [];
+
+    return html`
+      <div class="field-container">
+        <div class="field-title">Popup Type</div>
+        <ha-select
+          style="width: 100%;"
+          .value=${popupMode}
+          @selected=${(e: any) => {
+            const mode = e.target.value;
+            if (mode === 'none') {
+              updateRoute({ popup: undefined });
+            } else if (mode === 'list') {
+              updateRoute({ popup: [] });
+            } else {
+              updateRoute({ popup: '[[[ return []; ]]]' });
+            }
+          }}
+        >
+          <mwc-list-item value="none">Disabled</mwc-list-item>
+          <mwc-list-item value="list">List</mwc-list-item>
+          <mwc-list-item value="template">JS Template</mwc-list-item>
+        </ha-select>
+      </div>
+
+      ${popupMode === 'template'
+        ? html`
+            <div class="field-container">
+              <div class="field-title">Popup Template</div>
+              <div class="field-description">
+                Return array of popup items. Example: return [{ icon: 'mdi:home', label: 'Home',
+                url: '/home' }]
+              </div>
+              <ha-textfield
+                style="width: 100%;"
+                multiline
+                rows="4"
+                .value=${typeof route.popup === 'string' ? route.popup : ''}
+                @input=${(e: Event) => updateRoute({ popup: (e.target as HTMLInputElement).value })}
+              ></ha-textfield>
+            </div>
+          `
+        : ''}
+      ${popupMode === 'list'
+        ? html`
+            <div class="field-container">
+              <div class="field-description" style="margin-bottom: 8px;">
+                Add items that appear when this path is tapped.
+              </div>
+              ${(popupItems || []).map((item, idx) =>
+                this.renderPopupItemCompact(item, idx, popupItems, updateRoute)
+              )}
+              <button
+                class="add-entity-btn"
+                style="margin-top: 8px;"
+                @click=${() =>
+                  updateRoute({ popup: [...popupItems, this.createDefaultPopupItem()] })}
+              >
+                <ha-icon icon="mdi:plus"></ha-icon>
+                Add Popup Item
+              </button>
+            </div>
+          `
+        : ''}
+    `;
+  }
+
+  private renderPopupItemCompact(
+    item: NavPopupItem,
+    index: number,
+    items: NavPopupItem[],
+    updateRoute: (updates: Partial<NavRoute>) => void
+  ) {
+    const updateItem = (updates: Partial<NavPopupItem>) => {
+      updateRoute({
+        popup: items.map(i => (i.id === item.id ? { ...i, ...updates } : i)),
+      });
+    };
+
+    const removeItem = () => updateRoute({ popup: items.filter(i => i.id !== item.id) });
+
+    return html`
+      <div class="compact-item-row">
+        <ha-icon icon="${item.icon || 'mdi:star-outline'}" style="--mdc-icon-size: 20px;"></ha-icon>
+        <ha-textfield
+          style="flex: 1;"
+          placeholder="Label"
+          .value=${item.label || ''}
+          @input=${(e: Event) => updateItem({ label: (e.target as HTMLInputElement).value })}
+        ></ha-textfield>
+        <ha-textfield
+          style="flex: 1;"
+          placeholder="Path"
+          .value=${item.url || ''}
+          @input=${(e: Event) => updateItem({ url: (e.target as HTMLInputElement).value })}
+        ></ha-textfield>
+        <ha-icon-picker
+          style="width: 80px;"
+          .value=${item.icon || ''}
+          @value-changed=${(e: CustomEvent) => updateItem({ icon: e.detail.value })}
+        ></ha-icon-picker>
+        <button class="entity-action-btn delete" @click=${removeItem}>
+          <ha-icon icon="mdi:delete"></ha-icon>
+        </button>
+      </div>
+    `;
+  }
+
+  private renderBooleanModeSelect(
+    mode: 'auto' | 'true' | 'false' | 'template',
+    update: (value: boolean | string | undefined) => void
+  ) {
+    return html`
+      <ha-select
+        style="width: 100%;"
+        .value=${mode}
+        @selected=${(e: any) => {
+          const nextMode = e.target.value;
+          if (nextMode === 'auto') update(undefined);
+          if (nextMode === 'true') update(true);
+          if (nextMode === 'false') update(false);
+          if (nextMode === 'template') update('[[[ return true; ]]]');
+        }}
+      >
+        <mwc-list-item value="auto">Auto</mwc-list-item>
+        <mwc-list-item value="true">Always True</mwc-list-item>
+        <mwc-list-item value="false">Always False</mwc-list-item>
+        <mwc-list-item value="template">JS Template</mwc-list-item>
+      </ha-select>
+    `;
+  }
+
+  private getBooleanMode(
+    value: boolean | string | undefined
+  ): 'auto' | 'true' | 'false' | 'template' {
+    if (typeof value === 'boolean') {
+      return value ? 'true' : 'false';
+    }
+    if (typeof value === 'string') {
+      return 'template';
+    }
+    return 'auto';
+  }
+
+  private getHapticConfig(navModule: NavigationModule) {
+    if (navModule.nav_haptic === true) {
+      return {
+        url: false,
+        tap_action: true,
+        hold_action: true,
+        double_tap_action: true,
+      };
+    }
+    if (navModule.nav_haptic === false || !navModule.nav_haptic) {
+      return {
+        url: false,
+        tap_action: true,
+        hold_action: true,
+        double_tap_action: true,
+      };
+    }
+    return navModule.nav_haptic;
+  }
+
+  private getEditorStyles(): string {
+    return `
+      .module-settings {
+        padding-bottom: 24px;
+      }
+      .settings-section {
+        background: var(--secondary-background-color);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+      .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .section-description {
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        margin-bottom: 20px;
+        line-height: 1.4;
+      }
+      .info-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        background: rgba(var(--rgb-info-color), 0.1);
+        border-radius: 8px;
+        border-left: 4px solid var(--info-color);
+        font-size: 13px;
+        color: var(--primary-text-color);
+      }
+      .info-box ha-icon {
+        color: var(--info-color);
+        --mdc-icon-size: 20px;
+      }
+      .add-entity-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 12px;
+        border: 1px dashed var(--primary-color);
+        border-radius: 10px;
+        background: none;
+        color: var(--primary-color);
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s;
+      }
+      .add-entity-btn:hover {
+        background: rgba(var(--rgb-primary-color), 0.08);
+      }
+      .routes-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .entity-row {
+        border: 1px solid var(--divider-color);
+        border-radius: 10px;
+        background: var(--card-background-color);
+        overflow: hidden;
+        transition: all 0.2s;
+      }
+      .entity-row:hover {
+        border-color: var(--primary-color);
+      }
+      .entity-row.expanded {
+        border-color: var(--primary-color);
+        box-shadow: 0 4px 12px rgba(var(--rgb-primary-color), 0.15);
+      }
+      .entity-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .entity-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+      }
+      .entity-icon {
+        --mdc-icon-size: 22px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+      }
+      .entity-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--primary-text-color);
+      }
+      .entity-detail {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        margin-left: 8px;
+      }
+      .entity-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .entity-action-btn {
+        border: none;
+        background: none;
+        padding: 6px;
+        cursor: pointer;
+        border-radius: 6px;
+        color: var(--secondary-text-color);
+        transition: all 0.2s;
+      }
+      .entity-action-btn:hover {
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+      }
+      .entity-action-btn.delete:hover {
+        color: var(--error-color);
+      }
+      .expand-icon {
+        --mdc-icon-size: 20px;
+        color: var(--secondary-text-color);
+        transition: transform 0.2s;
+      }
+      .entity-row.expanded .expand-icon {
+        transform: rotate(180deg);
+      }
+      .entity-expanded {
+        padding: 16px;
+        border-top: 1px solid var(--divider-color);
+        background: var(--secondary-background-color);
+      }
+      .entity-field-group {
+        margin-bottom: 20px;
+      }
+      .entity-field-group:last-child {
+        margin-bottom: 0;
+      }
+      .field-group-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--divider-color);
+      }
+      .entity-fields-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+      .field-container {
+        margin-bottom: 12px;
+      }
+      .field-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        margin-bottom: 6px;
+      }
+      .field-description {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        line-height: 1.4;
+        margin-bottom: 8px;
+      }
+      .compact-item-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        background: var(--card-background-color);
+      }
+      .color-field {
+        margin-bottom: 16px;
+      }
+    `;
+  }
+}
+    route: NavRoute,
+    index: number,
+    routes: NavRoute[],
+    hass: HomeAssistant,
+    navModule: NavigationModule,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    const isExpanded = this._expandedRoutes.has(route.id);
+    const label = route.label || `Path ${index + 1}`;
+    const icon = route.icon || 'mdi:compass-outline';
+
+    const updateRoute = (updates: Partial<NavRoute>) => {
+      const nextRoutes = routes.map(r => (r.id === route.id ? { ...r, ...updates } : r));
+      updateModule({ nav_routes: nextRoutes });
+    };
+
+    const removeRoute = () => {
+      const nextRoutes = routes.filter(r => r.id !== route.id);
+      this._expandedRoutes.delete(route.id);
+      updateModule({ nav_routes: nextRoutes });
+    };
+
+    const moveRoute = (direction: number) => {
+      const currentIndex = routes.findIndex(r => r.id === route.id);
+      const targetIndex = currentIndex + direction;
+      if (targetIndex < 0 || targetIndex >= routes.length) return;
+      const nextRoutes = [...routes];
+      const [item] = nextRoutes.splice(currentIndex, 1);
+      nextRoutes.splice(targetIndex, 0, item);
+      updateModule({ nav_routes: nextRoutes });
+    };
+
+    const toggleExpand = () => {
+      if (isExpanded) {
+        this._expandedRoutes.delete(route.id);
+      } else {
+        this._expandedRoutes.add(route.id);
+      }
+      updateModule({});
+    };
+
+    return html`
+      <div class="entity-row ${isExpanded ? 'expanded' : ''}">
+        <div class="entity-header" @click=${toggleExpand}>
+          <div class="entity-info">
+            <ha-icon icon="${icon}" class="entity-icon"></ha-icon>
+            <div class="entity-name">${label}</div>
+            ${route.url ? html` <div class="entity-detail">${route.url}</div> ` : ''}
+          </div>
+          <div class="entity-actions" @click=${(e: Event) => e.stopPropagation()}>
+            <button class="entity-action-btn" @click=${() => moveRoute(-1)} title="Move up">
+              <ha-icon icon="mdi:arrow-up"></ha-icon>
+            </button>
+            <button class="entity-action-btn" @click=${() => moveRoute(1)} title="Move down">
+              <ha-icon icon="mdi:arrow-down"></ha-icon>
+            </button>
+            <button class="entity-action-btn delete" @click=${removeRoute} title="Delete">
+              <ha-icon icon="mdi:delete"></ha-icon>
+            </button>
+            <ha-icon
+              icon="${isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}"
+              class="expand-icon"
+            ></ha-icon>
+          </div>
+        </div>
+
+        ${isExpanded
+          ? html`
+              <div class="entity-expanded">
+                <!-- Path Details -->
+                <div class="entity-field-group">
+                  <div class="field-group-title">Path Details</div>
+                  <div class="entity-fields-grid">
+                    <div class="field-container">
+                      <div class="field-title">Label</div>
+                      <ha-textfield
+                        style="width: 100%;"
+                        .value=${route.label || ''}
+                        @input=${(e: Event) =>
+                          updateRoute({ label: (e.target as HTMLInputElement).value })}
+                      ></ha-textfield>
+                    </div>
+                    <div class="field-container">
+                      <div class="field-title">Dashboard Path</div>
+                      <div class="field-description">Example: /lovelace/home</div>
+                      <ha-textfield
+                        style="width: 100%;"
+                        .value=${route.url || ''}
+                        placeholder="/lovelace/home"
+                        @input=${(e: Event) =>
+                          updateRoute({ url: (e.target as HTMLInputElement).value })}
+                      ></ha-textfield>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Visual Settings -->
+                <div class="entity-field-group">
+                  <div class="field-group-title">Visual</div>
+                  <div class="entity-fields-grid">
+                    <div class="field-container">
+                      <div class="field-title">Icon</div>
+                      <ha-icon-picker
+                        .value=${route.icon || ''}
+                        @value-changed=${(e: CustomEvent) => updateRoute({ icon: e.detail.value })}
+                      ></ha-icon-picker>
+                    </div>
+                    <div class="field-container">
+                      <div class="field-title">Icon Color</div>
+                      <ultra-color-picker
+                        .value=${route.icon_color || ''}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateRoute({ icon_color: e.detail.value })}
+                      ></ultra-color-picker>
+                    </div>
+                    <div class="field-container">
+                      <div class="field-title">Selected Icon</div>
+                      <ha-icon-picker
+                        .value=${route.icon_selected || ''}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateRoute({ icon_selected: e.detail.value })}
+                      ></ha-icon-picker>
+                    </div>
+                    <div class="field-container">
+                      <div class="field-title">Selected Color</div>
+                      <ultra-color-picker
+                        .value=${route.selected_color || ''}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateRoute({ selected_color: e.detail.value })}
+                      ></ultra-color-picker>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Image Settings -->
+                <div class="entity-field-group">
+                  <div class="field-group-title">Image (Optional)</div>
+                  <div class="field-description" style="margin-bottom: 12px;">
+                    Use custom images instead of icons (e.g., user avatars, logos)
+                  </div>
+                  <div class="entity-fields-grid">
+                    <div class="field-container">
+                      <div class="field-title">Image URL</div>
+                      <ha-textfield
+                        style="width: 100%;"
+                        .value=${route.image || ''}
+                        placeholder="https://example.com/image.png"
+                        @input=${(e: Event) =>
+                          updateRoute({ image: (e.target as HTMLInputElement).value })}
+                      ></ha-textfield>
+                    </div>
+                    <div class="field-container">
+                      <div class="field-title">Selected Image URL</div>
+                      <ha-textfield
+                        style="width: 100%;"
+                        .value=${route.image_selected || ''}
+                        @input=${(e: Event) =>
+                          updateRoute({ image_selected: (e.target as HTMLInputElement).value })}
+                      ></ha-textfield>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Badge Settings -->
+                <div class="entity-field-group">
+                  <div class="field-group-title">Badge</div>
+                  ${this.renderBadgeEditor(route, updateRoute)}
+                </div>
+
+                <!-- Popup Settings -->
+                <div class="entity-field-group">
+                  <div class="field-group-title">Popup Menu</div>
+                  ${this.renderPopupEditor(route, hass, updateRoute)}
+                </div>
+              </div>
+            `
+          : ''}
+      </div>
+    `;
+  }
+
+  private renderBadgeEditor(route: NavRoute, updateRoute: (updates: Partial<NavRoute>) => void) {
+    const badge = route.badge || {};
+    const showMode = this.getBooleanMode(badge.show);
+
+    const updateBadge = (updates: Partial<NavRoute['badge']>) => {
+      updateRoute({ badge: { ...badge, ...updates } });
+    };
+
+    return html`
+      <div class="field-container">
+        <div class="field-title">Show Badge</div>
+        ${this.renderBooleanModeSelect(showMode, value => updateBadge({ show: value as any }))}
+      </div>
+      ${showMode !== 'false'
+        ? html`
+            <div class="entity-fields-grid">
+              <div class="field-container">
+                <div class="field-title">Badge Count / Text</div>
+                <ha-textfield
+                  style="width: 100%;"
+                  .value=${badge.count || ''}
+                  placeholder="5"
+                  @input=${(e: Event) =>
+                    updateBadge({ count: (e.target as HTMLInputElement).value })}
+                ></ha-textfield>
+              </div>
+              <div class="field-container">
+                <div class="field-title">Badge Color</div>
+                <ultra-color-picker
+                  .value=${badge.color || ''}
+                  @value-changed=${(e: CustomEvent) => updateBadge({ color: e.detail.value })}
+                ></ultra-color-picker>
+              </div>
+              <div class="field-container">
+                <div class="field-title">Text Color</div>
+                <ultra-color-picker
+                  .value=${badge.text_color || badge.textColor || ''}
+                  @value-changed=${(e: CustomEvent) =>
+                    updateBadge({ text_color: e.detail.value, textColor: undefined })}
+                ></ultra-color-picker>
+              </div>
+            </div>
+          `
+        : ''}
+    `;
+  }
+
+  private renderPopupEditor(
+    route: NavRoute,
+    hass: HomeAssistant,
+    updateRoute: (updates: Partial<NavRoute>) => void
+  ) {
+    const popupMode = Array.isArray(route.popup)
+      ? 'list'
+      : typeof route.popup === 'string'
+        ? 'template'
+        : 'none';
+
+    const popupItems = Array.isArray(route.popup) ? route.popup : [];
+
+    return html`
+      <div class="field-container">
+        <div class="field-title">Popup Type</div>
+        <ha-select
+          style="width: 100%;"
+          .value=${popupMode}
+          @selected=${(e: any) => {
+            const mode = e.target.value;
+            if (mode === 'none') {
+              updateRoute({ popup: undefined });
+            } else if (mode === 'list') {
+              updateRoute({ popup: [] });
+            } else {
+              updateRoute({ popup: '[[[ return []; ]]]' });
+            }
+          }}
+        >
+          <mwc-list-item value="none">Disabled</mwc-list-item>
+          <mwc-list-item value="list">List</mwc-list-item>
+          <mwc-list-item value="template">JS Template</mwc-list-item>
+        </ha-select>
+      </div>
+
+      ${popupMode === 'template'
+        ? html`
+            <div class="field-container">
+              <div class="field-title">Popup Template</div>
+              <div class="field-description">
+                Return array of popup items. Example: return [{ icon: 'mdi:home', label: 'Home',
+                url: '/home' }]
+              </div>
+              <ha-textfield
+                style="width: 100%;"
+                multiline
+                rows="4"
+                .value=${typeof route.popup === 'string' ? route.popup : ''}
+                @input=${(e: Event) => updateRoute({ popup: (e.target as HTMLInputElement).value })}
+              ></ha-textfield>
+            </div>
+          `
+        : ''}
+      ${popupMode === 'list'
+        ? html`
+            <div class="field-container">
+              <div class="field-description" style="margin-bottom: 8px;">
+                Add items that appear when this path is tapped.
+              </div>
+              ${(popupItems || []).map((item, idx) =>
+                this.renderPopupItemCompact(item, idx, popupItems, updateRoute)
+              )}
+              <button
+                class="add-entity-btn"
+                style="margin-top: 8px;"
+                @click=${() =>
+                  updateRoute({ popup: [...popupItems, this.createDefaultPopupItem()] })}
+              >
+                <ha-icon icon="mdi:plus"></ha-icon>
+                Add Popup Item
+              </button>
+            </div>
+          `
+        : ''}
+    `;
+  }
+
+  private renderPopupItemCompact(
+    item: NavPopupItem,
+    index: number,
+    items: NavPopupItem[],
+    updateRoute: (updates: Partial<NavRoute>) => void
+  ) {
+    const updateItem = (updates: Partial<NavPopupItem>) => {
+      updateRoute({
+        popup: items.map(i => (i.id === item.id ? { ...i, ...updates } : i)),
+      });
+    };
+
+    const removeItem = () => updateRoute({ popup: items.filter(i => i.id !== item.id) });
+
+    return html`
+      <div class="compact-item-row">
+        <ha-icon icon="${item.icon || 'mdi:star-outline'}" style="--mdc-icon-size: 20px;"></ha-icon>
+        <ha-textfield
+          style="flex: 1;"
+          placeholder="Label"
+          .value=${item.label || ''}
+          @input=${(e: Event) => updateItem({ label: (e.target as HTMLInputElement).value })}
+        ></ha-textfield>
+        <ha-textfield
+          style="flex: 1;"
+          placeholder="Path"
+          .value=${item.url || ''}
+          @input=${(e: Event) => updateItem({ url: (e.target as HTMLInputElement).value })}
+        ></ha-textfield>
+        <ha-icon-picker
+          style="width: 80px;"
+          .value=${item.icon || ''}
+          @value-changed=${(e: CustomEvent) => updateItem({ icon: e.detail.value })}
+        ></ha-icon-picker>
+        <button class="entity-action-btn delete" @click=${removeItem}>
+          <ha-icon icon="mdi:delete"></ha-icon>
+        </button>
+      </div>
+    `;
+  }
+}

@@ -328,6 +328,7 @@ export declare class LayoutTab extends LitElement {
     private _onDragEnter;
     private _autoExpandOnDragOver;
     private _onDragLeave;
+    private _getModuleDropIndex;
     private _onDrop;
     private _onTreeLayoutChildDrop;
     private _onTreeDeepNestedChildDrop;
@@ -347,6 +348,7 @@ export declare class LayoutTab extends LitElement {
     private _openRowSettings;
     private _updateRow;
     private _openColumnSettings;
+    private _closeColumnSettings;
     private _updateColumn;
     private _loadGoogleFont;
     private _renderModulePreview;

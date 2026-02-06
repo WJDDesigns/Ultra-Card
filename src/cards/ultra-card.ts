@@ -21,6 +21,7 @@ import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service
 import { ucVideoBgService } from '../services/uc-video-bg-service';
 import { ucDynamicWeatherService } from '../services/uc-dynamic-weather-service';
 import { ucBackgroundService } from '../services/uc-background-service';
+import { ucNavigationService } from '../services/uc-navigation-service';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
 import { UcGestureService } from '../services/uc-gesture-service';
 import { Z_INDEX } from '../utils/uc-z-index';
@@ -255,6 +256,7 @@ export class UltraCard extends LitElement {
     // Register dynamic weather modules with the service
     this._registerDynamicWeatherModules();
     this._registerBackgroundModules();
+    this._registerNavigationModules();
   }
 
   disconnectedCallback(): void {
@@ -342,6 +344,7 @@ export class UltraCard extends LitElement {
 
     // Unregister background modules so per-view backgrounds are cleaned up
     this._unregisterBackgroundModules();
+    this._unregisterNavigationModules();
   }
 
   /**
@@ -712,7 +715,7 @@ export class UltraCard extends LitElement {
     });
 
     // Modules that render view-wide effects or are invisible on the dashboard
-    const invisibleTypes = ['video_bg', 'dynamic_weather', 'background'];
+    const invisibleTypes = ['video_bg', 'dynamic_weather', 'background', 'navigation'];
     const onlyInvisibleModules =
       allModules.length > 0 && allModules.every(m => invisibleTypes.includes(m.type));
 
@@ -730,19 +733,99 @@ export class UltraCard extends LitElement {
     // Check if we're in the card editor (not just dashboard edit mode)
     const isInCardEditor = !!document.querySelector('hui-dialog-edit-card');
 
-    // Check if the dashboard itself is in edit mode
+    // Check if the dashboard itself is in edit mode using multiple methods
     const isDashboardEditMode = (() => {
       try {
+        // Method 1: Check URL parameter
         const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('edit') === '1';
+        if (urlParams.get('edit') === '1') return true;
+
+        // Method 2: Check HA's lovelace editMode property
+        const root = document.querySelector('home-assistant') as any;
+        const lovelace = root?.shadowRoot
+          ?.querySelector('home-assistant-main')
+          ?.shadowRoot?.querySelector('ha-drawer')
+          ?.querySelector('partial-panel-resolver')
+          ?.querySelector('ha-panel-lovelace')?.lovelace;
+        if (lovelace?.editMode) return true;
+
+        // Method 3: Check for edit mode UI elements
+        if (document.querySelector('hui-editor-mode')) return true;
+
+        // Method 4: Check if card has edit mode overlay
+        const hasEditOverlay = !!document.querySelector('hui-card-edit-mode');
+        if (hasEditOverlay) return true;
+
+        return false;
       } catch {
         return false;
       }
     })();
 
-    // If only invisible modules (video_bg, dynamic_weather) and NOT in card editor AND NOT in dashboard edit mode, don't render anything
+    // If only invisible modules (video_bg, dynamic_weather) and NOT in card editor AND NOT in dashboard edit mode, hide completely
     if (onlyInvisibleModules && !isInCardEditor && !isDashboardEditMode) {
+      // Set attribute for CSS to hide the host element
+      this.setAttribute('data-invisible', 'true');
+      // Also set inline style to ensure it's hidden (backup for shadow DOM scenarios)
+      this.style.display = 'none';
+      this.style.height = '0';
+      this.style.overflow = 'hidden';
+      this.style.margin = '0';
+      this.style.padding = '0';
+
+      // Also try to hide parent hui-card element in sections view
+      requestAnimationFrame(() => {
+        try {
+          let parent: HTMLElement | null = this.parentElement;
+          let depth = 0;
+          while (parent && depth < 10) {
+            const tagName = parent.tagName?.toLowerCase();
+            if (tagName === 'hui-card' || tagName === 'hui-section-card') {
+              parent.style.display = 'none';
+              parent.style.height = '0';
+              parent.style.margin = '0';
+              parent.style.padding = '0';
+              break;
+            }
+            parent = parent.parentElement;
+            depth++;
+          }
+        } catch (e) {
+          // Ignore errors from DOM traversal
+        }
+      });
+
       return html``;
+    } else {
+      this.removeAttribute('data-invisible');
+      // Remove inline styles if we're not invisible
+      this.style.removeProperty('display');
+      this.style.removeProperty('height');
+      this.style.removeProperty('overflow');
+      this.style.removeProperty('margin');
+      this.style.removeProperty('padding');
+
+      // Restore parent hui-card visibility if previously hidden
+      requestAnimationFrame(() => {
+        try {
+          let parent: HTMLElement | null = this.parentElement;
+          let depth = 0;
+          while (parent && depth < 10) {
+            const tagName = parent.tagName?.toLowerCase();
+            if (tagName === 'hui-card' || tagName === 'hui-section-card') {
+              parent.style.removeProperty('display');
+              parent.style.removeProperty('height');
+              parent.style.removeProperty('margin');
+              parent.style.removeProperty('padding');
+              break;
+            }
+            parent = parent.parentElement;
+            depth++;
+          }
+        } catch (e) {
+          // Ignore errors from DOM traversal
+        }
+      });
     }
 
     // If only popup modules with invisible triggers (logic/page_load) and NOT in card editor, render with display: contents (no visible container)
@@ -792,12 +875,16 @@ export class UltraCard extends LitElement {
 
       // Re-register background modules when config changes
       this._registerBackgroundModules();
+
+      // Re-register navigation modules when config changes
+      this._registerNavigationModules();
     }
 
-    // Also re-register weather modules when hass changes (for automatic mode updates)
+    // Also re-register service-based modules when hass changes (for automatic mode updates and entity state changes)
     if (changedProperties.has('hass')) {
       this._registerDynamicWeatherModules();
       this._registerBackgroundModules();
+      this._registerNavigationModules();
     }
 
     // Only check scaling when config or hass changes (not on every render) and feature is enabled
@@ -2801,6 +2888,55 @@ export class UltraCard extends LitElement {
   }
 
   /**
+   * Register all navigation modules with the navigation service
+   */
+  private _registerNavigationModules(): void {
+    if (!this.config || !this.hass || !this._instanceId) return;
+
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'navigation') {
+            ucNavigationService.registerModule(
+              this._instanceId!,
+              module.id,
+              module as any,
+              this.hass!,
+              this.config!,
+              this as any
+            );
+          }
+        });
+      });
+    });
+  }
+
+  /**
+   * Unregister all navigation modules from the navigation service
+   * @param force If true, unregister all modules regardless of scope. If false, only unregister 'current_view' scope modules.
+   */
+  private _unregisterNavigationModules(force: boolean = false): void {
+    if (!this.config || !this._instanceId) return;
+
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'navigation') {
+            const navModule = module as any;
+            const scope = navModule.nav_scope || 'all_views';
+
+            // For 'all_views' scope, only unregister if forced (card truly removed)
+            // For 'current_view' scope, always unregister on disconnect
+            if (force || scope === 'current_view') {
+              ucNavigationService.unregisterModule(this._instanceId!, module.id);
+            }
+          }
+        });
+      });
+    });
+  }
+
+  /**
    * Inject a <style> block containing the combined styles from every registered
    * module into the card's shadow-root. This is required for features such as
    * the icon animation classes (e.g. `.icon-animation-pulse`) defined within
@@ -2830,6 +2966,16 @@ export class UltraCard extends LitElement {
         width: 100%;
         min-width: 0;
         overflow-anchor: none; /* Prevent scroll anchoring on mobile when 3rd party cards update */
+      }
+
+      /* Hide the entire card when it only contains invisible modules (navigation, video_bg, etc.) */
+      :host([data-invisible]) {
+        display: none !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        overflow: hidden !important;
       }
 
       .card-container {

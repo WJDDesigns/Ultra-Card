@@ -30,6 +30,7 @@ export * from './grid-module';
 export * from './badge-of-honor-module';
 export * from './vacuum-module';
 export * from './people-module';
+export * from './navigation-module';
 export { getModuleRegistry } from './module-registry';
 export { ucPresetsService } from '../services/uc-presets-service';
 export { ucFavoritesService } from '../services/uc-favorites-service';

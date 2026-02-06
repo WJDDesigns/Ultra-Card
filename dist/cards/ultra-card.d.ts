@@ -184,6 +184,15 @@ export declare class UltraCard extends LitElement {
      */
     private _unregisterBackgroundModules;
     /**
+     * Register all navigation modules with the navigation service
+     */
+    private _registerNavigationModules;
+    /**
+     * Unregister all navigation modules from the navigation service
+     * @param force If true, unregister all modules regardless of scope. If false, only unregister 'current_view' scope modules.
+     */
+    private _unregisterNavigationModules;
+    /**
      * Inject a <style> block containing the combined styles from every registered
      * module into the card's shadow-root. This is required for features such as
      * the icon animation classes (e.g. `.icon-animation-pulse`) defined within

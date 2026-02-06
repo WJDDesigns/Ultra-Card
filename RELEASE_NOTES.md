@@ -1,5 +1,23 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.5.0-beta1
+
+### 🚀 New Features
+
+- **Added Time intervals on graphs as toggle** - Improved toggle state handling and reliability
+- **Added New navigation module to allow a dock style navigation system for icon paths** - Enhanced module functionality for better user experience
+
+### 🔧 Improvements
+
+- **Potential fix for drag and drop issues in builder** - Refined functionality for smoother operation
+- **Potential fixes for auto close popup container issues** - Improved popup behavior and display reliability
+
+### 🐛 Bug Fixes
+
+- **Fixed issue where column settings were not showing up** - Now placed column settings for changing column size in row as button.
+
+---
+
 ## Version 2.3.0-beta33
 
 ### 🚀 New Features
