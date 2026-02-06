@@ -1,5 +1,13 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.5.0-beta2
+
+### ⚠️ Breaking Changes
+
+- **Removed Old logging** - Enhanced functionality and reliability
+
+---
+
 ## Version 2.5.0-beta1
 
 ### ⚠️ Breaking Changes
