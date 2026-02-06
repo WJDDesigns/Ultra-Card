@@ -2,6 +2,14 @@
 
 ## Version 2.5.0-beta1
 
+### ⚠️ Breaking Changes
+
+- **Removed Old logging** - Enhanced functionality and reliability
+
+---
+
+## Version 2.5.0-beta1
+
 ### 🚀 New Features
 
 - **Added Time intervals on graphs as toggle** - Improved toggle state handling and reliability

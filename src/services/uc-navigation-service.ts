@@ -111,20 +111,12 @@ class UcNavigationService {
         window.__ucNavigationPreviewListenerAdded = true;
         window.addEventListener('uc-navigation-preview-update', ((e: CustomEvent) => {
           const detail = e.detail || {};
-          console.log(
-            '[UC Navigation] Preview update received:',
-            detail?.moduleId,
-            'style:',
-            detail?.module?.nav_style
-          );
           if (detail?.module && detail?.moduleId && detail?.config) {
-            console.log('[UC Navigation] Setting preview override for:', detail.moduleId);
             getPreviewOverrides().set(detail.moduleId, {
               module: detail.module as NavigationModule,
               config: detail.config as UltraCardConfig,
               updatedAt: Date.now(),
             });
-            console.log('[UC Navigation] Preview overrides size:', getPreviewOverrides().size);
             // Dispatch a custom event to trigger re-render in all instances
             window.dispatchEvent(new CustomEvent('uc-navigation-force-render'));
           }
@@ -155,7 +147,6 @@ class UcNavigationService {
                   node.querySelector?.('ultra-card-editor')
                 ) {
                   if (this.previewOverrides.size > 0) {
-                    console.log('[UC Navigation] Editor closed, clearing all preview overrides');
                     this.previewOverrides.clear();
                     this.scheduleUpdate();
                   }
@@ -431,27 +422,8 @@ class UcNavigationService {
 
     const previewOverride = this.previewOverrides.get(registered.moduleId);
 
-    // Always log the lookup
-    console.log(
-      '[UC Navigation] Preview lookup for:',
-      registered.moduleId,
-      'found:',
-      !!previewOverride,
-      'map size:',
-      this.previewOverrides.size,
-      'map keys:',
-      Array.from(this.previewOverrides.keys())
-    );
-
     const moduleForRender = previewOverride?.module ?? registered.module;
     const configForRender = previewOverride?.config ?? registered.config;
-
-    if (previewOverride) {
-      console.log(
-        '[UC Navigation] USING preview override, new style:',
-        previewOverride.module.nav_style
-      );
-    }
 
     const navConfig = this.resolveNavigationConfig(moduleForRender, configForRender);
     const hass = registered.hass;
@@ -605,20 +577,6 @@ class UcNavigationService {
       hass,
       navModule
     );
-
-    // Debug logging
-    console.log('[UC Navigation] Render:', {
-      cardId: registered.cardId,
-      moduleId: registered.moduleId,
-      style: navModule.nav_style,
-      mode,
-      position,
-      showLabels,
-      mediaPlayerEnabled: mediaPlayerConfig?.enabled,
-      mediaPlayerEntity: mediaPlayerConfig?.entity,
-      mediaPlayerInNavbar,
-      routeCount: routes.length,
-    });
 
     // For widget mode (not icon modes), render media player separately
     const mediaPlayerWidgetTemplate = !mediaPlayerInNavbar

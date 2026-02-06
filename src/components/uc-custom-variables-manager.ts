@@ -127,7 +127,6 @@ export class UcCustomVariablesManager extends LitElement {
     this._editingAttributeName = variable.attribute_name || '';
     this._editingIsGlobal = variable.isGlobal !== false;
     this._nameError = '';
-    console.log('[UC Variables] Started editing:', variable.name, 'entity:', variable.entity);
   }
 
   private _cancelEdit(): void {
@@ -143,14 +142,7 @@ export class UcCustomVariablesManager extends LitElement {
   private _saveEdit(): void {
     // Use the original entity as fallback if current one is empty (prevents accidental clearing)
     const entityToSave = this._editingEntity || this._originalEditingEntity;
-    
-    console.log('[UC Variables] Saving edit:', {
-      name: this._editingName,
-      editingEntity: this._editingEntity,
-      originalEntity: this._originalEditingEntity,
-      entityToSave: entityToSave,
-    });
-    
+
     if (!this._editingId || !this._editingName.trim() || !entityToSave) return;
 
     // Validate name
@@ -168,7 +160,6 @@ export class UcCustomVariablesManager extends LitElement {
     // SAFETY CHECK: Ensure the variable exists in at least one list
     // This prevents accidental deletion if state gets out of sync (especially on mobile)
     if (!globalVar && !cardVar) {
-      console.warn(`[UC Variables] Variable ${this._editingId} not found in any list - aborting save to prevent data loss`);
       this._nameError = 'Variable not found. Please cancel and try again.';
       return;
     }

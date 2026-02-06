@@ -124,7 +124,6 @@ class UcCustomVariablesService {
     
     // Only broadcast change if save succeeded - prevents reloading stale data from localStorage
     if (!saveSuccess) {
-      console.warn('[UC Variables] Variable saved in memory only (localStorage full). Will be lost on page refresh.');
     } else {
       this._broadcastChange();
     }
@@ -227,7 +226,6 @@ class UcCustomVariablesService {
     
     // Only broadcast change if save succeeded - prevents reloading stale data from localStorage
     if (!saveSuccess) {
-      console.warn('[UC Variables] Variable updated in memory only (localStorage full). Will be lost on page refresh.');
     } else {
       this._broadcastChange();
     }
@@ -248,7 +246,6 @@ class UcCustomVariablesService {
     
     // Only broadcast change if save succeeded
     if (!saveSuccess) {
-      console.warn('[UC Variables] Variable deleted in memory only (localStorage full).');
     } else {
       this._broadcastChange();
     }
@@ -364,7 +361,6 @@ class UcCustomVariablesService {
         return variable.entity;
       }
       // Variable not found - return undefined so the field shows as unconfigured
-      console.warn(`[UC Variables] Variable "${value}" not found`);
       return undefined;
     }
 
