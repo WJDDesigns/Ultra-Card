@@ -2498,6 +2498,7 @@ export interface PresetDefinition {
     integrations?: string[];
     thumbnail?: string;
     layout: LayoutConfig;
+    customVariables?: CustomVariable[];
     cardSettings?: {
         card_background?: string;
         card_border_radius?: number;

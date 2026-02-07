@@ -4477,6 +4477,8 @@ export interface PresetDefinition {
   integrations?: string[];
   thumbnail?: string;
   layout: LayoutConfig; // The actual preset configuration
+  // Optional custom variables included with the preset
+  customVariables?: CustomVariable[];
   // Card-level settings from full card exports
   cardSettings?: {
     card_background?: string;

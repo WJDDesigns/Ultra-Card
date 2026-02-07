@@ -7421,10 +7421,28 @@ export class LayoutTab extends LitElement {
         ...(currentLayout.gap !== undefined && { gap: currentLayout.gap }),
       };
 
-      // Apply card-level settings if this is a full card preset
-      if (preset.cardSettings) {
-        const cardSettingsUpdates: Record<string, any> = {};
+      // Import preset variables as card-specific (local), never global
+      const currentCardVars = this.config._customVariables || [];
+      let updatedCardVars = currentCardVars;
+      let variableSummary: { added: number; renamed: { from: string; to: string }[]; skipped: string[] } | null =
+        null;
 
+      if (preset.customVariables && preset.customVariables.length > 0) {
+        const varResult = ucExportImportService.importVariablesAsCardSpecific(
+          { customVariables: preset.customVariables } as ExportData,
+          currentCardVars
+        );
+        if (varResult.cardVarsToAdd.length > 0) {
+          updatedCardVars = [...currentCardVars, ...varResult.cardVarsToAdd];
+          variableSummary = varResult.summary;
+        }
+      }
+
+      const shouldUpdateCardVars = updatedCardVars !== currentCardVars;
+
+      // Apply card-level settings if this is a full card preset
+      const cardSettingsUpdates: Record<string, any> = {};
+      if (preset.cardSettings) {
         // Apply each card setting
         if (preset.cardSettings.card_background !== undefined) {
           cardSettingsUpdates.card_background = preset.cardSettings.card_background;
@@ -7484,28 +7502,19 @@ export class LayoutTab extends LitElement {
           cardSettingsUpdates.card_background_position =
             preset.cardSettings.card_background_position;
         }
-
-        // Apply both layout and card settings together
-        if (Object.keys(cardSettingsUpdates).length > 0) {
-          const fullConfig = {
-            ...this.config,
-            ...cardSettingsUpdates,
-            layout: newLayout,
-          };
-
-          this.dispatchEvent(
-            new CustomEvent('config-changed', {
-              detail: { config: fullConfig },
-              bubbles: true,
-              composed: true,
-            })
-          );
-        } else {
-          this._updateLayout(newLayout);
-        }
-      } else {
-        this._updateLayout(newLayout);
       }
+
+      const configUpdates: Partial<UltraCardConfig> = {
+        layout: newLayout,
+        ...(shouldUpdateCardVars ? { _customVariables: updatedCardVars } : {}),
+        ...cardSettingsUpdates,
+      };
+
+      if (!this._isUndoRedoAction) {
+        this._saveStateToUndoStack();
+        this._redoStack = [];
+      }
+      this._updateConfig(configUpdates);
 
       this._showModuleSelector = false;
       this._selectedLayoutModuleIndex = -1;
@@ -7514,6 +7523,27 @@ export class LayoutTab extends LitElement {
       this._selectedRowIndex = -1;
       this._selectedColumnIndex = -1;
       this._showToast(`"${preset.name}" preset added successfully!`, 'success');
+
+      if (variableSummary) {
+        let message = `Imported ${variableSummary.added} variable(s) as card-specific`;
+        if (variableSummary.renamed.length > 0) {
+          const renames = variableSummary.renamed.map(r => `${r.from}→${r.to}`).join(', ');
+          message += ` (renamed: ${renames})`;
+        }
+        if (variableSummary.skipped.length > 0) {
+          message += ` (${variableSummary.skipped.length} already existed)`;
+        }
+        this._showToast(message, 'info');
+      }
+
+      const missingVars = findMissingVariables(mappedLayout, {
+        ...this.config,
+        ...(shouldUpdateCardVars ? { _customVariables: updatedCardVars } : {}),
+      });
+      if (missingVars.length > 0) {
+        this._missingVariables = missingVars;
+        this._showVariableMappingDialog = true;
+      }
 
       // debug removed
     } catch (error) {
@@ -10254,6 +10284,26 @@ export class LayoutTab extends LitElement {
   ): void {
     if (!e.dataTransfer) return;
 
+    const currentTarget = e.currentTarget as HTMLElement;
+    const target = e.target as HTMLElement | null;
+
+    // If the drag started from a nested child node, let that node handle it.
+    const nestedDragOrigin = target?.closest(
+      '.tree-layout-child, .tree-deep-child, .tree-module'
+    ) as HTMLElement | null;
+    if (nestedDragOrigin && nestedDragOrigin !== currentTarget) {
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+
+    // If a nested handler already set drag data, abort.
+    if (this._draggedItem) {
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+
     // CRITICAL: Stop propagation to prevent parent layout from capturing the drag
     e.stopPropagation();
 
@@ -10285,10 +10335,10 @@ export class LayoutTab extends LitElement {
     );
 
     // Add visual feedback
-    const target = e.currentTarget as HTMLElement;
-    if (target) {
-      target.style.opacity = '0.6';
-      target.style.transform = 'scale(0.95)';
+    const dragTarget = e.currentTarget as HTMLElement;
+    if (dragTarget) {
+      dragTarget.style.opacity = '0.6';
+      dragTarget.style.transform = 'scale(0.95)';
     }
   }
 
@@ -19332,6 +19382,9 @@ export class LayoutTab extends LitElement {
       parentModuleIndex,
       childIndex,
     };
+    // Reset nested selection when opening a direct child
+    this._selectedNestedChildIndex = -1;
+    this._selectedNestedNestedChildIndex = -1;
     this._showLayoutChildSettings = true;
   }
 
@@ -19607,6 +19660,7 @@ export class LayoutTab extends LitElement {
 
     // Store the nested child index separately for deeper nesting
     this._selectedNestedChildIndex = nestedChildIndex;
+    this._selectedNestedNestedChildIndex = -1;
     this._showLayoutChildSettings = true;
   }
 

@@ -1,5 +1,21 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.5.0-beta3
+
+### 🚀 New Features
+
+- **Added special import of variables** - Now will show up inside variable area
+
+### 🔧 Improvements
+
+- **Other stuff** - Refined functionality for smoother operation
+
+### 🐛 Bug Fixes
+
+- **Fix for deeply nested modules** - Enhanced module functionality for better user experience
+
+---
+
 ## Version 2.5.0-beta2
 
 ### ⚠️ Breaking Changes

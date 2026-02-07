@@ -299,6 +299,7 @@ class UcPresetsService {
       // Parse the shortcode as JSON layout configuration
       let layout: LayoutConfig;
       let cardSettings: PresetDefinition['cardSettings'] | undefined;
+      let customVariables: PresetDefinition['customVariables'] | undefined;
 
       try {
         // Try to parse as direct JSON first
@@ -332,6 +333,12 @@ class UcPresetsService {
             const encodedData = shortcodeMatch[1].trim();
             const jsonData = atob(encodedData);
             const importData = JSON.parse(jsonData);
+            customVariables =
+              Array.isArray(importData.customVariables)
+                ? importData.customVariables
+                : Array.isArray(importData.data?._customVariables)
+                  ? importData.data._customVariables
+                  : undefined;
 
             // Decoded shortcode (silent)
 
@@ -400,6 +407,7 @@ class UcPresetsService {
         layout,
         // Include card-level settings if this is a full card export
         ...(cardSettings && { cardSettings }),
+        ...(customVariables && customVariables.length > 0 ? { customVariables } : {}),
         metadata: {
           created: wpPreset.created,
           updated: wpPreset.updated || wpPreset.created,
