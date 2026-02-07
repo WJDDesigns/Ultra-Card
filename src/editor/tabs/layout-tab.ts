@@ -1166,6 +1166,109 @@ export class LayoutTab extends LitElement {
     `;
   }
 
+  // Render overflow menu for level-4 children (e.g. leaf inside Column → Popup → Horizontal → Vertical)
+  private _renderLevel4ChildOverflowMenu(
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    deepLayoutIndex: number,
+    childIndex: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const menuKey = `level4-${rowIndex}-${columnIndex}-${parentModuleIndex}-${nestedLayoutIndex}-${deepLayoutIndex}-${childIndex}`;
+    const isOpen = this._openOverflowMenuKey === menuKey;
+    const menuItems: { icon: string; label: string; action: () => void; destructive?: boolean }[] = [
+      {
+        icon: 'mdi:pencil',
+        label: localize('editor.layout.edit', lang, 'Edit'),
+        action: () =>
+          this._openLevel4ChildSettings(
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedLayoutIndex,
+            deepLayoutIndex,
+            childIndex
+          ),
+      },
+      {
+        icon: 'mdi:clipboard-arrow-up',
+        label: localize('editor.layout.copy', lang, 'Copy'),
+        action: () =>
+          this._copyLevel4Child(
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedLayoutIndex,
+            deepLayoutIndex,
+            childIndex
+          ),
+      },
+      {
+        icon: 'mdi:content-copy',
+        label: localize('editor.layout.duplicate', lang, 'Duplicate'),
+        action: () =>
+          this._duplicateLevel4Child(
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedLayoutIndex,
+            deepLayoutIndex,
+            childIndex
+          ),
+      },
+      {
+        icon: 'mdi:delete',
+        label: localize('editor.layout.delete', lang, 'Delete'),
+        action: () =>
+          this._deleteLevel4Child(
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedLayoutIndex,
+            deepLayoutIndex,
+            childIndex
+          ),
+        destructive: true,
+      },
+    ];
+    return html`
+      <div class="tree-overflow-container">
+        <button
+          class="tree-overflow-btn"
+          @click=${(e: Event) => this._toggleOverflowMenu(menuKey, e)}
+          @mousedown=${(e: Event) => e.stopPropagation()}
+          @dragstart=${(e: Event) => e.preventDefault()}
+          title="${localize('editor.layout.more_actions', lang, 'More actions')}"
+        >
+          <ha-icon icon="mdi:dots-horizontal"></ha-icon>
+        </button>
+        ${isOpen
+          ? html`
+              <div class="tree-overflow-menu" @click=${(e: Event) => e.stopPropagation()}>
+                ${menuItems.map(
+                  (item, index) => html`
+                    ${index > 0 && item.destructive ? html`<hr class="menu-divider" />` : ''}
+                    <button
+                      class="tree-menu-item ${item.destructive ? 'destructive' : ''}"
+                      @click=${() => {
+                        item.action();
+                        this._openOverflowMenuKey = null;
+                      }}
+                    >
+                      <ha-icon icon="${item.icon}"></ha-icon>
+                      <span>${item.label}</span>
+                    </button>
+                  `
+                )}
+              </div>
+            `
+          : ''}
+      </div>
+    `;
+  }
+
   // Render overflow menu for tabs section children (modules inside tabs sections)
   private _renderTabsSectionChildOverflowMenu(
     rowIndex?: number,
@@ -3079,10 +3182,10 @@ export class LayoutTab extends LitElement {
         @dragend=${this._onDragEnd}
         @dragover=${this._onDragOver}
         @dragenter=${(e: DragEvent) =>
-          this._onDragEnter(e, 'layout', rowIndex, columnIndex, parentModuleIndex, childIndex)}
+          this._onDragEnter(e, 'nested-layout', rowIndex, columnIndex, parentModuleIndex, childIndex)}
         @dragleave=${this._onDragLeave}
         @drop=${(e: DragEvent) =>
-          this._onTreeLayoutChildDrop(e, rowIndex, columnIndex, parentModuleIndex, childIndex)}
+          this._onTreeNestedLayoutDrop(e, rowIndex, columnIndex, parentModuleIndex, childIndex)}
       >
         <div class="tree-node-content">
           <div class="tree-node-header layout-header">
@@ -4963,6 +5066,14 @@ export class LayoutTab extends LitElement {
                 <ha-icon icon="mdi:delete"></ha-icon>
               </button>
             </div>
+            ${this._renderLevel4ChildOverflowMenu(
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              nestedLayoutIndex,
+              deepLayoutIndex,
+              childIndex
+            )}
           </div>
         </div>
       </div>
@@ -5778,7 +5889,7 @@ export class LayoutTab extends LitElement {
     deepNestedChildIndex?: number;
   } | null = null;
   @state() private _dropTarget: {
-    type: 'module' | 'column' | 'row' | 'layout' | 'layout-child' | 'deep-nested-layout';
+    type: 'module' | 'column' | 'row' | 'layout' | 'nested-layout' | 'layout-child' | 'deep-nested-layout';
     rowIndex: number;
     columnIndex?: number;
     moduleIndex?: number;
@@ -10401,10 +10512,12 @@ export class LayoutTab extends LitElement {
   }
 
   private _onDragEnd(e: DragEvent): void {
-    // Reset visual feedback - remove CSS classes
+    // Reset visual feedback - remove CSS classes and inline styles (layout child drags set opacity/transform)
     const target = e.currentTarget as HTMLElement;
     if (target) {
       target.classList.remove('being-dragged');
+      target.style.opacity = '';
+      target.style.transform = '';
     }
 
     // Clean up any remaining drag-over classes
@@ -10413,6 +10526,8 @@ export class LayoutTab extends LitElement {
     });
     this.shadowRoot?.querySelectorAll('.being-dragged').forEach(el => {
       el.classList.remove('being-dragged');
+      (el as HTMLElement).style.opacity = '';
+      (el as HTMLElement).style.transform = '';
     });
 
     // Remove dragging state attributes
@@ -10463,7 +10578,7 @@ export class LayoutTab extends LitElement {
 
   private _onDragEnter(
     e: DragEvent,
-    type: 'module' | 'column' | 'row' | 'layout' | 'layout-child',
+    type: 'module' | 'column' | 'row' | 'layout' | 'nested-layout' | 'layout-child',
     rowIndex: number,
     columnIndex?: number,
     moduleIndex?: number,
@@ -10474,12 +10589,23 @@ export class LayoutTab extends LitElement {
 
     if (!this._draggedItem) return;
 
-    // Don't allow dropping on self
+    // Don't allow dropping on self (same type and indices)
     if (
       this._draggedItem.type === type &&
       this._draggedItem.rowIndex === rowIndex &&
       this._draggedItem.columnIndex === columnIndex &&
       this._draggedItem.moduleIndex === moduleIndex
+    ) {
+      return;
+    }
+    // Nested layout: same node when dragging layout-child with same parent and childIndex
+    if (
+      type === 'nested-layout' &&
+      this._draggedItem.type === 'layout-child' &&
+      this._draggedItem.rowIndex === rowIndex &&
+      this._draggedItem.columnIndex === columnIndex &&
+      this._draggedItem.moduleIndex === moduleIndex &&
+      this._draggedItem.layoutChildIndex === childIndex
     ) {
       return;
     }
@@ -10791,6 +10917,38 @@ export class LayoutTab extends LitElement {
     this.requestUpdate();
   }
 
+  // Drop ON a nested layout (e.g. horizontal inside slider) -> insert inside that nested layout
+  private _onTreeNestedLayoutDrop(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    childIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const target = e.currentTarget as HTMLElement;
+    if (target) target.classList.remove('drag-over');
+
+    if (!this._draggedItem) return;
+
+    if (!this._isValidDropTarget(this._draggedItem.type, 'nested-layout')) return;
+
+    this._performMove(this._draggedItem, {
+      type: 'nested-layout',
+      rowIndex,
+      columnIndex,
+      moduleIndex: parentModuleIndex,
+      nestedLayoutIndex: childIndex,
+    });
+
+    this._clearDragExpandedItems();
+    this._draggedItem = null;
+    this._dropTarget = null;
+    this.requestUpdate();
+  }
+
   // Helper to clear temporarily expanded items (don't re-collapse after successful drop)
   private _clearDragExpandedItems(): void {
     this._dragExpandedRows.clear();
@@ -10805,11 +10963,11 @@ export class LayoutTab extends LitElement {
   private _isValidDropTarget(sourceType: string, targetType: string): boolean {
     // Define valid drop combinations
     const validCombinations: Record<string, string[]> = {
-      module: ['module', 'column', 'layout', 'layout-child', 'nested-child-target'], // Modules can be dropped on other modules, column areas, layout modules, or layout children for reordering
-      'nested-child': ['module', 'column', 'layout', 'layout-child', 'nested-child-target'], // Modules from nested layouts (3-level: Slider -> Horizontal -> Module)
-      'layout-child': ['module', 'column', 'layout', 'layout-child', 'nested-child-target'], // Actual type emitted by layout child drag start
-      'deep-nested-child': ['module', 'column', 'layout', 'layout-child', 'nested-child-target'], // Modules from deeply nested layouts (4-level)
-      'tabs-section-child': ['module', 'column', 'layout', 'layout-child', 'nested-child-target'], // Modules from tabs sections can be dropped on columns, layouts, etc.
+      module: ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target'], // Modules can be dropped on other modules, column areas, layout modules, or layout children for reordering
+      'nested-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target'], // Modules from nested layouts (3-level: Slider -> Horizontal -> Module)
+      'layout-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target'], // Actual type emitted by layout child drag start
+      'deep-nested-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target'], // Modules from deeply nested layouts (4-level)
+      'tabs-section-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target'], // Modules from tabs sections can be dropped on columns, layouts, etc.
       column: ['column', 'row'], // Columns can be dropped on other columns or row areas
       row: ['row'], // Rows can only be dropped on other rows
     };
@@ -10915,6 +11073,47 @@ export class LayoutTab extends LitElement {
       // Don't remove from source first for layout targets!
     }
 
+    if (target.type === 'nested-layout') {
+      // Drop ON a nested layout (e.g. horizontal inside slider) -> insert inside that nested layout
+      const targetParentLayout =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      const targetNestedLayout = targetParentLayout?.modules?.[(target as any).nestedLayoutIndex];
+      if (targetNestedLayout && this._isLayoutModule(targetNestedLayout.type)) {
+        const sourceIsLayoutModule = this._isLayoutModule(sourceModule?.type);
+        if (sourceIsLayoutModule) {
+          const sourceColumn = layout.rows[source.rowIndex].columns[source.columnIndex];
+          const sourceParentLayout =
+            source.layoutChildIndex !== undefined
+              ? sourceColumn.modules[source.moduleIndex]
+              : undefined;
+          const sourceList =
+            source.layoutChildIndex !== undefined && this._isLayoutModule(sourceParentLayout?.type)
+              ? sourceParentLayout.modules
+              : sourceColumn.modules;
+          const targetList = targetNestedLayout.modules ?? (targetNestedLayout.modules = []);
+          if (!Array.isArray(sourceList)) return;
+          const sourceIndex =
+            source.layoutChildIndex !== undefined ? source.layoutChildIndex : (source.moduleIndex ?? -1);
+          if (!sourceRemoved && sourceIndex >= 0 && sourceIndex < sourceList.length) {
+            sourceList.splice(sourceIndex, 1);
+          }
+          targetList.push(sourceModule);
+          return;
+        }
+        if (!targetNestedLayout.modules) {
+          targetNestedLayout.modules = [];
+        }
+        targetNestedLayout.modules.push(sourceModule);
+        if (source.layoutChildIndex === undefined) {
+          layout.rows[source.rowIndex].columns[source.columnIndex].modules.splice(
+            source.moduleIndex,
+            1
+          );
+        }
+      }
+      return;
+    }
+
     if (target.type === 'layout') {
       // Move to layout module - validate target first, then move
       const targetLayoutModule =
@@ -10925,7 +11124,6 @@ export class LayoutTab extends LitElement {
 
         if (sourceIsLayoutModule) {
           this._relocateLayoutModule(layout, source, target, sourceModule, sourceRemoved, 'after');
-          this._updateLayout(layout);
           return;
         }
 
@@ -10956,7 +11154,6 @@ export class LayoutTab extends LitElement {
 
         if (sourceIsLayoutModule) {
           this._relocateLayoutModule(layout, source, target, sourceModule, sourceRemoved, 'before');
-          this._updateLayout(layout);
           return;
         }
 
@@ -10988,15 +11185,26 @@ export class LayoutTab extends LitElement {
     }
 
     // Add to target
-    if (target.type === 'module') {
+    if (target.type === 'nested-child-target') {
+      // Insert into the nested layout's modules array (e.g. horizontal inside slider)
+      const targetParentLayout =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      const targetNestedLayout = targetParentLayout?.modules?.[target.layoutChildIndex];
+      if (targetNestedLayout && Array.isArray(targetNestedLayout.modules)) {
+        const insertIdx =
+          target.childIndex !== undefined ? target.childIndex : targetNestedLayout.modules.length;
+        targetNestedLayout.modules.splice(insertIdx, 0, sourceModule);
+      }
+    } else if (target.type === 'module') {
       // Insert at specific position
-      let targetIndex = target.moduleIndex || 0;
+      let targetIndex = target.moduleIndex ?? 0;
 
       // If moving within the same column and target is after source, adjust index
       if (
+        source.layoutChildIndex === undefined &&
         source.rowIndex === target.rowIndex &&
         source.columnIndex === target.columnIndex &&
-        target.moduleIndex > source.moduleIndex
+        (target.moduleIndex ?? 0) > (source.moduleIndex ?? 0)
       ) {
         targetIndex--;
       }
@@ -11064,15 +11272,7 @@ export class LayoutTab extends LitElement {
       return;
     }
 
-    // Prevent layout modules from nesting inside other layout modules (e.g., vertical inside vertical)
-    if (
-      this._isLayoutModule(moduleToMove.type) &&
-      this._isLayoutModule(targetParentLayout?.type) &&
-      targetParentLayout?.type !== 'horizontal' &&
-      targetParentLayout?.type !== 'slider'
-    ) {
-      return;
-    }
+    // Allow all layout types to contain other layout types (e.g. horizontal inside vertical)
 
     const sourceIndex =
       source.layoutChildIndex !== undefined ? source.layoutChildIndex : (source.moduleIndex ?? -1);
@@ -16471,6 +16671,52 @@ export class LayoutTab extends LitElement {
   }
 
   /**
+   * Copies a level 4 child module to clipboard
+   */
+  private _copyLevel4Child(
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    deepLayoutIndex: number,
+    childIndex: number
+  ): void {
+    const lang = this.hass?.locale?.language || 'en';
+    const layout = this.config.layout;
+    if (!layout?.rows?.[rowIndex]?.columns?.[columnIndex]?.modules?.[parentModuleIndex]) {
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
+      return;
+    }
+    const parentLayout = layout.rows[rowIndex].columns[columnIndex].modules[parentModuleIndex] as any;
+    const nestedLayout = parentLayout?.modules?.[nestedLayoutIndex];
+    const deepLayout = nestedLayout?.modules?.[deepLayoutIndex];
+    const childModule = deepLayout?.modules?.[childIndex];
+    if (!childModule) {
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
+      return;
+    }
+    try {
+      ucExportImportService.copyModuleToLocalStorage(childModule);
+      this._hasModuleClipboard = true;
+      this._showToast(
+        localize('editor.layout.module_copied', lang, 'Module copied to clipboard'),
+        'success'
+      );
+    } catch (error) {
+      this._showToast(
+        localize('editor.layout.module_copy_failed', lang, 'Failed to copy module'),
+        'error'
+      );
+    }
+  }
+
+  /**
    * Adds a module to a deeply nested layout (layout inside layout inside tabs)
    */
   private _addModuleToTabsSectionDeeplyNestedLayout(moduleType: string): void {
@@ -16809,11 +17055,12 @@ export class LayoutTab extends LitElement {
   }
 
   /**
-   * Updates a child module in a tabs section
+   * Updates a child module in a tabs section (or level-4 nested layout path)
    */
   private _updateTabsSectionChild(updates: any): void {
     if (!this._selectedTabsSectionChild) return;
 
+    const selected = this._selectedTabsSectionChild as any;
     const {
       rowIndex,
       columnIndex,
@@ -16825,67 +17072,66 @@ export class LayoutTab extends LitElement {
       deepNestedChildIndex,
       parentLayoutChildIndex,
       isNested,
-    } = this._selectedTabsSectionChild;
+    } = selected;
 
-    if (
-      rowIndex === undefined ||
-      columnIndex === undefined ||
-      moduleIndex === undefined ||
-      sectionIndex === undefined ||
-      (childIndex === undefined &&
-        (layoutChildIndex === undefined || nestedChildIndex === undefined))
-    ) {
+    if (rowIndex === undefined || columnIndex === undefined || moduleIndex === undefined) {
       return;
+    }
+
+    // Level-4 path does not use sectionIndex
+    if (!selected.isLevel4 && sectionIndex === undefined) {
+      if (
+        childIndex === undefined &&
+        (layoutChildIndex === undefined || nestedChildIndex === undefined)
+      ) {
+        return;
+      }
     }
 
     const layout = this._ensureLayout();
     const newLayout = JSON.parse(JSON.stringify(layout));
 
-    // Get the tabs module
-    let tabsModule: any;
-    if (isNested && parentLayoutChildIndex !== undefined) {
-      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
-      tabsModule = parentLayout.modules[parentLayoutChildIndex];
-    } else {
-      tabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
-    }
-
-    // Handle direct children, nested layout children, and deeply nested layout children
     let targetModule: any;
-    if (
-      layoutChildIndex !== undefined &&
-      nestedChildIndex !== undefined &&
-      deepNestedChildIndex !== undefined
-    ) {
-      // Deeply nested layout child (3 levels deep)
-      const section = tabsModule?.sections?.[sectionIndex];
-      const layoutModule = section?.modules?.[layoutChildIndex];
-      const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
-      if (!nestedLayoutModule?.modules?.[deepNestedChildIndex]) {
-        return;
-      }
-      targetModule = nestedLayoutModule.modules[deepNestedChildIndex];
-    } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
-      // Nested layout child
-      const section = tabsModule?.sections?.[sectionIndex];
-      const layoutModule = section?.modules?.[layoutChildIndex];
-      if (!layoutModule?.modules?.[nestedChildIndex]) {
-        return;
-      }
-      targetModule = layoutModule.modules[nestedChildIndex];
-    } else if (childIndex !== undefined) {
-      // Direct tabs section child
-      if (!tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex]) {
-        return;
-      }
-      targetModule = tabsModule.sections[sectionIndex].modules[childIndex];
+
+    if (selected.isLevel4 && selected.nestedLayoutIndex !== undefined && selected.deepLayoutIndex !== undefined && selected.childIndex !== undefined) {
+      const parentLayout = newLayout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex] as any;
+      const nestedLayout = parentLayout?.modules?.[selected.nestedLayoutIndex];
+      const deepLayout = nestedLayout?.modules?.[selected.deepLayoutIndex];
+      if (!deepLayout?.modules?.[selected.childIndex]) return;
+      targetModule = deepLayout.modules[selected.childIndex];
     } else {
-      return;
+      let tabsModule: any;
+      if (isNested && parentLayoutChildIndex !== undefined) {
+        const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+        tabsModule = parentLayout.modules[parentLayoutChildIndex];
+      } else {
+        tabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+      }
+
+      if (
+        layoutChildIndex !== undefined &&
+        nestedChildIndex !== undefined &&
+        deepNestedChildIndex !== undefined
+      ) {
+        const section = tabsModule?.sections?.[sectionIndex];
+        const layoutModule = section?.modules?.[layoutChildIndex];
+        const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
+        if (!nestedLayoutModule?.modules?.[deepNestedChildIndex]) return;
+        targetModule = nestedLayoutModule.modules[deepNestedChildIndex];
+      } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
+        const section = tabsModule?.sections?.[sectionIndex];
+        const layoutModule = section?.modules?.[layoutChildIndex];
+        if (!layoutModule?.modules?.[nestedChildIndex]) return;
+        targetModule = layoutModule.modules[nestedChildIndex];
+      } else if (childIndex !== undefined) {
+        if (!tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex]) return;
+        targetModule = tabsModule.sections[sectionIndex].modules[childIndex];
+      } else {
+        return;
+      }
     }
 
-    // Apply updates to the target module
     Object.assign(targetModule, updates);
-
     this._updateLayout(newLayout);
   }
 
@@ -20540,6 +20786,7 @@ export class LayoutTab extends LitElement {
   private _renderTabsSectionChildSettings(): TemplateResult {
     if (!this._selectedTabsSectionChild) return html``;
 
+    const selected = this._selectedTabsSectionChild as any;
     const {
       rowIndex,
       columnIndex,
@@ -20551,39 +20798,43 @@ export class LayoutTab extends LitElement {
       deepNestedChildIndex,
       parentLayoutChildIndex,
       isNested,
-    } = this._selectedTabsSectionChild;
+    } = selected;
 
     const layout = this._ensureLayout();
 
-    // Get the tabs module
-    let tabsModule: any;
-    if (isNested && parentLayoutChildIndex !== undefined) {
-      const parentLayout = layout.rows[rowIndex].columns[columnIndex].modules[moduleIndex] as any;
-      tabsModule = parentLayout.modules[parentLayoutChildIndex];
-    } else {
-      tabsModule = layout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
-    }
-
-    // Handle direct children, nested layout children, and deeply nested layout children
+    // Level-4 path: Column → layout (e.g. Popup) → layout → layout → leaf (no tabs/sections)
     let module: any;
-    if (
-      layoutChildIndex !== undefined &&
-      nestedChildIndex !== undefined &&
-      deepNestedChildIndex !== undefined
-    ) {
-      // Deeply nested layout child (3 levels deep)
-      const section = tabsModule?.sections?.[sectionIndex];
-      const layoutModule = section?.modules?.[layoutChildIndex];
-      const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
-      module = nestedLayoutModule?.modules?.[deepNestedChildIndex];
-    } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
-      // Nested layout child
-      const section = tabsModule?.sections?.[sectionIndex];
-      const layoutModule = section?.modules?.[layoutChildIndex];
-      module = layoutModule?.modules?.[nestedChildIndex];
-    } else if (childIndex !== undefined) {
-      // Direct tabs section child
-      module = tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex];
+    if (selected.isLevel4 && selected.nestedLayoutIndex !== undefined && selected.deepLayoutIndex !== undefined && selected.childIndex !== undefined) {
+      const parentLayout = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex] as any;
+      const nestedLayout = parentLayout?.modules?.[selected.nestedLayoutIndex];
+      const deepLayout = nestedLayout?.modules?.[selected.deepLayoutIndex];
+      module = deepLayout?.modules?.[selected.childIndex];
+    } else {
+      // Get the tabs module (or parent layout when nested)
+      let tabsModule: any;
+      if (isNested && parentLayoutChildIndex !== undefined) {
+        const parentLayout = layout.rows[rowIndex].columns[columnIndex].modules[moduleIndex] as any;
+        tabsModule = parentLayout.modules[parentLayoutChildIndex];
+      } else {
+        tabsModule = layout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+      }
+
+      if (
+        layoutChildIndex !== undefined &&
+        nestedChildIndex !== undefined &&
+        deepNestedChildIndex !== undefined
+      ) {
+        const section = tabsModule?.sections?.[sectionIndex];
+        const layoutModule = section?.modules?.[layoutChildIndex];
+        const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
+        module = nestedLayoutModule?.modules?.[deepNestedChildIndex];
+      } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
+        const section = tabsModule?.sections?.[sectionIndex];
+        const layoutModule = section?.modules?.[layoutChildIndex];
+        module = layoutModule?.modules?.[nestedChildIndex];
+      } else if (childIndex !== undefined) {
+        module = tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex];
+      }
     }
 
     if (!module) {
@@ -21016,6 +21267,7 @@ export class LayoutTab extends LitElement {
   private _duplicateTabsSectionChildFromPopup(): void {
     if (!this._selectedTabsSectionChild) return;
 
+    const selected = this._selectedTabsSectionChild as any;
     const {
       rowIndex,
       columnIndex,
@@ -21027,70 +21279,64 @@ export class LayoutTab extends LitElement {
       deepNestedChildIndex,
       parentLayoutChildIndex,
       isNested,
-    } = this._selectedTabsSectionChild;
+    } = selected;
 
     const layout = this._ensureLayout();
     const newLayout = JSON.parse(JSON.stringify(layout));
 
-    // Get the tabs module
-    let tabsModule: any;
-    if (isNested && parentLayoutChildIndex !== undefined) {
-      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
-      tabsModule = parentLayout.modules[parentLayoutChildIndex];
-    } else {
-      tabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
-    }
-
-    // Handle direct children, nested layout children, and deeply nested layout children
     let originalModule: any;
     let targetArray: any[];
     let insertIndex: number;
 
-    if (
-      layoutChildIndex !== undefined &&
-      nestedChildIndex !== undefined &&
-      deepNestedChildIndex !== undefined
-    ) {
-      // Deeply nested layout child (3 levels deep)
-      const section = tabsModule?.sections?.[sectionIndex];
-      const layoutModule = section?.modules?.[layoutChildIndex];
-      const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
-      if (!nestedLayoutModule?.modules?.[deepNestedChildIndex]) {
-        return;
-      }
-      originalModule = nestedLayoutModule.modules[deepNestedChildIndex];
-      targetArray = nestedLayoutModule.modules;
-      insertIndex = deepNestedChildIndex + 1;
-    } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
-      // Nested layout child
-      const section = tabsModule?.sections?.[sectionIndex];
-      const layoutModule = section?.modules?.[layoutChildIndex];
-      if (!layoutModule?.modules?.[nestedChildIndex]) {
-        return;
-      }
-      originalModule = layoutModule.modules[nestedChildIndex];
-      targetArray = layoutModule.modules;
-      insertIndex = nestedChildIndex + 1;
-    } else if (childIndex !== undefined) {
-      // Direct tabs section child
-      if (!tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex]) {
-        return;
-      }
-      originalModule = tabsModule.sections[sectionIndex].modules[childIndex];
-      targetArray = tabsModule.sections[sectionIndex].modules;
-      insertIndex = childIndex + 1;
+    if (selected.isLevel4 && selected.nestedLayoutIndex !== undefined && selected.deepLayoutIndex !== undefined && selected.childIndex !== undefined) {
+      const parentLayout = newLayout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex] as any;
+      const nestedLayout = parentLayout?.modules?.[selected.nestedLayoutIndex];
+      const deepLayout = nestedLayout?.modules?.[selected.deepLayoutIndex];
+      if (!deepLayout?.modules?.[selected.childIndex]) return;
+      originalModule = deepLayout.modules[selected.childIndex];
+      targetArray = deepLayout.modules;
+      insertIndex = selected.childIndex + 1;
     } else {
-      return;
+      let tabsModule: any;
+      if (isNested && parentLayoutChildIndex !== undefined) {
+        const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+        tabsModule = parentLayout.modules[parentLayoutChildIndex];
+      } else {
+        tabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+      }
+
+      if (
+        layoutChildIndex !== undefined &&
+        nestedChildIndex !== undefined &&
+        deepNestedChildIndex !== undefined
+      ) {
+        const section = tabsModule?.sections?.[sectionIndex];
+        const layoutModule = section?.modules?.[layoutChildIndex];
+        const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
+        if (!nestedLayoutModule?.modules?.[deepNestedChildIndex]) return;
+        originalModule = nestedLayoutModule.modules[deepNestedChildIndex];
+        targetArray = nestedLayoutModule.modules;
+        insertIndex = deepNestedChildIndex + 1;
+      } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
+        const section = tabsModule?.sections?.[sectionIndex];
+        const layoutModule = section?.modules?.[layoutChildIndex];
+        if (!layoutModule?.modules?.[nestedChildIndex]) return;
+        originalModule = layoutModule.modules[nestedChildIndex];
+        targetArray = layoutModule.modules;
+        insertIndex = nestedChildIndex + 1;
+      } else if (childIndex !== undefined) {
+        if (!tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex]) return;
+        originalModule = tabsModule.sections[sectionIndex].modules[childIndex];
+        targetArray = tabsModule.sections[sectionIndex].modules;
+        insertIndex = childIndex + 1;
+      } else {
+        return;
+      }
     }
 
     const duplicatedModule = JSON.parse(JSON.stringify(originalModule));
-
-    // Generate new ID for the duplicated module
     duplicatedModule.id = `${duplicatedModule.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-    // Insert after the original
     targetArray.splice(insertIndex, 0, duplicatedModule);
-
     this._updateLayout(newLayout);
   }
 
@@ -21138,6 +21384,7 @@ export class LayoutTab extends LitElement {
   private _deleteTabsSectionChildFromPopup(): void {
     if (!this._selectedTabsSectionChild) return;
 
+    const selected = this._selectedTabsSectionChild as any;
     const {
       rowIndex,
       columnIndex,
@@ -21149,50 +21396,47 @@ export class LayoutTab extends LitElement {
       deepNestedChildIndex,
       parentLayoutChildIndex,
       isNested,
-    } = this._selectedTabsSectionChild;
+    } = selected;
 
     const layout = this._ensureLayout();
     const newLayout = JSON.parse(JSON.stringify(layout));
 
-    // Get the tabs module
-    let tabsModule: any;
-    if (isNested && parentLayoutChildIndex !== undefined) {
-      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
-      tabsModule = parentLayout.modules[parentLayoutChildIndex];
+    if (selected.isLevel4 && selected.nestedLayoutIndex !== undefined && selected.deepLayoutIndex !== undefined && selected.childIndex !== undefined) {
+      const parentLayout = newLayout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex] as any;
+      const nestedLayout = parentLayout?.modules?.[selected.nestedLayoutIndex];
+      const deepLayout = nestedLayout?.modules?.[selected.deepLayoutIndex];
+      if (!deepLayout?.modules) return;
+      deepLayout.modules.splice(selected.childIndex, 1);
     } else {
-      tabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
-    }
+      let tabsModule: any;
+      if (isNested && parentLayoutChildIndex !== undefined) {
+        const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+        tabsModule = parentLayout.modules[parentLayoutChildIndex];
+      } else {
+        tabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+      }
 
-    // Handle direct children, nested layout children, and deeply nested layout children
-    if (
-      layoutChildIndex !== undefined &&
-      nestedChildIndex !== undefined &&
-      deepNestedChildIndex !== undefined
-    ) {
-      // Deeply nested layout child (3 levels deep)
-      const section = tabsModule?.sections?.[sectionIndex];
-      const layoutModule = section?.modules?.[layoutChildIndex];
-      const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
-      if (!nestedLayoutModule?.modules?.[deepNestedChildIndex]) {
+      if (
+        layoutChildIndex !== undefined &&
+        nestedChildIndex !== undefined &&
+        deepNestedChildIndex !== undefined
+      ) {
+        const section = tabsModule?.sections?.[sectionIndex];
+        const layoutModule = section?.modules?.[layoutChildIndex];
+        const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
+        if (!nestedLayoutModule?.modules?.[deepNestedChildIndex]) return;
+        nestedLayoutModule.modules.splice(deepNestedChildIndex, 1);
+      } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
+        const section = tabsModule?.sections?.[sectionIndex];
+        const layoutModule = section?.modules?.[layoutChildIndex];
+        if (!layoutModule?.modules?.[nestedChildIndex]) return;
+        layoutModule.modules.splice(nestedChildIndex, 1);
+      } else if (childIndex !== undefined) {
+        if (!tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex]) return;
+        tabsModule.sections[sectionIndex].modules.splice(childIndex, 1);
+      } else {
         return;
       }
-      nestedLayoutModule.modules.splice(deepNestedChildIndex, 1);
-    } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
-      // Nested layout child
-      const section = tabsModule?.sections?.[sectionIndex];
-      const layoutModule = section?.modules?.[layoutChildIndex];
-      if (!layoutModule?.modules?.[nestedChildIndex]) {
-        return;
-      }
-      layoutModule.modules.splice(nestedChildIndex, 1);
-    } else if (childIndex !== undefined) {
-      // Direct tabs section child
-      if (!tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex]) {
-        return;
-      }
-      tabsModule.sections[sectionIndex].modules.splice(childIndex, 1);
-    } else {
-      return;
     }
 
     this._updateLayout(newLayout);
@@ -26322,32 +26566,6 @@ export class LayoutTab extends LitElement {
 
       parentLayoutType = parentModule?.type || null;
 
-      // Calculate current nesting depth by checking if parent has layout children
-      if (
-        parentModule &&
-        (parentModule.type === 'horizontal' ||
-          parentModule.type === 'vertical' ||
-          parentModule.type === 'accordion' ||
-          parentModule.type === 'slider' ||
-          parentModule.type === 'popup')
-      ) {
-        const layoutParent = parentModule as any;
-        if (layoutParent.modules && layoutParent.modules.length > 0) {
-          // Check if any existing children are layout modules (indicating we're at/near max depth)
-          const hasLayoutChildren = layoutParent.modules.some(
-            (child: any) =>
-              child.type === 'horizontal' ||
-              child.type === 'vertical' ||
-              child.type === 'accordion' ||
-              child.type === 'popup' ||
-              child.type === 'slider'
-          );
-          if (hasLayoutChildren && nestingDepth >= 3) {
-            nestingDepth = 4; // Would exceed maximum depth (currently allowing 3 levels)
-          }
-        }
-      }
-
       // If adding to a slider, include pagebreak in content modules
       if (parentLayoutType === 'slider') {
         const pageBreakModule = allModules.find(m => m.metadata.type === 'pagebreak');
@@ -26357,16 +26575,11 @@ export class LayoutTab extends LitElement {
       }
     }
 
-    // Filter layout modules based on nesting rules (max 3 levels for flexibility)
+    // No nesting depth limit: allow layout modules at any level
     let allowedLayoutModules: any[] = [];
     if (isAddingToLayoutModule && parentLayoutType) {
-      if (nestingDepth < 3) {
-        // Allow both horizontal and vertical layout modules for levels 1, 2, and 3
-        allowedLayoutModules = layoutModules;
-      }
-      // If nestingDepth >= 3, don't show any layout modules (content only)
+      allowedLayoutModules = layoutModules;
     } else if (!isAddingToLayoutModule) {
-      // When adding to columns, show all layout modules
       allowedLayoutModules = layoutModules;
     }
 
@@ -26406,9 +26619,7 @@ export class LayoutTab extends LitElement {
                           <h4 class="category-title">Layout Containers</h4>
                           <p class="category-description">
                             ${isAddingToLayoutModule
-                              ? nestingDepth < 2
-                                ? `Add layout modules (${2 - nestingDepth} more level${2 - nestingDepth !== 1 ? 's' : ''} allowed)`
-                                : 'Maximum nesting depth reached - only content modules allowed'
+                              ? 'Add layout or content modules at any nesting level'
                               : 'Create containers to organize your modules'}
                           </p>
                           <div class="module-types layout-modules">

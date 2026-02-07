@@ -2217,6 +2217,11 @@ export class UltraPopupModule extends BaseUltraModule {
         lastLogicStates.set(uniquePopupKey, logicDeterminedState);
       }
 
+      // When auto_close is off and logic opens the popup initially, mark as manually opened
+      if (initialState && triggerType === 'logic' && popupModule.auto_close === false) {
+        manuallyOpenedPopups.add(uniquePopupKey);
+      }
+
       // Start auto-close timer if popup opens initially and timer is enabled
       if (initialState && popupModule.auto_close_timer_enabled) {
         this._startAutoCloseTimer(popupModule, uniquePopupKey);
@@ -2238,6 +2243,13 @@ export class UltraPopupModule extends BaseUltraModule {
         if (logicDeterminedState) {
           // Always allow opening on rising edge
           popupStates.set(uniquePopupKey, true);
+
+          // When auto_close is off, mark as manually opened for extra protection
+          // This prevents any re-render or secondary code path from closing the popup
+          // The close button and auto-close timer still work because they clear manuallyOpenedPopups
+          if (popupModule.auto_close === false) {
+            manuallyOpenedPopups.add(uniquePopupKey);
+          }
 
           // Start timer if enabled
           if (!wasOpen && popupModule.auto_close_timer_enabled) {

@@ -332,7 +332,8 @@ export class UltraNavigationModule extends BaseUltraModule {
                   unifiedItems.length,
                   navModule,
                   hass,
-                  updateModule
+                  updateModule,
+                  config
                 );
               }
               return '';
@@ -1348,7 +1349,8 @@ export class UltraNavigationModule extends BaseUltraModule {
     totalItems: number,
     navModule: NavigationModule,
     hass: HomeAssistant,
-    updateModule: (updates: Partial<CardModule>) => void
+    updateModule: (updates: Partial<CardModule>) => void,
+    config?: UltraCardConfig
   ): TemplateResult {
     const itemId = type === 'media_player' ? '__media_player__' : '__media_player__';
     const isExpanded = this._expandedSpecialItems.has(itemId);
@@ -1444,7 +1446,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         ${isExpanded && type === 'media_player'
           ? html`
               <div class="entity-expanded">
-                ${this.renderMediaPlayerExpandedSettings(navModule, hass, updateModule)}
+                ${this.renderMediaPlayerExpandedSettings(navModule, hass, updateModule, config)}
               </div>
             `
           : ''}
@@ -1452,14 +1454,143 @@ export class UltraNavigationModule extends BaseUltraModule {
     `;
   }
 
+  /** Map inactive_tap_action to dropdown category for media player (idle/off/unavailable only). */
+  private getInactiveTapActionCategory(mediaPlayer: NavigationModule['nav_media_player']): string {
+    const action = mediaPlayer?.inactive_tap_action;
+    if (!action) return 'play';
+    if (action.action === 'nothing') return 'nothing';
+    if (action.action === 'navigate' && !action.navigation_path) return 'navigate';
+    if (action.action === 'navigate') return 'navigate';
+    if (action.action === 'url') return 'url';
+    if (action.action === 'open-popup') return 'open-popup';
+    if (action.action === 'toggle') return 'toggle';
+    if (action.action === 'more-info') return 'more-info';
+    if (action.action === 'assist') return 'assist';
+    if (action.action === 'perform-action' || (action.action as string) === 'call-service') return 'perform-action';
+    return 'perform-action';
+  }
+
   private renderMediaPlayerExpandedSettings(
     navModule: NavigationModule,
     hass: HomeAssistant,
-    updateModule: (updates: Partial<CardModule>) => void
+    updateModule: (updates: Partial<CardModule>) => void,
+    config?: UltraCardConfig
   ): TemplateResult {
     const mediaPlayer = navModule.nav_media_player || {};
     const displayMode = mediaPlayer.display_mode || 'icon_click';
     const hasEntity = mediaPlayer.entity && mediaPlayer.entity !== '';
+    const inactiveCategory = this.getInactiveTapActionCategory(mediaPlayer);
+
+    const setInactiveTapAction = (cat: string) => {
+      switch (cat) {
+        case 'play':
+          const { inactive_tap_action: _, ...rest } = mediaPlayer;
+          updateModule({ nav_media_player: { ...rest } });
+          break;
+        case 'nothing':
+          updateModule({
+            nav_media_player: { ...mediaPlayer, inactive_tap_action: { action: 'nothing' } },
+          });
+          break;
+        case 'navigate':
+          updateModule({
+            nav_media_player: {
+              ...mediaPlayer,
+              inactive_tap_action: {
+                action: 'navigate',
+                navigation_path: mediaPlayer.inactive_tap_action?.navigation_path || '',
+              },
+            },
+          });
+          break;
+        case 'url':
+          updateModule({
+            nav_media_player: {
+              ...mediaPlayer,
+              inactive_tap_action: {
+                action: 'url',
+                url_path: mediaPlayer.inactive_tap_action?.url_path || '',
+              },
+            },
+          });
+          break;
+        case 'open-popup':
+          updateModule({
+            nav_media_player: {
+              ...mediaPlayer,
+              inactive_tap_action: {
+                action: 'open-popup',
+                popup_id: mediaPlayer.inactive_tap_action?.popup_id || '',
+              },
+            },
+          });
+          break;
+        case 'toggle':
+          updateModule({
+            nav_media_player: {
+              ...mediaPlayer,
+              inactive_tap_action: {
+                action: 'toggle',
+                entity: mediaPlayer.inactive_tap_action?.entity || mediaPlayer.entity || '',
+              },
+            },
+          });
+          break;
+        case 'more-info':
+          updateModule({
+            nav_media_player: {
+              ...mediaPlayer,
+              inactive_tap_action: {
+                action: 'more-info',
+                entity: mediaPlayer.inactive_tap_action?.entity || mediaPlayer.entity || '',
+              },
+            },
+          });
+          break;
+        case 'assist':
+          updateModule({
+            nav_media_player: {
+              ...mediaPlayer,
+              inactive_tap_action: {
+                action: 'assist',
+                pipeline_id: mediaPlayer.inactive_tap_action?.pipeline_id,
+                start_listening: mediaPlayer.inactive_tap_action?.start_listening ?? false,
+              },
+            },
+          });
+          break;
+        case 'perform-action':
+          updateModule({
+            nav_media_player: {
+              ...mediaPlayer,
+              inactive_tap_action: {
+                ...(mediaPlayer.inactive_tap_action || {}),
+                action: 'perform-action',
+              },
+            },
+          });
+          break;
+      }
+    };
+
+    const updateInactiveTapAction = (updates: Partial<NavActionConfig>) => {
+      updateModule({
+        nav_media_player: {
+          ...mediaPlayer,
+          inactive_tap_action: { ...(mediaPlayer.inactive_tap_action || {}), ...updates } as NavActionConfig,
+        },
+      });
+    };
+
+    const serviceActionValue = (() => {
+      const a = (mediaPlayer.inactive_tap_action || {}) as NavActionConfig;
+      return {
+        action: a.perform_action || a.service || '',
+        ...(a.data ? { data: a.data } : {}),
+        ...(a.service_data ? { data: a.service_data } : {}),
+        ...(a.target ? { target: a.target } : {}),
+      };
+    })();
 
     return html`
       ${!hasEntity
@@ -1534,6 +1665,165 @@ export class UltraNavigationModule extends BaseUltraModule {
           });
         }
       )}
+
+      <!-- Inactive Tap Action (idle/off/unavailable only) -->
+      <div class="field-group-title" style="margin-top: 16px; margin-bottom: 8px;">Inactive Tap Action</div>
+      <div class="field-description" style="margin-bottom: 12px;">
+        When the media player is idle, off, or unavailable, tapping the icon can do something other than start playback.
+      </div>
+      <div class="field-container">
+        <ha-select
+          style="width: 100%;"
+          .value=${inactiveCategory}
+          @selected=${(e: any) => {
+            e.stopPropagation();
+            const nextValue = e.detail?.value ?? e.target?.value;
+            if (nextValue) setInactiveTapAction(nextValue);
+          }}
+          @closed=${(e: Event) => e.stopPropagation()}
+        >
+          <mwc-list-item value="play">Play (default)</mwc-list-item>
+          <mwc-list-item value="nothing">Do nothing</mwc-list-item>
+          <mwc-list-item value="open-popup">Open popup</mwc-list-item>
+          <mwc-list-item value="navigate">Navigate</mwc-list-item>
+          <mwc-list-item value="url">Open URL</mwc-list-item>
+          <mwc-list-item value="more-info">More info</mwc-list-item>
+          <mwc-list-item value="toggle">Toggle</mwc-list-item>
+          <mwc-list-item value="perform-action">Perform action</mwc-list-item>
+          <mwc-list-item value="assist">Assist</mwc-list-item>
+        </ha-select>
+      </div>
+      ${inactiveCategory === 'navigate'
+        ? html`
+            <div class="field-container" style="margin-top: 8px;">
+              <div class="field-title">Path</div>
+              <ultra-navigation-picker
+                .hass=${hass}
+                .value=${mediaPlayer.inactive_tap_action?.navigation_path || ''}
+                label=""
+                @value-changed=${(e: CustomEvent) =>
+                  updateInactiveTapAction({ navigation_path: e.detail.value })}
+              ></ultra-navigation-picker>
+            </div>
+          `
+        : ''}
+      ${inactiveCategory === 'url'
+        ? html`
+            <div class="field-container" style="margin-top: 8px;">
+              <div class="field-title">URL</div>
+              <ha-textfield
+                style="width: 100%;"
+                .value=${mediaPlayer.inactive_tap_action?.url_path || ''}
+                placeholder="https://example.com"
+                @input=${(e: Event) =>
+                  updateInactiveTapAction({ url_path: (e.target as HTMLInputElement).value })}
+                @click=${(e: Event) => e.stopPropagation()}
+              ></ha-textfield>
+            </div>
+          `
+        : ''}
+      ${inactiveCategory === 'open-popup' && config
+        ? html`
+            <div class="field-container" style="margin-top: 8px;">
+              <div class="field-title">Popup</div>
+              ${(() => {
+                const popups = this.getPopupModules(config);
+                if (popups.length === 0) {
+                  return html`
+                    <div class="info-box" style="padding: 12px; border-radius: 8px;">
+                      No popup modules found. Add a Popup module to this card first.
+                    </div>
+                  `;
+                }
+                return html`
+                  <ha-select
+                    style="width: 100%;"
+                    .value=${mediaPlayer.inactive_tap_action?.popup_id || ''}
+                    @selected=${(e: any) => {
+                      e.stopPropagation();
+                      updateInactiveTapAction({ action: 'open-popup', popup_id: e.target.value });
+                    }}
+                    @closed=${(e: Event) => e.stopPropagation()}
+                  >
+                    ${popups.map(
+                      p => html`<mwc-list-item value="${p.value}">${p.label}</mwc-list-item>`
+                    )}
+                  </ha-select>
+                `;
+              })()}
+            </div>
+          `
+        : ''}
+      ${inactiveCategory === 'toggle' || inactiveCategory === 'more-info'
+        ? html`
+            <div class="field-container" style="margin-top: 8px;">
+              <div class="field-title">Entity</div>
+              <ha-entity-picker
+                .hass=${hass}
+                .value=${mediaPlayer.inactive_tap_action?.entity || mediaPlayer.entity || ''}
+                @value-changed=${(e: CustomEvent) =>
+                  updateInactiveTapAction({ entity: e.detail.value })}
+                allow-custom-entity
+              ></ha-entity-picker>
+            </div>
+          `
+        : ''}
+      ${inactiveCategory === 'assist'
+        ? html`
+            <div class="field-container" style="margin-top: 8px;">
+              <ha-form
+                .hass=${hass}
+                .data=${{
+                  pipeline_id: mediaPlayer.inactive_tap_action?.pipeline_id,
+                  start_listening: mediaPlayer.inactive_tap_action?.start_listening ?? false,
+                }}
+                .schema=${[
+                  {
+                    name: 'pipeline_id',
+                    selector: { assist_pipeline: { include_last_used: true } },
+                  },
+                  { name: 'start_listening', selector: { boolean: {} } },
+                ]}
+                .computeLabel=${() => ''}
+                @value-changed=${(e: CustomEvent) => {
+                  e.stopPropagation();
+                  const v = e.detail.value || {};
+                  updateInactiveTapAction({
+                    action: 'assist',
+                    pipeline_id: v.pipeline_id,
+                    start_listening: v.start_listening,
+                  });
+                }}
+              ></ha-form>
+            </div>
+          `
+        : ''}
+      ${inactiveCategory === 'perform-action'
+        ? html`
+            <div class="nav-action-perform-action" style="margin-top: 8px;">
+              <div class="field-title">Action</div>
+              <ha-service-control
+                .hass=${hass}
+                .value=${serviceActionValue}
+                @value-changed=${(e: CustomEvent) => {
+                  e.stopPropagation();
+                  const value = e.detail?.value || {};
+                  const next: NavActionConfig = {
+                    ...(mediaPlayer.inactive_tap_action || {}),
+                    action: 'perform-action',
+                    perform_action: value.action || '',
+                    target: value.target,
+                    data: value.data,
+                  };
+                  if (!value.data) delete (next as any).data;
+                  updateModule({
+                    nav_media_player: { ...mediaPlayer, inactive_tap_action: next },
+                  });
+                }}
+              ></ha-service-control>
+            </div>
+          `
+        : ''}
     `;
   }
 

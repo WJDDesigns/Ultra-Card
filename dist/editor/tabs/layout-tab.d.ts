@@ -102,6 +102,7 @@ export declare class LayoutTab extends LitElement {
     private _renderBreadcrumbs;
     private _renderTreeOverflowMenu;
     private _renderLayoutChildOverflowMenu;
+    private _renderLevel4ChildOverflowMenu;
     private _renderTabsSectionChildOverflowMenu;
     private _renderTabsSectionOverflowMenu;
     private _renderNestedTabsSectionOverflowMenu;
@@ -332,6 +333,7 @@ export declare class LayoutTab extends LitElement {
     private _onDrop;
     private _onTreeLayoutChildDrop;
     private _onTreeDeepNestedChildDrop;
+    private _onTreeNestedLayoutDrop;
     private _clearDragExpandedItems;
     private _isValidDropTarget;
     private _performMove;
@@ -504,6 +506,10 @@ export declare class LayoutTab extends LitElement {
      */
     private _deleteLevel4Child;
     /**
+     * Copies a level 4 child module to clipboard
+     */
+    private _copyLevel4Child;
+    /**
      * Adds a module to a deeply nested layout (layout inside layout inside tabs)
      */
     private _addModuleToTabsSectionDeeplyNestedLayout;
@@ -525,7 +531,7 @@ export declare class LayoutTab extends LitElement {
      */
     private _openTabsSectionChildSettings;
     /**
-     * Updates a child module in a tabs section
+     * Updates a child module in a tabs section (or level-4 nested layout path)
      */
     private _updateTabsSectionChild;
     /**

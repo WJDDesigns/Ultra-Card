@@ -1,5 +1,21 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.5.0-beta4
+
+### 🔧 Improvements
+
+- **Improved Drag and drop builder for better control** - Enhanced for improved user experience
+- **Improved Media player control for inactive actions** - Enhanced action handling and user interaction response
+
+### 🐛 Bug Fixes
+
+- **Fixed Navigation path issues in Navigation Module** - Enhanced module functionality for better user experience
+- **Fixed Stacks not showing notifications in Navigation Module** - Enhanced module functionality for better user experience
+- **Fixed Issue with nested modules not showing overflow/edit** - Resolved content overflow and clipping issues
+- **Fixed Popup container auto close issues (maybe?)** - Improved popup behavior and display reliability
+
+---
+
 ## Version 2.5.0-beta3
 
 ### 🚀 New Features

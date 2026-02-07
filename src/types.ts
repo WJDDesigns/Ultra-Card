@@ -3975,9 +3975,11 @@ export interface NavMediaPlayerConfig {
     | 'bottom-left'
     | 'bottom-center'
     | 'bottom-right';
-  tap_action?: ModuleActionConfig;
-  hold_action?: ModuleActionConfig;
-  double_tap_action?: ModuleActionConfig;
+  tap_action?: NavActionConfig;
+  hold_action?: NavActionConfig;
+  double_tap_action?: NavActionConfig;
+  /** When media is idle/off/unavailable, tap can do something else instead of play. Undefined = play (default). */
+  inactive_tap_action?: NavActionConfig;
 }
 
 export interface NavigationTemplateConfig {

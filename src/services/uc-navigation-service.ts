@@ -962,14 +962,29 @@ class UcNavigationService {
     viewLayer: ViewNavLayer,
     childIndex: number = 0
   ): TemplateResult {
-    const hidden = this.resolveBoolean(child.hidden, false, hass, navModule, child);
+    // Resolve route properties (templates, images, etc.) the same way top-level routes do
+    const resolvedChild = this.resolveRoute(child, hass, navModule, registered.config);
+
+    const hidden = this.resolveBoolean(resolvedChild.hidden, false, hass, navModule, resolvedChild);
     if (hidden) return html``;
 
-    const icon = child.icon || 'mdi:star-outline';
-    const label = child.label || '';
-    const url = child.url || '';
-
+    const url = resolvedChild.url || '';
+    const label = resolvedChild.label || '';
     const isSelected = url ? this.isCurrentUrl(url) : false;
+
+    // Resolve image and icon exactly like renderRouteItem
+    const resolvedImage = isSelected
+      ? resolvedChild.image_selected || resolvedChild.image
+      : resolvedChild.image;
+    const resolvedIcon = isSelected
+      ? resolvedChild.icon_selected || resolvedChild.icon
+      : resolvedChild.icon || 'mdi:star-outline';
+    const iconColor = isSelected && resolvedChild.selected_color
+      ? resolvedChild.selected_color
+      : resolvedChild.icon_color;
+
+    // Badge
+    const badgeTemplate = this.renderBadge(resolvedChild.badge, hass, navModule, resolvedChild);
 
     const handleClick = async (e?: Event) => {
       const actionElement = (e?.currentTarget as HTMLElement) || undefined;
@@ -985,7 +1000,7 @@ class UcNavigationService {
       }
 
       // Handle tap_action if configured
-      const action = child.tap_action;
+      const action = resolvedChild.tap_action;
       if (action && action.action && action.action !== 'default' && action.action !== 'nothing') {
         if (action.action === 'url' && action.url_path) {
           window.open(action.url_path, '_blank', 'noopener');
@@ -1042,7 +1057,29 @@ class UcNavigationService {
         style="display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 4px; animation-delay: ${animDelay}ms;"
       >
         <div class="button ${isSelected ? 'active' : ''}" style="width: 40px; height: 40px;">
-          <ha-icon class="icon ${isSelected ? 'active' : ''}" icon="${icon}"></ha-icon>
+          ${resolvedImage
+            ? html`
+                <img
+                  class="image ${isSelected ? 'active' : ''}"
+                  src="${resolvedImage}"
+                  alt="${label}"
+                />
+              `
+            : resolvedIcon
+              ? html`
+                  <ha-icon
+                    class="icon ${isSelected ? 'active' : ''}"
+                    icon="${resolvedIcon}"
+                    style="${iconColor ? `color:${iconColor};` : ''}"
+                  ></ha-icon>
+                `
+              : html`
+                  <ha-icon
+                    class="icon ${isSelected ? 'active' : ''}"
+                    icon="mdi:help-circle-outline"
+                  ></ha-icon>
+                `}
+          ${badgeTemplate}
         </div>
         ${label
           ? html`<div class="label ${isSelected ? 'active' : ''}" style="font-size: 11px;">
@@ -1103,7 +1140,9 @@ class UcNavigationService {
     // Check explicit show condition
     const hasContent = !!countStr;
     const show = this.resolveBoolean(badge.show, hasContent, hass, navModule, context);
-    if (!show) return html``;
+    if (!show) {
+      return html``;
+    }
 
     const bgColor = badge.color || 'red';
     const textColor = badge.text_color || badge.textColor || '#ffffff';
@@ -1282,11 +1321,31 @@ class UcNavigationService {
       shouldShowLabel = true;
     }
 
-    // Handle click - play/pause or expand widget
+    // Handle click - play/pause, inactive action, or expand widget
     const handleClick = async () => {
-      // If idle or paused, start playback using universal toggle
-      if (isIdle || isPaused) {
-        await this.toggleMediaPlayback(hass, entity, state.state);
+      // Inactive (idle/off/unavailable only): use configured inactive_tap_action or default to play
+      if (isIdle) {
+        const inactiveAction = mediaPlayer.inactive_tap_action;
+        if (inactiveAction) {
+          if (inactiveAction.action === 'nothing') return;
+          await this.executeNavAction(
+            inactiveAction,
+            mediaItem,
+            hass,
+            registered,
+            viewLayer,
+            'tap',
+            undefined
+          );
+          return;
+        }
+        await this.toggleMediaPlayback(hass, entity, state?.state);
+        return;
+      }
+
+      // Paused: always start playback (inactive action applies only to idle/off/unavailable)
+      if (isPaused) {
+        await this.toggleMediaPlayback(hass, entity, state?.state);
         return;
       }
 
@@ -1650,83 +1709,15 @@ class UcNavigationService {
       actionType: 'tap' | 'hold' | 'double',
       actionElement?: HTMLElement | null
     ) => {
-      const element = actionElement || state.lastTarget || undefined;
-      // Block navigation actions in edit mode (hover effects still work)
-      try {
-        if (new URLSearchParams(window.location.search).get('edit') === '1') return;
-      } catch {
-        /* ignore */
-      }
-
-      if (!action) {
-        if (item.url) {
-          await this.performNavigation(item.url, hass, registered, viewLayer, actionType);
-        }
-        return;
-      }
-
-      if (action.action === 'nothing') {
-        return;
-      }
-
-      if (action.action === 'default') {
-        if (item.url) {
-          await this.performNavigation(item.url, hass, registered, viewLayer, actionType);
-        }
-        return;
-      }
-
-      if (action.action === 'navigate' && action.navigation_path) {
-        await this.performNavigation(
-          action.navigation_path,
-          hass,
-          registered,
-          viewLayer,
-          actionType
-        );
-        return;
-      }
-
-      // Open external URL in a new tab
-      if (action.action === 'url' && action.url_path) {
-        window.open(action.url_path, '_blank', 'noopener');
-        this.triggerHaptic(actionType, registered);
-        return;
-      }
-
-      // Open a popup module by ID
-      if (action.action === 'open-popup' && action.popup_id) {
-        openPopupById(action.popup_id);
-        this.triggerHaptic(actionType, registered);
-        return;
-      }
-
-      if (action.action === 'more-info' && action.entity) {
-        const event = new CustomEvent('hass-more-info', {
-          bubbles: true,
-          composed: true,
-          detail: { entityId: action.entity },
-        });
-        const hosts = [
-          document.querySelector('home-assistant'),
-          document.querySelector('home-assistant-main'),
-          document,
-          window,
-        ].filter(Boolean) as Array<EventTarget>;
-        hosts.forEach(host => host.dispatchEvent(event));
-        this.triggerHaptic(actionType, registered);
-        return;
-      }
-
-      await ucActionService.handleAction(
-        action as any,
+      await this.executeNavAction(
+        action,
+        item,
         hass,
-        element,
-        registered.config,
-        undefined,
-        registered.module
+        registered,
+        viewLayer,
+        actionType,
+        actionElement ?? state.lastTarget ?? undefined
       );
-      this.triggerHaptic(actionType, registered);
     };
 
     return {
@@ -1798,12 +1789,111 @@ class UcNavigationService {
         }, 250);
       },
       onPointerLeave: () => {
-        this.clearGestureState(elementId);
+        // Only cancel hold gesture — do NOT cancel the click timeout.
+        // On touch devices pointerleave fires right after pointerup when the
+        // finger lifts, which would cancel the pending 250ms tap action.
+        const s = this.gestureStates.get(elementId);
+        if (s) {
+          if (s.holdTimeout) {
+            clearTimeout(s.holdTimeout);
+            s.holdTimeout = null;
+          }
+          s.isHolding = false;
+        }
       },
       onPointerCancel: () => {
         this.clearGestureState(elementId);
       },
     };
+  }
+
+  /**
+   * Execute a nav action (navigate, url, open-popup, more-info, perform-action, etc.).
+   * Reused by gesture handlers and by media player inactive tap.
+   */
+  private async executeNavAction(
+    action: NavActionConfig | undefined,
+    item: NavRoute,
+    hass: HomeAssistant,
+    registered: RegisteredModule,
+    viewLayer: ViewNavLayer,
+    actionType: 'tap' | 'hold' | 'double',
+    actionElement?: HTMLElement | null
+  ): Promise<void> {
+    const element = actionElement ?? undefined;
+    try {
+      if (new URLSearchParams(window.location.search).get('edit') === '1') return;
+    } catch {
+      /* ignore */
+    }
+
+    if (!action) {
+      if (item.url) {
+        await this.performNavigation(item.url, hass, registered, viewLayer, actionType);
+      }
+      return;
+    }
+
+    if (action.action === 'nothing') {
+      return;
+    }
+
+    if (action.action === 'default') {
+      if (item.url) {
+        await this.performNavigation(item.url, hass, registered, viewLayer, actionType);
+      }
+      return;
+    }
+
+    if (action.action === 'navigate' && action.navigation_path) {
+      await this.performNavigation(
+        action.navigation_path,
+        hass,
+        registered,
+        viewLayer,
+        actionType
+      );
+      return;
+    }
+
+    if (action.action === 'url' && action.url_path) {
+      window.open(action.url_path, '_blank', 'noopener');
+      this.triggerHaptic(actionType, registered);
+      return;
+    }
+
+    if (action.action === 'open-popup' && action.popup_id) {
+      openPopupById(action.popup_id);
+      this.triggerHaptic(actionType, registered);
+      return;
+    }
+
+    if (action.action === 'more-info' && action.entity) {
+      const event = new CustomEvent('hass-more-info', {
+        bubbles: true,
+        composed: true,
+        detail: { entityId: action.entity },
+      });
+      const hosts = [
+        document.querySelector('home-assistant'),
+        document.querySelector('home-assistant-main'),
+        document,
+        window,
+      ].filter(Boolean) as Array<EventTarget>;
+      hosts.forEach(host => host.dispatchEvent(event));
+      this.triggerHaptic(actionType, registered);
+      return;
+    }
+
+    await ucActionService.handleAction(
+      action as any,
+      hass,
+      element,
+      registered.config,
+      undefined,
+      registered.module
+    );
+    this.triggerHaptic(actionType, registered);
   }
 
   private async performNavigation(
