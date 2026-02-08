@@ -2,7 +2,7 @@ import { TemplateResult, html, render } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
-import { CardModule, UltraCardConfig, PopupModule } from '../types';
+import { CardModule, UltraCardConfig, PopupModule, NavigationModule, NavRoute } from '../types';
 import { getModuleRegistry } from './module-registry';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
@@ -458,431 +458,522 @@ export class UltraPopupModule extends BaseUltraModule {
     const popupModule = module as PopupModule;
     const lang = hass?.locale?.language || 'en';
 
+    // Check if this popup is being opened via a navigation module
+    const navSourceName = this._isOpenedViaNavigation(popupModule.id, config);
+
     return html`
       ${this.injectUcFormStyles()}
 
       <div class="module-general-settings">
         <!-- Trigger Configuration Section -->
-        ${this.renderSettingsSection(
-          localize('editor.popup.trigger.section_title', lang, 'Trigger Configuration'),
-          localize(
-            'editor.popup.trigger.section_desc',
-            lang,
-            'Configure how the popup is triggered to open.'
-          ),
-          [
-            {
-              title: localize('editor.popup.trigger.type', lang, 'Trigger Type'),
-              description: localize(
-                'editor.popup.trigger.type_desc',
+        ${navSourceName
+          ? html`
+              <div
+                class="settings-section"
+                style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+              >
+                <div
+                  class="section-title"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+                >
+                  ${localize('editor.popup.trigger.section_title', lang, 'Trigger Configuration')}
+                </div>
+                <div
+                  style="display: flex; align-items: center; gap: 12px; background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.1); border: 1px solid rgba(var(--rgb-primary-color, 33, 150, 243), 0.3); border-radius: 8px; padding: 16px; margin-top: 8px;"
+                >
+                  <ha-icon
+                    icon="mdi:navigation-variant"
+                    style="color: var(--primary-color); flex-shrink: 0; --mdc-icon-size: 24px;"
+                  ></ha-icon>
+                  <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 14px; color: var(--primary-text-color); margin-bottom: 4px;">
+                      Opened via Navigation
+                    </div>
+                    <div style="font-size: 13px; color: var(--secondary-text-color); line-height: 1.4;">
+                      This popup is configured to open from <strong>${navSourceName}</strong>. The trigger
+                      type is managed by the navigation module and cannot be changed here.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `
+          : this.renderSettingsSection(
+              localize('editor.popup.trigger.section_title', lang, 'Trigger Configuration'),
+              localize(
+                'editor.popup.trigger.section_desc',
                 lang,
-                'Choose how the popup will be opened.'
+                'Configure how the popup is triggered to open.'
               ),
-              hass,
-              data: { trigger_type: popupModule.trigger_type || 'button' },
-              schema: [
-                this.selectField('trigger_type', [
-                  {
-                    value: 'button',
-                    label: localize('editor.popup.trigger.button', lang, 'Button'),
-                  },
-                  { value: 'image', label: localize('editor.popup.trigger.image', lang, 'Image') },
-                  { value: 'icon', label: localize('editor.popup.trigger.icon', lang, 'Icon') },
-                  {
-                    value: 'module',
-                    label: localize('editor.popup.trigger.module', lang, 'Module'),
-                  },
-                  {
-                    value: 'page_load',
-                    label: localize('editor.popup.trigger.page_load', lang, 'Page Load'),
-                  },
-                  {
-                    value: 'logic',
-                    label: localize('editor.popup.trigger.logic', lang, 'Logic Conditions'),
-                  },
-                ]),
-              ],
-              onChange: (e: CustomEvent) => {
-                const next = e.detail.value.trigger_type;
-                const prev = popupModule.trigger_type || 'button';
-                if (next === prev) return;
-                updateModule(e.detail.value);
-                setTimeout(() => {
-                  this.triggerPreviewUpdate();
-                }, 50);
-              },
-            },
-          ]
-        )}
-
-        <!-- Conditional: Button Trigger -->
-        ${popupModule.trigger_type === 'button'
-          ? html`
-              <div style="margin-top: -16px; margin-bottom: 32px;">
-                ${this.renderConditionalFieldsGroup(
-                  localize('editor.popup.trigger.button', lang, 'Button'),
-                  html`
-                    ${this.renderFieldSection(
-                      localize('editor.popup.trigger.button_text', lang, 'Button Text'),
-                      localize(
-                        'editor.popup.trigger.button_text_desc',
-                        lang,
-                        'Text to display on the trigger button.'
-                      ),
-                      hass,
-                      { trigger_button_text: popupModule.trigger_button_text || '' },
-                      [this.textField('trigger_button_text')],
-                      (e: CustomEvent) => {
-                        updateModule(e.detail.value);
-                        setTimeout(() => {
-                          this.triggerPreviewUpdate();
-                        }, 50);
-                      }
-                    )}
-                    ${this.renderFieldSection(
-                      localize('editor.popup.trigger.button_icon', lang, 'Button Icon'),
-                      localize(
-                        'editor.popup.trigger.button_icon_desc',
-                        lang,
-                        'Icon to display on the trigger button.'
-                      ),
-                      hass,
-                      { trigger_button_icon: popupModule.trigger_button_icon || '' },
-                      [this.iconField('trigger_button_icon')],
-                      (e: CustomEvent) => {
-                        updateModule(e.detail.value);
-                        setTimeout(() => {
-                          this.triggerPreviewUpdate();
-                        }, 50);
-                      }
-                    )}
-                    ${this.renderSettingsSection('', '', [
+              [
+                {
+                  title: localize('editor.popup.trigger.type', lang, 'Trigger Type'),
+                  description: localize(
+                    'editor.popup.trigger.type_desc',
+                    lang,
+                    'Choose how the popup will be opened.'
+                  ),
+                  hass,
+                  data: { trigger_type: popupModule.trigger_type || 'button' },
+                  schema: [
+                    this.selectField('trigger_type', [
                       {
-                        title: localize(
-                          'editor.popup.trigger.button_full_width',
-                          lang,
-                          'Full Width'
-                        ),
-                        description: localize(
-                          'editor.popup.trigger.button_full_width_desc',
-                          lang,
-                          'Make the button span the full width of the container.'
-                        ),
-                        hass,
-                        data: {
-                          trigger_button_full_width: popupModule.trigger_button_full_width || false,
-                        },
-                        schema: [this.booleanField('trigger_button_full_width')],
-                        onChange: (e: CustomEvent) => {
-                          updateModule(e.detail.value);
-                          setTimeout(() => {
-                            this.triggerPreviewUpdate();
-                          }, 50);
-                        },
+                        value: 'button',
+                        label: localize('editor.popup.trigger.button', lang, 'Button'),
                       },
-                    ])}
+                      {
+                        value: 'image',
+                        label: localize('editor.popup.trigger.image', lang, 'Image'),
+                      },
+                      { value: 'icon', label: localize('editor.popup.trigger.icon', lang, 'Icon') },
+                      {
+                        value: 'module',
+                        label: localize('editor.popup.trigger.module', lang, 'Module'),
+                      },
+                      {
+                        value: 'page_load',
+                        label: localize('editor.popup.trigger.page_load', lang, 'Page Load'),
+                      },
+                      {
+                        value: 'logic',
+                        label: localize('editor.popup.trigger.logic', lang, 'Logic Conditions'),
+                      },
+                    ]),
+                  ],
+                  onChange: (e: CustomEvent) => {
+                    const next = e.detail.value.trigger_type;
+                    const prev = popupModule.trigger_type || 'button';
+                    if (next === prev) return;
+                    updateModule(e.detail.value);
+                    setTimeout(() => {
+                      this.triggerPreviewUpdate();
+                    }, 50);
+                  },
+                },
+              ]
+            )}
+
+        <!-- Trigger sub-options: hidden when opened via navigation -->
+        ${!navSourceName
+          ? html`
+              <!-- Conditional: Button Trigger -->
+              ${popupModule.trigger_type === 'button'
+                ? html`
+                    <div style="margin-top: -16px; margin-bottom: 32px;">
+                      ${this.renderConditionalFieldsGroup(
+                        localize('editor.popup.trigger.button', lang, 'Button'),
+                        html`
+                          ${this.renderFieldSection(
+                            localize('editor.popup.trigger.button_text', lang, 'Button Text'),
+                            localize(
+                              'editor.popup.trigger.button_text_desc',
+                              lang,
+                              'Text to display on the trigger button.'
+                            ),
+                            hass,
+                            { trigger_button_text: popupModule.trigger_button_text || '' },
+                            [this.textField('trigger_button_text')],
+                            (e: CustomEvent) => {
+                              updateModule(e.detail.value);
+                              setTimeout(() => {
+                                this.triggerPreviewUpdate();
+                              }, 50);
+                            }
+                          )}
+                          ${this.renderFieldSection(
+                            localize('editor.popup.trigger.button_icon', lang, 'Button Icon'),
+                            localize(
+                              'editor.popup.trigger.button_icon_desc',
+                              lang,
+                              'Icon to display on the trigger button.'
+                            ),
+                            hass,
+                            { trigger_button_icon: popupModule.trigger_button_icon || '' },
+                            [this.iconField('trigger_button_icon')],
+                            (e: CustomEvent) => {
+                              updateModule(e.detail.value);
+                              setTimeout(() => {
+                                this.triggerPreviewUpdate();
+                              }, 50);
+                            }
+                          )}
+                          ${this.renderSettingsSection('', '', [
+                            {
+                              title: localize(
+                                'editor.popup.trigger.button_full_width',
+                                lang,
+                                'Full Width'
+                              ),
+                              description: localize(
+                                'editor.popup.trigger.button_full_width_desc',
+                                lang,
+                                'Make the button span the full width of the container.'
+                              ),
+                              hass,
+                              data: {
+                                trigger_button_full_width:
+                                  popupModule.trigger_button_full_width || false,
+                              },
+                              schema: [this.booleanField('trigger_button_full_width')],
+                              onChange: (e: CustomEvent) => {
+                                updateModule(e.detail.value);
+                                setTimeout(() => {
+                                  this.triggerPreviewUpdate();
+                                }, 50);
+                              },
+                            },
+                          ])}
+                        `
+                      )}
+                    </div>
                   `
-                )}
-              </div>
-            `
-          : ''}
+                : ''}
 
-        <!-- Conditional: Image Trigger -->
-        ${popupModule.trigger_type === 'image'
-          ? html`
-              <div style="margin-top: -16px; margin-bottom: 32px;">
-                ${this.renderConditionalFieldsGroup(
-                  localize('editor.popup.trigger.image', lang, 'Image'),
-                  html`
-                    ${this.renderSettingsSection('', '', [
-                      {
-                        title: localize('editor.popup.trigger.image_type', lang, 'Image Type'),
-                        description: localize(
-                          'editor.popup.trigger.image_type_desc',
-                          lang,
-                          'Choose how to provide the image for the trigger.'
-                        ),
-                        hass,
-                        data: { trigger_image_type: popupModule.trigger_image_type || 'url' },
-                        schema: [
-                          this.selectField('trigger_image_type', [
+              <!-- Conditional: Image Trigger -->
+              ${popupModule.trigger_type === 'image'
+                ? html`
+                    <div style="margin-top: -16px; margin-bottom: 32px;">
+                      ${this.renderConditionalFieldsGroup(
+                        localize('editor.popup.trigger.image', lang, 'Image'),
+                        html`
+                          ${this.renderSettingsSection('', '', [
                             {
-                              value: 'upload',
-                              label: localize('editor.design.bg_upload', lang, 'Upload Image'),
-                            },
-                            {
-                              value: 'entity',
-                              label: localize('editor.design.bg_entity', lang, 'Entity Image'),
-                            },
-                            {
-                              value: 'url',
-                              label: localize('editor.design.bg_url', lang, 'Image URL'),
-                            },
-                          ]),
-                        ],
-                        onChange: (e: CustomEvent) => {
-                          const next = e.detail.value.trigger_image_type;
-                          const prev = popupModule.trigger_image_type || 'url';
-                          if (next === prev) return;
-                          updateModule(e.detail.value);
-                          setTimeout(() => {
-                            this.triggerPreviewUpdate();
-                          }, 50);
-                        },
-                      },
-                    ])}
-                    ${popupModule.trigger_image_type === 'upload'
-                      ? html`
-                          <div style="margin-bottom: 16px;">
-                            <div
-                              style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--primary-text-color);"
-                            >
-                              ${localize('editor.design.upload_bg_image', lang, 'Upload Image')}
-                            </div>
-                            <div class="upload-container">
-                              <div
-                                class="file-upload-row"
-                                style="display: flex; align-items: center; gap: 12px;"
-                              >
-                                <label
-                                  class="file-upload-button"
-                                  style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--primary-color); color: white; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;"
-                                >
-                                  <ha-icon
-                                    icon="mdi:upload"
-                                    style="--mdc-icon-size: 20px;"
-                                  ></ha-icon>
-                                  <span
-                                    >${localize(
-                                      'editor.design.choose_file',
+                              title: localize(
+                                'editor.popup.trigger.image_type',
+                                lang,
+                                'Image Type'
+                              ),
+                              description: localize(
+                                'editor.popup.trigger.image_type_desc',
+                                lang,
+                                'Choose how to provide the image for the trigger.'
+                              ),
+                              hass,
+                              data: {
+                                trigger_image_type: popupModule.trigger_image_type || 'url',
+                              },
+                              schema: [
+                                this.selectField('trigger_image_type', [
+                                  {
+                                    value: 'upload',
+                                    label: localize(
+                                      'editor.design.bg_upload',
                                       lang,
-                                      'Choose File'
-                                    )}</span
+                                      'Upload Image'
+                                    ),
+                                  },
+                                  {
+                                    value: 'entity',
+                                    label: localize(
+                                      'editor.design.bg_entity',
+                                      lang,
+                                      'Entity Image'
+                                    ),
+                                  },
+                                  {
+                                    value: 'url',
+                                    label: localize('editor.design.bg_url', lang, 'Image URL'),
+                                  },
+                                ]),
+                              ],
+                              onChange: (e: CustomEvent) => {
+                                const next = e.detail.value.trigger_image_type;
+                                const prev = popupModule.trigger_image_type || 'url';
+                                if (next === prev) return;
+                                updateModule(e.detail.value);
+                                setTimeout(() => {
+                                  this.triggerPreviewUpdate();
+                                }, 50);
+                              },
+                            },
+                          ])}
+                          ${popupModule.trigger_image_type === 'upload'
+                            ? html`
+                                <div style="margin-bottom: 16px;">
+                                  <div
+                                    style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--primary-text-color);"
                                   >
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    @change=${async (e: Event) => {
-                                      const input = e.target as HTMLInputElement;
-                                      const file = input.files?.[0];
-                                      if (!file || !hass) return;
-                                      try {
-                                        const { uploadImage } = await import(
-                                          '../utils/image-upload'
-                                        );
-                                        const imagePath = await uploadImage(hass, file);
-                                        updateModule({
-                                          trigger_image_url: imagePath,
-                                          trigger_image_type: 'upload',
-                                        });
-                                        setTimeout(() => {
-                                          this.triggerPreviewUpdate();
-                                        }, 50);
-                                      } catch (error) {
-                                        console.error('Image upload failed:', error);
-                                        alert(
-                                          `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-                                        );
-                                      }
-                                    }}
-                                    style="display: none"
-                                  />
-                                </label>
-                                <div
-                                  style="flex: 1; color: var(--secondary-text-color); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                >
-                                  ${popupModule.trigger_image_url &&
-                                  popupModule.trigger_image_url.startsWith('/api/image/serve/')
-                                    ? popupModule.trigger_image_url.split('/').pop() ||
-                                      'Uploaded image'
-                                    : popupModule.trigger_image_url
-                                      ? 'Image selected'
-                                      : 'No file chosen'}
+                                    ${localize(
+                                      'editor.design.upload_bg_image',
+                                      lang,
+                                      'Upload Image'
+                                    )}
+                                  </div>
+                                  <div class="upload-container">
+                                    <div
+                                      class="file-upload-row"
+                                      style="display: flex; align-items: center; gap: 12px;"
+                                    >
+                                      <label
+                                        class="file-upload-button"
+                                        style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--primary-color); color: white; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;"
+                                      >
+                                        <ha-icon
+                                          icon="mdi:upload"
+                                          style="--mdc-icon-size: 20px;"
+                                        ></ha-icon>
+                                        <span
+                                          >${localize(
+                                            'editor.design.choose_file',
+                                            lang,
+                                            'Choose File'
+                                          )}</span
+                                        >
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          @change=${async (e: Event) => {
+                                            const input = e.target as HTMLInputElement;
+                                            const file = input.files?.[0];
+                                            if (!file || !hass) return;
+                                            try {
+                                              const { uploadImage } = await import(
+                                                '../utils/image-upload'
+                                              );
+                                              const imagePath = await uploadImage(hass, file);
+                                              updateModule({
+                                                trigger_image_url: imagePath,
+                                                trigger_image_type: 'upload',
+                                              });
+                                              setTimeout(() => {
+                                                this.triggerPreviewUpdate();
+                                              }, 50);
+                                            } catch (error) {
+                                              console.error('Image upload failed:', error);
+                                              alert(
+                                                `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+                                              );
+                                            }
+                                          }}
+                                          style="display: none"
+                                        />
+                                      </label>
+                                      <div
+                                        style="flex: 1; color: var(--secondary-text-color); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                      >
+                                        ${popupModule.trigger_image_url &&
+                                        popupModule.trigger_image_url.startsWith(
+                                          '/api/image/serve/'
+                                        )
+                                          ? popupModule.trigger_image_url.split('/').pop() ||
+                                            'Uploaded image'
+                                          : popupModule.trigger_image_url
+                                            ? 'Image selected'
+                                            : 'No file chosen'}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
-                          </div>
+                              `
+                            : ''}
+                          ${popupModule.trigger_image_type === 'entity'
+                            ? html`
+                                ${this.renderFieldSection(
+                                  localize(
+                                    'editor.design.bg_image_entity',
+                                    lang,
+                                    'Image Entity'
+                                  ),
+                                  localize(
+                                    'editor.design.bg_image_entity_desc',
+                                    lang,
+                                    'Select an entity that has an image attribute.'
+                                  ),
+                                  hass,
+                                  {
+                                    trigger_image_entity:
+                                      popupModule.trigger_image_entity || '',
+                                  },
+                                  [this.entityField('trigger_image_entity')],
+                                  (e: CustomEvent) => {
+                                    updateModule(e.detail.value);
+                                    setTimeout(() => {
+                                      this.triggerPreviewUpdate();
+                                    }, 50);
+                                  }
+                                )}
+                              `
+                            : ''}
+                          ${popupModule.trigger_image_type === 'url'
+                            ? html`
+                                ${this.renderFieldSection(
+                                  localize(
+                                    'editor.popup.trigger.image_url',
+                                    lang,
+                                    'Image URL'
+                                  ),
+                                  localize(
+                                    'editor.popup.trigger.image_url_desc',
+                                    lang,
+                                    'URL of the image to use as the trigger.'
+                                  ),
+                                  hass,
+                                  { trigger_image_url: popupModule.trigger_image_url || '' },
+                                  [this.textField('trigger_image_url')],
+                                  (e: CustomEvent) => {
+                                    updateModule(e.detail.value);
+                                    setTimeout(() => {
+                                      this.triggerPreviewUpdate();
+                                    }, 50);
+                                  }
+                                )}
+                              `
+                            : ''}
+                          ${this.renderSettingsSection('', '', [
+                            {
+                              title: localize(
+                                'editor.popup.trigger.image_full_width',
+                                lang,
+                                'Full Width'
+                              ),
+                              description: localize(
+                                'editor.popup.trigger.image_full_width_desc',
+                                lang,
+                                'Make the image span the full width of the container.'
+                              ),
+                              hass,
+                              data: {
+                                trigger_image_full_width:
+                                  popupModule.trigger_image_full_width || false,
+                              },
+                              schema: [this.booleanField('trigger_image_full_width')],
+                              onChange: (e: CustomEvent) => {
+                                updateModule(e.detail.value);
+                                setTimeout(() => {
+                                  this.triggerPreviewUpdate();
+                                }, 50);
+                              },
+                            },
+                          ])}
                         `
-                      : ''}
-                    ${popupModule.trigger_image_type === 'entity'
-                      ? html`
-                          ${this.renderFieldSection(
-                            localize('editor.design.bg_image_entity', lang, 'Image Entity'),
-                            localize(
-                              'editor.design.bg_image_entity_desc',
-                              lang,
-                              'Select an entity that has an image attribute.'
-                            ),
-                            hass,
-                            { trigger_image_entity: popupModule.trigger_image_entity || '' },
-                            [this.entityField('trigger_image_entity')],
-                            (e: CustomEvent) => {
-                              updateModule(e.detail.value);
-                              setTimeout(() => {
-                                this.triggerPreviewUpdate();
-                              }, 50);
-                            }
-                          )}
-                        `
-                      : ''}
-                    ${popupModule.trigger_image_type === 'url'
-                      ? html`
-                          ${this.renderFieldSection(
-                            localize('editor.popup.trigger.image_url', lang, 'Image URL'),
-                            localize(
-                              'editor.popup.trigger.image_url_desc',
-                              lang,
-                              'URL of the image to use as the trigger.'
-                            ),
-                            hass,
-                            { trigger_image_url: popupModule.trigger_image_url || '' },
-                            [this.textField('trigger_image_url')],
-                            (e: CustomEvent) => {
-                              updateModule(e.detail.value);
-                              setTimeout(() => {
-                                this.triggerPreviewUpdate();
-                              }, 50);
-                            }
-                          )}
-                        `
-                      : ''}
-                    ${this.renderSettingsSection('', '', [
-                      {
-                        title: localize(
-                          'editor.popup.trigger.image_full_width',
-                          lang,
-                          'Full Width'
-                        ),
-                        description: localize(
-                          'editor.popup.trigger.image_full_width_desc',
-                          lang,
-                          'Make the image span the full width of the container.'
-                        ),
-                        hass,
-                        data: {
-                          trigger_image_full_width: popupModule.trigger_image_full_width || false,
-                        },
-                        schema: [this.booleanField('trigger_image_full_width')],
-                        onChange: (e: CustomEvent) => {
-                          updateModule(e.detail.value);
-                          setTimeout(() => {
-                            this.triggerPreviewUpdate();
-                          }, 50);
-                        },
-                      },
-                    ])}
+                      )}
+                    </div>
                   `
-                )}
-              </div>
-            `
-          : ''}
+                : ''}
 
-        <!-- Conditional: Icon Trigger -->
-        ${popupModule.trigger_type === 'icon'
-          ? html`
-              <div style="margin-top: -16px; margin-bottom: 32px;">
-                ${this.renderConditionalFieldsGroup(
-                  localize('editor.popup.trigger.icon', lang, 'Icon'),
-                  html`
-                    ${this.renderFieldSection(
-                      localize('editor.popup.trigger.icon', lang, 'Trigger Icon'),
+              <!-- Conditional: Icon Trigger -->
+              ${popupModule.trigger_type === 'icon'
+                ? html`
+                    <div style="margin-top: -16px; margin-bottom: 32px;">
+                      ${this.renderConditionalFieldsGroup(
+                        localize('editor.popup.trigger.icon', lang, 'Icon'),
+                        html`
+                          ${this.renderFieldSection(
+                            localize('editor.popup.trigger.icon', lang, 'Trigger Icon'),
+                            localize(
+                              'editor.popup.trigger.icon_desc',
+                              lang,
+                              'Icon to display as the trigger.'
+                            ),
+                            hass,
+                            { trigger_icon: popupModule.trigger_icon || '' },
+                            [this.iconField('trigger_icon')],
+                            (e: CustomEvent) => {
+                              updateModule(e.detail.value);
+                              setTimeout(() => {
+                                this.triggerPreviewUpdate();
+                              }, 50);
+                            }
+                          )}
+                        `
+                      )}
+                    </div>
+                  `
+                : ''}
+
+              <!-- Conditional: Module Trigger -->
+              ${popupModule.trigger_type === 'module'
+                ? html`
+                    <div style="margin-top: -16px; margin-bottom: 32px;">
+                      ${this.renderConditionalFieldsGroup(
+                        localize('editor.popup.trigger.module_config', lang, 'Module Trigger'),
+                        html`
+                          ${this._renderModuleTriggerConfig(
+                            popupModule,
+                            hass,
+                            config,
+                            updateModule,
+                            lang
+                          )}
+                        `
+                      )}
+                    </div>
+                  `
+                : ''}
+
+              <!-- Conditional: Logic Trigger -->
+              ${popupModule.trigger_type === 'logic'
+                ? html`
+                    <div style="margin-top: -16px; margin-bottom: 32px;">
+                      ${this.renderConditionalFieldsGroup(
+                        localize(
+                          'editor.popup.trigger.logic_config',
+                          lang,
+                          'Logic Configuration'
+                        ),
+                        html` ${this._renderTriggerLogic(popupModule, hass, updateModule)} `
+                      )}
+                    </div>
+                  `
+                : ''}
+
+              <!-- Trigger Alignment (shown for button, icon, image triggers) -->
+              ${popupModule.trigger_type === 'button' ||
+              popupModule.trigger_type === 'icon' ||
+              popupModule.trigger_type === 'image'
+                ? html`
+                    ${this.renderSettingsSection(
                       localize(
-                        'editor.popup.trigger.icon_desc',
+                        'editor.popup.trigger.alignment_section',
                         lang,
-                        'Icon to display as the trigger.'
+                        'Trigger Alignment'
                       ),
-                      hass,
-                      { trigger_icon: popupModule.trigger_icon || '' },
-                      [this.iconField('trigger_icon')],
-                      (e: CustomEvent) => {
-                        updateModule(e.detail.value);
-                        setTimeout(() => {
-                          this.triggerPreviewUpdate();
-                        }, 50);
-                      }
-                    )}
-                  `
-                )}
-              </div>
-            `
-          : ''}
-
-        <!-- Conditional: Module Trigger -->
-        ${popupModule.trigger_type === 'module'
-          ? html`
-              <div style="margin-top: -16px; margin-bottom: 32px;">
-                ${this.renderConditionalFieldsGroup(
-                  localize('editor.popup.trigger.module_config', lang, 'Module Trigger'),
-                  html`
-                    ${this._renderModuleTriggerConfig(
-                      popupModule,
-                      hass,
-                      config,
-                      updateModule,
-                      lang
-                    )}
-                  `
-                )}
-              </div>
-            `
-          : ''}
-
-        <!-- Conditional: Logic Trigger -->
-        ${popupModule.trigger_type === 'logic'
-          ? html`
-              <div style="margin-top: -16px; margin-bottom: 32px;">
-                ${this.renderConditionalFieldsGroup(
-                  localize('editor.popup.trigger.logic_config', lang, 'Logic Configuration'),
-                  html` ${this._renderTriggerLogic(popupModule, hass, updateModule)} `
-                )}
-              </div>
-            `
-          : ''}
-
-        <!-- Trigger Alignment (shown for button, icon, image triggers) -->
-        ${popupModule.trigger_type === 'button' ||
-        popupModule.trigger_type === 'icon' ||
-        popupModule.trigger_type === 'image'
-          ? html`
-              ${this.renderSettingsSection(
-                localize('editor.popup.trigger.alignment_section', lang, 'Trigger Alignment'),
-                localize(
-                  'editor.popup.trigger.alignment_desc',
-                  lang,
-                  'Choose how the trigger element is aligned.'
-                ),
-                [
-                  {
-                    title: localize('editor.popup.trigger.alignment', lang, 'Alignment'),
-                    description: localize(
-                      'editor.popup.trigger.alignment_help',
-                      lang,
-                      'Align the trigger element to the left, center, or right.'
-                    ),
-                    hass,
-                    data: { trigger_alignment: popupModule.trigger_alignment || 'center' },
-                    schema: [
-                      this.selectField('trigger_alignment', [
-                        { value: 'left', label: localize('editor.common.left', lang, 'Left') },
+                      localize(
+                        'editor.popup.trigger.alignment_desc',
+                        lang,
+                        'Choose how the trigger element is aligned.'
+                      ),
+                      [
                         {
-                          value: 'center',
-                          label: localize('editor.common.center', lang, 'Center'),
+                          title: localize('editor.popup.trigger.alignment', lang, 'Alignment'),
+                          description: localize(
+                            'editor.popup.trigger.alignment_help',
+                            lang,
+                            'Align the trigger element to the left, center, or right.'
+                          ),
+                          hass,
+                          data: {
+                            trigger_alignment: popupModule.trigger_alignment || 'center',
+                          },
+                          schema: [
+                            this.selectField('trigger_alignment', [
+                              {
+                                value: 'left',
+                                label: localize('editor.common.left', lang, 'Left'),
+                              },
+                              {
+                                value: 'center',
+                                label: localize('editor.common.center', lang, 'Center'),
+                              },
+                              {
+                                value: 'right',
+                                label: localize('editor.common.right', lang, 'Right'),
+                              },
+                            ]),
+                          ],
+                          onChange: (e: CustomEvent) => {
+                            const next = e.detail.value.trigger_alignment;
+                            const prev = popupModule.trigger_alignment || 'center';
+                            if (next === prev) return;
+                            updateModule(e.detail.value);
+                            setTimeout(() => {
+                              this.triggerPreviewUpdate();
+                            }, 50);
+                          },
                         },
-                        { value: 'right', label: localize('editor.common.right', lang, 'Right') },
-                      ]),
-                    ],
-                    onChange: (e: CustomEvent) => {
-                      const next = e.detail.value.trigger_alignment;
-                      const prev = popupModule.trigger_alignment || 'center';
-                      if (next === prev) return;
-                      updateModule(e.detail.value);
-                      setTimeout(() => {
-                        this.triggerPreviewUpdate();
-                      }, 50);
-                    },
-                  },
-                ]
-              )}
+                      ]
+                    )}
+                  `
+                : ''}
             `
           : ''}
 
@@ -1343,6 +1434,92 @@ export class UltraPopupModule extends BaseUltraModule {
           : ''}
       </div>
     `;
+  }
+
+  /**
+   * Check if this popup is being opened via a navigation module's route or media player action.
+   * Returns the name/label of the navigation module referencing this popup, or null if none.
+   */
+  private _isOpenedViaNavigation(
+    popupId: string,
+    config?: UltraCardConfig
+  ): string | null {
+    if (!config?.layout?.rows) return null;
+
+    // Helper to check if a single route references this popup
+    const routeReferencesPopup = (route: NavRoute): boolean => {
+      if (route.tap_action?.action === 'open-popup' && route.tap_action?.popup_id === popupId) {
+        return true;
+      }
+      if (route.hold_action?.action === 'open-popup' && route.hold_action?.popup_id === popupId) {
+        return true;
+      }
+      if (
+        route.double_tap_action?.action === 'open-popup' &&
+        route.double_tap_action?.popup_id === popupId
+      ) {
+        return true;
+      }
+      return false;
+    };
+
+    // Recursively scan all items in the layout for navigation modules
+    const findNavReference = (items: any[]): string | null => {
+      if (!items || !Array.isArray(items)) return null;
+
+      for (const item of items) {
+        if (item.type === 'navigation') {
+          const navModule = item as NavigationModule;
+          const navName =
+            (item as any).module_name || navModule.name || `Navigation (${navModule.id.slice(-6)})`;
+
+          // Check routes
+          if (navModule.nav_routes) {
+            for (const route of navModule.nav_routes) {
+              if (routeReferencesPopup(route)) return navName;
+            }
+          }
+
+          // Check stack children
+          if (navModule.nav_stacks) {
+            for (const stack of navModule.nav_stacks) {
+              if (stack.children) {
+                for (const child of stack.children) {
+                  if (routeReferencesPopup(child)) return navName;
+                }
+              }
+            }
+          }
+
+          // Check media player inactive_tap_action
+          if (
+            navModule.nav_media_player?.inactive_tap_action?.action === 'open-popup' &&
+            navModule.nav_media_player?.inactive_tap_action?.popup_id === popupId
+          ) {
+            return navName;
+          }
+        }
+
+        // Recurse into rows (columns)
+        if (item.columns && Array.isArray(item.columns)) {
+          for (const column of item.columns) {
+            if (column.modules) {
+              const found = findNavReference(column.modules);
+              if (found) return found;
+            }
+          }
+        }
+
+        // Recurse into nested modules (containers)
+        if (item.modules && Array.isArray(item.modules)) {
+          const found = findNavReference(item.modules);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    return findNavReference(config.layout.rows);
   }
 
   /**
@@ -3177,10 +3354,14 @@ export class UltraPopupModule extends BaseUltraModule {
       }
     }
 
-    // If there's no visible trigger (logic, page_load, or module), wrap in a zero-height container
-    // so it doesn't take up any space on the dashboard
+    // If there's no visible trigger (logic, page_load, module, or opened via navigation),
+    // wrap in a zero-height container so it doesn't take up any space on the dashboard
+    const isOpenedViaNav = this._isOpenedViaNavigation(popupModule.id, config) !== null;
     const hasVisibleTrigger =
-      triggerType !== 'page_load' && triggerType !== 'logic' && triggerType !== 'module';
+      triggerType !== 'page_load' &&
+      triggerType !== 'logic' &&
+      triggerType !== 'module' &&
+      !isOpenedViaNav;
 
     if (!hasVisibleTrigger) {
       // No visible trigger - render as completely invisible (takes no space)

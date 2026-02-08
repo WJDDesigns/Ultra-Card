@@ -297,8 +297,9 @@ class UcExportImportService {
   async importFromClipboard(): Promise<ExportData | null> {
     try {
       // Check if the modern clipboard API is available
-      if (navigator.clipboard && navigator.clipboard.readText) {
-        const text = await navigator.clipboard.readText();
+      const nav = navigator as unknown as Navigator;
+      if (nav.clipboard && nav.clipboard.readText) {
+        const text = await nav.clipboard.readText();
         if (!text || text.trim().length === 0) {
           console.warn('Clipboard is empty');
           return null;
@@ -464,7 +465,7 @@ class UcExportImportService {
    */
   private async _copyToClipboard(text: string): Promise<void> {
     try {
-      await navigator.clipboard.writeText(text);
+      await (navigator as unknown as Navigator).clipboard.writeText(text);
     } catch (error) {
       // Fallback for older browsers
       const textArea = document.createElement('textarea');

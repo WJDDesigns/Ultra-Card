@@ -151,6 +151,8 @@ export declare class LayoutTab extends LitElement {
     private _addModuleToDeepNestedLayout;
     private _openDeepNestedSettings;
     private _duplicateDeepNestedChild;
+    /** Navigate layout tree via path [rowIndex, columnIndex, moduleIndex, ...nestedIndices]; returns the modules array at that path or null. */
+    private _resolveModuleList;
     private _deleteDeepNestedChild;
     private _renderTreeLevel4TabsSection;
     private _onConditionDragStart;
@@ -324,6 +326,8 @@ export declare class LayoutTab extends LitElement {
     private _onDragStart;
     private _onTreeLayoutChildDragStart;
     private _onTreeDeepNestedChildDragStart;
+    private _onTreeLevel4ChildDragStart;
+    private _onTreePathChildDragStart;
     private _onDragEnd;
     private _onDragOver;
     private _onDragEnter;
@@ -334,6 +338,8 @@ export declare class LayoutTab extends LitElement {
     private _onTreeLayoutChildDrop;
     private _onTreeDeepNestedChildDrop;
     private _onTreeNestedLayoutDrop;
+    private _onTreeLevel4ChildDrop;
+    private _onTreePathChildDrop;
     private _clearDragExpandedItems;
     private _isValidDropTarget;
     private _performMove;
@@ -343,6 +349,8 @@ export declare class LayoutTab extends LitElement {
     private _moveRow;
     private _moveNestedChild;
     private _moveDeepNestedChild;
+    /** Move a path-child (level 5+ generic nesting) to a target. */
+    private _movePathChild;
     /**
      * Move a module from inside a tabs section to another location in the layout
      */

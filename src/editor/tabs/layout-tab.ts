@@ -455,7 +455,8 @@ export class LayoutTab extends LitElement {
     );
 
     // Check for touch capability (additional mobile indicator)
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isTouchDevice =
+      'ontouchstart' in window || (navigator as unknown as Navigator).maxTouchPoints > 0;
 
     return isMobileViewport || isMobileUserAgent || (isTouchDevice && window.innerWidth <= 1024);
   }
@@ -5000,11 +5001,45 @@ export class LayoutTab extends LitElement {
     }
 
     return html`
-      <div class="tree-node tree-deep-child ${isLastChild ? 'last-node' : ''}">
+      <div
+        class="tree-node tree-deep-child ${isLastChild ? 'last-node' : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) =>
+          this._onTreeLevel4ChildDragStart(
+            e,
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedLayoutIndex,
+            deepLayoutIndex,
+            childIndex
+          )}
+        @dragend=${this._onDragEnd}
+        @dragover=${this._onDragOver}
+        @dragenter=${(e: DragEvent) =>
+          this._onDragEnter(e, 'layout-child', rowIndex, columnIndex, parentModuleIndex)}
+        @dragleave=${this._onDragLeave}
+        @drop=${(e: DragEvent) =>
+          this._onTreeLevel4ChildDrop(
+            e,
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedLayoutIndex,
+            deepLayoutIndex,
+            childIndex
+          )}
+      >
         <div class="tree-node-line"></div>
         <div class="tree-node-dot child-dot"></div>
         <div class="tree-node-content">
           <div class="tree-node-header child-header">
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_move', lang, 'Drag to move')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
             <ha-icon icon="${metadata.icon}" class="tree-node-icon"></ha-icon>
             <div class="tree-node-info">
               <span class="tree-node-title">${moduleTitle}</span>
@@ -5123,9 +5158,41 @@ export class LayoutTab extends LitElement {
         class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${isLastChild
           ? 'last-node'
           : ''} ${isCollapsed ? 'collapsed' : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) =>
+          this._onTreeLevel4ChildDragStart(
+            e,
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedLayoutIndex,
+            deepLayoutIndex,
+            childIndex
+          )}
+        @dragend=${this._onDragEnd}
+        @dragover=${this._onDragOver}
+        @dragenter=${(e: DragEvent) =>
+          this._onDragEnter(e, 'layout-child', rowIndex, columnIndex, parentModuleIndex)}
+        @dragleave=${this._onDragLeave}
+        @drop=${(e: DragEvent) =>
+          this._onTreeLevel4ChildDrop(
+            e,
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            nestedLayoutIndex,
+            deepLayoutIndex,
+            childIndex
+          )}
       >
         <div class="tree-node-content">
           <div class="tree-node-header layout-header">
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_move', lang, 'Drag to move')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
             <ha-icon
               icon="${metadata?.icon || 'mdi:view-sequential'}"
               class="tree-node-icon layout-icon"
@@ -5302,11 +5369,29 @@ export class LayoutTab extends LitElement {
     }
 
     return html`
-      <div class="tree-node tree-deep-child ${isLastChild ? 'last-node' : ''}">
+      <div
+        class="tree-node tree-deep-child ${isLastChild ? 'last-node' : ''}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) =>
+          this._onTreePathChildDragStart(e, parentPath, childIndex)}
+        @dragend=${this._onDragEnd}
+        @dragover=${this._onDragOver}
+        @dragenter=${(e: DragEvent) =>
+          this._onDragEnter(e, 'layout-child', parentPath[0], parentPath[1], parentPath[2])}
+        @dragleave=${this._onDragLeave}
+        @drop=${(e: DragEvent) =>
+          this._onTreePathChildDrop(e, parentPath, childIndex)}
+      >
         <div class="tree-node-line"></div>
         <div class="tree-node-dot child-dot"></div>
         <div class="tree-node-content">
           <div class="tree-node-header child-header">
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_move', lang, 'Drag to move')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
             <ha-icon icon="${metadata.icon}" class="tree-node-icon"></ha-icon>
             <div class="tree-node-info">
               <span class="tree-node-title">${moduleTitle}</span>
@@ -5388,9 +5473,25 @@ export class LayoutTab extends LitElement {
           ? 'tabs-layout'
           : ''} ${isLastChild ? 'last-node' : ''} ${isCollapsed ? 'collapsed' : ''}"
         data-nesting-depth="${nestingDepth}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) =>
+          this._onTreePathChildDragStart(e, parentPath, childIndex)}
+        @dragend=${this._onDragEnd}
+        @dragover=${this._onDragOver}
+        @dragenter=${(e: DragEvent) =>
+          this._onDragEnter(e, 'layout-child', parentPath[0], parentPath[1], parentPath[2])}
+        @dragleave=${this._onDragLeave}
+        @drop=${(e: DragEvent) =>
+          this._onTreePathChildDrop(e, parentPath, childIndex)}
       >
         <div class="tree-node-content">
           <div class="tree-node-header layout-header deep-nested-header">
+            <div
+              class="tree-node-drag-handle"
+              title="${localize('editor.layout.drag_to_move', lang, 'Drag to move')}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
             <ha-icon
               icon="${metadata?.icon || 'mdi:view-sequential'}"
               class="tree-node-icon layout-icon"
@@ -5665,24 +5766,28 @@ export class LayoutTab extends LitElement {
     this._updateLayout(newLayout);
   }
 
+  /** Navigate layout tree via path [rowIndex, columnIndex, moduleIndex, ...nestedIndices]; returns the modules array at that path or null. */
+  private _resolveModuleList(layout: any, path: number[]): any[] | null {
+    if (!path || path.length < 3) return null;
+    let current: any =
+      layout.rows[path[0]]?.columns[path[1]]?.modules[path[2]];
+    for (let i = 3; i < path.length; i++) {
+      if (!current?.modules) return null;
+      current = current.modules[path[i]];
+    }
+    return current?.modules ?? null;
+  }
+
   private _deleteDeepNestedChild(parentPath: number[], childIndex: number): void {
     if (parentPath.length < 3) return;
 
     const layout = this._ensureLayout();
     const newLayout = JSON.parse(JSON.stringify(layout));
 
-    // Navigate to the parent layout module using the path
-    let current: any =
-      newLayout.rows[parentPath[0]]?.columns[parentPath[1]]?.modules[parentPath[2]];
+    const modules = this._resolveModuleList(newLayout, parentPath);
+    if (!modules) return;
 
-    for (let i = 3; i < parentPath.length; i++) {
-      if (!current?.modules) break;
-      current = current.modules[parentPath[i]];
-    }
-
-    if (!current?.modules) return;
-
-    current.modules.splice(childIndex, 1);
+    modules.splice(childIndex, 1);
     this._updateLayout(newLayout);
   }
 
@@ -5879,7 +5984,7 @@ export class LayoutTab extends LitElement {
 
   // Drag and drop state
   @state() private _draggedItem: {
-    type: 'module' | 'column' | 'row' | 'layout-child' | 'nested-child' | 'deep-nested-child';
+    type: 'module' | 'column' | 'row' | 'layout-child' | 'nested-child' | 'deep-nested-child' | 'path-child';
     rowIndex: number;
     columnIndex?: number;
     moduleIndex?: number;
@@ -5887,14 +5992,17 @@ export class LayoutTab extends LitElement {
     layoutChildIndex?: number;
     nestedChildIndex?: number;
     deepNestedChildIndex?: number;
+    parentPath?: number[];
+    pathChildIndex?: number;
   } | null = null;
   @state() private _dropTarget: {
-    type: 'module' | 'column' | 'row' | 'layout' | 'nested-layout' | 'layout-child' | 'deep-nested-layout';
+    type: 'module' | 'column' | 'row' | 'layout' | 'nested-layout' | 'layout-child' | 'deep-nested-layout' | 'path-child-target';
     rowIndex: number;
     columnIndex?: number;
     moduleIndex?: number;
     childIndex?: number;
     nestedChildIndex?: number;
+    parentPath?: number[];
   } | null = null;
   // Track the intended drag target element (set on mousedown before dragstart)
   // This helps parent handlers know when a nested element is being dragged
@@ -10448,8 +10556,7 @@ export class LayoutTab extends LitElement {
     // Add visual feedback
     const dragTarget = e.currentTarget as HTMLElement;
     if (dragTarget) {
-      dragTarget.style.opacity = '0.6';
-      dragTarget.style.transform = 'scale(0.95)';
+      dragTarget.classList.add('being-dragged');
     }
   }
 
@@ -10506,9 +10613,105 @@ export class LayoutTab extends LitElement {
     // Add visual feedback
     const target = e.currentTarget as HTMLElement;
     if (target) {
-      target.style.opacity = '0.6';
-      target.style.transform = 'scale(0.95)';
+      target.classList.add('being-dragged');
     }
+  }
+
+  // Drag start for level 4 children (e.g. modules inside Popup -> Horizontal -> Vertical)
+  private _onTreeLevel4ChildDragStart(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    deepLayoutIndex: number,
+    childIndex: number
+  ): void {
+    if (!e.dataTransfer) return;
+
+    // CRITICAL: Stop propagation to prevent parent layout from capturing the drag
+    e.stopPropagation();
+
+    // If a nested handler already set drag data, abort.
+    if (this._draggedItem) {
+      e.preventDefault();
+      return;
+    }
+
+    const layout = this._ensureLayout();
+    const topLayout = layout.rows[rowIndex]?.columns[columnIndex]?.modules[parentModuleIndex] as any;
+    const nestedLayout = topLayout?.modules?.[nestedLayoutIndex] as any;
+    const deepLayout = nestedLayout?.modules?.[deepLayoutIndex] as any;
+    const data = deepLayout?.modules?.[childIndex];
+
+    this._draggedItem = {
+      type: 'deep-nested-child',
+      rowIndex,
+      columnIndex,
+      moduleIndex: parentModuleIndex,
+      layoutChildIndex: nestedLayoutIndex,
+      nestedChildIndex: deepLayoutIndex,
+      deepNestedChildIndex: childIndex,
+      data,
+    };
+
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData(
+      'text/plain',
+      JSON.stringify({
+        type: 'deep-nested-child',
+        rowIndex,
+        columnIndex,
+        moduleIndex: parentModuleIndex,
+        nestedLayoutIndex,
+        deepLayoutIndex,
+        childIndex,
+      })
+    );
+
+    // Add visual feedback
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.classList.add('being-dragged');
+    }
+  }
+
+  // Generic path-based drag start for level 5+ (unlimited nesting)
+  private _onTreePathChildDragStart(
+    e: DragEvent,
+    parentPath: number[],
+    childIndex: number
+  ): void {
+    if (!e.dataTransfer) return;
+
+    e.stopPropagation();
+    if (this._draggedItem) {
+      e.preventDefault();
+      return;
+    }
+
+    const layout = this._ensureLayout();
+    const modules = this._resolveModuleList(layout, parentPath);
+    const data = modules?.[childIndex];
+    if (data === undefined) return;
+
+    this._draggedItem = {
+      type: 'path-child',
+      rowIndex: parentPath[0],
+      columnIndex: parentPath[1],
+      parentPath: [...parentPath],
+      pathChildIndex: childIndex,
+      data,
+    };
+
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData(
+      'text/plain',
+      JSON.stringify({ type: 'path-child', parentPath: [...parentPath], childIndex })
+    );
+
+    const target = e.currentTarget as HTMLElement;
+    if (target) target.classList.add('being-dragged');
   }
 
   private _onDragEnd(e: DragEvent): void {
@@ -10949,6 +11152,98 @@ export class LayoutTab extends LitElement {
     this.requestUpdate();
   }
 
+  // Drop handler for level 4 children (modules inside Popup -> Horizontal -> Vertical)
+  // Used for reordering within the same deep nested layout
+  private _onTreeLevel4ChildDrop(
+    e: DragEvent,
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    deepLayoutIndex: number,
+    childIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const target = e.currentTarget as HTMLElement;
+    if (target) target.classList.remove('drag-over');
+
+    if (!this._draggedItem) return;
+
+    // Don't allow dropping on self
+    if (
+      this._draggedItem.type === 'deep-nested-child' &&
+      this._draggedItem.rowIndex === rowIndex &&
+      this._draggedItem.columnIndex === columnIndex &&
+      this._draggedItem.moduleIndex === parentModuleIndex &&
+      this._draggedItem.layoutChildIndex === nestedLayoutIndex &&
+      this._draggedItem.nestedChildIndex === deepLayoutIndex &&
+      this._draggedItem.deepNestedChildIndex === childIndex
+    ) {
+      return;
+    }
+
+    // Validate drop target compatibility
+    if (!this._isValidDropTarget(this._draggedItem.type, 'deep-nested-child-target')) return;
+
+    this._performMove(this._draggedItem, {
+      type: 'deep-nested-child-target',
+      rowIndex,
+      columnIndex,
+      moduleIndex: parentModuleIndex,
+      layoutChildIndex: nestedLayoutIndex,
+      nestedChildIndex: deepLayoutIndex,
+      childIndex,
+    });
+
+    this._clearDragExpandedItems();
+    this._draggedItem = null;
+    this._dropTarget = null;
+    this.requestUpdate();
+  }
+
+  // Generic path-based drop for level 5+ (unlimited nesting)
+  private _onTreePathChildDrop(
+    e: DragEvent,
+    parentPath: number[],
+    childIndex: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const target = e.currentTarget as HTMLElement;
+    if (target) target.classList.remove('drag-over');
+
+    if (!this._draggedItem) return;
+
+    // Don't allow dropping on self (same path and child index)
+    if (
+      this._draggedItem.type === 'path-child' &&
+      this._draggedItem.parentPath &&
+      this._draggedItem.parentPath.length === parentPath.length &&
+      this._draggedItem.parentPath.every((v, i) => v === parentPath[i]) &&
+      this._draggedItem.pathChildIndex === childIndex
+    ) {
+      return;
+    }
+
+    if (!this._isValidDropTarget(this._draggedItem.type, 'path-child-target')) return;
+
+    this._performMove(this._draggedItem, {
+      type: 'path-child-target',
+      rowIndex: parentPath[0],
+      columnIndex: parentPath[1],
+      parentPath: [...parentPath],
+      childIndex,
+    });
+
+    this._clearDragExpandedItems();
+    this._draggedItem = null;
+    this._dropTarget = null;
+    this.requestUpdate();
+  }
+
   // Helper to clear temporarily expanded items (don't re-collapse after successful drop)
   private _clearDragExpandedItems(): void {
     this._dragExpandedRows.clear();
@@ -10963,13 +11258,14 @@ export class LayoutTab extends LitElement {
   private _isValidDropTarget(sourceType: string, targetType: string): boolean {
     // Define valid drop combinations
     const validCombinations: Record<string, string[]> = {
-      module: ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target'], // Modules can be dropped on other modules, column areas, layout modules, or layout children for reordering
-      'nested-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target'], // Modules from nested layouts (3-level: Slider -> Horizontal -> Module)
-      'layout-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target'], // Actual type emitted by layout child drag start
-      'deep-nested-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target'], // Modules from deeply nested layouts (4-level)
-      'tabs-section-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target'], // Modules from tabs sections can be dropped on columns, layouts, etc.
-      column: ['column', 'row'], // Columns can be dropped on other columns or row areas
-      row: ['row'], // Rows can only be dropped on other rows
+      module: ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target', 'deep-nested-child-target', 'path-child-target'],
+      'nested-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target', 'deep-nested-child-target', 'path-child-target'],
+      'layout-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target', 'deep-nested-child-target', 'path-child-target'],
+      'deep-nested-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target', 'deep-nested-child-target', 'path-child-target'],
+      'path-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target', 'deep-nested-child-target', 'path-child-target'],
+      'tabs-section-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target', 'deep-nested-child-target', 'path-child-target'],
+      column: ['column', 'row'],
+      row: ['row'],
     };
 
     return validCombinations[sourceType]?.includes(targetType) || false;
@@ -10992,6 +11288,9 @@ export class LayoutTab extends LitElement {
         break;
       case 'deep-nested-child':
         this._moveDeepNestedChild(newLayout, source, target);
+        break;
+      case 'path-child':
+        this._movePathChild(newLayout, source, target);
         break;
       case 'tabs-section-child':
         this._moveTabsSectionChild(newLayout, source, target);
@@ -11185,7 +11484,26 @@ export class LayoutTab extends LitElement {
     }
 
     // Add to target
-    if (target.type === 'nested-child-target') {
+    if (target.type === 'path-child-target' && target.parentPath) {
+      // Insert into level 5+ container (generic path)
+      const targetList = this._resolveModuleList(layout, target.parentPath);
+      if (targetList) {
+        const insertIdx =
+          target.childIndex !== undefined ? target.childIndex : targetList.length;
+        targetList.splice(insertIdx, 0, sourceModule);
+      }
+    } else if (target.type === 'deep-nested-child-target') {
+      // Insert into the deep nested layout's modules array (e.g. vertical inside horizontal inside popup)
+      const targetTopLayout =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      const targetNestedLayout = targetTopLayout?.modules?.[target.layoutChildIndex];
+      const targetDeepLayout = targetNestedLayout?.modules?.[target.nestedChildIndex];
+      if (targetDeepLayout && Array.isArray(targetDeepLayout.modules)) {
+        const insertIdx =
+          target.childIndex !== undefined ? target.childIndex : targetDeepLayout.modules.length;
+        targetDeepLayout.modules.splice(insertIdx, 0, sourceModule);
+      }
+    } else if (target.type === 'nested-child-target') {
       // Insert into the nested layout's modules array (e.g. horizontal inside slider)
       const targetParentLayout =
         layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
@@ -11423,45 +11741,198 @@ export class LayoutTab extends LitElement {
       const targetIndex =
         target.childIndex !== undefined ? target.childIndex : targetNestedLayout.modules.length;
       targetNestedLayout.modules.splice(targetIndex, 0, sourceModule);
+    } else if (target.type === 'deep-nested-child-target') {
+      // Moving to a deep nested layout (level 3)
+      const targetTopLayout =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      const targetNestedLayout = targetTopLayout.modules[target.layoutChildIndex];
+      const targetDeepLayout = targetNestedLayout.modules[target.nestedChildIndex];
+      if (!targetDeepLayout.modules) {
+        targetDeepLayout.modules = [];
+      }
+      const insertIdx =
+        target.childIndex !== undefined ? target.childIndex : targetDeepLayout.modules.length;
+      targetDeepLayout.modules.splice(insertIdx, 0, sourceModule);
+    } else if (target.type === 'path-child-target' && target.parentPath) {
+      const targetList = this._resolveModuleList(layout, target.parentPath);
+      if (targetList) {
+        const insertIdx =
+          target.childIndex !== undefined ? target.childIndex : targetList.length;
+        targetList.splice(insertIdx, 0, sourceModule);
+      }
     }
   }
 
   private _moveDeepNestedChild(layout: any, source: any, target: any): void {
-    // Handle moving deep nested child modules (modules inside deeply nested layout modules, e.g., icon inside popup inside horizontal inside slider)
+    // Handle moving deep nested child modules (e.g. module inside Popup -> Horizontal -> Vertical)
     const sourceTopLayout =
       layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
     const sourceNestedLayout = sourceTopLayout.modules[source.layoutChildIndex];
     const sourceDeepNestedLayout = sourceNestedLayout.modules[source.nestedChildIndex];
     const sourceModule = sourceDeepNestedLayout.modules[source.deepNestedChildIndex];
 
+    // Handle reordering within the same deep nested layout
+    if (
+      target.type === 'deep-nested-child-target' &&
+      source.rowIndex === target.rowIndex &&
+      source.columnIndex === target.columnIndex &&
+      source.moduleIndex === target.moduleIndex &&
+      source.layoutChildIndex === target.layoutChildIndex &&
+      source.nestedChildIndex === target.nestedChildIndex
+    ) {
+      const sourceIdx = source.deepNestedChildIndex;
+      let targetIdx = target.childIndex;
+
+      if (sourceIdx === targetIdx) return;
+
+      sourceDeepNestedLayout.modules.splice(sourceIdx, 1);
+      if (sourceIdx < targetIdx) targetIdx--;
+      sourceDeepNestedLayout.modules.splice(targetIdx, 0, sourceModule);
+      return;
+    }
+
     // Remove from source
     sourceDeepNestedLayout.modules.splice(source.deepNestedChildIndex, 1);
 
     // Add to target based on target type
-    if (target.type === 'module' || target.type === 'column') {
+    if (target.type === 'deep-nested-child-target') {
+      // Moving to a different deep nested layout
+      const targetTopLayout =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      const targetNestedLayout = targetTopLayout.modules[target.layoutChildIndex];
+      const targetDeepLayout = targetNestedLayout.modules[target.nestedChildIndex];
+      if (!targetDeepLayout.modules) targetDeepLayout.modules = [];
+      const insertIdx =
+        target.childIndex !== undefined ? target.childIndex : targetDeepLayout.modules.length;
+      targetDeepLayout.modules.splice(insertIdx, 0, sourceModule);
+    } else if (target.type === 'nested-child-target') {
+      // Moving to a nested layout (level 2)
+      const targetTopLayout =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      const targetNestedLayout = targetTopLayout.modules[target.layoutChildIndex];
+      if (!targetNestedLayout.modules) targetNestedLayout.modules = [];
+      const insertIdx =
+        target.childIndex !== undefined ? target.childIndex : targetNestedLayout.modules.length;
+      targetNestedLayout.modules.splice(insertIdx, 0, sourceModule);
+    } else if (target.type === 'module' || target.type === 'column') {
       // Moving to a regular column
       const targetColumn = layout.rows[target.rowIndex].columns[target.columnIndex];
       const targetIndex =
         target.moduleIndex !== undefined ? target.moduleIndex : targetColumn.modules.length;
       targetColumn.modules.splice(targetIndex, 0, sourceModule);
-    } else if (target.type === 'layout') {
-      // Moving to a layout module (1st level)
-      const targetLayoutModule =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      if (!targetLayoutModule.modules) {
-        targetLayoutModule.modules = [];
+    } else if (target.type === 'layout' || target.type === 'nested-layout') {
+      // Moving to a layout module
+      let targetLayoutModule: any;
+      if (target.type === 'nested-layout') {
+        const parentLayout =
+          layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+        targetLayoutModule = parentLayout?.modules?.[(target as any).nestedLayoutIndex];
+      } else {
+        targetLayoutModule =
+          layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
       }
+      if (!targetLayoutModule) return;
+      if (!targetLayoutModule.modules) targetLayoutModule.modules = [];
       targetLayoutModule.modules.push(sourceModule);
     } else if (target.type === 'layout-child') {
       // Moving to a specific position within a layout module
       const targetLayoutModule =
         layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      if (!targetLayoutModule.modules) {
-        targetLayoutModule.modules = [];
-      }
+      if (!targetLayoutModule.modules) targetLayoutModule.modules = [];
       const targetIndex =
         target.childIndex !== undefined ? target.childIndex : targetLayoutModule.modules.length;
       targetLayoutModule.modules.splice(targetIndex, 0, sourceModule);
+    } else if (target.type === 'path-child-target' && target.parentPath) {
+      const targetList = this._resolveModuleList(layout, target.parentPath);
+      if (targetList) {
+        const insertIdx =
+          target.childIndex !== undefined ? target.childIndex : targetList.length;
+        targetList.splice(insertIdx, 0, sourceModule);
+      }
+    }
+  }
+
+  /** Move a path-child (level 5+ generic nesting) to a target. */
+  private _movePathChild(layout: any, source: any, target: any): void {
+    const path = source.parentPath;
+    if (!path || source.pathChildIndex === undefined) return;
+
+    const sourceList = this._resolveModuleList(layout, path);
+    if (!sourceList || source.pathChildIndex >= sourceList.length) return;
+
+    const sourceModule = sourceList[source.pathChildIndex];
+
+    // Same-container reorder: path-child-target with same path
+    if (target.type === 'path-child-target' && target.parentPath) {
+      const samePath =
+        path.length === target.parentPath.length &&
+        path.every((v, i) => v === target.parentPath![i]);
+      if (samePath) {
+        const sourceIdx = source.pathChildIndex;
+        let targetIdx = target.childIndex ?? sourceIdx;
+        if (sourceIdx === targetIdx) return;
+        sourceList.splice(sourceIdx, 1);
+        if (sourceIdx < targetIdx) targetIdx--;
+        sourceList.splice(targetIdx, 0, sourceModule);
+        return;
+      }
+    }
+
+    // Remove from source
+    sourceList.splice(source.pathChildIndex, 1);
+
+    // Insert at target
+    if (target.type === 'path-child-target' && target.parentPath) {
+      const targetList = this._resolveModuleList(layout, target.parentPath);
+      if (targetList) {
+        const insertIdx = target.childIndex !== undefined ? target.childIndex : targetList.length;
+        targetList.splice(insertIdx, 0, sourceModule);
+      }
+      return;
+    }
+
+    if (target.type === 'module' || target.type === 'column') {
+      const targetColumn = layout.rows[target.rowIndex].columns[target.columnIndex];
+      const targetIndex =
+        target.moduleIndex !== undefined ? target.moduleIndex : targetColumn.modules.length;
+      targetColumn.modules.splice(targetIndex, 0, sourceModule);
+    } else if (target.type === 'layout' || target.type === 'nested-layout') {
+      let targetLayoutModule: any;
+      if (target.type === 'nested-layout') {
+        const parentLayout =
+          layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+        targetLayoutModule = parentLayout?.modules?.[(target as any).nestedLayoutIndex];
+      } else {
+        targetLayoutModule =
+          layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      }
+      if (!targetLayoutModule) return;
+      if (!targetLayoutModule.modules) targetLayoutModule.modules = [];
+      targetLayoutModule.modules.push(sourceModule);
+    } else if (target.type === 'layout-child') {
+      const targetLayoutModule =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      if (!targetLayoutModule.modules) targetLayoutModule.modules = [];
+      const insertIdx =
+        target.childIndex !== undefined ? target.childIndex : targetLayoutModule.modules.length;
+      targetLayoutModule.modules.splice(insertIdx, 0, sourceModule);
+    } else if (target.type === 'nested-child-target') {
+      const targetTopLayout =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      const targetNestedLayout = targetTopLayout.modules[target.layoutChildIndex];
+      if (!targetNestedLayout.modules) targetNestedLayout.modules = [];
+      const insertIdx =
+        target.childIndex !== undefined ? target.childIndex : targetNestedLayout.modules.length;
+      targetNestedLayout.modules.splice(insertIdx, 0, sourceModule);
+    } else if (target.type === 'deep-nested-child-target') {
+      const targetTopLayout =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      const targetNestedLayout = targetTopLayout.modules[target.layoutChildIndex];
+      const targetDeepLayout = targetNestedLayout.modules[target.nestedChildIndex];
+      if (!targetDeepLayout.modules) targetDeepLayout.modules = [];
+      const insertIdx =
+        target.childIndex !== undefined ? target.childIndex : targetDeepLayout.modules.length;
+      targetDeepLayout.modules.splice(insertIdx, 0, sourceModule);
     }
   }
 

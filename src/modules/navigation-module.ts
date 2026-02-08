@@ -1876,6 +1876,29 @@ export class UltraNavigationModule extends BaseUltraModule {
       }
     };
 
+    const duplicateRoute = () => {
+      const cloned: NavRoute = {
+        ...JSON.parse(JSON.stringify(route)),
+        id: this.generateId('nav-route'),
+        label: `${route.label || (isStackChild ? 'Stack Item' : `Path ${index + 1}`)} (Copy)`,
+      };
+      if (isStackChild) {
+        const stacks = (navModule.nav_stacks || []).map(s => {
+          if (s.id !== parentStackId) return s;
+          const kids = [...(s.children || [])];
+          const idx = kids.findIndex(c => c.id === route.id);
+          kids.splice(idx + 1, 0, cloned);
+          return { ...s, children: kids };
+        });
+        updateModule({ nav_stacks: stacks });
+      } else {
+        const nextRoutes = [...routes];
+        const idx = nextRoutes.findIndex(r => r.id === route.id);
+        nextRoutes.splice(idx + 1, 0, cloned);
+        updateModule({ nav_routes: nextRoutes });
+      }
+    };
+
     const toggleExpand = () => {
       if (isExpanded) {
         this._expandedRoutes.delete(route.id);
@@ -1980,6 +2003,9 @@ export class UltraNavigationModule extends BaseUltraModule {
             ${route.url ? html` <div class="entity-detail">${route.url}</div> ` : ''}
           </div>
           <div class="entity-actions" @click=${(e: Event) => e.stopPropagation()}>
+            <button class="entity-action-btn duplicate" @click=${duplicateRoute} title="Duplicate">
+              <ha-icon icon="mdi:content-copy"></ha-icon>
+            </button>
             <button class="entity-action-btn delete" @click=${removeRoute} title="Delete">
               <ha-icon icon="mdi:delete"></ha-icon>
             </button>
@@ -2107,6 +2133,23 @@ export class UltraNavigationModule extends BaseUltraModule {
       });
     };
 
+    const duplicateStack = () => {
+      const clonedChildren = (children || []).map(c => ({
+        ...JSON.parse(JSON.stringify(c)),
+        id: this.generateId('nav-route'),
+      }));
+      const cloned: NavStackItem = {
+        ...JSON.parse(JSON.stringify(stack)),
+        id: this.generateId('nav-stack'),
+        label: `${stack.label || `Stack ${index + 1}`} (Copy)`,
+        children: clonedChildren,
+      };
+      const nextStacks = [...stacks];
+      const idx = nextStacks.findIndex(s => s.id === stack.id);
+      nextStacks.splice(idx + 1, 0, cloned);
+      updateModule({ nav_stacks: nextStacks });
+    };
+
     const toggleExpand = () => {
       if (isExpanded) {
         this._expandedRoutes.delete(stack.id);
@@ -2221,6 +2264,13 @@ export class UltraNavigationModule extends BaseUltraModule {
             </div>
           </div>
           <div class="entity-actions" @click=${(e: Event) => e.stopPropagation()}>
+            <button
+              class="entity-action-btn duplicate"
+              @click=${duplicateStack}
+              title="Duplicate stack"
+            >
+              <ha-icon icon="mdi:content-copy"></ha-icon>
+            </button>
             <button
               class="entity-action-btn delete"
               @click=${removeStack}
@@ -3060,6 +3110,9 @@ export class UltraNavigationModule extends BaseUltraModule {
       }
       .entity-action-btn.delete:hover {
         color: var(--error-color);
+      }
+      .entity-action-btn.duplicate:hover {
+        color: var(--accent-color);
       }
       .expand-icon {
         --mdc-icon-size: 20px;

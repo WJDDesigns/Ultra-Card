@@ -91,6 +91,11 @@ class UcNavigationService {
   private autohideMouseHandler: ((e: MouseEvent) => void) | null = null;
   private autohideActive = false;
 
+  // Media player state watcher – detects track changes even when the
+  // originating card is on a non-visible view and not receiving hass updates.
+  private _mediaWatchInterval: ReturnType<typeof setInterval> | null = null;
+  private _lastMediaSnapshot: Map<string, string> = new Map(); // entity_id → last_updated
+
   // Use the getter to access the shared map
   private get previewOverrides() {
     return getPreviewOverrides();
@@ -190,6 +195,8 @@ class UcNavigationService {
     });
 
     this.scheduleUpdate();
+    // Start/stop the media player watcher as needed
+    this.manageMediaPlayerWatcher();
   }
 
   unregisterModule(cardId: string, moduleId: string): void {
@@ -201,6 +208,103 @@ class UcNavigationService {
     } else {
       this.scheduleUpdate();
     }
+    // Re-evaluate whether we still need the media watcher
+    this.manageMediaPlayerWatcher();
+  }
+
+  /**
+   * Retrieve the freshest `hass` object from the HA root element.
+   * When the originating card is on a non-visible view, its stored `hass`
+   * can be stale. The `<home-assistant>` element always has the latest state.
+   */
+  private getFreshHass(registered: RegisteredModule): HomeAssistant {
+    try {
+      const haEl = document.querySelector('home-assistant') as any;
+      if (haEl?.hass) {
+        // Keep stored reference in sync so downstream code is consistent
+        registered.hass = haEl.hass;
+        return haEl.hass;
+      }
+    } catch {
+      // Fallback silently
+    }
+    return registered.hass;
+  }
+
+  /**
+   * Collect all media_player entity IDs from currently registered navigation modules.
+   */
+  private getTrackedMediaEntities(): Set<string> {
+    const entities = new Set<string>();
+    for (const reg of this.registeredModules.values()) {
+      const mp = (reg.module as any)?.nav_media_player;
+      if (mp?.enabled !== false && mp?.entity) {
+        entities.add(mp.entity as string);
+      }
+    }
+    return entities;
+  }
+
+  /**
+   * Start or stop the media player state watcher based on whether any
+   * registered navigation module has a media player configured.
+   */
+  private manageMediaPlayerWatcher(): void {
+    const entities = this.getTrackedMediaEntities();
+    if (entities.size > 0 && !this._mediaWatchInterval) {
+      this.startMediaPlayerWatcher();
+    } else if (entities.size === 0 && this._mediaWatchInterval) {
+      this.stopMediaPlayerWatcher();
+    }
+  }
+
+  /**
+   * Poll the HA root element for media player state changes every ~1 s.
+   * When a tracked entity's last_updated changes, trigger a full re-render
+   * so album art / title / artist update in real-time.
+   */
+  private startMediaPlayerWatcher(): void {
+    if (this._mediaWatchInterval) return;
+
+    this._mediaWatchInterval = setInterval(() => {
+      try {
+        const haEl = document.querySelector('home-assistant') as any;
+        const hass: HomeAssistant | undefined = haEl?.hass;
+        if (!hass?.states) return;
+
+        const entities = this.getTrackedMediaEntities();
+        let changed = false;
+
+        for (const entityId of entities) {
+          const state = hass.states[entityId];
+          if (!state) continue;
+          const prev = this._lastMediaSnapshot.get(entityId);
+          const curr = state.last_updated || '';
+          if (prev !== curr) {
+            this._lastMediaSnapshot.set(entityId, curr);
+            changed = true;
+          }
+        }
+
+        if (changed) {
+          // Push fresh hass into all registered modules before rendering
+          for (const reg of this.registeredModules.values()) {
+            reg.hass = hass;
+          }
+          this.evaluateAndRender();
+        }
+      } catch {
+        // Silently ignore errors in the watcher
+      }
+    }, 1000);
+  }
+
+  private stopMediaPlayerWatcher(): void {
+    if (this._mediaWatchInterval) {
+      clearInterval(this._mediaWatchInterval);
+      this._mediaWatchInterval = null;
+    }
+    this._lastMediaSnapshot.clear();
   }
 
   /**
@@ -414,6 +518,10 @@ class UcNavigationService {
   }
 
   private renderNavigationForContainer(registered: RegisteredModule, container: HTMLElement): void {
+    // Always pull the freshest hass so media player state is current
+    // even when the originating card is on a non-visible view.
+    this.getFreshHass(registered);
+
     const viewLayer = this.ensureNavLayerForView(container);
     const moduleKey = `${registered.cardId}-${registered.moduleId}`;
 
@@ -494,6 +602,9 @@ class UcNavigationService {
   }
 
   private cleanup(): void {
+    // Stop media player watcher
+    this.stopMediaPlayerWatcher();
+
     // Tear down auto-hide listeners
     if (this.autohideMouseHandler) {
       document.removeEventListener('mousemove', this.autohideMouseHandler);
@@ -1295,6 +1406,8 @@ class UcNavigationService {
     const isExpanded = viewLayer.mediaPlayerExpanded ?? false;
     const title = state?.attributes?.media_title || state?.attributes?.friendly_name || entity;
     const image = state?.attributes?.entity_picture;
+    // Build cache-busted URL so album art refreshes on track change
+    const imageUrl = this.getMediaImageUrl(hass, image, state);
 
     const mediaItem = {
       id: `media-${registered.moduleId}`,
@@ -1377,11 +1490,19 @@ class UcNavigationService {
     };
 
     // Determine which icon to show
+    // Use background-image (like HA's hui-media-control-card) instead of
+    // <img src> — background-image swaps are handled by the CSS engine and
+    // update reliably when the URL changes, avoiding stale-image issues.
     let iconContent;
     if (isPlaying && image) {
       // Playing with album art - show album art
       iconContent = html`
-        <img src="${getImageUrl(hass, image)}" alt="${title}" class="image media-album-art" />
+        <div
+          class="image media-album-art"
+          role="img"
+          aria-label="${title}"
+          style="background-image: url('${imageUrl}');"
+        ></div>
       `;
     } else if (isPlaying) {
       // Playing without album art - show music icon
@@ -1389,12 +1510,12 @@ class UcNavigationService {
     } else if (isPaused && image) {
       // Paused with album art - show album art with play overlay
       iconContent = html`
-        <img
-          src="${getImageUrl(hass, image)}"
-          alt="${title}"
+        <div
           class="image media-album-art"
-          style="opacity: 0.6;"
-        />
+          role="img"
+          aria-label="${title}"
+          style="background-image: url('${imageUrl}'); opacity: 0.6;"
+        ></div>
         <ha-icon
           class="icon media-play-overlay"
           icon="mdi:play"
@@ -1456,7 +1577,9 @@ class UcNavigationService {
     const title = state.attributes?.media_title || state.attributes?.friendly_name || entity;
     const artist = state.attributes?.media_artist || '';
     const image = state.attributes?.entity_picture;
-    const albumBg = mediaPlayer.album_cover_background && image ? getImageUrl(hass, image) : '';
+    // Build cache-busted URL so album art refreshes on track change
+    const imageUrl = this.getMediaImageUrl(hass, image, state);
+    const albumBg = mediaPlayer.album_cover_background && image ? imageUrl : '';
     const widgetPosition = mediaPlayer.widget_position || 'above';
 
     const mediaItem = {
@@ -1556,9 +1679,10 @@ class UcNavigationService {
         >
           ${image
             ? html`
-                <div class="media-player-image">
-                  <img src="${getImageUrl(hass, image)}" alt="${title}" />
-                </div>
+                <div
+                  class="media-player-image"
+                  style="background-image: url('${imageUrl}');"
+                ></div>
               `
             : html``}
           <div class="media-player-info">
@@ -1620,7 +1744,9 @@ class UcNavigationService {
     const title = state.attributes?.media_title || state.attributes?.friendly_name || entity;
     const artist = state.attributes?.media_artist || '';
     const image = state.attributes?.entity_picture;
-    const albumBg = mediaPlayer.album_cover_background && image ? getImageUrl(hass, image) : '';
+    // Build cache-busted URL so album art refreshes on track change
+    const imageUrl = this.getMediaImageUrl(hass, image, state);
+    const albumBg = mediaPlayer.album_cover_background && image ? imageUrl : '';
 
     const position = mediaPlayer.desktop_position || 'bottom-center';
     const positionClass = isDesktop ? position : 'bottom-center';
@@ -1656,9 +1782,10 @@ class UcNavigationService {
         >
           ${image
             ? html`
-                <div class="media-player-image">
-                  <img src="${getImageUrl(hass, image)}" alt="${title}" />
-                </div>
+                <div
+                  class="media-player-image"
+                  style="background-image: url('${imageUrl}');"
+                ></div>
               `
             : html``}
           <div class="media-player-info">
@@ -2158,6 +2285,8 @@ class UcNavigationService {
 
   private requestRender(viewLayer: ViewNavLayer): void {
     if (!viewLayer.activeModule) return;
+    // Ensure we render with the freshest hass (media player state, etc.)
+    this.getFreshHass(viewLayer.activeModule);
     const navConfig = this.resolveNavigationConfig(
       viewLayer.activeModule.module,
       viewLayer.activeModule.config
@@ -2291,6 +2420,29 @@ class UcNavigationService {
   private getResolvedImage(image: string | undefined, hass: HomeAssistant): string | undefined {
     if (!image) return undefined;
     return getImageUrl(hass, image);
+  }
+
+  /**
+   * Build a cache-busted image URL for media player album art.
+   * HA media player proxy URLs (e.g. /api/media_player_proxy/...) don't change
+   * between tracks even though the served content does. Appending the entity's
+   * last_updated timestamp forces the browser to re-fetch when the track changes.
+   */
+  private getMediaImageUrl(
+    hass: HomeAssistant,
+    image: string | undefined,
+    _state: { last_updated?: string; last_changed?: string } | undefined
+  ): string {
+    if (!image) return '';
+
+    // Match HA's own hui-media-control-card behaviour exactly:
+    //   url = hass.hassUrl(entity_picture)
+    // hassUrl() resolves relative proxy paths against the HA base URL.
+    // No extra query params — HA's built-in `cache` hash already changes
+    // per track and is the only cache-buster needed.
+    const hassUrl = (hass as any).hassUrl;
+    const result = typeof hassUrl === 'function' ? hassUrl(image) : image;
+    return result || '';
   }
 
   private isDesktop(desktopConfig?: NavDesktopConfig): boolean {
@@ -2730,6 +2882,40 @@ class UcNavigationService {
         box-shadow: var(--navbar-box-shadow-mobile-floating);
         margin: 12px;
       }
+
+      /* ── Mobile horizontal scroll when too many icons ── */
+      .navbar-card.mobile.bottom,
+      .navbar-card.mobile.top {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+      }
+      .navbar-card.mobile.bottom::-webkit-scrollbar,
+      .navbar-card.mobile.top::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
+      }
+      .navbar-card.mobile.floating.bottom,
+      .navbar-card.mobile.floating.top {
+        max-width: calc(100vw - 24px); /* account for floating margins */
+      }
+      /* Vertical mobile navbar scroll */
+      .navbar-card.mobile.left,
+      .navbar-card.mobile.right {
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .navbar-card.mobile.left::-webkit-scrollbar,
+      .navbar-card.mobile.right::-webkit-scrollbar {
+        display: none;
+      }
+      .navbar-card.mobile.floating.left,
+      .navbar-card.mobile.floating.right {
+        max-height: calc(100vh - 24px);
+      }
+
       .navbar-card.docked {
         margin: 0;
         border-left: none;
@@ -2767,6 +2953,7 @@ class UcNavigationService {
         align-items: center;
         gap: 4px;
         min-width: 52px;
+        flex-shrink: 0;
         cursor: pointer;
         user-select: none;
         transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease;
@@ -2970,6 +3157,7 @@ class UcNavigationService {
       }
       .stack-item {
         position: relative;
+        flex-shrink: 0;
       }
       /* Stack icon hover — direct child only, not popup children */
       .stack-item:hover > .button {
@@ -3263,11 +3451,15 @@ class UcNavigationService {
         align-items: center;
         gap: 12px;
       }
-      .media-player-image img {
+      .media-player-image {
         width: 44px;
         height: 44px;
+        min-width: 44px;
+        min-height: 44px;
         border-radius: 12px;
-        object-fit: cover;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
       }
       .media-player-info {
         display: flex;
@@ -3379,7 +3571,9 @@ class UcNavigationService {
       .media-button .media-album-art {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
         border-radius: inherit;
       }
       .media-button .media-playing-indicator {

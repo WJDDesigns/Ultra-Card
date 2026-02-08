@@ -6002,7 +6002,8 @@ export class UltraCardEditor extends LitElement {
     e.preventDefault();
 
     const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const formData = new (FormData as any)(form) as FormData;
     const username = formData.get('username') as string;
     const password = formData.get('password') as string;
 

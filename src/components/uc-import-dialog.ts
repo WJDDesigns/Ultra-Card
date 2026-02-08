@@ -146,8 +146,9 @@ export class UcImportDialog extends LitElement {
     // Try to get full content from clipboard API instead of relying on browser paste
     // This avoids truncation issues on Chromebooks and other browsers
     try {
-      if (navigator.clipboard && navigator.clipboard.readText) {
-        const clipboardText = await navigator.clipboard.readText();
+      const nav = navigator as unknown as Navigator;
+      if (nav.clipboard && nav.clipboard.readText) {
+        const clipboardText = await nav.clipboard.readText();
         if (clipboardText) {
           const textarea = e.target as HTMLTextAreaElement;
           textarea.value = clipboardText;
