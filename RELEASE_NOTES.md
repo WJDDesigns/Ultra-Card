@@ -1,5 +1,21 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.5.0-beta6
+
+### 🚀 New Features
+
+- **Added Show/hide dock toggle for editing which will help with covering over the save button in UI** - Enhanced button interaction and visual feedback
+
+### 🔧 Improvements
+
+- **Improved Drag and drop function and drop zone** - Refined functionality for smoother operation
+
+### 🐛 Bug Fixes
+
+- **Fixed Favorite Color system issues** - Enhanced color handling and customization options
+
+---
+
 ## Version 2.5.0-beta5
 
 ### 🚀 New Features

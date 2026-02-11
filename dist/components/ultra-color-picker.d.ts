@@ -15,10 +15,10 @@ export declare class UltraColorPicker extends LitElement {
     private _showPalette;
     private _textInputValue?;
     private _favoriteColors;
-    private _showAddToFavorites;
     private _transparency;
     private _documentClickHandler?;
     private _favoritesUnsubscribe?;
+    connectedCallback(): void;
     protected firstUpdated(): void;
     disconnectedCallback(): void;
     private _handleDocumentClick;

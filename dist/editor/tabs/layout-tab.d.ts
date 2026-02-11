@@ -161,6 +161,14 @@ export declare class LayoutTab extends LitElement {
     private _resolvePreviewBackgroundImageCSS;
     private _draggedItem;
     private _dropTarget;
+    /** DOM element currently under the drag for positioning the drop indicator line. */
+    private _dropTargetElement;
+    /** Element currently showing the drag gap animation. */
+    private _dropGapElement;
+    /** Last resolved list boundary to reduce jitter. */
+    private _dropBoundaryElement;
+    private _dropBoundaryEdge;
+    private _dropListSnapshot;
     private _intendedDragTarget;
     private _dragExpandedRows;
     private _dragExpandedColumns;
@@ -334,6 +342,15 @@ export declare class LayoutTab extends LitElement {
     private _autoExpandOnDragOver;
     private _onDragLeave;
     private _getModuleDropIndex;
+    /** Positions the drop indicator line at the insertion point (before/after target).
+     * Line is constrained to the target section's width so it only shows inside that section. */
+    private _positionDropIndicator;
+    private _getDropIndices;
+    /** Resolve a single shared boundary between items using list order (no dual zones). */
+    private _resolveListBoundary;
+    /** Adds/removes a visual gap to show the insertion space. */
+    private _setDropGap;
+    private _clearDropGap;
     private _onDrop;
     private _onTreeLayoutChildDrop;
     private _onTreeDeepNestedChildDrop;

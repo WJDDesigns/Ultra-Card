@@ -1019,6 +1019,15 @@ export class UltraNavigationModule extends BaseUltraModule {
       }
     })();
 
+    // Check if the dashboard is in edit mode even from a live preview context
+    const isInEditModeDashboard = (() => {
+      try {
+        return new URLSearchParams(window.location.search).get('edit') === '1';
+      } catch {
+        return false;
+      }
+    })();
+
     const showPlaceholder =
       previewContext === 'live' || previewContext === 'ha-preview' || isDashboardEditMode;
 
@@ -1027,6 +1036,9 @@ export class UltraNavigationModule extends BaseUltraModule {
       const hasMediaPlayer =
         navModule.nav_media_player?.enabled && navModule.nav_media_player?.entity;
       const hasSettings = false; // Settings icon removed
+      // Show the dock toggle when the editor is open in dashboard edit mode
+      const showDockToggle = isInEditModeDashboard && previewContext === 'live';
+      const isPreviewExpanded = showDockToggle && ucNavigationService.isEditModePreviewExpanded();
 
       return html`
         <div
@@ -1057,8 +1069,51 @@ export class UltraNavigationModule extends BaseUltraModule {
           <div
             style="font-size: 10px; color: var(--secondary-text-color); margin-top: 12px; opacity: 0.6; font-style: italic;"
           >
-            The navbar overlays the dashboard. Exit edit mode to see it in place.
+            ${showDockToggle
+              ? isPreviewExpanded
+                ? 'Dock preview is visible on the dashboard behind this editor.'
+                : 'The dock is hidden in edit mode so the Save button stays accessible.'
+              : 'The navbar overlays the dashboard. Exit edit mode to see it in place.'}
           </div>
+          ${showDockToggle
+            ? html`
+                <style>
+                  @keyframes uc-dock-btn-pulse {
+                    0% { box-shadow: 0 0 0 0 rgba(var(--rgb-primary-color), 0.5); }
+                    70% { box-shadow: 0 0 0 8px rgba(var(--rgb-primary-color), 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(var(--rgb-primary-color), 0); }
+                  }
+                </style>
+                <button
+                  type="button"
+                  @click=${() => {
+                    ucNavigationService.toggleEditModePreview(!isPreviewExpanded);
+                  }}
+                  style="
+                    margin-top: 14px;
+                    padding: 6px 16px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: var(--primary-color);
+                    background: rgba(var(--rgb-primary-color), 0.15);
+                    border: 1px solid var(--primary-color);
+                    border-radius: 18px;
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    transition: background 0.2s ease;
+                    animation: uc-dock-btn-pulse 2s ease-in-out 3;
+                  "
+                >
+                  <ha-icon
+                    icon="${isPreviewExpanded ? 'mdi:eye-off' : 'mdi:eye'}"
+                    style="--mdc-icon-size: 16px;"
+                  ></ha-icon>
+                  ${isPreviewExpanded ? 'Hide dock preview' : 'Preview dock'}
+                </button>
+              `
+            : ''}
         </div>
       `;
     }

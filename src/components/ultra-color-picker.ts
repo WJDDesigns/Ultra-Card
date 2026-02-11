@@ -138,33 +138,37 @@ export class UltraColorPicker extends LitElement {
   @state() private _showPalette = false;
   @state() private _textInputValue?: string;
   @state() private _favoriteColors: FavoriteColor[] = [];
-  @state() private _showAddToFavorites = false;
   @state() private _transparency = 100; // 0-100, where 100 is fully opaque
   private _documentClickHandler?: (e: Event) => void;
   private _favoritesUnsubscribe?: () => void;
 
-  protected firstUpdated(): void {
-    this._currentValue = this.value;
-    this._textInputValue = this.value;
-    // Extract initial transparency from the value
-    this._transparency = this._extractTransparency(this.value);
+  connectedCallback(): void {
+    super.connectedCallback();
 
     // Simple click outside handler for accordion
-    this._documentClickHandler = this._handleDocumentClick.bind(this);
+    if (!this._documentClickHandler) {
+      this._documentClickHandler = this._handleDocumentClick.bind(this);
+    }
     document.addEventListener('click', this._documentClickHandler, true);
 
-    // Subscribe to favorite colors changes
+    // Subscribe to favorite colors changes (re-establishes on each connect)
     this._favoritesUnsubscribe = ucFavoriteColorsService.subscribe(favorites => {
       this._favoriteColors = favorites;
       this.requestUpdate(); // Force re-render when favorites change
     });
   }
 
+  protected firstUpdated(): void {
+    this._currentValue = this.value;
+    this._textInputValue = this.value;
+    // Extract initial transparency from the value
+    this._transparency = this._extractTransparency(this.value);
+  }
+
   disconnectedCallback(): void {
     super.disconnectedCallback();
     if (this._documentClickHandler) {
       document.removeEventListener('click', this._documentClickHandler, true);
-      this._documentClickHandler = undefined;
     }
 
     // Unsubscribe from favorite colors
@@ -176,9 +180,6 @@ export class UltraColorPicker extends LitElement {
 
   private _handleDocumentClick(event: Event): void {
     if (!this._showPalette) return;
-
-    // Don't close palette during prompt dialogs or if we're in the middle of adding favorites
-    if (this._showAddToFavorites) return;
 
     // If click originated inside this component (including within shadow DOM), ignore
     const path = (event as any).composedPath?.() as EventTarget[] | undefined;
@@ -543,7 +544,6 @@ export class UltraColorPicker extends LitElement {
 
         // Keep the palette open if it was open before
         this._showPalette = originalShowPalette;
-        this._showAddToFavorites = false;
 
         // Force a re-render to show the updated favorites
         this.requestUpdate();
@@ -1145,55 +1145,51 @@ export class UltraColorPicker extends LitElement {
                   </div>
                 </div>
 
-                <!-- Favorites Section -->
-                ${this._favoriteColors.length > 0 || this._showAddToFavorites
-                  ? html`
-                      <div class="favorites-section">
-                        <div class="favorites-header">
-                          <label class="favorites-label">Favorite Colors</label>
-                          ${this._currentValue &&
-                          !ucFavoriteColorsService.hasColor(this._currentValue)
-                            ? html`
-                                <button
-                                  class="add-favorite-btn"
-                                  @click=${this._addToFavorites}
-                                  title="Add current color to favorites"
-                                  type="button"
-                                >
-                                  <ha-icon icon="mdi:heart-plus"></ha-icon>
-                                </button>
-                              `
-                            : ''}
-                        </div>
+                <!-- Favorites Section (always visible so users can add favorites) -->
+                <div class="favorites-section">
+                  <div class="favorites-header">
+                    <label class="favorites-label">Favorite Colors</label>
+                    ${this._currentValue &&
+                    !ucFavoriteColorsService.hasColor(this._currentValue)
+                      ? html`
+                          <button
+                            class="add-favorite-btn"
+                            @click=${this._addToFavorites}
+                            title="Add current color to favorites"
+                            type="button"
+                          >
+                            <ha-icon icon="mdi:heart-plus"></ha-icon>
+                          </button>
+                        `
+                      : ''}
+                  </div>
 
-                        ${this._favoriteColors.length > 0
-                          ? html`
-                              <div class="favorites-grid">
-                                ${this._favoriteColors.map(
-                                  favorite => html`
-                                    <div
-                                      class="favorite-swatch ${this._currentValue === favorite.color
-                                        ? 'selected'
-                                        : ''}"
-                                      style="background: ${favorite.color}"
-                                      @click=${(e: Event) => this._selectColor(favorite.color, e)}
-                                      title="${favorite.name} (${favorite.color})"
-                                    >
-                                      <span class="favorite-tooltip">${favorite.name}</span>
-                                    </div>
-                                  `
-                                )}
+                  ${this._favoriteColors.length > 0
+                    ? html`
+                        <div class="favorites-grid">
+                          ${this._favoriteColors.map(
+                            favorite => html`
+                              <div
+                                class="favorite-swatch ${this._currentValue === favorite.color
+                                  ? 'selected'
+                                  : ''}"
+                                style="background: ${favorite.color}"
+                                @click=${(e: Event) => this._selectColor(favorite.color, e)}
+                                title="${favorite.name} (${favorite.color})"
+                              >
+                                <span class="favorite-tooltip">${favorite.name}</span>
                               </div>
                             `
-                          : html`
-                              <div class="no-favorites">
-                                <span>No favorite colors yet</span>
-                                <small>Select a color and click the heart to add it</small>
-                              </div>
-                            `}
-                      </div>
-                    `
-                  : ''}
+                          )}
+                        </div>
+                      `
+                    : html`
+                        <div class="no-favorites">
+                          <span>No favorite colors yet</span>
+                          <small>Select a color and click the heart to add it</small>
+                        </div>
+                      `}
+                </div>
               </div>
             `
           : ''}
@@ -1833,7 +1829,9 @@ export class UltraColorPicker extends LitElement {
       .favorites-section {
         margin-top: 16px;
         padding-top: 16px;
+        padding-bottom: 8px;
         border-top: 1px solid var(--divider-color);
+        overflow: visible;
       }
 
       .favorites-header {
@@ -1907,10 +1905,10 @@ export class UltraColorPicker extends LitElement {
 
       .favorite-swatch .favorite-tooltip {
         position: absolute;
-        bottom: -30px;
+        top: -30px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.8);
+        background: rgba(0, 0, 0, 0.85);
         color: white;
         padding: 4px 8px;
         border-radius: 4px;

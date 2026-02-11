@@ -48,6 +48,8 @@ interface ViewNavLayer {
   /** Auto-hide state */
   autohideHidden?: boolean;
   autohideTimer?: ReturnType<typeof setTimeout>;
+  /** In edit mode: when true, show full dock temporarily so user can preview it */
+  editModePreviewExpanded?: boolean;
 }
 
 interface NavGestureState {
@@ -341,6 +343,27 @@ class UcNavigationService {
     };
   }
 
+  /**
+   * Toggle the edit-mode dock preview on/off.
+   * Called from the navigation module's placeholder card in the editor.
+   */
+  toggleEditModePreview(show: boolean): void {
+    for (const layer of this.viewLayers.values()) {
+      layer.editModePreviewExpanded = show;
+    }
+    this.evaluateAndRender();
+  }
+
+  /**
+   * Whether the dock is currently shown as a preview in edit mode.
+   */
+  isEditModePreviewExpanded(): boolean {
+    for (const layer of this.viewLayers.values()) {
+      if (layer.editModePreviewExpanded) return true;
+    }
+    return false;
+  }
+
   private scheduleUpdate(): void {
     if (this.updateDebounceTimer) {
       clearTimeout(this.updateDebounceTimer);
@@ -536,7 +559,21 @@ class UcNavigationService {
     const navConfig = this.resolveNavigationConfig(moduleForRender, configForRender);
     const hass = registered.hass;
 
-    this.applyAutoPadding(container, navConfig, hass);
+    // Skip auto-padding in dashboard edit mode, but keep it when
+    // the card editor has an active preview override (user is editing the dock)
+    const isDashboardEditModeForPadding = (() => {
+      if (previewOverride) return false; // keep padding for live preview
+      try {
+        return new URLSearchParams(window.location.search).get('edit') === '1';
+      } catch {
+        return false;
+      }
+    })();
+    if (isDashboardEditModeForPadding) {
+      this.restorePadding(container, viewLayer);
+    } else {
+      this.applyAutoPadding(container, navConfig, hass);
+    }
 
     const template = this.renderNavigationTemplate(navConfig, registered, viewLayer);
     render(template, viewLayer.navLayer);
@@ -721,8 +758,11 @@ class UcNavigationService {
         : rawDockColor;
     const iconColor = navModule.nav_icon_color || '';
 
-    // Detect edit mode
+    // Detect edit mode — but NOT when the card editor is open with a live
+    // preview override for this module (user is actively editing the dock)
+    const hasActivePreview = this.previewOverrides.has(registered.moduleId);
     const isDashboardEditMode = (() => {
+      if (hasActivePreview) return false; // show dock for live preview
       try {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('edit') === '1';
@@ -768,39 +808,63 @@ class UcNavigationService {
           : ''} ${autohideEnabled ? 'autohide-enabled' : ''} style-${navModule.nav_style ||
         'uc_modern'}"
       >
-        ${stackBackdrop} ${mediaPlayerWidgetTemplate}
-        <div
-          class="navbar-card ${isDesktop ? 'desktop' : 'mobile'} ${mode} ${position}${dockColor
-            ? ' has-dock-color'
-            : ''}"
-          style="${mode === 'docked'
-            ? this.getDockedStyle(position, isDesktop)
-            : offsetStyle} justify-content: ${alignment};${dockColor
-            ? ` --uc-nav-dock-color: ${dockColor}; --navbar-button-bg: rgba(255,255,255,0.12); --navbar-button-hover-bg: rgba(255,255,255,0.24); --navbar-button-active-bg: rgba(255,255,255,0.36); --navbar-icon-color: rgba(255,255,255,0.85); --navbar-icon-active-color: #fff;`
-            : ''}${iconColor
-            ? ` --uc-nav-icon-color: ${iconColor}; --navbar-icon-color: ${iconColor}; --navbar-icon-active-color: ${iconColor};`
-            : ''}"
-        >
-          ${this.renderRoutesWithMediaPlayer(
-            routes,
-            mediaPlayerConfig,
-            mediaPlayerInNavbar,
-            hass,
-            navModule,
-            registered,
-            viewLayer,
-            showLabels
-          )}
-        </div>
         ${isDashboardEditMode
-          ? html`
-              <div class="navbar-edit-pill ${position}">
-                <ha-icon icon="mdi:pencil-lock" style="--mdc-icon-size: 12px;"></ha-icon>
-                Navigation disabled in edit mode
+          ? viewLayer.editModePreviewExpanded
+            ? html`
+                ${stackBackdrop} ${mediaPlayerWidgetTemplate}
+                <div
+                  class="navbar-card ${isDesktop ? 'desktop' : 'mobile'} ${mode} ${position}${dockColor
+                    ? ' has-dock-color'
+                    : ''}"
+                  style="${mode === 'docked'
+                    ? this.getDockedStyle(position, isDesktop)
+                    : offsetStyle} justify-content: ${alignment};${dockColor
+                    ? ` --uc-nav-dock-color: ${dockColor}; --navbar-button-bg: rgba(255,255,255,0.12); --navbar-button-hover-bg: rgba(255,255,255,0.24); --navbar-button-active-bg: rgba(255,255,255,0.36); --navbar-icon-color: rgba(255,255,255,0.85); --navbar-icon-active-color: #fff;`
+                    : ''}${iconColor
+                    ? ` --uc-nav-icon-color: ${iconColor}; --navbar-icon-color: ${iconColor}; --navbar-icon-active-color: ${iconColor};`
+                    : ''}"
+                >
+                  ${this.renderRoutesWithMediaPlayer(
+                    routes,
+                    mediaPlayerConfig,
+                    mediaPlayerInNavbar,
+                    hass,
+                    navModule,
+                    registered,
+                    viewLayer,
+                    showLabels
+                  )}
+                </div>
+                ${this.renderMediaPlayerPopup(mediaPlayerConfig, hass, navModule, registered, viewLayer)}
+              `
+            : '' /* Dock hidden — toggle lives in the module placeholder card */
+          : html`
+              ${stackBackdrop} ${mediaPlayerWidgetTemplate}
+              <div
+                class="navbar-card ${isDesktop ? 'desktop' : 'mobile'} ${mode} ${position}${dockColor
+                  ? ' has-dock-color'
+                  : ''}"
+                style="${mode === 'docked'
+                  ? this.getDockedStyle(position, isDesktop)
+                  : offsetStyle} justify-content: ${alignment};${dockColor
+                  ? ` --uc-nav-dock-color: ${dockColor}; --navbar-button-bg: rgba(255,255,255,0.12); --navbar-button-hover-bg: rgba(255,255,255,0.24); --navbar-button-active-bg: rgba(255,255,255,0.36); --navbar-icon-color: rgba(255,255,255,0.85); --navbar-icon-active-color: #fff;`
+                  : ''}${iconColor
+                  ? ` --uc-nav-icon-color: ${iconColor}; --navbar-icon-color: ${iconColor}; --navbar-icon-active-color: ${iconColor};`
+                  : ''}"
+              >
+                ${this.renderRoutesWithMediaPlayer(
+                  routes,
+                  mediaPlayerConfig,
+                  mediaPlayerInNavbar,
+                  hass,
+                  navModule,
+                  registered,
+                  viewLayer,
+                  showLabels
+                )}
               </div>
-            `
-          : ''}
-        ${this.renderMediaPlayerPopup(mediaPlayerConfig, hass, navModule, registered, viewLayer)}
+              ${this.renderMediaPlayerPopup(mediaPlayerConfig, hass, navModule, registered, viewLayer)}
+            `}
       </div>
     `;
   }
@@ -3326,42 +3390,6 @@ class UcNavigationService {
       }
       .navbar-card.has-dock-color .stack-child-item .label.active {
         color: #fff;
-      }
-
-      /* ── Edit mode pill — small label near the dock ────── */
-      .navbar-edit-pill {
-        position: fixed;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        padding: 4px 10px;
-        background: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.3px;
-        border-radius: 20px;
-        pointer-events: none;
-        z-index: 200;
-        white-space: nowrap;
-      }
-      .navbar-edit-pill.bottom {
-        bottom: 4px;
-        right: 12px;
-      }
-      .navbar-edit-pill.top {
-        top: 4px;
-        right: 12px;
-      }
-      .navbar-edit-pill.left {
-        bottom: 12px;
-        left: 4px;
-      }
-      .navbar-edit-pill.right {
-        bottom: 12px;
-        right: 4px;
       }
 
       /* ── Auto-hide transitions ──────────────────────────── */

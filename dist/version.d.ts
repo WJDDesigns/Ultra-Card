@@ -6,4 +6,4 @@
 
 * Build timestamp: 2026-01-27
  */
-export declare const VERSION = "2.5.0-beta5";
+export declare const VERSION = "2.5.0-beta6";

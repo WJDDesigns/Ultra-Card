@@ -1179,61 +1179,62 @@ export class LayoutTab extends LitElement {
     const lang = this.hass?.locale?.language || 'en';
     const menuKey = `level4-${rowIndex}-${columnIndex}-${parentModuleIndex}-${nestedLayoutIndex}-${deepLayoutIndex}-${childIndex}`;
     const isOpen = this._openOverflowMenuKey === menuKey;
-    const menuItems: { icon: string; label: string; action: () => void; destructive?: boolean }[] = [
-      {
-        icon: 'mdi:pencil',
-        label: localize('editor.layout.edit', lang, 'Edit'),
-        action: () =>
-          this._openLevel4ChildSettings(
-            rowIndex,
-            columnIndex,
-            parentModuleIndex,
-            nestedLayoutIndex,
-            deepLayoutIndex,
-            childIndex
-          ),
-      },
-      {
-        icon: 'mdi:clipboard-arrow-up',
-        label: localize('editor.layout.copy', lang, 'Copy'),
-        action: () =>
-          this._copyLevel4Child(
-            rowIndex,
-            columnIndex,
-            parentModuleIndex,
-            nestedLayoutIndex,
-            deepLayoutIndex,
-            childIndex
-          ),
-      },
-      {
-        icon: 'mdi:content-copy',
-        label: localize('editor.layout.duplicate', lang, 'Duplicate'),
-        action: () =>
-          this._duplicateLevel4Child(
-            rowIndex,
-            columnIndex,
-            parentModuleIndex,
-            nestedLayoutIndex,
-            deepLayoutIndex,
-            childIndex
-          ),
-      },
-      {
-        icon: 'mdi:delete',
-        label: localize('editor.layout.delete', lang, 'Delete'),
-        action: () =>
-          this._deleteLevel4Child(
-            rowIndex,
-            columnIndex,
-            parentModuleIndex,
-            nestedLayoutIndex,
-            deepLayoutIndex,
-            childIndex
-          ),
-        destructive: true,
-      },
-    ];
+    const menuItems: { icon: string; label: string; action: () => void; destructive?: boolean }[] =
+      [
+        {
+          icon: 'mdi:pencil',
+          label: localize('editor.layout.edit', lang, 'Edit'),
+          action: () =>
+            this._openLevel4ChildSettings(
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              nestedLayoutIndex,
+              deepLayoutIndex,
+              childIndex
+            ),
+        },
+        {
+          icon: 'mdi:clipboard-arrow-up',
+          label: localize('editor.layout.copy', lang, 'Copy'),
+          action: () =>
+            this._copyLevel4Child(
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              nestedLayoutIndex,
+              deepLayoutIndex,
+              childIndex
+            ),
+        },
+        {
+          icon: 'mdi:content-copy',
+          label: localize('editor.layout.duplicate', lang, 'Duplicate'),
+          action: () =>
+            this._duplicateLevel4Child(
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              nestedLayoutIndex,
+              deepLayoutIndex,
+              childIndex
+            ),
+        },
+        {
+          icon: 'mdi:delete',
+          label: localize('editor.layout.delete', lang, 'Delete'),
+          action: () =>
+            this._deleteLevel4Child(
+              rowIndex,
+              columnIndex,
+              parentModuleIndex,
+              nestedLayoutIndex,
+              deepLayoutIndex,
+              childIndex
+            ),
+          destructive: true,
+        },
+      ];
     return html`
       <div class="tree-overflow-container">
         <button
@@ -1892,9 +1893,13 @@ export class LayoutTab extends LitElement {
       <div
         class="tree-node tree-row ${isLastRow ? 'last-node' : ''} ${isCollapsed
           ? 'collapsed'
-          : ''} ${this._dropTarget?.type === 'row' && this._dropTarget?.rowIndex === rowIndex
+          : ''} ${this._dropTarget?.type === 'row' &&
+        this._dropTarget?.rowIndex === rowIndex &&
+        this._dropTarget?.insertEdge === 'inside'
           ? 'drop-target'
           : ''}"
+        data-drop-type="row"
+        data-row-index="${rowIndex}"
         draggable="true"
         @dragstart=${(e: DragEvent) => this._onDragStart(e, 'row', rowIndex)}
         @dragend=${this._onDragEnd}
@@ -1921,11 +1926,7 @@ export class LayoutTab extends LitElement {
                   this._openColumnLayoutSelector(rowIndex);
                 }}
                 @mousedown=${(e: Event) => e.stopPropagation()}
-                title="${localize(
-                  'editor.layout.column_layout',
-                  lang,
-                  'Column Layout'
-                )}"
+                title="${localize('editor.layout.column_layout', lang, 'Column Layout')}"
               >
                 <ha-icon icon="mdi:view-column-outline"></ha-icon>
                 <span
@@ -2039,9 +2040,13 @@ export class LayoutTab extends LitElement {
           ? 'collapsed'
           : ''} ${this._dropTarget?.type === 'column' &&
         this._dropTarget?.rowIndex === rowIndex &&
-        this._dropTarget?.columnIndex === columnIndex
+        this._dropTarget?.columnIndex === columnIndex &&
+        this._dropTarget?.insertEdge === 'inside'
           ? 'drop-target'
           : ''}"
+        data-drop-type="column"
+        data-row-index="${rowIndex}"
+        data-column-index="${columnIndex}"
         draggable="true"
         @dragstart=${(e: DragEvent) => this._onDragStart(e, 'column', rowIndex, columnIndex)}
         @dragend=${this._onDragEnd}
@@ -2212,9 +2217,14 @@ export class LayoutTab extends LitElement {
           : ''} ${this._dropTarget?.type === 'module' &&
         this._dropTarget?.rowIndex === rowIndex &&
         this._dropTarget?.columnIndex === columnIndex &&
-        this._dropTarget?.moduleIndex === moduleIndex
+        this._dropTarget?.moduleIndex === moduleIndex &&
+        this._dropTarget?.insertEdge === 'inside'
           ? 'drop-target'
           : ''}"
+        data-drop-type="module"
+        data-row-index="${rowIndex}"
+        data-column-index="${columnIndex}"
+        data-module-index="${moduleIndex}"
         draggable="true"
         @dragstart=${(e: DragEvent) =>
           this._onDragStart(e, 'module', rowIndex, columnIndex, moduleIndex)}
@@ -2329,6 +2339,10 @@ export class LayoutTab extends LitElement {
         class="tree-node tree-layout-module ${isTabs ? 'tabs-layout' : ''} ${isLastModule
           ? 'last-node'
           : ''} ${isCollapsed ? 'collapsed' : ''}"
+        data-drop-type="layout"
+        data-row-index="${rowIndex}"
+        data-column-index="${columnIndex}"
+        data-module-index="${moduleIndex}"
         draggable="true"
         @dragstart=${(e: DragEvent) =>
           this._onDragStart(e, 'module', rowIndex, columnIndex, moduleIndex)}
@@ -3040,13 +3054,18 @@ export class LayoutTab extends LitElement {
         class="tree-node tree-layout-child ${isLastChild ? 'last-node' : ''} ${isPagebreak
           ? 'tree-pagebreak'
           : ''}"
+        data-drop-type="layout-child"
+        data-row-index="${rowIndex}"
+        data-column-index="${columnIndex}"
+        data-module-index="${parentModuleIndex}"
+        data-child-index="${childIndex}"
         draggable="true"
         @dragstart=${(e: DragEvent) =>
           this._onTreeLayoutChildDragStart(e, rowIndex, columnIndex, parentModuleIndex, childIndex)}
         @dragend=${this._onDragEnd}
         @dragover=${this._onDragOver}
         @dragenter=${(e: DragEvent) =>
-          this._onDragEnter(e, 'layout-child', rowIndex, columnIndex, parentModuleIndex)}
+          this._onDragEnter(e, 'layout-child', rowIndex, columnIndex, parentModuleIndex, childIndex)}
         @dragleave=${this._onDragLeave}
         @drop=${(e: DragEvent) =>
           this._onTreeLayoutChildDrop(e, rowIndex, columnIndex, parentModuleIndex, childIndex)}
@@ -3183,7 +3202,14 @@ export class LayoutTab extends LitElement {
         @dragend=${this._onDragEnd}
         @dragover=${this._onDragOver}
         @dragenter=${(e: DragEvent) =>
-          this._onDragEnter(e, 'nested-layout', rowIndex, columnIndex, parentModuleIndex, childIndex)}
+          this._onDragEnter(
+            e,
+            'nested-layout',
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            childIndex
+          )}
         @dragleave=${this._onDragLeave}
         @drop=${(e: DragEvent) =>
           this._onTreeNestedLayoutDrop(e, rowIndex, columnIndex, parentModuleIndex, childIndex)}
@@ -3529,8 +3555,6 @@ export class LayoutTab extends LitElement {
           @dragenter=${(e: DragEvent) => {
             e.preventDefault();
             e.stopPropagation();
-            const target = e.currentTarget as HTMLElement;
-            if (target) target.classList.add('drag-over');
           }}
           @dragleave=${(e: DragEvent) => this._onDragLeave(e)}
           @drop=${(e: DragEvent) => {
@@ -5372,15 +5396,13 @@ export class LayoutTab extends LitElement {
       <div
         class="tree-node tree-deep-child ${isLastChild ? 'last-node' : ''}"
         draggable="true"
-        @dragstart=${(e: DragEvent) =>
-          this._onTreePathChildDragStart(e, parentPath, childIndex)}
+        @dragstart=${(e: DragEvent) => this._onTreePathChildDragStart(e, parentPath, childIndex)}
         @dragend=${this._onDragEnd}
         @dragover=${this._onDragOver}
         @dragenter=${(e: DragEvent) =>
           this._onDragEnter(e, 'layout-child', parentPath[0], parentPath[1], parentPath[2])}
         @dragleave=${this._onDragLeave}
-        @drop=${(e: DragEvent) =>
-          this._onTreePathChildDrop(e, parentPath, childIndex)}
+        @drop=${(e: DragEvent) => this._onTreePathChildDrop(e, parentPath, childIndex)}
       >
         <div class="tree-node-line"></div>
         <div class="tree-node-dot child-dot"></div>
@@ -5474,15 +5496,13 @@ export class LayoutTab extends LitElement {
           : ''} ${isLastChild ? 'last-node' : ''} ${isCollapsed ? 'collapsed' : ''}"
         data-nesting-depth="${nestingDepth}"
         draggable="true"
-        @dragstart=${(e: DragEvent) =>
-          this._onTreePathChildDragStart(e, parentPath, childIndex)}
+        @dragstart=${(e: DragEvent) => this._onTreePathChildDragStart(e, parentPath, childIndex)}
         @dragend=${this._onDragEnd}
         @dragover=${this._onDragOver}
         @dragenter=${(e: DragEvent) =>
           this._onDragEnter(e, 'layout-child', parentPath[0], parentPath[1], parentPath[2])}
         @dragleave=${this._onDragLeave}
-        @drop=${(e: DragEvent) =>
-          this._onTreePathChildDrop(e, parentPath, childIndex)}
+        @drop=${(e: DragEvent) => this._onTreePathChildDrop(e, parentPath, childIndex)}
       >
         <div class="tree-node-content">
           <div class="tree-node-header layout-header deep-nested-header">
@@ -5769,8 +5789,7 @@ export class LayoutTab extends LitElement {
   /** Navigate layout tree via path [rowIndex, columnIndex, moduleIndex, ...nestedIndices]; returns the modules array at that path or null. */
   private _resolveModuleList(layout: any, path: number[]): any[] | null {
     if (!path || path.length < 3) return null;
-    let current: any =
-      layout.rows[path[0]]?.columns[path[1]]?.modules[path[2]];
+    let current: any = layout.rows[path[0]]?.columns[path[1]]?.modules[path[2]];
     for (let i = 3; i < path.length; i++) {
       if (!current?.modules) return null;
       current = current.modules[path[i]];
@@ -5984,7 +6003,14 @@ export class LayoutTab extends LitElement {
 
   // Drag and drop state
   @state() private _draggedItem: {
-    type: 'module' | 'column' | 'row' | 'layout-child' | 'nested-child' | 'deep-nested-child' | 'path-child';
+    type:
+      | 'module'
+      | 'column'
+      | 'row'
+      | 'layout-child'
+      | 'nested-child'
+      | 'deep-nested-child'
+      | 'path-child';
     rowIndex: number;
     columnIndex?: number;
     moduleIndex?: number;
@@ -5996,14 +6022,36 @@ export class LayoutTab extends LitElement {
     pathChildIndex?: number;
   } | null = null;
   @state() private _dropTarget: {
-    type: 'module' | 'column' | 'row' | 'layout' | 'nested-layout' | 'layout-child' | 'deep-nested-layout' | 'path-child-target';
+    type:
+      | 'module'
+      | 'column'
+      | 'row'
+      | 'layout'
+      | 'nested-layout'
+      | 'layout-child'
+      | 'deep-nested-layout'
+      | 'path-child-target';
     rowIndex: number;
     columnIndex?: number;
     moduleIndex?: number;
     childIndex?: number;
     nestedChildIndex?: number;
     parentPath?: number[];
+    /** When set, show insertion line at this edge; only highlight item when 'inside'. */
+    insertEdge?: 'before' | 'after' | 'inside';
   } | null = null;
+  /** DOM element currently under the drag for positioning the drop indicator line. */
+  private _dropTargetElement: HTMLElement | null = null;
+  /** Element currently showing the drag gap animation. */
+  private _dropGapElement: HTMLElement | null = null;
+  /** Last resolved list boundary to reduce jitter. */
+  private _dropBoundaryElement: HTMLElement | null = null;
+  private _dropBoundaryEdge: 'before' | 'after' | null = null;
+  private _dropListSnapshot: {
+    container: HTMLElement | null;
+    scrollTop: number;
+    items: Array<{ element: HTMLElement; mid: number }>;
+  } = { container: null, scrollTop: 0, items: [] };
   // Track the intended drag target element (set on mousedown before dragstart)
   // This helps parent handlers know when a nested element is being dragged
   private _intendedDragTarget: HTMLElement | null = null;
@@ -7643,8 +7691,11 @@ export class LayoutTab extends LitElement {
       // Import preset variables as card-specific (local), never global
       const currentCardVars = this.config._customVariables || [];
       let updatedCardVars = currentCardVars;
-      let variableSummary: { added: number; renamed: { from: string; to: string }[]; skipped: string[] } | null =
-        null;
+      let variableSummary: {
+        added: number;
+        renamed: { from: string; to: string }[];
+        skipped: string[];
+      } | null = null;
 
       if (preset.customVariables && preset.customVariables.length > 0) {
         const varResult = ucExportImportService.importVariablesAsCardSpecific(
@@ -10639,7 +10690,9 @@ export class LayoutTab extends LitElement {
     }
 
     const layout = this._ensureLayout();
-    const topLayout = layout.rows[rowIndex]?.columns[columnIndex]?.modules[parentModuleIndex] as any;
+    const topLayout = layout.rows[rowIndex]?.columns[columnIndex]?.modules[
+      parentModuleIndex
+    ] as any;
     const nestedLayout = topLayout?.modules?.[nestedLayoutIndex] as any;
     const deepLayout = nestedLayout?.modules?.[deepLayoutIndex] as any;
     const data = deepLayout?.modules?.[childIndex];
@@ -10677,11 +10730,7 @@ export class LayoutTab extends LitElement {
   }
 
   // Generic path-based drag start for level 5+ (unlimited nesting)
-  private _onTreePathChildDragStart(
-    e: DragEvent,
-    parentPath: number[],
-    childIndex: number
-  ): void {
+  private _onTreePathChildDragStart(e: DragEvent, parentPath: number[], childIndex: number): void {
     if (!e.dataTransfer) return;
 
     e.stopPropagation();
@@ -10765,6 +10814,10 @@ export class LayoutTab extends LitElement {
 
     this._draggedItem = null;
     this._dropTarget = null;
+    this._dropTargetElement = null;
+    this._clearDropGap();
+    this._dropBoundaryElement = null;
+    this._dropBoundaryEdge = null;
     this.requestUpdate();
   }
 
@@ -10776,6 +10829,108 @@ export class LayoutTab extends LitElement {
 
     if (e.dataTransfer) {
       e.dataTransfer.dropEffect = 'move';
+    }
+
+    // Update insertion edge from pointer position so the drop-indicator line follows the cursor
+    const el = this.shadowRoot?.elementFromPoint(e.clientX, e.clientY);
+    const node = el?.closest<HTMLElement>(
+      '.tree-row, .tree-column, .tree-module, .tree-layout-module, .tree-layout-child, .tree-nested-layout, .tree-deep-child, [data-drop-type]'
+    );
+    if (!node || !this._dropTarget) return;
+    const dropType = node.getAttribute('data-drop-type') as
+      | 'row'
+      | 'column'
+      | 'module'
+      | 'layout'
+      | 'layout-child'
+      | 'nested-layout'
+      | null;
+    const type =
+      dropType ??
+      (node.classList.contains('tree-row')
+        ? 'row'
+        : node.classList.contains('tree-column')
+          ? 'column'
+          : node.classList.contains('tree-module')
+            ? 'module'
+            : node.classList.contains('tree-layout-module') ||
+                node.classList.contains('tree-nested-layout')
+              ? 'layout'
+              : node.classList.contains('tree-layout-child') ||
+                  node.classList.contains('tree-deep-child')
+                ? 'layout-child'
+                : null);
+    if (!type) return;
+    const rowIndex =
+      node.dataset.rowIndex != null
+        ? parseInt(node.dataset.rowIndex, 10)
+        : this._dropTarget.rowIndex;
+    const columnIndex =
+      node.dataset.columnIndex != null
+        ? parseInt(node.dataset.columnIndex, 10)
+        : this._dropTarget.columnIndex;
+    const moduleIndex =
+      node.dataset.moduleIndex != null
+        ? parseInt(node.dataset.moduleIndex, 10)
+        : this._dropTarget.moduleIndex;
+    if (
+      this._dropTarget.type !== type ||
+      this._dropTarget.rowIndex !== rowIndex ||
+      this._dropTarget.columnIndex !== columnIndex ||
+      this._dropTarget.moduleIndex !== moduleIndex
+    ) {
+      return;
+    }
+    const rect = node.getBoundingClientRect();
+    const header = node.querySelector('.tree-node-header');
+    const isOverHeader =
+      (type === 'layout' || type === 'nested-layout') && !!header && !!el && header.contains(el);
+    let insertEdge: 'before' | 'after' | 'inside' = 'after';
+    let boundary: { element: HTMLElement; edge: 'before' | 'after' } | null = null;
+    if ((type === 'layout' || type === 'nested-layout') && isOverHeader && header) {
+      const headerRect = header.getBoundingClientRect();
+      const headerY = e.clientY;
+      const topZone = headerRect.top + headerRect.height * 0.25;
+      const bottomZone = headerRect.top + headerRect.height * 0.75;
+      const currentEdge = this._dropTarget?.insertEdge;
+      if (currentEdge === 'inside') {
+        const hysteresis = 6;
+        insertEdge =
+          headerY < topZone - hysteresis
+            ? 'before'
+            : headerY > bottomZone + hysteresis
+              ? 'after'
+              : 'inside';
+      } else {
+        insertEdge = headerY < topZone ? 'before' : headerY > bottomZone ? 'after' : 'inside';
+      }
+    } else if (rect.height) {
+      boundary = this._resolveListBoundary(node, e.clientY);
+      insertEdge = boundary.edge;
+    }
+    const boundaryEl = insertEdge === 'inside' ? node : (boundary?.element ?? node);
+    const gapTarget =
+      boundaryEl.closest<HTMLElement>('.tree-node, .layout-module-empty') ?? boundaryEl;
+    const shouldUpdateEdge = this._dropTarget.insertEdge !== insertEdge;
+    const shouldUpdateGap =
+      this._dropGapElement !== gapTarget || this._dropTargetElement !== boundaryEl;
+    if (shouldUpdateEdge) {
+      const nextIndices = this._getDropIndices(boundaryEl);
+      this._dropTarget = {
+        ...this._dropTarget,
+        rowIndex: nextIndices.rowIndex ?? this._dropTarget.rowIndex,
+        columnIndex: nextIndices.columnIndex ?? this._dropTarget.columnIndex,
+        moduleIndex: nextIndices.moduleIndex ?? this._dropTarget.moduleIndex,
+        childIndex: nextIndices.childIndex ?? this._dropTarget.childIndex,
+        insertEdge,
+      };
+    }
+    if (shouldUpdateEdge || shouldUpdateGap) {
+      this._dropTargetElement = boundaryEl;
+      this.shadowRoot?.querySelectorAll('.drag-over').forEach(n => n.classList.remove('drag-over'));
+      if (insertEdge === 'inside') node.classList.add('drag-over');
+      this._setDropGap(gapTarget, insertEdge);
+      this.requestUpdate();
     }
   }
 
@@ -10799,7 +10954,13 @@ export class LayoutTab extends LitElement {
       this._draggedItem.columnIndex === columnIndex &&
       this._draggedItem.moduleIndex === moduleIndex
     ) {
-      return;
+      // For layout-child type, moduleIndex is the parent's index which is shared by all siblings.
+      // Only block if it's actually the same child (same layoutChildIndex), not a sibling.
+      if (type === 'layout-child' && this._draggedItem.layoutChildIndex !== childIndex) {
+        // Different child in same parent — allow reordering (don't return)
+      } else {
+        return;
+      }
     }
     // Nested layout: same node when dragging layout-child with same parent and childIndex
     if (
@@ -10833,7 +10994,38 @@ export class LayoutTab extends LitElement {
 
     if (!isValid) return;
 
-    this._dropTarget = { type, rowIndex, columnIndex, moduleIndex };
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const header = target.querySelector('.tree-node-header');
+    const isOverHeader =
+      (type === 'layout' || type === 'nested-layout') &&
+      !!header &&
+      header.contains(e.target as Element);
+    let insertEdge: 'before' | 'after' | 'inside' = 'after';
+    if ((type === 'layout' || type === 'nested-layout') && isOverHeader && header) {
+      const headerRect = header.getBoundingClientRect();
+      const headerY = e.clientY;
+      const topZone = headerRect.top + headerRect.height * 0.25;
+      const bottomZone = headerRect.top + headerRect.height * 0.75;
+      insertEdge = headerY < topZone ? 'before' : headerY > bottomZone ? 'after' : 'inside';
+    }
+    let boundary: { element: HTMLElement; edge: 'before' | 'after' } | null = null;
+    if (!isOverHeader && rect.height) {
+      boundary = this._resolveListBoundary(target, e.clientY);
+      insertEdge = boundary.edge;
+    }
+
+    const boundaryEl = insertEdge === 'inside' ? target : (boundary?.element ?? target);
+    const nextIndices = this._getDropIndices(boundaryEl);
+    this._dropTarget = {
+      type,
+      rowIndex: nextIndices.rowIndex ?? rowIndex,
+      columnIndex: nextIndices.columnIndex ?? columnIndex,
+      moduleIndex: nextIndices.moduleIndex ?? moduleIndex,
+      childIndex: nextIndices.childIndex ?? childIndex,
+      insertEdge,
+    };
+    this._dropTargetElement = boundaryEl;
 
     // Auto-expand collapsed items after a short delay
     if (this._dragExpandTimeout) {
@@ -10843,15 +11035,16 @@ export class LayoutTab extends LitElement {
       this._autoExpandOnDragOver(type, rowIndex, columnIndex, moduleIndex);
     }, 500); // 500ms delay before auto-expand
 
-    // Add enhanced visual feedback via CSS class
-    const target = e.currentTarget as HTMLElement;
+    // Only highlight the item when dropping *inside* (e.g. layout); for before/after we show the line only
     if (target) {
-      // Remove drag-over from any other elements first
       this.shadowRoot?.querySelectorAll('.drag-over').forEach(el => {
         el.classList.remove('drag-over');
       });
-      target.classList.add('drag-over');
+      if (insertEdge === 'inside') {
+        target.classList.add('drag-over');
+      }
     }
+    this._setDropGap(target, insertEdge);
 
     this.requestUpdate();
   }
@@ -10951,6 +11144,11 @@ export class LayoutTab extends LitElement {
       }
 
       this._dropTarget = null;
+      this._dropTargetElement = null;
+      this._clearDropGap();
+      this._dropBoundaryElement = null;
+      this._dropBoundaryEdge = null;
+      this._dropListSnapshot = { container: null, scrollTop: 0, items: [] };
       this.requestUpdate();
     }
   }
@@ -10966,6 +11164,154 @@ export class LayoutTab extends LitElement {
     const offsetY = e.clientY - rect.top;
     const insertAfter = offsetY > rect.height / 2;
     return insertAfter ? moduleIndex + 1 : moduleIndex;
+  }
+
+  /** Positions the drop indicator line at the insertion point (before/after target).
+   * Line is constrained to the target section's width so it only shows inside that section. */
+  private _positionDropIndicator(): void {
+    const container = this.shadowRoot?.querySelector('.tree-view-container') as HTMLElement | null;
+    const indicator = this.shadowRoot?.getElementById('tree-drop-indicator') as HTMLElement | null;
+    if (!container || !indicator) return;
+
+    const edge = this._dropTarget?.insertEdge;
+    const el = this._dropTargetElement;
+    if (!this._dropTarget || !el || edge === 'inside') {
+      indicator.classList.remove('visible');
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const scrollTop = container.scrollTop ?? 0;
+    const scrollLeft = container.scrollLeft ?? 0;
+    const top =
+      edge === 'before'
+        ? elRect.top - containerRect.top + scrollTop
+        : elRect.bottom - containerRect.top + scrollTop;
+    const left = elRect.left - containerRect.left + scrollLeft;
+    const width = elRect.width;
+    indicator.style.top = `${top}px`;
+    indicator.style.left = `${left}px`;
+    indicator.style.width = `${width}px`;
+    indicator.classList.add('visible');
+  }
+
+  private _getDropIndices(el: HTMLElement): {
+    rowIndex?: number;
+    columnIndex?: number;
+    moduleIndex?: number;
+    childIndex?: number;
+  } {
+    return {
+      rowIndex: el.dataset.rowIndex != null ? parseInt(el.dataset.rowIndex, 10) : undefined,
+      columnIndex:
+        el.dataset.columnIndex != null ? parseInt(el.dataset.columnIndex, 10) : undefined,
+      moduleIndex:
+        el.dataset.moduleIndex != null ? parseInt(el.dataset.moduleIndex, 10) : undefined,
+      childIndex:
+        el.dataset.childIndex != null ? parseInt(el.dataset.childIndex, 10) : undefined,
+    };
+  }
+
+  /** Resolve a single shared boundary between items using list order (no dual zones). */
+  private _resolveListBoundary(
+    target: HTMLElement,
+    clientY: number
+  ): { element: HTMLElement; edge: 'before' | 'after' } {
+    const base = target.closest<HTMLElement>('.tree-node, .layout-module-empty') ?? target;
+    const container =
+      base.closest<HTMLElement>('.tree-node-children') ??
+      base.closest<HTMLElement>('.tree-view-container') ??
+      base.parentElement;
+    if (!container) {
+      return { element: base, edge: 'before' };
+    }
+
+    const scrollTop = container.scrollTop ?? 0;
+    const needsSnapshot =
+      this._dropListSnapshot.container !== container ||
+      Math.abs(this._dropListSnapshot.scrollTop - scrollTop) > 2 ||
+      this._dropListSnapshot.items.length === 0;
+
+    if (needsSnapshot) {
+      const items = Array.from(container.children).filter(
+        el =>
+          (el as HTMLElement).classList?.contains('tree-node') ||
+          (el as HTMLElement).classList?.contains('layout-module-empty')
+      ) as HTMLElement[];
+
+      this._dropListSnapshot = {
+        container,
+        scrollTop,
+        items: items.map(item => {
+          const rect = item.getBoundingClientRect();
+          return { element: item, mid: rect.top + rect.height / 2 };
+        }),
+      };
+    }
+
+    const items = this._dropListSnapshot.items;
+    if (items.length === 0) {
+      return { element: base, edge: 'before' };
+    }
+
+    // Hysteresis buffer to reduce jitter near boundaries
+    const hysteresis = 6;
+
+    // If we already have a boundary, only switch when we move past its buffer
+    if (
+      this._dropBoundaryElement &&
+      items.some(item => item.element === this._dropBoundaryElement)
+    ) {
+      const rect = this._dropBoundaryElement.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      if (this._dropBoundaryEdge === 'before') {
+        if (clientY <= mid + hysteresis) {
+          return { element: this._dropBoundaryElement, edge: 'before' };
+        }
+      } else if (this._dropBoundaryEdge === 'after') {
+        if (clientY >= mid - hysteresis) {
+          return { element: this._dropBoundaryElement, edge: 'after' };
+        }
+      }
+    }
+
+    for (const item of items) {
+      if (clientY <= item.mid) {
+        this._dropBoundaryElement = item.element;
+        this._dropBoundaryEdge = 'before';
+        return { element: item.element, edge: 'before' };
+      }
+    }
+
+    // Past the last item -> insert after last
+    const last = items[items.length - 1].element;
+    this._dropBoundaryElement = last;
+    this._dropBoundaryEdge = 'after';
+    return { element: last, edge: 'after' };
+  }
+
+  /** Adds/removes a visual gap to show the insertion space. */
+  private _setDropGap(target: HTMLElement, insertEdge: 'before' | 'after' | 'inside'): void {
+    const baseTarget = target?.closest<HTMLElement>('.tree-node, .layout-module-empty') ?? null;
+    if (!baseTarget || insertEdge === 'inside') {
+      this._clearDropGap();
+      return;
+    }
+    const edge = insertEdge;
+    if (this._dropGapElement && this._dropGapElement !== baseTarget) {
+      this._dropGapElement.classList.remove('drop-gap-before', 'drop-gap-after');
+    }
+    this._dropGapElement = baseTarget;
+    baseTarget.classList.remove('drop-gap-before', 'drop-gap-after');
+    baseTarget.classList.add(edge === 'before' ? 'drop-gap-before' : 'drop-gap-after');
+  }
+
+  private _clearDropGap(): void {
+    if (this._dropGapElement) {
+      this._dropGapElement.classList.remove('drop-gap-before', 'drop-gap-after');
+      this._dropGapElement = null;
+    }
   }
 
   private _onDrop(
@@ -10999,14 +11345,54 @@ export class LayoutTab extends LitElement {
     // Validate drop target compatibility
     if (!this._isValidDropTarget(this._draggedItem.type, type)) return; // Reject invalid drops
 
-    const resolvedModuleIndex =
-      type === 'module' ? this._getModuleDropIndex(e, moduleIndex) : moduleIndex;
+    const insertEdge = this._dropTarget?.insertEdge;
+    const isLayoutEmpty = target?.classList.contains('layout-module-empty');
+    let resolvedType = type;
+    let resolvedModuleIndex: number | undefined = moduleIndex;
+
+    let resolvedChildIndex: number | undefined;
+
+    if (type === 'module') {
+      const baseIndex = this._dropTarget?.moduleIndex ?? moduleIndex;
+      resolvedModuleIndex = insertEdge === 'after' ? (baseIndex ?? 0) + 1 : baseIndex;
+    } else if (type === 'layout') {
+      if (
+        this._dropTarget?.type === 'layout-child' &&
+        this._dropTarget.childIndex !== undefined &&
+        (insertEdge === 'before' || insertEdge === 'after')
+      ) {
+        // Drop event fired on the layout parent (e.g. in the gap between children) but
+        // _dropTarget tracked a child-level position during dragover.
+        // Use the tracked child position instead of column-level reorder or append.
+        resolvedType = 'layout-child';
+        const baseChildIndex = this._dropTarget.childIndex;
+        resolvedChildIndex = insertEdge === 'after' ? baseChildIndex + 1 : baseChildIndex;
+      } else if (!isLayoutEmpty && (insertEdge === 'before' || insertEdge === 'after')) {
+        // Reorder: treat as insert at position before/after this layout in the column
+        resolvedType = 'module';
+        const idx = moduleIndex ?? 0;
+        resolvedModuleIndex = insertEdge === 'before' ? idx : idx + 1;
+      }
+    } else if (
+      type === 'column' &&
+      this._dropTarget &&
+      this._dropTarget.moduleIndex !== undefined &&
+      (insertEdge === 'before' || insertEdge === 'after')
+    ) {
+      // Drop event fired on the column (e.g. in the gap between modules) but
+      // _dropTarget tracked the exact insertion position during dragover.
+      // Use the tracked position instead of appending to end of column.
+      resolvedType = 'module';
+      const baseIndex = this._dropTarget.moduleIndex;
+      resolvedModuleIndex = insertEdge === 'after' ? baseIndex + 1 : baseIndex;
+    }
 
     this._performMove(this._draggedItem, {
-      type,
+      type: resolvedType,
       rowIndex,
       columnIndex,
       moduleIndex: resolvedModuleIndex,
+      childIndex: resolvedChildIndex,
     });
 
     // Clear temporarily expanded items on successful drop
@@ -11014,6 +11400,11 @@ export class LayoutTab extends LitElement {
 
     this._draggedItem = null;
     this._dropTarget = null;
+    this._dropTargetElement = null;
+    this._clearDropGap();
+    this._dropBoundaryElement = null;
+    this._dropBoundaryEdge = null;
+    this._dropListSnapshot = { container: null, scrollTop: 0, items: [] };
     this.requestUpdate();
   }
 
@@ -11120,7 +11511,7 @@ export class LayoutTab extends LitElement {
     this.requestUpdate();
   }
 
-  // Drop ON a nested layout (e.g. horizontal inside slider) -> insert inside that nested layout
+  // Drop ON a nested layout (e.g. horizontal inside slider) -> insert inside or reorder before/after
   private _onTreeNestedLayoutDrop(
     e: DragEvent,
     rowIndex: number,
@@ -11138,17 +11529,34 @@ export class LayoutTab extends LitElement {
 
     if (!this._isValidDropTarget(this._draggedItem.type, 'nested-layout')) return;
 
-    this._performMove(this._draggedItem, {
-      type: 'nested-layout',
-      rowIndex,
-      columnIndex,
-      moduleIndex: parentModuleIndex,
-      nestedLayoutIndex: childIndex,
-    });
+    const insertEdge = this._dropTarget?.insertEdge;
+    if (insertEdge === 'before' || insertEdge === 'after') {
+      // Reorder: insert before or after this nested layout within the parent layout
+      this._performMove(this._draggedItem, {
+        type: 'layout-child',
+        rowIndex,
+        columnIndex,
+        moduleIndex: parentModuleIndex,
+        childIndex: insertEdge === 'before' ? childIndex : childIndex + 1,
+      });
+    } else {
+      this._performMove(this._draggedItem, {
+        type: 'nested-layout',
+        rowIndex,
+        columnIndex,
+        moduleIndex: parentModuleIndex,
+        nestedLayoutIndex: childIndex,
+      });
+    }
 
     this._clearDragExpandedItems();
     this._draggedItem = null;
     this._dropTarget = null;
+    this._dropTargetElement = null;
+    this._clearDropGap();
+    this._dropBoundaryElement = null;
+    this._dropBoundaryEdge = null;
+    this._dropListSnapshot = { container: null, scrollTop: 0, items: [] };
     this.requestUpdate();
   }
 
@@ -11204,11 +11612,7 @@ export class LayoutTab extends LitElement {
   }
 
   // Generic path-based drop for level 5+ (unlimited nesting)
-  private _onTreePathChildDrop(
-    e: DragEvent,
-    parentPath: number[],
-    childIndex: number
-  ): void {
+  private _onTreePathChildDrop(e: DragEvent, parentPath: number[], childIndex: number): void {
     e.preventDefault();
     e.stopPropagation();
 
@@ -11258,12 +11662,66 @@ export class LayoutTab extends LitElement {
   private _isValidDropTarget(sourceType: string, targetType: string): boolean {
     // Define valid drop combinations
     const validCombinations: Record<string, string[]> = {
-      module: ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target', 'deep-nested-child-target', 'path-child-target'],
-      'nested-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target', 'deep-nested-child-target', 'path-child-target'],
-      'layout-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target', 'deep-nested-child-target', 'path-child-target'],
-      'deep-nested-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target', 'deep-nested-child-target', 'path-child-target'],
-      'path-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target', 'deep-nested-child-target', 'path-child-target'],
-      'tabs-section-child': ['module', 'column', 'layout', 'nested-layout', 'layout-child', 'nested-child-target', 'deep-nested-child-target', 'path-child-target'],
+      module: [
+        'module',
+        'column',
+        'layout',
+        'nested-layout',
+        'layout-child',
+        'nested-child-target',
+        'deep-nested-child-target',
+        'path-child-target',
+      ],
+      'nested-child': [
+        'module',
+        'column',
+        'layout',
+        'nested-layout',
+        'layout-child',
+        'nested-child-target',
+        'deep-nested-child-target',
+        'path-child-target',
+      ],
+      'layout-child': [
+        'module',
+        'column',
+        'layout',
+        'nested-layout',
+        'layout-child',
+        'nested-child-target',
+        'deep-nested-child-target',
+        'path-child-target',
+      ],
+      'deep-nested-child': [
+        'module',
+        'column',
+        'layout',
+        'nested-layout',
+        'layout-child',
+        'nested-child-target',
+        'deep-nested-child-target',
+        'path-child-target',
+      ],
+      'path-child': [
+        'module',
+        'column',
+        'layout',
+        'nested-layout',
+        'layout-child',
+        'nested-child-target',
+        'deep-nested-child-target',
+        'path-child-target',
+      ],
+      'tabs-section-child': [
+        'module',
+        'column',
+        'layout',
+        'nested-layout',
+        'layout-child',
+        'nested-child-target',
+        'deep-nested-child-target',
+        'path-child-target',
+      ],
       column: ['column', 'row'],
       row: ['row'],
     };
@@ -11392,7 +11850,9 @@ export class LayoutTab extends LitElement {
           const targetList = targetNestedLayout.modules ?? (targetNestedLayout.modules = []);
           if (!Array.isArray(sourceList)) return;
           const sourceIndex =
-            source.layoutChildIndex !== undefined ? source.layoutChildIndex : (source.moduleIndex ?? -1);
+            source.layoutChildIndex !== undefined
+              ? source.layoutChildIndex
+              : (source.moduleIndex ?? -1);
           if (!sourceRemoved && sourceIndex >= 0 && sourceIndex < sourceList.length) {
             sourceList.splice(sourceIndex, 1);
           }
@@ -11488,8 +11948,7 @@ export class LayoutTab extends LitElement {
       // Insert into level 5+ container (generic path)
       const targetList = this._resolveModuleList(layout, target.parentPath);
       if (targetList) {
-        const insertIdx =
-          target.childIndex !== undefined ? target.childIndex : targetList.length;
+        const insertIdx = target.childIndex !== undefined ? target.childIndex : targetList.length;
         targetList.splice(insertIdx, 0, sourceModule);
       }
     } else if (target.type === 'deep-nested-child-target') {
@@ -11756,8 +12215,7 @@ export class LayoutTab extends LitElement {
     } else if (target.type === 'path-child-target' && target.parentPath) {
       const targetList = this._resolveModuleList(layout, target.parentPath);
       if (targetList) {
-        const insertIdx =
-          target.childIndex !== undefined ? target.childIndex : targetList.length;
+        const insertIdx = target.childIndex !== undefined ? target.childIndex : targetList.length;
         targetList.splice(insertIdx, 0, sourceModule);
       }
     }
@@ -11845,8 +12303,7 @@ export class LayoutTab extends LitElement {
     } else if (target.type === 'path-child-target' && target.parentPath) {
       const targetList = this._resolveModuleList(layout, target.parentPath);
       if (targetList) {
-        const insertIdx =
-          target.childIndex !== undefined ? target.childIndex : targetList.length;
+        const insertIdx = target.childIndex !== undefined ? target.childIndex : targetList.length;
         targetList.splice(insertIdx, 0, sourceModule);
       }
     }
@@ -12527,7 +12984,8 @@ export class LayoutTab extends LitElement {
                     this._dropTarget?.rowIndex === rowIndex &&
                     this._dropTarget?.columnIndex === columnIndex &&
                     this._dropTarget?.moduleIndex === moduleIndex &&
-                    (this._dropTarget as any)?.childIndex === childIndex
+                    (this._dropTarget as any)?.childIndex === childIndex &&
+                    (this._dropTarget as any)?.insertEdge === 'inside'
                       ? 'drop-target'
                       : ''}"
                     style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
@@ -12545,6 +13003,10 @@ export class LayoutTab extends LitElement {
             : html`
                 <div
                   class="layout-module-empty"
+                  data-drop-type="layout"
+                  data-row-index="${rowIndex}"
+                  data-column-index="${columnIndex}"
+                  data-module-index="${moduleIndex}"
                   @click=${(e: Event) => {
                     e.stopPropagation();
                     this._openLayoutModuleSelector(rowIndex!, columnIndex!, moduleIndex!);
@@ -17161,7 +17623,9 @@ export class LayoutTab extends LitElement {
       );
       return;
     }
-    const parentLayout = layout.rows[rowIndex].columns[columnIndex].modules[parentModuleIndex] as any;
+    const parentLayout = layout.rows[rowIndex].columns[columnIndex].modules[
+      parentModuleIndex
+    ] as any;
     const nestedLayout = parentLayout?.modules?.[nestedLayoutIndex];
     const deepLayout = nestedLayout?.modules?.[deepLayoutIndex];
     const childModule = deepLayout?.modules?.[childIndex];
@@ -17564,8 +18028,15 @@ export class LayoutTab extends LitElement {
 
     let targetModule: any;
 
-    if (selected.isLevel4 && selected.nestedLayoutIndex !== undefined && selected.deepLayoutIndex !== undefined && selected.childIndex !== undefined) {
-      const parentLayout = newLayout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex] as any;
+    if (
+      selected.isLevel4 &&
+      selected.nestedLayoutIndex !== undefined &&
+      selected.deepLayoutIndex !== undefined &&
+      selected.childIndex !== undefined
+    ) {
+      const parentLayout = newLayout.rows[rowIndex]?.columns[columnIndex]?.modules[
+        moduleIndex
+      ] as any;
       const nestedLayout = parentLayout?.modules?.[selected.nestedLayoutIndex];
       const deepLayout = nestedLayout?.modules?.[selected.deepLayoutIndex];
       if (!deepLayout?.modules?.[selected.childIndex]) return;
@@ -17967,12 +18438,6 @@ export class LayoutTab extends LitElement {
       moduleIndex,
       sectionIndex,
     } as any;
-
-    // Add visual feedback using CSS class (will be cleared by _onDragLeave)
-    const target = e.currentTarget as HTMLElement;
-    if (target) {
-      target.classList.add('drag-over');
-    }
 
     this.requestUpdate();
   }
@@ -21275,7 +21740,12 @@ export class LayoutTab extends LitElement {
 
     // Level-4 path: Column → layout (e.g. Popup) → layout → layout → leaf (no tabs/sections)
     let module: any;
-    if (selected.isLevel4 && selected.nestedLayoutIndex !== undefined && selected.deepLayoutIndex !== undefined && selected.childIndex !== undefined) {
+    if (
+      selected.isLevel4 &&
+      selected.nestedLayoutIndex !== undefined &&
+      selected.deepLayoutIndex !== undefined &&
+      selected.childIndex !== undefined
+    ) {
       const parentLayout = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex] as any;
       const nestedLayout = parentLayout?.modules?.[selected.nestedLayoutIndex];
       const deepLayout = nestedLayout?.modules?.[selected.deepLayoutIndex];
@@ -21759,8 +22229,15 @@ export class LayoutTab extends LitElement {
     let targetArray: any[];
     let insertIndex: number;
 
-    if (selected.isLevel4 && selected.nestedLayoutIndex !== undefined && selected.deepLayoutIndex !== undefined && selected.childIndex !== undefined) {
-      const parentLayout = newLayout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex] as any;
+    if (
+      selected.isLevel4 &&
+      selected.nestedLayoutIndex !== undefined &&
+      selected.deepLayoutIndex !== undefined &&
+      selected.childIndex !== undefined
+    ) {
+      const parentLayout = newLayout.rows[rowIndex]?.columns[columnIndex]?.modules[
+        moduleIndex
+      ] as any;
       const nestedLayout = parentLayout?.modules?.[selected.nestedLayoutIndex];
       const deepLayout = nestedLayout?.modules?.[selected.deepLayoutIndex];
       if (!deepLayout?.modules?.[selected.childIndex]) return;
@@ -21872,8 +22349,15 @@ export class LayoutTab extends LitElement {
     const layout = this._ensureLayout();
     const newLayout = JSON.parse(JSON.stringify(layout));
 
-    if (selected.isLevel4 && selected.nestedLayoutIndex !== undefined && selected.deepLayoutIndex !== undefined && selected.childIndex !== undefined) {
-      const parentLayout = newLayout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex] as any;
+    if (
+      selected.isLevel4 &&
+      selected.nestedLayoutIndex !== undefined &&
+      selected.deepLayoutIndex !== undefined &&
+      selected.childIndex !== undefined
+    ) {
+      const parentLayout = newLayout.rows[rowIndex]?.columns[columnIndex]?.modules[
+        moduleIndex
+      ] as any;
       const nestedLayout = parentLayout?.modules?.[selected.nestedLayoutIndex];
       const deepLayout = nestedLayout?.modules?.[selected.deepLayoutIndex];
       if (!deepLayout?.modules) return;
@@ -23003,9 +23487,7 @@ export class LayoutTab extends LitElement {
               >
                 <ha-icon icon="mdi:delete"></ha-icon>
               </button>
-              <button class="close-button" @click=${() => this._closeColumnSettings()}>
-                ×
-              </button>
+              <button class="close-button" @click=${() => this._closeColumnSettings()}>×</button>
             </div>
           </div>
 
@@ -25682,6 +26164,9 @@ export class LayoutTab extends LitElement {
   protected updated(changedProperties: Map<string, any>): void {
     super.updated(changedProperties);
 
+    // Position the drop indicator line (insertion space) when dragging
+    this._positionDropIndicator();
+
     // Add fixedmenuposition to all ha-select elements (like HA tile-card does)
     this._addFixedMenuPositionToSelects();
 
@@ -25875,6 +26360,7 @@ export class LayoutTab extends LitElement {
         ${this._renderBreadcrumbs()}
 
         <div class="tree-view-container">
+          <div id="tree-drop-indicator" class="tree-drop-indicator" aria-hidden="true"></div>
           ${layout.rows.map((row, rowIndex) =>
             this._renderTreeRow(row, rowIndex, layout.rows.length)
           )}
@@ -25898,7 +26384,8 @@ export class LayoutTab extends LitElement {
             (row, rowIndex) => html`
               <div
                 class="row-builder ${this._dropTarget?.type === 'row' &&
-                this._dropTarget?.rowIndex === rowIndex
+                this._dropTarget?.rowIndex === rowIndex &&
+                this._dropTarget?.insertEdge === 'inside'
                   ? 'drop-target'
                   : ''}"
                 draggable="true"
@@ -26134,7 +26621,8 @@ export class LayoutTab extends LitElement {
                               this._onDrop(e, 'column', rowIndex, columnIndex)}
                             class="${this._dropTarget?.type === 'column' &&
                             this._dropTarget?.rowIndex === rowIndex &&
-                            this._dropTarget?.columnIndex === columnIndex
+                            this._dropTarget?.columnIndex === columnIndex &&
+                            this._dropTarget?.insertEdge === 'inside'
                               ? 'drop-target'
                               : ''}"
                           >
@@ -26238,7 +26726,8 @@ export class LayoutTab extends LitElement {
                             <div
                               class="modules-container ${this._dropTarget?.type === 'column' &&
                               this._dropTarget?.rowIndex === rowIndex &&
-                              this._dropTarget?.columnIndex === columnIndex
+                              this._dropTarget?.columnIndex === columnIndex &&
+                              this._dropTarget?.insertEdge === 'inside'
                                 ? 'drop-target'
                                 : ''}"
                               @dragover=${this._onDragOver}
@@ -26259,7 +26748,8 @@ export class LayoutTab extends LitElement {
                                     class="module-item ${this._dropTarget?.type === 'module' &&
                                     this._dropTarget?.rowIndex === rowIndex &&
                                     this._dropTarget?.columnIndex === columnIndex &&
-                                    this._dropTarget?.moduleIndex === moduleIndex
+                                    this._dropTarget?.moduleIndex === moduleIndex &&
+                                    this._dropTarget?.insertEdge === 'inside'
                                       ? 'drop-target'
                                       : ''}"
                                     draggable="true"
@@ -30596,10 +31086,29 @@ export class LayoutTab extends LitElement {
          TREE VIEW CONTAINER STYLES
          ======================================== */
       .tree-view-container {
+        position: relative;
         flex: 1;
         overflow-y: auto;
         overflow-x: hidden;
         padding: 8px 4px 8px 12px;
+      }
+
+      /* Insertion line: shows the space where the item will be dropped (list-style, section width only) */
+      .tree-drop-indicator {
+        position: absolute;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: var(--primary-color);
+        border-radius: 0;
+        pointer-events: none;
+        z-index: 10;
+        opacity: 0;
+        transition: opacity 0.1s ease;
+        box-sizing: border-box;
+      }
+      .tree-drop-indicator.visible {
+        opacity: 1;
       }
 
       .tree-add-row-container {
@@ -30639,6 +31148,32 @@ export class LayoutTab extends LitElement {
         padding-left: 0;
         margin-bottom: 6px;
         --tree-level-color: var(--divider-color);
+        transition: padding 220ms ease;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+
+      /* Smooth gap animation when showing insertion space */
+      .tree-node.drop-gap-before {
+        padding-top: 22px;
+      }
+
+      .tree-node.drop-gap-after {
+        padding-bottom: 26px;
+      }
+
+      .layout-module-empty {
+        transition: padding 220ms ease;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+
+      .layout-module-empty.drop-gap-before {
+        padding-top: 22px;
+      }
+
+      .layout-module-empty.drop-gap-after {
+        padding-bottom: 26px;
       }
 
       /* Each level gets a unique color variable */
