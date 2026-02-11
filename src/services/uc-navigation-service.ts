@@ -45,6 +45,10 @@ interface ViewNavLayer {
   activeModule?: RegisteredModule;
   mediaPlayerExpanded?: boolean;
   activeStackId?: string;
+  /** Viewport rect of the active stack button — used to position the popup outside .navbar-card */
+  _stackButtonRect?: DOMRect;
+  /** Shared hover-close timer for stack open_mode:'hover' */
+  _stackHoverTimer?: ReturnType<typeof setTimeout>;
   /** Auto-hide state */
   autohideHidden?: boolean;
   autohideTimer?: ReturnType<typeof setTimeout>;
@@ -791,11 +795,15 @@ class UcNavigationService {
             style="position: fixed; inset: 0; pointer-events: auto; z-index: 50;"
             @click=${() => {
               viewLayer.activeStackId = undefined;
+              viewLayer._stackButtonRect = undefined;
               this.requestRender(viewLayer);
             }}
           ></div>
         `
       : '';
+
+    // Stack children popup rendered outside .navbar-card to avoid overflow clipping
+    const stackPopup = this.renderActiveStackPopup(navModule, hass, registered, viewLayer, position);
 
     return html`
       <style>
@@ -811,7 +819,7 @@ class UcNavigationService {
         ${isDashboardEditMode
           ? viewLayer.editModePreviewExpanded
             ? html`
-                ${stackBackdrop} ${mediaPlayerWidgetTemplate}
+                ${stackBackdrop} ${stackPopup} ${mediaPlayerWidgetTemplate}
                 <div
                   class="navbar-card ${isDesktop ? 'desktop' : 'mobile'} ${mode} ${position}${dockColor
                     ? ' has-dock-color'
@@ -839,7 +847,7 @@ class UcNavigationService {
               `
             : '' /* Dock hidden — toggle lives in the module placeholder card */
           : html`
-              ${stackBackdrop} ${mediaPlayerWidgetTemplate}
+              ${stackBackdrop} ${stackPopup} ${mediaPlayerWidgetTemplate}
               <div
                 class="navbar-card ${isDesktop ? 'desktop' : 'mobile'} ${mode} ${position}${dockColor
                   ? ' has-dock-color'
@@ -1011,25 +1019,25 @@ class UcNavigationService {
       stackIsHorizontal = isHorizontalNavbar;
     }
 
-    // Handle stack click/hover
+    // Handle stack click/hover — store button rect for the portal popup
     const handleStackClick = (e: Event) => {
       e.stopPropagation();
-      // Block navigation in edit mode but allow stack open/close
       if (stack.open_mode === 'hover') return;
+      const el = e.currentTarget as HTMLElement;
+      viewLayer._stackButtonRect = isExpanded ? undefined : el.getBoundingClientRect();
       viewLayer.activeStackId = isExpanded ? undefined : stack.id;
       this.requestRender(viewLayer);
     };
 
-    // For hover mode, use a timer to avoid re-render flicker
-    let hoverCloseTimer: ReturnType<typeof setTimeout> | undefined;
-
-    const handleStackMouseEnter = () => {
+    const handleStackMouseEnter = (e: Event) => {
       if (stack.open_mode !== 'hover') return;
-      if (hoverCloseTimer) {
-        clearTimeout(hoverCloseTimer);
-        hoverCloseTimer = undefined;
+      if (viewLayer._stackHoverTimer) {
+        clearTimeout(viewLayer._stackHoverTimer);
+        viewLayer._stackHoverTimer = undefined;
       }
       if (viewLayer.activeStackId !== stack.id) {
+        const el = e.currentTarget as HTMLElement;
+        viewLayer._stackButtonRect = el.getBoundingClientRect();
         viewLayer.activeStackId = stack.id;
         this.requestRender(viewLayer);
       }
@@ -1038,9 +1046,10 @@ class UcNavigationService {
     const handleStackMouseLeave = () => {
       if (stack.open_mode !== 'hover') return;
       // Delay close so the popup stays open while moving cursor to it
-      hoverCloseTimer = setTimeout(() => {
+      viewLayer._stackHoverTimer = setTimeout(() => {
         if (viewLayer.activeStackId === stack.id) {
           viewLayer.activeStackId = undefined;
+          viewLayer._stackButtonRect = undefined;
           this.requestRender(viewLayer);
         }
       }, 300);
@@ -1049,6 +1058,8 @@ class UcNavigationService {
     // Badge for stack
     const badgeTemplate = this.renderBadge(stack.badge, hass, navModule, stack as any);
 
+    // Children popup is rendered outside .navbar-card via renderActiveStackPopup()
+    // to avoid overflow clipping on mobile (see renderNavigation)
     return html`
       <div
         class="route stack-item ${isExpanded ? 'expanded' : ''}"
@@ -1065,66 +1076,102 @@ class UcNavigationService {
           ${badgeTemplate}
         </div>
         ${showLabel ? html`<div class="label">${label}</div>` : ''}
-        ${isExpanded && children.length > 0
-          ? html`
-              <div
-                class="stack-children ${stackIsHorizontal
-                  ? 'horizontal'
-                  : 'vertical'} from-${position}"
-                style="
-                  position: absolute;
-                  ${position === 'bottom'
-                  ? 'bottom: 100%; left: 50%; transform: translateX(-50%);'
-                  : ''}
-                  ${position === 'top' ? 'top: 100%; left: 50%; transform: translateX(-50%);' : ''}
-                  ${position === 'left' ? 'left: 100%; top: 50%; transform: translateY(-50%);' : ''}
-                  ${position === 'right'
-                  ? 'right: 100%; top: 50%; transform: translateY(-50%);'
-                  : ''}
-                  display: flex;
-                  flex-direction: ${stackIsHorizontal ? 'row' : 'column'};
-                  gap: 8px;
-                  padding: 8px;
-                  margin-${position === 'bottom'
-                  ? 'bottom'
-                  : position === 'top'
-                    ? 'top'
-                    : position === 'left'
-                      ? 'left'
-                      : 'right'}: 8px;
-                  background: var(--uc-nav-dock-color, var(--navbar-background-color));
-                  border-radius: var(--navbar-border-radius, 12px);
-                  box-shadow: var(--navbar-box-shadow);
-                  backdrop-filter: blur(var(--navbar-backdrop-blur, 16px)) saturate(180%);
-                  -webkit-backdrop-filter: blur(var(--navbar-backdrop-blur, 16px)) saturate(180%);
-                  border: 1px solid var(--navbar-border-color, rgba(var(--rgb-primary-color), 0.1));
-                  pointer-events: auto;
-                  z-index: 100;
-                "
-                @click=${(e: Event) => e.stopPropagation()}
-                @mouseenter=${() => {
-                  if (hoverCloseTimer) {
-                    clearTimeout(hoverCloseTimer);
-                    hoverCloseTimer = undefined;
-                  }
-                }}
-                @mouseleave=${() => {
-                  if (stack.open_mode === 'hover') {
-                    hoverCloseTimer = setTimeout(() => {
-                      if (viewLayer.activeStackId === stack.id) {
-                        viewLayer.activeStackId = undefined;
-                        this.requestRender(viewLayer);
-                      }
-                    }, 300);
-                  }
-                }}
-              >
-                ${children.map((child, childIdx) =>
-                  this.renderStackChildItem(child, hass, navModule, registered, viewLayer, childIdx)
-                )}
-              </div>
-            `
-          : ''}
+      </div>
+    `;
+  }
+
+  /**
+   * Render the expanded stack children popup as a portal OUTSIDE .navbar-card.
+   * This avoids overflow clipping on mobile bottom/top navbars which have
+   * overflow-x: auto / overflow-y: hidden for horizontal scrolling.
+   * The popup is absolutely positioned within .navbar (position:fixed; inset:0)
+   * using viewport coordinates from the stored button rect.
+   */
+  private renderActiveStackPopup(
+    navModule: NavigationModule,
+    hass: HomeAssistant,
+    registered: RegisteredModule,
+    viewLayer: ViewNavLayer,
+    position: string
+  ): TemplateResult {
+    const activeId = viewLayer.activeStackId;
+    const rect = viewLayer._stackButtonRect;
+    if (!activeId || !rect) return html``;
+
+    const stacks = navModule.nav_stacks || [];
+    const stack = stacks.find(s => s.id === activeId);
+    if (!stack) return html``;
+
+    const children = stack.children || [];
+    if (children.length === 0) return html``;
+
+    // Determine stack orientation
+    const isDesktop = this.isDesktop(navModule.nav_desktop);
+    const isHorizontalNavbar = position === 'left' || position === 'right';
+    let stackIsHorizontal: boolean;
+    if (stack.orientation === 'horizontal') {
+      stackIsHorizontal = true;
+    } else if (stack.orientation === 'vertical') {
+      stackIsHorizontal = false;
+    } else {
+      stackIsHorizontal = isHorizontalNavbar;
+    }
+
+    // Compute popup position using the button's viewport rect.
+    // .navbar has position:fixed; inset:0 so its coord space = viewport.
+    const gap = 8;
+    let posStyle = '';
+    if (position === 'bottom') {
+      posStyle = `bottom: ${window.innerHeight - rect.top + gap}px; left: ${rect.left + rect.width / 2}px; transform: translateX(-50%);`;
+    } else if (position === 'top') {
+      posStyle = `top: ${rect.bottom + gap}px; left: ${rect.left + rect.width / 2}px; transform: translateX(-50%);`;
+    } else if (position === 'left') {
+      posStyle = `left: ${rect.right + gap}px; top: ${rect.top + rect.height / 2}px; transform: translateY(-50%);`;
+    } else if (position === 'right') {
+      posStyle = `right: ${window.innerWidth - rect.left + gap}px; top: ${rect.top + rect.height / 2}px; transform: translateY(-50%);`;
+    }
+
+    return html`
+      <div
+        class="stack-children ${stackIsHorizontal ? 'horizontal' : 'vertical'} from-${position}"
+        style="
+          position: absolute;
+          ${posStyle}
+          display: flex;
+          flex-direction: ${stackIsHorizontal ? 'row' : 'column'};
+          gap: 8px;
+          padding: 8px;
+          background: var(--uc-nav-dock-color, var(--navbar-background-color));
+          border-radius: var(--navbar-border-radius, 12px);
+          box-shadow: var(--navbar-box-shadow);
+          backdrop-filter: blur(var(--navbar-backdrop-blur, 16px)) saturate(180%);
+          -webkit-backdrop-filter: blur(var(--navbar-backdrop-blur, 16px)) saturate(180%);
+          border: 1px solid var(--navbar-border-color, rgba(var(--rgb-primary-color), 0.1));
+          pointer-events: auto;
+          z-index: 100;
+        "
+        @click=${(e: Event) => e.stopPropagation()}
+        @mouseenter=${() => {
+          if (viewLayer._stackHoverTimer) {
+            clearTimeout(viewLayer._stackHoverTimer);
+            viewLayer._stackHoverTimer = undefined;
+          }
+        }}
+        @mouseleave=${() => {
+          if (stack.open_mode === 'hover') {
+            viewLayer._stackHoverTimer = setTimeout(() => {
+              if (viewLayer.activeStackId === stack.id) {
+                viewLayer.activeStackId = undefined;
+                viewLayer._stackButtonRect = undefined;
+                this.requestRender(viewLayer);
+              }
+            }, 300);
+          }
+        }}
+      >
+        ${children.map((child, childIdx) =>
+          this.renderStackChildItem(child, hass, navModule, registered, viewLayer, childIdx)
+        )}
       </div>
     `;
   }
@@ -1165,6 +1212,7 @@ class UcNavigationService {
       const actionElement = (e?.currentTarget as HTMLElement) || undefined;
       // Close the stack
       viewLayer.activeStackId = undefined;
+      viewLayer._stackButtonRect = undefined;
       this.requestRender(viewLayer);
 
       // Block navigation in edit mode

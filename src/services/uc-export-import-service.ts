@@ -208,10 +208,14 @@ class UcExportImportService {
       }
     }
 
+    // Strip personal data (favorite colors are user-local, not part of shared configs)
+    const sanitizedExport = { ...privacyScan.sanitizedData };
+    delete sanitizedExport.favorite_colors;
+
     const exportData: ExportData = {
       type: 'ultra-card-full',
       version: VERSION,
-      data: privacyScan.sanitizedData, // Use sanitized data
+      data: sanitizedExport,
       metadata: {
         exported: new Date().toISOString(),
         name: name || config.card_name || 'Exported Card',

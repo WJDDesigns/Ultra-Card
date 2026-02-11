@@ -34,6 +34,7 @@ import {
   getCurrentDashboardId,
 } from '../pro/third-party-limit-service';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
+import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';
 
 // Import editor at top level to ensure it's available
 import '../editor/ultra-card-editor';
@@ -528,6 +529,22 @@ export class UltraCard extends LitElement {
       // Skip registration entirely for editor preview cards so they never affect limits
       if (!this._isEditorPreviewCard && !(window as any).__UC_PREVIEW_SUPPRESS_LOCKS) {
         ThirdPartyLimitService.register(cardInstanceId, dashboardId, this.config);
+      }
+    } catch {}
+
+    // Restore favorite colors from card config if localStorage is empty
+    // This handles cases where localStorage was cleared but config has a backup
+    try {
+      if (
+        this.config.favorite_colors &&
+        Array.isArray(this.config.favorite_colors) &&
+        this.config.favorite_colors.length > 0
+      ) {
+        const currentFavorites = ucFavoriteColorsService.getFavorites();
+        if (currentFavorites.length === 0) {
+          // localStorage is empty but config has favorites - restore them
+          ucFavoriteColorsService.importFromConfig(this.config.favorite_colors);
+        }
       }
     } catch {}
 

@@ -1,5 +1,18 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.5.0-beta7
+
+### 🔧 Improvements
+
+- **More drag and drop builder improvmenets** - Refined functionality for smoother operation
+
+### 🐛 Bug Fixes
+
+- **Fix for mobile navigation stacks not working** - Better mobile device support and touch interaction handling
+- **Fix for favorite colors.** - Enhanced color handling and customization options
+
+---
+
 ## Version 2.5.0-beta6
 
 ### 🚀 New Features

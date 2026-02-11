@@ -11342,6 +11342,24 @@ export class LayoutTab extends LitElement {
       return;
     }
 
+    // Prevent dropping a layout-child back onto its own parent layout header.
+    // The module is already inside this layout — this is a no-op that can cause
+    // the module to disappear if the remove-then-readd path fails.
+    if (
+      type === 'layout' &&
+      (this._draggedItem.type === 'layout-child' || this._draggedItem.type === 'nested-child') &&
+      this._draggedItem.rowIndex === rowIndex &&
+      this._draggedItem.columnIndex === columnIndex &&
+      this._draggedItem.moduleIndex === moduleIndex
+    ) {
+      this._draggedItem = null;
+      this._dropTarget = null;
+      this._dropTargetElement = null;
+      this._clearDropGap();
+      this.requestUpdate();
+      return;
+    }
+
     // Validate drop target compatibility
     if (!this._isValidDropTarget(this._draggedItem.type, type)) return; // Reject invalid drops
 
@@ -11869,6 +11887,14 @@ export class LayoutTab extends LitElement {
             1
           );
         }
+      } else if (sourceRemoved && sourceModule) {
+        // Safety: target nested layout validation failed but source was already removed.
+        // Restore the source module to prevent it from disappearing.
+        const parentLayoutModule = layout.rows[source.rowIndex]?.columns[source.columnIndex]
+          ?.modules[source.moduleIndex] as any;
+        if (parentLayoutModule?.modules) {
+          parentLayoutModule.modules.splice(source.layoutChildIndex, 0, sourceModule);
+        }
       }
       return;
     }
@@ -11898,6 +11924,14 @@ export class LayoutTab extends LitElement {
             source.moduleIndex,
             1
           );
+        }
+      } else if (sourceRemoved && sourceModule) {
+        // Safety: target layout validation failed but source was already removed.
+        // Restore the source module to prevent it from disappearing.
+        const parentLayoutModule = layout.rows[source.rowIndex]?.columns[source.columnIndex]
+          ?.modules[source.moduleIndex] as any;
+        if (parentLayoutModule?.modules) {
+          parentLayoutModule.modules.splice(source.layoutChildIndex, 0, sourceModule);
         }
       }
       return;

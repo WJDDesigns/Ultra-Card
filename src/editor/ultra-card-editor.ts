@@ -27,6 +27,7 @@ import './tabs/layout-tab';
 import '../components/ultra-color-picker';
 import '../components/uc-favorite-colors-manager';
 import '../components/uc-custom-variables-manager';
+import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';
 import '../components/uc-variable-mapping-dialog';
 import '../components/uc-favorite-dialog';
 import '../components/uc-import-dialog';
@@ -145,8 +146,32 @@ export class UltraCardEditor extends LitElement {
 
     // Setup cloud sync listeners
     this._setupCloudSyncListeners();
+
+    // Subscribe to favorite colors changes to back them up in card config
+    this._favoriteColorsUnsubscribe = ucFavoriteColorsService.subscribe(favorites => {
+      if (!this.config) return;
+      // Only update config if favorites actually differ from what's stored
+      const configFavorites = this.config.favorite_colors || [];
+      const favoritesChanged =
+        favorites.length !== configFavorites.length ||
+        JSON.stringify(favorites) !== JSON.stringify(configFavorites);
+      if (favoritesChanged) {
+        this.config = {
+          ...this.config,
+          favorite_colors: favorites.length > 0 ? [...favorites] : undefined,
+        };
+        // Persist to card config as a backup (uses isInternal to avoid re-dispatch loops)
+        const event = new CustomEvent('config-changed', {
+          detail: { config: this.config, isInternal: true },
+          bubbles: true,
+          composed: true,
+        });
+        this.dispatchEvent(event);
+      }
+    });
   }
 
+  private _favoriteColorsUnsubscribe?: () => void;
   private _resizeListener?: () => void;
 
   disconnectedCallback() {
@@ -176,6 +201,12 @@ export class UltraCardEditor extends LitElement {
 
     // Cleanup cloud sync listeners
     this._cleanupCloudSyncListeners();
+
+    // Cleanup favorite colors subscription
+    if (this._favoriteColorsUnsubscribe) {
+      this._favoriteColorsUnsubscribe();
+      this._favoriteColorsUnsubscribe = undefined;
+    }
   }
 
   private _checkMobileDevice(): void {

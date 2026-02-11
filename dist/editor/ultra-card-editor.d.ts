@@ -43,6 +43,7 @@ export declare class UltraCardEditor extends LitElement {
     setConfig(config: UltraCardConfig): void;
     protected willUpdate(changedProperties: Map<string, any>): void;
     connectedCallback(): void;
+    private _favoriteColorsUnsubscribe?;
     private _resizeListener?;
     disconnectedCallback(): void;
     private _checkMobileDevice;
