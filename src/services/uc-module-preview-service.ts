@@ -186,13 +186,18 @@ class UcModulePreviewService {
       outroAnimation?: string;
       shouldTriggerStateAnimation?: boolean;
       isHaPreview?: boolean; // Explicitly mark as HA Preview rendering (not dashboard)
+      isDashboardEditMode?: boolean; // Dashboard is in edit mode (show placeholders for invisible modules)
     }
   ): TemplateResult {
     const moduleWithDesign = module as any;
 
     // Get module content from module handler
     // Use explicit flag if provided, otherwise assume dashboard context
-    const previewContext = options?.isHaPreview ? 'ha-preview' : undefined;
+    const previewContext = options?.isHaPreview
+      ? 'ha-preview'
+      : options?.isDashboardEditMode
+        ? 'dashboard'
+        : undefined;
     const moduleContent = this._getModuleContent(module, hass, config, previewContext);
 
     // Get hover effect configuration

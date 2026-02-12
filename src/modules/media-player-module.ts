@@ -1427,7 +1427,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           canvas.width = size;
           canvas.height = size;
           
-          ctx.drawImage(img, 0, 0, size, size);
+          ctx.drawImage(img as unknown as CanvasImageSource, 0, 0, size, size);
           const imageData = ctx.getImageData(0, 0, size, size);
           const data = imageData.data;
           

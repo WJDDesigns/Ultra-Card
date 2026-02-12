@@ -2791,7 +2791,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
             }
 
             if (sliderControl.haptic_feedback && 'vibrate' in navigator) {
-              navigator.vibrate(10);
+              (navigator as any).vibrate(10);
             }
           } catch (error) {
             console.error('Failed to update entity:', error);

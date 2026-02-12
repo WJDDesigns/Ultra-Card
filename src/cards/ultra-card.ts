@@ -581,6 +581,37 @@ export class UltraCard extends LitElement {
     return false;
   }
 
+  /**
+   * Detect if the dashboard is in edit mode (not the card editor dialog).
+   * Used to show visible placeholders for invisible modules (video_bg, etc.).
+   */
+  private _detectDashboardEditMode(): boolean {
+    try {
+      // Method 1: Check URL parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('edit') === '1') return true;
+
+      // Method 2: Check HA's lovelace editMode property
+      const root = document.querySelector('home-assistant') as any;
+      const lovelace = root?.shadowRoot
+        ?.querySelector('home-assistant-main')
+        ?.shadowRoot?.querySelector('ha-drawer')
+        ?.querySelector('partial-panel-resolver')
+        ?.querySelector('ha-panel-lovelace')?.lovelace;
+      if (lovelace?.editMode) return true;
+
+      // Method 3: Check for edit mode UI elements
+      if (document.querySelector('hui-editor-mode')) return true;
+
+      // Method 4: Check if card has edit mode overlay
+      if (document.querySelector('hui-card-edit-mode')) return true;
+
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
   private _syncConfigMetadata(): void {
     if (!this.config) return;
     try {
@@ -1927,6 +1958,10 @@ export class UltraCard extends LitElement {
     // Detect if we're inside an HA Preview dialog (not the dashboard)
     const isHaPreview = this._detectEditorPreviewContext();
 
+    // Detect if the dashboard itself is in edit mode (for modules like video_bg
+    // that need to show a visible placeholder when the user is editing the dashboard)
+    const isDashboardEditMode = !isHaPreview && this._detectDashboardEditMode();
+
     const moduleContent = ucModulePreviewService.renderModuleContent(
       module,
       this.hass,
@@ -1940,6 +1975,7 @@ export class UltraCard extends LitElement {
         outroAnimation,
         shouldTriggerStateAnimation,
         isHaPreview, // Pass the detection result
+        isDashboardEditMode, // Pass dashboard edit mode detection
       }
     );
 

@@ -53,6 +53,11 @@ export declare class UltraCard extends LitElement {
      * NOTE: We do NOT check hass.editMode because that's true for the entire dashboard when editing.
      */
     private _detectEditorPreviewContext;
+    /**
+     * Detect if the dashboard is in edit mode (not the card editor dialog).
+     * Used to show visible placeholders for invisible modules (video_bg, etc.).
+     */
+    private _detectDashboardEditMode;
     private _syncConfigMetadata;
     private _applyInstanceIdToDataset;
     private _generatePreviewInstanceId;

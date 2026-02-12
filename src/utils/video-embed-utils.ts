@@ -21,25 +21,30 @@ export interface VideoEmbedOptions {
 export function extractYouTubeId(url: string): string | null {
   if (!url) return null;
 
-  // Handle various YouTube URL formats
+  // Handle various YouTube URL formats (standard, shorts, live, embed, etc.)
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
     /youtube\.com\/embed\/([^&\n?#]+)/,
     /youtube\.com\/v\/([^&\n?#]+)/,
+    /youtube\.com\/shorts\/([^&\n?#]+)/,
+    /youtube\.com\/live\/([^&\n?#]+)/,
   ];
 
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match && match[1]) {
+      console.debug('[UC Video BG] Extracted YouTube ID:', match[1], 'from:', url);
       return match[1];
     }
   }
 
   // If it's already just an ID (11 characters, alphanumeric with - and _)
   if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+    console.debug('[UC Video BG] Input is already a YouTube ID:', url);
     return url;
   }
 
+  console.warn('[UC Video BG] Could not extract YouTube ID from:', url);
   return null;
 }
 
@@ -73,31 +78,33 @@ export function extractVimeoId(url: string): string | null {
 export function getYouTubeEmbedUrl(videoId: string, options: VideoEmbedOptions = {}): string {
   const { autoplay = true, muted = true, loop = true, controls = false, startTime = 0 } = options;
 
-  const params = new URLSearchParams({
+  // Minimal, currently-supported YouTube embed params only.
+  // Avoid deprecated params (showinfo, fs, iv_load_policy, disablekb, modestbranding)
+  // which cause Error 153 "Video player configuration error".
+  const params: Record<string, string> = {
     autoplay: autoplay ? '1' : '0',
-    mute: '1', // Force mute
+    mute: muted ? '1' : '0',
     controls: controls ? '1' : '0',
-    showinfo: '0',
-    modestbranding: '1',
     rel: '0',
-    fs: '0',
-    iv_load_policy: '3',
-    disablekb: '1',
     playsinline: '1',
-    enablejsapi: '0', // Disable JS API to prevent unmuting
-  });
+  };
 
-  // For looping, we need to add the playlist parameter
+  // For looping, YouTube requires the playlist parameter set to the video ID
   if (loop) {
-    params.append('loop', '1');
-    params.append('playlist', videoId);
+    params.loop = '1';
+    params.playlist = videoId;
   }
 
   if (startTime > 0) {
-    params.append('start', String(startTime));
+    params.start = String(startTime);
   }
 
-  return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+  const queryString = new URLSearchParams(params).toString();
+  const url = `https://www.youtube.com/embed/${videoId}?${queryString}`;
+
+  console.debug('[UC Video BG] YouTube embed URL:', url);
+
+  return url;
 }
 
 /**
@@ -161,8 +168,10 @@ export function createIframeElement(
   iframe.src = src;
   iframe.title = title;
   iframe.frameBorder = '0';
-  iframe.allow = 'autoplay';
-  iframe.allowFullscreen = false;
+  // Match YouTube's official embed attributes exactly to avoid Error 153
+  iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+  iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+  iframe.allowFullscreen = true; // YouTube requires this — false triggers Error 153
   iframe.style.position = 'absolute';
   iframe.style.border = 'none';
   iframe.style.pointerEvents = 'none';

@@ -419,9 +419,9 @@ export class UltraVideoBgModule extends BaseUltraModule {
     let embedUrl = '';
 
     if (default_source === 'youtube') {
-      const match = default_video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+      const match = default_video_url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/)|youtu\.be\/)([^&\n?#]+)/);
       videoId = match ? match[1] : default_video_url;
-      embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=0`;
+      embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=1&controls=1&modestbranding=1&rel=0&playsinline=1`;
     } else if (default_source === 'vimeo') {
       const match = default_video_url.match(/vimeo\.com\/(\d+)/);
       videoId = match ? match[1] : default_video_url;

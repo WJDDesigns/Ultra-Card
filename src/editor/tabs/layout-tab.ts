@@ -3196,6 +3196,11 @@ export class LayoutTab extends LitElement {
         class="tree-node tree-nested-layout ${isTabs ? 'tabs-layout' : ''} ${isLastChild
           ? 'last-node'
           : ''} ${isCollapsed ? 'collapsed' : ''}"
+        data-drop-type="nested-layout"
+        data-row-index="${rowIndex}"
+        data-column-index="${columnIndex}"
+        data-module-index="${parentModuleIndex}"
+        data-child-index="${childIndex}"
         draggable="true"
         @dragstart=${(e: DragEvent) =>
           this._onTreeLayoutChildDragStart(e, rowIndex, columnIndex, parentModuleIndex, childIndex)}
@@ -10833,7 +10838,7 @@ export class LayoutTab extends LitElement {
 
     // Update insertion edge from pointer position so the drop-indicator line follows the cursor
     const el = this.shadowRoot?.elementFromPoint(e.clientX, e.clientY);
-    const node = el?.closest<HTMLElement>(
+    let node = el?.closest<HTMLElement>(
       '.tree-row, .tree-column, .tree-module, .tree-layout-module, .tree-layout-child, .tree-nested-layout, .tree-deep-child, [data-drop-type]'
     );
     if (!node || !this._dropTarget) return;
@@ -10879,15 +10884,31 @@ export class LayoutTab extends LitElement {
       this._dropTarget.columnIndex !== columnIndex ||
       this._dropTarget.moduleIndex !== moduleIndex
     ) {
-      return;
+      // When the cursor is between nested layouts inside a parent layout,
+      // elementFromPoint returns the parent (type='layout') while _dropTarget is 'nested-layout'.
+      // If the resolved node contains the current _dropTargetElement, fall through
+      // using _dropTargetElement for edge calculations so insertEdge gets refined.
+      if (
+        this._dropTargetElement &&
+        node.contains(this._dropTargetElement) &&
+        node !== this._dropTargetElement
+      ) {
+        // Use the _dropTargetElement instead of the parent for position-based calculations
+        node = this._dropTargetElement;
+      } else {
+        return;
+      }
     }
     const rect = node.getBoundingClientRect();
     const header = node.querySelector('.tree-node-header');
-    const isOverHeader =
-      (type === 'layout' || type === 'nested-layout') && !!header && !!el && header.contains(el);
+    // Use _dropTarget.type for header checks since `node` may have been switched
+    // to _dropTargetElement when the resolved element was a parent container.
+    const dtType = this._dropTarget.type;
+    const hasHeaderDropZone = dtType === 'layout' || dtType === 'nested-layout' || dtType === 'column' || dtType === 'row';
+    const isOverHeader = hasHeaderDropZone && !!header && !!el && header.contains(el);
     let insertEdge: 'before' | 'after' | 'inside' = 'after';
     let boundary: { element: HTMLElement; edge: 'before' | 'after' } | null = null;
-    if ((type === 'layout' || type === 'nested-layout') && isOverHeader && header) {
+    if (hasHeaderDropZone && isOverHeader && header) {
       const headerRect = header.getBoundingClientRect();
       const headerY = e.clientY;
       const topZone = headerRect.top + headerRect.height * 0.25;
@@ -10997,12 +11018,10 @@ export class LayoutTab extends LitElement {
     const target = e.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
     const header = target.querySelector('.tree-node-header');
-    const isOverHeader =
-      (type === 'layout' || type === 'nested-layout') &&
-      !!header &&
-      header.contains(e.target as Element);
+    const hasHeaderDropZone = type === 'layout' || type === 'nested-layout' || type === 'column' || type === 'row';
+    const isOverHeader = hasHeaderDropZone && !!header && header.contains(e.target as Element);
     let insertEdge: 'before' | 'after' | 'inside' = 'after';
-    if ((type === 'layout' || type === 'nested-layout') && isOverHeader && header) {
+    if (hasHeaderDropZone && isOverHeader && header) {
       const headerRect = header.getBoundingClientRect();
       const headerY = e.clientY;
       const topZone = headerRect.top + headerRect.height * 0.25;
@@ -11342,30 +11361,12 @@ export class LayoutTab extends LitElement {
       return;
     }
 
-    // Prevent dropping a layout-child back onto its own parent layout header.
-    // The module is already inside this layout — this is a no-op that can cause
-    // the module to disappear if the remove-then-readd path fails.
-    if (
-      type === 'layout' &&
-      (this._draggedItem.type === 'layout-child' || this._draggedItem.type === 'nested-child') &&
-      this._draggedItem.rowIndex === rowIndex &&
-      this._draggedItem.columnIndex === columnIndex &&
-      this._draggedItem.moduleIndex === moduleIndex
-    ) {
-      this._draggedItem = null;
-      this._dropTarget = null;
-      this._dropTargetElement = null;
-      this._clearDropGap();
-      this.requestUpdate();
-      return;
-    }
-
     // Validate drop target compatibility
     if (!this._isValidDropTarget(this._draggedItem.type, type)) return; // Reject invalid drops
 
     const insertEdge = this._dropTarget?.insertEdge;
     const isLayoutEmpty = target?.classList.contains('layout-module-empty');
-    let resolvedType = type;
+    let resolvedType: string = type;
     let resolvedModuleIndex: number | undefined = moduleIndex;
 
     let resolvedChildIndex: number | undefined;
@@ -11390,19 +11391,38 @@ export class LayoutTab extends LitElement {
         resolvedType = 'module';
         const idx = moduleIndex ?? 0;
         resolvedModuleIndex = insertEdge === 'before' ? idx : idx + 1;
+      } else {
+        // Drop on layout header ('inside') — insert at the TOP of the layout's children
+        resolvedType = 'layout-child';
+        resolvedChildIndex = 0;
       }
-    } else if (
-      type === 'column' &&
-      this._dropTarget &&
-      this._dropTarget.moduleIndex !== undefined &&
-      (insertEdge === 'before' || insertEdge === 'after')
-    ) {
-      // Drop event fired on the column (e.g. in the gap between modules) but
-      // _dropTarget tracked the exact insertion position during dragover.
-      // Use the tracked position instead of appending to end of column.
-      resolvedType = 'module';
-      const baseIndex = this._dropTarget.moduleIndex;
-      resolvedModuleIndex = insertEdge === 'after' ? baseIndex + 1 : baseIndex;
+    } else if (type === 'column') {
+      if (this._draggedItem.type === 'column') {
+        // Column-on-column: reorder columns within the row
+        resolvedType = 'column';
+        // columnIndex already set from the drop target
+      } else if (
+        this._dropTarget &&
+        this._dropTarget.moduleIndex !== undefined &&
+        (insertEdge === 'before' || insertEdge === 'after')
+      ) {
+        // Drop event fired on the column (e.g. in the gap between modules) but
+        // _dropTarget tracked the exact insertion position during dragover.
+        // Use the tracked position instead of appending to end of column.
+        resolvedType = 'module';
+        const baseIndex = this._dropTarget.moduleIndex;
+        resolvedModuleIndex = insertEdge === 'after' ? baseIndex + 1 : baseIndex;
+      } else {
+        // Drop on column header — insert at the TOP of the column's modules
+        resolvedType = 'module';
+        resolvedModuleIndex = 0;
+      }
+    } else if (type === 'row') {
+      if (this._draggedItem.type === 'column' && insertEdge === 'inside') {
+        // Column dropped on row header ('inside') — insert at the TOP of the row's columns
+        resolvedType = 'row-inside';
+      }
+      // Otherwise keep type='row' for row reordering (before/after)
     }
 
     this._performMove(this._draggedItem, {
@@ -11548,6 +11568,7 @@ export class LayoutTab extends LitElement {
     if (!this._isValidDropTarget(this._draggedItem.type, 'nested-layout')) return;
 
     const insertEdge = this._dropTarget?.insertEdge;
+
     if (insertEdge === 'before' || insertEdge === 'after') {
       // Reorder: insert before or after this nested layout within the parent layout
       this._performMove(this._draggedItem, {
@@ -11558,12 +11579,14 @@ export class LayoutTab extends LitElement {
         childIndex: insertEdge === 'before' ? childIndex : childIndex + 1,
       });
     } else {
+      // Drop on nested layout header ('inside') — insert at the TOP of this nested layout
       this._performMove(this._draggedItem, {
-        type: 'nested-layout',
+        type: 'nested-child-target',
         rowIndex,
         columnIndex,
         moduleIndex: parentModuleIndex,
-        nestedLayoutIndex: childIndex,
+        layoutChildIndex: childIndex,
+        childIndex: 0,
       });
     }
 
@@ -11848,6 +11871,30 @@ export class LayoutTab extends LitElement {
       // Don't remove from source first for layout targets!
     }
 
+    // After removing a layout-child from its parent, adjust any target indices
+    // that reference the same parent layout's modules array to account for the shift.
+    if (sourceRemoved && source.layoutChildIndex !== undefined) {
+      const sameParent =
+        target.rowIndex === source.rowIndex &&
+        target.columnIndex === source.columnIndex &&
+        target.moduleIndex === source.moduleIndex;
+      if (sameParent) {
+        const removedIdx = source.layoutChildIndex;
+        // nested-child-target / deep-nested-child-target use layoutChildIndex into the same array
+        if (target.layoutChildIndex != null && target.layoutChildIndex > removedIdx) {
+          target.layoutChildIndex--;
+        }
+        // nested-layout target uses nestedLayoutIndex into the same array
+        if ((target as any).nestedLayoutIndex != null && (target as any).nestedLayoutIndex > removedIdx) {
+          (target as any).nestedLayoutIndex--;
+        }
+        // layout-child target uses childIndex as an insertion position in the same array
+        if (target.type === 'layout-child' && target.childIndex != null && target.childIndex > removedIdx) {
+          target.childIndex--;
+        }
+      }
+    }
+
     if (target.type === 'nested-layout') {
       // Drop ON a nested layout (e.g. horizontal inside slider) -> insert inside that nested layout
       const targetParentLayout =
@@ -11955,7 +12002,7 @@ export class LayoutTab extends LitElement {
         }
 
         // Insert at specific position
-        const insertIndex = (target as any).childIndex || 0;
+        const insertIndex = (target as any).childIndex ?? 0;
         targetLayoutModule.modules.splice(insertIndex, 0, sourceModule);
 
         // Only remove from source AFTER successfully adding to target (if not from layout child)
@@ -12132,8 +12179,16 @@ export class LayoutTab extends LitElement {
     }
 
     if (target.type === 'column') {
-      // Insert at specific position within row
-      layout.rows[target.rowIndex].columns.splice(target.columnIndex || 0, 0, sourceColumn);
+      // Reorder: insert at specific position within row
+      let insertIdx = target.columnIndex ?? 0;
+      // If same row and source was before target, adjust for the removal
+      if (source.rowIndex === target.rowIndex && source.columnIndex < insertIdx) {
+        insertIdx--;
+      }
+      layout.rows[target.rowIndex].columns.splice(insertIdx, 0, sourceColumn);
+    } else if (target.type === 'row-inside') {
+      // Drop on row header — insert at the TOP of the row's columns
+      layout.rows[target.rowIndex].columns.splice(0, 0, sourceColumn);
     } else if (target.type === 'row') {
       // Add to end of target row
       layout.rows[target.rowIndex].columns.push(sourceColumn);
@@ -12198,6 +12253,24 @@ export class LayoutTab extends LitElement {
     // Remove from source
     sourceNestedLayout.modules.splice(source.nestedChildIndex, 1);
 
+    // After removing a nested-child, adjust target indices that reference
+    // the same nested layout's modules array to account for the shift.
+    const sameNestedParent =
+      target.rowIndex === source.rowIndex &&
+      target.columnIndex === source.columnIndex &&
+      target.moduleIndex === source.moduleIndex &&
+      target.layoutChildIndex === source.layoutChildIndex;
+    if (sameNestedParent) {
+      // deep-nested-child-target uses nestedChildIndex into the same array
+      if (target.nestedChildIndex != null && target.nestedChildIndex > source.nestedChildIndex) {
+        target.nestedChildIndex--;
+      }
+      // nested-child-target uses childIndex as insertion position in the same array
+      if (target.type === 'nested-child-target' && target.childIndex != null && target.childIndex > source.nestedChildIndex) {
+        target.childIndex--;
+      }
+    }
+
     // Add to target based on target type
     if (target.type === 'module' || target.type === 'column') {
       // Moving to a regular column
@@ -12234,6 +12307,21 @@ export class LayoutTab extends LitElement {
       const targetIndex =
         target.childIndex !== undefined ? target.childIndex : targetNestedLayout.modules.length;
       targetNestedLayout.modules.splice(targetIndex, 0, sourceModule);
+    } else if (target.type === 'nested-layout') {
+      // Moving into a nested layout (e.g. dropping on a nested layout header with 'inside')
+      const targetParentLayout =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      const targetNestedLayout =
+        targetParentLayout?.modules?.[(target as any).nestedLayoutIndex];
+      if (targetNestedLayout) {
+        if (!targetNestedLayout.modules) {
+          targetNestedLayout.modules = [];
+        }
+        targetNestedLayout.modules.push(sourceModule);
+      } else {
+        // Safety: target nested layout not found, restore source to prevent disappearance
+        sourceNestedLayout.modules.splice(source.nestedChildIndex, 0, sourceModule);
+      }
     } else if (target.type === 'deep-nested-child-target') {
       // Moving to a deep nested layout (level 3)
       const targetTopLayout =
@@ -12285,6 +12373,20 @@ export class LayoutTab extends LitElement {
 
     // Remove from source
     sourceDeepNestedLayout.modules.splice(source.deepNestedChildIndex, 1);
+
+    // After removing a deep-nested-child, adjust target indices that reference
+    // the same deep nested layout's modules array to account for the shift.
+    const sameDeepParent =
+      target.rowIndex === source.rowIndex &&
+      target.columnIndex === source.columnIndex &&
+      target.moduleIndex === source.moduleIndex &&
+      target.layoutChildIndex === source.layoutChildIndex &&
+      target.nestedChildIndex === source.nestedChildIndex;
+    if (sameDeepParent) {
+      if (target.type === 'deep-nested-child-target' && target.childIndex != null && target.childIndex > source.deepNestedChildIndex) {
+        target.childIndex--;
+      }
+    }
 
     // Add to target based on target type
     if (target.type === 'deep-nested-child-target') {
