@@ -29,18 +29,10 @@ interface RegisteredModule {
   registeredAt: number;
 }
 
-interface ViewPadding {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-}
-
 interface ViewNavLayer {
   viewContainer: HTMLElement;
   navLayer: HTMLElement;
   viewId: string;
-  basePadding?: ViewPadding;
   activeModuleKey?: string;
   activeModule?: RegisteredModule;
   mediaPlayerExpanded?: boolean;
@@ -172,6 +164,39 @@ class UcNavigationService {
 
       // Start observing after a short delay
       setTimeout(observeEditorDialogs, 1000);
+
+      // Watch HA shadow roots for dialogs, panel changes, and drawer so we can hide the navbar
+      const observeHaOverlays = () => {
+        const ha = document.querySelector('home-assistant') as HTMLElement & { shadowRoot?: ShadowRoot } | null;
+        const haRoot = ha?.shadowRoot;
+        if (!haRoot) {
+          setTimeout(observeHaOverlays, 2000);
+          return;
+        }
+
+        const observer = new MutationObserver(() => {
+          this.scheduleUpdate();
+        });
+
+        observer.observe(haRoot, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['open'],
+        });
+
+        const haMain = haRoot.querySelector('home-assistant-main');
+        const mainRoot = (haMain as HTMLElement & { shadowRoot?: ShadowRoot })?.shadowRoot;
+        if (mainRoot) {
+          observer.observe(mainRoot, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['open'],
+          });
+        }
+      };
+      setTimeout(observeHaOverlays, 2000);
     }
   }
 
@@ -364,6 +389,51 @@ class UcNavigationService {
   isEditModePreviewExpanded(): boolean {
     for (const layer of this.viewLayers.values()) {
       if (layer.editModePreviewExpanded) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Returns true when the navbar should be hidden because an HA overlay or
+   * non-Lovelace panel is active (dialogs, settings, automations, sidebar).
+   */
+  private isNavbarObscured(): boolean {
+    try {
+      const ha = document.querySelector('home-assistant') as HTMLElement & { shadowRoot?: ShadowRoot; hass?: any } | null;
+      const haRoot = ha?.shadowRoot;
+      if (!haRoot) return false;
+
+      // 1. Check if we're on a Lovelace dashboard panel
+      // Use HA's hass object which reliably tracks the current panel
+      const hass = ha?.hass;
+      if (hass?.panelUrl) {
+        const currentPanel = hass.panels?.[hass.panelUrl];
+        if (currentPanel?.component_name !== 'lovelace') {
+          return true; // Not on a dashboard (settings, automations, dev tools, etc.)
+        }
+      }
+
+      // 2. Check for open HA dialogs (date pickers, more-info, confirmations)
+      const dialogs = haRoot.querySelectorAll('ha-dialog');
+      for (const dialog of Array.from(dialogs)) {
+        const d = dialog as HTMLElement & { open?: boolean };
+        if (dialog.hasAttribute('open') || d.open) {
+          return true;
+        }
+      }
+
+      // 3. Check for open sidebar/drawer on mobile
+      const haMain = haRoot.querySelector('home-assistant-main');
+      const mainRoot = (haMain as HTMLElement & { shadowRoot?: ShadowRoot })?.shadowRoot;
+      const drawer = mainRoot?.querySelector('ha-drawer');
+      if (drawer) {
+        const d = drawer as HTMLElement & { open?: boolean };
+        if (drawer.hasAttribute('open') || d.open) {
+          return true;
+        }
+      }
+    } catch {
+      // Fail open - show navbar if detection fails
     }
     return false;
   }
@@ -563,21 +633,12 @@ class UcNavigationService {
     const navConfig = this.resolveNavigationConfig(moduleForRender, configForRender);
     const hass = registered.hass;
 
-    // Skip auto-padding in dashboard edit mode, but keep it when
-    // the card editor has an active preview override (user is editing the dock)
-    const isDashboardEditModeForPadding = (() => {
-      if (previewOverride) return false; // keep padding for live preview
-      try {
-        return new URLSearchParams(window.location.search).get('edit') === '1';
-      } catch {
-        return false;
-      }
-    })();
-    if (isDashboardEditModeForPadding) {
-      this.restorePadding(container, viewLayer);
-    } else {
-      this.applyAutoPadding(container, navConfig, hass);
+    // Hide navbar when HA overlay or non-Lovelace panel is active
+    if (this.isNavbarObscured()) {
+      viewLayer.navLayer.style.display = 'none';
+      return;
     }
+    viewLayer.navLayer.style.display = '';
 
     const template = this.renderNavigationTemplate(navConfig, registered, viewLayer);
     render(template, viewLayer.navLayer);
@@ -588,7 +649,6 @@ class UcNavigationService {
     if (!viewLayer) return;
 
     render(html``, viewLayer.navLayer);
-    this.restorePadding(container, viewLayer);
   }
 
   private ensureNavLayerForView(viewContainer: HTMLElement): ViewNavLayer {
@@ -655,7 +715,6 @@ class UcNavigationService {
     for (const [container, layer] of this.viewLayers.entries()) {
       if (layer.autohideTimer) clearTimeout(layer.autohideTimer);
       render(html``, layer.navLayer);
-      this.restorePadding(container, layer);
       layer.navLayer.remove();
     }
     this.viewLayers.clear();
@@ -745,9 +804,13 @@ class UcNavigationService {
     const baseStyles = this.buildBaseStyles(navModule.nav_style);
     const customStyles = navModule.nav_styles || '';
 
-    // Calculate offset styling for floating mode
-    const offset = deviceConfig.offset ?? 16;
-    const offsetStyle = mode === 'floating' ? this.getFloatingOffsetStyle(position, offset) : '';
+    // Calculate offset styling — applies to both docked and floating modes
+    const offset = deviceConfig.offset ?? (mode === 'floating' ? 16 : 0);
+    const offsetStyle = mode === 'floating' && offset > 0 ? this.getFloatingOffsetStyle(position, offset) : '';
+
+    // Icon spacing
+    const iconGap = navModule.nav_layout?.icon_gap;
+    const iconGapStyle = iconGap != null ? `--uc-nav-icon-gap: ${iconGap}px;` : '';
 
     // Alignment
     const alignment = deviceConfig.alignment || 'center';
@@ -815,6 +878,7 @@ class UcNavigationService {
           ? 'autohide-hidden'
           : ''} ${autohideEnabled ? 'autohide-enabled' : ''} style-${navModule.nav_style ||
         'uc_modern'}"
+        style="${iconGapStyle}"
       >
         ${isDashboardEditMode
           ? viewLayer.editModePreviewExpanded
@@ -825,7 +889,7 @@ class UcNavigationService {
                     ? ' has-dock-color'
                     : ''}"
                   style="${mode === 'docked'
-                    ? this.getDockedStyle(position, isDesktop)
+                    ? this.getDockedStyle(position, isDesktop, offset)
                     : offsetStyle} justify-content: ${alignment};${dockColor
                     ? ` --uc-nav-dock-color: ${dockColor}; --navbar-button-bg: rgba(255,255,255,0.12); --navbar-button-hover-bg: rgba(255,255,255,0.24); --navbar-button-active-bg: rgba(255,255,255,0.36); --navbar-icon-color: rgba(255,255,255,0.85); --navbar-icon-active-color: #fff;`
                     : ''}${iconColor
@@ -853,7 +917,7 @@ class UcNavigationService {
                   ? ' has-dock-color'
                   : ''}"
                 style="${mode === 'docked'
-                  ? this.getDockedStyle(position, isDesktop)
+                  ? this.getDockedStyle(position, isDesktop, offset)
                   : offsetStyle} justify-content: ${alignment};${dockColor
                   ? ` --uc-nav-dock-color: ${dockColor}; --navbar-button-bg: rgba(255,255,255,0.12); --navbar-button-hover-bg: rgba(255,255,255,0.24); --navbar-button-active-bg: rgba(255,255,255,0.36); --navbar-icon-color: rgba(255,255,255,0.85); --navbar-icon-active-color: #fff;`
                   : ''}${iconColor
@@ -2562,186 +2626,12 @@ class UcNavigationService {
     return window.innerWidth >= minWidth;
   }
 
-  private applyAutoPadding(
-    container: HTMLElement,
-    navModule: NavigationModule,
-    hass: HomeAssistant
-  ): void {
-    const layout = navModule.nav_layout;
-    const autoPadding = layout?.auto_padding;
-
-    // Remove any existing UC auto-padding styles first
-    this.removeAutoPaddingStyles();
-
-    if (autoPadding && autoPadding.enabled === false) {
-      const layer = this.viewLayers.get(container);
-      if (layer) {
-        this.restorePadding(container, layer);
-      }
-      return;
-    }
-
-    const layer = this.ensureNavLayerForView(container);
-    if (!layer.basePadding) {
-      const computed = getComputedStyle(container);
-      layer.basePadding = {
-        top: parseFloat(computed.paddingTop) || 0,
-        right: parseFloat(computed.paddingRight) || 0,
-        bottom: parseFloat(computed.paddingBottom) || 0,
-        left: parseFloat(computed.paddingLeft) || 0,
-      };
-    }
-
-    const isDesktop = this.isDesktop(navModule.nav_desktop);
-    const desktopPosition = navModule.nav_desktop?.position || 'bottom';
-    const mobilePosition = navModule.nav_mobile?.position || 'bottom';
-    const position = isDesktop ? desktopPosition : mobilePosition;
-
-    const desktopPx = autoPadding?.desktop_px ?? 100;
-    const mobilePx = autoPadding?.mobile_px ?? 80;
-    const mediaPx = autoPadding?.media_player_px ?? 100;
-
-    let paddingValue = isDesktop ? desktopPx : mobilePx;
-    const mediaVisible = this.isMediaPlayerVisible(navModule.nav_media_player, hass);
-    if (mediaVisible) {
-      paddingValue += mediaPx;
-    }
-
-    // Apply padding via CSS injection for better compatibility with HA layouts
-    // This targets multiple potential content containers to ensure padding works
-    this.injectAutoPaddingStyles(position, paddingValue);
-
-    // Also apply to the direct container for views that support it
-    const base = layer.basePadding;
-    const nextPadding: ViewPadding = {
-      top: base.top,
-      right: base.right,
-      bottom: base.bottom,
-      left: base.left,
-    };
-
-    switch (position) {
-      case 'top':
-        nextPadding.top = base.top + paddingValue;
-        break;
-      case 'bottom':
-        nextPadding.bottom = base.bottom + paddingValue;
-        break;
-      case 'left':
-        nextPadding.left = base.left + paddingValue;
-        break;
-      case 'right':
-        nextPadding.right = base.right + paddingValue;
-        break;
-      default:
-        nextPadding.bottom = base.bottom + paddingValue;
-        break;
-    }
-
-    container.style.paddingTop = `${nextPadding.top}px`;
-    container.style.paddingRight = `${nextPadding.right}px`;
-    container.style.paddingBottom = `${nextPadding.bottom}px`;
-    container.style.paddingLeft = `${nextPadding.left}px`;
-  }
-
-  private injectAutoPaddingStyles(position: string, paddingValue: number): void {
-    const styleId = 'uc-navigation-auto-padding-styles';
-
-    // Remove existing style tag if any
-    const existing = document.getElementById(styleId);
-    if (existing) {
-      existing.remove();
-    }
-
-    // Build padding CSS based on position
-    let paddingCss = '';
-    switch (position) {
-      case 'top':
-        paddingCss = `padding-top: ${paddingValue}px !important;`;
-        break;
-      case 'bottom':
-        paddingCss = `padding-bottom: ${paddingValue}px !important;`;
-        break;
-      case 'left':
-        paddingCss = `padding-left: ${paddingValue}px !important;`;
-        break;
-      case 'right':
-        paddingCss = `padding-right: ${paddingValue}px !important;`;
-        break;
-      default:
-        paddingCss = `padding-bottom: ${paddingValue}px !important;`;
-    }
-
-    // Create style tag targeting various HA content containers
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = `
-      /* UC Navigation Auto Padding */
-      /* Sections view content */
-      hui-sections-view {
-        ${paddingCss}
-        box-sizing: border-box;
-      }
-      /* Masonry view content */
-      hui-masonry-view {
-        ${paddingCss}
-        box-sizing: border-box;
-      }
-      /* Panel view content */
-      hui-panel-view {
-        ${paddingCss}
-        box-sizing: border-box;
-      }
-      /* Generic hui-view */
-      hui-view {
-        ${paddingCss}
-        box-sizing: border-box;
-      }
-      /* Sections view sections container */
-      hui-sections-view .container {
-        ${paddingCss}
-        box-sizing: border-box;
-      }
-    `;
-
-    document.head.appendChild(style);
-  }
-
-  private removeAutoPaddingStyles(): void {
-    const styleId = 'uc-navigation-auto-padding-styles';
-    const existing = document.getElementById(styleId);
-    if (existing) {
-      existing.remove();
-    }
-  }
-
-  private restorePadding(container: HTMLElement, layer: ViewNavLayer): void {
-    // Remove injected CSS styles
-    this.removeAutoPaddingStyles();
-
-    if (!layer.basePadding) return;
-    container.style.paddingTop = `${layer.basePadding.top}px`;
-    container.style.paddingRight = `${layer.basePadding.right}px`;
-    container.style.paddingBottom = `${layer.basePadding.bottom}px`;
-    container.style.paddingLeft = `${layer.basePadding.left}px`;
-  }
-
-  private isMediaPlayerVisible(
-    mediaPlayer: NavMediaPlayerConfig | undefined,
-    hass: HomeAssistant
-  ): boolean {
-    if (!mediaPlayer || !mediaPlayer.entity) return false;
-    const state = hass.states?.[mediaPlayer.entity];
-    if (!state) return false;
-    const defaultShow = state.state === 'playing' || state.state === 'paused';
-    return this.resolveBoolean(mediaPlayer.show, defaultShow, hass, {} as any, state);
-  }
-
-  private getDockedStyle(position: string, isDesktop: boolean): string {
+  private getDockedStyle(position: string, isDesktop: boolean, offset: number = 0): string {
+    const offsetMargin = offset > 0 ? ` margin-${position}: ${offset}px;` : '';
     if (position === 'left' || position === 'right') {
-      return `height: 100%; width: ${isDesktop ? '72px' : '64px'}; border-radius: 0;`;
+      return `height: 100%; width: ${isDesktop ? '72px' : '64px'}; border-radius: 0;${offsetMargin}`;
     }
-    return 'width: 100%; border-radius: 0;';
+    return `width: 100%; border-radius: 0;${offsetMargin}`;
   }
 
   /** Convert a CSS color string to rgba with a given alpha (for glass tinting) */
@@ -2971,7 +2861,7 @@ class UcNavigationService {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: var(--uc-nav-icon-gap, 8px);
         padding: 8px 10px;
         background-image: var(--uc-nav-dock-color, var(--navbar-background-color));
         background-color: var(--uc-nav-dock-color, var(--navbar-background-color));

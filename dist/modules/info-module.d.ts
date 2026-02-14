@@ -4,6 +4,7 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, InfoModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
+import '../components/uc-template-cheatsheet';
 export declare class UltraInfoModule extends BaseUltraModule {
     metadata: ModuleMetadata;
     private _templateService?;
@@ -58,4 +59,5 @@ export declare class UltraInfoModule extends BaseUltraModule {
      * @returns True if entity picture should be used
      */
     private _shouldUseEntityPicture;
+    private _getEntityAttributes;
 }

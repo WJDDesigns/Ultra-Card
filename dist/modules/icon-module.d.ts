@@ -4,6 +4,7 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, IconModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
+import '../components/uc-template-cheatsheet';
 export declare class UltraIconModule extends BaseUltraModule {
     metadata: ModuleMetadata;
     private _previewCollapsed;

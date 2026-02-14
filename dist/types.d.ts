@@ -316,6 +316,8 @@ export interface InfoEntityConfig {
     content_distribution?: 'normal' | 'space-between' | 'space-around' | 'space-evenly';
     enable_hover_effect?: boolean;
     hover_background_color?: string;
+    /** Display an entity attribute instead of state */
+    attribute?: string;
 }
 export interface InfoModule extends BaseModule {
     type: 'info';
@@ -626,6 +628,8 @@ export interface IconConfig {
     active_state?: string;
     inactive_attribute?: string;
     active_attribute?: string;
+    /** Simple attribute display override (shows same attribute for both active/inactive) */
+    display_attribute?: string;
     custom_inactive_state_text?: string;
     custom_active_state_text?: string;
     custom_inactive_name_text?: string;
@@ -2205,6 +2209,8 @@ export interface NavAutoPaddingConfig {
 }
 export interface NavLayoutConfig {
     auto_padding?: NavAutoPaddingConfig;
+    /** Gap between icons in the dock (px). Default 8. */
+    icon_gap?: number;
 }
 export interface NavHapticConfig {
     url?: boolean;

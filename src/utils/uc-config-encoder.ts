@@ -195,7 +195,9 @@ export class UcConfigEncoder {
   static async copyToClipboard(config: UltraCardConfig): Promise<void> {
     try {
       const encoded = this.encode(config);
-      await navigator.clipboard.writeText(encoded);
+      const clipboard = (navigator as Navigator).clipboard;
+      if (!clipboard) throw new Error('Clipboard API not available');
+      await clipboard.writeText(encoded);
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
       throw new Error('Failed to copy config to clipboard');
@@ -207,7 +209,9 @@ export class UcConfigEncoder {
    */
   static async pasteFromClipboard(): Promise<UltraCardConfig> {
     try {
-      const text = await navigator.clipboard.readText();
+      const clipboard = (navigator as Navigator).clipboard;
+      if (!clipboard) throw new Error('Clipboard API not available');
+      const text = await clipboard.readText();
 
       if (!text) {
         throw new Error('Clipboard is empty');

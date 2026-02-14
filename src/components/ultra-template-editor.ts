@@ -430,6 +430,20 @@ export class UltraTemplateEditor extends LitElement {
     );
   }
 
+  /**
+   * Insert text at the current cursor position in the editor.
+   * @param text Text to insert
+   */
+  public insertAtCursor(text: string): void {
+    if (!this._editor) return;
+    const cursor = this._editor.state.selection.main.head;
+    this._editor.dispatch({
+      changes: { from: cursor, insert: text },
+      selection: { anchor: cursor + text.length, head: cursor + text.length },
+    });
+    this._editor.focus();
+  }
+
   public focus(): void {
     if (this._editor) {
       // Prevent scroll-into-view behavior when focusing

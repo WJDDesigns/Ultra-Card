@@ -130,14 +130,7 @@ export class UltraNavigationModule extends BaseUltraModule {
         show_labels: false,
         position: 'bottom',
       },
-      nav_layout: {
-        auto_padding: {
-          enabled: true,
-          desktop_px: 100,
-          mobile_px: 80,
-          media_player_px: 100,
-        },
-      },
+      nav_layout: {},
       nav_haptic: {
         url: false,
         tap_action: true,
@@ -600,46 +593,42 @@ export class UltraNavigationModule extends BaseUltraModule {
           ]
         )}
 
-        <!-- Desktop Offset Slider (only for floating mode) -->
-        ${navModule.nav_desktop?.mode === 'floating'
-          ? html`
-              <div class="field-group" style="margin: 16px 0; padding: 0 16px;">
-                <div>
-                  <div
-                    class="field-title"
-                    style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-                  >
-                    Desktop Offset
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px; color: var(--secondary-text-color);"
-                  >
-                    Distance from screen edge in floating mode (px).
-                  </div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
-                  <ha-slider
-                    style="flex: 1;"
-                    .min=${0}
-                    .max=${100}
-                    .step=${1}
-                    .value=${navModule.nav_desktop?.offset ?? 16}
-                    @change=${(e: Event) =>
-                      updateModule({
-                        nav_desktop: {
-                          ...navModule.nav_desktop,
-                          offset: parseInt((e.target as any).value, 10),
-                        },
-                      })}
-                  ></ha-slider>
-                  <span style="min-width: 40px; text-align: center; font-weight: 600;">
-                    ${navModule.nav_desktop?.offset ?? 16}px
-                  </span>
-                </div>
-              </div>
-            `
-          : ''}
+        <!-- Desktop Offset Slider -->
+        <div class="field-group" style="margin: 16px 0; padding: 0 16px;">
+          <div>
+            <div
+              class="field-title"
+              style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
+            >
+              Desktop Offset
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px; color: var(--secondary-text-color);"
+            >
+              Distance from screen edge (px). Pushes the dock away from the edge.
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+            <ha-slider
+              style="flex: 1;"
+              .min=${0}
+              .max=${100}
+              .step=${1}
+              .value=${navModule.nav_desktop?.offset ?? (navModule.nav_desktop?.mode === 'floating' ? 16 : 0)}
+              @change=${(e: Event) =>
+                updateModule({
+                  nav_desktop: {
+                    ...navModule.nav_desktop,
+                    offset: parseInt((e.target as any).value, 10),
+                  },
+                })}
+            ></ha-slider>
+            <span style="min-width: 40px; text-align: center; font-weight: 600;">
+              ${navModule.nav_desktop?.offset ?? (navModule.nav_desktop?.mode === 'floating' ? 16 : 0)}px
+            </span>
+          </div>
+        </div>
 
         <!-- Mobile Configuration Section -->
         ${this.renderSettingsSection(
@@ -735,122 +724,79 @@ export class UltraNavigationModule extends BaseUltraModule {
           ]
         )}
 
-        <!-- Mobile Offset Slider (only for floating mode) -->
-        ${navModule.nav_mobile?.mode === 'floating'
-          ? html`
-              <div class="field-group" style="margin: 16px 0; padding: 0 16px;">
-                <div>
-                  <div
-                    class="field-title"
-                    style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-                  >
-                    Mobile Offset
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px; color: var(--secondary-text-color);"
-                  >
-                    Distance from screen edge in floating mode (px).
-                  </div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
-                  <ha-slider
-                    style="flex: 1;"
-                    .min=${0}
-                    .max=${100}
-                    .step=${1}
-                    .value=${navModule.nav_mobile?.offset ?? 16}
-                    @change=${(e: Event) =>
-                      updateModule({
-                        nav_mobile: {
-                          ...navModule.nav_mobile,
-                          offset: parseInt((e.target as any).value, 10),
-                        },
-                      })}
-                  ></ha-slider>
-                  <span style="min-width: 40px; text-align: center; font-weight: 600;">
-                    ${navModule.nav_mobile?.offset ?? 16}px
-                  </span>
-                </div>
-              </div>
-            `
-          : ''}
+        <!-- Mobile Offset Slider -->
+        <div class="field-group" style="margin: 16px 0; padding: 0 16px;">
+          <div>
+            <div
+              class="field-title"
+              style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
+            >
+              Mobile Offset
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px; color: var(--secondary-text-color);"
+            >
+              Distance from screen edge (px). Pushes the dock away from the edge.
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+            <ha-slider
+              style="flex: 1;"
+              .min=${0}
+              .max=${100}
+              .step=${1}
+              .value=${navModule.nav_mobile?.offset ?? (navModule.nav_mobile?.mode === 'floating' ? 16 : 0)}
+              @change=${(e: Event) =>
+                updateModule({
+                  nav_mobile: {
+                    ...navModule.nav_mobile,
+                    offset: parseInt((e.target as any).value, 10),
+                  },
+                })}
+            ></ha-slider>
+            <span style="min-width: 40px; text-align: center; font-weight: 600;">
+              ${navModule.nav_mobile?.offset ?? (navModule.nav_mobile?.mode === 'floating' ? 16 : 0)}px
+            </span>
+          </div>
+        </div>
 
-        <!-- Layout & Padding Section -->
-        ${this.renderSettingsSection('LAYOUT & PADDING', 'Configure spacing and layout behavior.', [
-          {
-            title: 'Auto Padding',
-            description: 'Automatically pad the dashboard to prevent content overlap.',
-            hass,
-            data: { enabled: navModule.nav_layout?.auto_padding?.enabled ?? true },
-            schema: [UcFormUtils.boolean('enabled')],
-            onChange: (e: CustomEvent) => {
-              updateModule({
-                nav_layout: {
-                  ...navModule.nav_layout,
-                  auto_padding: {
-                    ...(navModule.nav_layout?.auto_padding || {}),
-                    enabled: e.detail.value.enabled,
+        <!-- Icon Spacing Section -->
+        <div class="field-group" style="margin: 16px 0; padding: 0 16px;">
+          <div>
+            <div
+              class="field-title"
+              style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
+            >
+              Icon Spacing
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px; color: var(--secondary-text-color);"
+            >
+              Gap between icons in the dock (px).
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+            <ha-slider
+              style="flex: 1;"
+              .min=${0}
+              .max=${32}
+              .step=${1}
+              .value=${navModule.nav_layout?.icon_gap ?? 8}
+              @change=${(e: Event) =>
+                updateModule({
+                  nav_layout: {
+                    ...navModule.nav_layout,
+                    icon_gap: parseInt((e.target as any).value, 10),
                   },
-                },
-              });
-            },
-          },
-          {
-            title: 'Desktop Padding (px)',
-            description: 'Padding applied when navbar is visible on desktop.',
-            hass,
-            data: { desktop_px: navModule.nav_layout?.auto_padding?.desktop_px ?? 100 },
-            schema: [UcFormUtils.number('desktop_px', 0, 400)],
-            onChange: (e: CustomEvent) => {
-              updateModule({
-                nav_layout: {
-                  ...navModule.nav_layout,
-                  auto_padding: {
-                    ...(navModule.nav_layout?.auto_padding || {}),
-                    desktop_px: Number(e.detail.value.desktop_px),
-                  },
-                },
-              });
-            },
-          },
-          {
-            title: 'Mobile Padding (px)',
-            description: 'Padding applied when navbar is visible on mobile.',
-            hass,
-            data: { mobile_px: navModule.nav_layout?.auto_padding?.mobile_px ?? 80 },
-            schema: [UcFormUtils.number('mobile_px', 0, 400)],
-            onChange: (e: CustomEvent) => {
-              updateModule({
-                nav_layout: {
-                  ...navModule.nav_layout,
-                  auto_padding: {
-                    ...(navModule.nav_layout?.auto_padding || {}),
-                    mobile_px: Number(e.detail.value.mobile_px),
-                  },
-                },
-              });
-            },
-          },
-          {
-            title: 'Media Player Padding (px)',
-            description: 'Extra padding when media player widget is visible.',
-            hass,
-            data: { media_player_px: navModule.nav_layout?.auto_padding?.media_player_px ?? 100 },
-            schema: [UcFormUtils.number('media_player_px', 0, 400)],
-            onChange: (e: CustomEvent) => {
-              updateModule({
-                nav_layout: {
-                  ...navModule.nav_layout,
-                  auto_padding: {
-                    ...(navModule.nav_layout?.auto_padding || {}),
-                    media_player_px: Number(e.detail.value.media_player_px),
-                  },
-                },
-              });
-            },
-          },
-        ])}
+                })}
+            ></ha-slider>
+            <span style="min-width: 40px; text-align: center; font-weight: 600;">
+              ${navModule.nav_layout?.icon_gap ?? 8}px
+            </span>
+          </div>
+        </div>
 
         <!-- Auto-Hide Section -->
         <div class="settings-section">

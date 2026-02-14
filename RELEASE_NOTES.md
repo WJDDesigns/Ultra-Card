@@ -1,5 +1,19 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.5.0-beta10.1
+
+### 🚀 New Features
+
+- **Added Attribute display in icon/info modules** - Enhanced module functionality for better user experience
+- **Added Cheatsheet button where Unified template displays with copy support** - Enhanced template processing and dynamic content evaluation
+
+### 🐛 Bug Fixes
+
+- **Fixed Bideo Background not displaying** - Corrected behavior for more reliable operation
+- **Fixed Navigation module covering up UI and added offset controls** - Enhanced module functionality for better user experience
+
+---
+
 ## Version 2.5.0-beta8
 
 ### 🔧 Improvements
