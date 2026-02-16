@@ -966,6 +966,8 @@ export interface PopupModule extends BaseModule {
     trigger_alignment?: 'left' | 'center' | 'right';
     trigger_button_full_width?: boolean;
     trigger_image_full_width?: boolean;
+    trigger_icon_size?: number;
+    trigger_icon_color?: string;
     layout?: 'default' | 'full_screen' | 'left_panel' | 'right_panel' | 'top_panel' | 'bottom_panel';
     animation?: 'fade' | 'scale_up' | 'scale_down' | 'slide_top' | 'slide_left' | 'slide_right' | 'slide_bottom';
     popup_width?: string;

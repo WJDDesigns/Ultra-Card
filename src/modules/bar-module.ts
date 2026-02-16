@@ -728,32 +728,18 @@ export class UltraBarModule extends BaseUltraModule {
                           ],
                           onChange: (e: CustomEvent) => updateModule(e.detail.value),
                         },
-                        {
-                          title: localize(
-                            'editor.bar.time_progress_config.update_interval',
-                            lang,
-                            'Update Interval (ms)'
-                          ),
-                          description: localize(
-                            'editor.bar.time_progress_config.update_interval_desc',
-                            lang,
-                            'How often to update the progress bar in milliseconds. Default: 1000 (1 second). Lower values = smoother but more CPU usage.'
-                          ),
-                          hass,
-                          data: {
-                            time_progress_update_interval:
-                              (barModule as any).time_progress_update_interval || 1000,
-                          },
-                          schema: [
-                            this.numberField('time_progress_update_interval', 100, 10000, 100),
-                          ],
-                          onChange: (e: CustomEvent) =>
-                            updateModule({
-                              time_progress_update_interval:
-                                e.detail.value.time_progress_update_interval,
-                            }),
-                        },
                       ]
+                    )}
+                    ${this.renderSliderField(
+                      localize('editor.bar.time_progress_config.update_interval', lang, 'Update Interval (ms)'),
+                      localize('editor.bar.time_progress_config.update_interval_desc', lang, 'How often to update the progress bar in milliseconds. Default: 1000 (1 second). Lower values = smoother but more CPU usage.'),
+                      (barModule as any).time_progress_update_interval || 1000,
+                      1000,
+                      100,
+                      10000,
+                      100,
+                      (value: number) => updateModule({ time_progress_update_interval: value }),
+                      'ms'
                     )}
                   `
                 )
@@ -6773,6 +6759,7 @@ export class UltraBarModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
       .bar-module-preview {
         display: block; /* ensure bar occupies width of its container */
         width: 100%;

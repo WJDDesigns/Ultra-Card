@@ -548,13 +548,16 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         )}
 
         <!-- Refresh Interval -->
-        ${this.renderFieldSection(
+        ${this.renderSliderField(
           localize('editor.sports.refresh_interval', lang, 'Refresh Interval (minutes)'),
           localize('editor.sports.refresh_interval_desc', lang, 'How often to refresh the data (1-60 minutes)'),
-          hass,
-          { refresh_interval: module.refresh_interval || 5 },
-          [this.numberField('refresh_interval', 1, 60)],
-          (e: CustomEvent) => updateModule({ refresh_interval: e.detail.value.refresh_interval })
+          module.refresh_interval || 5,
+          5,
+          1,
+          60,
+          1,
+          (value: number) => updateModule({ refresh_interval: value }),
+          'min'
         )}
       </div>
     `;
@@ -2419,6 +2422,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
       .sports-module-container {
         width: 100%;
       }

@@ -651,28 +651,76 @@ export class GlobalActionsTab extends LitElement {
                 </div>
                 <div class="conditional-fields-content" style="padding: 16px;">
                   <!-- Duration Field -->
-                  <div style="margin-bottom: 16px;">
+                  <div class="field-container" style="margin-bottom: 16px;">
                     <div
                       class="field-title"
                       style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
                     >
-                      ${localize('editor.hover_effects.duration', lang, 'Duration (ms)')}
+                      ${localize('editor.hover_effects.duration', lang, 'Duration')} (${hoverEffect.duration || 300}ms)
                     </div>
-                    ${UcFormUtils.renderForm(
-                      this.hass,
-                      { duration: hoverEffect.duration || 300 },
-                      [UcFormUtils.number('duration', 100, 2000, 50)],
-                      (e: CustomEvent) => {
-                        const next = e.detail.value.duration;
-                        const current = hoverEffect.duration || 300;
-                        if (next === current) return;
-                        updateHoverEffect({ duration: next });
-                        setTimeout(() => {
-                          this._triggerPreviewUpdate();
-                        }, 50);
-                      },
-                      false
-                    )}
+                    <div
+                      class="gap-control-container"
+                      style="display: flex; align-items: center; gap: 12px;"
+                    >
+                      <input
+                        type="range"
+                        class="gap-slider"
+                        min="100"
+                        max="2000"
+                        step="50"
+                        .value="${String(hoverEffect.duration || 300)}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          updateHoverEffect({ duration: Number(target.value) });
+                          setTimeout(() => {
+                            this._triggerPreviewUpdate();
+                          }, 50);
+                        }}
+                      />
+                      <input
+                        type="number"
+                        class="gap-input"
+                        min="100"
+                        max="2000"
+                        step="50"
+                        .value="${String(hoverEffect.duration || 300)}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const val = Number(target.value);
+                          if (!isNaN(val)) {
+                            updateHoverEffect({ duration: val });
+                            setTimeout(() => {
+                              this._triggerPreviewUpdate();
+                            }, 50);
+                          }
+                        }}
+                        @keydown=${(e: KeyboardEvent) => {
+                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            const target = e.target as HTMLInputElement;
+                            const currentValue = Number(target.value) || 300;
+                            const increment = e.key === 'ArrowUp' ? 50 : -50;
+                            const newValue = Math.max(100, Math.min(2000, currentValue + increment));
+                            updateHoverEffect({ duration: newValue });
+                            setTimeout(() => {
+                              this._triggerPreviewUpdate();
+                            }, 50);
+                          }
+                        }}
+                      />
+                      <button
+                        class="reset-btn"
+                        @click=${() => {
+                          updateHoverEffect({ duration: 300 });
+                          setTimeout(() => {
+                            this._triggerPreviewUpdate();
+                          }, 50);
+                        }}
+                        title="Reset to default (300)"
+                      >
+                        <ha-icon icon="mdi:refresh"></ha-icon>
+                      </button>
+                    </div>
                   </div>
 
                   <!-- Timing Function Field -->
@@ -821,6 +869,108 @@ export class GlobalActionsTab extends LitElement {
 
       .field-container {
         margin-bottom: 16px;
+      }
+
+      /* Gap control styles for sliders */
+      .gap-control-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .gap-slider {
+        flex: 1;
+        height: 6px;
+        background: var(--divider-color);
+        border-radius: 3px;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .gap-slider::-webkit-slider-thumb {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider:hover {
+        background: var(--primary-color);
+        opacity: 0.7;
+      }
+
+      .gap-slider:hover::-webkit-slider-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-slider:hover::-moz-range-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-input {
+        width: 48px !important;
+        max-width: 48px !important;
+        min-width: 48px !important;
+        padding: 4px 6px !important;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        text-align: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        box-sizing: border-box;
+      }
+
+      .gap-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+      }
+
+      .reset-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .reset-btn:hover {
+        background: var(--primary-color);
+        color: var(--text-primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .reset-btn ha-icon {
+        font-size: 16px;
       }
     `;
   }

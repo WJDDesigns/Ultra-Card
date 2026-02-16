@@ -903,6 +903,7 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
       .animated-weather-module-container {
         padding: 0;
         position: relative;

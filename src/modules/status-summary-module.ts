@@ -484,20 +484,20 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
             ],
             (e: CustomEvent) => updateModule({ sort_direction: e.detail.value.sort_direction })
           )}
-          ${UcFormUtils.renderFieldSection(
+          ${this.renderSliderField(
             localize('editor.status_summary.max_items_to_show', lang, 'Max Items to Show'),
             localize(
               'editor.status_summary.max_items_to_show_desc',
               lang,
               'Maximum number of entities to display. Set to 0 for unlimited.'
             ),
-            hass,
-            { max_items_to_show: summaryModule.max_items_to_show || 50 },
-            [UcFormUtils.number('max_items_to_show', 0, 1000, 1)],
-            (e: CustomEvent) => {
-              const value = e.detail.value.max_items_to_show;
-              updateModule({ max_items_to_show: value === 0 ? undefined : value });
-            }
+            summaryModule.max_items_to_show || 50,
+            50,
+            0,
+            1000,
+            1,
+            (value: number) => updateModule({ max_items_to_show: value === 0 ? undefined : value }),
+            ''
           )}
         </div>
 
@@ -791,7 +791,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
             ${localize('editor.status_summary.time_filtering', lang, 'TIME FILTERING')}
           </div>
 
-          ${UcFormUtils.renderFieldSection(
+          ${this.renderSliderField(
             localize(
               'editor.status_summary.max_time_since_change',
               lang,
@@ -802,13 +802,13 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
               lang,
               "Hide entities that haven't changed in this many minutes. Leave empty for no limit."
             ),
-            hass,
-            { max_time_since_change: summaryModule.max_time_since_change || '' },
-            [UcFormUtils.number('max_time_since_change', 0, 10080, 1)],
-            (e: CustomEvent) => {
-              const value = e.detail.value.max_time_since_change;
-              updateModule({ max_time_since_change: value === '' ? undefined : value });
-            }
+            summaryModule.max_time_since_change || 0,
+            0,
+            0,
+            10080,
+            1,
+            (value: number) => updateModule({ max_time_since_change: value === 0 ? undefined : value }),
+            'min'
           )}
         </div>
 
@@ -818,31 +818,37 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
             ${localize('editor.status_summary.layout', lang, 'LAYOUT')}
           </div>
 
-          ${UcFormUtils.renderFieldSection(
+          ${this.renderSliderField(
             localize('editor.status_summary.row_height', lang, 'Row Height (px)'),
             localize(
               'editor.status_summary.row_height_desc',
               lang,
               'Height of each entity row in pixels.'
             ),
-            hass,
-            { row_height: summaryModule.row_height || 40 },
-            [UcFormUtils.number('row_height', 20, 100, 1)],
-            (e: CustomEvent) => updateModule({ row_height: e.detail.value.row_height })
+            summaryModule.row_height || 40,
+            40,
+            20,
+            100,
+            1,
+            (value: number) => updateModule({ row_height: value }),
+            'px'
           )}
-          ${UcFormUtils.renderFieldSection(
+          ${this.renderSliderField(
             localize('editor.status_summary.row_gap', lang, 'Row Gap (px)'),
             localize(
               'editor.status_summary.row_gap_desc',
               lang,
               'Gap between entity rows in pixels.'
             ),
-            hass,
-            { row_gap: summaryModule.row_gap || 4 },
-            [UcFormUtils.number('row_gap', 0, 20, 1)],
-            (e: CustomEvent) => updateModule({ row_gap: e.detail.value.row_gap })
+            summaryModule.row_gap || 4,
+            4,
+            0,
+            20,
+            1,
+            (value: number) => updateModule({ row_gap: value }),
+            'px'
           )}
-          ${UcFormUtils.renderFieldSection(
+          ${this.renderSliderField(
             localize(
               'editor.status_summary.max_entity_name_length',
               lang,
@@ -853,11 +859,13 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
               lang,
               'Maximum number of characters to display for entity names before truncating.'
             ),
-            hass,
-            { max_entity_name_length: summaryModule.max_entity_name_length || 30 },
-            [UcFormUtils.number('max_entity_name_length', 10, 100, 1)],
-            (e: CustomEvent) =>
-              updateModule({ max_entity_name_length: e.detail.value.max_entity_name_length })
+            summaryModule.max_entity_name_length || 30,
+            30,
+            10,
+            100,
+            1,
+            (value: number) => updateModule({ max_entity_name_length: value }),
+            ''
           )}
           ${this.renderSettingsSection('', '', [
             {
@@ -1877,6 +1885,10 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
         window.dispatchEvent(new CustomEvent('ultra-card-module-update'));
       }
     }, 50);
+  }
+
+  getStyles(): string {
+    return `${BaseUltraModule.getSliderStyles()}`;
   }
 
   // Preview rendering

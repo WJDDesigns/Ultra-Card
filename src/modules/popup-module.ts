@@ -106,6 +106,8 @@ export class UltraPopupModule extends BaseUltraModule {
       trigger_alignment: 'center',
       trigger_button_full_width: false,
       trigger_image_full_width: false,
+      trigger_icon_size: 24,
+      trigger_icon_color: '',
 
       // Layout settings
       layout: 'default',
@@ -367,19 +369,19 @@ export class UltraPopupModule extends BaseUltraModule {
                 </div>
 
                 <!-- Close Button Size -->
-                ${this.renderFieldSection(
+                ${this.renderSliderField(
                   localize('editor.popup.design.close_button_size', lang, 'Close Button Size'),
                   localize(
                     'editor.popup.design.close_button_size_desc',
                     lang,
                     'Size of the close button icon (in pixels).'
                   ),
-                  hass,
-                  { close_button_size: popupModule.close_button_size || 32 },
-                  [this.numberField('close_button_size', 16, 64, 1)],
-                  (e: CustomEvent) => {
-                    updateModule({ close_button_size: e.detail.value.close_button_size });
-                  }
+                  popupModule.close_button_size || 32,
+                  32,
+                  16,
+                  64,
+                  1,
+                  (value: number) => updateModule({ close_button_size: value })
                 )}
 
                 <!-- Close Button Icon -->
@@ -874,6 +876,43 @@ export class UltraPopupModule extends BaseUltraModule {
                               }, 50);
                             }
                           )}
+
+                          <!-- Trigger Icon Size -->
+                          ${this.renderSliderField(
+                            localize('editor.popup.trigger.icon_size', lang, 'Trigger Icon Size'),
+                            localize(
+                              'editor.popup.trigger.icon_size_desc',
+                              lang,
+                              'Size of the trigger icon in pixels.'
+                            ),
+                            popupModule.trigger_icon_size || 24,
+                            24,
+                            10,
+                            100,
+                            1,
+                            (value: number) => updateModule({ trigger_icon_size: value })
+                          )}
+
+                          <!-- Trigger Icon Color -->
+                          <div style="margin-bottom: 16px;">
+                            <ultra-color-picker
+                              .label=${localize(
+                                'editor.popup.trigger.icon_color',
+                                lang,
+                                'Trigger Icon Color'
+                              )}
+                              .value=${popupModule.trigger_icon_color || ''}
+                              .defaultValue=${''}
+                              .hass=${hass}
+                              @value-changed=${(e: CustomEvent) => {
+                                const value = e.detail.value;
+                                updateModule({ trigger_icon_color: value });
+                                setTimeout(() => {
+                                  this.triggerPreviewUpdate();
+                                }, 50);
+                              }}
+                            ></ultra-color-picker>
+                          </div>
                         `
                       )}
                     </div>
@@ -1378,7 +1417,7 @@ export class UltraPopupModule extends BaseUltraModule {
                     'Timer Configuration'
                   ),
                   html`
-                    ${this.renderFieldSection(
+                    ${this.renderSliderField(
                       localize(
                         'editor.popup.auto_close_timer.seconds',
                         lang,
@@ -1389,12 +1428,13 @@ export class UltraPopupModule extends BaseUltraModule {
                         lang,
                         'Number of seconds before the popup automatically closes.'
                       ),
-                      hass,
-                      { auto_close_timer_seconds: popupModule.auto_close_timer_seconds || 30 },
-                      [this.numberField('auto_close_timer_seconds', 1, 300, 1)],
-                      (e: CustomEvent) => {
-                        updateModule(e.detail.value);
-                      }
+                      popupModule.auto_close_timer_seconds || 30,
+                      30,
+                      1,
+                      300,
+                      1,
+                      (value: number) => updateModule({ auto_close_timer_seconds: value }),
+                      's'
                     )}
                   `
                 )}
@@ -2727,6 +2767,8 @@ export class UltraPopupModule extends BaseUltraModule {
         }
       } else if (triggerType === 'icon') {
         const triggerIcon = popupModule.trigger_icon || 'mdi:information';
+        const triggerIconSize = popupModule.trigger_icon_size || 24;
+        const triggerIconColor = popupModule.trigger_icon_color || 'var(--primary-color)';
         triggerElement = html`
           <ha-icon
             class="swiper-no-swiping popup-trigger"
@@ -2737,7 +2779,7 @@ export class UltraPopupModule extends BaseUltraModule {
               e.stopPropagation();
               handleTriggerClick(e);
             }}
-            style="--mdc-icon-size: 48px; cursor: pointer; color: var(--primary-color); transition: transform 0.2s ease; touch-action: manipulation; pointer-events: auto;"
+            style="--mdc-icon-size: ${triggerIconSize}px; cursor: pointer; color: ${triggerIconColor}; transition: transform 0.2s ease; touch-action: manipulation; pointer-events: auto;"
             @mouseover=${(e: Event) => {
               const target = e.target as HTMLElement;
               target.style.transform = 'scale(1.1)';
@@ -3115,6 +3157,9 @@ export class UltraPopupModule extends BaseUltraModule {
         </style>
         <div
           class="ultra-popup-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="${(titleText || 'Popup').trim() || 'Popup'}"
           @click=${handleOverlayClick}
           style="
             position: fixed;
@@ -3480,5 +3525,11 @@ export class UltraPopupModule extends BaseUltraModule {
       window.clearTimeout(timerId);
       popupTimers.delete(popupKey);
     }
+  }
+
+  getStyles(): string {
+    return `
+      ${BaseUltraModule.getSliderStyles()}
+    `;
   }
 }

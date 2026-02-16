@@ -213,15 +213,20 @@ export class UltraClimateModule extends BaseUltraModule {
       )}
 
       <!-- Dial Configuration -->
-      ${this.renderSettingsSection('Dial Configuration', 'Customize the circular dial appearance', [
-        {
-          title: 'Dial Size',
-          description: 'Diameter of the circular dial in pixels (200-400)',
-          hass,
-          data: { dial_size: climateModule.dial_size || 280 },
-          schema: [this.numberField('dial_size', 200, 400, 10)],
-          onChange: (e: CustomEvent) => updateModule({ dial_size: e.detail.value.dial_size }),
-        },
+      <!-- Dial Configuration -->
+      ${this.renderSliderField(
+        'Dial Size',
+        'Diameter of the circular dial in pixels (200-400)',
+        climateModule.dial_size || 280,
+        280,
+        200,
+        400,
+        10,
+        (value: number) => updateModule({ dial_size: value }),
+        'px'
+      )}
+
+      ${this.renderSettingsSection('', '', [
         {
           title: 'Temperature Unit',
           description: 'Display unit for temperature (auto-detects from entity)',
@@ -237,16 +242,19 @@ export class UltraClimateModule extends BaseUltraModule {
           onChange: (e: CustomEvent) =>
             updateModule({ temperature_unit: e.detail.value.temperature_unit }),
         },
-        {
-          title: 'Control Button Size',
-          description: 'Size of the +/- temperature control buttons (24-60px)',
-          hass,
-          data: { temp_control_size: climateModule.temp_control_size || 32 },
-          schema: [this.numberField('temp_control_size', 24, 60, 2)],
-          onChange: (e: CustomEvent) =>
-            updateModule({ temp_control_size: e.detail.value.temp_control_size }),
-        },
       ])}
+
+      ${this.renderSliderField(
+        'Control Button Size',
+        'Size of the +/- temperature control buttons (24-60px)',
+        climateModule.temp_control_size || 32,
+        32,
+        24,
+        60,
+        2,
+        (value: number) => updateModule({ temp_control_size: value }),
+        'px'
+      )}
 
       <!-- Colors -->
       <div class="settings-section">
@@ -1375,6 +1383,7 @@ export class UltraClimateModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
       /* Climate Module Container */
       .climate-module-container {
         display: flex;

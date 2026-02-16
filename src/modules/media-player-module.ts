@@ -191,13 +191,16 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       ${mp.layout === 'card'
         ? html`
             <div style="margin-top: 8px; margin-bottom: 16px;">
-              ${this.renderFieldSection(
+              ${this.renderSliderField(
                 'Album Art Size',
                 'Size of the album art in pixels (80-400)',
-                hass,
-                { card_size: mp.card_size || 280 },
-                [this.numberField('card_size', 80, 400, 10)],
-                (e: CustomEvent) => updateModule({ card_size: e.detail.value.card_size })
+                mp.card_size || 280,
+                280,
+                80,
+                400,
+                10,
+                (value: number) => updateModule({ card_size: value }),
+                'px'
               )}
             </div>
           `
@@ -1586,6 +1589,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
       /* Media Player Module Styles */
       .media-player-container {
         position: relative;

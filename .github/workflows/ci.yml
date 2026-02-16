@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, master, develop]
+  push:
+    branches: [main, master, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test:run
+
+      - name: Build
+        run: |
+          npm run prebuild
+          npm run build
+
+      - name: Bundle size check
+        run: |
+          SIZE=$(stat -c%s dist/ultra-card.js)
+          echo "Bundle size: $SIZE bytes"
+          if [ "$SIZE" -gt 8388608 ]; then
+            echo "::warning::Bundle size ($SIZE bytes) exceeds 8MB. Consider lazy-loading more modules."
+          fi

@@ -530,6 +530,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
       .animated-forecast-module-container {
         padding: 0;
         width: 100%;

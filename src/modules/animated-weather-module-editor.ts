@@ -5,6 +5,7 @@ import { TemplateResult, html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { AnimatedWeatherModule, UltraCardConfig, CardModule } from '../types';
 import { localize } from '../localize/localize';
+import { BaseUltraModule } from './base-module';
 
 // Item metadata
 interface WeatherItemMeta {
@@ -227,13 +228,16 @@ export function renderAnimatedWeatherModuleEditor(
               <div class="accordion-content">
                 <!-- Size Control -->
                 <div class="control-row">
-                  <div class="control-label">Size (px)</div>
-                  ${context.renderUcForm(
-                    hass,
-                    { [sizeKey]: weatherModule[sizeKey] || (column === 'left' ? 14 : 16) },
-                    [context.numberField(sizeKey as string, 0, 128, 1)],
-                    (e: CustomEvent) => updateModule(e.detail.value),
-                    false
+                  ${context.renderSliderField(
+                    'Size',
+                    '',
+                    (weatherModule[sizeKey] as number) || (column === 'left' ? 14 : 16),
+                    column === 'left' ? 14 : 16,
+                    0,
+                    128,
+                    1,
+                    (value: number) => updateModule({ [sizeKey]: value } as any),
+                    'px'
                   )}
                 </div>
 
@@ -259,6 +263,7 @@ export function renderAnimatedWeatherModuleEditor(
   return html`
     ${context.injectUcFormStyles()}
     <style>
+      ${BaseUltraModule.getSliderStyles()}
       .weather-editor-container {
         display: flex;
         flex-direction: column;
@@ -423,54 +428,58 @@ export function renderAnimatedWeatherModuleEditor(
         <div class="section-title">Layout Settings</div>
         
         <!-- Layout Spread -->
-        <div class="control-row" style="margin-bottom: 16px;">
-          <div class="control-label">Layout Spread (0% Compact Centered ↔ 100% Full-Width Spread)</div>
-          ${context.renderUcForm(
-            hass,
-            { layout_spread: weatherModule.layout_spread ?? 100 },
-            [context.numberField('layout_spread', 0, 100, 1)],
-            (e: CustomEvent) => updateModule(e.detail.value),
-            false
-          )}
-        </div>
+        ${context.renderSliderField(
+          'Layout Spread',
+          '0% Compact Centered ↔ 100% Full-Width Spread',
+          weatherModule.layout_spread ?? 100,
+          100,
+          0,
+          100,
+          1,
+          (value: number) => updateModule({ layout_spread: value }),
+          '%'
+        )}
 
-        <div class="control-row" style="margin-bottom: 16px;">
-          <div class="control-label">Left Column Vertical Gap (0-32px)</div>
-          ${context.renderUcForm(
-            hass,
-            { left_column_gap: weatherModule.left_column_gap ?? 8 },
-            [context.numberField('left_column_gap', 0, 32, 1)],
-            (e: CustomEvent) => updateModule(e.detail.value),
-            false
-          )}
-        </div>
+        ${context.renderSliderField(
+          'Left Column Vertical Gap',
+          '0-32px',
+          weatherModule.left_column_gap ?? 8,
+          8,
+          0,
+          32,
+          1,
+          (value: number) => updateModule({ left_column_gap: value }),
+          'px'
+        )}
 
-        <div class="control-row" style="margin-bottom: 16px;">
-          <div class="control-label">Right Column Vertical Gap (0-32px)</div>
-          ${context.renderUcForm(
-            hass,
-            { right_column_gap: weatherModule.right_column_gap ?? 8 },
-            [context.numberField('right_column_gap', 0, 32, 1)],
-            (e: CustomEvent) => updateModule(e.detail.value),
-            false
-          )}
-        </div>
+        ${context.renderSliderField(
+          'Right Column Vertical Gap',
+          '0-32px',
+          weatherModule.right_column_gap ?? 8,
+          8,
+          0,
+          32,
+          1,
+          (value: number) => updateModule({ right_column_gap: value }),
+          'px'
+        )}
       </div>
 
       <!-- Center Column Settings -->
       <div class="entity-config-section">
         <div class="section-title">Center Column (Weather Icon)</div>
         
-        <div class="control-row" style="margin-bottom: 16px;">
-          <div class="control-label">Icon Size (0-300px)</div>
-          ${context.renderUcForm(
-            hass,
-            { main_icon_size: weatherModule.main_icon_size || 120 },
-            [context.numberField('main_icon_size', 0, 300, 10)],
-            (e: CustomEvent) => updateModule(e.detail.value),
-            false
-          )}
-        </div>
+        ${context.renderSliderField(
+          'Icon Size',
+          '0-300px',
+          weatherModule.main_icon_size || 120,
+          120,
+          0,
+          300,
+          10,
+          (value: number) => updateModule({ main_icon_size: value }),
+          'px'
+        )}
 
         <div class="control-row">
           <div class="control-label">Icon Style</div>

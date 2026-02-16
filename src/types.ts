@@ -1711,6 +1711,8 @@ export interface PopupModule extends BaseModule {
   trigger_alignment?: 'left' | 'center' | 'right';
   trigger_button_full_width?: boolean;
   trigger_image_full_width?: boolean;
+  trigger_icon_size?: number; // Size of the trigger icon in pixels (default: 24)
+  trigger_icon_color?: string; // Color of the trigger icon
 
   // Layout settings
   layout?: 'default' | 'full_screen' | 'left_panel' | 'right_panel' | 'top_panel' | 'bottom_panel';

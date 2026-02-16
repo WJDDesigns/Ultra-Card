@@ -152,6 +152,12 @@ export class UltraSpinboxModule extends BaseUltraModule {
     ];
   }
 
+  getStyles(): string {
+    return `
+      ${BaseUltraModule.getSliderStyles()}
+    `;
+  }
+
   renderGeneralTab(
     module: CardModule,
     hass: HomeAssistant,
@@ -189,64 +195,63 @@ export class UltraSpinboxModule extends BaseUltraModule {
         )}
 
         <!-- Value Configuration -->
-        ${this.renderSettingsSection(
-          localize('editor.spinbox.value.title', lang, 'Value Configuration'),
-          localize(
-            'editor.spinbox.value.desc',
-            lang,
-            'Configure the numeric range, step size, and default value.'
-          ),
-          [
-            {
-              title: localize('editor.spinbox.min_value', lang, 'Minimum Value'),
-              description: localize(
-                'editor.spinbox.min_value_desc',
-                lang,
-                'The minimum allowed value'
-              ),
-              hass,
-              data: { min_value: spinboxModule.min_value ?? 0 },
-              schema: [this.numberField('min_value')],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
-            },
-            {
-              title: localize('editor.spinbox.max_value', lang, 'Maximum Value'),
-              description: localize(
-                'editor.spinbox.max_value_desc',
-                lang,
-                'The maximum allowed value'
-              ),
-              hass,
-              data: { max_value: spinboxModule.max_value ?? 100 },
-              schema: [this.numberField('max_value')],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
-            },
-            {
-              title: localize('editor.spinbox.step', lang, 'Step Size'),
-              description: localize(
-                'editor.spinbox.step_desc',
-                lang,
-                'How much the value changes with each button press'
-              ),
-              hass,
-              data: { step: spinboxModule.step ?? 1 },
-              schema: [this.numberField('step')],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
-            },
-            {
-              title: localize('editor.spinbox.value', lang, 'Default Value'),
-              description: localize(
-                'editor.spinbox.value_desc',
-                lang,
-                'The initial value (only used when no entity is linked)'
-              ),
-              hass,
-              data: { value: spinboxModule.value ?? 50 },
-              schema: [this.numberField('value')],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
-            },
-          ]
-        )}
+        <div class="settings-section">
+          <div class="section-title">
+            ${localize('editor.spinbox.value.title', lang, 'Value Configuration')}
+          </div>
+          <div class="section-description" style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;">
+            ${localize(
+              'editor.spinbox.value.desc',
+              lang,
+              'Configure the numeric range, step size, and default value.'
+            )}
+          </div>
+
+          ${this.renderSliderField(
+            localize('editor.spinbox.min_value', lang, 'Minimum Value'),
+            localize('editor.spinbox.min_value_desc', lang, 'The minimum allowed value'),
+            spinboxModule.min_value ?? 0,
+            0,
+            0,
+            1000,
+            1,
+            (value: number) => updateModule({ min_value: value }),
+            ''
+          )}
+          ${this.renderSliderField(
+            localize('editor.spinbox.max_value', lang, 'Maximum Value'),
+            localize('editor.spinbox.max_value_desc', lang, 'The maximum allowed value'),
+            spinboxModule.max_value ?? 100,
+            100,
+            0,
+            1000,
+            1,
+            (value: number) => updateModule({ max_value: value }),
+            ''
+          )}
+          ${this.renderSliderField(
+            localize('editor.spinbox.step', lang, 'Step Size'),
+            localize('editor.spinbox.step_desc', lang, 'How much the value changes with each button press'),
+            spinboxModule.step ?? 1,
+            1,
+            0,
+            100,
+            1,
+            (value: number) => updateModule({ step: value }),
+            ''
+          )}
+          ${this.renderSliderField(
+            localize('editor.spinbox.value', lang, 'Default Value'),
+            localize('editor.spinbox.value_desc', lang, 'The initial value (only used when no entity is linked)'),
+            spinboxModule.value ?? 50,
+            50,
+            0,
+            1000,
+            1,
+            (value: number) => updateModule({ value: value }),
+            ''
+          )}
+        </div>
 
         <!-- Display Configuration -->
         <div class="settings-section">
@@ -413,47 +418,56 @@ export class UltraSpinboxModule extends BaseUltraModule {
           </div>
 
           <div class="field-group" style="margin-bottom: 16px;">
-            ${this.renderFieldSection(
+            ${this.renderSliderField(
               localize('editor.spinbox.button_size', lang, 'Button Size'),
               localize(
                 'editor.spinbox.button_size_desc',
                 lang,
                 'Size of the buttons in pixels (width and height)'
               ),
-              hass,
-              { button_size: spinboxModule.button_size ?? 40 },
-              [this.numberField('button_size')],
-              (e: CustomEvent) => updateModule(e.detail.value)
+              spinboxModule.button_size ?? 40,
+              40,
+              10,
+              200,
+              1,
+              (value: number) => updateModule({ button_size: value }),
+              'px'
             )}
           </div>
 
           <div class="field-group" style="margin-bottom: 16px;">
-            ${this.renderFieldSection(
+            ${this.renderSliderField(
               localize('editor.spinbox.button_spacing', lang, 'Value Spacing'),
               localize(
                 'editor.spinbox.button_spacing_desc',
                 lang,
                 'Space between buttons and value display in pixels'
               ),
-              hass,
-              { button_spacing: spinboxModule.button_spacing ?? 12 },
-              [this.numberField('button_spacing')],
-              (e: CustomEvent) => updateModule(e.detail.value)
+              spinboxModule.button_spacing ?? 12,
+              12,
+              0,
+              100,
+              1,
+              (value: number) => updateModule({ button_spacing: value }),
+              'px'
             )}
           </div>
 
           <div class="field-group" style="margin-bottom: 16px;">
-            ${this.renderFieldSection(
+            ${this.renderSliderField(
               localize('editor.spinbox.button_gap', lang, 'Button Gap'),
               localize(
                 'editor.spinbox.button_gap_desc',
                 lang,
                 'Space between increment and decrement buttons in pixels'
               ),
-              hass,
-              { button_gap: spinboxModule.button_gap ?? 8 },
-              [this.numberField('button_gap')],
-              (e: CustomEvent) => updateModule(e.detail.value)
+              spinboxModule.button_gap ?? 8,
+              8,
+              0,
+              100,
+              1,
+              (value: number) => updateModule({ button_gap: value }),
+              'px'
             )}
           </div>
 
@@ -535,17 +549,20 @@ export class UltraSpinboxModule extends BaseUltraModule {
                 </div>
 
                 <div class="field-group">
-                  ${this.renderFieldSection(
+                  ${this.renderSliderField(
                     localize('editor.spinbox.value_font_size', lang, 'Value Font Size'),
                     localize(
                       'editor.spinbox.value_font_size_desc',
                       lang,
                       'Font size for the value display (in pixels)'
                     ),
-                    hass,
-                    { value_font_size: spinboxModule.value_font_size ?? 18 },
-                    [this.numberField('value_font_size')],
-                    (e: CustomEvent) => updateModule(e.detail.value)
+                    spinboxModule.value_font_size ?? 18,
+                    18,
+                    8,
+                    100,
+                    1,
+                    (value: number) => updateModule({ value_font_size: value }),
+                    'px'
                   )}
                 </div>
               </div>

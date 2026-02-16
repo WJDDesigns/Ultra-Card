@@ -1165,59 +1165,68 @@ export class UltraSliderControlModule extends BaseUltraModule {
                       updateModule({ bars: updatedBars });
                     }
                   )}
-                  ${this.renderFieldSection(
+                  ${this.renderSliderField(
                     'Min Value',
                     'Minimum value for this bar',
-                    homeAssistant,
-                    { min_value: bar.min_value ?? 0 },
-                    [this.numberField('min_value', 0, 1000, 1)],
-                    (e: CustomEvent) => {
+                    bar.min_value ?? 0,
+                    0,
+                    0,
+                    1000,
+                    1,
+                    (value: number) => {
                       const updatedBars = [...(sliderControl.bars || [])];
                       const barIndex = updatedBars.findIndex(b => b.id === bar.id);
                       if (barIndex !== -1) {
                         updatedBars[barIndex] = {
                           ...updatedBars[barIndex],
-                          min_value: e.detail.value.min_value,
+                          min_value: value,
                         };
                       }
                       updateModule({ bars: updatedBars });
-                    }
+                    },
+                    ''
                   )}
-                  ${this.renderFieldSection(
+                  ${this.renderSliderField(
                     'Max Value',
                     'Maximum value for this bar',
-                    homeAssistant,
-                    { max_value: bar.max_value ?? 100 },
-                    [this.numberField('max_value', 0, 1000, 1)],
-                    (e: CustomEvent) => {
+                    bar.max_value ?? 100,
+                    100,
+                    0,
+                    1000,
+                    1,
+                    (value: number) => {
                       const updatedBars = [...(sliderControl.bars || [])];
                       const barIndex = updatedBars.findIndex(b => b.id === bar.id);
                       if (barIndex !== -1) {
                         updatedBars[barIndex] = {
                           ...updatedBars[barIndex],
-                          max_value: e.detail.value.max_value,
+                          max_value: value,
                         };
                       }
                       updateModule({ bars: updatedBars });
-                    }
+                    },
+                    ''
                   )}
-                  ${this.renderFieldSection(
+                  ${this.renderSliderField(
                     'Step',
                     'Step increment for value changes',
-                    homeAssistant,
-                    { step: bar.step ?? 1 },
-                    [this.numberField('step', 0.1, 100, 0.1)],
-                    (e: CustomEvent) => {
+                    bar.step ?? 1,
+                    1,
+                    0.1,
+                    100,
+                    0.1,
+                    (value: number) => {
                       const updatedBars = [...(sliderControl.bars || [])];
                       const barIndex = updatedBars.findIndex(b => b.id === bar.id);
                       if (barIndex !== -1) {
                         updatedBars[barIndex] = {
                           ...updatedBars[barIndex],
-                          step: e.detail.value.step,
+                          step: value,
                         };
                       }
                       updateModule({ bars: updatedBars });
-                    }
+                    },
+                    ''
                   )}
                   ${(() => {
                     const layoutMode = sliderControl.layout_mode || 'overlay';
@@ -4308,6 +4317,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
       /* Placeholder for styles */
     `;
   }

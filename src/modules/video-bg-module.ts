@@ -288,13 +288,16 @@ export class UltraVideoBgModule extends BaseUltraModule {
             </div>
           </div>
           ${videoBgModule.default_source === 'youtube' || videoBgModule.default_source === 'local'
-            ? this.renderFieldSection(
-                'Start Time (seconds)',
+            ? this.renderSliderField(
+                'Start Time',
                 'Start playback from this time offset.',
-                hass,
-                { default_start_time: videoBgModule.default_start_time },
-                [this.numberField('default_start_time', 0, 3600, 1)],
-                (e: CustomEvent) => updateModule(e.detail.value)
+                videoBgModule.default_start_time ?? 0,
+                0,
+                0,
+                3600,
+                1,
+                (value: number) => updateModule({ default_start_time: value }),
+                's'
               )
             : ''}
         </div>
@@ -311,37 +314,49 @@ export class UltraVideoBgModule extends BaseUltraModule {
             VISUAL FILTERS
           </div>
 
-          ${this.renderFieldSection(
-            'Opacity (%)',
+          ${this.renderSliderField(
+            'Opacity',
             'Control the overall transparency of the video background.',
-            hass,
-            { opacity: videoBgModule.opacity },
-            [this.numberField('opacity', 0, 100, 1)],
-            (e: CustomEvent) => updateModule(e.detail.value)
+            videoBgModule.opacity ?? 100,
+            100,
+            0,
+            100,
+            1,
+            (value: number) => updateModule({ opacity: value }),
+            '%'
           )}
-          ${this.renderFieldSection(
-            'Blur (px)',
+          ${this.renderSliderField(
+            'Blur',
             'Apply a blur effect to the video background.',
-            hass,
-            { blur_value: parseInt(videoBgModule.blur) || 0 },
-            [this.numberField('blur_value', 0, 30, 1)],
-            (e: CustomEvent) => updateModule({ blur: `${e.detail.value.blur_value}px` })
+            parseInt(videoBgModule.blur) || 0,
+            0,
+            0,
+            30,
+            1,
+            (value: number) => updateModule({ blur: `${value}px` }),
+            'px'
           )}
-          ${this.renderFieldSection(
-            'Brightness (%)',
+          ${this.renderSliderField(
+            'Brightness',
             'Adjust the brightness of the video background.',
-            hass,
-            { brightness_value: parseInt(videoBgModule.brightness) || 100 },
-            [this.numberField('brightness_value', 0, 200, 5)],
-            (e: CustomEvent) => updateModule({ brightness: `${e.detail.value.brightness_value}%` })
+            parseInt(videoBgModule.brightness) || 100,
+            100,
+            0,
+            200,
+            5,
+            (value: number) => updateModule({ brightness: `${value}%` }),
+            '%'
           )}
-          ${this.renderFieldSection(
-            'Scale (%)',
+          ${this.renderSliderField(
+            'Scale',
             'Adjust the size of the video background. Use this to crop or zoom videos with different aspect ratios.',
-            hass,
-            { scale: videoBgModule.scale * 100 },
-            [this.numberField('scale', 50, 200, 5)],
-            (e: CustomEvent) => updateModule({ scale: e.detail.value.scale / 100 })
+            videoBgModule.scale * 100,
+            100,
+            50,
+            200,
+            5,
+            (value: number) => updateModule({ scale: value / 100 }),
+            '%'
           )}
         </div>
 
@@ -541,35 +556,41 @@ export class UltraVideoBgModule extends BaseUltraModule {
           ? html`
               <div class="conditional-fields-group" style="margin-top: 16px;">
                 <div class="conditional-fields-content">
-                  ${this.renderFieldSection(
-                    'Card Opacity (%)',
+                  ${this.renderSliderField(
+                    'Card Opacity',
                     'Control the transparency of all Ultra Cards.',
-                    hass,
-                    { opacity: transparency.opacity },
-                    [this.numberField('opacity', 0, 100, 1)],
-                    (e: CustomEvent) => {
+                    transparency.opacity ?? 90,
+                    90,
+                    0,
+                    100,
+                    1,
+                    (value: number) => {
                       updateModule({
                         global_card_transparency: {
                           ...transparency,
-                          opacity: e.detail.value.opacity,
+                          opacity: value,
                         },
                       });
-                    }
+                    },
+                    '%'
                   )}
-                  ${this.renderFieldSection(
-                    'Blur Amount (px)',
+                  ${this.renderSliderField(
+                    'Blur Amount',
                     'Apply backdrop blur to all Ultra Cards.',
-                    hass,
-                    { blur_px: transparency.blur_px },
-                    [this.numberField('blur_px', 0, 30, 1)],
-                    (e: CustomEvent) => {
+                    transparency.blur_px ?? 0,
+                    0,
+                    0,
+                    30,
+                    1,
+                    (value: number) => {
                       updateModule({
                         global_card_transparency: {
                           ...transparency,
-                          blur_px: e.detail.value.blur_px,
+                          blur_px: value,
                         },
                       });
-                    }
+                    },
+                    'px'
                   )}
 
                   <div style="margin-top: 16px;">
@@ -754,6 +775,8 @@ export class UltraVideoBgModule extends BaseUltraModule {
    */
   getStyles(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
+
       /* Conditional fields group styling */
       .conditional-fields-group {
         margin-top: 16px;

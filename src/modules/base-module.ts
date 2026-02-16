@@ -593,6 +593,206 @@ export abstract class BaseUltraModule implements UltraModule {
   protected expandableField = UcFormUtils.expandable;
 
   /**
+   * Render a consistent slider control with range slider + number input + reset button.
+   * Use this instead of numberField/renderFieldSection for all numeric slider controls.
+   *
+   * @param title - Display title for the field
+   * @param description - Description text below the title
+   * @param value - Current value
+   * @param defaultValue - Default value (used for reset)
+   * @param min - Minimum slider/input value
+   * @param max - Maximum slider/input value
+   * @param step - Step increment
+   * @param onChange - Callback when value changes (receives new numeric value)
+   * @param unit - Optional unit label (default: 'px')
+   */
+  protected renderSliderField(
+    title: string,
+    description: string,
+    value: number,
+    defaultValue: number,
+    min: number,
+    max: number,
+    step: number,
+    onChange: (value: number) => void,
+    unit: string = 'px'
+  ): TemplateResult {
+    return html`
+      <div class="field-container" style="margin-bottom: 16px;">
+        <div class="field-title">${title} (${value}${unit})</div>
+        ${description
+          ? html`<div class="field-description">${description}</div>`
+          : ''}
+        <div
+          class="gap-control-container"
+          style="display: flex; align-items: center; gap: 12px;"
+        >
+          <input
+            type="range"
+            class="gap-slider"
+            min="${min}"
+            max="${max}"
+            step="${step}"
+            .value="${String(value)}"
+            @input=${(e: Event) => {
+              const target = e.target as HTMLInputElement;
+              onChange(Number(target.value));
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }}
+          />
+          <input
+            type="number"
+            class="gap-input"
+            min="${min}"
+            max="${max}"
+            step="${step}"
+            .value="${String(value)}"
+            @input=${(e: Event) => {
+              const target = e.target as HTMLInputElement;
+              const val = Number(target.value);
+              if (!isNaN(val)) {
+                onChange(val);
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            }}
+            @keydown=${(e: KeyboardEvent) => {
+              if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                const target = e.target as HTMLInputElement;
+                const currentValue = Number(target.value) || defaultValue;
+                const increment = e.key === 'ArrowUp' ? step : -step;
+                const newValue = Math.max(min, Math.min(max, currentValue + increment));
+                onChange(newValue);
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            }}
+          />
+          <button
+            class="reset-btn"
+            @click=${() => {
+              onChange(defaultValue);
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }}
+            title="Reset to default (${defaultValue})"
+          >
+            <ha-icon icon="mdi:refresh"></ha-icon>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Returns the shared CSS for gap-slider controls.
+   * Include in your module's getStyles() method:
+   *   ${BaseUltraModule.getSliderStyles()}
+   */
+  static getSliderStyles(): string {
+    return `
+      .gap-control-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .gap-slider {
+        flex: 1;
+        height: 6px;
+        background: var(--divider-color);
+        border-radius: 3px;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .gap-slider::-webkit-slider-thumb {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider:hover {
+        background: var(--primary-color);
+        opacity: 0.7;
+      }
+
+      .gap-slider:hover::-webkit-slider-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-slider:hover::-moz-range-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-input {
+        width: 48px !important;
+        max-width: 48px !important;
+        min-width: 48px !important;
+        padding: 4px 6px !important;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        text-align: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        box-sizing: border-box;
+      }
+
+      .gap-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+      }
+
+      .reset-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .reset-btn:hover {
+        background: var(--primary-color);
+        color: var(--text-primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .reset-btn ha-icon {
+        font-size: 16px;
+      }
+    `;
+  }
+
+  /**
    * Render variable quick-select chips above entity pickers
    * Shows both global and card-specific custom variables as clickable chips
    * When a chip is clicked, the variable's entity is selected

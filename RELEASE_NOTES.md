@@ -1,5 +1,18 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.5.0-beta-RC1
+
+### 🚀 New Features
+
+- **Added Popup Module Icon Sizing** - Enhanced module functionality for better user experience
+
+### 🔧 Improvements
+
+- **Major Performance Improvements** - Improved performance and responsiveness
+- **Turned to RC as Release Candidate** - Refined functionality for smoother operation
+
+---
+
 ## Version 2.5.0-beta10.1
 
 ### 🚀 New Features

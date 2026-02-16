@@ -235,6 +235,27 @@ export declare abstract class BaseUltraModule implements UltraModule {
     protected gridField: typeof UcFormUtils.grid;
     protected expandableField: typeof UcFormUtils.expandable;
     /**
+     * Render a consistent slider control with range slider + number input + reset button.
+     * Use this instead of numberField/renderFieldSection for all numeric slider controls.
+     *
+     * @param title - Display title for the field
+     * @param description - Description text below the title
+     * @param value - Current value
+     * @param defaultValue - Default value (used for reset)
+     * @param min - Minimum slider/input value
+     * @param max - Maximum slider/input value
+     * @param step - Step increment
+     * @param onChange - Callback when value changes (receives new numeric value)
+     * @param unit - Optional unit label (default: 'px')
+     */
+    protected renderSliderField(title: string, description: string, value: number, defaultValue: number, min: number, max: number, step: number, onChange: (value: number) => void, unit?: string): TemplateResult;
+    /**
+     * Returns the shared CSS for gap-slider controls.
+     * Include in your module's getStyles() method:
+     *   ${BaseUltraModule.getSliderStyles()}
+     */
+    static getSliderStyles(): string;
+    /**
      * Render variable quick-select chips above entity pickers
      * Shows both global and card-specific custom variables as clickable chips
      * When a chip is clicked, the variable's entity is selected

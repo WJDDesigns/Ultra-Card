@@ -672,7 +672,7 @@ export class UltraTabsModule extends BaseUltraModule {
                 <div
                   style="border-left: 3px solid var(--primary-color); padding-left: 16px; margin-top: 8px;"
                 >
-                  ${this.renderFieldSection(
+                  ${this.renderSliderField(
                     localize(
                       'editor.tabs_module.responsive.mobile_breakpoint',
                       lang,
@@ -683,13 +683,13 @@ export class UltraTabsModule extends BaseUltraModule {
                       lang,
                       'Screen width in pixels below which tabs collapse to icons only.'
                     ),
-                    hass,
-                    { mobile_breakpoint: tabsModule.mobile_breakpoint ?? 600 },
-                    [this.numberField('mobile_breakpoint', 320, 1200, 10)],
-                    (e: CustomEvent) => {
-                      updateModule({ mobile_breakpoint: e.detail.value.mobile_breakpoint });
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }
+                    tabsModule.mobile_breakpoint ?? 600,
+                    600,
+                    320,
+                    1200,
+                    10,
+                    (value: number) => updateModule({ mobile_breakpoint: value }),
+                    'px'
                   )}
                 </div>
               `
@@ -1256,20 +1256,20 @@ export class UltraTabsModule extends BaseUltraModule {
           </div>
 
           <!-- Tab Gap -->
-          ${this.renderFieldSection(
+          ${this.renderSliderField(
             localize('editor.tabs_module.design.tab_gap', lang, 'Gap Between Tabs'),
             localize(
               'editor.tabs_module.design.tab_gap_desc',
               lang,
               'Space between individual tabs (in pixels).'
             ),
-            hass,
-            { tab_gap: tabsModule.tab_gap ?? 4 },
-            [this.numberField('tab_gap', 0, 32, 1)],
-            (e: CustomEvent) => {
-              updateModule({ tab_gap: e.detail.value.tab_gap });
-              setTimeout(() => this.triggerPreviewUpdate(), 50);
-            }
+            tabsModule.tab_gap ?? 4,
+            4,
+            0,
+            32,
+            1,
+            (value: number) => updateModule({ tab_gap: value }),
+            'px'
           )}
 
           <!-- Tab Padding -->
@@ -1307,20 +1307,20 @@ export class UltraTabsModule extends BaseUltraModule {
           )}
 
           <!-- Tab Border Width -->
-          ${this.renderFieldSection(
+          ${this.renderSliderField(
             localize('editor.tabs_module.design.tab_border_width', lang, 'Tab Border Width'),
             localize(
               'editor.tabs_module.design.tab_border_width_desc',
               lang,
               'Border width for tabs (in pixels).'
             ),
-            hass,
-            { tab_border_width: tabsModule.tab_border_width ?? 0 },
-            [this.numberField('tab_border_width', 0, 10, 1)],
-            (e: CustomEvent) => {
-              updateModule({ tab_border_width: e.detail.value.tab_border_width });
-              setTimeout(() => this.triggerPreviewUpdate(), 50);
-            }
+            tabsModule.tab_border_width ?? 0,
+            0,
+            0,
+            10,
+            1,
+            (value: number) => updateModule({ tab_border_width: value }),
+            'px'
           )}
         </div>
 
@@ -1414,7 +1414,7 @@ export class UltraTabsModule extends BaseUltraModule {
           </div>
 
           <!-- Content Border Width -->
-          ${this.renderFieldSection(
+          ${this.renderSliderField(
             localize(
               'editor.tabs_module.design.content_border_width',
               lang,
@@ -1425,13 +1425,13 @@ export class UltraTabsModule extends BaseUltraModule {
               lang,
               'Border width for content area (in pixels).'
             ),
-            hass,
-            { content_border_width: tabsModule.content_border_width ?? 0 },
-            [this.numberField('content_border_width', 0, 10, 1)],
-            (e: CustomEvent) => {
-              updateModule({ content_border_width: e.detail.value.content_border_width });
-              setTimeout(() => this.triggerPreviewUpdate(), 50);
-            }
+            tabsModule.content_border_width ?? 0,
+            0,
+            0,
+            10,
+            1,
+            (value: number) => updateModule({ content_border_width: value }),
+            'px'
           )}
         </div>
 
@@ -1582,7 +1582,12 @@ export class UltraTabsModule extends BaseUltraModule {
 
       <div class="ultra-tabs-container ${uniqueContainerClass}" style="${containerStyles}">
         <!-- Tabs Header -->
-        <div class="ultra-tabs-header" style="${tabsContainerStyles}">
+        <div
+          class="ultra-tabs-header"
+          style="${tabsContainerStyles}"
+          role="tablist"
+          aria-label="Tabs"
+        >
           ${sections.map(section => this._renderTabButton(section, activeTabId!, tabsModule, hass))}
         </div>
 
@@ -1628,6 +1633,10 @@ export class UltraTabsModule extends BaseUltraModule {
           ? 'has-icon'
           : ''}"
         style="${buttonStyles}"
+        role="tab"
+        aria-selected="${isActive}"
+        aria-label="${(section.title || 'Tab').trim() || 'Tab'}"
+        tabindex="${isActive ? 0 : -1}"
         @click=${handleClick}
         @mouseenter=${handleHover}
       >
@@ -1994,6 +2003,12 @@ export class UltraTabsModule extends BaseUltraModule {
       transition: all ${transition} ease;
       ${extraStyles}
       ${flexStyle}
+    `;
+  }
+
+  getStyles(): string {
+    return `
+      ${BaseUltraModule.getSliderStyles()}
     `;
   }
 

@@ -719,17 +719,19 @@ export class UltraLightModule extends BaseUltraModule {
             Settings that apply to all presets
           </div>
 
-          ${this.renderFieldSection(
+          ${this.renderSliderField(
             'Default Transition Time',
             'Default transition time for all presets (can be overridden per preset)',
-            hass,
-            { default_transition_time: lightModule.default_transition_time ?? 0.5 },
-            [this.numberField('default_transition_time', 0, 10, 0.1)],
-            (e: CustomEvent) => {
-              const next = Number(e.detail.value.default_transition_time);
-              if (isNaN(next) || next === lightModule.default_transition_time) return;
-              updateModule({ default_transition_time: next });
-            }
+            lightModule.default_transition_time ?? 0.5,
+            0.5,
+            0,
+            10,
+            0.1,
+            (value: number) => {
+              if (value === lightModule.default_transition_time) return;
+              updateModule({ default_transition_time: value });
+            },
+            's'
           )}
           </div>
         </div>
@@ -1223,14 +1225,16 @@ export class UltraLightModule extends BaseUltraModule {
             (preset.button_style || 'filled') !== 'text'
               ? html`
                   <div style="margin-top: 12px;">
-                    ${this.renderFieldSection(
+                    ${this.renderSliderField(
                       'Border Radius',
                       'Adjust button roundness (0 = square, 50 = circle)',
-                      hass,
-                      { border_radius: preset.border_radius || 8 },
-                      [this.numberField('border_radius', 0, 50, 1)],
-                      (e: CustomEvent) =>
-                        updatePreset({ border_radius: e.detail.value.border_radius })
+                      preset.border_radius || 8,
+                      8,
+                      0,
+                      50,
+                      1,
+                      (value: number) => updatePreset({ border_radius: value }),
+                      'px'
                     )}
                   </div>
                 `
@@ -1558,15 +1562,16 @@ export class UltraLightModule extends BaseUltraModule {
           <div style="font-weight: 500; margin-bottom: 12px; color: var(--primary-text-color);">
             Advanced Settings
           </div>
-          ${this.renderFieldSection(
+          ${this.renderSliderField(
             'Transition Time (seconds)',
             'Override default transition time for this preset',
-            hass,
-            {
-              transition_time: preset.transition_time || lightModule.default_transition_time || 0.5,
-            },
-            [this.numberField('transition_time', 0, 10, 0.1)],
-            (e: CustomEvent) => updatePreset({ transition_time: e.detail.value.transition_time })
+            preset.transition_time || lightModule.default_transition_time || 0.5,
+            lightModule.default_transition_time || 0.5,
+            0,
+            10,
+            0.1,
+            (value: number) => updatePreset({ transition_time: value }),
+            's'
           )}
         </div>
 
@@ -2774,6 +2779,7 @@ export class UltraLightModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
       .light-module-container {
         padding: 16px;
         background: var(--card-background-color);

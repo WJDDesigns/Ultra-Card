@@ -970,6 +970,7 @@ export class UltraButtonModule extends BaseUltraModule {
               ? 'justify'
               : ''} ${hoverEffectClass}"
             style="${this.styleObjectToCss(mergedButtonStyle)}"
+            aria-label="${(buttonModule.label || 'Button').trim() || 'Button'}"
             @pointerdown=${handlers.onPointerDown}
             @pointerup=${handlers.onPointerUp}
             @pointerleave=${handlers.onPointerLeave}

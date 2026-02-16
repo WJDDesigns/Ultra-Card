@@ -72,6 +72,7 @@ module.exports = (env, argv) => {
     output: {
       filename: `ultra-card.js`,
       path: path.resolve(__dirname, 'dist'),
+      chunkFilename: 'uc-[name].js',
     },
     plugins: [
       new CopyWebpackPlugin({
@@ -175,7 +176,9 @@ module.exports = (env, argv) => {
       },
     ],
     performance: {
-      hints: false,
+      hints: isProduction ? 'warning' : false,
+      maxAssetSize: 2 * 1024 * 1024, // 2MB - catch bundle regressions
+      maxEntrypointSize: 2 * 1024 * 1024,
     },
     devServer: {
       static: {

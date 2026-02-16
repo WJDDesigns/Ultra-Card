@@ -508,35 +508,35 @@ export class UltraAccordionModule extends BaseUltraModule {
           <!-- Container Border Width & Radius -->
           <div class="field-row">
             <div>
-              ${this.renderFieldSection(
+              ${this.renderSliderField(
                 localize('editor.accordion.design.container_border_width', lang, 'Border Width'),
                 '',
-                hass,
-                { container_border_width: d.container_border_width ?? 1 },
-                [this.numberField('container_border_width', 0, 10, 1)],
-                (e: CustomEvent) => {
-                  const design = {
-                    ...d,
-                    container_border_width: e.detail.value.container_border_width,
-                  };
+                d.container_border_width ?? 1,
+                1,
+                0,
+                10,
+                1,
+                (value: number) => {
+                  const design = { ...d, container_border_width: value };
                   updateModule({ design } as any);
-                }
+                },
+                'px'
               )}
             </div>
             <div>
-              ${this.renderFieldSection(
+              ${this.renderSliderField(
                 localize('editor.accordion.design.container_border_radius', lang, 'Border Radius'),
                 '',
-                hass,
-                { container_border_radius: d.container_border_radius ?? 8 },
-                [this.numberField('container_border_radius', 0, 50, 1)],
-                (e: CustomEvent) => {
-                  const design = {
-                    ...d,
-                    container_border_radius: e.detail.value.container_border_radius,
-                  };
+                d.container_border_radius ?? 8,
+                8,
+                0,
+                50,
+                1,
+                (value: number) => {
+                  const design = { ...d, container_border_radius: value };
                   updateModule({ design } as any);
-                }
+                },
+                'px'
               )}
             </div>
           </div>
@@ -635,16 +635,19 @@ export class UltraAccordionModule extends BaseUltraModule {
             ></ultra-color-picker>
 
             <div>
-              ${this.renderFieldSection(
+              ${this.renderSliderField(
                 localize('editor.accordion.design.icon_size', lang, 'Icon Size'),
                 '',
-                hass,
-                { icon_size: d.icon_size ?? 24 },
-                [this.numberField('icon_size', 12, 48, 1)],
-                (e: CustomEvent) => {
-                  const design = { ...d, icon_size: e.detail.value.icon_size };
+                d.icon_size ?? 24,
+                24,
+                12,
+                48,
+                1,
+                (value: number) => {
+                  const design = { ...d, icon_size: value };
                   updateModule({ design } as any);
-                }
+                },
+                'px'
               )}
             </div>
           </div>
@@ -652,16 +655,19 @@ export class UltraAccordionModule extends BaseUltraModule {
           <!-- Header Font Size & Weight -->
           <div class="field-row">
             <div>
-              ${this.renderFieldSection(
+              ${this.renderSliderField(
                 localize('editor.accordion.design.header_font_size', lang, 'Font Size'),
                 '',
-                hass,
-                { header_font_size: d.header_font_size || 16 },
-                [this.numberField('header_font_size', 8, 48, 1)],
-                (e: CustomEvent) => {
-                  const design = { ...d, header_font_size: e.detail.value.header_font_size };
+                d.header_font_size || 16,
+                16,
+                8,
+                48,
+                1,
+                (value: number) => {
+                  const design = { ...d, header_font_size: value };
                   updateModule({ design } as any);
-                }
+                },
+                'px'
               )}
             </div>
             <div>
@@ -689,20 +695,23 @@ export class UltraAccordionModule extends BaseUltraModule {
           </div>
 
           <!-- Header Padding -->
-          ${this.renderFieldSection(
+          ${this.renderSliderField(
             localize('editor.accordion.design.header_padding', lang, 'Header Padding'),
             localize(
               'editor.accordion.design.header_padding_desc',
               lang,
               'Padding inside the header (in pixels).'
             ),
-            hass,
-            { header_padding: d.header_padding ?? 12 },
-            [this.numberField('header_padding', 0, 48, 1)],
-            (e: CustomEvent) => {
-              const design = { ...d, header_padding: e.detail.value.header_padding };
+            d.header_padding ?? 12,
+            12,
+            0,
+            48,
+            1,
+            (value: number) => {
+              const design = { ...d, header_padding: value };
               updateModule({ design } as any);
-            }
+            },
+            'px'
           )}
 
           <!-- Header Border Bottom -->
@@ -723,16 +732,19 @@ export class UltraAccordionModule extends BaseUltraModule {
             ></ultra-color-picker>
 
             <div>
-              ${this.renderFieldSection(
+              ${this.renderSliderField(
                 localize('editor.accordion.design.header_border_width', lang, 'Border Width'),
                 '',
-                hass,
-                { header_border_width: d.header_border_width ?? 1 },
-                [this.numberField('header_border_width', 0, 5, 1)],
-                (e: CustomEvent) => {
-                  const design = { ...d, header_border_width: e.detail.value.header_border_width };
+                d.header_border_width ?? 1,
+                1,
+                0,
+                5,
+                1,
+                (value: number) => {
+                  const design = { ...d, header_border_width: value };
                   updateModule({ design } as any);
-                }
+                },
+                'px'
               )}
             </div>
           </div>
@@ -772,20 +784,23 @@ export class UltraAccordionModule extends BaseUltraModule {
           </div>
 
           <!-- Content Padding -->
-          ${this.renderFieldSection(
+          ${this.renderSliderField(
             localize('editor.accordion.design.content_padding', lang, 'Content Padding'),
             localize(
               'editor.accordion.design.content_padding_desc',
               lang,
               'Padding around the content area (in pixels).'
             ),
-            hass,
-            { content_padding: d.content_padding || 16 },
-            [this.numberField('content_padding', 0, 48, 1)],
-            (e: CustomEvent) => {
-              const design = { ...d, content_padding: e.detail.value.content_padding };
+            d.content_padding || 16,
+            16,
+            0,
+            48,
+            1,
+            (value: number) => {
+              const design = { ...d, content_padding: value };
               updateModule({ design } as any);
-            }
+            },
+            'px'
           )}
 
           <!-- Content Border -->
@@ -806,19 +821,19 @@ export class UltraAccordionModule extends BaseUltraModule {
             ></ultra-color-picker>
 
             <div>
-              ${this.renderFieldSection(
+              ${this.renderSliderField(
                 localize('editor.accordion.design.content_border_width', lang, 'Border Width'),
                 '',
-                hass,
-                { content_border_width: d.content_border_width ?? 0 },
-                [this.numberField('content_border_width', 0, 5, 1)],
-                (e: CustomEvent) => {
-                  const design = {
-                    ...d,
-                    content_border_width: e.detail.value.content_border_width,
-                  };
+                d.content_border_width ?? 0,
+                0,
+                0,
+                5,
+                1,
+                (value: number) => {
+                  const design = { ...d, content_border_width: value };
                   updateModule({ design } as any);
-                }
+                },
+                'px'
               )}
             </div>
           </div>
@@ -1470,7 +1485,17 @@ export class UltraAccordionModule extends BaseUltraModule {
         <div
           class="ultra-accordion-header"
           style=${this.styleObjectToCss(headerStyles)}
+          role="button"
+          tabindex="0"
+          aria-expanded="${isOpen}"
+          aria-label="${titleText}${isOpen ? ', expanded' : ', collapsed'}"
           @click=${handleToggle}
+          @keydown=${(e: KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleToggle(e);
+            }
+          }}
         >
           <!-- Title -->
           <span class="ultra-accordion-title" style=${this.styleObjectToCss(titleStyles)}
@@ -1583,5 +1608,11 @@ export class UltraAccordionModule extends BaseUltraModule {
     // Note: Nesting depth validation removed - users can nest layouts as deep as they want
 
     return { valid: errors.length === 0, errors };
+  }
+
+  getStyles(): string {
+    return `
+      ${BaseUltraModule.getSliderStyles()}
+    `;
   }
 }

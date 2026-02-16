@@ -5,6 +5,7 @@ import { TemplateResult, html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { AnimatedForecastModule, UltraCardConfig, CardModule } from '../types';
 import { localize } from '../localize/localize';
+import { BaseUltraModule } from './base-module';
 
 export function renderAnimatedForecastModuleEditor(
   context: any,
@@ -18,6 +19,7 @@ export function renderAnimatedForecastModuleEditor(
 
   return html`
     ${context.injectUcFormStyles()}
+    <style>${BaseUltraModule.getSliderStyles()}</style>
     <div class="module-general-settings">
       <!-- ============================================ -->
       <!-- ENTITY CONFIGURATION SECTION -->
@@ -94,22 +96,16 @@ export function renderAnimatedForecastModuleEditor(
         </div>
 
         <!-- Forecast Days -->
-        <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-          ${localize('editor.animated_forecast.forecast_days', lang, 'Forecast Days')}
-        </div>
-        <div class="field-description" style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;">
-          ${localize(
-            'editor.animated_forecast.forecast_days_desc',
-            lang,
-            'Number of forecast days (3-7)'
-          )}
-        </div>
-        ${context.renderUcForm(
-          hass,
-          { forecast_days: forecastModule.forecast_days || 5 },
-          [context.numberField('forecast_days', 3, 7, 1)],
-          (e: CustomEvent) => updateModule(e.detail.value),
-          false
+        ${context.renderSliderField(
+          localize('editor.animated_forecast.forecast_days', lang, 'Forecast Days'),
+          localize('editor.animated_forecast.forecast_days_desc', lang, 'Number of forecast days (3-7)'),
+          forecastModule.forecast_days || 5,
+          5,
+          3,
+          7,
+          1,
+          (value: number) => updateModule({ forecast_days: value }),
+          ''
         )}
       </div>
 
@@ -132,45 +128,31 @@ export function renderAnimatedForecastModuleEditor(
         >
           <!-- Forecast Day Size -->
           <div>
-            <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">
-              ${localize(
-                'editor.animated_forecast.forecast_day_size',
-                lang,
-                'Forecast Day Name Size'
-              )}
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 12px; opacity: 0.7; margin-bottom: 8px;"
-            >
-              10-24px
-            </div>
-            ${context.renderUcForm(
-              hass,
-              { forecast_day_size: forecastModule.forecast_day_size || 14 },
-              [context.numberField('forecast_day_size', 10, 24, 1)],
-              (e: CustomEvent) => updateModule(e.detail.value),
-              false
+            ${context.renderSliderField(
+              localize('editor.animated_forecast.forecast_day_size', lang, 'Forecast Day Name Size'),
+              '10-24px',
+              forecastModule.forecast_day_size || 14,
+              14,
+              10,
+              24,
+              1,
+              (value: number) => updateModule({ forecast_day_size: value }),
+              'px'
             )}
           </div>
 
           <!-- Forecast Temp Size -->
           <div>
-            <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">
-              ${localize('editor.animated_forecast.forecast_temp_size', lang, 'Forecast Temp Size')}
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 12px; opacity: 0.7; margin-bottom: 8px;"
-            >
-              10-24px
-            </div>
-            ${context.renderUcForm(
-              hass,
-              { forecast_temp_size: forecastModule.forecast_temp_size || 14 },
-              [context.numberField('forecast_temp_size', 10, 24, 1)],
-              (e: CustomEvent) => updateModule(e.detail.value),
-              false
+            ${context.renderSliderField(
+              localize('editor.animated_forecast.forecast_temp_size', lang, 'Forecast Temp Size'),
+              '10-24px',
+              forecastModule.forecast_temp_size || 14,
+              14,
+              10,
+              24,
+              1,
+              (value: number) => updateModule({ forecast_temp_size: value }),
+              'px'
             )}
           </div>
         </div>
@@ -191,22 +173,16 @@ export function renderAnimatedForecastModuleEditor(
         </div>
 
         <!-- Forecast Icon Size -->
-        <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-          ${localize('editor.animated_forecast.forecast_icon_size', lang, 'Forecast Icon Size')}
-        </div>
-        <div class="field-description" style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;">
-          ${localize(
-            'editor.animated_forecast.forecast_icon_size_desc',
-            lang,
-            'Size of forecast weather icons (32-80px)'
-          )}
-        </div>
-        ${context.renderUcForm(
-          hass,
-          { forecast_icon_size: forecastModule.forecast_icon_size || 48 },
-          [context.numberField('forecast_icon_size', 32, 80, 4)],
-          (e: CustomEvent) => updateModule(e.detail.value),
-          false
+        ${context.renderSliderField(
+          localize('editor.animated_forecast.forecast_icon_size', lang, 'Forecast Icon Size'),
+          localize('editor.animated_forecast.forecast_icon_size_desc', lang, 'Size of forecast weather icons (32-80px)'),
+          forecastModule.forecast_icon_size || 48,
+          48,
+          32,
+          80,
+          4,
+          (value: number) => updateModule({ forecast_icon_size: value }),
+          'px'
         )}
 
         <!-- Icon Style -->

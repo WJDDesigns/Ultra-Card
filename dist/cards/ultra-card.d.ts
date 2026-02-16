@@ -45,6 +45,12 @@ export declare class UltraCard extends LitElement {
      * to avoid interfering with HA's card picker (automatic config-changed events were causing issues)
      */
     private _setupVariablesBackup;
+    /**
+     * Collect all entity IDs referenced in the card config (display conditions, module entities).
+     * Used by shouldUpdate to skip re-renders when only unrelated hass state changed.
+     */
+    private _getRelevantEntityIds;
+    protected shouldUpdate(changedProps: PropertyValues): boolean;
     protected willUpdate(changedProps: PropertyValues): void;
     setConfig(config: UltraCardConfig): void;
     /**

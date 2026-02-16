@@ -575,22 +575,24 @@ export class UltraNavigationModule extends BaseUltraModule {
                 });
               },
             },
-            {
-              title: 'Min Width',
-              description: 'Viewport width (px) that switches to desktop mode.',
-              hass,
-              data: { min_width: navModule.nav_desktop?.min_width ?? 768 },
-              schema: [UcFormUtils.number('min_width', 320, 2560)],
-              onChange: (e: CustomEvent) => {
-                updateModule({
-                  nav_desktop: {
-                    ...navModule.nav_desktop,
-                    min_width: Number(e.detail.value.min_width),
-                  },
-                });
-              },
-            },
           ]
+        )}
+
+        ${this.renderSliderField(
+          'Min Width',
+          'Viewport width (px) that switches to desktop mode.',
+          navModule.nav_desktop?.min_width ?? 768,
+          768,
+          320,
+          2560,
+          1,
+          (value: number) => updateModule({
+            nav_desktop: {
+              ...navModule.nav_desktop,
+              min_width: value,
+            },
+          }),
+          'px'
         )}
 
         <!-- Desktop Offset Slider -->
@@ -942,6 +944,10 @@ export class UltraNavigationModule extends BaseUltraModule {
         )}
       </div>
     `;
+  }
+
+  getStyles(): string {
+    return `${BaseUltraModule.getSliderStyles()}`;
   }
 
   renderPreview(

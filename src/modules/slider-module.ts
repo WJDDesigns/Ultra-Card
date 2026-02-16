@@ -22,7 +22,6 @@ import {
   Scrollbar,
 } from 'swiper/modules';
 
-// Register Swiper modules globally (only slide and fade effects supported)
 Swiper.use([
   Navigation,
   Pagination,
@@ -38,7 +37,6 @@ import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 import 'swiper/css/scrollbar';
 
-// Swiper instance manager for slider instances
 class SwiperInstanceManager {
   private static instances = new Map<string, Swiper>();
 
@@ -389,30 +387,39 @@ export class UltraSliderModule extends BaseUltraModule {
           </div>
 
           ${!(sliderModule.auto_height ?? true)
-            ? this.renderFieldSection(
+            ? this.renderSliderField(
                 'Slider Height',
                 'Fixed height for the slider in pixels',
-                hass,
-                { slider_height: sliderModule.slider_height || 300 },
-                [this.numberField('slider_height', 50, 1000, 10)],
-                (e: CustomEvent) => updateModule({ slider_height: e.detail.value.slider_height })
+                sliderModule.slider_height || 300,
+                300,
+                50,
+                1000,
+                10,
+                (value: number) => updateModule({ slider_height: value }),
+                'px'
               )
             : ''}
-          ${this.renderFieldSection(
+          ${this.renderSliderField(
             'Slides Per View',
             'Number of slides visible at once',
-            hass,
-            { slides_per_view: sliderModule.slides_per_view || 1 },
-            [this.numberField('slides_per_view', 1, 10, 1)],
-            (e: CustomEvent) => updateModule({ slides_per_view: e.detail.value.slides_per_view })
+            sliderModule.slides_per_view || 1,
+            1,
+            1,
+            10,
+            1,
+            (value: number) => updateModule({ slides_per_view: value }),
+            ''
           )}
-          ${this.renderFieldSection(
+          ${this.renderSliderField(
             'Space Between',
             'Space between slides in pixels',
-            hass,
-            { space_between: sliderModule.space_between || 0 },
-            [this.numberField('space_between', 0, 100, 5)],
-            (e: CustomEvent) => updateModule({ space_between: e.detail.value.space_between })
+            sliderModule.space_between || 0,
+            0,
+            0,
+            100,
+            5,
+            (value: number) => updateModule({ space_between: value }),
+            'px'
           )}
           ${(sliderModule.slides_per_view || 1) > 1
             ? this.renderFieldSection(
@@ -520,14 +527,16 @@ export class UltraSliderModule extends BaseUltraModule {
                   (e: CustomEvent) =>
                     updateModule({ pagination_position: e.detail.value.pagination_position })
                 )}
-                ${this.renderFieldSection(
+                ${this.renderSliderField(
                   'Pagination Size',
                   'Size of pagination indicators in pixels',
-                  hass,
-                  { pagination_size: sliderModule.pagination_size || 12 },
-                  [this.numberField('pagination_size', 6, 30, 1)],
-                  (e: CustomEvent) =>
-                    updateModule({ pagination_size: e.detail.value.pagination_size })
+                  sliderModule.pagination_size || 12,
+                  12,
+                  6,
+                  30,
+                  1,
+                  (value: number) => updateModule({ pagination_size: value }),
+                  'px'
                 )}
                 <div style="margin-bottom: 16px;">
                   <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">
@@ -606,14 +615,16 @@ export class UltraSliderModule extends BaseUltraModule {
                     }}
                   ></ha-switch>
                 </div>
-                ${this.renderFieldSection(
+                ${this.renderSliderField(
                   'Arrow Position Offset',
                   'Offset arrows position: positive = more inside, negative = more outside (in pixels)',
-                  hass,
-                  { arrow_position_offset: sliderModule.arrow_position_offset || 0 },
-                  [this.numberField('arrow_position_offset', -100, 100, 5)],
-                  (e: CustomEvent) =>
-                    updateModule({ arrow_position_offset: e.detail.value.arrow_position_offset })
+                  sliderModule.arrow_position_offset || 0,
+                  0,
+                  -100,
+                  100,
+                  5,
+                  (value: number) => updateModule({ arrow_position_offset: value }),
+                  'px'
                 )}
                 <div style="margin-bottom: 16px;">
                   <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">
@@ -668,13 +679,16 @@ export class UltraSliderModule extends BaseUltraModule {
                   ],
                   (e: CustomEvent) => updateModule({ arrow_style: e.detail.value.arrow_style })
                 )}
-                ${this.renderFieldSection(
+                ${this.renderSliderField(
                   'Arrow Size',
                   'Size of navigation arrows in pixels',
-                  hass,
-                  { arrow_size: sliderModule.arrow_size || 40 },
-                  [this.numberField('arrow_size', 20, 80, 5)],
-                  (e: CustomEvent) => updateModule({ arrow_size: e.detail.value.arrow_size })
+                  sliderModule.arrow_size || 40,
+                  40,
+                  20,
+                  80,
+                  5,
+                  (value: number) => updateModule({ arrow_size: value }),
+                  'px'
                 )}
                 ${this.renderFieldSection(
                   'Previous Arrow Icon',
@@ -736,13 +750,16 @@ export class UltraSliderModule extends BaseUltraModule {
             (e: CustomEvent) =>
               updateModule({ transition_effect: e.detail.value.transition_effect })
           )}
-          ${this.renderFieldSection(
+          ${this.renderSliderField(
             'Transition Speed',
             'Transition duration in milliseconds',
-            hass,
-            { transition_speed: sliderModule.transition_speed || 300 },
-            [this.numberField('transition_speed', 100, 2000, 50)],
-            (e: CustomEvent) => updateModule({ transition_speed: e.detail.value.transition_speed })
+            sliderModule.transition_speed || 300,
+            300,
+            100,
+            2000,
+            50,
+            (value: number) => updateModule({ transition_speed: value }),
+            'ms'
           )}
         </div>
 
@@ -764,14 +781,16 @@ export class UltraSliderModule extends BaseUltraModule {
 
           ${sliderModule.auto_play
             ? html`
-                ${this.renderFieldSection(
+                ${this.renderSliderField(
                   'Auto-play Delay',
                   'Time between slides in milliseconds',
-                  hass,
-                  { auto_play_delay: sliderModule.auto_play_delay || 3000 },
-                  [this.numberField('auto_play_delay', 1000, 10000, 500)],
-                  (e: CustomEvent) =>
-                    updateModule({ auto_play_delay: e.detail.value.auto_play_delay })
+                  sliderModule.auto_play_delay || 3000,
+                  3000,
+                  1000,
+                  10000,
+                  500,
+                  (value: number) => updateModule({ auto_play_delay: value }),
+                  'ms'
                 )}
                 <div
                   style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;"
@@ -3147,6 +3166,6 @@ export class UltraSliderModule extends BaseUltraModule {
   getStyles(): string {
     // Swiper CSS is imported directly via import statements
     // Custom styles for Ultra Card-specific features are in renderPreview
-    return ``;
+    return `${BaseUltraModule.getSliderStyles()}`;
   }
 }

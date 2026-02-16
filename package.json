@@ -1,6 +1,6 @@
 {
   "name": "ultra-card",
-  "version": "2.5.0-beta9",
+  "version": "2.5.0-beta-RC1",
   "description": "Ultra Card - A modular card builder for Home Assistant",
   "main": "dist/ultra-card.js",
   "scripts": {
@@ -21,7 +21,10 @@
     "lint:fix": "eslint src/**/*.ts --fix",
     "validate:translations": "node scripts/validate-translations.js",
     "translations:stats": "node scripts/translation-stats.js",
-    "sync:translations": "node prepare-build.js"
+    "sync:translations": "node prepare-build.js",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [
     "home-assistant",
@@ -38,6 +41,8 @@
     "url": "https://github.com/WJDDesigns/Ultra-Card"
   },
   "dependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "1.7.7",
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "1.1.0",
     "@codemirror/autocomplete": "^6.18.3",
     "@codemirror/commands": "^6.7.1",
     "@codemirror/lang-javascript": "^6.2.2",
@@ -71,6 +76,7 @@
     "style-loader": "^4.0.0",
     "ts-loader": "^9.4.2",
     "typescript": "^5.3.3",
+    "vitest": "4.0.18",
     "webpack": "^5.75.0",
     "webpack-cli": "^5.0.1",
     "webpack-dev-server": "^4.15.1"

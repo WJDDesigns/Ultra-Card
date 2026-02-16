@@ -36,7 +36,6 @@ import {
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';
 
-// Import editor at top level to ensure it's available
 import '../editor/ultra-card-editor';
 import { externalCardContainerService } from '../services/external-card-container-service';
 
@@ -53,10 +52,11 @@ export class UltraCard extends LitElement {
     const oldHass = this._hass;
     this._hass = value;
 
-    // Only update external card containers if hass object reference changed
+    // Only update external card containers and logic service if hass object reference changed
     // (HA creates new objects when state changes, so reference check is sufficient)
     if (value && value !== oldHass) {
       externalCardContainerService.setHass(value);
+      logicService.setHass(value);
     }
 
     // Let Lit handle the property change for other updates
@@ -85,7 +85,6 @@ export class UltraCard extends LitElement {
   private _globalTransparencyApplied = false;
   private _variablesBackupUnsub?: () => void;
   private _variablesBackupVersion = 0;
-
   connectedCallback(): void {
     super.connectedCallback();
 
@@ -385,6 +384,54 @@ export class UltraCard extends LitElement {
     // NOTE: We no longer dispatch config-changed events automatically for backup
     // This was causing HA's card picker to pre-select UC card when adding new cards
     // Backup is now only saved when user explicitly saves through the editor
+  }
+
+  /**
+   * Collect all entity IDs referenced in the card config (display conditions, module entities).
+   * Used by shouldUpdate to skip re-renders when only unrelated hass state changed.
+   */
+  private _getRelevantEntityIds(): Set<string> {
+    const ids = new Set<string>();
+    const config = this.config;
+    if (!config?.layout?.rows) return ids;
+    for (const row of config.layout.rows) {
+      row.display_conditions?.forEach(c => {
+        if (c.entity && typeof c.entity === 'string') ids.add(c.entity);
+      });
+      for (const col of row.columns || []) {
+        col.display_conditions?.forEach(c => {
+          if (c.entity && typeof c.entity === 'string') ids.add(c.entity);
+        });
+        for (const mod of col.modules || []) {
+          mod.display_conditions?.forEach(c => {
+            if (c.entity && typeof c.entity === 'string') ids.add(c.entity);
+          });
+          const m = mod as { entity?: string; entities?: string[] };
+          if (typeof m.entity === 'string') ids.add(m.entity);
+          if (Array.isArray(m.entities)) m.entities.forEach(e => ids.add(e));
+        }
+      }
+    }
+    return ids;
+  }
+
+  protected shouldUpdate(changedProps: PropertyValues): boolean {
+    if (changedProps.has('config')) return true;
+    if (!changedProps.has('hass')) return true;
+    const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+    const newHass = this.hass;
+    if (!newHass?.states) return true;
+    const entityIds = this._getRelevantEntityIds();
+    if (entityIds.size === 0) return true;
+    for (const id of entityIds) {
+      const oldState = oldHass?.states?.[id]?.state;
+      const newState = newHass.states?.[id]?.state;
+      if (oldState !== newState) return true;
+      const oldChanged = oldHass?.states?.[id]?.last_changed;
+      const newChanged = newHass.states?.[id]?.last_changed;
+      if (oldChanged !== newChanged) return true;
+    }
+    return false;
   }
 
   protected willUpdate(changedProps: PropertyValues): void {
@@ -902,7 +949,12 @@ export class UltraCard extends LitElement {
     }
 
     return html`
-      <div class="card-container" style="${cardStyle}">
+      <div
+        class="card-container"
+        style="${cardStyle}"
+        role="region"
+        aria-label="Ultra Card"
+      >
         ${this.config.layout.rows.map(row => this._renderRow(row))}
       </div>
     `;

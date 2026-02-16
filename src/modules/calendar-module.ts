@@ -427,16 +427,16 @@ export class UltraCalendarModule extends BaseUltraModule {
         )}
 
         <!-- Days to Show -->
-        ${this.renderFieldSection(
+        ${this.renderSliderField(
           'Days to Show',
           'Number of days to display events for',
-          hass,
-          { days_to_show: module.days_to_show || 7 },
-          [this.numberField('days_to_show', 1, 365)],
-          (e: CustomEvent) => {
-            updateModule({ days_to_show: e.detail.value.days_to_show });
-            setTimeout(() => this.triggerPreviewUpdate(), 50);
-          }
+          module.days_to_show || 7,
+          7,
+          1,
+          365,
+          1,
+          (value: number) => updateModule({ days_to_show: value }),
+          ''
         )}
 
         <!-- Title Configuration -->
@@ -595,16 +595,16 @@ export class UltraCalendarModule extends BaseUltraModule {
                 </div>
               </div>
             `
-          : this.renderFieldSection(
+          : this.renderSliderField(
               'Events to Show',
               'Maximum number of events to display (0 for unlimited)',
-              hass,
-              { compact_events_to_show: module.compact_events_to_show ?? 5 },
-              [this.numberField('compact_events_to_show', 0, 100)],
-              (e: CustomEvent) => {
-                updateModule({ compact_events_to_show: e.detail.value.compact_events_to_show });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              }
+              module.compact_events_to_show ?? 5,
+              5,
+              0,
+              100,
+              1,
+              (value: number) => updateModule({ compact_events_to_show: value }),
+              ''
             )}
 
         ${this.renderFieldSection(
@@ -714,28 +714,28 @@ export class UltraCalendarModule extends BaseUltraModule {
       <div class="view-options-group">
         <div class="view-options-title">Week View Options</div>
 
-        ${this.renderFieldSection(
+        ${this.renderSliderField(
           'Start Hour',
           'First hour to display (0-23)',
-          hass,
-          { week_start_hour: module.week_start_hour ?? 0 },
-          [this.numberField('week_start_hour', 0, 23)],
-          (e: CustomEvent) => {
-            updateModule({ week_start_hour: e.detail.value.week_start_hour });
-            setTimeout(() => this.triggerPreviewUpdate(), 50);
-          }
+          module.week_start_hour ?? 0,
+          0,
+          0,
+          23,
+          1,
+          (value: number) => updateModule({ week_start_hour: value }),
+          'h'
         )}
 
-        ${this.renderFieldSection(
+        ${this.renderSliderField(
           'End Hour',
           'Last hour to display (1-24)',
-          hass,
-          { week_end_hour: module.week_end_hour ?? 24 },
-          [this.numberField('week_end_hour', 1, 24)],
-          (e: CustomEvent) => {
-            updateModule({ week_end_hour: e.detail.value.week_end_hour });
-            setTimeout(() => this.triggerPreviewUpdate(), 50);
-          }
+          module.week_end_hour ?? 24,
+          24,
+          1,
+          24,
+          1,
+          (value: number) => updateModule({ week_end_hour: value }),
+          'h'
         )}
 
         ${this.renderFieldSection(
@@ -769,28 +769,28 @@ export class UltraCalendarModule extends BaseUltraModule {
       <div class="view-options-group">
         <div class="view-options-title">Day View Options</div>
 
-        ${this.renderFieldSection(
+        ${this.renderSliderField(
           'Start Hour',
           'First hour to display (0-23)',
-          hass,
-          { day_start_hour: module.day_start_hour ?? 0 },
-          [this.numberField('day_start_hour', 0, 23)],
-          (e: CustomEvent) => {
-            updateModule({ day_start_hour: e.detail.value.day_start_hour });
-            setTimeout(() => this.triggerPreviewUpdate(), 50);
-          }
+          module.day_start_hour ?? 0,
+          0,
+          0,
+          23,
+          1,
+          (value: number) => updateModule({ day_start_hour: value }),
+          'h'
         )}
 
-        ${this.renderFieldSection(
+        ${this.renderSliderField(
           'End Hour',
           'Last hour to display (1-24)',
-          hass,
-          { day_end_hour: module.day_end_hour ?? 24 },
-          [this.numberField('day_end_hour', 1, 24)],
-          (e: CustomEvent) => {
-            updateModule({ day_end_hour: e.detail.value.day_end_hour });
-            setTimeout(() => this.triggerPreviewUpdate(), 50);
-          }
+          module.day_end_hour ?? 24,
+          24,
+          1,
+          24,
+          1,
+          (value: number) => updateModule({ day_end_hour: value }),
+          'h'
         )}
 
         ${this.renderFieldSection(
@@ -881,16 +881,16 @@ export class UltraCalendarModule extends BaseUltraModule {
       <div class="view-options-group">
         <div class="view-options-title">Grid View Options</div>
 
-        ${this.renderFieldSection(
+        ${this.renderSliderField(
           'Columns',
           'Number of columns in the grid',
-          hass,
-          { grid_columns: module.grid_columns ?? 2 },
-          [this.numberField('grid_columns', 1, 6)],
-          (e: CustomEvent) => {
-            updateModule({ grid_columns: e.detail.value.grid_columns });
-            setTimeout(() => this.triggerPreviewUpdate(), 50);
-          }
+          module.grid_columns ?? 2,
+          2,
+          1,
+          6,
+          1,
+          (value: number) => updateModule({ grid_columns: value }),
+          ''
         )}
 
         ${this.renderFieldSection(
@@ -1179,16 +1179,16 @@ export class UltraCalendarModule extends BaseUltraModule {
             </div>
           </div>
 
-          ${this.renderFieldSection(
+          ${this.renderSliderField(
             'Event Background Opacity',
             'Background opacity for event items (0-100)',
-            hass,
-            { event_background_opacity: module.event_background_opacity ?? 0 },
-            [this.numberField('event_background_opacity', 0, 100)],
-            (e: CustomEvent) => {
-              updateModule({ event_background_opacity: e.detail.value.event_background_opacity });
-              setTimeout(() => this.triggerPreviewUpdate(), 50);
-            }
+            module.event_background_opacity ?? 0,
+            0,
+            0,
+            100,
+            1,
+            (value: number) => updateModule({ event_background_opacity: value }),
+            '%'
           )}
 
           ${this.renderFieldSection(
@@ -1332,23 +1332,28 @@ export class UltraCalendarModule extends BaseUltraModule {
           )}
         </div>
 
-        ${this.renderFieldSection(
+        ${this.renderSliderField(
           'Refresh Interval (minutes)',
           'How often to refresh calendar events (0 to disable)',
-          hass,
-          { refresh_interval: module.refresh_interval ?? 15 },
-          [this.numberField('refresh_interval', 0, 1440)],
-          (e: CustomEvent) => updateModule({ refresh_interval: e.detail.value.refresh_interval })
+          module.refresh_interval ?? 15,
+          15,
+          0,
+          1440,
+          1,
+          (value: number) => updateModule({ refresh_interval: value }),
+          'min'
         )}
 
-        ${this.renderFieldSection(
+        ${this.renderSliderField(
           'Max Event Title Length',
           'Truncate event titles to this length (0 for no limit)',
-          hass,
-          { max_event_title_length: module.max_event_title_length ?? 0 },
-          [this.numberField('max_event_title_length', 0, 500)],
-          (e: CustomEvent) =>
-            updateModule({ max_event_title_length: e.detail.value.max_event_title_length })
+          module.max_event_title_length ?? 0,
+          0,
+          0,
+          500,
+          1,
+          (value: number) => updateModule({ max_event_title_length: value }),
+          ''
         )}
       </div>
     `;
@@ -2777,7 +2782,7 @@ export class UltraCalendarModule extends BaseUltraModule {
   }
 
   getStyles(): string {
-    return this.getPreviewStyles({} as CalendarModule);
+    return `${BaseUltraModule.getSliderStyles()}${this.getPreviewStyles({} as CalendarModule)}`;
   }
 }
 

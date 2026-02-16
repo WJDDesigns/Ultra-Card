@@ -148,3 +148,15 @@ For completely hands-free testing, install `lovelace-auto-reload-card` via HACS:
 - **Auto-deploy is built-in** - Webpack copies files automatically on every build
 - **Keep DevTools open** - Essential for bypassing browser cache
 - **~10-15 second iteration** - Down from 60-90 seconds with the old workflow
+
+---
+
+## TypeScript strict mode (incremental)
+
+The project currently uses `strict: false` and `noImplicitAny: false` in `tsconfig.json`. Moving to strict mode improves type safety and catches bugs earlier. Recommended incremental path:
+
+1. **Enable `strictNullChecks`** – Run `npx tsc --noEmit` after setting `"strictNullChecks": true` in `tsconfig.json` to see errors. Fix or narrow types file-by-file (e.g. add `!` or optional chaining, or ensure values are defined before use).
+2. **Enable `noImplicitAny`** – Add explicit types where TypeScript infers `any`.
+3. **Enable full `strict: true`** – Address remaining strict-mode errors.
+
+Fixing can be done per-directory (e.g. `src/utils/` first) or per-module. Use `// @ts-expect-error` sparingly and only with a short comment explaining the exception.
