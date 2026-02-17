@@ -4,6 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { NativeCardModule, UltraCardConfig } from '../types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { ucNativeCardsService } from '../services/uc-native-cards-service';
+import { Z_INDEX } from '../utils/uc-z-index';
 import yaml from 'js-yaml';
 
 // Editor element cache to prevent unnecessary recreation
@@ -881,11 +882,13 @@ export class UltraNativeCardModule extends BaseUltraModule {
 
   static get styles(): CSSResult {
     return css`
+      /* Stacking context above UC navbar so built-in HA popups (date picker, etc.) show on top */
       .native-card-preview {
         width: 100%;
         min-height: 100px;
         display: block;
         position: relative;
+        z-index: ${Z_INDEX.NATIVE_CARD_ABOVE_NAV};
       }
       
       .native-card-preview > * {

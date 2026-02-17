@@ -1,5 +1,15 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.5.0-beta-RC2
+
+### 🐛 Bug Fixes
+
+- **Fixed Issues with slider control module and changes not being accepted** - Enhanced module functionality for better user experience
+- **Fixed Toggle module justification in horizontal layout** - Enhanced module functionality for better user experience
+- **Fixed Popup behavior when using navigation module** - Enhanced module functionality for better user experience
+
+---
+
 ## Version 2.5.0-beta-RC1
 
 ### 🚀 New Features

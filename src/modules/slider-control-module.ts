@@ -33,6 +33,9 @@ export class UltraSliderControlModule extends BaseUltraModule {
   // Bar management state
   private expandedBars: Set<string> = new Set();
 
+  // Flag to track whether drag was initiated from the drag handle
+  private _dragFromHandle = false;
+
   // Track which bars are being interacted with to prevent reactive updates
   private interactingBars: Set<string> = new Set();
 
@@ -846,17 +849,18 @@ export class UltraSliderControlModule extends BaseUltraModule {
             max-height: 0;
             overflow: hidden;
             transition:
-              max-height 0.2s ease-out,
-              padding 0.2s ease-out;
+              max-height 0.3s ease-out,
+              padding 0.2s ease-out,
+              opacity 0.15s ease-out;
             opacity: 0;
           }
           .bar-content.expanded {
             padding: 16px;
-            max-height: 9999px;
+            max-height: 2500px;
             overflow: visible;
             opacity: 1;
             transition:
-              max-height 0.2s ease-in,
+              max-height 0.3s ease-in,
               padding 0.2s ease-in,
               opacity 0.15s ease-in;
           }
@@ -910,21 +914,18 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 data-bar-id="${bar.id}"
                 draggable="true"
                 @dragstart=${(e: DragEvent) => {
-                  const composedPath = e.composedPath?.() || [];
-                  const canDrag = composedPath.some(element =>
-                    (element as HTMLElement).classList?.contains('drag-handle')
-                  );
-
-                  if (!canDrag) {
+                  if (!this._dragFromHandle) {
                     e.preventDefault();
                     return;
                   }
+                  this._dragFromHandle = false;
 
                   e.dataTransfer!.setData('text/plain', bar.id);
                   e.dataTransfer!.effectAllowed = 'move';
                   (e.currentTarget as HTMLElement).classList.add('dragging');
                 }}
                 @dragend=${(e: DragEvent) => {
+                  this._dragFromHandle = false;
                   (e.currentTarget as HTMLElement).classList.remove('dragging');
                 }}
                 @dragover=${(e: DragEvent) => {
@@ -956,20 +957,42 @@ export class UltraSliderControlModule extends BaseUltraModule {
               >
                 <div
                   class="bar-header ${isExpanded ? 'expanded' : ''}"
-                  @click=${() => {
+                  @click=${(e: Event) => {
                     const wasExpanded = this.expandedBars.has(bar.id);
                     if (wasExpanded) {
                       this.expandedBars.delete(bar.id);
                     } else {
                       this.expandedBars.add(bar.id);
                     }
-                    this.requestUpdate();
+
+                    // Toggle directly on DOM for instant feedback (requestUpdate is a no-op in module context)
+                    const header = e.currentTarget as HTMLElement;
+                    const barItem = header.closest('.bar-item');
+                    if (barItem) {
+                      const content = barItem.querySelector('.bar-content');
+                      const chevron = header.querySelector('ha-icon[icon^="mdi:chevron"]');
+                      if (wasExpanded) {
+                        header.classList.remove('expanded');
+                        content?.classList.remove('expanded');
+                        if (chevron) chevron.setAttribute('icon', 'mdi:chevron-down');
+                      } else {
+                        header.classList.add('expanded');
+                        content?.classList.add('expanded');
+                        if (chevron) chevron.setAttribute('icon', 'mdi:chevron-up');
+                      }
+                    }
                   }}
                 >
                   <ha-icon
                     icon="mdi:drag-vertical"
                     class="drag-handle"
                     @click=${(e: Event) => e.stopPropagation()}
+                    @mousedown=${() => {
+                      this._dragFromHandle = true;
+                    }}
+                    @touchstart=${() => {
+                      this._dragFromHandle = true;
+                    }}
                   ></ha-icon>
                   <div class="bar-type-badge ${bar.type}">${bar.type}</div>
                   <div class="bar-label">${displayName}</div>
@@ -2587,8 +2610,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
       const resolvedOverlayIconPosition =
         bar.overlay_icon_position || sliderControl.overlay_icon_position || 'bottom';
 
-      // Default track color: use fill color at 25% opacity
-      let trackColor = sliderControl.slider_track_color;
+      // Track color: per-bar override > global override > auto-calculated from fill
+      let trackColor = bar.slider_track_color || sliderControl.slider_track_color;
       if (!trackColor) {
         if (isGradient) {
           trackColor = 'rgba(var(--rgb-primary-color), 0.25)';
@@ -2653,6 +2676,67 @@ export class UltraSliderControlModule extends BaseUltraModule {
           containerStyles = `
             background: ${trackColor};
             border-radius: 10px;
+          `;
+          overlayContent = overlayFillSnippet;
+          break;
+        case 'embossed':
+          containerStyles = `
+            background: ${baseBackground};
+            border-radius: ${borderRadius};
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 -2px 4px rgba(255, 255, 255, 0.1), 0 1px 2px rgba(0, 0, 0, 0.2);
+          `;
+          overlayContent = `
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 0%, transparent 40%, rgba(0, 0, 0, 0.15) 100%);
+          `;
+          break;
+        case 'inset':
+          containerStyles = `
+            background: ${baseBackground};
+            border-radius: ${borderRadius};
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 -1px 2px rgba(255, 255, 255, 0.05);
+          `;
+          break;
+        case 'gradient-overlay':
+          containerStyles = `
+            background: ${baseBackground};
+            border-radius: ${borderRadius};
+          `;
+          overlayContent = `
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%, rgba(0, 0, 0, 0.15) 100%);
+          `;
+          break;
+        case 'neon-glow': {
+          // Neon glow uses a blurred duplicate of the bar's background placed behind it,
+          // so the glow naturally follows gradients (RGB, color_temp) and solid fills alike.
+          containerStyles = `
+            background: ${baseBackground};
+            border-radius: ${borderRadius};
+          `;
+          break;
+        }
+        case 'outline':
+          containerStyles = `
+            background: transparent;
+            border-radius: ${borderRadius};
+            border: 2px solid ${gradient};
+          `;
+          overlayContent = overlayFillSnippet;
+          break;
+        case 'metallic':
+          containerStyles = `
+            background: ${baseBackground};
+            border-radius: ${borderRadius};
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+          `;
+          overlayContent = `
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.05) 45%, rgba(0, 0, 0, 0.05) 55%, rgba(255, 255, 255, 0.1) 100%);
+          `;
+          break;
+        case 'neumorphic':
+          containerStyles = `
+            background: ${trackColor};
+            border-radius: ${borderRadius};
+            box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.15), -6px -6px 12px rgba(255, 255, 255, 0.08);
           `;
           overlayContent = overlayFillSnippet;
           break;
@@ -2822,11 +2906,19 @@ export class UltraSliderControlModule extends BaseUltraModule {
       const barWrapperClass = `uc-slider-bar uc-layout-${layoutMode} uc-orientation-${orientation} uc-bar-type-${bar.type}`;
 
       const containerWidth = isVertical ? `${barSliderHeight}px` : '100%';
+      // For vertical split, use a fixed pixel height instead of '100%' which creates
+      // an unresolvable percentage chain (no ancestor has a defined height).
       const containerHeight = isVertical
-        ? shouldFillParent
-          ? '100%'
-          : `${targetVerticalHeight}px`
+        ? `${targetVerticalHeight}px`
         : `${barSliderStyle === 'minimal' ? 8 : barSliderHeight}px`;
+
+      // Build the neon glow background element for neon-glow style
+      // Uses a blurred duplicate of the bar's gradient to create a glow that follows the colors.
+      // For gradient bars: use the full gradient so the glow follows all colors.
+      // For solid fill bars: use just the fill color (not baseBackground which includes the
+      // faded track), so the glow is vibrant and visible.
+      const isNeonGlow = barSliderStyle === 'neon-glow';
+      const neonGlowBackground = isGradientBar ? gradient : gradient;
 
       return html`
         <div class="${barWrapperClass}">
@@ -2841,22 +2933,41 @@ export class UltraSliderControlModule extends BaseUltraModule {
               `
             : ''}
 
-          <div
-            class="slider-track-container uc-slider-track"
-            style="
-              position: relative;
-              height: ${containerHeight};
-              width: ${containerWidth};
-              ${containerStyles}
-              transition: all ${bar.transition_duration ||
-            sliderControl.transition_duration ||
-            200}ms ease;
-              overflow: ${barSliderStyle === 'minimal' ? 'visible' : 'hidden'};
-              ${barSliderStyle === 'minimal' ? 'display: flex; align-items: center;' : ''}
-              ${isVertical ? 'display: flex; justify-content: center; align-items: center;' : ''}
-              --slider-height: ${barSliderHeight}px;
-            "
-          >
+          <div style="position: relative; ${isNeonGlow ? 'overflow: visible;' : ''}">
+            ${isNeonGlow
+              ? html`
+                  <div
+                    style="
+                      position: absolute;
+                      inset: 0;
+                      background: ${neonGlowBackground};
+                      border-radius: ${borderRadius};
+                      filter: blur(10px) saturate(1.5);
+                      opacity: 0.6;
+                      pointer-events: none;
+                      z-index: 0;
+                      transition: background 200ms ease;
+                    "
+                  ></div>
+                `
+              : ''}
+            <div
+              class="slider-track-container uc-slider-track"
+              style="
+                position: relative;
+                height: ${containerHeight};
+                width: ${containerWidth};
+                ${containerStyles}
+                transition: all ${bar.transition_duration ||
+              sliderControl.transition_duration ||
+              200}ms ease;
+                overflow: ${barSliderStyle === 'minimal' ? 'visible' : 'hidden'};
+                ${barSliderStyle === 'minimal' ? 'display: flex; align-items: center;' : ''}
+                ${isVertical ? 'display: flex; justify-content: center; align-items: center;' : ''}
+                --slider-height: ${barSliderHeight}px;
+                ${isNeonGlow ? 'z-index: 1;' : ''}
+              "
+            >
             ${overlayContent && !applyGradientAsTrack
               ? html`
                   <div
@@ -2903,9 +3014,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 -webkit-appearance: none;
                 appearance: none;
                 width: ${isVertical
-                ? shouldFillParent
-                  ? `calc(100% + ${inputExtension}px)`
-                  : `${targetVerticalHeight + inputExtension}px`
+                ? `${targetVerticalHeight + inputExtension}px`
                 : '100%'};
                 height: ${isVertical
                 ? isGradientSlider
@@ -2948,21 +3057,25 @@ export class UltraSliderControlModule extends BaseUltraModule {
                         const useAutoContrast =
                           bar.auto_contrast ?? sliderControl.auto_contrast ?? true;
                         const contrastColor = visualPercentage > 50 ? '#000' : '#fff';
-                        const nameColor = useAutoContrast
-                          ? contrastColor
-                          : bar.name_color ||
-                            sliderControl.name_color ||
-                            'var(--primary-text-color)';
-                        const valueColor = useAutoContrast
-                          ? contrastColor
-                          : bar.value_color ||
-                            sliderControl.value_color ||
-                            'var(--primary-text-color)';
-                        const iconColor = useAutoContrast
-                          ? contrastColor
-                          : bar.icon_color ||
-                            sliderControl.icon_color ||
-                            'var(--primary-text-color)';
+                        // Explicit color overrides always take priority over auto-contrast
+                        const explicitNameColor = bar.name_color || sliderControl.name_color;
+                        const nameColor = explicitNameColor
+                          ? explicitNameColor
+                          : useAutoContrast
+                            ? contrastColor
+                            : 'var(--primary-text-color)';
+                        const explicitValueColor = bar.value_color || sliderControl.value_color;
+                        const valueColor = explicitValueColor
+                          ? explicitValueColor
+                          : useAutoContrast
+                            ? contrastColor
+                            : 'var(--primary-text-color)';
+                        const explicitIconColor = bar.icon_color || sliderControl.icon_color;
+                        const iconColor = explicitIconColor
+                          ? explicitIconColor
+                          : useAutoContrast
+                            ? contrastColor
+                            : 'var(--primary-text-color)';
                         const iconToggle =
                           bar.icon_as_toggle ?? sliderControl.icon_as_toggle ?? true;
 
@@ -3184,6 +3297,26 @@ export class UltraSliderControlModule extends BaseUltraModule {
                           const centerElements: TemplateResult[] = [];
                           const rightElements: TemplateResult[] = [];
 
+                          // Explicit color overrides always take priority over auto-contrast
+                          const explicitIconColor = bar.icon_color || sliderControl.icon_color;
+                          const resolvedIconColor = explicitIconColor
+                            ? explicitIconColor
+                            : autoContrast
+                              ? contrastColor
+                              : 'var(--primary-text-color)';
+                          const explicitNameColor = bar.name_color || sliderControl.name_color;
+                          const resolvedNameColor = explicitNameColor
+                            ? explicitNameColor
+                            : autoContrast
+                              ? contrastColor
+                              : 'var(--primary-text-color)';
+                          const explicitValueColor = bar.value_color || sliderControl.value_color;
+                          const resolvedValueColor = explicitValueColor
+                            ? explicitValueColor
+                            : autoContrast
+                              ? contrastColor
+                              : 'var(--primary-text-color)';
+
                           const iconElement = showIconSection
                             ? html`
                                 <ha-icon
@@ -3192,11 +3325,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                                   EntityIconService.getEntityIcon(entityState, homeAssistant)}"
                                   style="
                                     --mdc-icon-size: ${iconSize}px;
-                                    color: ${autoContrast
-                                    ? contrastColor
-                                    : bar.icon_color ||
-                                      sliderControl.icon_color ||
-                                      'var(--primary-text-color)'};
+                                    color: ${resolvedIconColor};
                                     pointer-events: ${iconToggle ? 'auto' : 'none'};
                                     cursor: ${iconToggle ? 'pointer' : 'default'};
                                   "
@@ -3211,11 +3340,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                                   class="uc-slider-name"
                                   style="
                                     font-size: ${bar.name_size || sliderControl.name_size || 14}px;
-                                    color: ${autoContrast
-                                    ? contrastColor
-                                    : bar.name_color ||
-                                      sliderControl.name_color ||
-                                      'var(--primary-text-color)'};
+                                    color: ${resolvedNameColor};
                                     font-weight: ${(bar.name_bold ??
                                   sliderControl.name_bold ??
                                   true)
@@ -3240,11 +3365,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                                     font-size: ${bar.value_size ||
                                   sliderControl.value_size ||
                                   14}px;
-                                    color: ${autoContrast
-                                    ? contrastColor
-                                    : bar.value_color ||
-                                      sliderControl.value_color ||
-                                      'var(--primary-text-color)'};
+                                    color: ${resolvedValueColor};
                                     font-weight: 600;
                                   "
                                 >
@@ -3333,6 +3454,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                       `}
                 `
               : ''}
+          </div>
           </div>
         </div>
       `;
@@ -3450,17 +3572,22 @@ export class UltraSliderControlModule extends BaseUltraModule {
               }
             : undefined;
 
-          // Create elements
+          // Create elements - explicit color overrides take priority over dynamic_icon
+          const outsideExplicitIconColor = bar.icon_color || sliderControl.icon_color;
+          const outsideResolvedIconColor = outsideExplicitIconColor
+            ? outsideExplicitIconColor
+            : (bar.dynamic_icon ?? sliderControl.dynamic_icon ?? true) &&
+                entityState?.attributes.rgb_color
+              ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+              : 'var(--secondary-text-color)';
+
           const iconElement = showIconSection
             ? html`
                 <ha-icon
                   icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
                   style="
                 --mdc-icon-size: ${outsideIconSize}px;
-                color: ${(bar.dynamic_icon ?? sliderControl.dynamic_icon ?? true) &&
-                  entityState?.attributes.rgb_color
-                    ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                    : bar.icon_color || sliderControl.icon_color || 'var(--secondary-text-color)'};
+                color: ${outsideResolvedIconColor};
                 cursor: ${iconToggle ? 'pointer' : 'default'};
                 pointer-events: ${iconToggle ? 'auto' : 'none'};
               "
@@ -3618,16 +3745,22 @@ export class UltraSliderControlModule extends BaseUltraModule {
               }
             : undefined;
 
-          // Create elements
+          // Create elements - explicit color overrides take priority over dynamic_icon
+          const hzOutsideExplicitIconColor = bar.icon_color || sliderControl.icon_color;
+          const hzOutsideResolvedIconColor = hzOutsideExplicitIconColor
+            ? hzOutsideExplicitIconColor
+            : (bar.dynamic_icon ?? sliderControl.dynamic_icon ?? true) &&
+                entityState?.attributes.rgb_color
+              ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+              : 'var(--secondary-text-color)';
+
           const iconElement = showIconSection
             ? html`
                 <ha-icon
                   icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
                   style="
-                --mdc-icon-size: ${sliderControl.icon_size || 16}px;
-                color: ${sliderControl.dynamic_icon && entityState?.attributes.rgb_color
-                    ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                    : 'var(--secondary-text-color)'};
+                --mdc-icon-size: ${bar.icon_size || sliderControl.icon_size || 16}px;
+                color: ${hzOutsideResolvedIconColor};
                 cursor: ${iconToggle ? 'pointer' : 'default'};
                 pointer-events: ${iconToggle ? 'auto' : 'none'};
               "
@@ -3896,16 +4029,22 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
           const allElements: TemplateResult[] = [];
 
+          // Explicit color overrides take priority over dynamic_icon
+          const splitExplicitIconColor = bar.icon_color || sliderControl.icon_color;
+          const splitResolvedIconColor = splitExplicitIconColor
+            ? splitExplicitIconColor
+            : (bar.dynamic_icon ?? sliderControl.dynamic_icon ?? true) &&
+                entityState?.attributes.rgb_color
+              ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+              : 'var(--primary-text-color)';
+
           if (showIconSection) {
             allElements.push(html`
               <ha-icon
                 icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
                 style="
                   --mdc-icon-size: ${bar.icon_size || sliderControl.icon_size || 16}px;
-                  color: ${(bar.dynamic_icon ?? sliderControl.dynamic_icon ?? true) &&
-                entityState?.attributes.rgb_color
-                  ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                  : bar.icon_color || sliderControl.icon_color || 'var(--primary-text-color)'};
+                  color: ${splitResolvedIconColor};
                   cursor: ${iconToggle ? 'pointer' : 'default'};
                   pointer-events: ${iconToggle ? 'auto' : 'none'};
                 "
@@ -4013,12 +4152,26 @@ export class UltraSliderControlModule extends BaseUltraModule {
       `;
     }
 
+    // Apply module background color if configured
+    const moduleBackground = (sliderControl as any).design?.background_color || sliderControl.background_color || '';
+    const backgroundStyle = moduleBackground ? `background: ${moduleBackground};` : '';
+
+    // Check if any bar uses neon-glow so we can ensure overflow isn't clipped
+    const hasNeonGlow = bars.some(
+      b => (b.slider_style || sliderControl.slider_style || 'flat') === 'neon-glow'
+    );
+    const overflowStyle = hasNeonGlow
+      ? 'overflow: visible;'
+      : isOutsideLayout
+        ? 'overflow: hidden;'
+        : '';
+
     return html`
       <div
         class="slider-control-container ${baseLayoutClass}"
-        style="padding: 16px; position: relative; ${isVertical
-          ? 'display: flex; justify-content: center; align-items: center;'
-          : ''} ${isOutsideLayout ? 'overflow: hidden;' : ''}"
+        style="padding: 16px; position: relative; ${backgroundStyle} ${isVertical
+          ? `display: flex; justify-content: center; align-items: center; min-height: ${verticalSliderHeight}px;`
+          : ''} ${overflowStyle}"
       >
         ${warningBanner}
         <style>
@@ -4218,8 +4371,9 @@ export class UltraSliderControlModule extends BaseUltraModule {
   }
 
   /**
-   * Extract RGB values from a color string (hex, rgb, or CSS var)
-   * Returns default blue if parsing fails
+   * Extract RGB values from a color string (hex, rgb, rgba, or gradient)
+   * For gradient strings, extracts the first parseable color found.
+   * Returns default blue if parsing fails.
    */
   private extractRgbFromColor(color: string): [number, number, number] {
     // Try to extract from hex color
@@ -4250,6 +4404,30 @@ export class UltraSliderControlModule extends BaseUltraModule {
     const rgbaMatch = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/);
     if (rgbaMatch) {
       return [parseInt(rgbaMatch[1]), parseInt(rgbaMatch[2]), parseInt(rgbaMatch[3])];
+    }
+
+    // For gradient strings, try to find the first rgb/hex color inside
+    if (color.includes('gradient')) {
+      const gradientRgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      if (gradientRgbMatch) {
+        return [parseInt(gradientRgbMatch[1]), parseInt(gradientRgbMatch[2]), parseInt(gradientRgbMatch[3])];
+      }
+      const gradientHexMatch = color.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/);
+      if (gradientHexMatch) {
+        const hex = gradientHexMatch[1];
+        if (hex.length === 3) {
+          return [
+            parseInt(hex[0] + hex[0], 16),
+            parseInt(hex[1] + hex[1], 16),
+            parseInt(hex[2] + hex[2], 16),
+          ];
+        }
+        return [
+          parseInt(hex.substring(0, 2), 16),
+          parseInt(hex.substring(2, 4), 16),
+          parseInt(hex.substring(4, 6), 16),
+        ];
+      }
     }
 
     // Default to primary blue color

@@ -89,8 +89,15 @@ export const Z_INDEX = {
   /** Card background layer (z-index: 10) */
   CARD_BACKGROUND: 10,
 
-  /** Card controls and buttons (z-index: 20) */
+  /** Card controls and buttons (z-index: 20) - also used for UC navbar layer */
   CARD_CONTROLS: 20,
+
+  /**
+   * Native card live container - above navbar so built-in HA popups (date picker,
+   * dropdowns from tile/entity cards) render in front of the UC navigation bar.
+   * (z-index: 25)
+   */
+  NATIVE_CARD_ABOVE_NAV: 25,
 
   /** Card tooltips (z-index: 30) */
   CARD_TOOLTIP: 30,

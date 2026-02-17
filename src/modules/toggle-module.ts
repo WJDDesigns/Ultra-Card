@@ -1872,14 +1872,17 @@ export class UltraToggleModule extends BaseUltraModule {
         .segmented-container {
           display: flex;
           flex-direction: column;
-          align-items: ${module.alignment === 'left'
-            ? 'flex-start'
-            : module.alignment === 'right'
-              ? 'flex-end'
-              : 'center'};
+          align-items: ${module.alignment === 'justify'
+            ? 'stretch'
+            : module.alignment === 'left'
+              ? 'flex-start'
+              : module.alignment === 'right'
+                ? 'flex-end'
+                : 'center'};
           padding: 8px;
           gap: ${module.spacing || 8}px;
           width: ${module.alignment === 'justify' ? '100%' : 'auto'};
+          box-sizing: border-box;
         }
 
         .segmented-title {
@@ -1896,6 +1899,7 @@ export class UltraToggleModule extends BaseUltraModule {
           padding: 4px;
           gap: ${module.spacing || 0}px;
           width: ${module.alignment === 'justify' ? '100%' : 'auto'};
+          box-sizing: border-box;
         }
 
         .segmented-button {

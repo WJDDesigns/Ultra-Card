@@ -837,6 +837,12 @@ export class UltraHorizontalModule extends BaseUltraModule {
   }
 
   private childShouldFillAvailableSpace(childModule: CardModule): boolean {
+    // Any child module with alignment "justify" should fill available horizontal space
+    const childAsAny = childModule as any;
+    if (childAsAny.alignment === 'justify') {
+      return true;
+    }
+
     if (childModule.type === 'separator') {
       const separator = childModule as any;
       const orientation = separator.orientation || 'horizontal';
