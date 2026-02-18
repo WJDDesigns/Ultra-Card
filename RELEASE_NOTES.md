@@ -1,5 +1,127 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.5.0
+
+This release delivers our largest update since 2.2.0 with **91 changes** across the board.
+
+**📊 By the numbers:** 28 new features | 42 bug fixes | 21 improvements
+
+### 🙏 Thank You, Discord Community
+
+A huge thank you to the Ultra Card Discord community. Your feature requests and bug reports are a major reason we have such a capable, stable card builder. Your feedback shapes every release. Keep it coming.
+
+### 🚀 New Features
+
+- Added live search for modules and cards
+- Added custom variables system
+- Added custom sizing for columns
+- Added search in modules, cards, and presets
+- Added global and card-specific variable scope
+- Added viewport column breakpoint menu
+- Added Pro toggle to remove default modules on new cards
+- Added Robot Vacuum module for Pro users
+- Added device breakpoints for custom designs per device
+- Added device breakpoints in Live Preview
+- Added icon and text size sliders for Text module
+- Added 24-hour grace period for Pro user verification
+- Added conditional logic for grid entities with override
+- Added People module
+- Added default title and value size in graph module
+- Added default Home Assistant font
+- Added Navigation module with dock-style layout
+- Added time interval toggle for graphs
+- Added show/hide dock toggle when editing
+- Added navigation module scrolling on mobile
+- Added attribute display in icon and info modules
+- Added template cheatsheet button with copy support
+- Added popup module icon sizing
+- Added special variable import
+- Added Media Player module
+- Redesigned builder layout for better desktop and mobile experience
+- Improved graph module value refresh
+
+### 🐛 Bug Fixes
+
+- Fixed Ultra Card being pre-selected when adding new cards
+- Fixed state mode variables not updating in real time
+- Fixed card-specific variables not resolving after save
+- Fixed local and card-specific variables not resolving in templates
+- Fixed variable save button deleting variables on mobile
+- Fixed variables lost on browser cache clear
+- Fixed gauge module design issues
+- Fixed design tab not working with gauge modules
+- Fixed preset loading issues
+- Fixed global and local variable scope issues
+- Fixed Pro button border in add module window
+- Fixed double border in row builder
+- Fixed popup issues with multiple browser windows
+- Fixed comparison operators in active/inactive state conditions
+- Fixed gauge value offsets
+- Fixed horizontal module navigation conflict with popups
+- Fixed toggle state tracking
+- Fixed gradients not saving to favorites
+- Fixed mobile padding inconsistency
+- Fixed popup rendering issues
+- Fixed UC card pre-selection when adding cards
+- Fixed column settings not showing
+- Fixed bar module left and right action areas causing crashes
+- Fixed number entities not displaying in slider module
+- Fixed double background in horizontal and vertical modules
+- Fixed icon module template animation issues
+- Fixed tabs overflow with nested modules
+- Fixed overflow menu not showing on modules
+- Fixed border radius and background in layout module
+- Fixed bar module template input
+- Fixed map module UI overlaps
+- Fixed icon module template and JSON issues
+- Fixed column inheritance
+- Fixed overflow of children in columns
+- Fixed theme color and opacity
+- Fixed nested tab in popup in new builder
+- Fixed tab module inside popup
+- Fixed slider control changes not being accepted
+- Fixed toggle justification in horizontal layout
+- Fixed popup behavior with navigation module
+- Fixed video background not displaying
+- Fixed navigation module covering UI
+- Fixed mobile navigation stacks
+- Fixed favorite colors
+- Fixed navigation path issues
+- Fixed stacks not showing notifications in navigation
+- Fixed nested modules not showing overflow and edit
+- Fixed popup auto-close
+- Fixed deeply nested modules
+- Fixed z-index in graph module
+- Fixed camera title overlaying UI
+- Fixed variable mode template error
+- Fixed variable persistence
+
+### 🔧 Improvements
+
+- Improved toggle auto maker and behavior
+- Improved variable display
+- Improved graph module
+- Improved popup stability
+- Improved actions service
+- Improved presets with ratings and image previews
+- Improved custom variables
+- Improved sprocket UI element
+- Improved logging to avoid impacting main site
+- Improved drag and drop builder
+- Improved media player control for inactive actions
+- Improved album art refresh in navigation
+- Major performance improvements
+- Removed old logging
+- Redesigned variable layout
+- Redesigned variable edit form
+- Improved variable sections
+- Replaced full_object with attribute mode for variables
+- Improved custom variables and module ID handling
+- Improved variable import and export
+- Further builder layout improvements
+
+---
+
 ## Version 2.5.0-beta-RC2
 
 ### 🐛 Bug Fixes

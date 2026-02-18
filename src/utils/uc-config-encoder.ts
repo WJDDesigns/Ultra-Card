@@ -7,22 +7,59 @@
  *
  * Format: UC_CONFIG_V1:{base64_encoded_compressed_json}
  *
+ * Sensitive fields (e.g. API keys) are redacted before export
+ * so they are never included in exported files or clipboard.
+ *
  * @author WJD Designs
  */
 
-import { UltraCardConfig } from '../types';
+import { UltraCardConfig, CardModule, CardColumn } from '../types';
 import pako from 'pako';
 
 const CONFIG_PREFIX = 'UC_CONFIG_V1:';
 
+/** Placeholder used in exports when a sensitive value is redacted */
+export const SENSITIVE_PLACEHOLDER = '***REDACTED***';
+
+/** Keys that must not be included in exports (e.g. API keys, secrets) */
+const SENSITIVE_MODULE_KEYS: string[] = ['google_api_key'];
+
 export class UcConfigEncoder {
   /**
-   * Encode config to compressed Base64 string
+   * Sanitize config for export: deep-clone and redact sensitive fields
+   * (e.g. map module google_api_key) so they are never written to file or clipboard.
+   */
+  static sanitizeForExport(config: UltraCardConfig): UltraCardConfig {
+    const cloned = JSON.parse(JSON.stringify(config)) as UltraCardConfig;
+    const layout = cloned.layout;
+    if (!layout?.rows) return cloned;
+
+    for (const row of layout.rows) {
+      const columns: CardColumn[] = row.columns ?? [];
+      for (const col of columns) {
+        const modules: CardModule[] = col.modules ?? [];
+        for (const mod of modules) {
+          for (const key of SENSITIVE_MODULE_KEYS) {
+            const rec = mod as unknown as Record<string, unknown>;
+            if (key in mod && rec[key]) {
+              rec[key] = SENSITIVE_PLACEHOLDER;
+            }
+          }
+        }
+      }
+    }
+    return cloned;
+  }
+
+  /**
+   * Encode config to compressed Base64 string.
+   * Sensitive fields are redacted before encoding.
    */
   static encode(config: UltraCardConfig): string {
     try {
+      const safe = this.sanitizeForExport(config);
       // Convert config to JSON string
-      const jsonString = JSON.stringify(config);
+      const jsonString = JSON.stringify(safe);
 
       // Compress using pako (gzip)
       const compressed = pako.deflate(jsonString);
