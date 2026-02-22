@@ -4,6 +4,7 @@ Help make Ultra Card accessible to users worldwide! We welcome translation contr
 
 ## 🌍 Currently Supported Languages
 
+- 🇪🇺 Catalan (`ca.json`)
 - 🇨🇿 Czech (`cs.json`)
 - 🇩🇰 Danish (`da.json`)
 - 🇩🇪 German (`de.json`)
