@@ -1,5 +1,24 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.0.0-beta1
+
+### 🚀 New Features
+
+- **Added new Ultra Card sidebar (Hub) with all settings** - Dashboard, Favorites, Presets, Colors, Variables, Templates, Pro, and About
+- **Added Short intro blurbs on each Hub tab explaining what each tab is for** - New capability for improved dashboard customization
+
+### 🔧 Improvements
+
+- **Moved Favorites, Presets, Colors, Variables, and related settings into the new sidebar for both Pro and non-Pro users** - Improved favorites functionality and storage
+- **Non-Pro users must install the Ultra Card Pro Cloud integration to see the new sidebar and access these settings** - Enhanced Pro user features and customization options
+- **Pro users only need to update the Ultra Card Pro Cloud integration to see the new sidebar** - Enhanced Pro user features and customization options
+
+### 🐛 Bug Fixes
+
+- **Fixed Ultra Card Hub panel not loading when deployed via HACS** - Deploy script now includes ultra-card-panel.js
+
+---
+
 ## Version 2.5.0
 
 This release delivers our largest update since 2.2.0 with **91 changes** across the board.
