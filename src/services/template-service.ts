@@ -29,7 +29,9 @@ function isStringBasedTemplate(templateKey: string): boolean {
   return (
     templateKey.startsWith('unified_') ||
     templateKey.startsWith('info_entity_') ||
-    templateKey.startsWith('state_text_')
+    templateKey.startsWith('state_text_') ||
+    templateKey.startsWith('bar_left_') ||
+    templateKey.startsWith('bar_right_')
   );
 }
 

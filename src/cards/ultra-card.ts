@@ -406,9 +406,37 @@ export class UltraCard extends LitElement {
           mod.display_conditions?.forEach(c => {
             if (c.entity && typeof c.entity === 'string') ids.add(c.entity);
           });
-          const m = mod as { entity?: string; entities?: string[] };
+          const m = mod as any;
           if (typeof m.entity === 'string') ids.add(m.entity);
-          if (Array.isArray(m.entities)) m.entities.forEach(e => ids.add(e));
+          // entities can be string[] (legacy) or an array of objects with an entity field
+          if (Array.isArray(m.entities)) {
+            m.entities.forEach((e: any) => {
+              if (typeof e === 'string') ids.add(e);
+              else if (e?.entity && typeof e.entity === 'string') ids.add(e.entity);
+            });
+          }
+          // Collect entities from nested item arrays (icons, info_entities, data_items, etc.)
+          // so that shouldUpdate() fires when those entities change, even when display_conditions
+          // are present and have populated entityIds (which would otherwise prevent the
+          // "size === 0 → always update" fallback from applying).
+          const nestedArrayKeys = [
+            'icons',
+            'info_entities',
+            'data_items',
+            'data_items_compact',
+            'data_items_banner',
+            'data_items_horizontal_compact',
+            'data_items_horizontal_detailed',
+            'data_items_header',
+            'data_items_music_overlay',
+          ];
+          for (const key of nestedArrayKeys) {
+            if (Array.isArray(m[key])) {
+              for (const item of m[key]) {
+                if (item?.entity && typeof item.entity === 'string') ids.add(item.entity);
+              }
+            }
+          }
         }
       }
     }

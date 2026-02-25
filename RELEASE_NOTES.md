@@ -1,5 +1,21 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.0.0
+
+### 🔗 Ultra Card Connect
+- **Integration renamed to Ultra Card Connect** — The companion integration is now called "Ultra Card Connect" and is **required for all users** (free and Pro) to access the sidebar Hub
+- **Updated Pro tab install instructions** — The Pro tab now directs users to search for "Ultra Card Connect" in HACS with clear messaging that it's needed by everyone, not just Pro subscribers
+- **Updated integration status text** — Sidebar Pro tab now shows "Connected via Ultra Card Connect" when authenticated
+
+### 🚀 New Features
+- **Dashboard tab scans all dashboards** — The Hub Dashboard tab now counts Ultra Cards and views across all your dashboards (not just the current one), giving accurate totals for your entire Home Assistant setup
+- **Bar template support** — Template service now supports `bar_left_` and `bar_right_` template prefixes for bar module customization
+
+### 🐛 Bug Fixes
+- **Fixed entity tracking for nested module arrays** — `shouldUpdate()` now correctly detects entity changes inside nested arrays (`icons`, `info_entities`, `data_items`, `data_items_compact`, `data_items_banner`, and more). Cards using these module types will now re-render properly when their entities change state
+
+---
+
 ## Version 3.0.0-beta1
 
 ### 🚀 New Features

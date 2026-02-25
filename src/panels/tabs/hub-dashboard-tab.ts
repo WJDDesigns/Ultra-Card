@@ -11,7 +11,7 @@ import { VERSION } from '../../version';
 interface DashboardStats {
   cardCount: number;
   viewCount: number;
-  dashboardPath: string;
+  dashboardCount: number;
 }
 
 @customElement('hub-dashboard-tab')
@@ -248,11 +248,26 @@ export class HubDashboardTab extends LitElement {
     this._statsError = '';
     try {
       ucDashboardScannerService.initialize(this.hass);
-      const snapshot = await ucDashboardScannerService.scanDashboard();
+
+      // Scan all dashboards so totals include every UC card across every dashboard
+      const snapshot = await ucDashboardScannerService.scanAllDashboards();
+
+      // Dashboard count = default (Overview) + any custom dashboards in the list
+      let dashboardCount = 1; // always at least the default Overview
+      try {
+        const dashboards: any[] = await (this.hass as any).callWS({ type: 'lovelace/dashboards/list' });
+        if (Array.isArray(dashboards)) {
+          // HA's list includes custom ones; add 1 for Overview
+          dashboardCount = dashboards.length + 1;
+        }
+      } catch {
+        // fall back to 1 if the WS call fails
+      }
+
       this._stats = {
         cardCount: snapshot.card_count,
         viewCount: snapshot.views?.length ?? 0,
-        dashboardPath: snapshot.dashboard_path ?? 'default',
+        dashboardCount,
       };
     } catch (e: any) {
       console.warn('Dashboard scan for stats failed:', e);
@@ -279,25 +294,29 @@ export class HubDashboardTab extends LitElement {
 
       <div class="hub-tab-blurb">
         <ha-icon icon="mdi:information-outline"></ha-icon>
-        <p><strong>Dashboard.</strong> Overview of this view, Ultra Card count, and the latest release notes.</p>
+        <p><strong>Dashboard.</strong> Totals across all your dashboards — how many dashboards, views, and Ultra Cards you have — plus the latest release notes.</p>
       </div>
 
       <div class="stats-card">
-        <h3><ha-icon icon="mdi:view-dashboard"></ha-icon> This dashboard</h3>
+        <h3><ha-icon icon="mdi:view-dashboard"></ha-icon> Your Home Assistant</h3>
         ${this._statsLoading
-          ? html`<div class="stats-loading">Scanning dashboard…</div>`
+          ? html`<div class="stats-loading">Scanning all dashboards…</div>`
           : this._statsError
             ? html`<div class="stats-error">${this._statsError}</div>`
             : this._stats
               ? html`
                   <div class="stats-grid">
                     <div class="stat-item">
-                      <div class="stat-value">${this._stats.cardCount}</div>
-                      <div class="stat-label">Ultra Cards</div>
+                      <div class="stat-value">${this._stats.dashboardCount}</div>
+                      <div class="stat-label">Lovelace Dashboard${this._stats.dashboardCount !== 1 ? 's' : ''}</div>
                     </div>
                     <div class="stat-item">
                       <div class="stat-value">${this._stats.viewCount}</div>
-                      <div class="stat-label">Views</div>
+                      <div class="stat-label">View${this._stats.viewCount !== 1 ? 's' : ''}</div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-value">${this._stats.cardCount}</div>
+                      <div class="stat-label">Ultra Card${this._stats.cardCount !== 1 ? 's' : ''}</div>
                     </div>
                   </div>
                 `

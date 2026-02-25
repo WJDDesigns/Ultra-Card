@@ -1117,7 +1117,7 @@ export class HubProTab extends LitElement {
     return html`
       <div class="hub-tab-blurb">
         <ha-icon icon="mdi:information-outline"></ha-icon>
-        <p><strong>Pro</strong> unlocks cloud sync, dashboard snapshots, manual backups, and premium presets. Connect via the Ultra Card Pro Cloud integration to use these features on all your devices.</p>
+        <p><strong>Ultra Card Connect</strong> is required for all users to access this sidebar. Install it once via HACS — Pro subscribers also get their features synced automatically across every device.</p>
       </div>
       <!-- Integration Status -->
       ${this._renderIntegrationStatus(isIntegrationInstalled, isLoggedIn, isPro)}
@@ -1157,7 +1157,7 @@ export class HubProTab extends LitElement {
             <ha-icon icon="mdi:check-circle"></ha-icon>
           </div>
           <div class="status-body">
-            <h4>PRO Features Unlocked via Ultra Card Pro Cloud</h4>
+            <h4>Connected via Ultra Card Connect</h4>
             <p>
               <strong>${auth.display_name || auth.username}${auth.email ? ` · ${auth.email}` : ''}</strong>
             </p>
@@ -1177,7 +1177,7 @@ export class HubProTab extends LitElement {
             <ha-icon icon="mdi:alert-circle"></ha-icon>
           </div>
           <div class="status-body">
-            <h4>Ultra Card Pro Cloud Detected</h4>
+            <h4>Ultra Card Connect Detected</h4>
             <p>The integration is installed but not configured yet.</p>
             <p class="status-note">Takes 30 seconds to unlock all devices</p>
           </div>
@@ -1562,10 +1562,10 @@ export class HubProTab extends LitElement {
         <div class="cta-icon">
           <ha-icon icon="mdi:cloud-lock-outline"></ha-icon>
         </div>
-        <h3>Unlock PRO Features Across All Devices</h3>
+        <h3>Get the Ultra Card Sidebar + Pro Features</h3>
         <p>
-          Install <strong>Ultra Card Pro Cloud</strong> integration once, and every device
-          connected to this Home Assistant automatically gets PRO features.
+          Install <strong>Ultra Card Connect</strong> once — required for all users to access
+          the sidebar, plus Pro subscribers get their subscription synced across every device automatically.
         </p>
 
         <div class="benefits-grid">
@@ -1603,11 +1603,11 @@ export class HubProTab extends LitElement {
           <h5>Quick Install (2 minutes):</h5>
           <ol>
             <li>Click <strong>"Install via HACS"</strong> below</li>
-            <li>In HACS: Search "<strong>Ultra Card Pro Cloud</strong>"</li>
+            <li>In HACS: Search "<strong>Ultra Card Connect</strong>"</li>
             <li>Click <strong>Download</strong></li>
             <li>Restart Home Assistant</li>
             <li>Go to Settings → Integrations → Add Integration</li>
-            <li>Search and add "<strong>Ultra Card Pro Cloud</strong>"</li>
+            <li>Search and add "<strong>Ultra Card Connect</strong>"</li>
             <li>Enter your <strong>ultracard.io</strong> credentials</li>
           </ol>
         </div>
@@ -1615,7 +1615,7 @@ export class HubProTab extends LitElement {
         <div class="cta-buttons">
           <a
             class="cta-btn primary"
-            href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-pro-cloud&category=integration"
+            href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-connect&category=integration"
             target="_blank"
             rel="noopener"
           >
@@ -1642,8 +1642,8 @@ export class HubProTab extends LitElement {
         </div>
         <h3>Connect Your Account</h3>
         <p>
-          Go to Settings → Devices &amp; Services → Ultra Card Pro Cloud to
-          sign in and unlock Pro features.
+          Go to Settings → Devices &amp; Services → Ultra Card Connect to
+          sign in and unlock the sidebar and Pro features.
         </p>
         <div class="cta-buttons">
           <a
