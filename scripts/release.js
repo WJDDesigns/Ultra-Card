@@ -760,8 +760,14 @@ async function main() {
   // Generate changelog
   let changelog = generateChangelog(version, entries);
 
-  // Preview and confirm
-  let confirmed = false;
+  // Preview and confirm (skip if --yes flag provided)
+  const autoConfirm = args.includes('--yes');
+  let confirmed = autoConfirm;
+  if (autoConfirm) {
+    log.info('Auto-confirming release (--yes flag)');
+    console.log(`\n${colors.bright}Changelog:${colors.reset}\n`);
+    console.log(changelog);
+  }
   while (!confirmed) {
     const response = await previewAndConfirm(version, changelog, isPrerelease);
 
@@ -769,7 +775,7 @@ async function main() {
       confirmed = true;
     } else if (response === 'edit' || response === 'e') {
       log.info('Re-entering changelog entries...');
-      entries = await collectChangelogEntries();
+      entries = await collectChangelogEntries(args);
       changelog = generateChangelog(version, entries);
     } else {
       log.warn('Release cancelled by user');
