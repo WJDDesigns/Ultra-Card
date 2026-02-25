@@ -52,7 +52,10 @@ module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
 
   return {
-    entry: './src/index.ts',
+    entry: {
+      'ultra-card': './src/index.ts',
+      'ultra-card-panel': './src/panels/ultra-card-dashboard.ts',
+    },
     module: {
       rules: [
         {
@@ -70,7 +73,7 @@ module.exports = (env, argv) => {
       extensions: ['.tsx', '.ts', '.js'],
     },
     output: {
-      filename: `ultra-card.js`,
+      filename: '[name].js',
       path: path.resolve(__dirname, 'dist'),
       chunkFilename: 'uc-[name].js',
     },
@@ -138,6 +141,16 @@ module.exports = (env, argv) => {
                     licenseSource,
                     path.join(haDeployPath, 'ultra-card.js.LICENSE.txt')
                   );
+                }
+
+                // Copy panel bundle for Ultra Card Hub
+                const panelSource = path.resolve(__dirname, 'dist/ultra-card-panel.js');
+                if (fs.existsSync(panelSource)) {
+                  fs.copyFileSync(panelSource, path.join(haDeployPath, 'ultra-card-panel.js'));
+                }
+                const panelLicense = path.resolve(__dirname, 'dist/ultra-card-panel.js.LICENSE.txt');
+                if (fs.existsSync(panelLicense)) {
+                  fs.copyFileSync(panelLicense, path.join(haDeployPath, 'ultra-card-panel.js.LICENSE.txt'));
                 }
 
                 // Copy assets folder if it exists

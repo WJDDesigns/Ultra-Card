@@ -22,10 +22,8 @@ import {
 import { UcConfigEncoder } from '../utils/uc-config-encoder';
 import { uploadImage } from '../utils/image-upload';
 import { Z_INDEX } from '../utils/uc-z-index';
-import './tabs/about-tab';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
-import '../components/uc-favorite-colors-manager';
 import '../components/uc-custom-variables-manager';
 import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';
 import '../components/uc-variable-mapping-dialog';
@@ -38,7 +36,7 @@ import '../components/uc-manual-backup-dialog';
 import { getModuleRegistry } from '../modules';
 import { localize } from '../localize/localize';
 
-type EditorTab = 'layout' | 'settings' | 'pro' | 'about';
+type EditorTab = 'layout' | 'settings';
 
 @customElement('ultra-card-editor')
 export class UltraCardEditor extends LitElement {
@@ -74,8 +72,13 @@ export class UltraCardEditor extends LitElement {
   // Preview breakpoint state - for simulating different device widths in Live Preview
   @state() private _previewBreakpoint: DeviceBreakpoint = 'desktop';
 
+  /** Hub sidebar discovery banner dismissed (persisted in localStorage) */
+  @state() private _hubBannerDismissed = false;
+
   /** Flag to ensure module CSS for animations is injected once */
   private _moduleStylesInjected = false;
+
+  private static readonly HUB_BANNER_DISMISSED_KEY = 'ultra-card-hub-banner-dismissed';
 
   public setConfig(config: UltraCardConfig): void {
     this.config = config || {
@@ -112,6 +115,11 @@ export class UltraCardEditor extends LitElement {
 
     // Initialize Pro settings from localStorage
     this._skipDefaultModules = UltraCardEditor.getSkipDefaultModulesSetting();
+    try {
+      this._hubBannerDismissed = localStorage.getItem(UltraCardEditor.HUB_BANNER_DISMISSED_KEY) === 'true';
+    } catch {
+      /* ignore */
+    }
 
     try {
       (window as any).__UC_PREVIEW_SUPPRESS_LOCKS = true;
@@ -317,6 +325,37 @@ export class UltraCardEditor extends LitElement {
     this._updateConfig({ _customVariables: variables });
   }
 
+  private _renderHubDiscoveryBanner(): TemplateResult {
+    return html`
+      <div class="hub-discovery-banner">
+        <div class="hub-discovery-content">
+          <ha-icon icon="mdi:view-dashboard"></ha-icon>
+          <span>
+            Get the <strong>Ultra Card Hub</strong> sidebar — manage favorites, presets, colors, variables and more.
+            <a
+              href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-pro-cloud&category=integration"
+              target="_blank"
+              rel="noopener"
+              class="hub-discovery-link"
+            >Install via HACS</a>
+          </span>
+        </div>
+        <button class="hub-discovery-dismiss" title="Dismiss" @click=${this._dismissHubBanner} aria-label="Dismiss">
+          <ha-icon icon="mdi:close"></ha-icon>
+        </button>
+      </div>
+    `;
+  }
+
+  private _dismissHubBanner(): void {
+    try {
+      localStorage.setItem(UltraCardEditor.HUB_BANNER_DISMISSED_KEY, 'true');
+      this._hubBannerDismissed = true;
+    } catch {
+      this._hubBannerDismissed = true;
+    }
+  }
+
   private _toggleFullScreen(): void {
     this._isFullScreen = !this._isFullScreen;
 
@@ -337,9 +376,12 @@ export class UltraCardEditor extends LitElement {
       return html`<div>Loading...</div>`;
     }
     const lang = this.hass.locale?.language || 'en';
+    const hubPanelExists = !!(this.hass as any).panels?.['ultra-card-hub'];
+    const showHubBanner = !hubPanelExists && !this._hubBannerDismissed;
 
     return html`
       <div class="card-config ${this._isFullScreen ? 'fullscreen' : ''}">
+        ${showHubBanner ? this._renderHubDiscoveryBanner() : ''}
         <div class="tabs">
           <button
             class="tab ${this._activeTab === 'layout' ? 'active' : ''}"
@@ -355,45 +397,7 @@ export class UltraCardEditor extends LitElement {
                   class="tab ${this._activeTab === 'settings' ? 'active' : ''}"
                   @click=${() => (this._activeTab = 'settings')}
                 >
-                  ${localize('editor.tabs.settings', lang, 'Settings')}
-                </button>
-                <button
-                  class="tab ${this._activeTab === 'pro' ? 'active' : ''}"
-                  @click=${() => (this._activeTab = 'pro')}
-                >
-                  ${localize('editor.tabs.pro', lang, 'PRO')}
-                </button>
-                <button
-                  class="tab ${this._activeTab === 'about' ? 'active' : ''}"
-                  @click=${() => (this._activeTab = 'about')}
-                >
-                  ${localize('editor.tabs.about', lang, 'About')}
-                </button>
-              `
-            : ''}
-          ${!this._isMobile
-            ? html`
-                <button
-                  class="fullscreen-toggle"
-                  @click=${this._toggleFullScreen}
-                  title=${this._isFullScreen
-                    ? localize('editor.tooltips.return_dashboard', lang, 'Return to Dashboard')
-                    : localize('editor.tooltips.enter_fullscreen', lang, 'Enter Full Screen')}
-                >
-                  ${this._isFullScreen
-                    ? html`
-                        <svg viewBox="0 0 24 24" class="arrow-icon">
-                          <path d="M15.41,7.41L14,6L8,12L14,18L15.41,16.59L10.83,12L15.41,7.41Z" />
-                        </svg>
-                        <span class="dashboard-text"
-                          >${localize('editor.tooltips.dashboard', lang, 'Dashboard')}</span
-                        >
-                      `
-                    : html`
-                        <svg viewBox="0 0 24 24" class="arrow-icon">
-                          <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" />
-                        </svg>
-                      `}
+                  ${localize('editor.tabs.card_settings', lang, 'Card Settings')}
                 </button>
               `
             : ''}
@@ -408,12 +412,9 @@ export class UltraCardEditor extends LitElement {
                 .cloudUser=${this._cloudUser}
                 @switch-tab=${(e: CustomEvent) => (this._activeTab = e.detail.tab)}
                 @preview-breakpoint-changed=${this._handlePreviewBreakpointChanged}
+                @toggle-fullscreen=${this._toggleFullScreen}
               ></ultra-layout-tab>`
-            : this._activeTab === 'settings'
-              ? this._renderSettingsTab()
-              : this._activeTab === 'pro'
-                ? this._renderProTab()
-                : html`<ultra-about-tab .hass=${this.hass}></ultra-about-tab>`}
+            : this._renderSettingsTab()}
         </div>
 
         <!-- Variable Mapping Dialog for Import -->
@@ -1324,31 +1325,15 @@ export class UltraCardEditor extends LitElement {
             </div>
           </div>
 
-          <!-- Favorite Colors Section -->
+          <!-- Card-Only Variables Section (global variables managed in Ultra Card Hub → Variables tab) -->
           <div class="settings-section">
             <div class="section-header">
-              <h4>${localize('editor.favorite_colors.title', lang, 'Favorite Colors')}</h4>
+              <h4>${localize('editor.custom_variables.card_variables', lang, 'Card Variables')}</h4>
               <p>
                 ${localize(
-                  'editor.favorite_colors.description',
+                  'editor.custom_variables.card_section_description',
                   lang,
-                  'Manage your favorite colors that appear in all Ultra Card color pickers. These colors sync across all your Ultra Cards.'
-                )}
-              </p>
-            </div>
-
-            <uc-favorite-colors-manager .hass=${this.hass}></uc-favorite-colors-manager>
-          </div>
-
-          <!-- Custom Variables Section -->
-          <div class="settings-section">
-            <div class="section-header">
-              <h4>${localize('editor.custom_variables.title', lang, 'Custom Variables')}</h4>
-              <p>
-                ${localize(
-                  'editor.custom_variables.description',
-                  lang,
-                  'Create reusable variables that reference entities. Use them in templates with {{ $variable_name }}. These variables sync across all your Ultra Cards.'
+                  'Variables that apply only to this card. For shared variables used across cards, use the Ultra Card Hub → Variables tab in the sidebar.'
                 )}
               </p>
             </div>
@@ -1356,6 +1341,7 @@ export class UltraCardEditor extends LitElement {
             <uc-custom-variables-manager
               .hass=${this.hass}
               .config=${this.config}
+              .cardOnly=${true}
               @card-variables-changed=${this._handleCardVariablesChanged}
             ></uc-custom-variables-manager>
           </div>
@@ -1567,6 +1553,70 @@ export class UltraCardEditor extends LitElement {
         transition: var(--ultra-editor-transition);
       }
 
+      .hub-discovery-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 14px;
+        margin-bottom: 12px;
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.2);
+        border-radius: 10px;
+        font-size: 13px;
+        color: var(--primary-text-color);
+        line-height: 1.4;
+      }
+
+      .hub-discovery-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .hub-discovery-content ha-icon {
+        --mdc-icon-size: 20px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+      }
+
+      .hub-discovery-link {
+        color: var(--primary-color);
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .hub-discovery-link:hover {
+        text-decoration: underline;
+      }
+
+      .hub-discovery-dismiss {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        border-radius: 6px;
+        flex-shrink: 0;
+      }
+
+      .hub-discovery-dismiss:hover {
+        background: rgba(0, 0, 0, 0.06);
+        color: var(--primary-text-color);
+      }
+
+      .hub-discovery-dismiss ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
       /* Full screen mode styles */
       .card-config.fullscreen {
         max-width: none !important;
@@ -1590,14 +1640,11 @@ export class UltraCardEditor extends LitElement {
         max-width: none !important;
       }
 
-      /* Full screen mode header adjustments */
+      /* Full screen mode header adjustments - not sticky so it scrolls with content */
       .card-config.fullscreen .tabs {
         border: none;
         background: var(--card-background-color);
         padding: 16px;
-        position: sticky;
-        top: 0;
-        z-index: ${Z_INDEX.EDITOR_TABS};
         justify-content: center;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }

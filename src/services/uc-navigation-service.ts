@@ -94,12 +94,19 @@ class UcNavigationService {
   private _mediaWatchInterval: ReturnType<typeof setInterval> | null = null;
   private _lastMediaSnapshot: Map<string, string> = new Map(); // entity_id → last_updated
 
+  /** On mobile, poll for open dialogs (e.g. date picker) inside shadow roots so we hide the navbar. */
+  private _mobileOverlayCheckInterval: ReturnType<typeof setInterval> | null = null;
+
   // Use the getter to access the shared map
   private get previewOverrides() {
     return getPreviewOverrides();
   }
 
   private readonly defaultDesktopMinWidth = 768;
+
+  private isMobileViewport(): boolean {
+    return typeof window !== 'undefined' && window.matchMedia?.('(max-width: 767px)')?.matches === true;
+  }
 
   private readonly scheduleUpdateBound = () => this.scheduleUpdate();
 
@@ -394,6 +401,31 @@ class UcNavigationService {
   }
 
   /**
+   * Walk subtree (including shadow roots) and return true if any open dialog is found.
+   * Used so we hide the navbar when date pickers/overlays open inside the view (e.g. mobile).
+   */
+  private hasOpenDialogInSubtree(root: Node, depth: number = 0): boolean {
+    const maxDepth = 20;
+    if (depth > maxDepth) return false;
+
+    const el = root as HTMLElement & { open?: boolean; shadowRoot?: ShadowRoot };
+    if (el.nodeType !== Node.ELEMENT_NODE) return false;
+
+    const tag = el.tagName?.toLowerCase();
+    if (tag === 'ha-dialog' && (el.hasAttribute('open') || el.open)) return true;
+    if (tag === 'paper-dialog' && (el.hasAttribute('open') || (el as any).opened)) return true;
+    if (el.getAttribute?.('role') === 'dialog' && el.hasAttribute?.('open')) return true;
+
+    const shadow = (el as Element).shadowRoot;
+    if (shadow && this.hasOpenDialogInSubtree(shadow, depth + 1)) return true;
+
+    for (let child = root.firstChild; child; child = child.nextSibling) {
+      if (this.hasOpenDialogInSubtree(child, depth + 1)) return true;
+    }
+    return false;
+  }
+
+  /**
    * Returns true when the navbar should be hidden because an HA overlay or
    * non-Lovelace panel is active (dialogs, settings, automations, sidebar).
    */
@@ -414,22 +446,19 @@ class UcNavigationService {
       }
 
       // 2. Check for open HA dialogs (date pickers, more-info, confirmations)
-      const dialogs = haRoot.querySelectorAll('ha-dialog');
-      for (const dialog of Array.from(dialogs)) {
-        const d = dialog as HTMLElement & { open?: boolean };
-        if (dialog.hasAttribute('open') || d.open) {
-          return true;
-        }
-      }
+      // Search including shadow roots so we catch dialogs rendered inside the view (e.g. mobile date picker)
+      if (this.hasOpenDialogInSubtree(haRoot)) return true;
 
       // 3. Check for open sidebar/drawer on mobile
       const haMain = haRoot.querySelector('home-assistant-main');
       const mainRoot = (haMain as HTMLElement & { shadowRoot?: ShadowRoot })?.shadowRoot;
-      const drawer = mainRoot?.querySelector('ha-drawer');
-      if (drawer) {
-        const d = drawer as HTMLElement & { open?: boolean };
-        if (drawer.hasAttribute('open') || d.open) {
-          return true;
+      if (mainRoot) {
+        const drawer = mainRoot.querySelector('ha-drawer');
+        if (drawer) {
+          const d = drawer as HTMLElement & { open?: boolean };
+          if (drawer.hasAttribute('open') || d.open) {
+            return true;
+          }
         }
       }
     } catch {
@@ -446,7 +475,25 @@ class UcNavigationService {
     this.updateDebounceTimer = setTimeout(() => {
       this.evaluateAndRender();
       this.updateDebounceTimer = null;
+      this.startOrStopMobileOverlayCheck();
     }, 10); // Reduced debounce for faster real-time updates
+  }
+
+  /** On mobile, poll so we hide the navbar when date picker etc. opens inside shadow roots. */
+  private startOrStopMobileOverlayCheck(): void {
+    const shouldRun = this.registeredModules.size > 0 && this.isMobileViewport();
+    if (shouldRun && !this._mobileOverlayCheckInterval) {
+      this._mobileOverlayCheckInterval = setInterval(() => {
+        if (this.registeredModules.size === 0 || !this.isMobileViewport()) {
+          this.startOrStopMobileOverlayCheck();
+          return;
+        }
+        this.evaluateAndRender();
+      }, 400);
+    } else if (!shouldRun && this._mobileOverlayCheckInterval) {
+      clearInterval(this._mobileOverlayCheckInterval);
+      this._mobileOverlayCheckInterval = null;
+    }
   }
 
   private evaluateAndRender(): void {
@@ -705,6 +752,11 @@ class UcNavigationService {
   private cleanup(): void {
     // Stop media player watcher
     this.stopMediaPlayerWatcher();
+
+    if (this._mobileOverlayCheckInterval) {
+      clearInterval(this._mobileOverlayCheckInterval);
+      this._mobileOverlayCheckInterval = null;
+    }
 
     // Tear down auto-hide listeners
     if (this.autohideMouseHandler) {

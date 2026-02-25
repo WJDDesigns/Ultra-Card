@@ -292,6 +292,19 @@ class UcPresetsService {
   }
 
   /**
+   * Decode base64 to UTF-8 string so special characters (æ, ø, å, etc.) are preserved.
+   * Plain atob() returns a binary string interpreted as Latin-1 and corrupts UTF-8.
+   */
+  private _decodeBase64Utf8(base64: string): string {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+
+  /**
    * Convert WordPress preset to Ultra Card PresetDefinition
    */
   private _convertWordPressPreset(wpPreset: WordPressPreset): PresetDefinition {
@@ -331,7 +344,7 @@ class UcPresetsService {
           );
           if (shortcodeMatch) {
             const encodedData = shortcodeMatch[1].trim();
-            const jsonData = atob(encodedData);
+            const jsonData = this._decodeBase64Utf8(encodedData);
             const importData = JSON.parse(jsonData);
             customVariables =
               Array.isArray(importData.customVariables)

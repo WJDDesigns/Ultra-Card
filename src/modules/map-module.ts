@@ -6,6 +6,7 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, MapModule, MapMarker, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
 import { getImageUrl } from '../utils/image-upload';
+import { SENSITIVE_PLACEHOLDER } from '../utils/uc-config-encoder';
 import * as L from 'leaflet';
 
 export class UltraMapModule extends BaseUltraModule {
@@ -1335,6 +1336,31 @@ export class UltraMapModule extends BaseUltraModule {
     }
   }
 
+  /**
+   * Returns the effective map provider and type for rendering.
+   * If config requests Google but there is no valid API key (missing, empty, or redacted
+   * from export), falls back to OpenStreetMap so the map still works for presets/shared configs.
+   */
+  private getEffectiveMapProvider(
+    mapModule: MapModule
+  ): { provider: 'openstreetmap' | 'google'; mapType: string } {
+    const provider = mapModule.map_provider || 'openstreetmap';
+    const mapType = mapModule.map_type || 'roadmap';
+    if (provider !== 'google') {
+      return { provider, mapType };
+    }
+    const key = (mapModule.google_api_key || '').trim();
+    const hasValidKey =
+      key.length > 0 &&
+      key !== SENSITIVE_PLACEHOLDER &&
+      !key.toLowerCase().startsWith('***');
+    if (hasValidKey) {
+      return { provider: 'google', mapType };
+    }
+    // Fallback to OpenStreetMap (free, no API key) so shared presets always show a working map
+    return { provider: 'openstreetmap', mapType: 'roadmap' };
+  }
+
   // Extract coordinates from entity
   private extractCoordinates(
     entityId: string,
@@ -1804,9 +1830,8 @@ export class UltraMapModule extends BaseUltraModule {
         map.invalidateSize();
       }, 100);
 
-      // Add tile layer based on provider
-      const mapProvider = mapModule.map_provider || 'openstreetmap';
-      const mapType = mapModule.map_type || 'roadmap';
+      // Add tile layer based on provider (fallback to OSM if Google chosen but no API key)
+      const { provider: mapProvider, mapType } = this.getEffectiveMapProvider(mapModule);
       const tileKey = `${mapProvider}-${mapType}`;
 
       let tileLayer;
@@ -1986,8 +2011,7 @@ export class UltraMapModule extends BaseUltraModule {
 
       // Check if we need to update tile layer (provider or style changed)
       const currentTileLayer = mapAny._mapModuleTileLayer;
-      const mapProvider = mapModule.map_provider || 'openstreetmap';
-      const mapType = mapModule.map_type || 'roadmap';
+      const { provider: mapProvider, mapType } = this.getEffectiveMapProvider(mapModule);
       const tileKey = `${mapProvider}-${mapType}`;
 
       if (currentTileLayer && mapAny._mapModuleTileKey !== tileKey) {

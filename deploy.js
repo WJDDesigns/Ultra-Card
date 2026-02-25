@@ -17,7 +17,12 @@ const CONFIG = {
       path: '/Volumes/config/www/community/Ultra-Card',
     },
   ],
-  sourceFiles: ['dist/ultra-card.js', 'dist/ultra-card.js.LICENSE.txt'],
+  sourceFiles: [
+    'dist/ultra-card.js',
+    'dist/ultra-card.js.LICENSE.txt',
+    'dist/ultra-card-panel.js',
+    'dist/ultra-card-panel.js.LICENSE.txt',
+  ],
 };
 
 console.log('🚀 Ultra Card Deployment Script\n');

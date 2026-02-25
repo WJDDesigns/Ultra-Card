@@ -127,7 +127,9 @@ export interface BaseModule {
     | 'vacuum'
     | 'media_player'
     | 'people'
-    | 'navigation';
+    | 'navigation'
+    | 'timer'
+    | 'cover';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -4040,6 +4042,102 @@ export interface NavigationModule extends BaseModule {
   nav_icon_color?: string;
 }
 
+// ============================================
+// TIMER MODULE TYPES
+// ============================================
+
+export type TimerDisplayStyle = 'circle' | 'progress_bar' | 'digital' | 'background_fill';
+
+export interface TimerModule extends BaseModule {
+  type: 'timer';
+
+  /** Optional display title (e.g. "Kitchen", "Door close") */
+  title?: string;
+  /** Icon for the timer (e.g. mdi:timer, mdi:pot-steam) */
+  icon?: string;
+  /** Default duration in seconds when user hits Start */
+  duration_seconds: number;
+  /** Optional preset durations in seconds for quick buttons (e.g. [300, 600, 900, 3600]) */
+  preset_durations?: number[];
+  /** Display style: circle, progress_bar, digital, background_fill */
+  style: TimerDisplayStyle;
+  /** Optional HA timer entity to sync with */
+  timer_entity?: string;
+  /** Action to run when timer reaches zero (same shape as tap_action) */
+  on_expire_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+    target?: Record<string, any>;
+  };
+  /** When expired, show Snooze / Dismiss buttons */
+  show_snooze_dismiss?: boolean;
+  /** Snooze duration in seconds when user taps Snooze */
+  snooze_seconds?: number;
+
+  // Global action configuration (tap on timer area when idle/running)
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
+  display_mode?: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
+// ============================================
+// COVER MODULE TYPES (Pro)
+// ============================================
+
+export interface CoverModule extends BaseModule {
+  type: 'cover';
+
+  /** Cover entity (single-entity mode) */
+  entity: string;
+  /** Optional display name override */
+  name?: string;
+  /** Optional icon override */
+  icon?: string;
+
+  /** Display toggles */
+  show_title?: boolean;
+  show_icon?: boolean;
+  show_state?: boolean;
+  show_position?: boolean;
+  show_stop?: boolean;
+  show_position_control?: boolean;
+
+  /** Layout: compact (icon + state + controls), standard (name + position bar + buttons), buttons (explicit open/close/stop) */
+  layout?: 'compact' | 'standard' | 'buttons';
+  /** Alignment of content within the module */
+  alignment?: 'left' | 'center' | 'right';
+
+  /** Tilt (advanced): show tilt state and controls when entity supports it */
+  show_tilt?: boolean;
+  show_tilt_control?: boolean;
+
+  /** Multi-cover (advanced): when set, display these entities instead of single entity */
+  entities?: string[];
+  layout_multi?: 'stack' | 'grid';
+
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
+  display_mode?: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
 // Union type for all module types
 export type CardModule =
   | TextModule
@@ -4083,7 +4181,9 @@ export type CardModule =
   | BadgeOfHonorModule
   | MediaPlayerModule
   | PeopleModule
-  | NavigationModule;
+  | NavigationModule
+  | TimerModule
+  | CoverModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {
@@ -5492,6 +5592,7 @@ export interface GridModule extends BaseModule {
   grid_style: GridStylePreset;
   grid_display_mode: GridDisplayMode;
   columns: number; // 1-12, default 4
+  columns_mobile?: number; // 1-12, optional; when set, used on viewports ≤600px; otherwise same as columns
   rows?: number; // auto (0 or undefined) or fixed number
   gap: number; // pixels between items, default 8
 

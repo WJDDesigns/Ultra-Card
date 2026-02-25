@@ -72,6 +72,7 @@ export class LayoutTab extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public config!: UltraCardConfig;
   @property({ attribute: false }) public cloudUser?: any | null;
+  @property({ type: Boolean }) public isFullScreen = false;
 
   @state() private _showModuleSelector = false;
   @state() private _selectedRowIndex = -1;
@@ -160,6 +161,11 @@ export class LayoutTab extends LitElement {
   @state() private _hasModuleClipboard = false;
   @state() private _hasColumnClipboard = false;
   @state() private _hasCardClipboard = false;
+
+  /** Fullscreen card preview height (px), user-resizable via corner handle */
+  @state() private _previewHeightPx = 280;
+  private _previewResizeStartY = 0;
+  private _previewResizeStartHeight = 0;
 
   // Variable mapping dialog state for imports
   @state() private _showVariableMappingDialog = false;
@@ -739,7 +745,7 @@ export class LayoutTab extends LitElement {
           action: () => this._addColumn(rowIndex),
         },
         {
-          icon: 'mdi:content-copy',
+          icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
           action: () => this._duplicateRow(rowIndex),
         },
@@ -783,7 +789,7 @@ export class LayoutTab extends LitElement {
           action: () => this._openModuleSelector(rowIndex, columnIndex),
         },
         {
-          icon: 'mdi:content-copy',
+          icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
           action: () => this._duplicateColumn(rowIndex, columnIndex),
         },
@@ -792,6 +798,15 @@ export class LayoutTab extends LitElement {
           label: localize('editor.layout.copy', lang, 'Copy'),
           action: () => this._copyColumn(rowIndex, columnIndex),
         },
+        ...(this._hasColumnClipboard
+          ? [
+              {
+                icon: 'mdi:clipboard-arrow-down',
+                label: localize('editor.layout.paste_column', lang, 'Paste Column'),
+                action: () => this._pasteColumn(rowIndex),
+              },
+            ]
+          : []),
         {
           icon: 'mdi:delete',
           label: localize('editor.layout.delete', lang, 'Delete'),
@@ -807,7 +822,7 @@ export class LayoutTab extends LitElement {
           action: () => this._openModuleSettings(rowIndex, columnIndex, moduleIndex),
         },
         {
-          icon: 'mdi:content-copy',
+          icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
           action: () => this._duplicateModule(rowIndex, columnIndex, moduleIndex),
         },
@@ -836,7 +851,7 @@ export class LayoutTab extends LitElement {
           action: () => this._openLayoutModuleSelector(rowIndex, columnIndex, moduleIndex),
         },
         {
-          icon: 'mdi:content-copy',
+          icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
           action: () => this._duplicateModule(rowIndex, columnIndex, moduleIndex),
         },
@@ -925,7 +940,7 @@ export class LayoutTab extends LitElement {
             this._copyLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex),
         },
         {
-          icon: 'mdi:content-copy',
+          icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
           action: () =>
             this._duplicateLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex),
@@ -965,7 +980,7 @@ export class LayoutTab extends LitElement {
             this._copyLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex),
         },
         {
-          icon: 'mdi:content-copy',
+          icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
           action: () =>
             this._duplicateLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex),
@@ -1006,7 +1021,7 @@ export class LayoutTab extends LitElement {
             ),
         },
         {
-          icon: 'mdi:content-copy',
+          icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
           action: () =>
             this._duplicateNestedChildModule(
@@ -1110,7 +1125,7 @@ export class LayoutTab extends LitElement {
             ),
         },
         {
-          icon: 'mdi:content-copy',
+          icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
           action: () =>
             this._duplicateLevel4Child(
@@ -1204,7 +1219,7 @@ export class LayoutTab extends LitElement {
             ),
         },
         {
-          icon: 'mdi:content-copy',
+          icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
           action: () =>
             this._duplicateTabsSectionChild(
@@ -1310,7 +1325,7 @@ export class LayoutTab extends LitElement {
         action: () => this._editTabsSection(rowIndex, columnIndex, moduleIndex, sectionIndex),
       },
       {
-        icon: 'mdi:content-copy',
+        icon: 'mdi:content-duplicate',
         label: localize('editor.layout.duplicate', lang, 'Duplicate'),
         action: () => this._duplicateTabsSection(rowIndex, columnIndex, moduleIndex, sectionIndex),
       },
@@ -1391,7 +1406,7 @@ export class LayoutTab extends LitElement {
           this._openLayoutChildSettings(rowIndex, columnIndex, parentModuleIndex, nestedTabsIndex),
       },
       {
-        icon: 'mdi:content-copy',
+        icon: 'mdi:content-duplicate',
         label: localize('editor.layout.duplicate', lang, 'Duplicate'),
         action: () =>
           this._duplicateNestedTabsSection(
@@ -1717,7 +1732,7 @@ export class LayoutTab extends LitElement {
             ),
         },
         {
-          icon: 'mdi:content-copy',
+          icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
           action: () =>
             this._duplicateNestedTabsSectionChild(
@@ -1869,7 +1884,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -1886,7 +1901,7 @@ export class LayoutTab extends LitElement {
             ${this._renderTreeOverflowMenu('row', rowIndex)}
           </div>
         </div>
-        <div class="tree-node-children">
+        <div class="tree-node-children ${this.isFullScreen ? 'columns-horizontal' : ''}">
           <div
             class="tree-track-collapse"
             @click=${(e: Event) => this._toggleRowCollapsed(rowIndex, e)}
@@ -1915,6 +1930,23 @@ export class LayoutTab extends LitElement {
                   >
                     <ha-icon icon="mdi:plus"></ha-icon>
                     <span>${localize('editor.layout.add_column', lang, 'Add Column')}</span>
+                  </button>
+                  <button
+                    class="tree-paste-column-btn ${this._hasColumnClipboard || ucExportImportService.hasColumnInLocalStorage() ? 'active' : ''}"
+                    ?disabled=${!this._hasColumnClipboard && !ucExportImportService.hasColumnInLocalStorage()}
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      if (this._hasColumnClipboard || ucExportImportService.hasColumnInLocalStorage()) {
+                        this._hasColumnClipboard = true;
+                        this._pasteColumn(rowIndex);
+                      }
+                    }}
+                    title="${this._hasColumnClipboard || ucExportImportService.hasColumnInLocalStorage()
+                      ? localize('editor.layout.paste_column', lang, 'Paste Column')
+                      : localize('editor.layout.copy_column_first', lang, 'Copy a column first')}"
+                  >
+                    <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
+                    <span>${localize('editor.layout.paste_column', lang, 'Paste Column')}</span>
                   </button>
                 </div>
               `
@@ -2016,7 +2048,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -2184,7 +2216,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -2330,7 +2362,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -2743,7 +2775,7 @@ export class LayoutTab extends LitElement {
                   @mousedown=${(e: Event) => e.stopPropagation()}
                   title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
                 >
-                  <ha-icon icon="mdi:content-copy"></ha-icon>
+                  <ha-icon icon="mdi:content-duplicate"></ha-icon>
                 </button>
                 <button
                   class="tree-action-btn delete-btn"
@@ -2878,7 +2910,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -3029,7 +3061,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -3216,7 +3248,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -3665,7 +3697,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -3854,7 +3886,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -4088,7 +4120,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -4251,7 +4283,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -4599,7 +4631,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -4775,7 +4807,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -5011,7 +5043,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -5186,7 +5218,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -5460,7 +5492,7 @@ export class LayoutTab extends LitElement {
                 @mousedown=${(e: Event) => e.stopPropagation()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="tree-action-btn delete-btn"
@@ -5565,7 +5597,7 @@ export class LayoutTab extends LitElement {
         action: () => this._openDeepNestedSettings(parentPath, childIndex),
       },
       {
-        icon: 'mdi:content-copy',
+        icon: 'mdi:content-duplicate',
         label: localize('editor.layout.duplicate', lang, 'Duplicate'),
         action: () => this._duplicateDeepNestedChild(parentPath, childIndex),
       },
@@ -8588,6 +8620,7 @@ export class LayoutTab extends LitElement {
     try {
       ucExportImportService.copyColumnToLocalStorage(column);
       this._hasColumnClipboard = true;
+      this.requestUpdate();
       this._showToast(
         localize('editor.layout.column_copied', lang, 'Column copied to clipboard'),
         'success'
@@ -8673,6 +8706,38 @@ export class LayoutTab extends LitElement {
       );
     }
   }
+
+  /**
+   * Start dragging to resize the fullscreen card preview (bottom edge / corner).
+   */
+  private _onPreviewResizeStart = (e: MouseEvent): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    this._previewResizeStartY = e.clientY;
+    this._previewResizeStartHeight = this._previewHeightPx;
+    const minH = 120;
+    const maxH = Math.min(600, typeof window !== 'undefined' ? window.innerHeight * 0.8 : 600);
+
+    const onMove = (ev: MouseEvent): void => {
+      const deltaY = ev.clientY - this._previewResizeStartY;
+      let h = this._previewResizeStartHeight + deltaY;
+      h = Math.max(minH, Math.min(maxH, h));
+      this._previewHeightPx = h;
+      this.requestUpdate();
+    };
+
+    const onUp = (): void => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.removeProperty('user-select');
+      document.body.style.removeProperty('cursor');
+    };
+
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'ns-resize';
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
 
   /**
    * Check if there's Ultra Card export data available in clipboard
@@ -12795,7 +12860,7 @@ export class LayoutTab extends LitElement {
                     @dragstart=${(e: Event) => e.preventDefault()}
                     title="${localize('editor.layout.duplicate_module', lang, 'Duplicate Module')}"
                   >
-                    <ha-icon icon="mdi:content-copy"></ha-icon>
+                    <ha-icon icon="mdi:content-duplicate"></ha-icon>
                   </button>
                   <button
                     class="simplified-action-btn copy-btn"
@@ -12945,7 +13010,7 @@ export class LayoutTab extends LitElement {
                     @dragstart=${(e: Event) => e.preventDefault()}
                     title="${localize('editor.layout.duplicate_layout', lang, 'Duplicate Layout')}"
                   >
-                    <ha-icon icon="mdi:content-copy"></ha-icon>
+                    <ha-icon icon="mdi:content-duplicate"></ha-icon>
                   </button>
                   <button
                     class="layout-module-copy-btn"
@@ -13283,7 +13348,7 @@ export class LayoutTab extends LitElement {
                             'Duplicate Child Module'
                           )}"
                         >
-                          <ha-icon icon="mdi:content-copy"></ha-icon>
+                          <ha-icon icon="mdi:content-duplicate"></ha-icon>
                         </button>
                         <button
                           class="layout-child-action-btn copy-btn"
@@ -13516,7 +13581,7 @@ export class LayoutTab extends LitElement {
                       'Duplicate Nested Layout'
                     )}"
                   >
-                    <ha-icon icon="mdi:content-copy"></ha-icon>
+                    <ha-icon icon="mdi:content-duplicate"></ha-icon>
                   </button>
                   <button
                     class="layout-module-delete-btn"
@@ -14391,7 +14456,7 @@ export class LayoutTab extends LitElement {
                     @dragstart=${(e: Event) => e.preventDefault()}
                     title="${localize('editor.layout.duplicate_child_module', lang, 'Duplicate')}"
                   >
-                    <ha-icon icon="mdi:content-copy"></ha-icon>
+                    <ha-icon icon="mdi:content-duplicate"></ha-icon>
                   </button>
                   <button
                     class="layout-child-action-btn copy-btn"
@@ -14491,7 +14556,7 @@ export class LayoutTab extends LitElement {
                     @dragstart=${(e: Event) => e.preventDefault()}
                     title="${localize('editor.layout.duplicate_layout', lang, 'Duplicate Layout')}"
                   >
-                    <ha-icon icon="mdi:content-copy"></ha-icon>
+                    <ha-icon icon="mdi:content-duplicate"></ha-icon>
                   </button>
                   <button
                     class="layout-module-copy-btn"
@@ -14655,7 +14720,7 @@ export class LayoutTab extends LitElement {
                       'Duplicate Nested Layout'
                     )}"
                   >
-                    <ha-icon icon="mdi:content-copy"></ha-icon>
+                    <ha-icon icon="mdi:content-duplicate"></ha-icon>
                   </button>
                   <button
                     class="layout-module-delete-btn"
@@ -14912,7 +14977,7 @@ export class LayoutTab extends LitElement {
                         @mouseout=${(e: Event) =>
                           ((e.target as HTMLElement).style.background = 'none')}
                       >
-                        <ha-icon icon="mdi:content-copy" style="--mdc-icon-size: 18px;"></ha-icon>
+                        <ha-icon icon="mdi:content-duplicate" style="--mdc-icon-size: 18px;"></ha-icon>
                         <span
                           >${localize(
                             'editor.layout.duplicate_section',
@@ -15279,7 +15344,7 @@ export class LayoutTab extends LitElement {
                 'Duplicate Child Module'
               )}"
             >
-              <ha-icon icon="mdi:content-copy"></ha-icon>
+              <ha-icon icon="mdi:content-duplicate"></ha-icon>
             </button>
             <button
               class="layout-child-action-btn copy-btn"
@@ -15470,7 +15535,7 @@ export class LayoutTab extends LitElement {
                 @dragstart=${(e: Event) => e.preventDefault()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="layout-module-delete-btn"
@@ -15631,7 +15696,7 @@ export class LayoutTab extends LitElement {
               @dragstart=${(e: Event) => e.preventDefault()}
               title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
             >
-              <ha-icon icon="mdi:content-copy"></ha-icon>
+              <ha-icon icon="mdi:content-duplicate"></ha-icon>
             </button>
             <button
               class="layout-module-delete-btn"
@@ -16245,7 +16310,7 @@ export class LayoutTab extends LitElement {
               @dragstart=${(e: Event) => e.preventDefault()}
               title="${localize('editor.layout.duplicate_child_module', lang, 'Duplicate')}"
             >
-              <ha-icon icon="mdi:content-copy"></ha-icon>
+              <ha-icon icon="mdi:content-duplicate"></ha-icon>
             </button>
             <button
               class="layout-child-action-btn copy-btn"
@@ -16399,7 +16464,7 @@ export class LayoutTab extends LitElement {
                 @dragstart=${(e: Event) => e.preventDefault()}
                 title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="layout-module-delete-btn"
@@ -16534,7 +16599,7 @@ export class LayoutTab extends LitElement {
               @dragstart=${(e: Event) => e.preventDefault()}
               title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
             >
-              <ha-icon icon="mdi:content-copy"></ha-icon>
+              <ha-icon icon="mdi:content-duplicate"></ha-icon>
             </button>
             <button
               class="layout-module-delete-btn"
@@ -16723,7 +16788,7 @@ export class LayoutTab extends LitElement {
               @dragstart=${(e: Event) => e.preventDefault()}
               title="${localize('editor.layout.duplicate_child_module', lang, 'Duplicate')}"
             >
-              <ha-icon icon="mdi:content-copy"></ha-icon>
+              <ha-icon icon="mdi:content-duplicate"></ha-icon>
             </button>
             <button
               class="layout-child-action-btn copy-btn"
@@ -19482,7 +19547,7 @@ export class LayoutTab extends LitElement {
                         'Duplicate Nested Child Module'
                       )}"
                     >
-                      <ha-icon icon="mdi:content-copy"></ha-icon>
+                      <ha-icon icon="mdi:content-duplicate"></ha-icon>
                     </button>
                     <button
                       class="layout-child-action-btn copy-btn"
@@ -21865,7 +21930,7 @@ export class LayoutTab extends LitElement {
                 }}
                 title="${localize('editor.layout.duplicate_module', lang, 'Duplicate Module')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="action-button delete-button"
@@ -22513,7 +22578,7 @@ export class LayoutTab extends LitElement {
                 }}
                 title="${localize('editor.layout.duplicate_module', lang, 'Duplicate Module')}"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="action-button delete-button"
@@ -22824,7 +22889,7 @@ export class LayoutTab extends LitElement {
                 }}
                 title="Duplicate Child Module"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="action-button delete-button"
@@ -23382,7 +23447,7 @@ export class LayoutTab extends LitElement {
                 }}
                 title="Duplicate Row"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="action-button delete-button"
@@ -23508,7 +23573,7 @@ export class LayoutTab extends LitElement {
                 }}
                 title="Duplicate Column"
               >
-                <ha-icon icon="mdi:content-copy"></ha-icon>
+                <ha-icon icon="mdi:content-duplicate"></ha-icon>
               </button>
               <button
                 class="action-button delete-button"
@@ -24928,7 +24993,7 @@ export class LayoutTab extends LitElement {
               @click=${() => this._duplicateCondition(module, index)}
               title="Duplicate"
             >
-              <ha-icon icon="mdi:content-copy"></ha-icon>
+              <ha-icon icon="mdi:content-duplicate"></ha-icon>
             </button>
             <button
               type="button"
@@ -26314,7 +26379,29 @@ export class LayoutTab extends LitElement {
     const lang = this.hass?.locale?.language || 'en';
 
     return html`
-      <div class="layout-builder">
+      <div class="layout-builder ${this.isFullScreen ? 'fullscreen' : ''}">
+        ${this.isFullScreen && this.hass
+          ? html`
+              <div class="fullscreen-preview">
+                <div class="fullscreen-preview-label">
+                  ${localize('editor.layout.card_preview', lang, 'Card Preview')}
+                </div>
+                <div
+                  class="fullscreen-preview-card"
+                  style="height: ${this._previewHeightPx}px;"
+                >
+                  <ultra-card .hass=${this.hass} .config=${this.config}></ultra-card>
+                </div>
+                <div
+                  class="fullscreen-preview-resize-handle"
+                  title="${localize('editor.layout.resize_preview', lang, 'Drag to resize preview')}"
+                  @mousedown=${this._onPreviewResizeStart}
+                >
+                  <ha-icon icon="mdi:arrow-expand-vertical"></ha-icon>
+                </div>
+              </div>
+            `
+          : ''}
         <div class="builder-header">
           <h3>${localize('editor.tabs.layout', lang, 'Layout Builder')}</h3>
           <div class="header-buttons">
@@ -26391,6 +26478,18 @@ export class LayoutTab extends LitElement {
             >
               <ha-icon icon="mdi:clipboard-text"></ha-icon>
               <span>${localize('editor.layout.import_card', lang, 'Import Card')}</span>
+            </button>
+            <button
+              class="header-btn icon-only"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this.dispatchEvent(new CustomEvent('toggle-fullscreen', { bubbles: true, composed: true }));
+              }}
+              title="${this.isFullScreen
+                ? localize('editor.tooltips.return_dashboard', lang, 'Return to Dashboard')
+                : localize('editor.tooltips.enter_fullscreen', lang, 'Enter Full Screen')}"
+            >
+              <ha-icon icon="${this.isFullScreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
             </button>
           </div>
         </div>
@@ -26567,7 +26666,7 @@ export class LayoutTab extends LitElement {
                         @dragstart=${(e: Event) => e.preventDefault()}
                         title="Duplicate Row"
                       >
-                        <ha-icon icon="mdi:content-copy"></ha-icon>
+                        <ha-icon icon="mdi:content-duplicate"></ha-icon>
                       </button>
                       <button
                         class="delete-row-btn"
@@ -26713,7 +26812,7 @@ export class LayoutTab extends LitElement {
                                   @dragstart=${(e: Event) => e.preventDefault()}
                                   title="Duplicate Column"
                                 >
-                                  <ha-icon icon="mdi:content-copy"></ha-icon>
+                                  <ha-icon icon="mdi:content-duplicate"></ha-icon>
                                 </button>
                                 <button
                                   class="column-settings-btn"
@@ -26933,25 +27032,27 @@ export class LayoutTab extends LitElement {
                       <ha-icon icon="mdi:plus"></ha-icon>
                       Add Column
                     </button>
-                    ${this._hasColumnClipboard
-                      ? html`
-                          <button
-                            class="paste-column-btn"
-                            @click=${(e: Event) => {
-                              e.stopPropagation();
-                              this._pasteColumn(rowIndex);
-                            }}
-                            title="${localize(
-                              'editor.layout.paste_column',
-                              this.hass?.locale?.language || 'en',
-                              'Paste Column'
-                            )}"
-                          >
-                            <ha-icon icon="mdi:content-paste"></ha-icon>
-                            Paste
-                          </button>
-                        `
-                      : ''}
+                    <button
+                      class="paste-column-btn ${this._hasColumnClipboard || ucExportImportService.hasColumnInLocalStorage() ? 'paste-column-btn--active' : 'paste-column-btn--empty'}"
+                      ?disabled=${!this._hasColumnClipboard && !ucExportImportService.hasColumnInLocalStorage()}
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        if (this._hasColumnClipboard || ucExportImportService.hasColumnInLocalStorage()) {
+                          this._hasColumnClipboard = true;
+                          this._pasteColumn(rowIndex);
+                        }
+                      }}
+                      title="${this._hasColumnClipboard || ucExportImportService.hasColumnInLocalStorage()
+                        ? localize('editor.layout.paste_column', this.hass?.locale?.language || 'en', 'Paste Column')
+                        : localize('editor.layout.copy_column_first', this.hass?.locale?.language || 'en', 'Copy a column first')}"
+                    >
+                      <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
+                      ${localize(
+                        'editor.layout.paste_column',
+                        this.hass?.locale?.language || 'en',
+                        'Paste Column'
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -31892,6 +31993,37 @@ export class LayoutTab extends LitElement {
         animation-delay: 0.15s;
       }
 
+      /* Fullscreen: row columns side-by-side to use horizontal space */
+      .tree-row > .tree-node-children.columns-horizontal {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 12px;
+        padding-left: 32px;
+      }
+
+      .tree-row > .tree-node-children.columns-horizontal::before {
+        display: none;
+      }
+
+      .tree-row > .tree-node-children.columns-horizontal > .tree-track-collapse {
+        flex: 0 0 auto;
+      }
+
+      .tree-row > .tree-node-children.columns-horizontal > .tree-node {
+        flex: 1 1 200px;
+        min-width: 200px;
+        max-width: 100%;
+        margin-bottom: 0;
+      }
+
+      .tree-row > .tree-node-children.columns-horizontal > .tree-add-button-container {
+        flex: 0 0 100%;
+        width: 100%;
+        margin-top: 4px;
+      }
+
       /* ========== DISABLE ANIMATIONS FOR TABS LAYOUT AND ALL ITS CONTENTS ========== */
       /* This prevents the flash/animation when collapsing sections or interacting with tabs */
 
@@ -32084,6 +32216,10 @@ export class LayoutTab extends LitElement {
       .tree-add-button-container {
         padding: 4px 0 4px var(--tree-indent);
         position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
       }
 
       /* Hide the vertical line next to add buttons by masking it */
@@ -32112,6 +32248,38 @@ export class LayoutTab extends LitElement {
         transition: all 0.2s ease;
         position: relative;
         z-index: 3;
+      }
+
+      .tree-paste-column-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: transparent;
+        border: 1px dashed var(--divider-color);
+        border-radius: 6px;
+        color: var(--disabled-text-color, rgba(255, 255, 255, 0.35));
+        font-size: 12px;
+        cursor: not-allowed;
+        transition: all 0.2s ease;
+        position: relative;
+        z-index: 3;
+      }
+
+      .tree-paste-column-btn.active,
+      .tree-paste-column-btn:not(:disabled) {
+        border-color: var(--success-color, #4caf50);
+        color: var(--success-color, #4caf50);
+        cursor: pointer;
+      }
+
+      .tree-paste-column-btn.active:hover,
+      .tree-paste-column-btn:not(:disabled):hover {
+        background: rgba(76, 175, 80, 0.1);
+      }
+
+      .tree-paste-column-btn ha-icon {
+        --mdc-icon-size: 16px;
       }
 
       .tree-add-btn:hover {
@@ -32478,6 +32646,60 @@ export class LayoutTab extends LitElement {
         height: 100%;
         display: flex;
         flex-direction: column;
+      }
+
+      /* Fullscreen: card preview at top (height controlled by inline style + resize handle) */
+      .layout-builder.fullscreen .fullscreen-preview {
+        flex-shrink: 0;
+        margin-bottom: 16px;
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--card-background-color);
+        position: relative;
+      }
+
+      .layout-builder.fullscreen .fullscreen-preview-label {
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--secondary-text-color);
+        border-bottom: 1px solid var(--divider-color);
+      }
+
+      .layout-builder.fullscreen .fullscreen-preview-card {
+        min-height: 120px;
+        overflow: auto;
+        padding: 12px;
+      }
+
+      .layout-builder.fullscreen .fullscreen-preview-card ultra-card {
+        display: block;
+      }
+
+      .layout-builder.fullscreen .fullscreen-preview-resize-handle {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary-color);
+        color: white;
+        cursor: ns-resize;
+        border-radius: 8px 0 0 0;
+        z-index: 2;
+        --mdc-icon-size: 18px;
+        transition: background 0.15s ease;
+      }
+
+      .layout-builder.fullscreen .fullscreen-preview-resize-handle:hover {
+        background: var(--primary-color);
+        opacity: 0.9;
       }
 
       .builder-header {
@@ -33415,19 +33637,45 @@ export class LayoutTab extends LitElement {
         justify-content: center;
         gap: 6px;
         padding: 10px 12px;
-        border: 2px dashed var(--success-color, #4caf50);
         border-radius: 6px;
-        background: none;
-        color: var(--success-color, #4caf50);
-        cursor: pointer;
         transition: all 0.2s ease;
         font-size: 13px;
+        font-weight: 500;
         flex: 1;
         min-height: 40px;
         box-sizing: border-box;
       }
 
-      .paste-column-btn:hover {
+      /* Active state — column is in clipboard, ready to paste */
+      .paste-column-btn--active {
+        border: 2px dashed var(--success-color, #4caf50);
+        background: rgba(76, 175, 80, 0.08);
+        color: var(--success-color, #4caf50);
+        cursor: pointer;
+        animation: paste-column-appear 0.3s ease-out;
+      }
+
+      /* Empty state — nothing copied yet, shown as inactive */
+      .paste-column-btn--empty {
+        border: 2px dashed var(--divider-color, rgba(255,255,255,0.15));
+        background: none;
+        color: var(--disabled-text-color, rgba(255,255,255,0.3));
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      @keyframes paste-column-appear {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .paste-column-btn--active:hover {
         background: var(--success-color, #4caf50);
         color: white;
         border-color: var(--success-color, #4caf50);

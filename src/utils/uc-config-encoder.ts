@@ -95,8 +95,9 @@ export class UcConfigEncoder {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      // Decompress
-      const decompressed = pako.inflate(bytes, { to: 'string' });
+      // Decompress to bytes, then decode as UTF-8 (to: 'string' would treat bytes as Latin-1 and corrupt æ, ø, å etc.)
+      const decompressedBytes = pako.inflate(bytes);
+      const decompressed = new TextDecoder('utf-8').decode(decompressedBytes);
 
       // Parse JSON
       const config = JSON.parse(decompressed) as UltraCardConfig;

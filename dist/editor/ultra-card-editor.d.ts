@@ -1,10 +1,8 @@
 import { LitElement, TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { UltraCardConfig } from '../types';
-import './tabs/about-tab';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
-import '../components/uc-favorite-colors-manager';
 import '../components/uc-custom-variables-manager';
 import '../components/uc-variable-mapping-dialog';
 import '../components/uc-favorite-dialog';
@@ -38,8 +36,11 @@ export declare class UltraCardEditor extends LitElement {
     private _missingVariables;
     private _pendingImportConfig;
     private _previewBreakpoint;
+    /** Hub sidebar discovery banner dismissed (persisted in localStorage) */
+    private _hubBannerDismissed;
     /** Flag to ensure module CSS for animations is injected once */
     private _moduleStylesInjected;
+    private static readonly HUB_BANNER_DISMISSED_KEY;
     setConfig(config: UltraCardConfig): void;
     protected willUpdate(changedProperties: Map<string, any>): void;
     connectedCallback(): void;
@@ -51,6 +52,8 @@ export declare class UltraCardEditor extends LitElement {
     private _handleKeyDown;
     private _updateConfig;
     private _handleCardVariablesChanged;
+    private _renderHubDiscoveryBanner;
+    private _dismissHubBanner;
     private _toggleFullScreen;
     protected render(): TemplateResult<1>;
     private _renderSettingsTab;

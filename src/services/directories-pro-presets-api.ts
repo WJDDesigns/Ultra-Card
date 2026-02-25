@@ -270,13 +270,14 @@ export class DirectoriesProPresetsAPI {
   }
 
   /**
-   * Track preset download
+   * Track preset download by incrementing the downloads meta field.
+   * Calls a custom REST endpoint on the WordPress site.
    */
   async trackDownload(presetId: number): Promise<void> {
     try {
-      // For now, pretend to track download silently (endpoint TBD)
+      const url = `${DirectoriesProPresetsAPI.API_BASE.replace('/wp/v2', '/ultra-card/v1')}/presets/${presetId}/track-download`;
+      await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
     } catch (error) {
-      // Silently fail download tracking
       console.warn(`Failed to track download for preset ${presetId}:`, error);
     }
   }

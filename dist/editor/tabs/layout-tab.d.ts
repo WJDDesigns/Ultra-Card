@@ -11,6 +11,7 @@ export declare class LayoutTab extends LitElement {
     hass: HomeAssistant;
     config: UltraCardConfig;
     cloudUser?: any | null;
+    isFullScreen: boolean;
     private _showModuleSelector;
     private _selectedRowIndex;
     private _selectedColumnIndex;
@@ -54,6 +55,10 @@ export declare class LayoutTab extends LitElement {
     private _hasModuleClipboard;
     private _hasColumnClipboard;
     private _hasCardClipboard;
+    /** Fullscreen card preview height (px), user-resizable via corner handle */
+    private _previewHeightPx;
+    private _previewResizeStartY;
+    private _previewResizeStartHeight;
     private _showVariableMappingDialog;
     private _missingVariables;
     private _moduleSearchQuery;
@@ -269,6 +274,10 @@ export declare class LayoutTab extends LitElement {
     private _pasteModuleToNestedLayoutModule;
     private _copyColumn;
     private _pasteColumn;
+    /**
+     * Start dragging to resize the fullscreen card preview (bottom edge / corner).
+     */
+    private _onPreviewResizeStart;
     /**
      * Check if there's Ultra Card export data available in clipboard
      */

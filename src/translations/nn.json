@@ -4,7 +4,8 @@
       "layout": "Oppsettbyggjar",
       "settings": "Innstillingar",
       "about": "Om",
-      "pro": "Pro"
+      "pro": "Pro",
+      "card_settings": "Card Settings"
     },
     "settings": {
       "title": "Kortinnstillingar",
@@ -133,7 +134,10 @@
       "card_imported": "Card imported successfully",
       "card_import_failed": "Failed to import card",
       "no_card_to_import": "No valid card data found in clipboard",
-      "confirm_import_card": "This will replace your entire card configuration. Are you sure?"
+      "confirm_import_card": "This will replace your entire card configuration. Are you sure?",
+      "copy_column_first": "Copy a column first",
+      "card_preview": "Card Preview",
+      "resize_preview": "Drag to resize preview"
     },
     "about": {
       "developed_by": "Utvikla av",
@@ -2431,6 +2435,102 @@
       "description": "Exclusive settings for Ultra Card Pro subscribers",
       "skip_default_modules": "Start with Empty Card",
       "skip_default_modules_desc": "When adding a new Ultra Card, start with an empty layout instead of the default text and image modules"
+    },
+    "timer": {
+      "basic": {
+        "title": "Basic",
+        "desc": "Title and icon for the timer."
+      },
+      "title": "Title",
+      "title_desc": "Optional label (e.g. Kitchen, Door close)",
+      "icon": "Icon",
+      "icon_desc": "Icon for the timer",
+      "duration": {
+        "title": "Duration",
+        "desc": "Default duration when Start is pressed."
+      },
+      "duration_seconds": "Default duration (seconds)",
+      "duration_seconds_desc": "e.g. 300 = 5 minutes",
+      "on_expire": {
+        "title": "When timer ends",
+        "desc": "Action to run when the countdown reaches zero (e.g. turn off light, close cover)."
+      },
+      "style": {
+        "title": "Display style",
+        "desc": "How the timer is shown",
+        "circle": "Circle",
+        "progress_bar": "Progress Bar",
+        "digital": "Digital",
+        "background_fill": "Background Fill"
+      },
+      "advanced": {
+        "title": "Advanced"
+      },
+      "timer_entity": "Timer entity",
+      "timer_entity_desc": "Optional Home Assistant timer entity to sync with",
+      "show_snooze_dismiss": "Show Snooze / Dismiss when expired",
+      "show_snooze_dismiss_desc": "When the timer ends, show Snooze (restart) and Dismiss buttons.",
+      "snooze_seconds": "Snooze duration (seconds)",
+      "snooze_seconds_desc": "Restart countdown for this many seconds when Snooze is tapped",
+      "default_title": "Timer",
+      "times_up": "Time's up!",
+      "snooze": "Snooze",
+      "dismiss": "Dismiss",
+      "start": "Start",
+      "pause": "Pause",
+      "resume": "Resume",
+      "cancel": "Cancel",
+      "paused": "Paused"
+    },
+    "cover": {
+      "entity_section": "Entity",
+      "entity_desc": "Select the cover to control (blinds, garage, shutters).",
+      "entity": "Cover entity",
+      "display_section": "Display",
+      "display_desc": "Choose what to show on the card.",
+      "show_title": "Show title",
+      "show_title_desc": "Display the cover name",
+      "show_icon": "Show icon",
+      "show_icon_desc": "Display the cover icon",
+      "show_state": "Show state",
+      "show_state_desc": "Display open/closed/opening/closing",
+      "show_position": "Show position",
+      "show_position_desc": "Show position bar or percentage",
+      "show_position_control": "Show position slider",
+      "show_position_control_desc": "Allow setting position 0-100%",
+      "show_stop": "Show stop button",
+      "show_stop_desc": "Show stop button when supported",
+      "layout_section": "Layout",
+      "layout_desc": "How the controls are arranged.",
+      "layout": "Layout style",
+      "layout_style_desc": "Compact, standard, or buttons only",
+      "layout_compact": "Compact",
+      "layout_standard": "Standard",
+      "layout_buttons": "Buttons",
+      "alignment": "Alignment",
+      "alignment_desc": "Align content left, center, or right",
+      "alignment_left": "Left",
+      "alignment_center": "Center",
+      "alignment_right": "Right",
+      "advanced_section": "Advanced",
+      "advanced_desc": "Tilt and multi-cover options.",
+      "show_tilt": "Show tilt",
+      "show_tilt_desc": "Show tilt state and controls when supported",
+      "show_tilt_control": "Show tilt slider",
+      "show_tilt_control_desc": "Allow setting tilt position when supported",
+      "open": "Open",
+      "close": "Close",
+      "stop": "Stop",
+      "position": "Position",
+      "tilt": "Tilt",
+      "state_open": "Open",
+      "state_closed": "Closed",
+      "state_opening": "Opening",
+      "state_closing": "Closing",
+      "config_needed": "Select a cover",
+      "config_needed_desc": "Choose a cover entity in the General tab",
+      "select_entity": "Select cover entity",
+      "unavailable": "Unavailable"
     }
   }
 }

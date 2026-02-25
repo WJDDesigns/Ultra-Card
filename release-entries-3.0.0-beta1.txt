@@ -1,0 +1,6 @@
+Added new Ultra Card sidebar (Hub) with all settings: Dashboard, Favorites, Presets, Colors, Variables, Templates, Pro, and About
+Moved Favorites, Presets, Colors, Variables, and related settings into the new sidebar for both Pro and non-Pro users
+Non-Pro users must install the Ultra Card Pro Cloud integration to see the new sidebar and access these settings
+Pro users only need to update the Ultra Card Pro Cloud integration to see the new sidebar
+Fixed Ultra Card Hub panel not loading when deployed via HACS: deploy script now includes ultra-card-panel.js
+Added short intro blurbs on each Hub tab explaining what each tab is for

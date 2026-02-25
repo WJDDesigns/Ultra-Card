@@ -1661,22 +1661,45 @@ export class UltraToggleModule extends BaseUltraModule {
   }
 
   /**
-   * Check if a match_state configuration matches the current entity state
+   * Check if a match_state configuration matches the current entity state.
+   * Uses numeric comparison when both sides parse as numbers (e.g. input_number 1 matches 1.0).
    */
   private _matchesState(matchState: string | string[] | undefined, entityState: string): boolean {
     if (!matchState) {
       return false;
     }
 
+    const entityNum = this._tryParseNumber(entityState);
+
     // Handle array of possible states
     if (Array.isArray(matchState)) {
-      return matchState.some(
-        state => String(state).toLowerCase() === String(entityState).toLowerCase()
-      );
+      return matchState.some(state => this._valuesEqual(state, entityState, entityNum));
     }
 
-    // Handle single state (case-insensitive comparison)
-    return String(matchState).toLowerCase() === String(entityState).toLowerCase();
+    return this._valuesEqual(matchState, entityState, entityNum);
+  }
+
+  /** Parse as number or null; used for numeric equality in match_state. */
+  private _tryParseNumber(value: any): number | null {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const n = parseFloat(value);
+      return !isNaN(n) ? n : null;
+    }
+    return null;
+  }
+
+  /** Compare match value with entity state; numeric if both parse as numbers. */
+  private _valuesEqual(
+    matchValue: string | number,
+    entityState: string,
+    entityNum: number | null
+  ): boolean {
+    const matchNum = this._tryParseNumber(matchValue);
+    if (matchNum !== null && entityNum !== null) {
+      return matchNum === entityNum;
+    }
+    return String(matchValue).toLowerCase() === String(entityState).toLowerCase();
   }
 
   /**

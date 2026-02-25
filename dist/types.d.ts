@@ -49,7 +49,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum' | 'media_player' | 'people' | 'navigation';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum' | 'media_player' | 'people' | 'navigation' | 'timer' | 'cover';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -2276,7 +2276,73 @@ export interface NavigationModule extends BaseModule {
     /** Custom accent color for icons */
     nav_icon_color?: string;
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule | MediaPlayerModule | PeopleModule | NavigationModule;
+export type TimerDisplayStyle = 'circle' | 'progress_bar' | 'digital' | 'background_fill';
+export interface TimerModule extends BaseModule {
+    type: 'timer';
+    /** Optional display title (e.g. "Kitchen", "Door close") */
+    title?: string;
+    /** Icon for the timer (e.g. mdi:timer, mdi:pot-steam) */
+    icon?: string;
+    /** Default duration in seconds when user hits Start */
+    duration_seconds: number;
+    /** Optional preset durations in seconds for quick buttons (e.g. [300, 600, 900, 3600]) */
+    preset_durations?: number[];
+    /** Display style: circle, progress_bar, digital, background_fill */
+    style: TimerDisplayStyle;
+    /** Optional HA timer entity to sync with */
+    timer_entity?: string;
+    /** Action to run when timer reaches zero (same shape as tap_action) */
+    on_expire_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+        target?: Record<string, any>;
+    };
+    /** When expired, show Snooze / Dismiss buttons */
+    show_snooze_dismiss?: boolean;
+    /** Snooze duration in seconds when user taps Snooze */
+    snooze_seconds?: number;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    display_mode?: 'always' | 'every' | 'any';
+    display_conditions?: DisplayCondition[];
+}
+export interface CoverModule extends BaseModule {
+    type: 'cover';
+    /** Cover entity (single-entity mode) */
+    entity: string;
+    /** Optional display name override */
+    name?: string;
+    /** Optional icon override */
+    icon?: string;
+    /** Display toggles */
+    show_title?: boolean;
+    show_icon?: boolean;
+    show_state?: boolean;
+    show_position?: boolean;
+    show_stop?: boolean;
+    show_position_control?: boolean;
+    /** Layout: compact (icon + state + controls), standard (name + position bar + buttons), buttons (explicit open/close/stop) */
+    layout?: 'compact' | 'standard' | 'buttons';
+    /** Alignment of content within the module */
+    alignment?: 'left' | 'center' | 'right';
+    /** Tilt (advanced): show tilt state and controls when entity supports it */
+    show_tilt?: boolean;
+    show_tilt_control?: boolean;
+    /** Multi-cover (advanced): when set, display these entities instead of single entity */
+    entities?: string[];
+    layout_multi?: 'stack' | 'grid';
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    display_mode?: 'always' | 'every' | 'any';
+    display_conditions?: DisplayCondition[];
+}
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule | MediaPlayerModule | PeopleModule | NavigationModule | TimerModule | CoverModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;

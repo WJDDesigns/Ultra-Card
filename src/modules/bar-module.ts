@@ -1091,9 +1091,9 @@ export class UltraBarModule extends BaseUltraModule {
               : ''
           }
 
-          <!-- Bar Percentage Entity (not needed for Time Progress mode) -->
+          <!-- Bar Percentage Entity (only for Entity percentage type; template/difference/attribute/range have their own config) -->
           ${
-            barModule.percentage_type !== 'time_progress'
+            barModule.percentage_type === 'entity'
               ? html`
                   <div style="margin-top: 24px;">
                     ${FormUtils.renderField(

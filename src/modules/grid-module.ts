@@ -1363,6 +1363,47 @@ export class UltraGridModule extends BaseUltraModule {
           </div>
 
           <div class="field-container">
+            <div class="field-title">Mobile columns (${gridModule.columns_mobile ?? gridModule.columns ?? 4})</div>
+            <div class="field-description">Columns on narrow screens (≤600px). Empty = same as Columns.</div>
+            <div class="number-range-control">
+              <input
+                type="range"
+                class="range-slider"
+                min="1"
+                max="12"
+                step="1"
+                .value="${String(gridModule.columns_mobile ?? gridModule.columns ?? 4)}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  updateModule({ columns_mobile: parseInt(target.value, 10) });
+                }}
+              />
+              <input
+                type="number"
+                class="range-input"
+                min="1"
+                max="12"
+                step="1"
+                .value="${String(gridModule.columns_mobile ?? gridModule.columns ?? 4)}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = parseInt(target.value, 10);
+                  if (!isNaN(value) && value >= 1 && value <= 12) {
+                    updateModule({ columns_mobile: value });
+                  }
+                }}
+              />
+              <button
+                class="range-reset-btn"
+                @click=${() => updateModule({ columns_mobile: undefined })}
+                title="Use same as Columns"
+              >
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
+            </div>
+          </div>
+
+          <div class="field-container">
             <div class="field-title">Gap (${gridModule.gap || 12}px)</div>
             <div class="field-description">Space between grid items in pixels.</div>
             <div class="number-range-control">
@@ -3232,8 +3273,10 @@ export class UltraGridModule extends BaseUltraModule {
   private buildGridStyles(module: GridModule): string {
     const gap = module.gap || 12;
     const columns = module.columns || 4;
+    const columnsMobile = module.columns_mobile ?? columns;
 
-    let styles = `display: grid; gap: ${gap}px; width: 100%;`;
+    // CSS variables for responsive override in @media (max-width: 600px)
+    let styles = `display: grid; gap: ${gap}px; width: 100%; --uc-grid-columns: ${columns}; --uc-grid-columns-mobile: ${columnsMobile};`;
 
     switch (module.grid_display_mode) {
       case 'masonry':
@@ -3245,8 +3288,7 @@ export class UltraGridModule extends BaseUltraModule {
       case 'metro':
         // Metro uses doubled columns for finer control of tile sizes
         // Each "unit" is 2 grid columns, so a 4-column layout has 8 grid columns
-        // Row height is 90px to accommodate content properly
-        styles += `grid-template-columns: repeat(${columns * 2}, minmax(0, 1fr)); grid-auto-rows: 90px; grid-auto-flow: dense; align-items: stretch;`;
+        styles += `--uc-grid-metro-columns-mobile: ${columnsMobile * 2}; grid-template-columns: repeat(${columns * 2}, minmax(0, 1fr)); grid-auto-rows: 90px; grid-auto-flow: dense; align-items: stretch;`;
         break;
       case 'grid':
       default:
@@ -4547,15 +4589,15 @@ export class UltraGridModule extends BaseUltraModule {
         overflow: hidden;
       }
 
-      /* Responsive adjustments */
+      /* Responsive: use --uc-grid-columns-mobile (set on container) so mobile can show configured columns */
       @media (max-width: 600px) {
         .uc-grid-container.uc-grid-mode-grid,
         .uc-grid-container.uc-grid-mode-masonry {
-          grid-template-columns: repeat(2, 1fr) !important;
+          grid-template-columns: repeat(var(--uc-grid-columns-mobile, var(--uc-grid-columns, 4)), minmax(0, 1fr)) !important;
         }
 
         .uc-grid-container.uc-grid-mode-metro {
-          grid-template-columns: repeat(4, 1fr) !important;
+          grid-template-columns: repeat(var(--uc-grid-metro-columns-mobile, 8), minmax(0, 1fr)) !important;
         }
 
         .uc-grid-item.metro-small {

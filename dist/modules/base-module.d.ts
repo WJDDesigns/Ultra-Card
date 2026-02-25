@@ -348,6 +348,12 @@ export declare abstract class BaseUltraModule implements UltraModule {
      */
     protected buildDesignStyles(module: CardModule, hass?: HomeAssistant): Record<string, string | undefined>;
     /**
+     * Compare state or attribute value with target; use numeric equality when both parse as numbers
+     * (e.g. input_number 1 matches target "1.0").
+     */
+    protected _stateOrAttributeEquals(current: unknown, target: string): boolean;
+    private _parseNumber;
+    /**
      * Get animation configuration if conditions are met
      * Returns animation class and CSS variables for the animation wrapper, or null if no animation
      *

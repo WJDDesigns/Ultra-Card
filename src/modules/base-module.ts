@@ -1329,6 +1329,28 @@ export abstract class BaseUltraModule implements UltraModule {
   }
 
   /**
+   * Compare state or attribute value with target; use numeric equality when both parse as numbers
+   * (e.g. input_number 1 matches target "1.0").
+   */
+  protected _stateOrAttributeEquals(current: unknown, target: string): boolean {
+    const curNum = this._parseNumber(current);
+    const tgtNum = this._parseNumber(target);
+    if (curNum !== null && tgtNum !== null) {
+      return curNum === tgtNum;
+    }
+    return String(current) === String(target);
+  }
+
+  private _parseNumber(value: unknown): number | null {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const n = parseFloat(value);
+      return !isNaN(n) ? n : null;
+    }
+    return null;
+  }
+
+  /**
    * Get animation configuration if conditions are met
    * Returns animation class and CSS variables for the animation wrapper, or null if no animation
    *
@@ -1380,11 +1402,14 @@ export abstract class BaseUltraModule implements UltraModule {
     } else if (targetState && hass && hass.states[entityId]) {
       const entity = hass.states[entityId];
       if (triggerType === 'attribute' && attribute) {
-        // Attribute-based trigger
-        shouldAnimate = String(entity.attributes[attribute]) === targetState;
+        // Attribute-based trigger (numeric equality for input_number etc.)
+        shouldAnimate = this._stateOrAttributeEquals(
+          entity.attributes[attribute],
+          targetState
+        );
       } else {
-        // State-based trigger
-        shouldAnimate = entity.state === targetState;
+        // State-based trigger (numeric equality for input_number etc.)
+        shouldAnimate = this._stateOrAttributeEquals(entity.state, targetState);
       }
     }
 

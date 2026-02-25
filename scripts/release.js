@@ -400,9 +400,34 @@ function enhanceEntry(entry, category) {
 }
 
 /**
- * Collect changelog entries from user
+ * Read changelog entries from a file (one per line; empty lines and "done" are skipped)
  */
-async function collectChangelogEntries() {
+function readChangelogEntriesFromFile(filePath) {
+  const resolved = path.isAbsolute(filePath) ? filePath : path.resolve(path.dirname(__dirname), filePath);
+  if (!fs.existsSync(resolved)) {
+    throw new Error(`Changelog file not found: ${resolved}`);
+  }
+  const content = fs.readFileSync(resolved, 'utf8');
+  const entries = content
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(line => line && line.toLowerCase() !== 'done');
+  if (entries.length === 0) {
+    throw new Error(`No entries in changelog file: ${resolved}`);
+  }
+  log.success(`Loaded ${entries.length} changelog entries from ${path.basename(resolved)}`);
+  return entries;
+}
+
+/**
+ * Collect changelog entries from user (interactive) or from --changelog-file
+ */
+async function collectChangelogEntries(args) {
+  const changelogFileIdx = args.indexOf('--changelog-file');
+  if (changelogFileIdx !== -1 && args[changelogFileIdx + 1]) {
+    return readChangelogEntriesFromFile(args[changelogFileIdx + 1]);
+  }
+
   const rl = createReadlineInterface();
   const entries = [];
 
@@ -728,9 +753,9 @@ async function main() {
   // Sync package.json version
   const versionSynced = syncPackageVersion(version);
 
-  // Collect changelog entries
+  // Collect changelog entries (from file if --changelog-file provided)
   log.step('Collecting changelog entries...');
-  let entries = await collectChangelogEntries();
+  let entries = await collectChangelogEntries(args);
 
   // Generate changelog
   let changelog = generateChangelog(version, entries);

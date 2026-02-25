@@ -9,6 +9,8 @@ import { localize } from '../localize/localize';
 export class UcCustomVariablesManager extends LitElement {
   @property({ attribute: false }) public hass?: HomeAssistant;
   @property({ attribute: false }) public config?: UltraCardConfig;
+  /** When true, only card-specific variables are shown and editable. Global variables are managed in the Ultra Card Hub. */
+  @property({ type: Boolean }) public cardOnly = false;
 
   @state() private _globalVariables: CustomVariable[] = [];
   @state() private _cardVariables: CustomVariable[] = [];
@@ -281,7 +283,7 @@ export class UcCustomVariablesManager extends LitElement {
     this._newVariableEntity = '';
     this._newVariableValueType = 'state';
     this._newVariableAttributeName = '';
-    this._newVariableIsGlobal = true;
+    this._newVariableIsGlobal = !this.cardOnly;
     this._nameError = '';
   }
 
@@ -443,20 +445,34 @@ export class UcCustomVariablesManager extends LitElement {
 
   protected render(): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
-    const hasGlobalVariables = this._globalVariables.length > 0;
+    const hasGlobalVariables = !this.cardOnly && this._globalVariables.length > 0;
     const hasCardVariables = this._cardVariables.length > 0;
     const hasAnyVariables = hasGlobalVariables || hasCardVariables;
 
     return html`
       <div class="variables-manager">
+        ${this.cardOnly
+          ? html`
+              <div class="hub-notice">
+                <ha-icon icon="mdi:information-outline"></ha-icon>
+                <span>
+                  For shared (global) variables, use the <strong>Ultra Card Hub</strong> → Variables tab in the sidebar.
+                </span>
+              </div>
+            `
+          : ''}
         <div class="manager-header">
-          <h3>${localize('editor.custom_variables.title', lang, 'Custom Variables')}</h3>
+          <h3>${this.cardOnly
+            ? localize('editor.custom_variables.card_variables', lang, 'This Card Only')
+            : localize('editor.custom_variables.title', lang, 'Custom Variables')}</h3>
           <div class="header-actions">
             <button
               class="add-btn"
               @click=${this._showAddNewForm}
               ?disabled=${this._showAddForm}
-              title="${localize('editor.custom_variables.add_variable', lang, 'Add new variable')}"
+              title="${this.cardOnly
+                ? localize('editor.custom_variables.add_card_variable', lang, 'Add card variable')
+                : localize('editor.custom_variables.add_variable', lang, 'Add new variable')}"
             >
               <ha-icon icon="mdi:plus"></ha-icon>
               ${localize('editor.custom_variables.add_variable', lang, 'Add Variable')}
@@ -466,11 +482,17 @@ export class UcCustomVariablesManager extends LitElement {
 
         <div class="manager-description">
           <p>
-            ${localize(
-              'editor.custom_variables.description',
-              lang,
-              'Create reusable variables that reference entities. Use them in templates with {{ $variable_name }}. Drag and drop to reorder.'
-            )}
+            ${this.cardOnly
+              ? localize(
+                  'editor.custom_variables.card_only_description',
+                  lang,
+                  'Variables that apply only to this card. Use them in templates with {{ $variable_name }}.'
+                )
+              : localize(
+                  'editor.custom_variables.description',
+                  lang,
+                  'Create reusable variables that reference entities. Use them in templates with {{ $variable_name }}. Drag and drop to reorder.'
+                )}
           </p>
         </div>
 
@@ -480,19 +502,27 @@ export class UcCustomVariablesManager extends LitElement {
           ? html`
               <div class="empty-state">
                 <ha-icon icon="mdi:variable"></ha-icon>
-                <h4>${localize('editor.custom_variables.empty_title', lang, 'No Custom Variables')}</h4>
+                <h4>${this.cardOnly
+                  ? localize('editor.custom_variables.empty_card_title', lang, 'No Card Variables')
+                  : localize('editor.custom_variables.empty_title', lang, 'No Custom Variables')}</h4>
                 <p>
-                  ${localize(
-                    'editor.custom_variables.empty_description',
-                    lang,
-                    'Add your first variable to get started. Variables can be used in templates with {{ $variable_name }} syntax.'
-                  )}
+                  ${this.cardOnly
+                    ? localize(
+                        'editor.custom_variables.empty_card_description',
+                        lang,
+                        'Add a variable that applies only to this card, or use the Ultra Card Hub for shared variables.'
+                      )
+                    : localize(
+                        'editor.custom_variables.empty_description',
+                        lang,
+                        'Add your first variable to get started. Variables can be used in templates with {{ $variable_name }} syntax.'
+                      )}
                 </p>
               </div>
             `
           : ''}
         
-        <!-- Global Variables Section -->
+        <!-- Global Variables Section (hidden when cardOnly) -->
         ${hasGlobalVariables
           ? html`
               <div class="variables-section">
@@ -698,7 +728,8 @@ export class UcCustomVariablesManager extends LitElement {
           </div>
         ` : ''}
 
-        <!-- Global/Card-Specific Toggle -->
+        <!-- Global/Card-Specific Toggle (hidden when cardOnly; globals managed in Hub) -->
+        ${!this.cardOnly ? html`
         <div class="form-row">
           <div class="form-field scope-field">
             <label>${localize('editor.custom_variables.variable_scope', lang, 'Variable Scope')}</label>
@@ -725,6 +756,7 @@ export class UcCustomVariablesManager extends LitElement {
             </div>
           </div>
         </div>
+        ` : ''}
 
         <div class="form-actions">
           <button
@@ -830,6 +862,7 @@ export class UcCustomVariablesManager extends LitElement {
             </div>
           ` : ''}
 
+          ${!this.cardOnly ? html`
           <div class="edit-field">
             <label>${localize('editor.custom_variables.variable_scope', lang, 'Variable Scope')}</label>
             <div class="scope-toggle compact">
@@ -849,6 +882,7 @@ export class UcCustomVariablesManager extends LitElement {
               </button>
             </div>
           </div>
+        ` : ''}
         </div>
       </div>
     `;
@@ -859,6 +893,30 @@ export class UcCustomVariablesManager extends LitElement {
       .variables-manager {
         width: 100%;
         max-width: 700px;
+      }
+
+      .hub-notice {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        margin-bottom: 14px;
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.2);
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--primary-text-color);
+        line-height: 1.4;
+      }
+
+      .hub-notice ha-icon {
+        --mdc-icon-size: 20px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+      }
+
+      .hub-notice strong {
+        font-weight: 600;
       }
 
       .manager-header {

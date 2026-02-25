@@ -220,10 +220,22 @@ export class LogicService {
     const currentValue = entity.state;
 
     switch (operator) {
-      case '=':
+      case '=': {
+        const numCur = this.tryParseNumber(currentValue);
+        const numTgt = this.tryParseNumber(targetValue);
+        if (numCur !== null && numTgt !== null) {
+          return numCur === numTgt;
+        }
         return currentValue === String(targetValue);
-      case '!=':
+      }
+      case '!=': {
+        const numCurNe = this.tryParseNumber(currentValue);
+        const numTgtNe = this.tryParseNumber(targetValue);
+        if (numCurNe !== null && numTgtNe !== null) {
+          return numCurNe !== numTgtNe;
+        }
         return currentValue !== String(targetValue);
+      }
       case '>':
         const numCurrent = this.tryParseNumber(currentValue);
         const numTarget = this.tryParseNumber(targetValue);
@@ -287,10 +299,22 @@ export class LogicService {
     const currentValue = attributeValue;
 
     switch (operator) {
-      case '=':
+      case '=': {
+        const numCur = this.tryParseNumber(currentValue);
+        const numTgt = this.tryParseNumber(targetValue);
+        if (numCur !== null && numTgt !== null) {
+          return numCur === numTgt;
+        }
         return String(currentValue) === String(targetValue);
-      case '!=':
+      }
+      case '!=': {
+        const numCurNe = this.tryParseNumber(currentValue);
+        const numTgtNe = this.tryParseNumber(targetValue);
+        if (numCurNe !== null && numTgtNe !== null) {
+          return numCurNe !== numTgtNe;
+        }
         return String(currentValue) !== String(targetValue);
+      }
       case '>':
         const numCurrent = this.tryParseNumber(currentValue);
         const numTarget = this.tryParseNumber(targetValue);
