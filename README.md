@@ -389,9 +389,9 @@ Ultra Card works with **all** custom Lovelace cards, including:
 
 ## Translations
 
-Ultra Card supports 14 languages with full internationalization:
+Ultra Card supports 15 languages with full internationalization:
 
-🇺🇸 English • 🇬🇧 British English • 🇩🇪 German • 🇫🇷 French • 🇪🇸 Spanish • 🇮🇹 Italian • 🇳🇱 Dutch • 🇳🇴 Norwegian • 🇩🇰 Danish • 🇨🇿 Czech • 🇵🇱 Polish • 🇸🇪 Swedish • 🇵🇹 Portuguese • 🇷🇺 Russian
+🇺🇸 English • 🇬🇧 British English • 🇩🇪 German • 🇫🇷 French • 🇪🇸 Spanish • 🇮🇹 Italian • 🇳🇱 Dutch • 🇳🇴 Norwegian • 🇩🇰 Danish • 🇨🇿 Czech • 🇵🇱 Polish • 🇸🇪 Swedish • 🇵🇹 Portuguese • 🇷🇺 Russian • 🇪🇺 Catalan
 
 ### Help Translate
 
