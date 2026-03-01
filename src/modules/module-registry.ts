@@ -43,6 +43,7 @@ import { UltraPeopleModule } from './people-module';
 import { UltraNavigationModule } from './navigation-module';
 import { UltraTimerModule } from './timer-module';
 import { UltraCoverModule } from './cover-module';
+import { UltraDynamicListModule } from './dynamic-list-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -126,6 +127,8 @@ export class ModuleRegistry {
     this.registerModule(new UltraTimerModule());
     // Register cover module
     this.registerModule(new UltraCoverModule());
+    // Register dynamic list module
+    this.registerModule(new UltraDynamicListModule());
   }
 
   // Register a new module (for core modules or third-party modules)

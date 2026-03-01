@@ -1671,10 +1671,11 @@ export class UltraCard extends LitElement {
     }
 
     const raw = this.hass?.__uvc_template_strings?.[templateKey];
-    if (!raw) return [];
+    if (raw === undefined || raw === null) return [];
 
+    if (Array.isArray(raw)) return raw as CardColumn[];
     try {
-      const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(String(raw).trim());
       return Array.isArray(parsed) ? (parsed as CardColumn[]) : [];
     } catch (e) {
       console.error(`[UltraCard] columns_template on row "${row.id}" did not return valid JSON:`, e);
@@ -1702,10 +1703,11 @@ export class UltraCard extends LitElement {
     }
 
     const raw = this.hass?.__uvc_template_strings?.[templateKey];
-    if (!raw) return [];
+    if (raw === undefined || raw === null) return [];
 
+    if (Array.isArray(raw)) return raw as CardModule[];
     try {
-      const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(String(raw).trim());
       return Array.isArray(parsed) ? (parsed as CardModule[]) : [];
     } catch (e) {
       console.error(`[UltraCard] modules_template on column "${column.id}" did not return valid JSON:`, e);

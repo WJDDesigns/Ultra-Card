@@ -49,7 +49,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum' | 'media_player' | 'people' | 'navigation' | 'timer' | 'cover';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum' | 'media_player' | 'people' | 'navigation' | 'timer' | 'cover' | 'dynamic-list';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -2342,7 +2342,21 @@ export interface CoverModule extends BaseModule {
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule | MediaPlayerModule | PeopleModule | NavigationModule | TimerModule | CoverModule;
+export interface DynamicListModule extends BaseModule {
+    type: 'dynamic-list';
+    /** Jinja2 template that must return a JSON array of CardModule config objects via | tojson */
+    dynamic_template: string;
+    /** Layout direction for the generated modules */
+    direction: 'vertical' | 'horizontal';
+    /** Gap between generated modules in px */
+    gap: number;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    display_mode?: 'always' | 'every' | 'any';
+    display_conditions?: DisplayCondition[];
+}
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule | MediaPlayerModule | PeopleModule | NavigationModule | TimerModule | CoverModule | DynamicListModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;

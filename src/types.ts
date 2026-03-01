@@ -129,7 +129,8 @@ export interface BaseModule {
     | 'people'
     | 'navigation'
     | 'timer'
-    | 'cover';
+    | 'cover'
+    | 'dynamic-list';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -4138,6 +4139,21 @@ export interface CoverModule extends BaseModule {
   display_conditions?: DisplayCondition[];
 }
 
+export interface DynamicListModule extends BaseModule {
+  type: 'dynamic-list';
+  /** Jinja2 template that must return a JSON array of CardModule config objects via | tojson */
+  dynamic_template: string;
+  /** Layout direction for the generated modules */
+  direction: 'vertical' | 'horizontal';
+  /** Gap between generated modules in px */
+  gap: number;
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+  display_mode?: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
 // Union type for all module types
 export type CardModule =
   | TextModule
@@ -4183,7 +4199,8 @@ export type CardModule =
   | PeopleModule
   | NavigationModule
   | TimerModule
-  | CoverModule;
+  | CoverModule
+  | DynamicListModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {

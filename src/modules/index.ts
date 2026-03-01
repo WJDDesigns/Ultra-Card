@@ -36,6 +36,7 @@ export * from './people-module';
 export * from './navigation-module';
 export * from './timer-module';
 export * from './cover-module';
+export * from './dynamic-list-module';
 
 // Export convenience functions
 export { getModuleRegistry } from './module-registry';

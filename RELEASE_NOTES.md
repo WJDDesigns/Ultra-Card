@@ -1,5 +1,29 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0-beta2
+
+### 🚀 New Features
+
+- **Dynamic List Module** — New `dynamic-list` module type that uses a Jinja2 template to generate a list of modules at runtime. Includes built-in example templates for doors/windows, tire pressure, and more
+- **Dynamic Columns in Layout Editor** — Row settings now include a "Dynamic Columns" toggle with an inline Jinja2 template editor; when enabled, columns are generated from the template rather than static config
+- **Dynamic Modules in Layout Editor** — Column settings now include a "Dynamic Modules" toggle with an inline Jinja2 template editor; when enabled, modules are generated from the template
+
+### 🔧 Improvements
+
+- **Hub panel mobile responsiveness** — Tab strip now scrolls horizontally on narrow viewports, hiding the scrollbar while keeping it functional; narrow layout (≤870px) detected via `MediaQueryList` for reactive updates
+- **Mobile burger menu** — Hub panel header shows a hamburger button on narrow screens that fires `hass-toggle-menu` to open the HA sidebar
+- **Share Preset dialog mobile layout** — Dialog now uses `min()`-clamped widths, full-viewport sizing on mobile, field rows collapse to single-column below 480px, and font-size 16px on inputs to prevent iOS auto-zoom
+- **Share Preset dialog buttons** — Replaced `mwc-button` with native `<button>` elements using a consistent `footer-btn` style; Submit button is now disabled until all required fields are valid
+- **Z-index consistency** — Overflow context menus now use `Z_INDEX.CONTEXT_MENU` constant instead of hardcoded `9999`; Share Preset dialog boosted above all editor overlays via `--mdc-dialog-z-index: 8000`
+- **Overflow menu auto-close** — Open overflow menus are now closed when the Share Preset dialog opens and after successful Hub authentication
+
+### 🐛 Bug Fixes
+
+- **Template parsing crash fix** — `columns_template` and `modules_template` no longer crash when the template service returns an already-parsed array; both now short-circuit before `JSON.parse` for array values and use `String(raw).trim()` for safer string coercion
+- **Overflow menu persisting behind dialog** — Fixed overflow menu remaining visible beneath the Share Preset dialog by closing it before the dialog is shown
+
+---
+
 ## Version 3.0.0
 
 ### 🔗 Ultra Card Connect

@@ -48,10 +48,13 @@ export class UltraCardPanel extends LitElement {
   @state() private _proAuth: HubProTab['auth'] = null;
   @state() private _showProTab = false;
   @state() private _cloudUser: CloudUser | null = null;
+  @state() private _narrow = window.matchMedia('(max-width: 870px)').matches;
 
   // subscribeEvents returns Promise<() => void>; store the resolved unsub only
   private _unsub?: (() => void) | (() => Promise<void>);
   private _authListener?: (user: CloudUser | null) => void;
+  private _mql?: MediaQueryList;
+  private _onMqlChange = (e: MediaQueryListEvent) => { this._narrow = e.matches; };
 
   static styles = [
     panelStyles,
@@ -63,6 +66,20 @@ export class UltraCardPanel extends LitElement {
         border-bottom: 2px solid var(--divider-color, rgba(0, 0, 0, 0.08));
         padding: 0 24px;
         background: var(--ha-card-background, var(--card-background-color));
+        /* Horizontal scroll on overflow */
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        /* Hide scrollbar visually but keep it functional */
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        /* Prevent shrinking below content */
+        flex-shrink: 0;
+      }
+
+      .tab-strip::-webkit-scrollbar {
+        display: none;
       }
 
       .tab-strip button {
@@ -81,6 +98,7 @@ export class UltraCardPanel extends LitElement {
         margin-bottom: -2px;
         transition: all 0.2s ease;
         white-space: nowrap;
+        flex-shrink: 0;
       }
 
       .tab-strip button ha-icon {
@@ -101,14 +119,51 @@ export class UltraCardPanel extends LitElement {
         color: var(--primary-color);
       }
 
-      @media (max-width: 600px) {
+      /* Mobile burger menu button */
+      .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        border: none;
+        background: none;
+        color: var(--primary-text-color);
+        cursor: pointer;
+        border-radius: 50%;
+        padding: 0;
+        transition: background 0.15s ease;
+        margin-left: -8px;
+      }
+
+      .mobile-menu-btn:hover {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+      }
+
+      .mobile-menu-btn ha-icon {
+        --mdc-icon-size: 24px;
+      }
+
+      /* Narrow header layout: burger | title | account chip */
+      .hub-header--narrow {
+        padding: 8px 16px 8px 8px;
+        gap: 8px;
+      }
+
+      .hub-header--narrow h1 {
+        font-size: 20px;
+        flex: 1;
+      }
+
+      @media (max-width: 870px) {
         .tab-strip {
-          padding: 0 8px;
+          padding: 0 4px;
         }
         .tab-strip button {
-          padding: 12px 12px;
+          padding: 12px 14px;
           font-size: 13px;
-          gap: 6px;
+          gap: 5px;
         }
         .tab-strip button ha-icon {
           --mdc-icon-size: 18px;
@@ -119,6 +174,8 @@ export class UltraCardPanel extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
+    this._mql = window.matchMedia('(max-width: 870px)');
+    this._mql.addEventListener('change', this._onMqlChange);
     this._updateProState();
     this._cloudUser = ucCloudAuthService.getCurrentUser();
     this._authListener = (user: CloudUser | null) => {
@@ -139,6 +196,8 @@ export class UltraCardPanel extends LitElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    this._mql?.removeEventListener('change', this._onMqlChange);
+    this._mql = undefined;
     if (this._unsub) {
       try { this._unsub(); } catch { /* ignore */ }
       this._unsub = undefined;
@@ -190,6 +249,10 @@ export class UltraCardPanel extends LitElement {
     if (integrationUser) {
       ucCloudAuthService.setIntegrationUser(integrationUser);
     }
+  }
+
+  private _toggleSidebar(): void {
+    this.dispatchEvent(new CustomEvent('hass-toggle-menu', { bubbles: true, composed: true }));
   }
 
   private _renderAccountChip(): unknown {
@@ -270,15 +333,27 @@ export class UltraCardPanel extends LitElement {
 
     return html`
       <div class="hub-container">
-        <header class="hub-header">
+        <header class="hub-header ${this._narrow ? 'hub-header--narrow' : ''}">
+          ${this._narrow ? html`
+            <button
+              class="mobile-menu-btn"
+              @click=${this._toggleSidebar}
+              aria-label="Toggle sidebar"
+              title="Toggle sidebar"
+            >
+              <ha-icon icon="mdi:menu"></ha-icon>
+            </button>
+          ` : ''}
           <h1>Ultra Card</h1>
           ${this._renderAccountChip()}
         </header>
 
-        <nav class="tab-strip">
+        <nav class="tab-strip" role="tablist" aria-label="Hub navigation">
           ${visibleTabs.map(
             tab => html`
               <button
+                role="tab"
+                aria-selected=${this._activeTab === tab.key ? 'true' : 'false'}
                 class=${this._activeTab === tab.key ? 'active' : ''}
                 @click=${() => (this._activeTab = tab.key)}
               >

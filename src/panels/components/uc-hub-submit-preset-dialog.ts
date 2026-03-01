@@ -55,8 +55,20 @@ export class UcHubSubmitPresetDialog extends LitElement {
     }
 
     ha-dialog {
-      --mdc-dialog-min-width: 560px;
-      --mdc-dialog-max-width: 680px;
+      --mdc-dialog-min-width: min(560px, calc(100vw - 32px));
+      --mdc-dialog-max-width: min(680px, calc(100vw - 16px));
+      /* Boost above ALL editor overlays (context menus at 5005, popups at 1002, etc.) */
+      --mdc-dialog-z-index: 8000;
+      --dialog-z-index: 8000;
+    }
+
+    @media (max-width: 600px) {
+      ha-dialog {
+        --mdc-dialog-min-width: calc(100vw - 32px);
+        --mdc-dialog-max-width: calc(100vw - 16px);
+        /* Full-screen-ish on mobile: anchor to bottom of viewport */
+        --mdc-dialog-max-height: calc(100dvh - 32px);
+      }
     }
 
     .dialog-body {
@@ -140,7 +152,7 @@ export class UcHubSubmitPresetDialog extends LitElement {
       margin-top: 2px;
     }
 
-    /* Two-column row */
+    /* Two-column row — collapses to single column on mobile */
     .field-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -150,6 +162,16 @@ export class UcHubSubmitPresetDialog extends LitElement {
 
     .field-row .field {
       margin-bottom: 0;
+    }
+
+    @media (max-width: 480px) {
+      .field-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+      .field-row .field {
+        margin-bottom: 16px;
+      }
     }
 
     /* File upload */
@@ -360,6 +382,52 @@ export class UcHubSubmitPresetDialog extends LitElement {
       background: rgba(0, 0, 0, 0.04);
     }
 
+    /* Footer button sizing — slightly larger than default inline buttons */
+    .footer-btn {
+      min-width: 120px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      border-radius: 10px;
+      cursor: pointer;
+      user-select: none;
+      transition: opacity 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .footer-btn.btn-primary {
+      box-shadow: 0 2px 8px rgba(var(--rgb-primary-color, 3, 169, 244), 0.3);
+    }
+
+    .footer-btn.btn-primary:hover:not(:disabled) {
+      opacity: 0.9;
+      box-shadow: 0 4px 14px rgba(var(--rgb-primary-color, 3, 169, 244), 0.45);
+    }
+
+    .footer-btn.btn-primary:active:not(:disabled) {
+      opacity: 1;
+      box-shadow: none;
+      transform: scale(0.98);
+    }
+
+    .footer-btn.btn-secondary:hover:not(:disabled) {
+      background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.06);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .footer-btn.btn-secondary:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    @media (max-width: 480px) {
+      .footer-btn {
+        min-width: 0;
+        flex: 1;
+        justify-content: center;
+      }
+    }
+
     /* Validation error on field */
     .field-error {
       font-size: 11px;
@@ -379,6 +447,33 @@ export class UcHubSubmitPresetDialog extends LitElement {
 
     .spin {
       animation: spin 0.8s linear infinite;
+    }
+
+    @media (max-width: 480px) {
+      .dialog-body {
+        padding: 0;
+      }
+      .dialog-subtitle {
+        font-size: 12px;
+        margin-bottom: 16px;
+      }
+      .field input,
+      .field select,
+      .field textarea {
+        font-size: 16px; /* prevents iOS auto-zoom on focus */
+      }
+      .file-table-header,
+      .file-row {
+        grid-template-columns: 1fr auto auto;
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+      .file-size {
+        font-size: 11px;
+      }
+      .upload-zone {
+        padding: 12px;
+      }
     }
 
     /* Divider */
@@ -655,15 +750,19 @@ export class UcHubSubmitPresetDialog extends LitElement {
 
         ${this._submitted ? '' : html`
           <!-- Footer action buttons -->
-          <mwc-button
+          <button
             slot="secondaryAction"
+            class="btn btn-secondary footer-btn"
             @click=${this._close}
             ?disabled=${this._submitting}
-          >Cancel</mwc-button>
-          <mwc-button
+          >
+            <ha-icon icon="mdi:close"></ha-icon>
+            Cancel
+          </button>
+          <button
             slot="primaryAction"
-            raised
-            ?disabled=${this._submitting}
+            class="btn btn-primary footer-btn"
+            ?disabled=${!this._canSubmit || this._submitting}
             @click=${this._trySubmit}
           >
             ${this._submitting
@@ -672,9 +771,9 @@ export class UcHubSubmitPresetDialog extends LitElement {
                     Uploading photo
                     ${this._photoStates.filter(s => s.status !== 'pending').length}
                     of ${this._photos.length}…`
-                : html`<ha-icon icon="mdi:loading" class="spin"></ha-icon> Submitting preset…`
+                : html`<ha-icon icon="mdi:loading" class="spin"></ha-icon> Submitting…`
               : html`<ha-icon icon="mdi:cloud-upload"></ha-icon> Submit for Review`}
-          </mwc-button>
+          </button>
         `}
       </ha-dialog>
     `;

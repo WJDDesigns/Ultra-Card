@@ -27,6 +27,8 @@ export const panelStyles = css`
     justify-content: space-between;
     padding: 16px 24px 12px;
     gap: 12px;
+    min-height: 56px;
+    box-sizing: border-box;
   }
 
   .hub-header h1 {
@@ -34,6 +36,21 @@ export const panelStyles = css`
     font-size: 24px;
     font-weight: 400;
     color: var(--primary-text-color);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 870px) {
+    .hub-header {
+      padding: 8px 16px 8px 8px;
+      gap: 8px;
+    }
+    .hub-header h1 {
+      font-size: 20px;
+    }
   }
 
   .hub-account-chip {
@@ -223,11 +240,14 @@ export const panelStyles = css`
     gap: 16px;
   }
 
-  @media (max-width: 600px) {
+  @media (max-width: 870px) {
     .grid-cards {
       grid-template-columns: 1fr;
     }
     .hub-content {
+      padding: 12px;
+    }
+    .hub-section {
       padding: 16px;
     }
   }

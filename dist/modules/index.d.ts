@@ -33,6 +33,7 @@ export * from './people-module';
 export * from './navigation-module';
 export * from './timer-module';
 export * from './cover-module';
+export * from './dynamic-list-module';
 export { getModuleRegistry } from './module-registry';
 export { ucPresetsService } from '../services/uc-presets-service';
 export { ucFavoritesService } from '../services/uc-favorites-service';
