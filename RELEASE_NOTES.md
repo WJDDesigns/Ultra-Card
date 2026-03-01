@@ -5,8 +5,6 @@
 ### 🚀 New Features
 
 - **Dynamic List Module** — New `dynamic-list` module type that uses a Jinja2 template to generate a list of modules at runtime. Includes built-in example templates for doors/windows, tire pressure, and more
-- **Dynamic Columns in Layout Editor** — Row settings now include a "Dynamic Columns" toggle with an inline Jinja2 template editor; when enabled, columns are generated from the template rather than static config
-- **Dynamic Modules in Layout Editor** — Column settings now include a "Dynamic Modules" toggle with an inline Jinja2 template editor; when enabled, modules are generated from the template
 
 ### 🔧 Improvements
 

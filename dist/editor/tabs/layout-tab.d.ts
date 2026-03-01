@@ -10,7 +10,6 @@ import '../../components/uc-import-dialog';
 import '../../panels/components/uc-hub-login-dialog';
 import '../../panels/components/uc-hub-rate-dialog';
 import '../../panels/components/uc-hub-submit-preset-dialog';
-import '../../components/ultra-template-editor';
 export declare class LayoutTab extends LitElement {
     hass: HomeAssistant;
     config: UltraCardConfig;
