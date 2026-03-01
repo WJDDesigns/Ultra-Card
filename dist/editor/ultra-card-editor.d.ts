@@ -30,6 +30,7 @@ export declare class UltraCardEditor extends LitElement {
     private _snapshotSchedulerStatus;
     private _newerBackupAvailable;
     private _showSyncNotification;
+    private _isLoadingNewerBackup;
     private _skipDefaultModules;
     private _isCreatingManualSnapshot;
     private _showVariableMappingDialog;
@@ -38,11 +39,17 @@ export declare class UltraCardEditor extends LitElement {
     private _previewBreakpoint;
     /** Hub sidebar discovery banner dismissed (persisted in localStorage) */
     private _hubBannerDismissed;
+    /** Ultra Card Connect flow handler available (files on disk, not yet configured). null = not yet checked */
+    private _connectHandlerAvailable;
+    /** (unused — kept for reference; activation now uses HA native navigation) */
+    private _connectActivating;
     /** Flag to ensure module CSS for animations is injected once */
     private _moduleStylesInjected;
     private static readonly HUB_BANNER_DISMISSED_KEY;
     setConfig(config: UltraCardConfig): void;
     protected willUpdate(changedProperties: Map<string, any>): void;
+    private _checkConnectHandlerAvailable;
+    private _activateConnectSidebar;
     connectedCallback(): void;
     private _favoriteColorsUnsubscribe?;
     private _resizeListener?;
@@ -54,6 +61,7 @@ export declare class UltraCardEditor extends LitElement {
     private _handleCardVariablesChanged;
     private _renderHubDiscoveryBanner;
     private _dismissHubBanner;
+    private _renderSyncNotificationBanner;
     private _toggleFullScreen;
     protected render(): TemplateResult<1>;
     private _renderSettingsTab;

@@ -31,7 +31,9 @@ function isStringBasedTemplate(templateKey: string): boolean {
     templateKey.startsWith('info_entity_') ||
     templateKey.startsWith('state_text_') ||
     templateKey.startsWith('bar_left_') ||
-    templateKey.startsWith('bar_right_')
+    templateKey.startsWith('bar_right_') ||
+    templateKey.startsWith('layout_cols_') ||
+    templateKey.startsWith('layout_mods_')
   );
 }
 

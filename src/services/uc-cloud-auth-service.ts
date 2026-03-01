@@ -67,28 +67,25 @@ class UcCloudAuthService {
   private static readonly JWT_ENDPOINT = '/jwt-auth/v1';
   private static readonly STORAGE_KEY = 'ultra-card-cloud-auth';
   private static readonly REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes before expiry
+  // Default token lifetime when server doesn't specify — 7 days
+  private static readonly DEFAULT_TOKEN_TTL = 7 * 24 * 60 * 60 * 1000;
 
   private _currentUser: CloudUser | null = null;
   private _listeners: Set<(user: CloudUser | null) => void> = new Set();
   private _refreshTimer?: number;
 
   constructor() {
-    this._loadFromStorage();
-    this._setupAutoRefresh();
-
-    // DISABLED: Old cloud session sync system
-    // Now using Ultra Card Pro Cloud integration instead
-    // ucSessionSyncService.enable();
-    // this._checkCloudSession();
-    // this._retryCloudSessionCheck();
+    // Do NOT load from localStorage on startup — the HA integration sensor is the
+    // single source of truth. Any previous localStorage token is ignored.
+    // Auth is established when checkIntegrationAuth() is called with a live hass object.
   }
 
   /**
-   * Check if Ultra Card Pro Cloud integration is installed and authenticated
+   * Check if Ultra Card Connect integration is installed and authenticated
    * Returns integration auth data if available, null otherwise
    *
    * SECURITY: This reads from a protected sensor entity that users cannot manipulate.
-   * The sensor is created by the Ultra Card Pro Cloud integration after successful
+   * The sensor is created by the Ultra Card Connect integration after successful
    * authentication with ultracard.io.
    */
   checkIntegrationAuth(hass: any): CloudUser | null {
@@ -133,7 +130,7 @@ class UcCloudAuthService {
 
       return user;
     } catch (error) {
-      console.debug('No Ultra Card Pro Cloud integration found:', error);
+      console.debug('No Ultra Card Connect integration found:', error);
       return null;
     }
   }
@@ -147,6 +144,78 @@ class UcCloudAuthService {
       return !!hass?.states?.[sensorEntityId];
     } catch (error) {
       return false;
+    }
+  }
+
+  /**
+   * After sign-in, create or update the Ultra Card Connect config entry so the integration
+   * sensor shows authenticated and Pro is recognized. Handles: (1) no entry yet -> create via flow;
+   * (2) entry exists but not signed in -> reconfigure with credentials.
+   * Returns a short message for the UI on failure, or undefined on success.
+   */
+  async autoRegisterIntegration(
+    hass: any,
+    username: string,
+    password: string
+  ): Promise<string | undefined> {
+    if (!hass?.connection) return undefined;
+    const callApi = (hass as any).callApi;
+    const callWS = (hass as any).callWS;
+    if (typeof callApi !== 'function') return undefined;
+
+    const sensorEntityId = 'sensor.ultra_card_pro_cloud_authentication_status';
+    const sensor = hass?.states?.[sensorEntityId];
+    const isConnected = sensor?.state === 'connected' && sensor?.attributes?.authenticated;
+
+    if (isConnected) return undefined;
+
+    try {
+      let flowId: string;
+      const entriesRaw =
+        typeof callWS === 'function'
+          ? await callWS({
+              type: 'config_entries/get',
+              domain: 'ultra_card_pro_cloud',
+            })
+          : [];
+      const entries = entriesRaw as Array<{ entry_id: string; data?: Record<string, unknown> }>;
+
+      const existingEntry = Array.isArray(entries) && entries.length > 0 ? entries[0] : null;
+
+      if (existingEntry) {
+        const createRes = await callApi('POST', 'config/config_entries/flow', {
+          handler: 'ultra_card_pro_cloud',
+          show_advanced_options: false,
+          entry_id: existingEntry.entry_id,
+        });
+        flowId = createRes?.flow_id;
+        if (!flowId) return undefined;
+        await callApi('POST', `config/config_entries/flow/${flowId}`, {
+          next_step: 'sign_in',
+        });
+        await callApi('POST', `config/config_entries/flow/${flowId}`, {
+          username,
+          password,
+        });
+      } else {
+        const createRes = await callApi('POST', 'config/config_entries/flow', {
+          handler: 'ultra_card_pro_cloud',
+          show_advanced_options: false,
+        });
+        flowId = createRes?.flow_id;
+        if (!flowId) return undefined;
+        await callApi('POST', `config/config_entries/flow/${flowId}`, {
+          next_step: 'sign_in',
+        });
+        await callApi('POST', `config/config_entries/flow/${flowId}`, {
+          username,
+          password,
+        });
+      }
+      return undefined;
+    } catch (err) {
+      console.debug('Auto-register integration failed:', err);
+      return 'Could not auto-configure. You can add the integration manually in Settings → Integrations.';
     }
   }
 
@@ -279,26 +348,32 @@ class UcCloudAuthService {
   }
 
   /**
-   * Set current user from integration data (for Ultra Card Pro Cloud integration)
+   * Called whenever the integration sensor updates — keeps _currentUser in sync.
+   * Does NOT write to localStorage; the sensor is the authoritative store.
+   * Guard: skip notification if user hasn't changed, preventing re-entrant loops
+   * when _authListener is itself a registered listener (hass updates fire on every entity change).
    */
   setIntegrationUser(user: CloudUser): void {
+    if (
+      this._currentUser?.email === user.email &&
+      this._currentUser?.token === user.token
+    ) {
+      return;
+    }
     this._setCurrentUser(user);
-    this._saveToStorage();
   }
 
   /**
-   * Check if user is authenticated (has valid, non-expired token)
-   * For integration users with tokens, validate the token
+   * Check if user is authenticated.
+   * Returns true if we have a user with a token — local expiry is NOT checked here
+   * because the server is the authority on token validity. Expired tokens will receive
+   * a 401 which is already handled by authenticatedFetch's refresh-and-retry logic.
    */
   isAuthenticated(): boolean {
     if (!this._currentUser) return false;
-
-    // If user has a token (from integration or card auth), validate it
-    if (this._currentUser.token && this._currentUser.token !== '') {
-      return this._isTokenValid();
-    }
-
-    // If no token but user exists, they came from integration without token - always valid
+    // Has a token (JWT or integration) — consider authenticated
+    if (this._currentUser.token && this._currentUser.token !== '') return true;
+    // No token but user exists (integration auth without token field)
     return true;
   }
 
@@ -309,8 +384,115 @@ class UcCloudAuthService {
     return this._shouldRefreshToken();
   }
 
+  // ---------------------------------------------------------------------------
+  // HA-backed auth methods — single source of truth for all auth operations.
+  // Credentials are stored in HA's config entry storage (not localStorage).
+  // The frontend calls these via hass.callApi(); the HA integration handles
+  // the actual ultracard.io API calls and updates the sensor.
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Login via HA integration. Credentials are stored in HA config entries.
+   * The coordinator authenticates with ultracard.io and updates the sensor.
+   * Returns the CloudUser from the updated sensor.
+   */
+  async loginViaHass(hass: any, email: string, password: string): Promise<CloudUser> {
+    let result: any;
+    try {
+      result = await hass.callApi('POST', 'ultra_card_pro_cloud/login', {
+        username: email,
+        password,
+      });
+    } catch (err: any) {
+      throw err;
+    }
+    if (!result?.success || !result?.user) {
+      throw new Error(result?.error || 'Authentication failed');
+    }
+    // Sensor will update momentarily; populate from response immediately
+    const user = this._sensorAttrsToCloudUser(result.user);
+    this._setCurrentUser(user);
+    this._notifyListeners();
+    return user;
+  }
+
+  /**
+   * Register a new account via HA integration.
+   * Creates the WordPress account then stores credentials in HA config entries.
+   */
+  async registerViaHass(hass: any, username: string, email: string, password: string): Promise<CloudUser> {
+    const result = await hass.callApi('POST', 'ultra_card_pro_cloud/register', {
+      username,
+      email,
+      password,
+    });
+    if (!result?.success) {
+      throw new Error(result?.error || 'Registration failed');
+    }
+    if (result.user) {
+      const user = this._sensorAttrsToCloudUser(result.user);
+      this._setCurrentUser(user);
+      this._notifyListeners();
+      return user;
+    }
+    // If sensor isn't ready yet (async setup), return a minimal user
+    return {
+      id: 0,
+      username,
+      email,
+      displayName: username,
+      token: '',
+      expiresAt: 0,
+    };
+  }
+
+  /**
+   * Logout — clears credentials from HA config entry and resets sensor.
+   */
+  async logoutViaHass(hass: any): Promise<void> {
+    try {
+      await hass.callApi('POST', 'ultra_card_pro_cloud/logout', {});
+    } catch {
+      // Ignore network errors on logout; clear local state regardless
+    }
+    this._setCurrentUser(null);
+    this._notifyListeners();
+  }
+
+  /**
+   * Convert HA sensor attributes to a CloudUser object.
+   */
+  private _sensorAttrsToCloudUser(attrs: Record<string, any>): CloudUser {
+    return {
+      id: attrs.user_id || 0,
+      username: attrs.username || '',
+      email: attrs.email || '',
+      displayName: attrs.display_name || attrs.username || '',
+      token: attrs.token || '',
+      expiresAt: 0,
+      subscription: {
+        tier: attrs.subscription_tier || 'free',
+        status: attrs.subscription_status || 'active',
+        expires: attrs.subscription_expires,
+        features: {
+          auto_backups: attrs.subscription_tier === 'pro',
+          snapshots_enabled: attrs.subscription_tier === 'pro',
+          snapshot_limit: attrs.subscription_tier === 'pro' ? 10 : 0,
+          backup_retention_days: 90,
+        },
+        snapshot_count: 0,
+        snapshot_limit: attrs.subscription_tier === 'pro' ? 10 : 0,
+      },
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Legacy direct-JWT login (kept for internal use by authenticatedFetch only)
+  // ---------------------------------------------------------------------------
+
   /**
    * Login with username/email and password
+   * @deprecated Use loginViaHass() instead for persistent sessions
    */
   async login(credentials: LoginCredentials): Promise<CloudUser> {
     try {
@@ -366,37 +548,64 @@ class UcCloudAuthService {
   }
 
   /**
-   * Register new user account
+   * Register a new user account via the Ultra Card custom endpoint.
+   * The endpoint creates the WP subscriber and returns a JWT token in one step,
+   * so we can log the user in immediately without a second round-trip.
    */
   async register(data: RegisterData): Promise<CloudUser> {
     try {
-      // First, register the user via WordPress REST API
-      const registerResponse = await fetch(`${UcCloudAuthService.API_BASE}/wp/v2/users/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: data.username,
-          email: data.email,
-          password: data.password,
-          first_name: data.firstName || '',
-          last_name: data.lastName || '',
-        }),
-      });
+      const registerResponse = await fetch(
+        `${UcCloudAuthService.API_BASE}/ultra-card/v1/register`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: data.username,
+            email: data.email,
+            password: data.password,
+            display_name: data.firstName
+              ? `${data.firstName} ${data.lastName || ''}`.trim()
+              : data.username,
+          }),
+        }
+      );
+
+      const body = await registerResponse.json().catch(() => ({})) as Record<string, unknown>;
 
       if (!registerResponse.ok) {
-        const error = await registerResponse
-          .json()
-          .catch(() => ({ message: 'Registration failed' }));
-        throw new Error(error.message || `Registration failed: ${registerResponse.statusText}`);
+        // WP REST errors use { code, message }
+        const msg =
+          (body as { message?: string }).message ||
+          `Registration failed (${registerResponse.status})`;
+        throw new Error(msg);
       }
 
-      // After successful registration, login automatically
-      return await this.login({
-        username: data.username,
-        password: data.password,
-      });
+      // Our endpoint returns the JWT token directly — build an AuthResponse
+      // that _createUserFromAuth can consume
+      const token = (body.token ?? (body as any)?.data?.token) as string | null;
+
+      if (!token) {
+        // Endpoint succeeded but didn't return a token (edge case) — fall back to login
+        return await this.login({ username: data.username, password: data.password });
+      }
+
+      const authData: AuthResponse = {
+        token,
+        user_id:           (body.user_id as number) ?? 0,
+        user_email:        (body.user_email as string)        ?? data.email,
+        user_nicename:     (body.user_nicename as string)     ?? data.username,
+        user_display_name: (body.user_display_name as string) ?? data.username,
+        // Pass expires_in so the session lifetime is set correctly
+        expires_in:        (body.expires_in as number) ?? ((body as any)?.data?.expires_in as number) ?? undefined,
+      };
+
+      const user = this._createUserFromAuth(authData);
+      await this._fetchSubscriptionData(user);
+      this._setCurrentUser(user);
+      this._saveToStorage();
+      this._setupAutoRefresh();
+
+      return user;
     } catch (error) {
       console.error('❌ Registration failed:', error);
       throw error;
@@ -473,15 +682,10 @@ class UcCloudAuthService {
         return this.refreshToken(retryCount + 1);
       }
 
-      // All retries exhausted
-      // Only logout if token is actually expired
-      if (!this._isTokenValid()) {
-        console.error('❌ All refresh attempts failed and token expired, logging out');
-        await this.logout();
-      } else {
-        console.warn('⚠️ Refresh failed but token still valid, keeping session');
-      }
-
+      // All retries exhausted — keep the session alive regardless.
+      // The server will return 401 if the token is truly invalid when an API call is made.
+      // Forcing a local logout here leads to confusing "signed out" states on network errors.
+      console.warn('⚠️ Token refresh failed after all retries, keeping session as-is');
       throw error;
     }
   }
@@ -537,13 +741,14 @@ class UcCloudAuthService {
       throw new Error('Not authenticated');
     }
 
+    // Don't set Content-Type for FormData — browser sets it with the correct multipart boundary
+    const isFormData = options.body instanceof FormData;
+    const baseHeaders: Record<string, string> = { Authorization: authHeader };
+    if (!isFormData) baseHeaders['Content-Type'] = 'application/json';
+
     const response = await fetch(url, {
       ...options,
-      headers: {
-        ...options.headers,
-        Authorization: authHeader,
-        'Content-Type': 'application/json',
-      },
+      headers: { ...options.headers, ...baseHeaders },
     });
 
     // If token expired, try to refresh and retry once
@@ -552,17 +757,14 @@ class UcCloudAuthService {
         await this.refreshToken();
         const newAuthHeader = this.getAuthHeader();
         if (newAuthHeader) {
+          const retryHeaders: Record<string, string> = { Authorization: newAuthHeader };
+          if (!isFormData) retryHeaders['Content-Type'] = 'application/json';
           return fetch(url, {
             ...options,
-            headers: {
-              ...options.headers,
-              Authorization: newAuthHeader,
-              'Content-Type': 'application/json',
-            },
+            headers: { ...options.headers, ...retryHeaders },
           });
         }
       } catch (refreshError) {
-        // Refresh failed, user needs to login again
         throw new Error('Authentication expired. Please login again.');
       }
     }
@@ -588,6 +790,10 @@ class UcCloudAuthService {
    * Create user object from auth response
    */
   private _createUserFromAuth(authData: AuthResponse): CloudUser {
+    // Use server-provided expires_in if available, otherwise default to 7 days
+    const expiresAt = authData.expires_in
+      ? Date.now() + authData.expires_in * 1000
+      : Date.now() + UcCloudAuthService.DEFAULT_TOKEN_TTL;
     return {
       id: authData.user_id,
       username: authData.user_nicename,
@@ -596,7 +802,7 @@ class UcCloudAuthService {
       avatar: authData.avatar_url,
       token: authData.token,
       refreshToken: authData.refresh_token,
-      expiresAt: Date.now() + (authData.expires_in || 3600) * 1000,
+      expiresAt,
     };
   }
 
@@ -608,17 +814,27 @@ class UcCloudAuthService {
     this._notifyListeners();
   }
 
+  private _isNotifying = false;
+
   /**
-   * Notify all listeners of auth state change
+   * Notify all listeners of auth state change.
+   * Re-entrancy guard prevents listeners from recursively triggering new notifications
+   * (e.g. _authListener calling setIntegrationUser which calls back here).
    */
   private _notifyListeners(): void {
-    this._listeners.forEach(listener => {
-      try {
-        listener(this._currentUser);
-      } catch (error) {
-        console.error('Error in auth listener:', error);
-      }
-    });
+    if (this._isNotifying) return;
+    this._isNotifying = true;
+    try {
+      this._listeners.forEach(listener => {
+        try {
+          listener(this._currentUser);
+        } catch (error) {
+          console.error('Error in auth listener:', error);
+        }
+      });
+    } finally {
+      this._isNotifying = false;
+    }
   }
 
   /**
@@ -653,6 +869,8 @@ class UcCloudAuthService {
     this._clearAutoRefresh();
 
     if (!this._currentUser) return;
+    // Integration auth (no expiresAt) doesn't need refresh
+    if (!this._currentUser.expiresAt || this._currentUser.expiresAt === 0) return;
 
     const timeUntilRefresh =
       this._currentUser.expiresAt - Date.now() - UcCloudAuthService.REFRESH_THRESHOLD;
@@ -661,12 +879,39 @@ class UcCloudAuthService {
       this._refreshTimer = window.setTimeout(async () => {
         try {
           await this.refreshToken();
-          this._setupAutoRefresh(); // Setup next refresh
+          this._setupAutoRefresh();
         } catch (error) {
           console.error('Auto-refresh failed:', error);
         }
       }, timeUntilRefresh);
     }
+  }
+
+  /**
+   * On startup: if stored token is expired but we have a refresh token, silently renew it.
+   * This handles the case where the user returns after the token expired (e.g. next day).
+   */
+  private _attemptSessionRecovery(): void {
+    if (!this._currentUser) return;
+    // Integration auth is always valid, no recovery needed
+    if (!this._currentUser.expiresAt || this._currentUser.expiresAt === 0) return;
+    // Token still valid, nothing to do
+    if (this._isTokenValid()) return;
+
+    if (this._currentUser.refreshToken) {
+      // Token expired but we have a refresh token — try to renew silently
+      window.setTimeout(async () => {
+        try {
+          await this.refreshToken();
+          this._setupAutoRefresh();
+        } catch {
+          // Refresh failed — keep the session anyway, server will 401 if truly invalid
+        }
+      }, 0);
+    }
+    // No refresh token but token is expired — keep the session in storage anyway.
+    // isAuthenticated() no longer checks local expiry, so the user stays signed in.
+    // If the server rejects the token on an API call, they'll get a proper error then.
   }
 
   /**

@@ -1,5 +1,6 @@
 const path = require('path');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 const fs = require('fs');
 const webpack = require('webpack');
 
@@ -187,6 +188,7 @@ module.exports = (env, argv) => {
           });
         },
       },
+      ...(process.env.ANALYZE ? [new BundleAnalyzerPlugin({ analyzerMode: 'static', openAnalyzer: false, reportFilename: 'bundle-report.html' })] : []),
     ],
     performance: {
       hints: isProduction ? 'warning' : false,

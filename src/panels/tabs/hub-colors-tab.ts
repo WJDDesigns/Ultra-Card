@@ -3,6 +3,8 @@ import { customElement, state } from 'lit/decorators.js';
 import { FavoriteColor } from '../../types';
 import { ucFavoriteColorsService } from '../../services/uc-favorite-colors-service';
 import { panelStyles } from '../panel-styles';
+import { ucCloudAuthService, CloudUser } from '../../services/uc-cloud-auth-service';
+import { ucCloudSyncService, SyncStatus } from '../../services/uc-cloud-sync-service';
 
 @customElement('hub-colors-tab')
 export class HubColorsTab extends LitElement {
@@ -14,7 +16,12 @@ export class HubColorsTab extends LitElement {
   @state() private _editingId: string | null = null;
   @state() private _editName = '';
   @state() private _editColor = '';
+  @state() private _cloudUser: CloudUser | null = null;
+  @state() private _syncStatus: SyncStatus | null = null;
+  @state() private _syncing = false;
   private _unsub?: () => void;
+  private _authUnsub?: (user: CloudUser | null) => void;
+  private _syncUnsub?: (status: SyncStatus) => void;
   private _toastTimer?: ReturnType<typeof setTimeout>;
 
   static styles = [
@@ -382,21 +389,132 @@ export class HubColorsTab extends LitElement {
         gap: 4px;
         flex-shrink: 0;
       }
+
+      /* Sync Banner */
+      .sync-banner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        margin-bottom: 16px;
+        font-size: 13px;
+      }
+      .sync-banner ha-icon { --mdc-icon-size: 20px; flex-shrink: 0; }
+      .sync-banner-guest {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.2);
+      }
+      .sync-banner-guest ha-icon { color: var(--primary-color); }
+      .sync-banner-active {
+        background: rgba(var(--rgb-accent-color, 0, 150, 136), 0.07);
+        border: 1px solid rgba(var(--rgb-accent-color, 0, 150, 136), 0.18);
+      }
+      .sync-banner-active ha-icon { color: var(--success-color, #4caf50); }
+      .sync-banner-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+      .sync-banner-body strong { font-weight: 600; color: var(--primary-text-color); }
+      .sync-banner-body span { color: var(--secondary-text-color); font-size: 12px; }
+      .sync-banner-btn {
+        flex-shrink: 0;
+        padding: 5px 12px;
+        border-radius: 6px;
+        border: 1px solid var(--primary-color);
+        background: none;
+        color: var(--primary-color);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        white-space: nowrap;
+      }
+      .sync-banner-btn:hover:not(:disabled) { background: var(--primary-color); color: white; }
+      .sync-banner-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     `,
   ];
 
   connectedCallback(): void {
     super.connectedCallback();
+    // Ensure we have latest from localStorage (sync with favorites added in card settings)
+    ucFavoriteColorsService.refreshFromStorage();
     this._colors = ucFavoriteColorsService.getFavorites();
     this._unsub = ucFavoriteColorsService.subscribe(list => {
       this._colors = list;
     });
+    this._cloudUser = ucCloudAuthService.getCurrentUser();
+    this._syncStatus = ucCloudSyncService.getSyncStatus();
+    this._authUnsub = (user: CloudUser | null) => { this._cloudUser = user; };
+    ucCloudAuthService.addListener(this._authUnsub);
+    this._syncUnsub = (status: SyncStatus) => { this._syncStatus = status; };
+    ucCloudSyncService.addListener(this._syncUnsub);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this._unsub?.();
+    if (this._authUnsub) ucCloudAuthService.removeListener(this._authUnsub);
+    if (this._syncUnsub) ucCloudSyncService.removeListener(this._syncUnsub);
     if (this._toastTimer) clearTimeout(this._toastTimer);
+  }
+
+  private _goToAccount(): void {
+    this.dispatchEvent(new CustomEvent('hub-navigate-tab', {
+      detail: { tab: 'account' },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  private _formatSyncTime(date: Date | null | undefined): string {
+    if (!date) return 'Never';
+    try {
+      const d = new Date(date);
+      const diffMins = Math.floor((Date.now() - d.getTime()) / 60000);
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHrs = Math.floor(diffMins / 60);
+      if (diffHrs < 24) return `${diffHrs}h ago`;
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch { return 'Unknown'; }
+  }
+
+  private async _syncNow(): Promise<void> {
+    if (this._syncing) return;
+    this._syncing = true;
+    try {
+      await ucCloudSyncService.syncFavoriteColors();
+      this._showToast('Colors synced ✓');
+    } catch {
+      this._showToast('Sync failed — try again');
+    } finally {
+      this._syncing = false;
+    }
+  }
+
+  private _renderSyncBanner() {
+    if (!this._cloudUser) {
+      return html`
+        <div class="sync-banner sync-banner-guest">
+          <ha-icon icon="mdi:cloud-outline"></ha-icon>
+          <div class="sync-banner-body">
+            <strong>Back up & sync across all devices</strong>
+            <span>Create a free account to keep your color palette available everywhere.</span>
+          </div>
+          <button class="sync-banner-btn" @click=${this._goToAccount}>Sign In</button>
+        </div>
+      `;
+    }
+    return html`
+      <div class="sync-banner sync-banner-active">
+        <ha-icon icon=${this._syncing ? 'mdi:cloud-sync' : 'mdi:cloud-check'}></ha-icon>
+        <div class="sync-banner-body">
+          <strong>${this._syncing ? 'Syncing…' : 'Cloud Sync Active'}</strong>
+          <span>Last synced: ${this._formatSyncTime(this._syncStatus?.lastColorsSync)}</span>
+        </div>
+        <button class="sync-banner-btn" @click=${this._syncNow} ?disabled=${this._syncing}>
+          ${this._syncing ? 'Syncing…' : 'Sync Now'}
+        </button>
+      </div>
+    `;
   }
 
   private _showToast(msg: string): void {
@@ -478,6 +596,7 @@ export class HubColorsTab extends LitElement {
           <ha-icon icon="mdi:information-outline"></ha-icon>
           <p><strong>Favorite colors</strong> appear in every Ultra Card color picker so you can reuse your palette. Add colors here or save them from any picker with the heart icon.</p>
         </div>
+        ${this._renderSyncBanner()}
         <div class="empty-state">
           <div class="empty-state-icon">
             <ha-icon icon="mdi:palette-swatch-variant"></ha-icon>
@@ -500,6 +619,7 @@ export class HubColorsTab extends LitElement {
         <ha-icon icon="mdi:information-outline"></ha-icon>
         <p><strong>Favorite colors</strong> appear in every Ultra Card color picker so you can reuse your palette. Add colors here or save them from any picker with the heart icon.</p>
       </div>
+      ${this._renderSyncBanner()}
       <div class="colors-header">
         <span class="colors-count">
           <strong>${this._colors.length}</strong> saved color${this._colors.length !== 1 ? 's' : ''}

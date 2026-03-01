@@ -160,6 +160,16 @@ class UcFavoriteColorsService {
   }
 
   /**
+   * Reload favorites from localStorage and notify all subscribers.
+   * Call this when a UI connects so it shows the latest data (e.g. after adding
+   * favorites in another tab or the other UI - panel Colors tab vs card settings).
+   */
+  refreshFromStorage(): void {
+    this._loadFromStorage();
+    this._notifyListeners();
+  }
+
+  /**
    * Subscribe to favorite colors changes
    */
   subscribe(listener: (favorites: FavoriteColor[]) => void): () => void {

@@ -21,6 +21,8 @@ export interface ProAuthData {
 export class HubProTab extends LitElement {
   @property({ attribute: false }) auth: ProAuthData | null = null;
   @property({ attribute: false }) hass!: HomeAssistant;
+  /** Direct cloud login user (from Account tab login, passed from dashboard) */
+  @property({ attribute: false }) cloudUser: CloudUser | null = null;
 
   @state() private _toastMsg = '';
   @state() private _cloudUser: CloudUser | null = null;
@@ -1077,9 +1079,11 @@ export class HubProTab extends LitElement {
       this._cloudUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
     }
     // Load snapshot list once when Pro tab is shown so summary has data
+    const isProUser =
+      (this.auth?.authenticated && this.auth?.subscription_tier === 'pro') ||
+      this.cloudUser?.subscription?.tier === 'pro';
     if (
-      this.auth?.authenticated &&
-      this.auth?.subscription_tier === 'pro' &&
+      isProUser &&
       this.hass &&
       !this._snapshotsSummaryLoaded &&
       !this._snapshotsLoading
@@ -1110,15 +1114,25 @@ export class HubProTab extends LitElement {
   render() {
     const auth = this.auth;
     const isIntegrationInstalled = auth != null;
-    const isLoggedIn = !!auth?.authenticated;
-    const isPro = isLoggedIn && auth?.subscription_tier === 'pro';
-    const isActive = auth?.subscription_status === 'active';
+    // Treat as logged in if sensor auth OR direct cloud login is present
+    const isLoggedIn = !!auth?.authenticated || !!this.cloudUser;
+    const isPro =
+      (!!auth?.authenticated && auth?.subscription_tier === 'pro') ||
+      (!auth?.authenticated && this.cloudUser?.subscription?.tier === 'pro');
+    const isActive =
+      auth?.subscription_status === 'active' ||
+      this.cloudUser?.subscription?.status === 'active';
+    // When sensor auth isn't available, build a compatible auth object from cloudUser
+    const effectiveAuth: ProAuthData = auth ?? {
+      authenticated: true,
+      username: this.cloudUser?.username,
+      email: this.cloudUser?.email,
+      display_name: this.cloudUser?.displayName,
+      subscription_tier: this.cloudUser?.subscription?.tier || 'free',
+      subscription_status: this.cloudUser?.subscription?.status,
+    };
 
     return html`
-      <div class="hub-tab-blurb">
-        <ha-icon icon="mdi:information-outline"></ha-icon>
-        <p><strong>Ultra Card Connect</strong> is required for all users to access this sidebar. Install it once via HACS — Pro subscribers also get their features synced automatically across every device.</p>
-      </div>
       <!-- Integration Status -->
       ${this._renderIntegrationStatus(isIntegrationInstalled, isLoggedIn, isPro)}
 
@@ -1128,7 +1142,7 @@ export class HubProTab extends LitElement {
       <!-- Authenticated: show account + tools -->
       ${isLoggedIn
         ? html`
-            ${this._renderAccount(auth!, isPro, isActive)}
+            ${this._renderAccount(effectiveAuth, isPro, isActive)}
             ${isPro
               ? html`
                   ${this._renderDashboardTools()}
@@ -1138,11 +1152,7 @@ export class HubProTab extends LitElement {
               : this._renderUpgradePrompt()}
             ${this._renderFeaturesGrid()}
           `
-        : ''}
-
-      <!-- Not installed / not configured -->
-      ${!isIntegrationInstalled ? this._renderInstallCTA() : ''}
-      ${isIntegrationInstalled && !isLoggedIn ? this._renderConnectCTA() : ''}
+        : this._renderSignInPrompt()}
 
       <div class="toast ${this._toastMsg ? 'show' : ''}">${this._toastMsg}</div>
     `;
@@ -1170,20 +1180,6 @@ export class HubProTab extends LitElement {
       `;
     }
 
-    if (installed) {
-      return html`
-        <div class="integration-status not-configured">
-          <div class="status-icon-wrap warning">
-            <ha-icon icon="mdi:alert-circle"></ha-icon>
-          </div>
-          <div class="status-body">
-            <h4>Ultra Card Connect Detected</h4>
-            <p>The integration is installed but not configured yet.</p>
-            <p class="status-note">Takes 30 seconds to unlock all devices</p>
-          </div>
-        </div>
-      `;
-    }
 
     return nothing;
   }
@@ -1219,6 +1215,21 @@ export class HubProTab extends LitElement {
     `;
   }
 
+  private _renderSignInPrompt() {
+    return html`
+      <div class="install-card sign-in-prompt">
+        <div class="cta-icon">
+          <ha-icon icon="mdi:account-arrow-right-outline"></ha-icon>
+        </div>
+        <h3>Sign in to access Pro features</h3>
+        <p>
+          Use the <strong>Account</strong> tab to sign in or create an account. Once connected,
+          you can upgrade to Pro and use dashboard snapshots, cloud backups, and all Pro modules.
+        </p>
+      </div>
+    `;
+  }
+
   private _renderAccount(auth: ProAuthData, isPro: boolean, isActive: boolean) {
     return html`
       <div class="account-card">
@@ -1226,7 +1237,7 @@ export class HubProTab extends LitElement {
           <div class="header-icon"><ha-icon icon="mdi:account-circle"></ha-icon></div>
           <div class="header-content">
             <h3>Account</h3>
-            <p>Your Ultra Card Pro Cloud account details</p>
+            <p>Your Ultra Card Connect account details</p>
           </div>
         </div>
         <div class="account-row">
@@ -1511,7 +1522,7 @@ export class HubProTab extends LitElement {
         </ul>
         <a
           class="upgrade-btn"
-          href="https://ultracard.io/pro"
+          href="https://ultracard.io/product/ultra-card-pro/"
           target="_blank"
           rel="noopener"
         >
@@ -1545,7 +1556,7 @@ export class HubProTab extends LitElement {
           </div>
           <div class="feature-card">
             <div class="feature-icon presets"><ha-icon icon="mdi:palette"></ha-icon></div>
-            <div class="feature-info"><h4>Pro Presets</h4><p>Access exclusive premium presets and templates</p></div>
+            <div class="feature-info"><h4>Pro Modules</h4><p>Access exclusive premium modules and templates</p></div>
           </div>
           <div class="feature-card">
             <div class="feature-icon support"><ha-icon icon="mdi:face-agent"></ha-icon></div>
@@ -1553,115 +1564,6 @@ export class HubProTab extends LitElement {
           </div>
         </div>
       </div>
-    `;
-  }
-
-  private _renderInstallCTA() {
-    return html`
-      <div class="install-card">
-        <div class="cta-icon">
-          <ha-icon icon="mdi:cloud-lock-outline"></ha-icon>
-        </div>
-        <h3>Get the Ultra Card Sidebar + Pro Features</h3>
-        <p>
-          Install <strong>Ultra Card Connect</strong> once — required for all users to access
-          the sidebar, plus Pro subscribers get their subscription synced across every device automatically.
-        </p>
-
-        <div class="benefits-grid">
-          <div class="benefit-item">
-            <ha-icon icon="mdi:check-circle"></ha-icon>
-            <div>
-              <strong>Login Once</strong>
-              <span>Works on desktop, mobile, tablet, TV</span>
-            </div>
-          </div>
-          <div class="benefit-item">
-            <ha-icon icon="mdi:sync"></ha-icon>
-            <div>
-              <strong>Auto-Sync</strong>
-              <span>No per-device configuration needed</span>
-            </div>
-          </div>
-          <div class="benefit-item">
-            <ha-icon icon="mdi:shield-check"></ha-icon>
-            <div>
-              <strong>Secure & Reliable</strong>
-              <span>Server-side auth, automatic token refresh</span>
-            </div>
-          </div>
-          <div class="benefit-item">
-            <ha-icon icon="mdi:camera-burst"></ha-icon>
-            <div>
-              <strong>Dashboard Snapshots</strong>
-              <span>Full dashboard backup & restore</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="install-steps">
-          <h5>Quick Install (2 minutes):</h5>
-          <ol>
-            <li>Click <strong>"Install via HACS"</strong> below</li>
-            <li>In HACS: Search "<strong>Ultra Card Connect</strong>"</li>
-            <li>Click <strong>Download</strong></li>
-            <li>Restart Home Assistant</li>
-            <li>Go to Settings → Integrations → Add Integration</li>
-            <li>Search and add "<strong>Ultra Card Connect</strong>"</li>
-            <li>Enter your <strong>ultracard.io</strong> credentials</li>
-          </ol>
-        </div>
-
-        <div class="cta-buttons">
-          <a
-            class="cta-btn primary"
-            href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-connect&category=integration"
-            target="_blank"
-            rel="noopener"
-          >
-            <ha-icon icon="mdi:cloud-download"></ha-icon>
-            Install via HACS
-          </a>
-          <a class="cta-btn secondary" href="https://ultracard.io" target="_blank" rel="noopener">
-            <ha-icon icon="mdi:cart-outline"></ha-icon>
-            Get PRO Subscription
-          </a>
-        </div>
-      </div>
-
-      <!-- Features grid for non-installed users too -->
-      ${this._renderFeaturesGrid()}
-    `;
-  }
-
-  private _renderConnectCTA() {
-    return html`
-      <div class="install-card">
-        <div class="cta-icon">
-          <ha-icon icon="mdi:account-key-outline"></ha-icon>
-        </div>
-        <h3>Connect Your Account</h3>
-        <p>
-          Go to Settings → Devices &amp; Services → Ultra Card Connect to
-          sign in and unlock the sidebar and Pro features.
-        </p>
-        <div class="cta-buttons">
-          <a
-            class="cta-btn primary"
-            href="/config/integrations/integration/ultra_card_pro_cloud"
-            target="_top"
-          >
-            <ha-icon icon="mdi:cog"></ha-icon>
-            Configure Integration
-          </a>
-          <a class="cta-btn secondary" href="https://ultracard.io" target="_blank" rel="noopener">
-            <ha-icon icon="mdi:cart-outline"></ha-icon>
-            Get Pro
-          </a>
-        </div>
-      </div>
-
-      ${this._renderFeaturesGrid()}
     `;
   }
 

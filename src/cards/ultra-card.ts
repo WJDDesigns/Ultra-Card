@@ -13,6 +13,7 @@ import {
 import { getModuleRegistry } from '../modules';
 import { getImageUrl } from '../utils/image-upload';
 import { logicService } from '../services/logic-service';
+import { TemplateService } from '../services/template-service';
 import { configValidationService } from '../services/config-validation-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { ucModulePreviewService } from '../services/uc-module-preview-service';
@@ -57,6 +58,11 @@ export class UltraCard extends LitElement {
     if (value && value !== oldHass) {
       externalCardContainerService.setHass(value);
       logicService.setHass(value);
+      // Recreate layout template service when connection changes
+      if (this._layoutTemplateService) {
+        this._layoutTemplateService.unsubscribeAllTemplates();
+      }
+      this._layoutTemplateService = new TemplateService(value);
     }
 
     // Let Lit handle the property change for other updates
@@ -71,7 +77,11 @@ export class UltraCard extends LitElement {
   @state() private _animatingRows = new Set<string>();
   @state() private _animatingColumns = new Set<string>();
   @state() private _cloudUser: CloudUser | null = null;
+  @state() private _bannerDismissed = false;
   private _lastHassChangeTime = 0;
+  private static readonly CONNECTOR_BANNER_STORAGE_KEY = 'ultra-card-connector-banner-dismissed';
+  private static readonly HACS_CONNECTOR_URL =
+    'https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-connect&category=integration';
   private _templateUpdateListener?: (event: Event) => void;
   private _authListener?: (user: CloudUser | null) => void;
   /**
@@ -79,6 +89,7 @@ export class UltraCard extends LitElement {
    */
   private _moduleStylesInjected = false;
   private _instanceId: string = '';
+  private _layoutTemplateService: TemplateService | null = null;
   private _limitUnsub?: () => void;
   private _isEditorPreviewCard = false;
   private _globalTransparencyListener?: () => void;
@@ -156,6 +167,14 @@ export class UltraCard extends LitElement {
 
     // Check for integration auth and load cloud user
     this._loadCloudUser();
+
+    // Restore connector banner dismissed state
+    try {
+      this._bannerDismissed =
+        localStorage.getItem(UltraCard.CONNECTOR_BANNER_STORAGE_KEY) === 'true';
+    } catch {
+      // ignore
+    }
 
     // Set up clock update service to trigger re-renders for clock modules
     clockUpdateService.setUpdateCallback(() => {
@@ -275,6 +294,12 @@ export class UltraCard extends LitElement {
     // Clean up logic service and all template WebSocket subscriptions
     // This prevents subscription leaks that cause "Connection lost" errors
     logicService.cleanup();
+
+    // Clean up layout template service
+    if (this._layoutTemplateService) {
+      this._layoutTemplateService.unsubscribeAllTemplates();
+      this._layoutTemplateService = null;
+    }
 
     // Clean up event listener
     if (this._templateUpdateListener) {
@@ -1599,7 +1624,7 @@ export class UltraCard extends LitElement {
         @pointercancel=${hasRowActions ? rowHandlers.onPointerCancel : null}
         @pointerleave=${hasRowActions ? rowHandlers.onPointerLeave : null}
       >
-        ${row.columns.map(column => this._renderColumn(column))}
+        ${this._resolveColumns(row).map(column => this._renderColumn(column))}
       </div>
     `;
 
@@ -1624,6 +1649,68 @@ export class UltraCard extends LitElement {
     }
 
     return rowContent;
+  }
+
+  /**
+   * Resolves the columns for a row, supporting dynamic generation via `columns_template`.
+   * When `columns_template` is set, subscribes to the HA template and parses the JSON result
+   * as a CardColumn array. Falls back to static `columns` array otherwise.
+   */
+  private _resolveColumns(row: CardRow): CardColumn[] {
+    if (!row.columns_template) return row.columns;
+
+    const templateKey = `layout_cols_${row.id}`;
+    if (this._layoutTemplateService && this.hass) {
+      this._layoutTemplateService.subscribeToTemplate(
+        row.columns_template,
+        templateKey,
+        () => this.requestUpdate(),
+        {},
+        this.config
+      );
+    }
+
+    const raw = this.hass?.__uvc_template_strings?.[templateKey];
+    if (!raw) return [];
+
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? (parsed as CardColumn[]) : [];
+    } catch (e) {
+      console.error(`[UltraCard] columns_template on row "${row.id}" did not return valid JSON:`, e);
+      return [];
+    }
+  }
+
+  /**
+   * Resolves the modules for a column, supporting dynamic generation via `modules_template`.
+   * When `modules_template` is set, subscribes to the HA template and parses the JSON result
+   * as a CardModule array. Falls back to static `modules` array otherwise.
+   */
+  private _resolveModules(column: CardColumn): CardModule[] {
+    if (!column.modules_template) return column.modules;
+
+    const templateKey = `layout_mods_${column.id}`;
+    if (this._layoutTemplateService && this.hass) {
+      this._layoutTemplateService.subscribeToTemplate(
+        column.modules_template,
+        templateKey,
+        () => this.requestUpdate(),
+        {},
+        this.config
+      );
+    }
+
+    const raw = this.hass?.__uvc_template_strings?.[templateKey];
+    if (!raw) return [];
+
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? (parsed as CardModule[]) : [];
+    } catch (e) {
+      console.error(`[UltraCard] modules_template on column "${column.id}" did not return valid JSON:`, e);
+      return [];
+    }
   }
 
   private _renderColumn(column: CardColumn): TemplateResult {
@@ -1794,7 +1881,7 @@ export class UltraCard extends LitElement {
         @pointercancel=${hasColumnActions ? columnHandlers.onPointerCancel : null}
         @pointerleave=${hasColumnActions ? columnHandlers.onPointerLeave : null}
       >
-        ${column.modules.map(module => this._renderModule(module))}
+        ${this._resolveModules(column).map(module => this._renderModule(module))}
       </div>
     `;
 
@@ -2840,6 +2927,53 @@ export class UltraCard extends LitElement {
   }
 
   /**
+   * Dismiss the "Install Connector" banner and persist to localStorage
+   */
+  private _dismissConnectorBanner(): void {
+    this._bannerDismissed = true;
+    try {
+      localStorage.setItem(UltraCard.CONNECTOR_BANNER_STORAGE_KEY, 'true');
+    } catch {
+      // ignore
+    }
+    this.requestUpdate();
+  }
+
+  /**
+   * Render the dismissible connector install banner when integration is not present
+   */
+  private _renderConnectorBanner(): TemplateResult {
+    if (
+      !this.hass ||
+      ucCloudAuthService.isIntegrationInstalled(this.hass) ||
+      this._bannerDismissed
+    ) {
+      return html``;
+    }
+    return html`
+      <div class="connector-banner" role="banner">
+        <div class="connector-banner-content">
+          <ha-icon icon="mdi:power-plug" class="connector-banner-pulse-icon"></ha-icon>
+          <span class="connector-banner-text">
+            Install
+            <a href="${UltraCard.HACS_CONNECTOR_URL}" target="_blank" rel="noopener noreferrer"
+              >Ultra Card Connect</a
+            >
+            to manage favorites, presets, colors and more.
+          </span>
+          <button
+            class="connector-banner-dismiss"
+            aria-label="Dismiss"
+            @click=${this._dismissConnectorBanner}
+          >
+            <ha-icon icon="mdi:close"></ha-icon>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
    * Load cloud user from integration or card auth
    */
   private _loadCloudUser(): void {
@@ -3136,6 +3270,79 @@ export class UltraCard extends LitElement {
       .welcome-text p {
         margin: 8px 0;
         color: var(--secondary-text-color);
+      }
+
+      @keyframes connectorBannerPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(var(--rgb-primary-color, 33, 150, 243), 0.4); }
+        50% { box-shadow: 0 0 0 6px rgba(var(--rgb-primary-color, 33, 150, 243), 0); }
+      }
+
+      @keyframes connectorIconPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.25); opacity: 0.75; }
+      }
+
+      .connector-banner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 12px;
+        margin: -16px -16px 16px -16px;
+        background: linear-gradient(
+          135deg,
+          rgba(var(--rgb-primary-color, 33, 150, 243), 0.15),
+          rgba(var(--rgb-accent-color, 255, 152, 0), 0.1)
+        );
+        border-radius: var(--ha-card-border-radius, 8px) var(--ha-card-border-radius, 8px) 0 0;
+        border-bottom: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+        animation: connectorBannerPulse 2.5s ease-in-out 3;
+      }
+
+      .connector-banner-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .connector-banner-pulse-icon {
+        --mdc-icon-size: 20px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+        animation: connectorIconPulse 2s ease-in-out 3;
+      }
+
+      .connector-banner-text {
+        flex: 1;
+        font-size: 13px;
+        color: var(--primary-text-color);
+      }
+
+      .connector-banner-text a {
+        color: var(--primary-color);
+        text-decoration: underline;
+        font-weight: 600;
+      }
+
+      .connector-banner-dismiss {
+        flex-shrink: 0;
+        background: none;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        border-radius: 4px;
+      }
+
+      .connector-banner-dismiss:hover {
+        color: var(--primary-text-color);
+        background: rgba(0, 0, 0, 0.05);
+      }
+
+      .connector-banner-dismiss ha-icon {
+        --mdc-icon-size: 20px;
+        display: block;
       }
 
       .card-row {

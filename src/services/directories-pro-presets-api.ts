@@ -37,8 +37,8 @@ export interface WordPressPresetsResponse {
 
 export class DirectoriesProPresetsAPI {
   private static readonly API_BASE = 'https://ultracard.io/wp-json/wp/v2';
-  private static readonly CACHE_KEY = 'ultra-card-directories-pro-presets';
-  private static readonly CACHE_TIMESTAMP_KEY = 'ultra-card-directories-pro-presets-timestamp';
+  private static readonly CACHE_KEY = 'ultra-card-directories-pro-presets-v2';
+  private static readonly CACHE_TIMESTAMP_KEY = 'ultra-card-directories-pro-presets-v2-timestamp';
   private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   private static readonly EXTENDED_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours for CORS fallback
   private static readonly MAX_CACHE_ENTRIES = 10; // Maximum number of cache entries to keep
@@ -113,11 +113,20 @@ export class DirectoriesProPresetsAPI {
                     .filter(Boolean)
                 : [];
 
+              // Plain-text version for the truncated preview line
               const fullDescription = this._stripHtml(
                 meta.description ||
                   post.excerpt?.rendered ||
                   post.content?.rendered ||
                   'No description available'
+              );
+
+              // HTML version for Read More — prefer WP REST rendered HTML, fall back to PHP-safe HTML
+              const fullDescriptionHtml = this._ensureHtml(
+                post.content?.rendered ||
+                post.excerpt?.rendered ||
+                meta.description_html ||
+                fullDescription
               );
 
               // Extract featured image from embedded media
@@ -131,7 +140,7 @@ export class DirectoriesProPresetsAPI {
                 id: post.id,
                 name: this._decodeHtmlEntities(post.title?.rendered || 'Untitled Preset'),
                 description: this._truncateDescription(fullDescription, 15), // Truncated for cards
-                description_full: fullDescription, // Full description for Read More
+                description_full: fullDescriptionHtml, // HTML for Read More
                 shortcode: meta.shortcode || '{"rows":[]}',
                 category: meta.category || 'badges', // Default to badges instead of custom
                 tags: tags,
@@ -225,15 +234,24 @@ export class DirectoriesProPresetsAPI {
             .filter(Boolean)
         : [];
 
+      // Plain-text version for the truncated preview line
       const fullDescription = this._stripHtml(
         post.excerpt?.rendered || post.content?.rendered || 'No description available'
+      );
+
+      // HTML version for Read More — prefer WP REST rendered HTML, fall back to PHP-safe HTML
+      const fullDescriptionHtml = this._ensureHtml(
+        post.content?.rendered ||
+        post.excerpt?.rendered ||
+        meta.description_html ||
+        fullDescription
       );
 
       const preset: WordPressPreset = {
         id: post.id,
         name: this._decodeHtmlEntities(post.title?.rendered || 'Untitled Preset'),
         description: this._truncateDescription(fullDescription, 15),
-        description_full: fullDescription,
+        description_full: fullDescriptionHtml,
         shortcode: meta.shortcode || '{"rows":[]}',
         category: meta.category || 'badges',
         tags: tags,
@@ -493,6 +511,39 @@ export class DirectoriesProPresetsAPI {
     const textContent = tempDiv.textContent || tempDiv.innerText || '';
 
     return textContent.trim().replace(/\s+/g, ' ');
+  }
+
+  /**
+   * Ensure content has HTML markup for rich rendering.
+   * - If block-level HTML is already present, return as-is.
+   * - If WordPress rendered the content as a single <p> with no inner structure,
+   *   apply smart plain-text conversion:
+   *     • backtick spans  → <code>
+   *     • double newlines → <p> paragraph breaks
+   *     • single newlines → <br>
+   *     • inline " - "    → line-break + en-dash (handles "Vars: - key: desc - key: desc")
+   */
+  private _ensureHtml(content: string): string {
+    if (!content) return '';
+
+    // Already contains meaningful block-level markup — leave it alone
+    if (/<(p|br|ul|ol|li|h[1-6]|blockquote)\b/i.test(content)) return content;
+
+    // Convert backtick code spans
+    let html = content.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+
+    // If there are newlines use them as paragraph/line separators
+    if (html.includes('\n')) {
+      return '<p>' + html
+        .replace(/\n\n+/g, '</p><p>')
+        .replace(/\n/g, '<br>') + '</p>';
+    }
+
+    // No newlines: convert inline " - " separators to line breaks so list-style
+    // entries ("UC Variables used: - `key`: desc - `key`: desc") become readable
+    html = html.replace(/\s+-\s+/g, '<br>– ');
+
+    return `<p>${html}</p>`;
   }
 
   /**

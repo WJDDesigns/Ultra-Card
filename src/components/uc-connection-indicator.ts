@@ -1,7 +1,7 @@
 /**
- * Ultra Card Pro Cloud Connection Indicator
+ * Ultra Card Connect Connection Indicator
  *
- * Shows animated connection status when Ultra Card Pro Cloud integration is detected
+ * Shows animated connection status when Ultra Card Connect integration is detected
  *
  * States:
  * - connecting: Animated dots flowing from HA icon to cloud

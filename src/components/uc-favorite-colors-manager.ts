@@ -24,6 +24,8 @@ export class UcFavoriteColorsManager extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
 
+    // Ensure we have latest from localStorage (sync with other UIs)
+    ucFavoriteColorsService.refreshFromStorage();
     // Subscribe to favorite colors changes
     this._favoritesUnsubscribe = ucFavoriteColorsService.subscribe(favorites => {
       this._favoriteColors = favorites;

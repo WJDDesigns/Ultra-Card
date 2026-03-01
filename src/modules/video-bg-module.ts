@@ -646,15 +646,15 @@ export class UltraVideoBgModule extends BaseUltraModule {
         <div
           style="font-size: 14px; color: var(--secondary-text-color); margin-bottom: 24px; line-height: 1.6;"
         >
-          Video Background is a Pro feature. Install and authenticate with the Ultra Card Pro Cloud
-          integration to unlock this module.
+          Video Background is a Pro feature. Install and authenticate with Ultra Card Connect
+          to unlock this module.
         </div>
         <a
-          href="https://github.com/WJDDesigns/Ultra-Card-Pro-Cloud"
+          href="https://github.com/WJDDesigns/ultra-card-connect"
           target="_blank"
           style="display: inline-block; padding: 12px 24px; background: var(--primary-color); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;"
         >
-          Get Ultra Card Pro Cloud
+          Get Ultra Card Connect
         </a>
       </div>
     `;

@@ -2470,6 +2470,7 @@ export interface CardColumn {
     id: string;
     name?: string;
     modules: CardModule[];
+    modules_template?: string;
     vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
     horizontal_alignment?: 'left' | 'center' | 'right' | 'stretch' | 'space-between' | 'space-around' | 'justify';
     background_color?: string;
@@ -2502,6 +2503,7 @@ export interface CardRow {
     id: string;
     name?: string;
     columns: CardColumn[];
+    columns_template?: string;
     column_layout?: ColumnLayoutId;
     custom_column_sizing?: string;
     responsive_column_layouts?: ResponsiveColumnLayouts;

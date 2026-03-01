@@ -6,6 +6,7 @@
   "scripts": {
     "prebuild": "node prepare-build.js",
     "build": "webpack --mode production",
+    "build:analyze": "ANALYZE=1 webpack --mode production",
     "postbuild": "cp dist/ultra-card.js . && cp dist/ultra-card.js.LICENSE.txt .",
     "build:deploy": "npm run build && node deploy.js",
     "build:release": "node scripts/release.js",
@@ -78,6 +79,7 @@
     "typescript": "^5.3.3",
     "vitest": "4.0.18",
     "webpack": "^5.75.0",
+    "webpack-bundle-analyzer": "5.2.0",
     "webpack-cli": "^5.0.1",
     "webpack-dev-server": "^4.15.1"
   }

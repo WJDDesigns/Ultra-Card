@@ -39,6 +39,11 @@ export declare class UltraColorPicker extends LitElement {
     private _isDefaultValue;
     private _getContrastColor;
     /**
+     * Returns 'light' when the swatch is light (use dark text), 'dark' when dark (use light text).
+     * Used for favorite label pill/shadow styling so it works on light and dark themes and swatches.
+     */
+    private _getContrastTheme;
+    /**
      * Resolve a CSS variable or color to its computed RGBA value.
      * This preserves alpha transparency from theme variables.
      */

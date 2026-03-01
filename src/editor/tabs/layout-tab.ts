@@ -31,6 +31,7 @@ import { getImageUrl, uploadImage } from '../../utils/image-upload';
 import { localize } from '../../localize/localize';
 import { Z_INDEX } from '../../utils/uc-z-index';
 import { ucPresetsService } from '../../services/uc-presets-service';
+import { directoriesProPresetsAPI } from '../../services/directories-pro-presets-api';
 import { ucFavoritesService } from '../../services/uc-favorites-service';
 import { ThirdPartyLimitService, getCurrentDashboardId } from '../../pro/third-party-limit-service';
 import { isThirdParty } from '../../pro/is-third-party';
@@ -39,6 +40,7 @@ import { ucCustomVariablesService } from '../../services/uc-custom-variables-ser
 import { ucDashboardScannerService } from '../../services/uc-dashboard-scanner-service';
 import { ucModulePreviewService } from '../../services/uc-module-preview-service';
 import { ucCloudAuthService } from '../../services/uc-cloud-auth-service';
+import { ucCloudSyncService } from '../../services/uc-cloud-sync-service';
 import {
   ucExternalCardsService,
   normalizeNativeCardConfigType,
@@ -66,6 +68,10 @@ import {
   NATIVE_HA_CARDS,
   WEB_SAFE_FONTS,
 } from './layout-tab-constants';
+import '../../panels/components/uc-hub-login-dialog';
+import '../../panels/components/uc-hub-rate-dialog';
+import '../../panels/components/uc-hub-submit-preset-dialog';
+import type { SubmitPresetDialogPayload } from '../../panels/components/uc-hub-submit-preset-dialog';
 
 @customElement('ultra-layout-tab')
 export class LayoutTab extends LitElement {
@@ -179,6 +185,20 @@ export class LayoutTab extends LitElement {
   // Preset sorting state
   @state() private _presetSortBy: 'name' | 'date' | 'rating' = 'date';
   @state() private _presetSortDirection: 'asc' | 'desc' = 'desc';
+
+  // Share preset on ultracard.io
+  @state() private _showLoginDialogForSubmit = false;
+  @state() private _showSubmitPresetDialog = false;
+  @state() private _submitPresetDialogPayload: SubmitPresetDialogPayload | null = null;
+  @state() private _isCloudAuthenticated = false; // reactive mirror of auth state for toolbar button
+
+  // Inline rating & details for builder preset gallery
+  @state() private _builderRatingPreset: { id: string; name: string; existingRating: number } | null = null;
+  @state() private _builderPendingRateAfterLogin: { id: string; name: string } | null = null;
+  @state() private _builderShowLoginForRating = false;
+  @state() private _builderUserReviews: Map<string, number> = new Map();
+  @state() private _builderExpandedId: string | null = null;
+  @state() private _builderReadMoreId: string | null = null;
 
   // Flag to prevent double-processing of drops in tabs sections
   private _tabsSectionDropHandled = false;
@@ -340,6 +360,13 @@ export class LayoutTab extends LitElement {
 
     // Detect Safari and add class for Safari-specific fixes
     this._detectSafari();
+
+    // Track cloud auth state reactively so the Share Preset button renders correctly
+    this._isCloudAuthenticated = ucCloudAuthService.isAuthenticated();
+    this._authChangeListener = (user) => {
+      this._isCloudAuthenticated = user !== null;
+    };
+    ucCloudAuthService.addListener(this._authChangeListener);
   }
 
   /** Detect Safari browser and add class for Safari-specific CSS fixes */
@@ -1915,7 +1942,25 @@ export class LayoutTab extends LitElement {
           </div>
           ${!isCollapsed
             ? html`
-                ${row.columns && row.columns.length > 0
+                ${(row as any).columns_template
+                  ? html`
+                      <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        padding: 8px 12px;
+                        margin: 4px 0;
+                        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.12);
+                        border: 1px solid rgba(var(--rgb-primary-color, 33, 150, 243), 0.35);
+                        border-radius: 6px;
+                        font-size: 12px;
+                        color: var(--primary-color);
+                      ">
+                        <ha-icon icon="mdi:code-braces" style="--mdc-icon-size: 16px;"></ha-icon>
+                        <span><strong>Dynamic Columns</strong> — managed via <code>columns_template</code>. Edit in YAML mode.</span>
+                      </div>
+                    `
+                  : row.columns && row.columns.length > 0
                   ? row.columns.map((column, columnIndex) =>
                       this._renderTreeColumn(column, rowIndex, columnIndex, row.columns!.length)
                     )
@@ -2079,7 +2124,25 @@ export class LayoutTab extends LitElement {
           </div>
           ${!isCollapsed
             ? html`
-                ${column.modules && column.modules.length > 0
+                ${(column as any).modules_template
+                  ? html`
+                      <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        padding: 8px 12px;
+                        margin: 4px 0;
+                        background: rgba(var(--rgb-primary-color, 33, 150, 243), 0.12);
+                        border: 1px solid rgba(var(--rgb-primary-color, 33, 150, 243), 0.35);
+                        border-radius: 6px;
+                        font-size: 12px;
+                        color: var(--primary-color);
+                      ">
+                        <ha-icon icon="mdi:code-braces" style="--mdc-icon-size: 16px;"></ha-icon>
+                        <span><strong>Dynamic Modules</strong> — managed via <code>modules_template</code>. Edit in YAML mode.</span>
+                      </div>
+                    `
+                  : column.modules && column.modules.length > 0
                   ? column.modules.map((module, moduleIndex) =>
                       this._renderTreeModule(
                         module,
@@ -6050,6 +6113,7 @@ export class LayoutTab extends LitElement {
   private _resizeTimeout: ReturnType<typeof setTimeout> | null = null;
   private _visibilityChangeListener: (() => void) | null = null;
   private _windowFocusListener: (() => void) | null = null;
+  private _authChangeListener: ((user: any) => void) | undefined = undefined;
 
   // Component lifecycle
   disconnectedCallback() {
@@ -6098,6 +6162,11 @@ export class LayoutTab extends LitElement {
     if (this._windowFocusListener) {
       window.removeEventListener('focus', this._windowFocusListener);
       this._windowFocusListener = null;
+    }
+    // Remove cloud auth listener
+    if (this._authChangeListener) {
+      ucCloudAuthService.removeListener(this._authChangeListener);
+      this._authChangeListener = undefined;
     }
     // Clear template update timer
     if (this._templateUpdateTimer) {
@@ -7537,6 +7606,39 @@ export class LayoutTab extends LitElement {
 
     this._updateLayout(newLayout);
     this.requestUpdate();
+  }
+
+  /**
+   * Build payload for submitting current layout to ultracard.io. Returns null if layout is empty.
+   */
+  private _buildSubmitPresetPayload(): SubmitPresetDialogPayload | null {
+    const layout = this._ensureLayout();
+    if (!layout?.rows || layout.rows.length === 0) return null;
+    // Generate the full [ultra_card]...[/ultra_card] export shortcode — same format as export
+    const shortcode = ucExportImportService.generateCardShortcode(this.config);
+    return {
+      shortcode,
+      card_settings: undefined,
+      custom_variables: undefined,
+    };
+  }
+
+  /**
+   * Open share-preset flow: login if needed, then submit dialog with current layout.
+   */
+  private _openSharePresetDialog(): void {
+    const isAuth = ucCloudAuthService.isAuthenticated() || this.cloudUser != null;
+    if (!isAuth) {
+      this._showLoginDialogForSubmit = true;
+      return;
+    }
+    const payload = this._buildSubmitPresetPayload();
+    if (!payload) {
+      this._showToast('Add at least one row to your layout before sharing.', 'error');
+      return;
+    }
+    this._submitPresetDialogPayload = payload;
+    this._showSubmitPresetDialog = true;
   }
 
   private _addPreset(preset: PresetDefinition): void {
@@ -26492,6 +26594,23 @@ export class LayoutTab extends LitElement {
               <ha-icon icon="${this.isFullScreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
             </button>
           </div>
+          ${this._isCloudAuthenticated || this.cloudUser
+            ? html`
+                <div class="header-btn-row">
+                  <button
+                    class="header-btn with-text share-preset-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._openSharePresetDialog();
+                    }}
+                    title="Share your current layout on ultracard.io"
+                  >
+                    <ha-icon icon="mdi:share-variant"></ha-icon>
+                    <span>Share Preset</span>
+                  </button>
+                </div>
+              `
+            : ''}
         </div>
 
         ${this._renderBreadcrumbs()}
@@ -27069,6 +27188,72 @@ export class LayoutTab extends LitElement {
         ${this._showColumnLayoutSelector ? this._renderColumnLayoutSelector() : ''}
         ${this._renderImagePopup()} ${this._renderFavoriteDialog()} ${this._renderImportDialog()}
         ${this._renderVariableMappingDialog()}
+        <!-- Share Preset dialogs — always in DOM so they work regardless of active tab or popup state -->
+        ${this._showLoginDialogForSubmit
+          ? html`
+              <uc-hub-login-dialog
+                @auth-success=${() => {
+                  this._showLoginDialogForSubmit = false;
+                  const payload = this._buildSubmitPresetPayload();
+                  if (payload) {
+                    this._submitPresetDialogPayload = payload;
+                    this._showSubmitPresetDialog = true;
+                  }
+                }}
+                @close=${(e: Event) => { e.stopPropagation(); this._showLoginDialogForSubmit = false; }}
+              ></uc-hub-login-dialog>
+            `
+          : ''}
+        <!-- Builder preset inline rating dialogs -->
+        ${this._builderShowLoginForRating
+          ? html`
+              <uc-hub-login-dialog
+                @auth-success=${() => {
+                  this._builderShowLoginForRating = false;
+                  this._isCloudAuthenticated = true;
+                  if (this._builderPendingRateAfterLogin) {
+                    const existingRating = this._builderUserReviews.get(this._builderPendingRateAfterLogin.id) ?? ucCloudSyncService.getUserReview(this._builderPendingRateAfterLogin.id)?.rating ?? 0;
+                    this._builderRatingPreset = { ...this._builderPendingRateAfterLogin, existingRating };
+                    this._builderPendingRateAfterLogin = null;
+                  }
+                }}
+                @close=${(e: Event) => { e.stopPropagation(); this._builderShowLoginForRating = false; this._builderPendingRateAfterLogin = null; }}
+              ></uc-hub-login-dialog>
+            `
+          : ''}
+        ${this._builderRatingPreset
+          ? html`
+              <uc-hub-rate-dialog
+                .presetId=${this._builderRatingPreset.id}
+                .presetName=${this._builderRatingPreset.name}
+                .existingRating=${this._builderRatingPreset.existingRating}
+                @rating-submitted=${(e: CustomEvent<{ presetId: string; rating: number }>) => {
+                  const { presetId, rating } = e.detail;
+                  this._builderUserReviews = new Map(this._builderUserReviews).set(presetId, rating);
+                  this._builderRatingPreset = null;
+                }}
+                @close=${() => (this._builderRatingPreset = null)}
+              ></uc-hub-rate-dialog>
+            `
+          : ''}
+        ${this._showSubmitPresetDialog && this._submitPresetDialogPayload
+          ? html`
+              <uc-hub-submit-preset-dialog
+                .payload=${this._submitPresetDialogPayload}
+                @preset-submitted=${(e: Event) => {
+                  e.stopPropagation();
+                  this._showToast('Your preset has been submitted! It will appear in the gallery once reviewed and approved.');
+                  this._showSubmitPresetDialog = false;
+                  this._submitPresetDialogPayload = null;
+                }}
+                @close=${(e: Event) => {
+                  e.stopPropagation();
+                  this._showSubmitPresetDialog = false;
+                  this._submitPresetDialogPayload = null;
+                }}
+              ></uc-hub-submit-preset-dialog>
+            `
+          : ''}
       </div>
     `;
   }
@@ -27331,6 +27516,7 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
       </div>
+
     `;
   }
 
@@ -27889,6 +28075,14 @@ export class LayoutTab extends LitElement {
     );
   }
 
+  private _isNewPreset(preset: PresetDefinition): boolean {
+    const dateStr = (preset as any).metadata?.created || (preset as any).metadata?.date;
+    if (!dateStr) return false;
+    const created = new Date(dateStr);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    return created > thirtyDaysAgo;
+  }
+
   private _renderPresetImages(preset: any, wpPreset: any): TemplateResult {
     // Get all available images
     const images: string[] = [];
@@ -28293,6 +28487,9 @@ export class LayoutTab extends LitElement {
                         >
                           ${isCommunity ? 'Community' : isDefault ? 'Default' : 'Built-in'}
                         </div>
+                        ${this._isNewPreset(preset)
+                          ? html`<span class="new-badge">New</span>`
+                          : ''}
                         <div class="preset-title-info">
                           <h4 class="preset-header-title">${preset.name}</h4>
                           ${!isWjdDesigns
@@ -28313,18 +28510,22 @@ export class LayoutTab extends LitElement {
                                 class="preset-rating-stars"
                                 @click=${(e: Event) => {
                                   e.stopPropagation();
-                                  if (wpPreset.preset_url) {
-                                    window.open(wpPreset.preset_url, '_blank');
+                                  if (!this._isCloudAuthenticated) {
+                                    this._builderPendingRateAfterLogin = { id: preset.id, name: preset.name };
+                                    this._builderShowLoginForRating = true;
+                                    return;
                                   }
+                                  const existingRating = this._builderUserReviews.get(preset.id) ?? ucCloudSyncService.getUserReview(preset.id)?.rating ?? 0;
+                                  this._builderRatingPreset = { id: preset.id, name: preset.name, existingRating };
                                 }}
-                                title="Click to rate this preset (${(
-                                  preset.metadata?.rating || 0
-                                ).toFixed(1)}/5 - ${wpPreset.rating_count ||
-                                0} ${(wpPreset.rating_count || 0) === 1 ? 'review' : 'reviews'})"
+                                title=${this._isCloudAuthenticated
+                                  ? `Rate: ${(preset.metadata?.rating || 0).toFixed(1)}/5 — ${wpPreset.rating_count || 0} ${(wpPreset.rating_count || 0) === 1 ? 'review' : 'reviews'}`
+                                  : 'Sign in to rate this preset'}
                                 style="cursor: pointer; display: flex; align-items: center; gap: 4px;"
                               >
                                 ${[1, 2, 3, 4, 5].map(starNum => {
-                                  const rating = preset.metadata?.rating || 0;
+                                  const userRating = this._builderUserReviews.get(preset.id) ?? ucCloudSyncService.getUserReview(preset.id)?.rating ?? 0;
+                                  const rating = userRating > 0 ? userRating : (preset.metadata?.rating || 0);
                                   const isFilled = starNum <= Math.floor(rating);
                                   const isHalf = !isFilled && starNum - 0.5 <= rating && rating > 0;
                                   return html`
@@ -28356,7 +28557,13 @@ export class LayoutTab extends LitElement {
 
                     <!-- Content section -->
                     <div class="preset-content">
-                      <p class="preset-description">${preset.description}</p>
+                      <div class="preset-description">${unsafeHTML(preset.description)}</div>
+                      ${(preset as any).description_full && (preset as any).description_full !== preset.description
+                        ? html`<button class="read-more-link" @click=${(e: Event) => {
+                            e.stopPropagation();
+                            this._builderReadMoreId = this._builderReadMoreId === preset.id ? null : preset.id;
+                          }}>${this._builderReadMoreId === preset.id ? 'Read Less ↑' : 'Read More ↓'}</button>`
+                        : ''}
 
                       <!-- Tags and integrations -->
                       ${preset.tags.filter(
@@ -28407,18 +28614,40 @@ export class LayoutTab extends LitElement {
                               class="read-more-btn secondary"
                               @click=${(e: Event) => {
                                 e.stopPropagation();
-                                if (wpPreset.preset_url) {
-                                  window.open(wpPreset.preset_url, '_blank');
-                                }
+                                this._builderExpandedId = this._builderExpandedId === preset.id ? null : preset.id;
                               }}
-                              title="View full preset details on ultracard.io"
+                              title="View preset details"
                             >
-                              <ha-icon icon="mdi:open-in-new"></ha-icon>
-                              <span>Read More</span>
+                              <ha-icon icon=${this._builderExpandedId === preset.id ? 'mdi:chevron-up' : 'mdi:information-outline'}></ha-icon>
+                              <span>${this._builderExpandedId === preset.id ? 'Less' : 'Details'}</span>
                             </button>
                           `
                         : ''}
                     </div>
+
+                    <!-- Details expansion panel -->
+                    ${this._builderExpandedId === preset.id ? html`
+                      <div class="preset-details">
+                        <dl class="detail-info">
+                          <dt>Category</dt><dd>${preset.category}</dd>
+                          <dt>Version</dt><dd>${preset.version || '—'}</dd>
+                          <dt>Rows</dt><dd>${preset.layout?.rows?.length ?? 0}</dd>
+                          ${preset.customVariables?.length ? html`<dt>Variables</dt><dd>${preset.customVariables.length}</dd>` : ''}
+                          ${preset.cardSettings && Object.keys(preset.cardSettings).length ? html`<dt>Card settings</dt><dd>Included</dd>` : ''}
+                          ${preset.integrations?.length ? html`<dt>Requires</dt><dd>${preset.integrations.join(', ')}</dd>` : ''}
+                        </dl>
+                        ${preset.tags?.filter(t => !['community', 'wordpress', 'standard'].includes(t)).length
+                          ? html`<div class="detail-tags">${preset.tags.filter(t => !['community', 'wordpress', 'standard'].includes(t)).map(t => html`<span class="detail-tag">${t}</span>`)}</div>`
+                          : ''}
+                      </div>
+                    ` : ''}
+
+                    <!-- Read More expansion panel -->
+                    ${this._builderReadMoreId === preset.id && (preset as any).description_full ? html`
+                      <div class="preset-details preset-full-desc">
+                        ${unsafeHTML((preset as any).description_full)}
+                      </div>
+                    ` : ''}
                   </div>
                 `;
               })
@@ -32802,6 +33031,25 @@ export class LayoutTab extends LitElement {
       .import-card-btn.has-clipboard:hover {
         background: var(--success-color-dark, #388e3c);
         animation: none;
+      }
+
+      .header-btn-row {
+        display: flex;
+        align-items: center;
+        padding: 6px 0 2px;
+        border-top: 1px solid var(--divider-color, rgba(0,0,0,0.08));
+        margin-top: 4px;
+      }
+
+      .share-preset-btn {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12);
+        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.3);
+        color: var(--primary-color);
+      }
+
+      .share-preset-btn:hover {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.22);
+        border-color: rgba(var(--rgb-primary-color, 3, 169, 244), 0.5);
       }
 
       @keyframes pulse-glow {
@@ -37543,6 +37791,18 @@ export class LayoutTab extends LitElement {
         border: 1px solid rgba(var(--rgb-secondary-text-color), 0.9);
       }
 
+      .preset-header .new-badge {
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        flex-shrink: 0;
+        background: rgba(76, 175, 80, 0.9);
+        color: white;
+      }
+
       /* Large preview section */
       .preset-preview {
         position: relative;
@@ -37878,6 +38138,112 @@ export class LayoutTab extends LitElement {
         line-height: 1.4;
         color: var(--secondary-text-color);
         font-size: 13px;
+        overflow: hidden;
+        max-height: 4.2em; /* ~3 lines */
+      }
+
+      .read-more-link {
+        background: none;
+        border: none;
+        padding: 2px 0;
+        font-size: 12px;
+        color: var(--primary-color);
+        cursor: pointer;
+        font-weight: 500;
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      /* Details expansion panel */
+      .preset-details {
+        padding: 12px 16px;
+        border-top: 1px solid var(--divider-color, rgba(0,0,0,0.06));
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.02);
+        animation: fadeSlideIn 0.2s ease-out;
+      }
+
+      @keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+
+      .detail-info {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 6px 12px;
+        font-size: 12px;
+        margin-bottom: 10px;
+      }
+
+      .detail-info dt {
+        color: var(--secondary-text-color);
+        font-weight: 500;
+      }
+
+      .detail-info dd {
+        margin: 0;
+        color: var(--primary-text-color);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .detail-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 6px;
+      }
+
+      .detail-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+        border-radius: 4px;
+        font-size: 11px;
+        color: var(--primary-color);
+        font-weight: 500;
+      }
+
+      /* Scoped styles for WordPress HTML in description / read-more panels */
+      .preset-full-desc,
+      .preset-description {
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--secondary-text-color);
+      }
+
+      .preset-full-desc p,
+      .preset-full-desc li {
+        margin: 0 0 6px;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--primary-text-color);
+      }
+
+      .preset-full-desc a {
+        color: var(--primary-color);
+        text-decoration: underline;
+      }
+
+      .preset-full-desc h1,
+      .preset-full-desc h2,
+      .preset-full-desc h3 {
+        font-size: 13px;
+        font-weight: 600;
+        margin: 8px 0 4px;
+        color: var(--primary-text-color);
+      }
+
+      .preset-full-desc ul,
+      .preset-full-desc ol {
+        padding-left: 16px;
+        margin: 4px 0;
+      }
+
+      .preset-full-desc img {
+        max-width: 100%;
+        border-radius: 6px;
       }
 
       .preset-author {

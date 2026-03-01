@@ -6,6 +6,8 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { panelStyles } from './panel-styles';
+import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
+import './tabs/hub-account-tab';
 import './tabs/hub-dashboard-tab';
 import './tabs/hub-favorites-tab';
 import './tabs/hub-presets-tab';
@@ -18,7 +20,7 @@ import type { HubProTab } from './tabs/hub-pro-tab';
 
 const SENSOR_ENTITY = 'sensor.ultra_card_pro_cloud_authentication_status';
 
-type HubTab = 'dashboard' | 'favorites' | 'presets' | 'colors' | 'variables' | 'templates' | 'pro' | 'about';
+type HubTab = 'dashboard' | 'account' | 'favorites' | 'presets' | 'colors' | 'variables' | 'templates' | 'pro' | 'about';
 
 interface TabDef {
   key: HubTab;
@@ -28,6 +30,7 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { key: 'dashboard', label: 'Dashboard', icon: 'mdi:view-dashboard' },
+  { key: 'account', label: 'Account', icon: 'mdi:account-circle' },
   { key: 'pro', label: 'Pro', icon: 'mdi:star' },
   { key: 'favorites', label: 'Favorites', icon: 'mdi:heart' },
   { key: 'presets', label: 'Presets', icon: 'mdi:palette' },
@@ -44,8 +47,11 @@ export class UltraCardPanel extends LitElement {
   @state() private _activeTab: HubTab = 'dashboard';
   @state() private _proAuth: HubProTab['auth'] = null;
   @state() private _showProTab = false;
+  @state() private _cloudUser: CloudUser | null = null;
 
-  private _unsub?: () => void;
+  // subscribeEvents returns Promise<() => void>; store the resolved unsub only
+  private _unsub?: (() => void) | (() => Promise<void>);
+  private _authListener?: (user: CloudUser | null) => void;
 
   static styles = [
     panelStyles,
@@ -114,16 +120,39 @@ export class UltraCardPanel extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     this._updateProState();
+    this._cloudUser = ucCloudAuthService.getCurrentUser();
+    this._authListener = (user: CloudUser | null) => {
+      this._cloudUser = user;
+    };
+    ucCloudAuthService.addListener(this._authListener);
     if (this.hass?.connection) {
-      this._unsub = this.hass.connection.subscribeEvents(() => {
+      // subscribeEvents is async — store the resolved unsub function, not the Promise,
+      // so that disconnectedCallback can safely call it.
+      this.hass.connection.subscribeEvents(() => {
         this._updateProState();
-      }, 'state_changed');
+      }, 'state_changed').then((unsub) => {
+        this._unsub = unsub;
+      }).catch(() => {/* ignore subscribe errors */});
     }
+    this.addEventListener('hub-navigate-tab', this._onNavigateTab as EventListener);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    this._unsub?.();
+    if (this._unsub) {
+      try { this._unsub(); } catch { /* ignore */ }
+      this._unsub = undefined;
+    }
+    if (this._authListener) {
+      ucCloudAuthService.removeListener(this._authListener);
+      this._authListener = undefined;
+    }
+    this.removeEventListener('hub-navigate-tab', this._onNavigateTab as EventListener);
+  }
+
+  private _onNavigateTab(e: CustomEvent<{ tab: string }>): void {
+    const tab = e.detail?.tab as typeof this._activeTab;
+    if (tab) this._activeTab = tab;
   }
 
   updated(changed: Map<string, unknown>): void {
@@ -155,12 +184,68 @@ export class UltraCardPanel extends LitElement {
       subscription_status: attrs?.subscription_status as string | undefined,
       subscription_expires: attrs?.subscription_expires as number | undefined,
     };
+    // Sync integration user into auth service so snapshot/backup services see "logged in"
+    // when user only has the panel open (no Ultra Card on the dashboard).
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+    if (integrationUser) {
+      ucCloudAuthService.setIntegrationUser(integrationUser);
+    }
+  }
+
+  private _renderAccountChip(): unknown {
+    const user = this._proAuth?.authenticated
+      ? {
+          name: this._proAuth.display_name || this._proAuth.username || 'Account',
+          tier: this._proAuth.subscription_tier,
+        }
+      : this._cloudUser
+        ? {
+            name: this._cloudUser.displayName || this._cloudUser.username || 'Account',
+            tier: this._cloudUser.subscription?.tier,
+          }
+        : null;
+
+    if (user) {
+      const isPro = user.tier === 'pro';
+      return html`
+        <button
+          class="hub-account-chip"
+          @click=${() => (this._activeTab = 'account')}
+          title="View account"
+          aria-label="View account"
+        >
+          <ha-icon icon="mdi:account-circle"></ha-icon>
+          <span>Hi, ${user.name}</span>
+          <span class="hub-tier-badge ${isPro ? 'pro' : 'free'}">
+            ${isPro ? html`<ha-icon icon="mdi:star" style="--mdc-icon-size:10px"></ha-icon>` : ''}
+            ${isPro ? 'PRO' : 'Free'}
+          </span>
+        </button>
+      `;
+    }
+
+    return html`
+      <button
+        class="hub-sign-in-btn"
+        @click=${() => (this._activeTab = 'account')}
+        aria-label="Sign in"
+      >
+        <ha-icon icon="mdi:login"></ha-icon>
+        Sign In
+      </button>
+    `;
   }
 
   private _renderTabContent(): unknown {
     switch (this._activeTab) {
       case 'dashboard':
         return html`<hub-dashboard-tab .hass=${this.hass}></hub-dashboard-tab>`;
+      case 'account':
+        return html`<hub-account-tab
+          .hass=${this.hass}
+          .auth=${this._proAuth}
+          .cloudUser=${this._cloudUser}
+        ></hub-account-tab>`;
       case 'favorites':
         return html`<hub-favorites-tab></hub-favorites-tab>`;
       case 'presets':
@@ -172,7 +257,7 @@ export class UltraCardPanel extends LitElement {
       case 'templates':
         return html`<hub-templates-tab></hub-templates-tab>`;
       case 'pro':
-        return html`<hub-pro-tab .auth=${this._proAuth} .hass=${this.hass}></hub-pro-tab>`;
+        return html`<hub-pro-tab .auth=${this._proAuth} .hass=${this.hass} .cloudUser=${this._cloudUser}></hub-pro-tab>`;
       case 'about':
         return html`<ultra-about-tab .hass=${this.hass}></ultra-about-tab>`;
       default:
@@ -187,6 +272,7 @@ export class UltraCardPanel extends LitElement {
       <div class="hub-container">
         <header class="hub-header">
           <h1>Ultra Card</h1>
+          ${this._renderAccountChip()}
         </header>
 
         <nav class="tab-strip">

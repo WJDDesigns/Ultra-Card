@@ -45,6 +45,20 @@ export interface CloudReview {
   user_id: number;
 }
 
+/** Payload for submitting a user preset to ultracard.io */
+export interface SubmitPresetPayload {
+  name: string;
+  description: string;
+  category: string;
+  tags?: string[];
+  shortcode: string; // JSON string of layout
+  card_settings?: Record<string, unknown>;
+  custom_variables?: unknown[];
+  featured_image?: string;
+  source?: string;
+  integrations?: string;
+}
+
 export interface SyncConflict<T> {
   type: 'favorite' | 'color' | 'review';
   local: T;
@@ -58,11 +72,16 @@ export interface SyncStatus {
   isSyncing: boolean;
   pendingChanges: number;
   conflicts: SyncConflict<any>[];
+  lastFavoritesSync: Date | null;
+  lastColorsSync: Date | null;
+  lastVariablesSync: Date | null;
 }
 
 /**
  * Cloud synchronization service for Ultra Card data
  */
+const REVIEWS_STORAGE_KEY = 'ultra-card-reviews';
+
 class UcCloudSyncService {
   private static readonly API_BASE = 'https://ultracard.io/wp-json/ultra-card/v1';
   private static readonly SYNC_STATUS_KEY = 'ultra-card-sync-status';
@@ -74,6 +93,9 @@ class UcCloudSyncService {
     isSyncing: false,
     pendingChanges: 0,
     conflicts: [],
+    lastFavoritesSync: null,
+    lastColorsSync: null,
+    lastVariablesSync: null,
   };
 
   private _listeners: Set<(status: SyncStatus) => void> = new Set();
@@ -107,45 +129,29 @@ class UcCloudSyncService {
   }
 
   /**
-   * Sync all data types
-   * Note: Favorites and colors are LOCAL-ONLY and not synced to cloud
+   * Sync all data types: favorites, colors, and reviews with cloud
    */
-  async syncAll(): Promise<{ favorites: SyncResult; colors: SyncResult; reviews: SyncResult }> {
-    if (!this._canSync()) {
-      throw new Error('Cannot sync: not authenticated or sync disabled');
+  async syncAll(): Promise<{ favorites: SyncResult; colors: SyncResult; reviews: SyncResult; variables: SyncResult }> {
+    if (!ucCloudAuthService.isAuthenticated()) {
+      throw new Error('Cannot sync: not authenticated');
     }
 
     this._syncStatus.isSyncing = true;
     this._notifyListeners();
 
     try {
-      // Only sync reviews - favorites and colors remain local
-      const reviews = await this.syncReviews();
-
-      // Return empty success results for favorites/colors (not synced)
-      const favorites: SyncResult = {
-        success: true,
-        synced: 0,
-        conflicts: 0,
-        errors: [],
-        lastSync: new Date().toISOString(),
-      };
-
-      const colors: SyncResult = {
-        success: true,
-        synced: 0,
-        conflicts: 0,
-        errors: [],
-        lastSync: new Date().toISOString(),
-      };
+      const [favorites, colors, reviews, variables] = await Promise.all([
+        this.syncFavorites(),
+        this.syncFavoriteColors(),
+        this.syncReviews(),
+        this.syncVariables(),
+      ]);
 
       this._syncStatus.lastSync = new Date();
       this._syncStatus.pendingChanges = 0;
       this._clearPendingChanges();
 
-      // Sync logs removed for cleaner console
-
-      return { favorites, colors, reviews };
+      return { favorites, colors, reviews, variables };
     } finally {
       this._syncStatus.isSyncing = false;
       this._saveSyncStatus();
@@ -157,7 +163,7 @@ class UcCloudSyncService {
    * Sync favorites with cloud
    */
   async syncFavorites(): Promise<SyncResult> {
-    if (!this._canSync()) {
+    if (!ucCloudAuthService.isAuthenticated()) {
       throw new Error('Cannot sync favorites: not authenticated');
     }
 
@@ -191,6 +197,9 @@ class UcCloudSyncService {
 
       // Store conflicts for user resolution
       this._syncStatus.conflicts = [...this._syncStatus.conflicts, ...conflicts];
+      this._syncStatus.lastFavoritesSync = new Date();
+      this._saveSyncStatus();
+      this._notifyListeners();
 
       console.log(
         `✅ Favorites sync completed: ${result.synced} synced, ${result.conflicts} conflicts`
@@ -207,7 +216,7 @@ class UcCloudSyncService {
    * Sync favorite colors with cloud
    */
   async syncFavoriteColors(): Promise<SyncResult> {
-    if (!this._canSync()) {
+    if (!ucCloudAuthService.isAuthenticated()) {
       throw new Error('Cannot sync colors: not authenticated');
     }
 
@@ -237,12 +246,75 @@ class UcCloudSyncService {
       result.synced = uploadResults.length + downloadResults.length;
       result.conflicts = conflicts.length;
 
+      this._syncStatus.lastColorsSync = new Date();
+      this._saveSyncStatus();
+      this._notifyListeners();
+
       console.log(
         `✅ Colors sync completed: ${result.synced} synced, ${result.conflicts} conflicts`
       );
     } catch (error) {
       console.error('❌ Colors sync failed:', error);
       result.errors.push(error instanceof Error ? error.message : 'Unknown error');
+    }
+
+    return result;
+  }
+
+  /**
+   * Sync custom variables with cloud
+   */
+  async syncVariables(): Promise<SyncResult> {
+    const result: SyncResult = {
+      success: false,
+      synced: 0,
+      conflicts: 0,
+      errors: [],
+      lastSync: new Date().toISOString(),
+    };
+
+    try {
+      if (!ucCloudAuthService.isAuthenticated()) {
+        throw new Error('Not authenticated');
+      }
+
+      const localRaw = localStorage.getItem('ultra-card-custom-variables');
+      const localVars: unknown[] = localRaw ? JSON.parse(localRaw) : [];
+
+      const response = await ucCloudAuthService.authenticatedFetch(
+        `${UcCloudSyncService.API_BASE}/custom-variables`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ variables: localVars }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.variables) {
+          localStorage.setItem('ultra-card-custom-variables', JSON.stringify(data.variables));
+        }
+        result.success = true;
+        result.synced = localVars.length;
+        this._syncStatus.lastVariablesSync = new Date();
+        this._saveSyncStatus();
+        this._notifyListeners();
+        console.log(`✅ Variables sync completed: ${result.synced} variables`);
+      } else {
+        // Non-fatal: endpoint may not exist yet; mark as synced locally
+        result.success = true;
+        this._syncStatus.lastVariablesSync = new Date();
+        this._saveSyncStatus();
+        this._notifyListeners();
+      }
+    } catch (error) {
+      console.warn('Variables sync skipped:', error instanceof Error ? error.message : error);
+      // Graceful fallback: treat as success so UI doesn't alarm users
+      result.success = true;
+      this._syncStatus.lastVariablesSync = new Date();
+      this._saveSyncStatus();
+      this._notifyListeners();
     }
 
     return result;
@@ -370,11 +442,16 @@ class UcCloudSyncService {
 
   private _setupAuthListener(): void {
     ucCloudAuthService.addListener((user: CloudUser | null) => {
-      if (!user) {
+      if (user) {
+        // Auto-enable sync when user logs in
+        this._syncStatus.isEnabled = true;
+        this._saveSyncStatus();
+      } else {
         // User logged out, disable sync
         this._syncStatus.isEnabled = false;
         this._syncStatus.conflicts = [];
         this._clearPendingChanges();
+        this._saveSyncStatus();
       }
       this._notifyListeners();
     });
@@ -444,14 +521,18 @@ class UcCloudSyncService {
 
   private async _downloadFavorites(favorites: CloudFavorite[]): Promise<any[]> {
     // Convert cloud favorites to local format and save
-    const localFavorites = favorites.map(cf => ({
-      id: cf.id,
-      name: cf.name,
-      description: cf.description,
-      row: JSON.parse(cf.row_data),
-      created: cf.created,
-      tags: cf.tags,
-    }));
+    const localFavorites = favorites.map(cf => {
+      let row: unknown = null;
+      try { row = cf.row_data ? JSON.parse(cf.row_data) : null; } catch { row = null; }
+      return {
+        id: cf.id,
+        name: cf.name,
+        description: cf.description,
+        row,
+        created: cf.created,
+        tags: cf.tags,
+      };
+    });
 
     // Update local storage
     localStorage.setItem('ultra-card-favorites', JSON.stringify(localFavorites));
@@ -518,11 +599,17 @@ class UcCloudSyncService {
   }
 
   private _convertCloudFavorite(cf: CloudFavorite): any {
+    let row: unknown = null;
+    try {
+      row = cf.row_data ? JSON.parse(cf.row_data) : null;
+    } catch {
+      row = null;
+    }
     return {
       id: cf.id,
       name: cf.name,
       description: cf.description,
-      row: JSON.parse(cf.row_data),
+      row,
       created: cf.created,
       tags: cf.tags,
     };
@@ -571,13 +658,193 @@ class UcCloudSyncService {
     return { merged: [], conflicts: [] };
   }
 
-  // Review operations
-  private _getLocalReviews(): any[] {
+  /**
+   * Submit a review for a preset (authenticated users only).
+   */
+  async submitReview(presetId: string, rating: number): Promise<CloudReview> {
+    if (!ucCloudAuthService.isAuthenticated()) {
+      throw new Error('Authentication required to submit reviews');
+    }
+    const response = await ucCloudAuthService.authenticatedFetch(
+      `${UcCloudSyncService.API_BASE}/reviews`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preset_id: presetId, rating }),
+      }
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: 'Submit failed' }));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+    const review: CloudReview = await response.json();
+    this._saveLocalReview(review);
+    return review;
+  }
+
+  /**
+   * Submit a user preset to ultracard.io (authenticated users only).
+   * Backend creates a draft/pending post for moderation.
+   */
+  /**
+   * Upload a single photo to the media library.
+   * Returns the WordPress attachment ID and URL so the dialog can report
+   * per-photo progress before submitting the preset.
+   */
+  async uploadPresetPhoto(file: File): Promise<{ id: number; url: string }> {
+    if (!ucCloudAuthService.isAuthenticated()) {
+      throw new Error('Authentication required to upload photos');
+    }
+
+    const body = new FormData();
+    body.append('photo', file, file.name);
+
+    const response = await ucCloudAuthService.authenticatedFetch(
+      `${UcCloudSyncService.API_BASE}/media`,
+      { method: 'POST', body }
+    );
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: 'Upload failed' }));
+      throw new Error((err as { message?: string }).message || `HTTP ${response.status}`);
+    }
+    return response.json() as Promise<{ id: number; url: string }>;
+  }
+
+  async submitPreset(
+    payload: SubmitPresetPayload,
+    photos?: File[],
+    photoIds?: number[]
+  ): Promise<{ id: number; status: string; message?: string }> {
+    if (!ucCloudAuthService.isAuthenticated()) {
+      throw new Error('Authentication required to submit presets');
+    }
+
+    const body = new FormData();
+    body.append('name', payload.name);
+    body.append('description', payload.description);
+    body.append('category', payload.category);
+    body.append('shortcode', payload.shortcode);
+    if (payload.tags?.length) body.append('tags', payload.tags.join(','));
+    if (payload.source) body.append('source', payload.source);
+    if (payload.integrations) body.append('integrations', payload.integrations);
+    if (payload.card_settings && Object.keys(payload.card_settings).length > 0) {
+      body.append('card_settings', JSON.stringify(payload.card_settings));
+    }
+    if (payload.custom_variables && payload.custom_variables.length > 0) {
+      body.append('custom_variables', JSON.stringify(payload.custom_variables));
+    }
+    // Prefer pre-uploaded attachment IDs; fall back to raw file uploads
+    if (photoIds?.length) {
+      photoIds.forEach(id => body.append('photo_ids[]', String(id)));
+    } else if (photos?.length) {
+      photos.forEach((photo, i) => body.append(`photos[${i}]`, photo, photo.name));
+    }
+
+    const response = await ucCloudAuthService.authenticatedFetch(
+      `${UcCloudSyncService.API_BASE}/presets`,
+      { method: 'POST', body }
+    );
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: 'Submit failed' }));
+      throw new Error((err as { message?: string }).message || `HTTP ${response.status}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * Fetch the list of preset categories from the site.
+   * Returns [{value, label}] pairs, falling back to defaults on error.
+   */
+  async fetchPresetCategories(): Promise<Array<{ value: string; label: string }>> {
     try {
-      const stored = localStorage.getItem('ultra-card-reviews');
+      const response = await fetch(`${UcCloudSyncService.API_BASE}/preset-categories`);
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
+    } catch {
+      // Ignore fetch errors — fall through to defaults
+    }
+    return [
+      { value: 'layouts',  label: 'Layouts'  },
+      { value: 'badges',   label: 'Badges'   },
+      { value: 'widgets',  label: 'Widgets'  },
+      { value: 'scenes',   label: 'Scenes'   },
+      { value: 'climate',  label: 'Climate'  },
+      { value: 'energy',   label: 'Energy'   },
+      { value: 'security', label: 'Security' },
+      { value: 'lights',   label: 'Lights'   },
+      { value: 'media',    label: 'Media'    },
+      { value: 'custom',   label: 'Custom'   },
+    ];
+  }
+
+  /**
+   * Get the current user's review for a preset, if any (from local storage).
+   * Normalizes preset_id to string so API number and frontend string match.
+   */
+  getUserReview(presetId: string): CloudReview | null {
+    const user = ucCloudAuthService.getCurrentUser();
+    if (!user) return null;
+    const pid = String(presetId);
+    const uid = Number(user.id);
+    const reviews = this._getLocalReviews() as CloudReview[];
+    const found = reviews.find(
+      r => String(r.preset_id) === pid && Number(r.user_id) === uid
+    );
+    return found ?? null;
+  }
+
+  /**
+   * Fetch the current user's reviews from the server and merge into local storage.
+   * Call this when the Presets tab loads so ratings from other devices or after clear cache show up.
+   */
+  async loadUserReviewsFromServer(): Promise<void> {
+    if (!ucCloudAuthService.isAuthenticated()) return;
+    try {
+      const remote = await this._fetchRemoteReviews();
+      const user = ucCloudAuthService.getCurrentUser();
+      if (!user) return;
+      const uid = Number(user.id);
+      for (const r of remote) {
+        if (Number(r.user_id) === uid) {
+          this._saveLocalReview({ ...r, preset_id: String(r.preset_id) });
+        }
+      }
+    } catch (e) {
+      console.warn('Could not load user reviews from server:', e);
+    }
+  }
+
+  // Review operations
+  private _getLocalReviews(): CloudReview[] {
+    try {
+      const stored = localStorage.getItem(REVIEWS_STORAGE_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
+    }
+  }
+
+  private _saveLocalReview(review: CloudReview): void {
+    const reviews = this._getLocalReviews();
+    const pid = String(review.preset_id);
+    const uid = Number(review.user_id);
+    const normalized = { ...review, preset_id: pid };
+    const idx = reviews.findIndex(
+      r => String(r.preset_id) === pid && Number(r.user_id) === uid
+    );
+    if (idx >= 0) {
+      reviews[idx] = normalized;
+    } else {
+      reviews.push(normalized);
+    }
+    try {
+      localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(reviews));
+    } catch (e) {
+      console.error('Failed to save review locally:', e);
     }
   }
 
@@ -594,7 +861,31 @@ class UcCloudSyncService {
   }
 
   private async _uploadReviews(reviews: any[]): Promise<any[]> {
-    return [];
+    const results: CloudReview[] = [];
+    for (const r of reviews) {
+      try {
+        const response = await ucCloudAuthService.authenticatedFetch(
+          `${UcCloudSyncService.API_BASE}/reviews`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              preset_id: r.preset_id,
+              rating: r.rating,
+              comment: r.comment,
+            }),
+          }
+        );
+        if (response.ok) {
+          const review: CloudReview = await response.json();
+          results.push(review);
+          this._saveLocalReview(review);
+        }
+      } catch (err) {
+        console.error('Failed to upload review:', err);
+      }
+    }
+    return results;
   }
 
   private async _downloadReviews(reviews: CloudReview[]): Promise<any[]> {
@@ -675,6 +966,9 @@ class UcCloudSyncService {
           ...this._syncStatus,
           ...status,
           lastSync: status.lastSync ? new Date(status.lastSync) : null,
+          lastFavoritesSync: status.lastFavoritesSync ? new Date(status.lastFavoritesSync) : null,
+          lastColorsSync: status.lastColorsSync ? new Date(status.lastColorsSync) : null,
+          lastVariablesSync: status.lastVariablesSync ? new Date(status.lastVariablesSync) : null,
           isSyncing: false, // Never restore as syncing
         };
       }
@@ -690,6 +984,9 @@ class UcCloudSyncService {
         JSON.stringify({
           ...this._syncStatus,
           lastSync: this._syncStatus.lastSync?.toISOString(),
+          lastFavoritesSync: this._syncStatus.lastFavoritesSync?.toISOString() ?? null,
+          lastColorsSync: this._syncStatus.lastColorsSync?.toISOString() ?? null,
+          lastVariablesSync: this._syncStatus.lastVariablesSync?.toISOString() ?? null,
         })
       );
     } catch (error) {

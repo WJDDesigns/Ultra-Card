@@ -7,6 +7,9 @@ import '../global-design-tab';
 import '../../components/uc-favorite-dialog';
 import '../../components/uc-variable-mapping-dialog';
 import '../../components/uc-import-dialog';
+import '../../panels/components/uc-hub-login-dialog';
+import '../../panels/components/uc-hub-rate-dialog';
+import '../../panels/components/uc-hub-submit-preset-dialog';
 export declare class LayoutTab extends LitElement {
     hass: HomeAssistant;
     config: UltraCardConfig;
@@ -66,6 +69,16 @@ export declare class LayoutTab extends LitElement {
     private _presetSearchQuery;
     private _presetSortBy;
     private _presetSortDirection;
+    private _showLoginDialogForSubmit;
+    private _showSubmitPresetDialog;
+    private _submitPresetDialogPayload;
+    private _isCloudAuthenticated;
+    private _builderRatingPreset;
+    private _builderPendingRateAfterLogin;
+    private _builderShowLoginForRating;
+    private _builderUserReviews;
+    private _builderExpandedId;
+    private _builderReadMoreId;
     private _tabsSectionDropHandled;
     private _undoStack;
     private _redoStack;
@@ -190,6 +203,7 @@ export declare class LayoutTab extends LitElement {
     private _resizeTimeout;
     private _visibilityChangeListener;
     private _windowFocusListener;
+    private _authChangeListener;
     disconnectedCallback(): void;
     /**
      * Perform template update with single requestUpdate() call
@@ -240,6 +254,14 @@ export declare class LayoutTab extends LitElement {
     private _addModule;
     private _addPageBreakToSlider;
     private _addPageBreakToColumnSlider;
+    /**
+     * Build payload for submitting current layout to ultracard.io. Returns null if layout is empty.
+     */
+    private _buildSubmitPresetPayload;
+    /**
+     * Open share-preset flow: login if needed, then submit dialog with current layout.
+     */
+    private _openSharePresetDialog;
     private _addPreset;
     private _showEntityMappingDialog;
     private _applyPresetToLayout;
@@ -838,6 +860,7 @@ export declare class LayoutTab extends LitElement {
      * Handle upgrade button click - navigate to PRO tab
      */
     private _handleUpgradeClick;
+    private _isNewPreset;
     private _renderPresetImages;
     private _navigateSlider;
     private _goToSlide;

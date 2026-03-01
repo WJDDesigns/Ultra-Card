@@ -3,13 +3,20 @@ import { customElement, state } from 'lit/decorators.js';
 import { FavoriteRow } from '../../types';
 import { ucFavoritesService } from '../../services/uc-favorites-service';
 import { panelStyles } from '../panel-styles';
+import { ucCloudAuthService, CloudUser } from '../../services/uc-cloud-auth-service';
+import { ucCloudSyncService, SyncStatus } from '../../services/uc-cloud-sync-service';
 
 @customElement('hub-favorites-tab')
 export class HubFavoritesTab extends LitElement {
   @state() private _favorites: FavoriteRow[] = [];
   @state() private _toastMsg = '';
   @state() private _search = '';
+  @state() private _cloudUser: CloudUser | null = null;
+  @state() private _syncStatus: SyncStatus | null = null;
+  @state() private _syncing = false;
   private _unsub?: () => void;
+  private _authUnsub?: (user: CloudUser | null) => void;
+  private _syncUnsub?: (status: SyncStatus) => void;
   private _toastTimer?: ReturnType<typeof setTimeout>;
 
   static styles = [
@@ -243,6 +250,82 @@ export class HubFavoritesTab extends LitElement {
       .copy-config-btn ha-icon {
         --mdc-icon-size: 14px;
       }
+
+      /* Sync Banner */
+      .sync-banner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        margin-bottom: 16px;
+        font-size: 13px;
+      }
+
+      .sync-banner ha-icon {
+        --mdc-icon-size: 20px;
+        flex-shrink: 0;
+      }
+
+      .sync-banner-guest {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.2);
+      }
+
+      .sync-banner-guest ha-icon {
+        color: var(--primary-color);
+      }
+
+      .sync-banner-active {
+        background: rgba(var(--rgb-accent-color, 0, 150, 136), 0.07);
+        border: 1px solid rgba(var(--rgb-accent-color, 0, 150, 136), 0.18);
+      }
+
+      .sync-banner-active ha-icon {
+        color: var(--success-color, #4caf50);
+      }
+
+      .sync-banner-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+
+      .sync-banner-body strong {
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .sync-banner-body span {
+        color: var(--secondary-text-color);
+        font-size: 12px;
+      }
+
+      .sync-banner-btn {
+        flex-shrink: 0;
+        padding: 5px 12px;
+        border-radius: 6px;
+        border: 1px solid var(--primary-color);
+        background: none;
+        color: var(--primary-color);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        white-space: nowrap;
+      }
+
+      .sync-banner-btn:hover:not(:disabled) {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .sync-banner-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
     `,
   ];
 
@@ -252,11 +335,19 @@ export class HubFavoritesTab extends LitElement {
     this._unsub = ucFavoritesService.subscribe(list => {
       this._favorites = list;
     });
+    this._cloudUser = ucCloudAuthService.getCurrentUser();
+    this._syncStatus = ucCloudSyncService.getSyncStatus();
+    this._authUnsub = (user: CloudUser | null) => { this._cloudUser = user; };
+    ucCloudAuthService.addListener(this._authUnsub);
+    this._syncUnsub = (status: SyncStatus) => { this._syncStatus = status; };
+    ucCloudSyncService.addListener(this._syncUnsub);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this._unsub?.();
+    if (this._authUnsub) ucCloudAuthService.removeListener(this._authUnsub);
+    if (this._syncUnsub) ucCloudSyncService.removeListener(this._syncUnsub);
     if (this._toastTimer) clearTimeout(this._toastTimer);
   }
 
@@ -291,6 +382,72 @@ export class HubFavoritesTab extends LitElement {
     }
   }
 
+  private _goToAccount(): void {
+    this.dispatchEvent(new CustomEvent('hub-navigate-tab', {
+      detail: { tab: 'account' },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  private _formatSyncTime(date: Date | null | undefined): string {
+    if (!date) return 'Never';
+    try {
+      const d = new Date(date);
+      const now = new Date();
+      const diffMs = now.getTime() - d.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHrs = Math.floor(diffMins / 60);
+      if (diffHrs < 24) return `${diffHrs}h ago`;
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return 'Unknown';
+    }
+  }
+
+  private async _syncNow(): Promise<void> {
+    if (this._syncing) return;
+    this._syncing = true;
+    try {
+      await ucCloudSyncService.syncFavorites();
+      this._showToast('Favorites synced ✓');
+    } catch {
+      this._showToast('Sync failed — try again');
+    } finally {
+      this._syncing = false;
+    }
+  }
+
+  private _renderSyncBanner() {
+    if (!this._cloudUser) {
+      return html`
+        <div class="sync-banner sync-banner-guest">
+          <ha-icon icon="mdi:cloud-outline"></ha-icon>
+          <div class="sync-banner-body">
+            <strong>Back up & sync across all devices</strong>
+            <span>Create a free account to keep your favorites safe and available on every device.</span>
+          </div>
+          <button class="sync-banner-btn" @click=${this._goToAccount}>Sign In</button>
+        </div>
+      `;
+    }
+    const lastSync = this._syncStatus?.lastFavoritesSync;
+    return html`
+      <div class="sync-banner sync-banner-active">
+        <ha-icon icon=${this._syncing ? 'mdi:cloud-sync' : 'mdi:cloud-check'}></ha-icon>
+        <div class="sync-banner-body">
+          <strong>${this._syncing ? 'Syncing…' : 'Cloud Sync Active'}</strong>
+          <span>Last synced: ${this._formatSyncTime(lastSync)}</span>
+        </div>
+        <button class="sync-banner-btn" @click=${this._syncNow} ?disabled=${this._syncing}>
+          ${this._syncing ? 'Syncing…' : 'Sync Now'}
+        </button>
+      </div>
+    `;
+  }
+
   private _getFilteredFavorites(): FavoriteRow[] {
     if (!this._search.trim()) return this._favorites;
     const q = this._search.toLowerCase().trim();
@@ -309,6 +466,7 @@ export class HubFavoritesTab extends LitElement {
           <ha-icon icon="mdi:information-outline"></ha-icon>
           <p><strong>Favorites</strong> are saved layout rows you can reuse. Save a row from the card editor (heart icon), then add it to any card from here.</p>
         </div>
+        ${this._renderSyncBanner()}
         <div class="empty-state">
           <div class="empty-state-icon">
             <ha-icon icon="mdi:heart-outline"></ha-icon>
@@ -327,6 +485,7 @@ export class HubFavoritesTab extends LitElement {
         <ha-icon icon="mdi:information-outline"></ha-icon>
         <p><strong>Favorites</strong> are saved layout rows you can reuse. Save a row from the card editor (heart icon), then add it to any card from here.</p>
       </div>
+      ${this._renderSyncBanner()}
       <!-- Toolbar -->
       <div class="favorites-toolbar">
         ${this._favorites.length > 3

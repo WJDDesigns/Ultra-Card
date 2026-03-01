@@ -23,6 +23,11 @@ const CONFIG = {
     'dist/ultra-card-panel.js',
     'dist/ultra-card-panel.js.LICENSE.txt',
   ],
+  // The integration serves the panel from its own www/ directory.
+  // These extra copies ensure the sidebar panel is always up to date.
+  integrationPanelCopies: [
+    '/Volumes/config/custom_components/ultra_card_pro_cloud/www/ultra-card-panel.js',
+  ],
 };
 
 console.log('🚀 Ultra Card Deployment Script\n');
@@ -205,6 +210,27 @@ async function deploy() {
   } else {
     console.log('⚠️  No instances were successfully deployed to.\n');
     process.exit(1);
+  }
+
+  // Copy panel JS to integration www/ directories so the sidebar panel is served correctly.
+  const panelSrc = path.resolve(__dirname, 'dist/ultra-card-panel.js');
+  if (fs.existsSync(panelSrc) && CONFIG.integrationPanelCopies?.length) {
+    console.log('🔌 Updating integration panel copies...');
+    for (const dest of CONFIG.integrationPanelCopies) {
+      const destDir = path.dirname(dest);
+      if (fs.existsSync(destDir)) {
+        try {
+          fs.copyFileSync(panelSrc, dest);
+          const sizeMB = (fs.statSync(dest).size / (1024 * 1024)).toFixed(2);
+          console.log(`  ✅ Copied panel → ${dest} (${sizeMB} MB)`);
+        } catch (err) {
+          console.warn(`  ⚠️  Could not copy to ${dest}: ${err.message}`);
+        }
+      } else {
+        console.log(`  ℹ️  Integration path not found, skipping: ${dest}`);
+      }
+    }
+    console.log('');
   }
 }
 

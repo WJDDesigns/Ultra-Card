@@ -61,6 +61,7 @@ export class UltraCardEditor extends LitElement {
   @state() private _snapshotSchedulerStatus: SnapshotSchedulerStatus | null = null;
   @state() private _newerBackupAvailable: any = null;
   @state() private _showSyncNotification: boolean = false;
+  @state() private _isLoadingNewerBackup: boolean = false;
   @state() private _skipDefaultModules: boolean = false;
   @state() private _isCreatingManualSnapshot: boolean = false;
 
@@ -74,6 +75,12 @@ export class UltraCardEditor extends LitElement {
 
   /** Hub sidebar discovery banner dismissed (persisted in localStorage) */
   @state() private _hubBannerDismissed = false;
+
+  /** Ultra Card Connect flow handler available (files on disk, not yet configured). null = not yet checked */
+  @state() private _connectHandlerAvailable: boolean | null = null;
+
+  /** (unused — kept for reference; activation now uses HA native navigation) */
+  @state() private _connectActivating = false;
 
   /** Flag to ensure module CSS for animations is injected once */
   private _moduleStylesInjected = false;
@@ -94,9 +101,9 @@ export class UltraCardEditor extends LitElement {
     if (changedProperties.has('hass') && this.hass) {
       const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
 
-      // If integration is authenticated and we don't have a card user, use integration
-      if (integrationUser && !ucCloudAuthService.getCurrentUser()) {
-        console.log('✅ Integration auth detected, updating PRO status');
+      // If integration is authenticated, register in auth service so isAuthenticated() works
+      if (integrationUser) {
+        ucCloudAuthService.setIntegrationUser(integrationUser);
         this._cloudUser = integrationUser;
       }
 
@@ -108,6 +115,43 @@ export class UltraCardEditor extends LitElement {
     if (changedProperties.has('config') && this.hass) {
       ucEntityPickerEnhancer.update(this.hass, this.config);
     }
+
+    // One-time check: can we offer "Activate" (integration files on disk, no config entry yet)?
+    if (changedProperties.has('hass') && this.hass && this._connectHandlerAvailable === null) {
+      this._checkConnectHandlerAvailable();
+    }
+  }
+
+  private async _checkConnectHandlerAvailable(): Promise<void> {
+    if (!this.hass?.callApi) return;
+    const domain = 'ultra_card_pro_cloud';
+    try {
+      const raw = await (this.hass as any).callApi(
+        'GET',
+        'config/config_entries/flow_handlers'
+      );
+      // HA returns a JSON array of domain strings (e.g. ["ultra_card_pro_cloud", ...])
+      // or in some versions an object keyed by domain
+      let available = false;
+      if (Array.isArray(raw)) {
+        available = raw.some(
+          (h: any) =>
+            (typeof h === 'string' ? h : (h?.handler ?? h?.domain ?? '')) === domain
+        );
+      } else if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+        available = domain in (raw as Record<string, unknown>);
+      }
+      this._connectHandlerAvailable = available;
+    } catch {
+      this._connectHandlerAvailable = false;
+    }
+  }
+
+  private _activateConnectSidebar(): void {
+    // config_flow/start?domain=xxx only works for built-in integrations.
+    // For custom HACS integrations, navigate to the Devices & Services page
+    // and let the user complete the standard "Add Integration" flow.
+    window.location.href = '/config/integrations';
   }
 
   connectedCallback() {
@@ -155,6 +199,8 @@ export class UltraCardEditor extends LitElement {
     // Setup cloud sync listeners
     this._setupCloudSyncListeners();
 
+    // Ensure we have latest favorites from localStorage (sync with panel Colors tab)
+    ucFavoriteColorsService.refreshFromStorage();
     // Subscribe to favorite colors changes to back them up in card config
     this._favoriteColorsUnsubscribe = ucFavoriteColorsService.subscribe(favorites => {
       if (!this.config) return;
@@ -326,19 +372,38 @@ export class UltraCardEditor extends LitElement {
   }
 
   private _renderHubDiscoveryBanner(): TemplateResult {
+    const canActivate = this._connectHandlerAvailable === true;
+
     return html`
       <div class="hub-discovery-banner">
         <div class="hub-discovery-content">
-          <ha-icon icon="mdi:view-dashboard"></ha-icon>
-          <span>
-            Get the <strong>Ultra Card Hub</strong> sidebar — manage favorites, presets, colors, variables and more.
-            <a
-              href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-pro-cloud&category=integration"
-              target="_blank"
-              rel="noopener"
-              class="hub-discovery-link"
-            >Install via HACS</a>
-          </span>
+          <ha-icon icon="mdi:power-plug" class="banner-pulse-icon"></ha-icon>
+          ${canActivate
+            ? html`
+                <div class="hub-discovery-activate-block">
+                  <span>
+                    <strong>Ultra Card Connect</strong> is installed but not yet added as a service. Click below to open Settings → Integrations, then click <strong>+ Add Integration</strong> and search for <strong>Ultra Card Connect</strong>. A sidebar item will appear once setup is complete.
+                  </span>
+                  <div class="hub-discovery-actions">
+                    <button
+                      class="hub-discovery-activate"
+                      @click=${this._activateConnectSidebar}
+                    >Open Settings → Integrations</button>
+                  </div>
+                </div>
+              `
+            : html`
+                <span>
+                  Install <strong>Ultra Card Connect</strong> to manage favorites, presets, colors, variables and more.
+                  <a
+                    href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-connect&category=integration"
+                    target="_blank"
+                    rel="noopener"
+                    class="hub-discovery-link"
+                  >Install via HACS</a>.
+                  After installing, restart Home Assistant when prompted, then return here—you’ll see an “Activate sidebar” button.
+                </span>
+              `}
         </div>
         <button class="hub-discovery-dismiss" title="Dismiss" @click=${this._dismissHubBanner} aria-label="Dismiss">
           <ha-icon icon="mdi:close"></ha-icon>
@@ -354,6 +419,57 @@ export class UltraCardEditor extends LitElement {
     } catch {
       this._hubBannerDismissed = true;
     }
+  }
+
+  private _renderSyncNotificationBanner(): TemplateResult {
+    if (!this._showSyncNotification || !this._newerBackupAvailable) return html``;
+
+    const backup = this._newerBackupAvailable;
+    const savedAt = backup.created
+      ? new Date(backup.created).toLocaleString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : 'recently';
+    const device = backup.device_info || 'another device';
+    const stats = backup.card_stats;
+
+    return html`
+      <div class="cloud-sync-banner">
+        <div class="cloud-sync-banner-icon">
+          <ha-icon icon="mdi:cloud-sync"></ha-icon>
+        </div>
+        <div class="cloud-sync-banner-body">
+          <span class="cloud-sync-banner-title">Newer version available</span>
+          <span class="cloud-sync-banner-meta">
+            Saved ${savedAt} · ${device}${stats
+              ? html`&nbsp;·&nbsp;${stats.module_count}&nbsp;module${stats.module_count !== 1 ? 's' : ''}`
+              : ''}
+          </span>
+        </div>
+        <div class="cloud-sync-banner-actions">
+          <button
+            class="cloud-sync-btn-update"
+            @click=${this._handleLoadNewerBackup}
+            ?disabled=${this._isLoadingNewerBackup}
+          >
+            ${this._isLoadingNewerBackup
+              ? html`<ha-icon icon="mdi:loading" class="cloud-sync-loading"></ha-icon> Loading…`
+              : html`<ha-icon icon="mdi:cloud-download"></ha-icon> Update Now`}
+          </button>
+          <button
+            class="cloud-sync-btn-dismiss"
+            title="Not now"
+            @click=${this._handleDismissSyncNotification}
+            aria-label="Dismiss sync notification"
+          >
+            <ha-icon icon="mdi:close"></ha-icon>
+          </button>
+        </div>
+      </div>
+    `;
   }
 
   private _toggleFullScreen(): void {
@@ -382,6 +498,7 @@ export class UltraCardEditor extends LitElement {
     return html`
       <div class="card-config ${this._isFullScreen ? 'fullscreen' : ''}">
         ${showHubBanner ? this._renderHubDiscoveryBanner() : ''}
+        ${this._renderSyncNotificationBanner()}
         <div class="tabs">
           <button
             class="tab ${this._activeTab === 'layout' ? 'active' : ''}"
@@ -1553,6 +1670,16 @@ export class UltraCardEditor extends LitElement {
         transition: var(--ultra-editor-transition);
       }
 
+      @keyframes bannerPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(var(--rgb-primary-color, 3, 169, 244), 0.4); }
+        50% { box-shadow: 0 0 0 6px rgba(var(--rgb-primary-color, 3, 169, 244), 0); }
+      }
+
+      @keyframes iconPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.2); opacity: 0.8; }
+      }
+
       .hub-discovery-banner {
         display: flex;
         align-items: center;
@@ -1566,6 +1693,7 @@ export class UltraCardEditor extends LitElement {
         font-size: 13px;
         color: var(--primary-text-color);
         line-height: 1.4;
+        animation: bannerPulse 2.5s ease-in-out 3;
       }
 
       .hub-discovery-content {
@@ -1582,6 +1710,10 @@ export class UltraCardEditor extends LitElement {
         flex-shrink: 0;
       }
 
+      .banner-pulse-icon {
+        animation: iconPulse 2s ease-in-out 3;
+      }
+
       .hub-discovery-link {
         color: var(--primary-color);
         font-weight: 600;
@@ -1591,6 +1723,57 @@ export class UltraCardEditor extends LitElement {
 
       .hub-discovery-link:hover {
         text-decoration: underline;
+      }
+
+      .hub-discovery-activate-block {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .hub-discovery-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .hub-discovery-link-secondary {
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .hub-discovery-error {
+        display: block;
+        font-size: 12px;
+        color: var(--error-color, #db4437);
+        margin-top: 4px;
+        line-height: 1.4;
+      }
+
+      .hub-discovery-activate {
+        flex-shrink: 0;
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: none;
+        background: var(--primary-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .hub-discovery-activate:hover:not(:disabled) {
+        opacity: 0.9;
+      }
+
+      .hub-discovery-activate:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
       }
 
       .hub-discovery-dismiss {
@@ -1614,6 +1797,116 @@ export class UltraCardEditor extends LitElement {
       }
 
       .hub-discovery-dismiss ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      /* Cloud Sync notification banner */
+      .cloud-sync-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        margin-bottom: 12px;
+        background: rgba(76, 175, 80, 0.08);
+        border: 1px solid rgba(76, 175, 80, 0.3);
+        border-radius: 10px;
+        font-size: 13px;
+        color: var(--primary-text-color);
+        line-height: 1.4;
+      }
+
+      .cloud-sync-banner-icon {
+        --mdc-icon-size: 22px;
+        color: #4caf50;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+      }
+
+      .cloud-sync-banner-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+        gap: 2px;
+      }
+
+      .cloud-sync-banner-title {
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .cloud-sync-banner-meta {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+      }
+
+      .cloud-sync-banner-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+
+      .cloud-sync-btn-update {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 11px;
+        border: none;
+        border-radius: 6px;
+        background: #4caf50;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.15s ease;
+      }
+
+      .cloud-sync-btn-update:hover:not(:disabled) {
+        background: #43a047;
+      }
+
+      .cloud-sync-btn-update:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .cloud-sync-btn-update ha-icon {
+        --mdc-icon-size: 15px;
+      }
+
+      @keyframes uc-spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .cloud-sync-loading {
+        animation: uc-spin 0.8s linear infinite;
+        display: inline-flex;
+      }
+
+      .cloud-sync-btn-dismiss {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        border-radius: 6px;
+        flex-shrink: 0;
+      }
+
+      .cloud-sync-btn-dismiss:hover {
+        background: rgba(0, 0, 0, 0.06);
+        color: var(--primary-text-color);
+      }
+
+      .cloud-sync-btn-dismiss ha-icon {
         --mdc-icon-size: 18px;
       }
 
@@ -3809,44 +4102,30 @@ export class UltraCardEditor extends LitElement {
     }
     this._hasInitializedAuth = true;
 
-    // Priority 1: Check for integration auth (cross-device)
+    // Single auth source: HA integration sensor.
+    // No localStorage fallback — credentials live in HA config entries.
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
     if (integrationUser) {
+      ucCloudAuthService.setIntegrationUser(integrationUser);
       this._cloudUser = integrationUser;
-    } else {
-      // Priority 2: Fall back to card-based auth (single device)
-      this._cloudUser = ucCloudAuthService.getCurrentUser();
     }
 
     this._syncStatus = ucCloudSyncService.getSyncStatus();
     this._backupStatus = ucCloudBackupService.getStatus();
 
-    // If user exists in storage, attempt to restore session
-    if (this._cloudUser && ucCloudAuthService.isAuthenticated()) {
-      // Token is valid, just restore services
+    if (this._cloudUser) {
       try {
         await this._initializeProServices(this._cloudUser);
       } catch (error) {
-        console.error('❌ Failed to restore Pro session:', error);
-      }
-    } else if (this._cloudUser && this._cloudUser.refreshToken) {
-      // Token needs refresh - attempt it but don't logout on failure
-      try {
-        await ucCloudAuthService.refreshToken();
-        this._cloudUser = ucCloudAuthService.getCurrentUser();
-        if (this._cloudUser) {
-          await this._initializeProServices(this._cloudUser);
-        }
-      } catch (error) {
-        // Don't clear session on refresh failure - user might have network issues
-        // The auth service will handle logging them out if truly invalid
-        console.warn('⚠️ Session restore failed, please check your connection');
+        console.warn('⚠️ Pro services init failed:', error);
       }
     }
 
-    // Setup auth listener
+    // Auth listener: re-read integration sensor whenever auth service emits
     this._authListener = (user: CloudUser | null) => {
-      this._cloudUser = user;
+      const iUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+      if (iUser) ucCloudAuthService.setIntegrationUser(iUser);
+      this._cloudUser = iUser || user;
       this._loginError = '';
       this.requestUpdate();
     };
@@ -3911,7 +4190,7 @@ export class UltraCardEditor extends LitElement {
   private _renderProTab(): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
 
-    // Check for Ultra Card Pro Cloud integration (only auth method)
+    // Check for Ultra Card Connect integration (only auth method)
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
     const isIntegrationInstalled = ucCloudAuthService.isIntegrationInstalled(this.hass);
 
@@ -4042,7 +4321,7 @@ export class UltraCardEditor extends LitElement {
             <ha-icon icon="mdi:check-circle"></ha-icon>
           </div>
           <div class="status-content">
-            <h4>✅ PRO Features Unlocked via Ultra Card Pro Cloud</h4>
+            <h4>✅ PRO Features Unlocked via Ultra Card Connect</h4>
             <p>
               <strong
                 >${integrationUser.displayName}${integrationUser.email
@@ -4065,31 +4344,6 @@ export class UltraCardEditor extends LitElement {
       `;
     }
 
-    // Integration installed but not configured
-    if (isIntegrationInstalled) {
-      return html`
-        <div class="integration-status-card integration-not-configured">
-          <div class="status-icon">
-            <ha-icon icon="mdi:alert-circle"></ha-icon>
-          </div>
-          <div class="status-content">
-            <h4>🔧 Ultra Card Pro Cloud Integration Detected</h4>
-            <p>The integration is installed but not configured.</p>
-            <div class="status-actions">
-              <a
-                href="/config/integrations/integration/ultra_card_pro_cloud"
-                target="_top"
-                class="integration-button"
-              >
-                <ha-icon icon="mdi:cog"></ha-icon>
-                Configure Now
-              </a>
-            </div>
-            <p class="status-note">Takes 30 seconds to unlock all devices</p>
-          </div>
-        </div>
-      `;
-    }
 
     // Integration not installed - show install instructions
     if (!isIntegrationInstalled && !this._cloudUser) {
@@ -4101,7 +4355,7 @@ export class UltraCardEditor extends LitElement {
           <div class="status-content">
             <h4>⭐ Unlock PRO Features Across All Devices</h4>
             <p class="integration-subtitle">
-              Install <strong>Ultra Card Pro Cloud</strong> integration once, and every device
+              Install <strong>Ultra Card Connect</strong> once, and every device
               connected to this Home Assistant automatically gets PRO features.
             </p>
             <div class="benefits-list">
@@ -4133,26 +4387,23 @@ export class UltraCardEditor extends LitElement {
               <ol>
                 <li>Click <strong>"Install via HACS"</strong> below</li>
                 <li>
-                  In HACS: Search "<strong>Ultra Card Pro Cloud</strong>" (now available in HACS!)
+                  In HACS: Search "<strong>Ultra Card Connect</strong>"
                 </li>
-                <li>Click <strong>Download</strong></li>
-                <li>Restart Home Assistant</li>
-                <li>Go to Settings → Integrations → Add Integration</li>
-                <li>Search and add "<strong>Ultra Card Pro Cloud</strong>"</li>
-                <li>Enter your <strong>ultracard.io</strong> credentials</li>
+                <li>Click <strong>Download</strong> and restart Home Assistant</li>
+                <li>Open the <strong>Account</strong> tab and sign in — the integration is added for you automatically</li>
               </ol>
             </div>
 
             <div class="status-actions">
               <a
-                href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-pro-cloud&category=integration"
+                href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-connect&category=integration"
                 target="_blank"
                 class="integration-button integration-button-primary"
               >
                 <ha-icon icon="mdi:cloud-download"></ha-icon>
                 Install via HACS
               </a>
-              <a href="https://ultracard.io" target="_blank" class="integration-button">
+              <a href="https://ultracard.io/product/ultra-card-pro/" target="_blank" class="integration-button">
                 <ha-icon icon="mdi:cart"></ha-icon>
                 Get PRO Subscription
               </a>
@@ -4253,14 +4504,14 @@ export class UltraCardEditor extends LitElement {
         <div class="info-content">
           <h4>Ultra Card Pro Authentication</h4>
           <p>
-            To unlock Pro features, install the <strong>Ultra Card Pro Cloud</strong> integration
-            (now available in HACS!) from HACS and sign in there. Authentication is managed through
-            the integration for seamless cross-device sync.
+            To unlock Pro features, install <strong>Ultra Card Connect</strong>
+            from HACS and sign in via the Account tab. The integration is added automatically
+            for seamless cross-device sync.
           </p>
           ${!isIntegrationInstalled
             ? html`
                 <a
-                  href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-pro-cloud&category=integration"
+                  href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-connect&category=integration"
                   target="_blank"
                   rel="noopener"
                   class="install-integration-link"
@@ -5776,27 +6027,30 @@ export class UltraCardEditor extends LitElement {
   }
 
   private async _handleLoadNewerBackup() {
-    if (!this._newerBackupAvailable) return;
+    if (!this._newerBackupAvailable || this._isLoadingNewerBackup) return;
 
-    if (
-      !confirm(
-        'Load the newer backup from another device? Your current unsaved changes will be lost.'
-      )
-    ) {
-      return;
-    }
+    this._isLoadingNewerBackup = true;
 
     try {
       const config = await ucCloudBackupService.restoreBackup(this._newerBackupAvailable.id);
       this._updateConfig(config);
       this._showSyncNotification = false;
       this._newerBackupAvailable = null;
-      alert('Newer backup loaded successfully!');
     } catch (error) {
       console.error('Failed to load newer backup:', error);
-      alert(
-        'Failed to load newer backup: ' + (error instanceof Error ? error.message : 'Unknown error')
+      // Surface failure back in the banner without a blocking alert
+      this._showSyncNotification = false;
+      this._newerBackupAvailable = null;
+      // Fire a non-blocking toast-style event so the card can optionally surface it
+      this.dispatchEvent(
+        new CustomEvent('ultra-card-cloud-sync-error', {
+          detail: { message: error instanceof Error ? error.message : 'Failed to load backup' },
+          bubbles: true,
+          composed: true,
+        })
       );
+    } finally {
+      this._isLoadingNewerBackup = false;
     }
   }
 

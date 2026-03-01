@@ -151,6 +151,8 @@ export class UltraColorPicker extends LitElement {
     }
     document.addEventListener('click', this._documentClickHandler, true);
 
+    // Ensure we have latest from localStorage (sync with favorites added in panel Colors tab)
+    ucFavoriteColorsService.refreshFromStorage();
     // Subscribe to favorite colors changes (re-establishes on each connect)
     this._favoritesUnsubscribe = ucFavoriteColorsService.subscribe(favorites => {
       this._favoriteColors = favorites;
@@ -663,31 +665,43 @@ export class UltraColorPicker extends LitElement {
   }
 
   private _getContrastColor(backgroundColor: string): string {
-    // Handle transparent background
-    if (backgroundColor === 'transparent') {
-      return 'var(--primary-text-color)';
-    }
+    const theme = this._getContrastTheme(backgroundColor);
+    if (theme === 'light') return '#000000';
+    if (theme === 'dark') return '#ffffff';
+    return 'var(--primary-text-color)';
+  }
 
-    // For CSS variables, gradients, and complex colors, use theme text with shadow
-    if (!backgroundColor || backgroundColor.startsWith('var(') || isGradient(backgroundColor)) {
-      return 'var(--primary-text-color)';
-    }
+  /**
+   * Returns 'light' when the swatch is light (use dark text), 'dark' when dark (use light text).
+   * Used for favorite label pill/shadow styling so it works on light and dark themes and swatches.
+   */
+  private _getContrastTheme(backgroundColor: string): 'light' | 'dark' | null {
+    if (!backgroundColor || backgroundColor === 'transparent') return null;
+    if (backgroundColor.startsWith('var(') || isGradient(backgroundColor)) return 'dark';
 
-    // Simple hex color contrast calculation
+    let r = 0, g = 0, b = 0;
     if (backgroundColor.startsWith('#')) {
       const hex = backgroundColor.replace('#', '');
-      const r = parseInt(hex.substr(0, 2), 16);
-      const g = parseInt(hex.substr(2, 2), 16);
-      const b = parseInt(hex.substr(4, 2), 16);
-
-      // Calculate luminance
-      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-      return luminance > 0.5 ? '#000000' : '#ffffff';
+      const len = hex.length;
+      if (len === 6 || len === 8) {
+        r = parseInt(hex.substr(0, 2), 16);
+        g = parseInt(hex.substr(2, 2), 16);
+        b = parseInt(hex.substr(4, 2), 16);
+      } else if (len === 3) {
+        r = parseInt(hex[0] + hex[0], 16);
+        g = parseInt(hex[1] + hex[1], 16);
+        b = parseInt(hex[2] + hex[2], 16);
+      }
+    } else {
+      const rgba = backgroundColor.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+      if (rgba) {
+        r = parseInt(rgba[1], 10);
+        g = parseInt(rgba[2], 10);
+        b = parseInt(rgba[3], 10);
+      }
     }
-
-    // Default to theme text color
-    return 'var(--primary-text-color)';
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.5 ? 'light' : 'dark';
   }
 
   /**
@@ -1177,7 +1191,7 @@ export class UltraColorPicker extends LitElement {
                                 @click=${(e: Event) => this._selectColor(favorite.color, e)}
                                 title="${favorite.name} (${favorite.color})"
                               >
-                                <span class="favorite-tooltip">${favorite.name}</span>
+                                <span class="favorite-preset-name contrast-${this._getContrastTheme(favorite.color) || 'dark'}">${favorite.name}</span>
                               </div>
                             `
                           )}
@@ -1791,24 +1805,22 @@ export class UltraColorPicker extends LitElement {
         height: 40px;
         border-radius: 6px;
         cursor: pointer;
-        border: 2px solid transparent;
         transition: all 0.2s ease;
         position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: hidden;
+        /* No border: gradient fills to edge; ring only via box-shadow on hover/selected to avoid edge clipping */
       }
 
       .gradient-preset-swatch:hover {
         transform: scale(1.05);
-        border-color: var(--primary-color);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        box-shadow: inset 0 0 0 2px var(--primary-color), 0 2px 8px rgba(0, 0, 0, 0.2);
       }
 
       .gradient-preset-swatch.selected {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 33, 150, 243), 0.3);
+        box-shadow: inset 0 0 0 2px var(--primary-color), 0 0 0 3px rgba(var(--primary-color-rgb, 33, 150, 243), 0.3);
       }
 
       .gradient-preset-name {
@@ -1873,7 +1885,7 @@ export class UltraColorPicker extends LitElement {
 
       .favorites-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(32px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
         gap: 8px;
         margin-bottom: 0;
         width: 100%;
@@ -1881,47 +1893,52 @@ export class UltraColorPicker extends LitElement {
       }
 
       .favorite-swatch {
-        width: 28px;
-        height: 28px;
-        border-radius: 4px;
+        height: 40px;
+        border-radius: 6px;
         cursor: pointer;
-        border: 2px solid transparent;
         transition: all 0.2s ease;
         position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
+        overflow: hidden;
+        /* No border: color fills to edge; ring via box-shadow on hover/selected to avoid edge clipping */
       }
 
       .favorite-swatch:hover {
-        transform: scale(1.1);
-        border-color: var(--primary-color);
+        transform: scale(1.05);
+        box-shadow: inset 0 0 0 2px var(--primary-color), 0 2px 8px rgba(0, 0, 0, 0.2);
       }
 
       .favorite-swatch.selected {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 33, 150, 243), 0.3);
+        box-shadow: inset 0 0 0 2px var(--primary-color), 0 0 0 3px rgba(var(--primary-color-rgb, 33, 150, 243), 0.3);
       }
 
-      .favorite-swatch .favorite-tooltip {
-        position: absolute;
-        top: -30px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.85);
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
+      .favorite-swatch .favorite-preset-name {
         font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
         white-space: nowrap;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.2s ease;
-        z-index: ${Z_INDEX.CARD_TOOLTIP};
       }
 
-      .favorite-swatch:hover .favorite-tooltip {
-        opacity: 1;
+      /* Dark swatch: light text, dark pill (works in light and dark HA themes) */
+      .favorite-swatch .favorite-preset-name.contrast-dark {
+        color: #ffffff;
+        background: rgba(0, 0, 0, 0.4);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.5);
+      }
+
+      /* Light swatch: dark text, light pill (readable on coral, mint, etc.) */
+      .favorite-swatch .favorite-preset-name.contrast-light {
+        color: #000000;
+        background: rgba(255, 255, 255, 0.55);
+        text-shadow: 0 0 1px rgba(255, 255, 255, 0.9), 0 1px 2px rgba(0, 0, 0, 0.25);
       }
 
       .no-favorites {
@@ -1975,6 +1992,20 @@ export class UltraColorPicker extends LitElement {
         }
 
         .gradient-preset-name {
+          font-size: 10px;
+          padding: 1px 4px;
+        }
+
+        .favorites-grid {
+          grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+          gap: 6px;
+        }
+
+        .favorite-swatch {
+          height: 35px;
+        }
+
+        .favorite-preset-name {
           font-size: 10px;
           padding: 1px 4px;
         }

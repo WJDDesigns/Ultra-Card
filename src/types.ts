@@ -4412,6 +4412,9 @@ export interface CardColumn {
   id: string;
   name?: string;
   modules: CardModule[];
+  // Dynamic modules via Jinja2 template - must output a JSON array of CardModule objects
+  // Takes priority over `modules` when set. Updates reactively via HA template subscription.
+  modules_template?: string;
   vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
   horizontal_alignment?:
     | 'left'
@@ -4495,6 +4498,9 @@ export interface CardRow {
   id: string;
   name?: string;
   columns: CardColumn[];
+  // Dynamic columns via Jinja2 template - must output a JSON array of CardColumn objects
+  // Takes priority over `columns` when set. Updates reactively via HA template subscription.
+  columns_template?: string;
   column_layout?: ColumnLayoutId;
   custom_column_sizing?: string; // Custom CSS grid template columns value (e.g., "1fr 1fr 100px")
   // Responsive column layouts - allows different layouts per breakpoint

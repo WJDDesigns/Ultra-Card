@@ -177,6 +177,46 @@ class UcExportImportService {
    * @param config Card configuration to export
    * @param name Optional name for the export
    */
+  /**
+   * Generate the full [ultra_card]...[/ultra_card] shortcode for a card config
+   * without copying to clipboard or showing the privacy dialog.
+   * Used when sharing a preset from the layout builder.
+   */
+  generateCardShortcode(config: UltraCardConfig, name?: string): string {
+    // Strip personal data (same as exportCardToClipboard)
+    const sanitized = { ...config };
+    delete sanitized.favorite_colors;
+
+    // Gather variables referenced in the config
+    const usedVarNames = scanConfigForVariables(config);
+    const variablesToExport: CustomVariable[] = [];
+    for (const varName of usedVarNames) {
+      const cardVar = config._customVariables?.find(
+        v => v.name.toLowerCase() === varName.toLowerCase()
+      );
+      if (cardVar) {
+        variablesToExport.push({ ...cardVar, isGlobal: false });
+        continue;
+      }
+      const globalVar = ucCustomVariablesService.getVariableByName(varName);
+      if (globalVar) variablesToExport.push({ ...globalVar, isGlobal: true });
+    }
+
+    const exportData: ExportData = {
+      type: 'ultra-card-full',
+      version: VERSION,
+      data: sanitized,
+      metadata: {
+        exported: new Date().toISOString(),
+        name: name || config.card_name || 'Ultra Card',
+        privacyProtected: true,
+      },
+      customVariables: variablesToExport.length > 0 ? variablesToExport : undefined,
+    };
+
+    return this._generateShortcode(exportData);
+  }
+
   async exportCardToClipboard(config: UltraCardConfig, name?: string): Promise<void> {
     // Scan for privacy issues
     const privacyScan = ucPrivacyService.scanAndSanitize(config);

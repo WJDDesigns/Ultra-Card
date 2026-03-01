@@ -22,7 +22,11 @@ export const panelStyles = css`
 
   .hub-header {
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: 16px 24px 12px;
+    gap: 12px;
   }
 
   .hub-header h1 {
@@ -30,6 +34,75 @@ export const panelStyles = css`
     font-size: 24px;
     font-weight: 400;
     color: var(--primary-text-color);
+  }
+
+  .hub-account-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--ha-card-background, var(--card-background-color));
+    border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.08));
+    color: var(--primary-text-color);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .hub-account-chip:hover {
+    background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
+  }
+
+  .hub-account-chip ha-icon {
+    --mdc-icon-size: 18px;
+    color: var(--secondary-text-color);
+  }
+
+  .hub-tier-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .hub-tier-badge.pro {
+    background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.15);
+    color: var(--primary-color);
+  }
+
+  .hub-tier-badge.free {
+    background: rgba(158, 158, 158, 0.15);
+    color: var(--secondary-text-color);
+  }
+
+  .hub-sign-in-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--primary-color);
+    background: transparent;
+    color: var(--primary-color);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .hub-sign-in-btn:hover {
+    background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+  }
+
+  .hub-sign-in-btn ha-icon {
+    --mdc-icon-size: 16px;
   }
 
   .hub-tabs {

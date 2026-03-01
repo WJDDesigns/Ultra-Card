@@ -14,7 +14,10 @@ export declare class UltraCard extends LitElement {
     private _animatingRows;
     private _animatingColumns;
     private _cloudUser;
+    private _bannerDismissed;
     private _lastHassChangeTime;
+    private static readonly CONNECTOR_BANNER_STORAGE_KEY;
+    private static readonly HACS_CONNECTOR_URL;
     private _templateUpdateListener?;
     private _authListener?;
     /**
@@ -22,6 +25,7 @@ export declare class UltraCard extends LitElement {
      */
     private _moduleStylesInjected;
     private _instanceId;
+    private _layoutTemplateService;
     private _limitUnsub?;
     private _isEditorPreviewCard;
     private _globalTransparencyListener?;
@@ -104,6 +108,18 @@ export declare class UltraCard extends LitElement {
      */
     private _getCardBackgroundImageUrl;
     private _renderRow;
+    /**
+     * Resolves the columns for a row, supporting dynamic generation via `columns_template`.
+     * When `columns_template` is set, subscribes to the HA template and parses the JSON result
+     * as a CardColumn array. Falls back to static `columns` array otherwise.
+     */
+    private _resolveColumns;
+    /**
+     * Resolves the modules for a column, supporting dynamic generation via `modules_template`.
+     * When `modules_template` is set, subscribes to the HA template and parses the JSON result
+     * as a CardModule array. Falls back to static `modules` array otherwise.
+     */
+    private _resolveModules;
     private _renderColumn;
     private _renderModule;
     private _parseAnimationDuration;
@@ -161,6 +177,14 @@ export declare class UltraCard extends LitElement {
      * Check if a module is a pro module by checking its metadata tags
      */
     private _isProModule;
+    /**
+     * Dismiss the "Install Connector" banner and persist to localStorage
+     */
+    private _dismissConnectorBanner;
+    /**
+     * Render the dismissible connector install banner when integration is not present
+     */
+    private _renderConnectorBanner;
     /**
      * Load cloud user from integration or card auth
      */
