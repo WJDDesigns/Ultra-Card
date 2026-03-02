@@ -18,6 +18,27 @@ function formatRemaining(seconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+/**
+ * Computes remaining seconds from a HA timer entity state object.
+ * Mirrors the logic in custom-card-helpers' timerTimeRemaining():
+ *  - reads `attributes.remaining` ("H:MM:SS" string)
+ *  - for 'active' state, subtracts the time elapsed since last_changed
+ */
+function computeHassTimerRemaining(entityState: { state: string; attributes: Record<string, unknown>; last_changed: string }): number {
+  const remaining = (entityState.attributes.remaining as string) ?? '0:00:00';
+  const parts = remaining.split(':').map(Number);
+  let seconds = 0;
+  if (parts.length === 3) seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+  else if (parts.length === 2) seconds = parts[0] * 60 + parts[1];
+  else seconds = parts[0] || 0;
+
+  if (entityState.state === 'active') {
+    const elapsed = (Date.now() - new Date(entityState.last_changed).getTime()) / 1000;
+    seconds = Math.max(0, seconds - elapsed);
+  }
+  return seconds;
+}
+
 export class UltraTimerModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'timer',
@@ -193,9 +214,6 @@ export class UltraTimerModule extends BaseUltraModule {
     _previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const timerModule = module as TimerModule;
-    const state = timerStateService.getState(timerModule.id);
-    const status = state?.status ?? 'idle';
-    const remaining = state?.remaining_seconds ?? 0;
     const duration = Math.max(1, timerModule.duration_seconds ?? 300);
     const presets = timerModule.preset_durations ?? DEFAULT_PRESETS;
     const style = timerModule.style || 'circle';
@@ -211,6 +229,26 @@ export class UltraTimerModule extends BaseUltraModule {
         this.handleModuleAction(action as any, hass, undefined, config, undefined, module);
       }
     };
+
+    // Sync from linked HA timer entity on every render (safe — no-ops if nothing changed)
+    if (timerModule.timer_entity && hass) {
+      const entityState = hass.states[timerModule.timer_entity];
+      if (entityState) {
+        const haState = entityState.state; // 'active' | 'paused' | 'idle'
+        const remaining = computeHassTimerRemaining(entityState);
+        timerStateService.syncFromEntity(
+          timerModule.id,
+          haState,
+          remaining,
+          entityState.last_changed,
+          onExpire
+        );
+      }
+    }
+
+    const state = timerStateService.getState(timerModule.id);
+    const status = state?.status ?? 'idle';
+    const remaining = state?.remaining_seconds ?? 0;
 
     const start = (seconds: number) => {
       timerStateService.start(timerModule.id, seconds, onExpire);

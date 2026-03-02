@@ -2342,14 +2342,63 @@ export interface CoverModule extends BaseModule {
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
 }
+/** Field mapping for todo item → module (used when source_type is 'todo'). */
+export interface TodoItemTemplate {
+    /** Module type to render per item: text, icon, or bar */
+    module_type: 'text' | 'icon' | 'bar';
+    /** For text: primary line (e.g. summary). */
+    primary_field?: 'summary' | 'description' | 'due' | 'status';
+    /** For text: secondary line. */
+    secondary_field?: 'summary' | 'description' | 'due' | 'status' | 'none';
+    /** Icon when item is incomplete (needs_action). Fallback: icon. */
+    icon?: string;
+    /** Icon when item is completed. If not set, uses icon_completed from integration or icon. */
+    icon_completed?: string;
+    /** Icon when item is incomplete (needs_action). If not set, uses icon. */
+    icon_incomplete?: string;
+    /** Icon color when completed (e.g. from color picker). */
+    icon_color_completed?: string;
+    /** Icon color when incomplete (e.g. from color picker). */
+    icon_color_incomplete?: string;
+    /** Text alignment for item display. */
+    alignment?: 'left' | 'center' | 'right' | 'justify';
+    /** Where to show the icon relative to text: before, after, or none. */
+    icon_position?: 'before' | 'after' | 'none';
+    /** When true, tapping the row calls todo.update_item to mark item completed (or uncompleted). */
+    allow_tap_to_complete?: boolean;
+}
 export interface DynamicListModule extends BaseModule {
     type: 'dynamic-list';
-    /** Jinja2 template that must return a JSON array of CardModule config objects via | tojson */
+    /** Source of list items: Jinja2 template or HA todo entity. */
+    source_type?: 'template' | 'todo';
+    /** Jinja2 template that must return a JSON array of CardModule config objects via | tojson (used when source_type is 'template'). */
     dynamic_template: string;
+    /** Todo entity id (e.g. todo.shopping). Used when source_type is 'todo'. Empty = first available. */
+    todo_entity?: string;
+    /** Additional todo entity ids to include (e.g. M365 sub-lists). Items from all lists are combined. */
+    todo_entities?: string[];
+    /** Which statuses to show when source_type is 'todo'. Empty or omitted = both. */
+    todo_statuses?: ('needs_action' | 'completed')[];
+    /** How to map each todo item to a module when source_type is 'todo'. */
+    todo_item_template?: TodoItemTemplate;
     /** Layout direction for the generated modules */
     direction: 'vertical' | 'horizontal';
     /** Gap between generated modules in px */
     gap: number;
+    /** Allow items to wrap onto multiple rows/columns (default: true) */
+    wrap: boolean;
+    /** Number of columns in the grid (0 = auto/natural). Works for both horizontal and vertical. */
+    columns: number;
+    /** Maximum number of rows to show in a horizontal wrapping layout (0 = unlimited) */
+    rows: number;
+    /** Show only the first N items initially (0 = show all) */
+    limit: number;
+    /** What to show when limit is exceeded: show_more button or paginate controls */
+    limit_behavior: 'show_more' | 'paginate';
+    /** Horizontal alignment of items (justify-content / justify-items) */
+    align_h: 'start' | 'center' | 'end' | 'space-between' | 'space-around' | 'stretch';
+    /** Vertical alignment of items (align-items) */
+    align_v: 'start' | 'center' | 'end' | 'stretch';
     tap_action?: ModuleActionConfig;
     hold_action?: ModuleActionConfig;
     double_tap_action?: ModuleActionConfig;

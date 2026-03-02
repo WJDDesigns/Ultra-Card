@@ -658,6 +658,7 @@ export class UltraTextModule extends BaseUltraModule {
       left: 'flex-start',
       center: 'center',
       right: 'flex-end',
+      justify: 'flex-start', // text-align does the justify; container keeps content at start
     };
 
     // Declare template variables before textStyles
@@ -868,7 +869,7 @@ export class UltraTextModule extends BaseUltraModule {
       ? html`<div
           class="${GlobalActionsTab.getClickableClass(textModule)}"
           style="${GlobalActionsTab.getClickableStyle(textModule)}"
-          @click=${(e: Event) => this.handleClick(e, textModule, hass)}
+          @click=${(e: Event) => this.handleClick(e, textModule, hass, config)}
           @dblclick=${(e: Event) => this.handleDoubleClick(e, textModule, hass)}
           @mousedown=${(e: Event) => this.handleMouseDown(e, textModule, hass)}
           @mouseup=${(e: Event) => this.handleMouseUp(e, textModule, hass)}

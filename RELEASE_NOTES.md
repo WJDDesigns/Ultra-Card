@@ -1,5 +1,28 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0-beta3
+
+### 🚀 New Features
+
+- **Todo List source for Dynamic List module** — Dynamic List now supports a `todo` source type alongside Jinja2 templates. Pick any HA `todo.*` entity (Local Todo, M365, etc.), combine multiple lists via "Also include", and filter by status (needs_action, completed, or both)
+- **Todo item display customization** — Configure how each todo item renders: choose text/icon/bar module type, set primary & secondary fields (summary, description, due, status), per-status icons with color pickers, icon position, and text alignment
+- **Todo Service** — New `uc-todo-service.ts` fetches and caches items from HA `todo.get_items`, supporting multi-entity aggregation with deduplication
+- **Dynamic List layout options** — Added wrap, columns, rows, limit, limit_behavior (show_more / paginate), and horizontal/vertical alignment controls with full editor UI
+- **Show More / Pagination** — When a limit is set, Dynamic List renders either a "Show More" button or prev/next page controls with item count
+
+### 🔧 Improvements
+
+- **Timer module HA entity sync** — Timer module now reads state from a linked HA `timer.*` entity on each render, computing remaining seconds from the entity's `remaining` attribute and `last_changed` timestamp. Uses a change-detection map to avoid redundant interval restarts
+- **Timer state service `syncFromEntity()`** — New method on `timerStateService` that maps HA entity states (`active` → running, `paused` → paused, `idle` → idle) to local timer state, only acting when `haState` or `lastChanged` actually changes
+- **Text module `justify` alignment** — Text module flex container now maps `justify` alignment to `flex-start` with `text-align: justify`
+- **Text module click handler** — `handleClick` now passes `config` to support config-aware tap actions
+
+### 🐛 Bug Fixes
+
+- **Timer initial state moved after entity sync** — `getState()` is now called after `syncFromEntity()` so the very first render of a linked timer entity shows the correct status and remaining time
+
+---
+
 ## Version 3.1.0-beta2
 
 ### 🚀 New Features

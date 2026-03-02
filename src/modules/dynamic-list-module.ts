@@ -1,10 +1,11 @@
 import { TemplateResult, html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
-import { CardModule, DynamicListModule, UltraCardConfig } from '../types';
+import { CardModule, DynamicListModule, TodoItemTemplate, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { TemplateService } from '../services/template-service';
+import { UltraCardTodoService, TodoItem } from '../services/uc-todo-service';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { getModuleRegistry } from './module-registry';
 import { logicService } from '../services/logic-service';
@@ -12,6 +13,7 @@ import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { localize } from '../localize/localize';
 
 import '../components/ultra-template-editor';
+import '../components/ultra-color-picker';
 
 // ─── Example templates ───────────────────────────────────────────────────────
 
@@ -177,8 +179,47 @@ const USE_BTN_STYLE = `
   white-space: nowrap;
 `;
 
+// ─── Pagination / show-more button styles ─────────────────────────────────────
+const BTN_STYLE = `
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(var(--rgb-primary-color, 33,150,243), 0.12);
+  color: var(--primary-color);
+  border: 1px solid rgba(var(--rgb-primary-color, 33,150,243), 0.3);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+`;
+const PAGE_BAR_STYLE = `
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 4px 0;
+`;
+const PAGE_BTN_STYLE = `
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--rgb-primary-color, 33,150,243), 0.12);
+  color: var(--primary-color);
+  border: 1px solid rgba(var(--rgb-primary-color, 33,150,243), 0.3);
+  border-radius: 6px;
+  padding: 4px;
+  cursor: pointer;
+`;
+
 export class UltraDynamicListModule extends BaseUltraModule {
   private _templateService: TemplateService | null = null;
+  private _todoService: UltraCardTodoService | null = null;
+  // Per-module-instance state for show-more and pagination
+  private _expandedModules: Map<string, boolean> = new Map();
+  private _currentPage: Map<string, number> = new Map();
 
   private _hashString(str: string): string {
     let hash = 0;
@@ -203,9 +244,25 @@ export class UltraDynamicListModule extends BaseUltraModule {
     return {
       id: id || this.generateId('dynamic-list'),
       type: 'dynamic-list',
+      source_type: 'template',
       dynamic_template: EXAMPLE_DOORS_WINDOWS,
+      todo_entity: undefined,
+      todo_statuses: [],
+      todo_item_template: {
+        module_type: 'text',
+        primary_field: 'summary',
+        secondary_field: 'due',
+        icon: 'mdi:checkbox-marked-circle-outline',
+      },
       direction: 'horizontal',
       gap: 8,
+      wrap: true,
+      columns: 4,
+      rows: 0,
+      limit: 0,
+      limit_behavior: 'show_more',
+      align_h: 'center',
+      align_v: 'center',
       tap_action: { action: 'nothing' },
       hold_action: { action: 'nothing' },
       double_tap_action: { action: 'nothing' },
@@ -223,10 +280,333 @@ export class UltraDynamicListModule extends BaseUltraModule {
     const dynModule = module as DynamicListModule;
     const lang = hass?.locale?.language || 'en';
 
+    const sourceType =
+      String(dynModule.source_type || 'template').toLowerCase() === 'todo' ? 'todo' : 'template';
+    const isTodo = sourceType === 'todo';
+    const todoTpl = dynModule.todo_item_template || {
+      module_type: 'text',
+      primary_field: 'summary',
+      secondary_field: 'due',
+      icon: 'mdi:checkbox-marked-circle-outline',
+    };
+
     return html`
       ${this.injectUcFormStyles()}
-      <div class="module-general-settings">
+      <style>
+        .dynamic-list-editor ha-form { display: block; }
+        .dynamic-list-editor ha-form .form-group { margin-bottom: 8px; }
+        .dynamic-list-editor ha-form ha-select,
+        .dynamic-list-editor ha-form .mdc-select { min-height: 40px; height: auto; }
+        .dynamic-list-editor ha-form ha-select .mdc-select__anchor { min-height: 40px; }
+      </style>
+      <div class="module-general-settings ultra-clean-form dynamic-list-editor">
 
+        <!-- Source type: Template vs Todo List (dropdown) -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 12px; letter-spacing: 0.5px;"
+          >
+            Source
+          </div>
+          <div class="field-group" style="margin-bottom: 0;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">List source</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{ select: { options: [ { value: 'template', label: 'Jinja2 Template' }, { value: 'todo', label: 'Todo List (HA entity)' } ] } }}
+              .value=${sourceType}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ source_type: (e.detail.value || 'template') as 'template' | 'todo' } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+        </div>
+
+        ${isTodo ? html`
+        <!-- Todo List source: ha-selector dropdowns (no radios) -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 4px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;"
+          >
+            <ha-icon icon="mdi:format-list-checks" style="--mdc-icon-size: 20px;"></ha-icon>
+            Todo List
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 12px; margin-bottom: 12px; color: var(--secondary-text-color); line-height: 1.5;"
+          >
+            Use one or more to-do list entities (e.g. Local Todo, M365). Items are fetched via <code>todo.get_items</code>. Combine multiple lists (e.g. M365 sub-lists) by adding them in "Also include".
+          </div>
+          <div class="field-group" style="margin-bottom: 12px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Todo list</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: '', label: 'Default (first available)' },
+                    ...(hass.states
+                      ? Object.keys(hass.states)
+                          .filter((id) => id.startsWith('todo.'))
+                          .map((id) => ({
+                            value: id,
+                            label: (hass.states[id]?.attributes?.friendly_name as string) || id,
+                          }))
+                      : []),
+                  ],
+                },
+              }}
+              .value=${dynModule.todo_entity ?? ''}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ todo_entity: (e.detail.value || undefined) as string | undefined } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+          <div class="field-group" style="margin-bottom: 12px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Also include</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  multiple: true,
+                  options: [
+                    { value: '', label: 'Default (first available)' },
+                    ...(hass.states
+                      ? Object.keys(hass.states)
+                          .filter((id) => id.startsWith('todo.'))
+                          .map((id) => ({
+                            value: id,
+                            label: (hass.states[id]?.attributes?.friendly_name as string) || id,
+                          }))
+                      : []),
+                  ],
+                },
+              }}
+              .value=${dynModule.todo_entities || []}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ todo_entities: Array.isArray(e.detail.value) ? e.detail.value : [] } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+          <div class="field-group" style="margin-bottom: 12px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Show statuses</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: 'both', label: 'Both' },
+                    { value: 'needs_action', label: 'Needs action only' },
+                    { value: 'completed', label: 'Completed only' },
+                  ],
+                },
+              }}
+              .value=${(() => {
+                const s = dynModule.todo_statuses || [];
+                if (s.length === 0 || s.length === 2) return 'both';
+                return s[0] === 'completed' ? 'completed' : 'needs_action';
+              })()}
+              @value-changed=${(e: CustomEvent) => {
+                const v = e.detail.value;
+                const statuses: ('needs_action' | 'completed')[] =
+                  v === 'both' ? [] : v === 'completed' ? ['completed'] : ['needs_action'];
+                updateModule({ todo_statuses: statuses } as Partial<CardModule>);
+              }}
+            ></ha-selector>
+          </div>
+          <div class="field-group" style="margin-bottom: 8px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Item display</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: 'text', label: 'Text (primary + secondary)' },
+                    { value: 'icon', label: 'Icon' },
+                    { value: 'bar', label: 'Bar' },
+                  ],
+                },
+              }}
+              .value=${todoTpl.module_type || 'text'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({
+                  todo_item_template: { ...todoTpl, module_type: (e.detail.value || 'text') as 'text' | 'icon' | 'bar' },
+                } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+          <div class="field-group" style="margin-bottom: 8px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Primary field</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: 'summary', label: 'Summary' },
+                    { value: 'description', label: 'Description' },
+                    { value: 'due', label: 'Due date' },
+                    { value: 'status', label: 'Status' },
+                  ],
+                },
+              }}
+              .value=${todoTpl.primary_field || 'summary'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({
+                  todo_item_template: { ...todoTpl, primary_field: (e.detail.value || 'summary') as TodoItemTemplate['primary_field'] },
+                } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+          <div class="field-group" style="margin-bottom: 8px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Secondary field</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: 'none', label: 'None' },
+                    { value: 'summary', label: 'Summary' },
+                    { value: 'description', label: 'Description' },
+                    { value: 'due', label: 'Due date' },
+                    { value: 'status', label: 'Status' },
+                  ],
+                },
+              }}
+              .value=${todoTpl.secondary_field ?? 'due'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({
+                  todo_item_template: { ...todoTpl, secondary_field: (e.detail.value === 'none' ? undefined : e.detail.value) as TodoItemTemplate['secondary_field'] },
+                } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+          <div class="field-group" style="margin-bottom: 12px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Icon (default / fallback)</label>
+            <ha-icon-picker
+              .hass=${hass}
+              .value=${todoTpl.icon || 'mdi:checkbox-marked-circle-outline'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({
+                  todo_item_template: { ...todoTpl, icon: e.detail.value || 'mdi:checkbox-marked-circle-outline' },
+                } as Partial<CardModule>)}
+            ></ha-icon-picker>
+          </div>
+          <div class="field-group" style="margin-bottom: 12px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Icon when incomplete</label>
+            <ha-icon-picker
+              .hass=${hass}
+              .value=${todoTpl.icon_incomplete ?? todoTpl.icon ?? 'mdi:checkbox-marked-circle-outline'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({
+                  todo_item_template: { ...todoTpl, icon_incomplete: e.detail.value || undefined },
+                } as Partial<CardModule>)}
+            ></ha-icon-picker>
+          </div>
+          <div class="field-group" style="margin-bottom: 12px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Icon color when incomplete</label>
+            <ultra-color-picker
+              .hass=${hass}
+              .value=${todoTpl.icon_color_incomplete ?? ''}
+              .defaultValue=${'var(--secondary-text-color)'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({
+                  todo_item_template: { ...todoTpl, icon_color_incomplete: e.detail.value ?? undefined },
+                } as Partial<CardModule>)}
+            ></ultra-color-picker>
+          </div>
+          <div class="field-group" style="margin-bottom: 12px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Icon when completed</label>
+            <ha-icon-picker
+              .hass=${hass}
+              .value=${todoTpl.icon_completed ?? todoTpl.icon ?? 'mdi:checkbox-marked-circle'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({
+                  todo_item_template: { ...todoTpl, icon_completed: e.detail.value || undefined },
+                } as Partial<CardModule>)}
+            ></ha-icon-picker>
+          </div>
+          <div class="field-group" style="margin-bottom: 12px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Icon color when completed</label>
+            <ultra-color-picker
+              .hass=${hass}
+              .value=${todoTpl.icon_color_completed ?? ''}
+              .defaultValue=${'var(--primary-color)'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({
+                  todo_item_template: { ...todoTpl, icon_color_completed: e.detail.value ?? undefined },
+                } as Partial<CardModule>)}
+            ></ultra-color-picker>
+          </div>
+          <div class="field-group" style="margin-bottom: 12px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Icon position</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: 'before', label: 'Before text' },
+                    { value: 'after', label: 'After text' },
+                    { value: 'none', label: 'None (hide icon)' },
+                  ],
+                },
+              }}
+              .value=${todoTpl.icon_position ?? 'before'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({
+                  todo_item_template: { ...todoTpl, icon_position: (e.detail.value || 'before') as 'before' | 'after' | 'none' },
+                } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+          <div class="field-group" style="margin-bottom: 12px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Text alignment</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: 'left', label: 'Left' },
+                    { value: 'center', label: 'Center' },
+                    { value: 'right', label: 'Right' },
+                    { value: 'justify', label: 'Justify' },
+                  ],
+                },
+              }}
+              .value=${todoTpl.alignment ?? 'left'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({
+                  todo_item_template: { ...todoTpl, alignment: (e.detail.value || 'left') as 'left' | 'center' | 'right' | 'justify' },
+                } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+          <div class="field-group" style="margin-bottom: 12px;">
+            <ha-form
+              .hass=${hass}
+              .data=${{ allow_tap_to_complete: todoTpl.allow_tap_to_complete === true }}
+              .schema=${[
+                {
+                  name: 'allow_tap_to_complete',
+                  label: 'Allow tap to complete',
+                  description: 'Tap a row to toggle completed/needs action (shows checkbox icon; tap toggles status).',
+                  selector: { boolean: {} },
+                },
+              ]}
+              .computeLabel=${(schema: any) => schema.label || schema.name}
+              .computeDescription=${(schema: any) => schema.description || ''}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({
+                  todo_item_template: { ...todoTpl, allow_tap_to_complete: e.detail.value?.allow_tap_to_complete === true },
+                } as Partial<CardModule>)}
+            ></ha-form>
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 11px; margin-top: 12px; padding: 8px; background: rgba(0,0,0,0.15); border-radius: 6px; color: var(--secondary-text-color); line-height: 1.4;"
+          >
+            <strong>Description JSON (Local Todo, etc.):</strong> You can put JSON in an item’s description to override display or define multiple modules. Object (e.g. <code>{"color": "#f00", "text": "Custom"}</code>) is merged into the row. Array of module configs shows multiple modules for that one item.
+          </div>
+        </div>
+        ` : html`
         <!-- Template Section -->
         <div
           class="settings-section"
@@ -277,6 +657,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
             </div>
           </div>
         </div>
+        `}
 
         <!-- Layout Section -->
         <div
@@ -291,36 +672,84 @@ export class UltraDynamicListModule extends BaseUltraModule {
           </div>
 
           <div class="field-group" style="margin-bottom: 16px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">${localize('editor.dynamic_list.direction', lang, 'Direction')}</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: 'horizontal', label: 'Horizontal (side by side)' },
+                    { value: 'vertical', label: 'Vertical (stacked)' },
+                  ],
+                },
+              }}
+              .value=${dynModule.direction || 'horizontal'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ direction: (e.detail.value || 'horizontal') as 'horizontal' | 'vertical' } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+
+          <div class="field-group" style="margin-bottom: 16px;">
             <ha-form
               .hass=${hass}
-              .data=${{ direction: dynModule.direction || 'vertical' }}
+              .data=${{ wrap: dynModule.wrap !== false }}
               .schema=${[
                 {
-                  name: 'direction',
-                  label: localize('editor.dynamic_list.direction', lang, 'Direction'),
-                  description: localize(
-                    'editor.dynamic_list.direction_desc',
-                    lang,
-                    'How generated modules are stacked'
-                  ),
-                  selector: {
-                    select: {
-                      options: [
-                        { value: 'vertical', label: 'Vertical (stacked)' },
-                        { value: 'horizontal', label: 'Horizontal (side by side)' },
-                      ],
-                    },
-                  },
+                  name: 'wrap',
+                  label: 'Auto Wrap',
+                  description: 'Automatically wrap items onto new rows or columns when they run out of space',
+                  selector: { boolean: {} },
                 },
               ]}
               .computeLabel=${(schema: any) => schema.label || schema.name}
               .computeDescription=${(schema: any) => schema.description || ''}
               @value-changed=${(e: CustomEvent) =>
-                updateModule({ direction: e.detail.value.direction } as Partial<CardModule>)}
+                updateModule({ wrap: e.detail.value.wrap } as Partial<CardModule>)}
             ></ha-form>
           </div>
 
-          <div class="field-group">
+          <div class="field-group" style="margin-bottom: 16px;">
+            <ha-form
+              .hass=${hass}
+              .data=${{ columns: dynModule.columns ?? 0 }}
+              .schema=${[
+                {
+                  name: 'columns',
+                  label: 'Columns',
+                  description: (dynModule.direction || 'horizontal') === 'horizontal'
+                    ? 'Columns per row — items fill left to right then wrap (0 = auto size)'
+                    : 'Columns in the grid — items fill top to bottom per column (0 = single stack)',
+                  selector: { number: { min: 0, max: 12, step: 1, mode: 'slider' } },
+                },
+              ]}
+              .computeLabel=${(schema: any) => schema.label || schema.name}
+              .computeDescription=${(schema: any) => schema.description || ''}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ columns: e.detail.value.columns } as Partial<CardModule>)}
+            ></ha-form>
+          </div>
+
+          ${(dynModule.direction || 'horizontal') === 'horizontal' ? html`
+          <div class="field-group" style="margin-bottom: 16px;">
+            <ha-form
+              .hass=${hass}
+              .data=${{ rows: dynModule.rows ?? 0 }}
+              .schema=${[
+                {
+                  name: 'rows',
+                  label: 'Max Rows',
+                  description: 'Maximum rows in horizontal wrap layout (0 = unlimited). Works best with Columns set.',
+                  selector: { number: { min: 0, max: 20, step: 1, mode: 'slider' } },
+                },
+              ]}
+              .computeLabel=${(schema: any) => schema.label || schema.name}
+              .computeDescription=${(schema: any) => schema.description || ''}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ rows: e.detail.value.rows } as Partial<CardModule>)}
+            ></ha-form>
+          </div>` : ''}
+
+          <div class="field-group" style="margin-bottom: 16px;">
             <ha-form
               .hass=${hass}
               .data=${{ gap: dynModule.gap ?? 8 }}
@@ -328,14 +757,8 @@ export class UltraDynamicListModule extends BaseUltraModule {
                 {
                   name: 'gap',
                   label: localize('editor.dynamic_list.gap', lang, 'Gap (px)'),
-                  description: localize(
-                    'editor.dynamic_list.gap_desc',
-                    lang,
-                    'Space between generated modules in pixels'
-                  ),
-                  selector: {
-                    number: { min: 0, max: 64, step: 1, unit_of_measurement: 'px', mode: 'slider' },
-                  },
+                  description: localize('editor.dynamic_list.gap_desc', lang, 'Space between generated modules in pixels'),
+                  selector: { number: { min: 0, max: 64, step: 1, unit_of_measurement: 'px', mode: 'slider' } },
                 },
               ]}
               .computeLabel=${(schema: any) => schema.label || schema.name}
@@ -344,6 +767,86 @@ export class UltraDynamicListModule extends BaseUltraModule {
                 updateModule({ gap: e.detail.value.gap } as Partial<CardModule>)}
             ></ha-form>
           </div>
+
+          <div class="field-group" style="margin-bottom: 16px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Horizontal Alignment</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: 'start', label: 'Left' },
+                    { value: 'center', label: 'Center' },
+                    { value: 'end', label: 'Right' },
+                    { value: 'space-between', label: 'Space Between' },
+                    { value: 'space-around', label: 'Space Around' },
+                    { value: 'stretch', label: 'Stretch' },
+                  ],
+                },
+              }}
+              .value=${dynModule.align_h || 'center'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ align_h: (e.detail.value || 'center') as DynamicListModule['align_h'] } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+
+          <div class="field-group" style="margin-bottom: 16px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Vertical Alignment</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: 'start', label: 'Top' },
+                    { value: 'center', label: 'Center' },
+                    { value: 'end', label: 'Bottom' },
+                    { value: 'stretch', label: 'Stretch' },
+                  ],
+                },
+              }}
+              .value=${dynModule.align_v || 'center'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ align_v: (e.detail.value || 'center') as DynamicListModule['align_v'] } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+
+          <div class="field-group" style="margin-bottom: 16px;">
+            <ha-form
+              .hass=${hass}
+              .data=${{ limit: dynModule.limit ?? 0 }}
+              .schema=${[
+                {
+                  name: 'limit',
+                  label: 'Show Only (items)',
+                  description: 'Show only the first N items initially. 0 = show all. Set above 0 to enable Show More or Pagination.',
+                  selector: { number: { min: 0, max: 100, step: 1, mode: 'slider' } },
+                },
+              ]}
+              .computeLabel=${(schema: any) => schema.label || schema.name}
+              .computeDescription=${(schema: any) => schema.description || ''}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ limit: e.detail.value.limit } as Partial<CardModule>)}
+            ></ha-form>
+          </div>
+
+          ${(dynModule.limit ?? 0) > 0 ? html`
+          <div class="field-group">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">When limit reached</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: 'show_more', label: 'Show More / Show Less button' },
+                    { value: 'paginate', label: 'Paginate (prev / next)' },
+                  ],
+                },
+              }}
+              .value=${dynModule.limit_behavior || 'show_more'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ limit_behavior: (e.detail.value || 'show_more') as 'show_more' | 'paginate' } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>` : ''}
         </div>
 
         <!-- Examples Section -->
@@ -388,6 +891,158 @@ export class UltraDynamicListModule extends BaseUltraModule {
               </details>
             `)}
 
+          </div>
+        </div>
+
+        <!-- Domain Cheat Sheet Section -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 4px; letter-spacing: 0.5px;"
+          >
+            Domain Cheat Sheet
+          </div>
+          <div class="field-description" style="font-size: 12px; margin-bottom: 16px; color: var(--secondary-text-color); line-height: 1.5;">
+            These templates loop over <strong>every entity</strong> in a domain automatically — no hardcoded entity IDs needed. New entities appear on the card instantly. Replace <code>states.light</code> with any domain below.
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            ${([
+              {
+                domain: 'light',
+                label: 'All Lights',
+                icon_on: 'mdi:lightbulb',
+                icon_off: 'mdi:lightbulb-outline',
+                active_state: 'on',
+                icon_color_on: '#ffc107',
+                icon_color_off: '#9e9e9e',
+              },
+              {
+                domain: 'switch',
+                label: 'All Switches',
+                icon_on: 'mdi:toggle-switch',
+                icon_off: 'mdi:toggle-switch-off-outline',
+                active_state: 'on',
+                icon_color_on: '#4caf50',
+                icon_color_off: '#9e9e9e',
+              },
+              {
+                domain: 'binary_sensor',
+                label: 'All Binary Sensors',
+                icon_on: 'mdi:checkbox-marked-circle',
+                icon_off: 'mdi:checkbox-blank-circle-outline',
+                active_state: 'on',
+                icon_color_on: '#f44336',
+                icon_color_off: '#4caf50',
+              },
+              {
+                domain: 'cover',
+                label: 'All Covers (Blinds / Garage)',
+                icon_on: 'mdi:window-shutter-open',
+                icon_off: 'mdi:window-shutter',
+                active_state: 'open',
+                icon_color_on: '#ff9800',
+                icon_color_off: '#4caf50',
+              },
+              {
+                domain: 'fan',
+                label: 'All Fans',
+                icon_on: 'mdi:fan',
+                icon_off: 'mdi:fan-off',
+                active_state: 'on',
+                icon_color_on: '#2196f3',
+                icon_color_off: '#9e9e9e',
+              },
+              {
+                domain: 'media_player',
+                label: 'All Media Players',
+                icon_on: 'mdi:play-circle',
+                icon_off: 'mdi:stop-circle-outline',
+                active_state: 'playing',
+                icon_color_on: '#9c27b0',
+                icon_color_off: '#9e9e9e',
+              },
+              {
+                domain: 'climate',
+                label: 'All Climate / Thermostats',
+                icon_on: 'mdi:thermostat',
+                icon_off: 'mdi:thermostat',
+                active_state: 'heat',
+                icon_color_on: '#f44336',
+                icon_color_off: '#2196f3',
+              },
+              {
+                domain: 'person',
+                label: 'All People (Presence)',
+                icon_on: 'mdi:home-account',
+                icon_off: 'mdi:account-arrow-right',
+                active_state: 'home',
+                icon_color_on: '#4caf50',
+                icon_color_off: '#9e9e9e',
+              },
+              {
+                domain: 'sensor',
+                label: 'All Sensors (text)',
+                icon_on: '', icon_off: '', active_state: '', icon_color_on: '', icon_color_off: '',
+              },
+            ] as const).map(d => {
+              const isSensor = d.domain === 'sensor';
+              const tpl = isSensor
+                ? `{% set ns = namespace(mods=[]) %}
+{% for entity in states.${d.domain} %}
+  {% set mod = {
+    'id': '${d.domain}_' ~ loop.index,
+    'type': 'text',
+    'text': entity.name ~ ': ' ~ entity.state,
+    'display_mode': 'always', 'display_conditions': []
+  } %}
+  {% set ns.mods = ns.mods + [mod] %}
+{% endfor %}
+{{ ns.mods | tojson }}`
+                : `{% set ns = namespace(mods=[]) %}
+{% for entity in states.${d.domain} %}
+  {% set icon_item = {
+    'id': '${d.domain}_ii_' ~ loop.index,
+    'icon_mode': 'entity',
+    'entity': entity.entity_id,
+    'name': entity.name,
+    'icon_inactive': '${d.icon_off}',
+    'icon_active':   '${d.icon_on}',
+    'active_state':  '${d.active_state}',
+    'inactive_icon_color': '${d.icon_color_off}',
+    'active_icon_color':   '${d.icon_color_on}',
+    'show_name_when_inactive': true, 'show_state_when_inactive': true, 'show_icon_when_inactive': true,
+    'show_name_when_active':   true, 'show_state_when_active':   true, 'show_icon_when_active':   true
+  } %}
+  {% set mod = {'id': '${d.domain}_' ~ loop.index, 'type': 'icon', 'icons': [icon_item], 'display_mode': 'always', 'display_conditions': []} %}
+  {% set ns.mods = ns.mods + [mod] %}
+{% endfor %}
+{{ ns.mods | tojson }}`;
+
+              return html`
+                <details style="border: 1px solid var(--divider-color); border-radius: 8px; overflow: hidden;">
+                  <summary style="${EXAMPLE_HEADER_STYLE} list-style: none; cursor: pointer;">
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="font-size: 13px; font-weight: 600; color: var(--primary-text-color);">${d.label}</div>
+                      <div style="font-size: 11px; color: var(--secondary-text-color); margin-top: 2px;">
+                        <code>states.${d.domain}</code>
+                      </div>
+                    </div>
+                    <button
+                      style="${USE_BTN_STYLE}"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        updateModule({ dynamic_template: tpl } as Partial<CardModule>);
+                      }}
+                    >Use</button>
+                  </summary>
+                  <pre style="${EXAMPLE_PRE_STYLE}">${tpl}</pre>
+                </details>
+              `;
+            })}
           </div>
         </div>
 
@@ -533,6 +1188,152 @@ export class UltraDynamicListModule extends BaseUltraModule {
     return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
   }
 
+  /**
+   * Try to parse todo item description as JSON. Returns null if not valid JSON.
+   * Supports: object (merge into module) or array of objects (multiple modules per item).
+   */
+  private _parseDescriptionJson(description: string | undefined): Record<string, unknown> | unknown[] | null {
+    if (!description || typeof description !== 'string') return null;
+    const raw = description.trim();
+    if ((raw.startsWith('{') && raw.endsWith('}')) || (raw.startsWith('[') && raw.endsWith(']'))) {
+      try {
+        const parsed = JSON.parse(raw);
+        return typeof parsed === 'object' && parsed !== null ? parsed : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Map todo items to CardModule[] using todo_item_template. If an item's description
+   * is valid JSON, it can override module fields (object) or define multiple modules (array).
+   * itemsWithEntity: list of { item, entityId } so multiple lists can be combined.
+   */
+  private _mapTodoItemsToModules(
+    itemsWithEntity: { item: TodoItem; entityId: string }[],
+    statuses: ('needs_action' | 'completed')[] | undefined,
+    tpl: TodoItemTemplate,
+    moduleIdPrefix: string
+  ): CardModule[] {
+    const filtered =
+      Array.isArray(statuses) && statuses.length > 0
+        ? itemsWithEntity.filter((e) => statuses.includes(e.item.status))
+        : itemsWithEntity;
+    const primaryField = (item: TodoItem) => {
+      const f = tpl.primary_field || 'summary';
+      if (f === 'summary') return item.summary || '';
+      if (f === 'description') return item.description || '';
+      if (f === 'due') return item.due || '';
+      if (f === 'status') return item.status === 'completed' ? 'Done' : 'To do';
+      return item.summary || '';
+    };
+    const secondaryField = (item: TodoItem) => {
+      const f = tpl.secondary_field;
+      if (!f || f === 'none') return '';
+      if (f === 'summary') return item.summary || '';
+      if (f === 'description') return item.description || '';
+      if (f === 'due') return item.due || '';
+      if (f === 'status') return item.status === 'completed' ? 'Done' : 'To do';
+      return '';
+    };
+    const defaultIcon = tpl.icon || 'mdi:checkbox-marked-circle-outline';
+    const iconIncomplete = tpl.icon_incomplete ?? tpl.icon ?? defaultIcon;
+    const iconCompleted = tpl.icon_completed ?? tpl.icon ?? 'mdi:checkbox-marked-circle';
+    const out: CardModule[] = [];
+    filtered.forEach(({ item, entityId: todoEntity }, idx) => {
+      const baseId = `${moduleIdPrefix}_todo_${idx}_${(item.uid || idx).toString().slice(0, 8)}`;
+      const primary = primaryField(item);
+      const secondary = secondaryField(item);
+      const name = primary;
+      const descJson = this._parseDescriptionJson(item.description);
+
+      // Description as array of module configs: one item → multiple modules (e.g. parsed from JSON).
+      if (Array.isArray(descJson) && descJson.length > 0) {
+        descJson.forEach((entry, i) => {
+          if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+            const obj = entry as Record<string, unknown>;
+            const id = (obj.id as string) || `${baseId}_${i}`;
+            const mod = {
+              ...obj,
+              id: typeof id === 'string' ? id : `${baseId}_${i}`,
+              display_mode: (obj.display_mode as 'always') || 'always',
+              display_conditions: Array.isArray(obj.display_conditions) ? obj.display_conditions : [],
+            } as CardModule;
+            out.push(mod);
+          }
+        });
+        return;
+      }
+
+      // Single module per item (default or merged with description object).
+      let mod: CardModule;
+      if (tpl.module_type === 'icon') {
+        const isCompleted = item.status === 'completed';
+        mod = {
+          id: baseId,
+          type: 'icon',
+          icons: [
+            {
+              id: `${baseId}_icon`,
+              icon_mode: 'static',
+              entity: todoEntity,
+              name,
+              icon_inactive: isCompleted ? iconCompleted : iconIncomplete,
+              icon_active: iconCompleted,
+              inactive_icon_color: isCompleted ? (tpl.icon_color_completed ?? 'var(--primary-color)') : (tpl.icon_color_incomplete ?? 'var(--secondary-text-color)'),
+              active_icon_color: tpl.icon_color_completed ?? 'var(--primary-color)',
+              show_name_when_inactive: true,
+              show_state_when_inactive: false,
+              show_icon_when_inactive: true,
+              show_name_when_active: true,
+              show_state_when_active: false,
+              show_icon_when_active: true,
+            },
+          ],
+          display_mode: 'always' as const,
+          display_conditions: [],
+        } as CardModule;
+      } else {
+        const textLine = secondary ? `${primary} — ${secondary}` : primary;
+        const isCompleted = item.status === 'completed';
+        const textMod: CardModule = {
+          id: baseId,
+          type: 'text',
+          text: textLine,
+          display_mode: 'always' as const,
+          display_conditions: [],
+          icon: isCompleted ? iconCompleted : iconIncomplete,
+          icon_color: isCompleted ? tpl.icon_color_completed : tpl.icon_color_incomplete,
+          icon_position: (tpl.icon_position === 'none' ? 'none' : tpl.icon_position) || 'before',
+          alignment: tpl.alignment || 'left',
+        } as CardModule;
+        if (tpl.allow_tap_to_complete && item.uid) {
+          (textMod as any).tap_action = {
+            action: 'perform-action',
+            service: 'todo.update_item',
+            target: { entity_id: todoEntity },
+            service_data: { item: item.uid, status: isCompleted ? 'needs_action' : 'completed' },
+          };
+        }
+        mod = textMod;
+      }
+      // If description is a JSON object, merge its keys into the module (override/add fields).
+      if (descJson && !Array.isArray(descJson) && typeof descJson === 'object') {
+        const overrides = descJson as Record<string, unknown>;
+        const merged = { ...mod, ...overrides } as CardModule;
+        if (!merged.id) merged.id = mod.id;
+        if (!merged.display_mode) merged.display_mode = 'always';
+        if (merged.display_conditions === undefined) merged.display_conditions = [];
+        out.push(merged);
+      } else {
+        out.push(mod);
+      }
+    });
+    return out;
+  }
+
   renderPreview(
     module: CardModule,
     hass: HomeAssistant,
@@ -540,14 +1341,12 @@ export class UltraDynamicListModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const dynModule = module as DynamicListModule;
+    const sourceType =
+      String(dynModule.source_type || 'template').toLowerCase() === 'todo' ? 'todo' : 'template';
 
-    if (!dynModule.dynamic_template || dynModule.dynamic_template.trim() === '') {
-      return this.renderGradientErrorState(
-        'Add a Jinja2 Template',
-        'Enter a template in the General tab to generate modules dynamically',
-        'mdi:code-braces'
-      );
-    }
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/36063b29-f1db-4787-bed7-95c789116512',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c2200c'},body:JSON.stringify({sessionId:'c2200c',location:'dynamic-list-module.ts:renderPreview:entry',message:'Dynamic list renderPreview',data:{raw_source_type:dynModule.source_type,typeof_source_type:typeof dynModule.source_type,sourceType,todo_entity:dynModule.todo_entity,branch:sourceType},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
     if (!hass) {
       return this.renderGradientErrorState(
@@ -557,87 +1356,184 @@ export class UltraDynamicListModule extends BaseUltraModule {
       );
     }
 
-    // Initialize template service
-    if (!this._templateService) {
-      this._templateService = new TemplateService(hass);
-    }
+    let generatedModules: CardModule[] = [];
 
-    if (!hass.__uvc_template_strings) {
-      hass.__uvc_template_strings = {};
-    }
-
-    const processedTemplate = preprocessTemplateVariables(
-      dynModule.dynamic_template,
-      hass,
-      config
-    );
-    const templateHash = this._hashString(processedTemplate);
-    const templateKey = `layout_mods_dynlist_${dynModule.id}_${templateHash}`;
-
-    if (!this._templateService.hasTemplateSubscription(templateKey)) {
-      this._templateService.subscribeToTemplate(
-        processedTemplate,
-        templateKey,
-        () => {
-          if (typeof window !== 'undefined') {
-            if (!window._ultraCardUpdateTimer) {
-              window._ultraCardUpdateTimer = setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                window._ultraCardUpdateTimer = null;
-              }, 50);
-            }
+    // ─── Todo list source ───────────────────────────────────────────────────
+    if (sourceType === 'todo') {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/36063b29-f1db-4787-bed7-95c789116512',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c2200c'},body:JSON.stringify({sessionId:'c2200c',location:'dynamic-list-module.ts:todo-branch',message:'Entered todo branch',data:{todo_entity:dynModule.todo_entity,todo_entities:dynModule.todo_entities},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      const firstTodoEntity =
+        hass.states &&
+        Object.keys(hass.states).find((id) => id.startsWith('todo.'));
+      const resolve = (e: string) => (e?.trim() || firstTodoEntity || '').trim();
+      const primaryEntity = resolve(dynModule.todo_entity ?? '');
+      const extraEntities = (dynModule.todo_entities || [])
+        .map((e) => resolve(e))
+        .filter((e) => e && e !== primaryEntity);
+      const entityIds = primaryEntity
+        ? [primaryEntity, ...extraEntities]
+        : extraEntities.length
+          ? extraEntities
+          : firstTodoEntity
+            ? [firstTodoEntity]
+            : [];
+      if (entityIds.length === 0) {
+        return this.renderGradientErrorState(
+          'No Todo List',
+          'Add a to-do list (e.g. Local Todo) or choose one in the General tab. Use "Default (first available)" when you have at least one todo entity.',
+          'mdi:format-list-checks'
+        );
+      }
+      if (!this._todoService) {
+        this._todoService = new UltraCardTodoService();
+      }
+      const cache = (hass as any).__uvc_todo_cache as { [entityId: string]: TodoItem[] } | undefined;
+      const onUpdate = () => {
+        if (typeof window !== 'undefined') {
+          if (!(window as any)._ultraCardUpdateTimer) {
+            (window as any)._ultraCardUpdateTimer = setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              (window as any)._ultraCardUpdateTimer = null;
+            }, 50);
           }
-        },
-        {},
+        }
+      };
+      let anyMissing = false;
+      for (const eid of entityIds) {
+        if (cache?.[eid] === undefined) {
+          anyMissing = true;
+          this._todoService.getItems(hass, eid, onUpdate);
+        }
+      }
+      if (anyMissing) {
+        return html`
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+              padding: 16px;
+              color: var(--secondary-text-color);
+              font-size: 13px;
+            "
+          >
+            <ha-icon icon="mdi:loading" style="--mdc-icon-size: 16px; animation: spin 1s linear infinite;"></ha-icon>
+            Loading todo items…
+          </div>
+        `;
+      }
+      const itemsWithEntity: { item: TodoItem; entityId: string }[] = [];
+      entityIds.forEach((eid) => {
+        const items = cache?.[eid] || [];
+        items.forEach((item) => itemsWithEntity.push({ item, entityId: eid }));
+      });
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/36063b29-f1db-4787-bed7-95c789116512',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c2200c'},body:JSON.stringify({sessionId:'c2200c',location:'dynamic-list-module.ts:todo-after-cache',message:'Todo cache and items',data:{entityIds,cacheLengths:entityIds.map((eid)=>cache?.[eid]?.length??'missing'),itemsWithEntityLength:itemsWithEntity.length,todo_statuses:dynModule.todo_statuses},timestamp:Date.now(),hypothesisId:'G'})}).catch(()=>{});
+      // #endregion
+      const tpl = dynModule.todo_item_template || {
+        module_type: 'text',
+        primary_field: 'summary',
+        secondary_field: 'due',
+        icon: 'mdi:checkbox-marked-circle-outline',
+      };
+      generatedModules = this._mapTodoItemsToModules(
+        itemsWithEntity,
+        dynModule.todo_statuses,
+        tpl,
+        dynModule.id
+      );
+    } else {
+      // ─── Template source ──────────────────────────────────────────────────
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/36063b29-f1db-4787-bed7-95c789116512',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c2200c'},body:JSON.stringify({sessionId:'c2200c',location:'dynamic-list-module.ts:template-branch',message:'Entered template branch',data:{hasTemplate:!!(dynModule.dynamic_template && dynModule.dynamic_template.trim())},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      if (!dynModule.dynamic_template || dynModule.dynamic_template.trim() === '') {
+        return this.renderGradientErrorState(
+          'Add a Jinja2 Template',
+          'Enter a template in the General tab to generate modules dynamically',
+          'mdi:code-braces'
+        );
+      }
+      if (!this._templateService) {
+        this._templateService = new TemplateService(hass);
+      }
+      if (!hass.__uvc_template_strings) {
+        hass.__uvc_template_strings = {};
+      }
+      const processedTemplate = preprocessTemplateVariables(
+        dynModule.dynamic_template,
+        hass,
         config
       );
-    }
+      const templateHash = this._hashString(processedTemplate);
+      const templateKey = `layout_mods_dynlist_${dynModule.id}_${templateHash}`;
 
-    const raw = hass.__uvc_template_strings?.[templateKey];
-
-    if (!raw) {
-      return html`
-        <div
-          style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 16px;
-            color: var(--secondary-text-color);
-            font-size: 13px;
-          "
-        >
-          <ha-icon icon="mdi:loading" style="--mdc-icon-size: 16px; animation: spin 1s linear infinite;"></ha-icon>
-          Evaluating template…
-        </div>
-      `;
-    }
-
-    let generatedModules: CardModule[] = [];
-    // HA's WebSocket may return the result as an already-parsed JS array/object
-    // (when the template output is valid JSON, HA deserializes it before sending).
-    // Handle both cases: raw array/object and raw JSON string.
-    if (Array.isArray(raw)) {
-      generatedModules = raw as CardModule[];
-    } else if (raw !== null && typeof raw === 'object') {
-      // Shouldn't happen for a list template, but guard anyway
-      generatedModules = [];
-    } else {
-      try {
-        const parsed = JSON.parse(String(raw).trim());
-        generatedModules = Array.isArray(parsed) ? (parsed as CardModule[]) : [];
-      } catch (e) {
-        console.error('[UltraCard] Dynamic List: failed to parse template output:', raw, e);
-        return this.renderGradientErrorState(
-          'Invalid Template Output',
-          'Template must output a JSON array. End your template with {{ ns.mods | tojson }}.',
-          'mdi:alert-circle-outline'
+      if (!this._templateService.hasTemplateSubscription(templateKey)) {
+        this._templateService.subscribeToTemplate(
+          processedTemplate,
+          templateKey,
+          () => {
+            if (typeof window !== 'undefined') {
+              if (!(window as any)._ultraCardUpdateTimer) {
+                (window as any)._ultraCardUpdateTimer = setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  (window as any)._ultraCardUpdateTimer = null;
+                }, 50);
+              }
+            }
+          },
+          {},
+          config
         );
+      }
+
+      const raw = hass.__uvc_template_strings?.[templateKey];
+
+      if (!raw) {
+        return html`
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+              padding: 16px;
+              color: var(--secondary-text-color);
+              font-size: 13px;
+            "
+          >
+            <ha-icon icon="mdi:loading" style="--mdc-icon-size: 16px; animation: spin 1s linear infinite;"></ha-icon>
+            Evaluating template…
+          </div>
+        `;
+      }
+
+      if (Array.isArray(raw)) {
+        generatedModules = raw as CardModule[];
+      } else if (raw !== null && typeof raw === 'object') {
+        generatedModules = [];
+      } else {
+        try {
+          const parsed = JSON.parse(String(raw).trim());
+          generatedModules = Array.isArray(parsed) ? (parsed as CardModule[]) : [];
+        } catch (e) {
+          console.error('[UltraCard] Dynamic List: failed to parse template output:', raw, e);
+          return this.renderGradientErrorState(
+            'Invalid Template Output',
+            'Template must output a JSON array. End your template with {{ ns.mods | tojson }}.',
+            'mdi:alert-circle-outline'
+          );
+        }
       }
     }
 
     if (generatedModules.length === 0) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/36063b29-f1db-4787-bed7-95c789116512',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c2200c'},body:JSON.stringify({sessionId:'c2200c',location:'dynamic-list-module.ts:empty-list',message:'Showing empty list message',data:{sourceType,moduleId:dynModule.id},timestamp:Date.now(),hypothesisId:'E',runId:'post-fix'})}).catch(()=>{});
+      // #endregion
+      const isTodoEmpty = sourceType === 'todo';
       return html`
         <div
           style="
@@ -650,17 +1546,99 @@ export class UltraDynamicListModule extends BaseUltraModule {
             font-size: 13px;
           "
         >
-          <ha-icon icon="mdi:playlist-remove" style="--mdc-icon-size: 16px;"></ha-icon>
-          Template returned an empty list
+          <ha-icon icon="${isTodoEmpty ? 'mdi:format-list-checks' : 'mdi:playlist-remove'}" style="--mdc-icon-size: 16px;"></ha-icon>
+          ${isTodoEmpty ? 'No to-do items' : 'Template returned an empty list'}
         </div>
       `;
     }
 
     const registry = getModuleRegistry();
-    const direction = dynModule.direction || 'vertical';
+    const direction = dynModule.direction || 'horizontal';
     const gap = dynModule.gap ?? 8;
+    const wrap = dynModule.wrap !== false;
+    const cols = dynModule.columns ?? 4;
+    const maxRows = dynModule.rows ?? 0;
+    const limit = dynModule.limit ?? 0;
+    const limitBehavior = dynModule.limit_behavior || 'show_more';
+    const alignH = dynModule.align_h || 'center';
+    const alignV = dynModule.align_v || 'center';
+    const moduleId = dynModule.id;
 
-    const renderedModules = generatedModules.map(childModule => {
+    // ── Apply max-rows cap (horizontal grid only) ────────────────────────────
+    let cappedModules = generatedModules;
+    if (maxRows > 0 && direction === 'horizontal') {
+      const maxItems = cols > 0 ? maxRows * cols : maxRows;
+      cappedModules = generatedModules.slice(0, maxItems);
+    }
+
+    // ── Apply limit + show-more / pagination ─────────────────────────────────
+    const hasLimit = limit > 0 && limit < cappedModules.length;
+    let visibleModules = cappedModules;
+    let paginationBar: TemplateResult = html``;
+
+    if (hasLimit) {
+      if (limitBehavior === 'show_more') {
+        const expanded = this._expandedModules.get(moduleId) ?? false;
+        visibleModules = expanded ? cappedModules : cappedModules.slice(0, limit);
+        const remaining = cappedModules.length - limit;
+        paginationBar = expanded
+          ? html`
+              <button style="${BTN_STYLE}" @click=${() => {
+                this._expandedModules.set(moduleId, false);
+                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              }}>
+                <ha-icon icon="mdi:chevron-up" style="--mdc-icon-size:16px;"></ha-icon>
+                Show less
+              </button>`
+          : html`
+              <button style="${BTN_STYLE}" @click=${() => {
+                this._expandedModules.set(moduleId, true);
+                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              }}>
+                <ha-icon icon="mdi:chevron-down" style="--mdc-icon-size:16px;"></ha-icon>
+                Show ${remaining} more
+              </button>`;
+      } else {
+        // Paginate
+        const totalPages = Math.ceil(cappedModules.length / limit);
+        const page = Math.min(this._currentPage.get(moduleId) ?? 0, totalPages - 1);
+        visibleModules = cappedModules.slice(page * limit, page * limit + limit);
+        paginationBar = html`
+          <div style="${PAGE_BAR_STYLE}">
+            <button
+              style="${PAGE_BTN_STYLE}${page === 0 ? 'opacity:0.35;pointer-events:none;' : ''}"
+              @click=${() => {
+                this._currentPage.set(moduleId, Math.max(0, page - 1));
+                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              }}
+            ><ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:18px;"></ha-icon></button>
+            <span style="font-size:12px;color:var(--secondary-text-color);">${page + 1} / ${totalPages}</span>
+            <button
+              style="${PAGE_BTN_STYLE}${page >= totalPages - 1 ? 'opacity:0.35;pointer-events:none;' : ''}"
+              @click=${() => {
+                this._currentPage.set(moduleId, Math.min(totalPages - 1, page + 1));
+                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              }}
+            ><ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:18px;"></ha-icon></button>
+          </div>`;
+      }
+    }
+
+    // ── Container CSS ─────────────────────────────────────────────────────────
+    // Use CSS grid when a column count is fixed; flex for everything else
+    const useGrid = cols > 0;
+    const containerStyle = useGrid
+      ? `display:grid;grid-template-columns:repeat(${cols},1fr);gap:${gap}px;width:100%;justify-items:${alignH === 'space-between' || alignH === 'space-around' ? 'center' : alignH};align-items:${alignV};`
+      : direction === 'horizontal'
+      ? `display:flex;flex-direction:row;flex-wrap:${wrap ? 'wrap' : 'nowrap'};gap:${gap}px;width:100%;justify-content:${alignH};align-items:${alignV};`
+      : `display:flex;flex-direction:column;gap:${gap}px;width:100%;align-items:${alignH === 'space-between' || alignH === 'space-around' ? 'center' : alignH};justify-content:${alignV};`;
+
+    // Child wrapper style — only needed in flex-horizontal without grid.
+    // flex: 0 0 auto keeps each item at its natural width so wrap triggers correctly.
+    const needsChildWrapper = !useGrid && direction === 'horizontal';
+    const childFlexStyle = `flex: 0 0 auto; min-width: 0;`;
+
+    const renderedModules = visibleModules.map(childModule => {
       // Evaluate child visibility
       const shouldShow = logicService.evaluateModuleVisibility(childModule);
       if (!shouldShow) return html``;
@@ -697,19 +1675,32 @@ export class UltraDynamicListModule extends BaseUltraModule {
         return html`<div style="font-size:11px; color: var(--warning-color); padding: 4px;">🔒 Pro module</div>`;
       }
 
-      return moduleHandler.renderPreview(childModule, hass, config, previewContext);
+      // Apply dynamic-list design to child so Design tab on the list affects each row.
+      // Include both module.design and legacy top-level props (font_size, color, etc.) from the list.
+      const parentDesign = {
+        ...(dynModule.design || {}),
+        ...((dynModule as any).font_size !== undefined && (dynModule as any).font_size !== null && { font_size: (dynModule as any).font_size }),
+        ...((dynModule as any).color !== undefined && (dynModule as any).color !== null && { color: (dynModule as any).color }),
+        ...((dynModule as any).font_family !== undefined && (dynModule as any).font_family != null && { font_family: (dynModule as any).font_family }),
+      };
+      const moduleWithDesign = {
+        ...childModule,
+        design: { ...parentDesign, ...((childModule as any).design || {}) },
+      };
+      const content = moduleHandler.renderPreview(moduleWithDesign, hass, config, previewContext);
+      // When vertical list and align_h is center/end, wrap so the list block shrinks and centers (or aligns end)
+      const centerListBlock = !useGrid && direction === 'vertical' && (alignH === 'center' || alignH === 'end');
+      const wrapStyle = centerListBlock
+        ? `width: fit-content; max-width: 100%; align-self: ${alignH === 'center' ? 'center' : 'flex-end'};`
+        : '';
+      const wrapped = wrapStyle ? html`<div style="${wrapStyle}">${content}</div>` : content;
+      return needsChildWrapper ? html`<div style="${childFlexStyle}">${wrapped}</div>` : wrapped;
     });
 
     return html`
-      <div
-        style="
-          display: flex;
-          flex-direction: ${direction === 'horizontal' ? 'row' : 'column'};
-          gap: ${gap}px;
-          width: 100%;
-        "
-      >
-        ${renderedModules}
+      <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
+        <div style="${containerStyle}">${renderedModules}</div>
+        ${paginationBar}
       </div>
     `;
   }
@@ -717,8 +1708,16 @@ export class UltraDynamicListModule extends BaseUltraModule {
   validate(module: CardModule): { valid: boolean; errors: string[] } {
     const dynModule = module as DynamicListModule;
     const errors: string[] = [];
-    if (!dynModule.dynamic_template || dynModule.dynamic_template.trim() === '') {
-      errors.push('dynamic_template is required');
+    const isTodo =
+      String(dynModule.source_type || 'template').toLowerCase() === 'todo';
+    if (isTodo) {
+      if (!dynModule.todo_entity || !dynModule.todo_entity.trim()) {
+        errors.push('todo_entity is required when source is Todo List');
+      }
+    } else {
+      if (!dynModule.dynamic_template || dynModule.dynamic_template.trim() === '') {
+        errors.push('dynamic_template is required when source is Template');
+      }
     }
     return { valid: errors.length === 0, errors };
   }

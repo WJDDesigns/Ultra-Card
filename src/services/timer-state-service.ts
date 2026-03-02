@@ -13,7 +13,14 @@ export interface TimerState {
   on_expire?: () => void;
 }
 
+/** Tracks the last HA entity state we synced from, to avoid redundant re-syncs. */
+interface EntitySyncRecord {
+  haState: string;
+  lastChanged: string;
+}
+
 const STORE_KEY = '__ultraTimerStore__';
+const ENTITY_SYNC_KEY = '__ultraTimerEntitySync__';
 
 function getStore(): Map<string, TimerState> {
   const w = window as unknown as Record<string, Map<string, TimerState>>;
@@ -21,6 +28,14 @@ function getStore(): Map<string, TimerState> {
     w[STORE_KEY] = new Map<string, TimerState>();
   }
   return w[STORE_KEY];
+}
+
+function getEntitySyncStore(): Map<string, EntitySyncRecord> {
+  const w = window as unknown as Record<string, Map<string, EntitySyncRecord>>;
+  if (!w[ENTITY_SYNC_KEY]) {
+    w[ENTITY_SYNC_KEY] = new Map<string, EntitySyncRecord>();
+  }
+  return w[ENTITY_SYNC_KEY];
 }
 
 function dispatchUpdate(): void {
@@ -116,5 +131,69 @@ export const timerStateService = {
     const onExpire = state?.on_expire;
     if (state?.interval_id) clearInterval(state.interval_id);
     this.start(moduleId, durationSeconds, onExpire);
+  },
+
+  /**
+   * Syncs local timer state from a linked HA timer entity.
+   * Only acts when the entity's state or last_changed timestamp actually changes,
+   * so it is safe to call on every render cycle without causing interval churn.
+   *
+   * @param moduleId       The UC module id (store key)
+   * @param haState        HA entity state string: 'active' | 'paused' | 'idle'
+   * @param remainingSeconds  Pre-computed remaining seconds (use timerTimeRemaining() for active)
+   * @param lastChanged    HA entity last_changed ISO string (change detector)
+   * @param onExpire       Optional callback to run when local countdown hits zero
+   */
+  syncFromEntity(
+    moduleId: string,
+    haState: string,
+    remainingSeconds: number,
+    lastChanged: string,
+    onExpire?: () => void
+  ): void {
+    const syncStore = getEntitySyncStore();
+    const last = syncStore.get(moduleId);
+
+    // Skip if nothing has changed on the HA side
+    if (last && last.haState === haState && last.lastChanged === lastChanged) {
+      return;
+    }
+
+    // Record the new HA state so we don't re-process it
+    syncStore.set(moduleId, { haState, lastChanged });
+
+    const store = getStore();
+    const current = store.get(moduleId);
+
+    if (haState === 'active') {
+      // Clear any existing interval before starting fresh
+      if (current?.interval_id) clearInterval(current.interval_id);
+      const rounded = Math.round(remainingSeconds);
+      const state: TimerState = {
+        status: 'running',
+        remaining_seconds: rounded,
+        end_time: Date.now() + rounded * 1000,
+        on_expire: onExpire,
+      };
+      state.interval_id = setInterval(() => tick(moduleId), 1000);
+      store.set(moduleId, state);
+      dispatchUpdate();
+    } else if (haState === 'paused') {
+      if (current?.interval_id) clearInterval(current.interval_id);
+      const state: TimerState = {
+        status: 'paused',
+        remaining_seconds: Math.round(remainingSeconds),
+        on_expire: current?.on_expire ?? onExpire,
+      };
+      store.set(moduleId, state);
+      dispatchUpdate();
+    } else {
+      // idle (or unavailable/unknown) — reset only if we were in an active state
+      if (current && current.status !== 'idle') {
+        if (current.interval_id) clearInterval(current.interval_id);
+        store.delete(moduleId);
+        dispatchUpdate();
+      }
+    }
   },
 };
