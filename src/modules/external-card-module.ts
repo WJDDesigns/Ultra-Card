@@ -289,14 +289,16 @@ export class UltraExternalCardModule extends BaseUltraModule {
    * This now checks GLOBALLY across all Ultra Card instances using a cache
    */
   private _shouldLockModule(
-    module: ExternalCardModule,
+    _module: ExternalCardModule,
     hass: HomeAssistant,
-    config?: UltraCardConfig
+    _config?: UltraCardConfig
   ): boolean {
     // Never lock in editor contexts (HA edit mode or Live Preview)
     if ((hass as any)?.editMode) {
       return false;
     }
+    // No limit: all users can add unlimited third-party cards; never show Pro lock overlay
+    return false;
     // Use centralized ThirdPartyLimitService for consistent global enforcement
     try {
       // Never lock if the HA edit dialog is actually visible (preview context)
@@ -321,13 +323,13 @@ export class UltraExternalCardModule extends BaseUltraModule {
       const host = (this as any)?.host || undefined;
       const attachedId = (host as any)?.dataset?.ucInstanceId;
       // If the hosting Ultra Card flagged this as editor preview, or global flag set, never lock
-      if ((config as any)?.__ucIsEditorPreview || (window as any).__UC_PREVIEW_SUPPRESS_LOCKS) {
+      if ((_config as any)?.__ucIsEditorPreview || (window as any).__UC_PREVIEW_SUPPRESS_LOCKS) {
         return false;
       }
 
-      let cardId = attachedId || (config as any)?.__ucInstanceId || computeCardInstanceId(config!);
+      let cardId = attachedId || (_config as any)?.__ucInstanceId || computeCardInstanceId(_config!);
       // If config was registered, prefer the service-resolved id
-      const resolved = (ThirdPartyLimitService as any).getCardIdForConfig?.(config);
+      const resolved = (ThirdPartyLimitService as any).getCardIdForConfig?.(_config);
       if (resolved) cardId = resolved;
       // Do NOT register here to avoid re-registering on every render; rely on UltraCard
       const { allowedKeys, isPro, totalThirdParty } = ThirdPartyLimitService.evaluate(hass);
@@ -357,7 +359,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
       ) {
         this._refreshAllowedIdsCache(hass);
         if (!allowedExternalCardIdsCache) {
-          const allExternalModules = this._getAllExternalModules(config);
+          const allExternalModules = this._getAllExternalModules(_config);
           const sorted = [...allExternalModules].sort(
             (a, b) => this._extractTimestamp(a.id) - this._extractTimestamp(b.id)
           );

@@ -8,6 +8,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { localize } from '../localize/localize';
 import { TemplateService } from '../services/template-service';
+import { uploadImage, getImageUrl } from '../utils/image-upload';
 import '../components/ultra-color-picker';
 
 /** Event dispatched when QR data URL is ready so the card can re-render */
@@ -26,14 +27,31 @@ const logoDataUrlCache = new Map<string, string>();
 const logoFetchingSet = new Set<string>();
 
 /**
- * Fetch a remote logo URL and store it as a base64 data URL so that
- * qr-code-styling can embed it in a canvas without hitting CORS restrictions.
+ * Fetch a logo URL and store it as a base64 data URL so that
+ * qr-code-styling can embed it in a canvas without CORS/auth issues.
+ *
+ * Strategy:
+ *  - HA-internal paths (relative, /local/, /api/, or same-origin absolute): fetch with Bearer token.
+ *  - External http(s) URLs pointing to a different host: plain CORS fetch (no token).
+ *
  * Dispatches UC_QR_DATA_READY_EVENT when done (success or failure).
  */
-function fetchLogoAsDataUrl(logoUrl: string): void {
+function fetchLogoAsDataUrl(logoUrl: string, hass?: HomeAssistant): void {
   if (logoFetchingSet.has(logoUrl)) return;
   logoFetchingSet.add(logoUrl);
-  fetch(logoUrl, { mode: 'cors' })
+
+  // A URL is "external" only when it is an absolute http(s) URL pointing to a
+  // different host than the current page (i.e. not our HA instance).
+  const isExternalAbsolute =
+    (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) &&
+    !logoUrl.startsWith(`${window.location.protocol}//${window.location.host}`);
+
+  const headers: Record<string, string> = {};
+  if (!isExternalAbsolute && hass?.auth?.data?.access_token) {
+    headers['Authorization'] = `Bearer ${hass.auth.data.access_token}`;
+  }
+
+  fetch(logoUrl, { mode: 'cors', headers })
     .then((res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.blob();
@@ -66,15 +84,59 @@ function fetchLogoAsDataUrl(logoUrl: string): void {
     });
 }
 
-function logoStatus(module: QrCodeModule): string {
-  if (!module.logo_enabled || !module.logo_url) return 'nologo';
-  const cached = logoDataUrlCache.get(module.logo_url);
+function logoStatus(module: QrCodeModule, hass?: HomeAssistant): string {
+  if (!module.logo_enabled) return 'nologo';
+  const effectiveUrl = _getEffectiveLogoUrl(module, hass);
+  if (!effectiveUrl) return 'nologo';
+  const cached = logoDataUrlCache.get(effectiveUrl);
   if (cached === undefined) return 'logo:pending';
   if (cached === '') return 'logo:failed';
   return 'logo:loaded';
 }
 
-function cacheKey(module: QrCodeModule, content: string): string {
+/**
+ * Resolve the effective logo URL from the module config.
+ * For 'url' and 'upload' modes the stored logo_url is used directly.
+ * For 'entity' / 'attribute' modes we derive the URL from hass state.
+ * Returns an empty string when the URL cannot be determined yet.
+ */
+function _getEffectiveLogoUrl(module: QrCodeModule, hass: HomeAssistant | undefined): string {
+  if (!module.logo_enabled) return '';
+  const sourceType = module.logo_image_type || 'url';
+  if (sourceType === 'url' || sourceType === 'upload') {
+    // Run through getImageUrl so /api/image/serve/ paths get /original appended
+    // and local media paths are resolved to their /local/ equivalents.
+    const raw = module.logo_url || '';
+    if (!raw) return '';
+    return hass ? getImageUrl(hass, raw) : raw;
+  }
+  if (!hass) return '';
+  const entityId = module.logo_image_entity;
+  if (!entityId || !hass.states[entityId]) return '';
+  const stateObj = hass.states[entityId];
+  if (sourceType === 'entity') {
+    // Prefer entity_picture attribute, then fall back to state
+    const ep = (stateObj.attributes as Record<string, unknown>)?.entity_picture;
+    if (ep) return getImageUrl(hass, String(ep));
+    if (stateObj.state) return getImageUrl(hass, stateObj.state);
+    return '';
+  }
+  if (sourceType === 'attribute') {
+    const attrPath = module.logo_image_attribute || '';
+    if (!attrPath) return '';
+    // Support dot-notation attribute paths (e.g. vehicle_data.image)
+    const parts = attrPath.split('.');
+    let val: unknown = stateObj.attributes;
+    for (const part of parts) {
+      if (val == null || typeof val !== 'object') { val = undefined; break; }
+      val = (val as Record<string, unknown>)[part];
+    }
+    return val != null ? getImageUrl(hass, String(val)) : '';
+  }
+  return '';
+}
+
+function cacheKey(module: QrCodeModule, content: string, hass?: HomeAssistant): string {
   const size = module.size || 200;
   const fg = module.fg_color || '#000000';
   const bg = module.bg_color || '#ffffff';
@@ -83,8 +145,9 @@ function cacheKey(module: QrCodeModule, content: string): string {
   const dot = module.dot_style || 'square';
   const cSq = module.corner_square_style || 'square';
   const cDot = module.corner_dot_style || 'square';
-  const logoSuffix = module.logo_enabled && module.logo_url
-    ? `${logoStatus(module)}|${module.logo_size ?? 0.25}|${module.logo_margin ?? 4}|${module.logo_hide_bg_dots !== false}`
+  const effectiveUrl = _getEffectiveLogoUrl(module, hass);
+  const logoSuffix = module.logo_enabled && effectiveUrl
+    ? `${logoStatus(module, hass)}|${module.logo_size ?? 0.25}|${module.logo_margin ?? 4}|${module.logo_hide_bg_dots !== false}`
     : 'nologo';
   return `${module.id}|${content}|${size}|${fg}|${bg}|${ec}|${margin}|${dot}|${cSq}|${cDot}|${logoSuffix}`;
 }
@@ -126,9 +189,12 @@ export class UltraQrCodeModule extends BaseUltraModule {
       corner_square_style: 'square',
       corner_dot_style: 'square',
       logo_enabled: false,
+      logo_image_type: 'url',
       logo_url: '',
+      logo_image_entity: '',
+      logo_image_attribute: '',
       logo_size: 0.25,
-      logo_margin: 4,
+      logo_margin: 2,
       logo_hide_bg_dots: true,
       tap_action: { action: 'nothing' },
       hold_action: { action: 'nothing' },
@@ -363,57 +429,174 @@ export class UltraQrCodeModule extends BaseUltraModule {
         )}
         ${qrModule.logo_enabled
           ? html`
-              ${this.renderTextInput(
-                localize('editor.qr_code.logo_url', lang, 'Logo image URL'),
-                qrModule.logo_url || '',
+              <!-- Logo source type selector -->
+              ${this.renderSelect(
+                localize('editor.qr_code.logo_image_type', lang, 'Logo source'),
+                qrModule.logo_image_type || 'url',
+                [
+                  { value: 'url',       label: localize('editor.qr_code.logo_source_url',       lang, 'Image URL') },
+                  { value: 'upload',    label: localize('editor.qr_code.logo_source_upload',    lang, 'Upload Image') },
+                  { value: 'entity',    label: localize('editor.qr_code.logo_source_entity',    lang, 'Entity Image') },
+                  { value: 'attribute', label: localize('editor.qr_code.logo_source_attribute', lang, 'Entity Attribute') },
+                ],
                 (v: string) => {
-                  // Clear logo cache when URL changes so it re-fetches
-                  if (v !== qrModule.logo_url) {
-                    logoDataUrlCache.delete(qrModule.logo_url || '');
-                    logoDataUrlCache.delete(v);
-                  }
-                  updateModule({ logo_url: v });
+                  const next = v as QrCodeModule['logo_image_type'];
+                  updateModule({ logo_image_type: next });
                 },
-                'https://example.com/logo.png',
-                localize('editor.qr_code.logo_url_desc', lang, 'Direct URL to a PNG, JPG, or SVG image. Use /local/ paths for best results.')
+                localize('editor.qr_code.logo_image_type_desc', lang, 'Where to load the logo image from')
               )}
-              ${qrModule.logo_url && logoDataUrlCache.get(qrModule.logo_url) === ''
+
+              <!-- URL source -->
+              ${(qrModule.logo_image_type || 'url') === 'url'
                 ? html`
-                    <div
-                      style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-bottom:12px;background:rgba(var(--warning-color-int,255,152,0),0.12);border:1px solid var(--warning-color,#ff9800);border-radius:8px;font-size:13px;"
-                    >
-                      <ha-icon icon="mdi:alert-outline" style="--mdi-icon-size:18px;color:var(--warning-color,#ff9800);flex-shrink:0;margin-top:1px;"></ha-icon>
-                      <div>
-                        <strong>${localize('editor.qr_code.cors_title', lang, 'Image blocked by CORS')}</strong><br/>
-                        <span style="color:var(--secondary-text-color);">
-                          ${localize('editor.qr_code.cors_hint', lang, 'The server rejected cross-origin requests. Copy the image to /config/www/ and use /local/your-image.png instead.')}
-                        </span>
+                    ${this.renderTextInput(
+                      localize('editor.qr_code.logo_url', lang, 'Logo image URL'),
+                      qrModule.logo_url || '',
+                      (v: string) => {
+                        if (v !== qrModule.logo_url) {
+                          logoDataUrlCache.delete(qrModule.logo_url || '');
+                          logoDataUrlCache.delete(v);
+                          // Also clear any resolved-URL cache entries
+                          for (const k of [...qrDataUrlCache.keys()]) {
+                            if (k.includes('logo:')) qrDataUrlCache.delete(k);
+                          }
+                        }
+                        updateModule({ logo_url: v });
+                      },
+                      'https://example.com/logo.png',
+                      localize('editor.qr_code.logo_url_desc', lang, 'Direct URL to a PNG, JPG, or SVG image. Use /local/ paths for best results.')
+                    )}
+                    ${qrModule.logo_url && logoDataUrlCache.get(qrModule.logo_url) === ''
+                      ? html`
+                          <div
+                            style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-bottom:12px;background:rgba(var(--warning-color-int,255,152,0),0.12);border:1px solid var(--warning-color,#ff9800);border-radius:8px;font-size:13px;"
+                          >
+                            <ha-icon icon="mdi:alert-outline" style="--mdi-icon-size:18px;color:var(--warning-color,#ff9800);flex-shrink:0;margin-top:1px;"></ha-icon>
+                            <div>
+                              <strong>${localize('editor.qr_code.cors_title', lang, 'Image blocked by CORS')}</strong><br/>
+                              <span style="color:var(--secondary-text-color);">
+                                ${localize('editor.qr_code.cors_hint', lang, 'The server rejected cross-origin requests. Copy the image to /config/www/ and use /local/your-image.png instead.')}
+                              </span>
+                            </div>
+                          </div>
+                        `
+                      : ''}
+                  `
+                : ''}
+
+              <!-- Upload source -->
+              ${(qrModule.logo_image_type || 'url') === 'upload'
+                ? html`
+                    <div class="form-field" style="margin-bottom: 16px;">
+                      <label class="form-label" style="font-size: 14px; font-weight: 500; margin-bottom: 4px; display: block;">
+                        ${localize('editor.qr_code.logo_upload_label', lang, 'Upload logo image')}
+                      </label>
+                      <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px;">
+                        ${localize('editor.qr_code.logo_upload_desc', lang, 'Click to upload a PNG, JPG, or SVG from your device.')}
                       </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
+                        @change=${(e: Event) => this._handleLogoFileUpload(e, updateModule, hass)}
+                      />
+                      ${qrModule.logo_url
+                        ? html`
+                            <div style="margin-top: 8px; font-size: 12px; color: var(--secondary-text-color);">
+                              <ha-icon icon="mdi:check-circle" style="--mdi-icon-size:14px; color: var(--success-color, #4caf50);"></ha-icon>
+                              ${localize('editor.qr_code.logo_uploaded', lang, 'Uploaded')}: <code>${qrModule.logo_url}</code>
+                            </div>
+                          `
+                        : ''}
                     </div>
                   `
                 : ''}
+
+              <!-- Entity source -->
+              ${(qrModule.logo_image_type || 'url') === 'entity'
+                ? html`
+                    ${this.renderEntityPicker(
+                      localize('editor.qr_code.logo_entity', lang, 'Entity'),
+                      qrModule.logo_image_entity || '',
+                      (v: string) => {
+                        if (v !== qrModule.logo_image_entity) {
+                          logoDataUrlCache.delete(qrModule.logo_url || '');
+                        }
+                        updateModule({ logo_image_entity: v });
+                      },
+                      hass,
+                      undefined,
+                      localize('editor.qr_code.logo_entity_desc', lang, 'Entity with entity_picture or an image URL as its state (e.g. person, image).')
+                    )}
+                  `
+                : ''}
+
+              <!-- Attribute source -->
+              ${(qrModule.logo_image_type || 'url') === 'attribute'
+                ? html`
+                    ${this.renderEntityPicker(
+                      localize('editor.qr_code.logo_entity', lang, 'Entity'),
+                      qrModule.logo_image_entity || '',
+                      (v: string) => {
+                        if (v !== qrModule.logo_image_entity) {
+                          logoDataUrlCache.delete(qrModule.logo_url || '');
+                        }
+                        updateModule({ logo_image_entity: v });
+                      },
+                      hass,
+                      undefined,
+                      localize('editor.qr_code.logo_entity_attr_desc', lang, 'Entity that has an image URL in one of its attributes.')
+                    )}
+                    ${this.renderTextInput(
+                      localize('editor.qr_code.logo_attribute', lang, 'Attribute name'),
+                      qrModule.logo_image_attribute || '',
+                      (v: string) => {
+                        logoDataUrlCache.delete(qrModule.logo_url || '');
+                        updateModule({ logo_image_attribute: v || undefined });
+                      },
+                      'entity_picture',
+                      localize('editor.qr_code.logo_attribute_desc', lang, 'Attribute path containing the image URL (dot notation supported).')
+                    )}
+                  `
+                : ''}
+
               ${this.renderSliderField(
                 localize('editor.qr_code.logo_size', lang, 'Logo size'),
-                localize('editor.qr_code.logo_size_desc', lang, 'Logo as a fraction of the QR code area (10–40%)'),
+                localize('editor.qr_code.logo_size_desc', lang, 'Logo as a fraction of the QR code area (10–30%). Requires error correction H for best results.'),
                 Math.round((qrModule.logo_size ?? 0.25) * 100),
                 25,
                 10,
-                40,
+                30,
                 5,
                 (v: number) => updateModule({ logo_size: v / 100 }),
                 '%'
               )}
               ${this.renderSliderField(
                 localize('editor.qr_code.logo_margin', lang, 'Logo margin'),
-                localize('editor.qr_code.logo_margin_desc', lang, 'White space around the logo in pixels'),
-                qrModule.logo_margin ?? 4,
-                4,
+                localize('editor.qr_code.logo_margin_desc', lang, 'Padding around the logo in pixels (keep low — large values shrink the visible logo)'),
+                qrModule.logo_margin ?? 2,
+                2,
                 0,
-                16,
+                8,
                 1,
                 (v: number) => updateModule({ logo_margin: v }),
                 'px'
               )}
+              ${(qrModule.error_correction || 'M') !== 'H'
+                ? html`
+                    <div
+                      style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-bottom:12px;background:rgba(var(--info-color-int,33,150,243),0.1);border:1px solid var(--info-color,#2196f3);border-radius:8px;font-size:13px;"
+                    >
+                      <ha-icon icon="mdi:information-outline" style="--mdi-icon-size:18px;color:var(--info-color,#2196f3);flex-shrink:0;margin-top:1px;"></ha-icon>
+                      <div>
+                        <strong>${localize('editor.qr_code.logo_ec_tip_title', lang, 'Tip: use H error correction')}</strong><br/>
+                        <span style="color:var(--secondary-text-color);">
+                          ${localize('editor.qr_code.logo_ec_tip', lang, 'Set error correction to H (30%) in the Advanced section for the best logo clarity. Lower levels shrink the logo to protect readability.')}
+                        </span>
+                      </div>
+                    </div>
+                  `
+                : ''}
               ${this.renderCheckbox(
                 localize('editor.qr_code.logo_hide_bg_dots', lang, 'Hide dots behind logo'),
                 qrModule.logo_hide_bg_dots !== false,
@@ -583,15 +766,16 @@ export class UltraQrCodeModule extends BaseUltraModule {
     const labelBelow = qrModule.label_below !== false;
 
     // --- Logo resolution ---
-    // Pre-fetch the logo and convert to a data URL so qr-code-styling can embed
-    // it in the canvas without CORS issues (passing a data URL is always same-origin).
+    // Resolve the effective logo URL (handles url/upload/entity/attribute modes),
+    // then pre-fetch it as a data URL so qr-code-styling can embed it without CORS issues.
     let resolvedLogoDataUrl: string | undefined;
     let logoCorsError = false;
-    if (qrModule.logo_enabled && qrModule.logo_url) {
-      const cached = logoDataUrlCache.get(qrModule.logo_url);
+    const effectiveLogoUrl = _getEffectiveLogoUrl(qrModule, hass);
+    if (qrModule.logo_enabled && effectiveLogoUrl) {
+      const cached = logoDataUrlCache.get(effectiveLogoUrl);
       if (cached === undefined) {
         // Not yet fetched - kick off fetch and render without logo for now
-        fetchLogoAsDataUrl(qrModule.logo_url);
+        fetchLogoAsDataUrl(effectiveLogoUrl, hass);
       } else if (cached === '') {
         // Fetch failed (CORS or network error)
         logoCorsError = true;
@@ -601,7 +785,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
     }
     // --- End logo resolution ---
 
-    const key = cacheKey(qrModule, content);
+    const key = cacheKey(qrModule, content, hass);
     let dataUrl = qrDataUrlCache.get(key);
 
     if (!content && qrModule.content_mode !== 'template') {
@@ -723,7 +907,13 @@ export class UltraQrCodeModule extends BaseUltraModule {
       />
     `;
 
-    const corsWarningEl = logoCorsError
+    // Only show the CORS warning for external-URL source mode where the user can actually fix it.
+    const isExternalUrl =
+      (qrModule.logo_image_type || 'url') === 'url' &&
+      (qrModule.logo_url || '').startsWith('http') &&
+      !qrModule.logo_url!.startsWith(`${window.location.protocol}//${window.location.host}`);
+
+    const corsWarningEl = logoCorsError && isExternalUrl
       ? html`
           <div
             class="qr-cors-warning"
@@ -749,6 +939,30 @@ export class UltraQrCodeModule extends BaseUltraModule {
         ${corsWarningEl}
       </div>
     `;
+  }
+
+  private async _handleLogoFileUpload(
+    event: Event,
+    updateModule: (updates: Partial<QrCodeModule>) => void,
+    hass: HomeAssistant
+  ): Promise<void> {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (!file) return;
+    try {
+      const imagePath = await uploadImage(hass, file);
+      // Clear stale logo cache entries (both raw path and resolved URL)
+      logoDataUrlCache.delete(imagePath);
+      logoDataUrlCache.delete(getImageUrl(hass, imagePath));
+      // Also bust any pending QR caches
+      for (const k of [...qrDataUrlCache.keys()]) {
+        if (k.includes('logo:')) qrDataUrlCache.delete(k);
+      }
+      updateModule({ logo_url: imagePath, logo_image_type: 'upload' });
+    } catch (error) {
+      console.error('Error uploading logo file:', error);
+      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {

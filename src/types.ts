@@ -3640,7 +3640,11 @@ export interface QrCodeModule extends BaseModule {
   corner_dot_style?: 'square' | 'dot';
   // Logo overlay
   logo_enabled?: boolean;
-  logo_url?: string; // Image URL to embed in center
+  /** How the logo image is sourced: url (manual URL), upload (HA media upload), entity, attribute */
+  logo_image_type?: 'url' | 'upload' | 'entity' | 'attribute';
+  logo_url?: string; // Resolved image URL (also used for upload path)
+  logo_image_entity?: string; // Entity whose picture / state URL is used as logo
+  logo_image_attribute?: string; // Attribute path on logo_image_entity that holds the image URL
   logo_size?: number; // 0.1–0.4, default 0.25 (fraction of QR size)
   logo_margin?: number; // Pixels around the logo, default 4
   logo_hide_bg_dots?: boolean; // Hide QR dots behind logo, default true

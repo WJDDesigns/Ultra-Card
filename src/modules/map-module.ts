@@ -1350,14 +1350,15 @@ export class UltraMapModule extends BaseUltraModule {
       return { provider, mapType };
     }
     const key = (mapModule.google_api_key || '').trim();
-    const hasValidKey =
-      key.length > 0 &&
-      key !== SENSITIVE_PLACEHOLDER &&
-      !key.toLowerCase().startsWith('***');
-    if (hasValidKey) {
+    // Only fall back to OSM when the key is a known redacted placeholder (shared/exported presets).
+    // Google's raster tile endpoint works without a key, so an empty key is valid — matching pre-3.0 behaviour.
+    const isRedacted =
+      key === SENSITIVE_PLACEHOLDER ||
+      key.toLowerCase().startsWith('***');
+    if (!isRedacted) {
       return { provider: 'google', mapType };
     }
-    // Fallback to OpenStreetMap (free, no API key) so shared presets always show a working map
+    // Key was redacted on export — fall back to OSM so the shared preset still shows a working map
     return { provider: 'openstreetmap', mapType: 'roadmap' };
   }
 

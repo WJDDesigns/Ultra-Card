@@ -121,41 +121,17 @@ class ThirdPartyLimitServiceImpl {
     const thirdParty = Array.from(combinedMap.values());
     dbg3p('evaluate', { isPro, count: thirdParty.length });
 
-    if (isPro) {
-      return {
-        allowedKeys: new Set(thirdParty.map(m => m.key)),
-        lockedKeys: new Set(),
-        totalThirdParty: thirdParty.length,
-        isPro,
-      };
-    }
-
-    // Order by first-seen
-    const firstSeen = this.loadFirstSeen(dashboardId);
-    const sorted = [...thirdParty].sort(
-      (a, b) => (firstSeen[a.key] || 0) - (firstSeen[b.key] || 0)
-    );
-    const allowed = new Set(sorted.slice(0, ThirdPartyLimitServiceImpl.LIMIT).map(m => m.key));
-    const locked = new Set(sorted.slice(ThirdPartyLimitServiceImpl.LIMIT).map(m => m.key));
-    dbg3p('evaluate:result', {
-      allowed: allowed.size,
-      locked: locked.size,
-      exampleAllowed: Array.from(allowed).slice(0, 2),
-      exampleLocked: Array.from(locked).slice(0, 2),
-    });
-
+    // All users get unlimited third-party cards (no limit enforcement)
     return {
-      allowedKeys: allowed,
-      lockedKeys: locked,
+      allowedKeys: new Set(thirdParty.map(m => m.key)),
+      lockedKeys: new Set(),
       totalThirdParty: thirdParty.length,
       isPro,
     };
   }
 
-  wouldExceedLimit(hass: HomeAssistant, additionalThirdParty: number): boolean {
-    if (this.isPro(hass)) return false;
-    const current = this.evaluate(hass).totalThirdParty;
-    return current + additionalThirdParty > ThirdPartyLimitServiceImpl.LIMIT;
+  wouldExceedLimit(_hass: HomeAssistant, _additionalThirdParty: number): boolean {
+    return false; // No limit: all users can add unlimited third-party cards
   }
 
   // Helpers

@@ -2013,7 +2013,11 @@ export interface QrCodeModule extends BaseModule {
     corner_square_style?: 'square' | 'extra-rounded' | 'dot';
     corner_dot_style?: 'square' | 'dot';
     logo_enabled?: boolean;
+    /** How the logo image is sourced: url (manual URL), upload (HA media upload), entity, attribute */
+    logo_image_type?: 'url' | 'upload' | 'entity' | 'attribute';
     logo_url?: string;
+    logo_image_entity?: string;
+    logo_image_attribute?: string;
     logo_size?: number;
     logo_margin?: number;
     logo_hide_bg_dots?: boolean;

@@ -497,7 +497,7 @@ export class UltraToggleModule extends BaseUltraModule {
             localize(
               'editor.toggle.quick_setup_entity_desc',
               lang,
-              'Choose an entity to automatically create appropriate toggle points'
+              'Choose an entity, then click "Create Toggle Points" below to auto-generate points based on the entity type'
             ),
             hass,
             { quick_setup_entity: this._quickSetupEntity || '' },
@@ -549,7 +549,7 @@ export class UltraToggleModule extends BaseUltraModule {
             ${localize(
               'editor.toggle.entity_tracking_desc',
               lang,
-              'Optional: Override entity for all toggle points (only needed if different from individual point entities)'
+              'Optional: Set a shared entity to track across all toggle points. Use "Quick Setup" above to auto-create toggle points — this field does NOT create them.'
             )}
           </div>
 
@@ -558,7 +558,7 @@ export class UltraToggleModule extends BaseUltraModule {
             localize(
               'editor.toggle.tracking_entity_desc',
               lang,
-              'When set, toggle points with matching entity will use this entity state. Leave empty to use per-point entities.'
+              'The entity whose state determines the active toggle point. Toggle points with a matching match_state (or no match_entity set) will be compared against this entity.'
             ),
             hass,
             { tracking_entity: toggleModule.tracking_entity || '' },
@@ -1335,8 +1335,11 @@ export class UltraToggleModule extends BaseUltraModule {
         break;
 
       case 'input_select':
-        // Create toggle points from input_select options
+      case 'select':
+        // Create toggle points from input_select / select options
         const options = entityState.attributes.options || [];
+        const selectService =
+          domain === 'select' ? 'select.select_option' : 'input_select.select_option';
         newPoints = options.map((option: string, index: number) => ({
           id: this.generateId('toggle_point'),
           label: option,
@@ -1345,7 +1348,7 @@ export class UltraToggleModule extends BaseUltraModule {
           match_state: option,
           tap_action: {
             action: 'perform-action',
-            perform_action: 'input_select.select_option',
+            perform_action: selectService,
             data: { entity_id: entityId, option },
           },
           background_color: module.default_background_color,
@@ -1624,6 +1627,7 @@ export class UltraToggleModule extends BaseUltraModule {
     }
 
     // PRIORITY 2: If tracking entity is set, check for simple matching toggle points
+    // Also matches points with no match_entity set (they implicitly inherit tracking_entity)
     if (module.tracking_entity && hass.states[module.tracking_entity]) {
       const entityState = hass.states[module.tracking_entity].state;
 
@@ -1632,7 +1636,9 @@ export class UltraToggleModule extends BaseUltraModule {
         // Skip template-mode points (already checked above)
         if (point.match_template_mode) return false;
 
-        if (point.match_entity === module.tracking_entity) {
+        const usesTrackingEntity =
+          point.match_entity === module.tracking_entity || !point.match_entity;
+        if (usesTrackingEntity) {
           return this._matchesState(point.match_state, entityState);
         }
         return false;

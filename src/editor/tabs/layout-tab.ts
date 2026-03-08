@@ -7192,24 +7192,6 @@ export class LayoutTab extends LitElement {
     });
   }
   private _addModule(type: string): void {
-    // Enforce non-pro third-party limit (pre-check)
-    try {
-      const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-      const isPro =
-        integrationUser?.subscription?.tier === 'pro' &&
-        integrationUser?.subscription?.status === 'active';
-      if (!isPro) {
-        const additionalThirdParty = isThirdParty(type) ? 1 : 0;
-        if (ThirdPartyLimitService.wouldExceedLimit(this.hass!, additionalThirdParty)) {
-          this._showToast(
-            'Limit reached: 5 third-party modules per dashboard. Upgrade to Pro to add more.',
-            'error'
-          );
-          return;
-        }
-      }
-    } catch {}
-
     // Check if adding to a deeply nested layout inside a tabs section
     if (this._tabsSectionDeeplyNestedLayoutContext) {
       this._addModuleToTabsSectionDeeplyNestedLayout(type);
@@ -8123,29 +8105,6 @@ export class LayoutTab extends LitElement {
 
       // Clone the row with new IDs to avoid conflicts
       const clonedRow = this._cloneRowWithNewIds(rowData);
-
-      // Enforce non-pro third-party limit for pasted rows
-      try {
-        const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-        const isPro =
-          integrationUser?.subscription?.tier === 'pro' &&
-          integrationUser?.subscription?.status === 'active';
-        if (!isPro) {
-          const additionalThirdParty = (clonedRow.columns || []).reduce((acc, col) => {
-            return (
-              acc +
-              (col.modules || []).reduce(
-                (mAcc, m) => mAcc + (isThirdParty((m as any).type) ? 1 : 0),
-                0
-              )
-            );
-          }, 0);
-          if (ThirdPartyLimitService.wouldExceedLimit(this.hass!, additionalThirdParty)) {
-            this._showToast('Paste blocked: 5 third-party modules limit reached.', 'error');
-            return;
-          }
-        }
-      } catch {}
 
       // Handle variables from export - always add as card-specific with auto-rename
       if (ucExportImportService.hasCustomVariables(importData)) {
@@ -9388,22 +9347,6 @@ export class LayoutTab extends LitElement {
 
     const column = row.columns[columnIndex];
     if (!column.modules || !column.modules[moduleIndex]) return;
-
-    // Prevent duplication if it would exceed non-pro third-party limit
-    try {
-      const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-      const isPro =
-        integrationUser?.subscription?.tier === 'pro' &&
-        integrationUser?.subscription?.status === 'active';
-      if (!isPro) {
-        const mod = column.modules[moduleIndex] as any;
-        const additionalThirdParty = isThirdParty(mod?.type) ? 1 : 0;
-        if (ThirdPartyLimitService.wouldExceedLimit(this.hass!, additionalThirdParty)) {
-          this._showToast('Cannot duplicate: 5 third-party modules limit reached.', 'error');
-          return;
-        }
-      }
-    } catch {}
 
     const moduleToCopy = column.modules[moduleIndex];
 

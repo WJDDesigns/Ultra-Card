@@ -22,7 +22,7 @@
 
 **Preset Marketplace** — Install community presets with one click, preview before installing, and share your own designs.
 
-**Pro: ecosystem unifier** — Embed any custom Home Assistant card (Bubble Card, Mushroom, ApexCharts, and more) inside Ultra Card’s layout system. Free tier includes 5 third-party cards per dashboard; Pro unlocks unlimited.
+**Pro: ecosystem unifier** — Embed any custom Home Assistant card (Bubble Card, Mushroom, ApexCharts, and more) inside Ultra Card’s layout system. Third-party cards are unlimited for all users.
 
 **Pro: cloud & backups** — Cloud sync, automatic daily backups (30-day retention), and manual snapshots so your work is safe and available everywhere.
 
@@ -35,7 +35,7 @@
 - **19+ module types** — Text, Icon, Info, Image, Markdown, Bar, Graphs, Camera, Button, Slider, Spinbox, Dropdown, Light, Gauge, layouts, Tabs, Separator, plus Pro animated modules
 - **Conditional logic** — Show or hide by entity state, time, or Jinja2 templates
 - **Full Jinja2 support** — Templates with CodeMirror editor
-- **Native & 3rd party cards** — Unlimited native HA cards for everyone; 5 third-party cards free, unlimited with Pro
+- **Native & 3rd party cards** — Unlimited native and third-party cards for everyone
 - **Design controls** — Typography, colors, spacing, borders, shadows, gradients, animations
 - **Preset Marketplace** — Browse, install, and share community presets
 - **15 languages** — Full internationalization
@@ -66,7 +66,7 @@ Or add `https://github.com/WJDDesigns/Ultra-Card` as a custom Lovelace repositor
 
 ### Optional: Pro
 
-Visit **[UltraCard.io](https://ultracard.io)** for cloud sync, automated backups, exclusive animated modules (Clock, Weather, Forecast, Video Background), and unlimited third-party card integration.
+Visit **[UltraCard.io](https://ultracard.io)** for cloud sync, automated backups, exclusive animated modules (Clock, Weather, Forecast, Video Background), and third-party card integration.
 
 ---
 
@@ -81,7 +81,7 @@ Visit **[UltraCard.io](https://ultracard.io)** for cloud sync, automated backups
 
 Module docs: [Text](docs/modules/text.md), [Icon](docs/modules/icon.md), [Info](docs/modules/info.md), [Image](docs/modules/image.md), [Markdown](docs/modules/markdown.md), [Bar](docs/modules/bar.md), [Graphs](docs/modules/graphs.md), [Camera](docs/modules/camera.md), [Button](docs/modules/button.md), [Horizontal](docs/modules/horizontal.md), [Vertical](docs/modules/vertical.md), [Separator](docs/modules/separator.md).
 
-**Card integration** — Use unlimited native Home Assistant cards inside Ultra Card. Add Bubble Card, Mushroom Cards, ApexCharts, and other custom cards (5 free per dashboard; unlimited with Pro).
+**Card integration** — Use unlimited native Home Assistant cards inside Ultra Card. Add Bubble Card, Mushroom Cards, ApexCharts, and other custom cards—unlimited for all users.
 
 ---
 
@@ -93,7 +93,7 @@ Module docs: [Text](docs/modules/text.md), [Icon](docs/modules/icon.md), [Info](
 | Preset Marketplace | Yes | Yes |
 | Conditional logic & templates | Yes | Yes |
 | Native HA cards | Unlimited | Unlimited |
-| 3rd party cards | 5 per dashboard | Unlimited |
+| 3rd party cards | Unlimited | Unlimited |
 | Cloud configuration sync | — | Yes |
 | Automatic daily backups (30-day) | — | Yes |
 | Manual snapshots (up to 30) | — | Yes |
