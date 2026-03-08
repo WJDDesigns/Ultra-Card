@@ -417,10 +417,8 @@ export class LayoutTab extends LitElement {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    // On mobile, let CSS handle positioning - just ensure it's not dragged off-screen
+    // On mobile, reset any drag positioning and let CSS handle mobile layout
     if (isMobile) {
-      // Reset any drag positioning and let CSS handle mobile layout
-      element.style.position = 'fixed';
       element.style.top = '50%';
       element.style.left = '50%';
       element.style.transform = 'translate(-50%, -50%)';
@@ -459,12 +457,11 @@ export class LayoutTab extends LitElement {
 
     // Only update position if it changed
     if (newLeft !== rect.left || newTop !== rect.top) {
-      element.style.position = 'fixed';
+      element.style.marginLeft = '0';
+      element.style.marginTop = '0';
       element.style.left = `${newLeft}px`;
       element.style.top = `${newTop}px`;
       element.style.transform = 'none';
-      element.style.marginLeft = '0';
-      element.style.marginTop = '0';
     }
   }
 
@@ -473,8 +470,7 @@ export class LayoutTab extends LitElement {
     const isMobile = this._isMobileDevice();
 
     if (isMobile) {
-      // On mobile, let CSS handle all positioning - don't override
-      // Just ensure any previous drag positioning is cleared
+      // On mobile, reset any previous drag positioning and let CSS handle layout
       element.style.marginLeft = '';
       element.style.marginTop = '';
       element.style.left = '';
@@ -6114,9 +6110,77 @@ export class LayoutTab extends LitElement {
   private _windowFocusListener: (() => void) | null = null;
   private _authChangeListener: ((user: any) => void) | undefined = undefined;
 
+  /**
+   * Temporarily patch the HA dialog's CSS to allow popups to escape containment.
+   * wa-dialog's internal <dialog> element has `transform` (creates containing block
+   * for position:fixed descendants) and `overflow: hidden` (clips them).
+   * This temporarily removes both constraints while a popup is open.
+   */
+  private _savedDialogStyles: { el: HTMLElement; overflow: string; transform: string } | null = null;
+
+  private _patchDialogContainment(enable: boolean): void {
+    if (enable && !this._savedDialogStyles) {
+      let el: Element | null = this as unknown as Element;
+      while (el && el !== document.body) {
+        const tag = el.tagName?.toUpperCase();
+        if (tag === 'HA-DIALOG' || tag === 'HA-ADAPTIVE-DIALOG') {
+          const waDialog = (el as any).shadowRoot?.querySelector('wa-dialog');
+          const dialogEl = waDialog?.shadowRoot?.querySelector('dialog') as HTMLElement | null;
+          if (dialogEl) {
+            this._savedDialogStyles = {
+              el: dialogEl,
+              overflow: dialogEl.style.overflow,
+              transform: dialogEl.style.transform,
+            };
+            dialogEl.style.setProperty('overflow', 'visible', 'important');
+            dialogEl.style.setProperty('transform', 'none', 'important');
+            dialogEl.style.setProperty('backdrop-filter', 'none', 'important');
+            dialogEl.style.setProperty('will-change', 'auto', 'important');
+            dialogEl.style.setProperty('contain', 'none', 'important');
+            dialogEl.style.setProperty('filter', 'none', 'important');
+          }
+          break;
+        }
+        if (tag === 'WA-DIALOG') {
+          const dialogEl = (el as any).shadowRoot?.querySelector('dialog') as HTMLElement | null;
+          if (dialogEl) {
+            this._savedDialogStyles = {
+              el: dialogEl,
+              overflow: dialogEl.style.overflow,
+              transform: dialogEl.style.transform,
+            };
+            dialogEl.style.setProperty('overflow', 'visible', 'important');
+            dialogEl.style.setProperty('transform', 'none', 'important');
+            dialogEl.style.setProperty('backdrop-filter', 'none', 'important');
+            dialogEl.style.setProperty('will-change', 'auto', 'important');
+            dialogEl.style.setProperty('contain', 'none', 'important');
+            dialogEl.style.setProperty('filter', 'none', 'important');
+          }
+          break;
+        }
+        el = el.parentElement || ((el.getRootNode() as ShadowRoot)?.host) || null;
+      }
+    } else if (!enable && this._savedDialogStyles) {
+      const { el, overflow, transform } = this._savedDialogStyles;
+      if (el.isConnected) {
+        el.style.removeProperty('overflow');
+        el.style.removeProperty('transform');
+        el.style.removeProperty('backdrop-filter');
+        el.style.removeProperty('will-change');
+        el.style.removeProperty('contain');
+        el.style.removeProperty('filter');
+        if (overflow) el.style.overflow = overflow;
+        if (transform) el.style.transform = transform;
+      }
+      this._savedDialogStyles = null;
+    }
+  }
+
   // Component lifecycle
   disconnectedCallback() {
     super.disconnectedCallback();
+    // Restore HA dialog styles if patched
+    this._patchDialogContainment(false);
     // Clean up any active drag/resize operations
     this._endPopupDrag();
     this._endPopupResize();
@@ -6214,14 +6278,14 @@ export class LayoutTab extends LitElement {
 
     const rect = element.getBoundingClientRect();
 
-    // Convert current position to absolute positioning for drag
-    element.style.position = 'fixed';
-    element.style.left = `${rect.left}px`;
-    element.style.top = `${rect.top}px`;
+    // Element is position:absolute inside a fixed 100vw×100vh wrapper,
+    // so viewport coords == parent-relative coords. Clear the margin-based
+    // centering and lock left/top to the current rendered position.
     element.style.transform = 'none';
-    // Clear centering margins so left/top take effect and prevent jump-to-top
     element.style.marginLeft = '0';
     element.style.marginTop = '0';
+    element.style.left = `${rect.left}px`;
+    element.style.top = `${rect.top}px`;
 
     this._popupDragState = {
       isDragging: true,
@@ -6242,6 +6306,11 @@ export class LayoutTab extends LitElement {
 
   private _handlePopupDrag = (e: MouseEvent): void => {
     if (!this._popupDragState.isDragging || !this._popupDragState.element) return;
+    // Abort if element was removed from DOM by a re-render
+    if (!this._popupDragState.element.isConnected) {
+      this._endPopupDrag();
+      return;
+    }
 
     const deltaX = e.clientX - this._popupDragState.dragStartX;
     const deltaY = e.clientY - this._popupDragState.dragStartY;
@@ -6285,17 +6354,16 @@ export class LayoutTab extends LitElement {
     e.preventDefault();
     e.stopPropagation();
 
-    // If popup is still centered via transform, convert to absolute left/top once
+    // If popup is still centered via negative margins, convert to explicit left/top once
     const style = window.getComputedStyle(element);
     const hasTransform = style.transform && style.transform !== 'none';
     const rect = element.getBoundingClientRect();
-    if (hasTransform) {
-      element.style.position = 'fixed';
-      element.style.left = `${rect.left}px`;
-      element.style.top = `${rect.top}px`;
+    if (hasTransform || element.style.marginLeft !== '0') {
       element.style.transform = 'none';
       element.style.marginLeft = '0';
       element.style.marginTop = '0';
+      element.style.left = `${rect.left}px`;
+      element.style.top = `${rect.top}px`;
     }
     this._popupResizeState = {
       isResizing: true,
@@ -6315,7 +6383,11 @@ export class LayoutTab extends LitElement {
   }
   private _handlePopupResize = (e: MouseEvent): void => {
     if (!this._popupResizeState.isResizing || !this._popupResizeState.element) return;
-
+    // Abort if element was removed from DOM by a re-render
+    if (!this._popupResizeState.element.isConnected) {
+      this._endPopupResize();
+      return;
+    }
     const deltaX = e.clientX - this._popupResizeState.resizeStartX;
     const deltaY = e.clientY - this._popupResizeState.resizeStartY;
 
@@ -22009,10 +22081,11 @@ export class LayoutTab extends LitElement {
     const lang = this.hass?.locale?.language || 'en';
     return html`
       <div class="module-settings-popup">
-        <div class="popup-overlay"></div>
+        <div class="popup-overlay" @click=${() => this._closeTabsSectionChildSettings()}></div>
         <div
           class="popup-content draggable-popup"
           id="tabs-child-popup-${rowIndex}-${columnIndex}-${moduleIndex}-${sectionIndex}-${childIndex}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           <div
             class="popup-header"
@@ -22652,11 +22725,12 @@ export class LayoutTab extends LitElement {
     const lang = this.hass?.locale?.language || 'en';
     return html`
       <div class="module-settings-popup">
-        <div class="popup-overlay"></div>
+        <div class="popup-overlay" @click=${() => this._closeModuleSettings()}></div>
         <div
           class="popup-content draggable-popup"
           id="module-popup-${this._selectedModule?.rowIndex}-${this._selectedModule
             ?.columnIndex}-${this._selectedModule?.moduleIndex}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           <div
             class="popup-header"
@@ -22930,6 +23004,7 @@ export class LayoutTab extends LitElement {
           id="child-popup-${this._selectedLayoutChild?.parentRowIndex}-${this._selectedLayoutChild
             ?.parentColumnIndex}-${this._selectedLayoutChild?.parentModuleIndex}-${this
             ._selectedLayoutChild?.childIndex}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           <div
             class="popup-header"
@@ -23526,7 +23601,7 @@ export class LayoutTab extends LitElement {
     return html`
       <div class="settings-popup">
         <div class="popup-overlay" @click=${() => (this._showRowSettings = false)}></div>
-        <div class="popup-content draggable-popup" id="row-popup-${this._selectedRowForSettings}">
+        <div class="popup-content draggable-popup" id="row-popup-${this._selectedRowForSettings}" @click=${(e: Event) => e.stopPropagation()}>
           <div
             class="popup-header"
             @mousedown=${(e: MouseEvent) => {
@@ -23647,6 +23722,7 @@ export class LayoutTab extends LitElement {
           class="popup-content draggable-popup"
           id="column-popup-${this._selectedColumnForSettings?.rowIndex}-${this
             ._selectedColumnForSettings?.columnIndex}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           <div
             class="popup-header"
@@ -26381,6 +26457,15 @@ export class LayoutTab extends LitElement {
     // Initialize dashboard scanner service when hass is available
     if (changedProperties.has('hass') && this.hass) {
       ucDashboardScannerService.initialize(this.hass);
+    }
+
+    // Patch HA dialog containment when any popup is open, restore when all closed
+    const anyPopupOpen = !!this._selectedModule || !!this._selectedLayoutChild ||
+      !!this._selectedTabsSectionChild || !!this._showModuleSelector;
+    if (anyPopupOpen) {
+      this._patchDialogContainment(true);
+    } else if (this._savedDialogStyles) {
+      this._patchDialogContainment(false);
     }
 
     // Initialize popup positioning when popups are shown
@@ -33966,7 +34051,8 @@ export class LayoutTab extends LitElement {
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: ${Z_INDEX.MODULE_POPUP_OVERLAY};
+        /* Use DIALOG_OVERLAY (8000) so we escape editor stacking contexts */
+        z-index: ${Z_INDEX.DIALOG_OVERLAY};
         display: flex;
         align-items: center;
         justify-content: center;
@@ -34079,7 +34165,8 @@ export class LayoutTab extends LitElement {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        z-index: ${Z_INDEX.SELECTOR_POPUP};
+        /* Use DIALOG_CONTENT (8001) so it sits above the popup wrapper overlay */
+        z-index: ${Z_INDEX.DIALOG_CONTENT};
         max-width: calc(100vw - 40px); /* Ensure 20px padding on each side */
         max-height: calc(100vh - 40px); /* Ensure 20px padding on top/bottom */
       }
@@ -34887,7 +34974,8 @@ export class LayoutTab extends LitElement {
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: ${Z_INDEX.LAYOUT_CHILD_POPUP};
+        /* Use DIALOG_OVERLAY (8000) so we escape editor stacking contexts */
+        z-index: ${Z_INDEX.DIALOG_OVERLAY};
         display: flex;
         align-items: flex-start;
         justify-content: center;
@@ -34946,7 +35034,8 @@ export class LayoutTab extends LitElement {
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: ${Z_INDEX.MODULE_POPUP_CONTENT};
+        /* Use DIALOG_OVERLAY (8000) so we escape editor stacking contexts */
+        z-index: ${Z_INDEX.DIALOG_OVERLAY};
         display: flex;
         align-items: flex-start;
         justify-content: center;
@@ -35072,6 +35161,7 @@ export class LayoutTab extends LitElement {
         z-index: 0;
         background: var(--card-background-color);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        border-radius: 8px 8px 0 0;
       }
 
       .close-button {
@@ -35136,35 +35226,33 @@ export class LayoutTab extends LitElement {
 
       /* Drag and Resize Functionality */
       .draggable-popup {
+        /* Absolute inside the fixed full-viewport wrapper — effectively viewport-centered */
         position: absolute;
         /* Avoid transforms so fixed-position menus anchor to viewport correctly */
         transform: none !important;
-        max-width: none;
-        max-height: none;
         width: min(700px, 95vw);
         height: min(750px, 90vh);
-        /* Center the popup initially */
-        /* Use margins for centering instead of transforms to not create a containing block */
+        max-width: none;
+        max-height: none;
+        /* Center via negative margins (no transform = no new containing block for fixed children) */
         top: 50%;
         left: 50%;
-        margin-left: -350px; /* half of width when 700px; will be clamped by max-width */
-        margin-top: -375px; /* half of height when 750px; responsive will adjust */
-        /* Reset translate centering */
-        /* transform already set to none above */
-        z-index: ${Z_INDEX.MODULE_POPUP_OVERLAY};
+        margin-left: -350px;
+        margin-top: -375px;
+        /* Sits above the DIALOG_OVERLAY (8000) wrapper background */
+        z-index: ${Z_INDEX.DIALOG_CONTENT};
       }
 
-      /* During drag/resize, remove centering transform and use absolute positioning */
+      /* During drag/resize, remove centering transform — left/top set by JS */
       .draggable-popup.popup-dragging,
       .draggable-popup.popup-resizing {
         position: absolute;
         transform: none;
-        /* left and top will be set by JavaScript during drag */
       }
 
       /* Selector popup drag positioning */
       .selector-content.popup-dragging {
-        position: absolute;
+        position: fixed;
         transform: none;
         /* left and top will be set by JavaScript during drag */
       }
@@ -35172,7 +35260,6 @@ export class LayoutTab extends LitElement {
       /* Mobile optimization for module popups */
       @media (max-width: 768px), (max-height: 768px) {
         .draggable-popup {
-          /* Use transform-based centering for better mobile compatibility */
           position: fixed !important;
           top: 50% !important;
           left: 50% !important;

@@ -13,7 +13,6 @@ export declare class UltraIconModule extends BaseUltraModule {
     private _updateTimeout?;
     private _processingAttributes;
     private static _globalStylesInjected;
-    private _localStylesInjected;
     private static readonly _ANIMATION_KEYFRAMES;
     private _injectGlobalStyles;
     private _hashString;

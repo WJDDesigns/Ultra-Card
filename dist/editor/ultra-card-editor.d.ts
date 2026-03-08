@@ -45,6 +45,7 @@ export declare class UltraCardEditor extends LitElement {
     private _connectActivating;
     /** Flag to ensure module CSS for animations is injected once */
     private _moduleStylesInjected;
+    private _qrDataReadyListener?;
     private static readonly HUB_BANNER_DISMISSED_KEY;
     setConfig(config: UltraCardConfig): void;
     protected willUpdate(changedProperties: Map<string, any>): void;
@@ -116,6 +117,7 @@ export declare class UltraCardEditor extends LitElement {
     private _syncListener?;
     private _backupListener?;
     private _hasInitializedAuth;
+    private _hasRegisteredListeners;
     /**
      * Setup cloud sync listeners
      */

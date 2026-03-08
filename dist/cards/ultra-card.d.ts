@@ -19,6 +19,7 @@ export declare class UltraCard extends LitElement {
     private static readonly CONNECTOR_BANNER_STORAGE_KEY;
     private static readonly HACS_CONNECTOR_URL;
     private _templateUpdateListener?;
+    private _qrDataReadyListener?;
     private _authListener?;
     /**
      * Flag to ensure module CSS is injected only once per card instance.

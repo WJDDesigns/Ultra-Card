@@ -811,6 +811,45 @@ export class UltraDynamicListModule extends BaseUltraModule {
           </div>
 
           <div class="field-group" style="margin-bottom: 16px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Sort by</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: 'default', label: 'Default (source order)' },
+                    { value: 'summary', label: 'Summary / name (A–Z or Z–A)' },
+                    { value: 'due', label: 'Due date (todo only)' },
+                    { value: 'status', label: 'Status (todo: incomplete first/last)' },
+                  ],
+                },
+              }}
+              .value=${dynModule.sort_by ?? 'default'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ sort_by: (e.detail.value || 'default') as DynamicListModule['sort_by'] } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+
+          ${(dynModule.sort_by && dynModule.sort_by !== 'default') ? html`
+          <div class="field-group" style="margin-bottom: 16px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Sort direction</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: 'asc', label: 'Ascending (A→Z, oldest first, incomplete first)' },
+                    { value: 'desc', label: 'Descending (Z→A, newest first, completed first)' },
+                  ],
+                },
+              }}
+              .value=${dynModule.sort_direction ?? 'asc'}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ sort_direction: (e.detail.value || 'asc') as DynamicListModule['sort_direction'] } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>` : ''}
+
+          <div class="field-group" style="margin-bottom: 16px;">
             <ha-form
               .hass=${hass}
               .data=${{ limit: dynModule.limit ?? 0 }}
@@ -1429,9 +1468,30 @@ export class UltraDynamicListModule extends BaseUltraModule {
         const items = cache?.[eid] || [];
         items.forEach((item) => itemsWithEntity.push({ item, entityId: eid }));
       });
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/36063b29-f1db-4787-bed7-95c789116512',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c2200c'},body:JSON.stringify({sessionId:'c2200c',location:'dynamic-list-module.ts:todo-after-cache',message:'Todo cache and items',data:{entityIds,cacheLengths:entityIds.map((eid)=>cache?.[eid]?.length??'missing'),itemsWithEntityLength:itemsWithEntity.length,todo_statuses:dynModule.todo_statuses},timestamp:Date.now(),hypothesisId:'G'})}).catch(()=>{});
-      // #endregion
+      const sortBy = dynModule.sort_by || 'default';
+      const sortDir = dynModule.sort_direction || 'asc';
+      if (sortBy !== 'default') {
+        const mult = sortDir === 'asc' ? 1 : -1;
+        itemsWithEntity.sort((a, b) => {
+          if (sortBy === 'summary') {
+            const sa = (a.item.summary || '').toLowerCase();
+            const sb = (b.item.summary || '').toLowerCase();
+            return mult * (sa < sb ? -1 : sa > sb ? 1 : 0);
+          }
+          if (sortBy === 'due') {
+            const da = a.item.due || '';
+            const db = b.item.due || '';
+            const ta = da ? new Date(da).getTime() : 0;
+            const tb = db ? new Date(db).getTime() : 0;
+            return mult * (ta - tb);
+          }
+          if (sortBy === 'status') {
+            const order = (s: string) => (s === 'completed' ? 1 : 0);
+            return mult * (order(a.item.status) - order(b.item.status));
+          }
+          return 0;
+        });
+      }
       const tpl = dynModule.todo_item_template || {
         module_type: 'text',
         primary_field: 'summary',
@@ -1526,6 +1586,14 @@ export class UltraDynamicListModule extends BaseUltraModule {
             'mdi:alert-circle-outline'
           );
         }
+      }
+      const sortByTpl = dynModule.sort_by || 'default';
+      const sortDirTpl = dynModule.sort_direction || 'asc';
+      if (sortByTpl === 'summary' && generatedModules.length > 0) {
+        const mult = sortDirTpl === 'asc' ? 1 : -1;
+        const label = (m: CardModule) =>
+          ((m as any).text ?? (m as any).name ?? (m as any).icons?.[0]?.name ?? '').toString().toLowerCase();
+        generatedModules = [...generatedModules].sort((a, b) => mult * (label(a) < label(b) ? -1 : label(a) > label(b) ? 1 : 0));
       }
     }
 

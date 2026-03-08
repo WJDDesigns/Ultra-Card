@@ -204,6 +204,14 @@ export declare class LayoutTab extends LitElement {
     private _visibilityChangeListener;
     private _windowFocusListener;
     private _authChangeListener;
+    /**
+     * Temporarily patch the HA dialog's CSS to allow popups to escape containment.
+     * wa-dialog's internal <dialog> element has `transform` (creates containing block
+     * for position:fixed descendants) and `overflow: hidden` (clips them).
+     * This temporarily removes both constraints while a popup is open.
+     */
+    private _savedDialogStyles;
+    private _patchDialogContainment;
     disconnectedCallback(): void;
     /**
      * Perform template update with single requestUpdate() call

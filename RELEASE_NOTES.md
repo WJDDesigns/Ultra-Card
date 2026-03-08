@@ -1,5 +1,27 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0-beta4
+
+### 🚀 New Features
+
+- **Add QR Code module** - New Pro module that generates styled QR codes from static text, HA templates, or entity states, with customizable dot/corner styles, logo overlay, foreground/background colors, and tap actions
+- **Add sort options to Dynamic List module** - Sort todo and template lists by summary (A-Z), due date, or status (incomplete/completed first), with ascending or descending direction
+
+### 🔧 Improvements
+
+- **Improve Dynamic List module** - Sort direction selector only shown when a sort field is selected
+- **Improve import dialog UX** - Highlight the From Clipboard button as the recommended import method with primary color accent
+
+### 🐛 Bug Fixes
+
+- **Fix icon module animation keyframes** - Inject animation CSS into shadow DOM so custom animations render correctly inside shadow root
+- **Fix editor popup containment** - Patch HA dialog transform and overflow constraints so module popup pickers escape the dialog clipping boundary without leaving residual styles
+- **Fix popup drag on mobile** - Reset margin-based positioning on mobile and use CSS layout instead of drag-based left/top
+- **Fix QR code async re-render** - Card listens for uc-qr-data-ready event and calls requestUpdate so QR images appear after async toDataURL generation
+- **Fix import dialog Android clipboard truncation** - Detect truncated paste on Android and show a tip recommending the From Clipboard button; use async clipboard API with requestAnimationFrame fallback
+
+---
+
 ## Version 3.1.0-beta3
 
 ### 🚀 New Features

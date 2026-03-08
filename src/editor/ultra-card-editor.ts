@@ -85,6 +85,8 @@ export class UltraCardEditor extends LitElement {
   /** Flag to ensure module CSS for animations is injected once */
   private _moduleStylesInjected = false;
 
+  private _qrDataReadyListener?: () => void;
+
   private static readonly HUB_BANNER_DISMISSED_KEY = 'ultra-card-hub-banner-dismissed';
 
   public setConfig(config: UltraCardConfig): void {
@@ -105,6 +107,14 @@ export class UltraCardEditor extends LitElement {
       if (integrationUser) {
         ucCloudAuthService.setIntegrationUser(integrationUser);
         this._cloudUser = integrationUser;
+      } else if (!this._cloudUser) {
+        // hass arrived but sensor not connected yet — clear any stale user
+        this._cloudUser = null;
+      }
+
+      // If connectedCallback ran before hass was available, finish auth init now
+      if (!this._hasInitializedAuth) {
+        this._hasInitializedAuth = true;
       }
 
       // Update entity picker enhancer with latest hass/config
@@ -196,6 +206,10 @@ export class UltraCardEditor extends LitElement {
     // Update hover styles when configuration changes
     this._updateHoverEffectStyles();
 
+    // Re-render when QR code module finishes generating (so Live Preview updates)
+    this._qrDataReadyListener = () => this.requestUpdate();
+    window.addEventListener('uc-qr-data-ready', this._qrDataReadyListener);
+
     // Setup cloud sync listeners
     this._setupCloudSyncListeners();
 
@@ -204,8 +218,15 @@ export class UltraCardEditor extends LitElement {
     // Subscribe to favorite colors changes to back them up in card config
     this._favoriteColorsUnsubscribe = ucFavoriteColorsService.subscribe(favorites => {
       if (!this.config) return;
-      // Only update config if favorites actually differ from what's stored
+      // Don't erase the config backup when the service is empty on initial load —
+      // setConfig() may not have had a chance to restore from config.favorite_colors yet.
+      // Only write back to config when the service actually has colors (user added/edited some)
+      // or when config already has no favorites (nothing to protect).
       const configFavorites = this.config.favorite_colors || [];
+      if (favorites.length === 0 && configFavorites.length > 0) {
+        // Service is empty but config has a backup — skip this callback; setConfig will restore
+        return;
+      }
       const favoritesChanged =
         favorites.length !== configFavorites.length ||
         JSON.stringify(favorites) !== JSON.stringify(configFavorites);
@@ -248,6 +269,10 @@ export class UltraCardEditor extends LitElement {
     // Clean up resize listener
     if (this._resizeListener) {
       window.removeEventListener('resize', this._resizeListener);
+    }
+
+    if (this._qrDataReadyListener) {
+      window.removeEventListener('uc-qr-data-ready', this._qrDataReadyListener);
     }
 
     // Clean up full screen class if still applied
@@ -4091,17 +4116,12 @@ export class UltraCardEditor extends LitElement {
   private _syncListener?: (status: SyncStatus) => void;
   private _backupListener?: (status: BackupStatus) => void;
   private _hasInitializedAuth = false; // Track if we've initialized auth for this instance
+  private _hasRegisteredListeners = false; // Track if cloud listeners are registered
 
   /**
    * Setup cloud sync listeners
    */
   private async _setupCloudSyncListeners(): Promise<void> {
-    // Skip if already initialized for this instance
-    if (this._hasInitializedAuth) {
-      return;
-    }
-    this._hasInitializedAuth = true;
-
     // Single auth source: HA integration sensor.
     // No localStorage fallback — credentials live in HA config entries.
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
@@ -4109,6 +4129,17 @@ export class UltraCardEditor extends LitElement {
       ucCloudAuthService.setIntegrationUser(integrationUser);
       this._cloudUser = integrationUser;
     }
+
+    // Lock in the initialized flag once we have hass so willUpdate doesn't re-check needlessly.
+    if (this.hass) {
+      this._hasInitializedAuth = true;
+    }
+
+    // Only register listeners once regardless of hass timing
+    if (this._hasRegisteredListeners) {
+      return;
+    }
+    this._hasRegisteredListeners = true;
 
     this._syncStatus = ucCloudSyncService.getSyncStatus();
     this._backupStatus = ucCloudBackupService.getStatus();

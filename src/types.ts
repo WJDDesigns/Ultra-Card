@@ -130,7 +130,8 @@ export interface BaseModule {
     | 'navigation'
     | 'timer'
     | 'cover'
-    | 'dynamic-list';
+    | 'dynamic-list'
+    | 'qr_code';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -3613,6 +3614,44 @@ export interface VideoBackgroundModule extends BaseModule {
   global_card_transparency: GlobalCardTransparency;
 }
 
+// QR Code Module (Pro) - content source and display options
+export interface QrCodeModule extends BaseModule {
+  type: 'qr_code';
+  // Content source: static URL/text, HA template, or entity state/attribute
+  content_mode: 'static' | 'template' | 'entity';
+  content_static?: string; // For static: URL or text to encode
+  content_template?: string; // For template: HA Jinja2 template
+  content_entity?: string; // For entity: entity_id
+  content_attribute?: string; // Optional attribute (when content_mode === 'entity')
+  // Display
+  size: number; // Pixel size (e.g. 128–400), default 200
+  alignment?: 'left' | 'center' | 'right';
+  show_label?: boolean;
+  label_text?: string;
+  label_below?: boolean;
+  // Colors
+  fg_color?: string; // Foreground (default #000000)
+  bg_color?: string; // Background (default #ffffff)
+  error_correction?: 'L' | 'M' | 'Q' | 'H'; // Default 'M'
+  qr_margin?: number; // Quiet zone in modules (0–10), default 1; named to avoid BaseModule.margin
+  // Style (qr-code-styling)
+  dot_style?: 'square' | 'dots' | 'rounded' | 'extra-rounded' | 'classy' | 'classy-rounded';
+  corner_square_style?: 'square' | 'extra-rounded' | 'dot';
+  corner_dot_style?: 'square' | 'dot';
+  // Logo overlay
+  logo_enabled?: boolean;
+  logo_url?: string; // Image URL to embed in center
+  logo_size?: number; // 0.1–0.4, default 0.25 (fraction of QR size)
+  logo_margin?: number; // Pixels around the logo, default 4
+  logo_hide_bg_dots?: boolean; // Hide QR dots behind logo, default true
+  // Actions and logic (standard)
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+  display_mode: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
 // Weather Effect Types
 export type WeatherEffectType =
   | 'none'
@@ -4197,6 +4236,10 @@ export interface DynamicListModule extends BaseModule {
   align_h: 'start' | 'center' | 'end' | 'space-between' | 'space-around' | 'stretch';
   /** Vertical alignment of items (align-items) */
   align_v: 'start' | 'center' | 'end' | 'stretch';
+  /** Sort list by this field (default = keep source order). For todo: summary, due, status. For template: summary = by module text/name. */
+  sort_by?: 'default' | 'summary' | 'due' | 'status';
+  /** Sort direction when sort_by is set */
+  sort_direction?: 'asc' | 'desc';
   tap_action?: ModuleActionConfig;
   hold_action?: ModuleActionConfig;
   double_tap_action?: ModuleActionConfig;
@@ -4250,7 +4293,8 @@ export type CardModule =
   | NavigationModule
   | TimerModule
   | CoverModule
-  | DynamicListModule;
+  | DynamicListModule
+  | QrCodeModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {

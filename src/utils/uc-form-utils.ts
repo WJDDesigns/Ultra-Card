@@ -3,8 +3,11 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { CardModule, CustomVariable, UltraCardConfig } from '../types';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 
-// Module-level change guard to prevent infinite loops
-let _formChangeGuard = false;
+// Per-element guard: tracks which ha-form elements are currently processing a change.
+// Using a WeakSet prevents cross-module interference that the old singleton boolean caused —
+// opening an Icon module while a Dynamic-list module was also active would lock the singleton
+// and silently drop all subsequent form events until a cache clear.
+const _formChangeGuards = new WeakSet<EventTarget>();
 
 /**
  * Ultra Card form utilities
@@ -29,15 +32,16 @@ export class UcFormUtils {
         .computeLabel=${showLabels ? this._defaultComputeLabel : this._hideLabels}
         .computeDescription=${showLabels ? this._defaultComputeDescription : this._hideDescriptions}
         @value-changed=${(e: CustomEvent) => {
-          // Prevent re-entrant calls that cause infinite loops
-          if (_formChangeGuard) {
+          const target = e.target as EventTarget;
+          // Per-element re-entrancy guard to prevent infinite loops
+          if (_formChangeGuards.has(target)) {
             return;
           }
 
-          _formChangeGuard = true;
-          // Use requestAnimationFrame for better performance than setTimeout
-          requestAnimationFrame(() => {
-            _formChangeGuard = false;
+          _formChangeGuards.add(target);
+          // Microtask reset (faster than rAF, still async) — clears before next sync render
+          Promise.resolve().then(() => {
+            _formChangeGuards.delete(target);
           });
 
           onChange(e);

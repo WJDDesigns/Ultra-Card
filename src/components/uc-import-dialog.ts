@@ -12,6 +12,7 @@ export class UcImportDialog extends LitElement {
   @state() private _isProcessing = false;
   @state() private _error = '';
   @state() private _previewData: ExportData | null = null;
+  @state() private _showAndroidTip = false;
 
   protected render(): TemplateResult {
     if (!this.open) return html``;
@@ -30,9 +31,10 @@ export class UcImportDialog extends LitElement {
             <div class="import-methods">
               <h4>Import Methods</h4>
               <div class="method-buttons">
-                <button class="method-btn" @click=${this._importFromClipboard}>
+                <button class="method-btn method-btn--primary" @click=${this._importFromClipboard}>
                   <ha-icon icon="mdi:clipboard-text"></ha-icon>
                   <span>From Clipboard</span>
+                  <small class="method-btn__hint">Recommended</small>
                 </button>
                 <button class="method-btn" @click=${this._triggerFileInput}>
                   <ha-icon icon="mdi:file-upload"></ha-icon>
@@ -50,6 +52,18 @@ export class UcImportDialog extends LitElement {
                 placeholder="Paste your Ultra Card shortcode here: [ultra_card]...[/ultra_card]"
                 rows="6"
               ></textarea>
+              ${this._showAndroidTip
+                ? html`
+                    <div class="android-tip">
+                      <ha-icon icon="mdi:information-outline"></ha-icon>
+                      <span>
+                        The pasted text appears incomplete. This is a known Android/mobile
+                        clipboard limitation. Use the <strong>From Clipboard</strong> button
+                        above for a reliable import.
+                      </span>
+                    </div>
+                  `
+                : ''}
             </div>
 
             ${this._error
@@ -128,12 +142,14 @@ export class UcImportDialog extends LitElement {
     this._error = '';
     this._previewData = null;
     this._isProcessing = false;
+    this._showAndroidTip = false;
   }
 
   private _handleTextInput(e: Event): void {
     this._importText = (e.target as HTMLTextAreaElement).value;
     this._error = '';
     this._previewData = null;
+    this._showAndroidTip = false;
 
     if (this._importText.trim()) {
       this._processImportText();
@@ -141,50 +157,46 @@ export class UcImportDialog extends LitElement {
   }
 
   private async _handlePaste(e: ClipboardEvent): Promise<void> {
-    e.preventDefault();
-    
-    // Try to get full content from clipboard API instead of relying on browser paste
-    // This avoids truncation issues on Chromebooks and other browsers
-    try {
-      const nav = navigator as unknown as Navigator;
-      if (nav.clipboard && nav.clipboard.readText) {
-        const clipboardText = await nav.clipboard.readText();
-        if (clipboardText) {
-          const textarea = e.target as HTMLTextAreaElement;
-          textarea.value = clipboardText;
-          this._importText = clipboardText;
-          this._error = '';
-          this._previewData = null;
-          
-          if (this._importText.trim()) {
-            this._processImportText();
-          }
-          return;
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to read from clipboard API during paste, falling back to default paste:', error);
-    }
-    
-    // Fallback to default paste behavior if clipboard API fails
-    const textarea = e.target as HTMLTextAreaElement;
-    const pastedText = e.clipboardData?.getData('text') || '';
-    if (pastedText) {
-      // Insert at cursor position
-      const start = textarea.selectionStart || 0;
-      const end = textarea.selectionEnd || 0;
-      const currentValue = textarea.value;
-      const newValue = currentValue.substring(0, start) + pastedText + currentValue.substring(end);
-      
-      textarea.value = newValue;
-      this._importText = newValue;
+    // On Android WebView (HA companion app), e.preventDefault() + clipboardData.getData()
+    // causes truncation of large strings. The fix is to NOT prevent default so the browser
+    // completes the native paste into the textarea first, then read the full value on the
+    // next microtask. The existing @input handler (_handleTextInput) will also fire and
+    // process the text — this handler only adds the async clipboard API as a bonus attempt.
+
+    // Attempt the modern clipboard API first (runs in parallel, doesn't block native paste)
+    navigator.clipboard?.readText?.().then((clipboardText) => {
+      if (!clipboardText) return;
+      const textarea = e.target as HTMLTextAreaElement;
+      textarea.value = clipboardText;
+      this._importText = clipboardText;
+      this._showAndroidTip = false;
       this._error = '';
       this._previewData = null;
-      
       if (this._importText.trim()) {
         this._processImportText();
       }
-    }
+    }).catch(() => {
+      // Clipboard API unavailable or denied — native paste already handled by the browser.
+      // Read the textarea value on the next tick to get the fully pasted content.
+      requestAnimationFrame(() => {
+        const textarea = e.target as HTMLTextAreaElement;
+        const pastedText = textarea.value;
+        if (!pastedText) return;
+
+        this._importText = pastedText;
+        this._error = '';
+        this._previewData = null;
+
+        // Detect truncation: a valid shortcode always ends with [/ultra_card]
+        const looksLikeShortcode = pastedText.includes('[ultra_card]');
+        const isTruncated = looksLikeShortcode && !pastedText.includes('[/ultra_card]');
+        this._showAndroidTip = isTruncated;
+
+        if (this._importText.trim()) {
+          this._processImportText();
+        }
+      });
+    });
   }
 
   private _processImportText(): void {
@@ -391,6 +403,24 @@ export class UcImportDialog extends LitElement {
       color: var(--primary-color);
     }
 
+    .method-btn--primary {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      background: var(--primary-color-10, rgba(var(--rgb-primary-color, 3, 169, 244), 0.1));
+    }
+
+    .method-btn--primary:hover {
+      background: var(--primary-color-20, rgba(var(--rgb-primary-color, 3, 169, 244), 0.2));
+    }
+
+    .method-btn__hint {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+    }
+
     .method-btn ha-icon {
       --mdc-icon-size: 24px;
     }
@@ -410,6 +440,30 @@ export class UcImportDialog extends LitElement {
       font-weight: 500;
       color: var(--primary-text-color);
       font-size: 14px;
+    }
+
+    .android-tip {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: var(--warning-color-10, rgba(255, 152, 0, 0.1));
+      border: 1px solid var(--warning-color, #ff9800);
+      border-radius: 6px;
+      color: var(--warning-color, #ff9800);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .android-tip ha-icon {
+      --mdc-icon-size: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .android-tip strong {
+      font-weight: 600;
     }
 
     textarea {

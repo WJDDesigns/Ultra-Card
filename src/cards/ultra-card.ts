@@ -83,6 +83,7 @@ export class UltraCard extends LitElement {
   private static readonly HACS_CONNECTOR_URL =
     'https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-connect&category=integration';
   private _templateUpdateListener?: (event: Event) => void;
+  private _qrDataReadyListener?: () => void;
   private _authListener?: (user: CloudUser | null) => void;
   /**
    * Flag to ensure module CSS is injected only once per card instance.
@@ -216,6 +217,10 @@ export class UltraCard extends LitElement {
     };
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
 
+    // Re-render when QR code module finishes generating (async toDataURL)
+    this._qrDataReadyListener = () => this.requestUpdate();
+    window.addEventListener('uc-qr-data-ready', this._qrDataReadyListener);
+
     // React to preview flag toggles so open editor Save/Done updates unlocks immediately
     const previewListener = (e?: any) => {
       // Do not change registration on preview open/close, just re-render.
@@ -304,6 +309,10 @@ export class UltraCard extends LitElement {
     // Clean up event listener
     if (this._templateUpdateListener) {
       window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
+    }
+    if (this._qrDataReadyListener) {
+      window.removeEventListener('uc-qr-data-ready', this._qrDataReadyListener);
+      this._qrDataReadyListener = undefined;
     }
 
     // Clean up global transparency listener

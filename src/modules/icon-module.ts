@@ -52,7 +52,6 @@ export class UltraIconModule extends BaseUltraModule {
 
   // Ensure animation/keyframe CSS is globally available (outside editor shadow DOM)
   private static _globalStylesInjected = false;
-  private _localStylesInjected = false;
 
   // Keyframes CSS shared across all icons (needed inside nested shadow roots)
   private static readonly _ANIMATION_KEYFRAMES = `
@@ -2863,14 +2862,11 @@ export class UltraIconModule extends BaseUltraModule {
     // Ensure keyframes exist inside ha-icon shadow roots for Live Preview animations
     this._injectKeyframesForAllSplitPreviewIcons();
 
-    // Inject into local shadow DOM once - include keyframes for animations to work in shadow DOM context
-    const localStyle = !this._localStylesInjected
-      ? html`<style>
-          ${UltraIconModule._ANIMATION_KEYFRAMES}
-          ${this.getStyles()}
-        </style>`
-      : html``;
-    this._localStylesInjected = true;
+    // Inject into local shadow DOM — include keyframes so animations work in shadow DOM context
+    const localStyle = html`<style>
+        ${UltraIconModule._ANIMATION_KEYFRAMES}
+        ${this.getStyles()}
+      </style>`;
 
     // GRACEFUL RENDERING: Check for incomplete configuration
     // Static icons are always valid (no entity required)

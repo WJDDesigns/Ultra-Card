@@ -49,7 +49,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum' | 'media_player' | 'people' | 'navigation' | 'timer' | 'cover' | 'dynamic-list';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum' | 'media_player' | 'people' | 'navigation' | 'timer' | 'cover' | 'dynamic-list' | 'qr_code';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -1993,6 +1993,36 @@ export interface VideoBackgroundModule extends BaseModule {
     rules?: VideoBackgroundRule[];
     global_card_transparency: GlobalCardTransparency;
 }
+export interface QrCodeModule extends BaseModule {
+    type: 'qr_code';
+    content_mode: 'static' | 'template' | 'entity';
+    content_static?: string;
+    content_template?: string;
+    content_entity?: string;
+    content_attribute?: string;
+    size: number;
+    alignment?: 'left' | 'center' | 'right';
+    show_label?: boolean;
+    label_text?: string;
+    label_below?: boolean;
+    fg_color?: string;
+    bg_color?: string;
+    error_correction?: 'L' | 'M' | 'Q' | 'H';
+    qr_margin?: number;
+    dot_style?: 'square' | 'dots' | 'rounded' | 'extra-rounded' | 'classy' | 'classy-rounded';
+    corner_square_style?: 'square' | 'extra-rounded' | 'dot';
+    corner_dot_style?: 'square' | 'dot';
+    logo_enabled?: boolean;
+    logo_url?: string;
+    logo_size?: number;
+    logo_margin?: number;
+    logo_hide_bg_dots?: boolean;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    display_mode: 'always' | 'every' | 'any';
+    display_conditions?: DisplayCondition[];
+}
 export type WeatherEffectType = 'none' | 'rain' | 'rain_storm' | 'rain_drizzle' | 'hail' | 'acid_rain' | 'matrix_rain' | 'lightning' | 'snow_gentle' | 'snow_storm' | 'fog_light' | 'fog_dense' | 'sun_beams' | 'clouds' | 'wind';
 export interface DynamicWeatherModule extends BaseModule {
     type: 'dynamic_weather';
@@ -2399,13 +2429,17 @@ export interface DynamicListModule extends BaseModule {
     align_h: 'start' | 'center' | 'end' | 'space-between' | 'space-around' | 'stretch';
     /** Vertical alignment of items (align-items) */
     align_v: 'start' | 'center' | 'end' | 'stretch';
+    /** Sort list by this field (default = keep source order). For todo: summary, due, status. For template: summary = by module text/name. */
+    sort_by?: 'default' | 'summary' | 'due' | 'status';
+    /** Sort direction when sort_by is set */
+    sort_direction?: 'asc' | 'desc';
     tap_action?: ModuleActionConfig;
     hold_action?: ModuleActionConfig;
     double_tap_action?: ModuleActionConfig;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule | MediaPlayerModule | PeopleModule | NavigationModule | TimerModule | CoverModule | DynamicListModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule | MediaPlayerModule | PeopleModule | NavigationModule | TimerModule | CoverModule | DynamicListModule | QrCodeModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;
