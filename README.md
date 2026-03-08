@@ -38,7 +38,7 @@
 - **Native & 3rd party cards** — Unlimited native HA cards for everyone; 5 third-party cards free, unlimited with Pro
 - **Design controls** — Typography, colors, spacing, borders, shadows, gradients, animations
 - **Preset Marketplace** — Browse, install, and share community presets
-- **14 languages** — Full internationalization
+- **15 languages** — Full internationalization
 
 ---
 
@@ -112,7 +112,7 @@ Browse and install community presets from inside the editor: **Presets** tab →
 
 ## Translations
 
-Supported languages: English, British English, German, French, Spanish, Italian, Dutch, Norwegian, Danish, Czech, Polish, Swedish, Portuguese, Russian.
+Supported languages: Catalan, English, British English, German, French, Spanish, Italian, Dutch, Norwegian, Danish, Czech, Polish, Swedish, Portuguese, Russian.
 
 To contribute translations, see [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md). You can edit files in `src/translations/` on GitHub and open a pull request.
 
