@@ -506,22 +506,26 @@ class UcExportImportService {
 
   /**
    * Copy text to clipboard
+   * @throws Error with message starting 'CLIPBOARD_UNAVAILABLE:' and the text as payload when both clipboard API and execCommand fail (e.g. Android WebView)
    */
   private async _copyToClipboard(text: string): Promise<void> {
     try {
       await (navigator as unknown as Navigator).clipboard.writeText(text);
-    } catch (error) {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
+      return;
+    } catch (_) {
+      // Clipboard API unavailable or denied — try legacy execCommand
+    }
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.cssText = 'position:fixed;left:-999999px;top:-999999px;';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    if (!ok) {
+      // Both methods failed (e.g. Android WebView) — signal caller to show fallback UI
+      throw new Error('CLIPBOARD_UNAVAILABLE:' + text);
     }
   }
 

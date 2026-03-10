@@ -61,7 +61,10 @@ module.exports = (env, argv) => {
       rules: [
         {
           test: /\.tsx?$/,
-          use: 'ts-loader',
+          use: {
+            loader: 'ts-loader',
+            options: { transpileOnly: true },
+          },
           exclude: /node_modules/,
         },
         {
@@ -121,10 +124,13 @@ module.exports = (env, argv) => {
           });
         },
       },
-      // Auto-deploy to Home Assistant on build (for development)
+      // Auto-deploy to Home Assistant on build (for development). Skipped when SKIP_HA_DEPLOY=1 (e.g. build:deploy uses deploy.js instead).
       {
         apply: compiler => {
           compiler.hooks.afterEmit.tap('AutoDeployToHA', () => {
+            if (process.env.SKIP_HA_DEPLOY === '1') {
+              return;
+            }
             const haDeployPath =
               process.env.HA_DEPLOY_PATH || '/Volumes/config/www/community/Ultra-Card';
             const sourceFile = path.resolve(__dirname, 'dist/ultra-card.js');

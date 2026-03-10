@@ -49,7 +49,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum' | 'media_player' | 'people' | 'navigation' | 'timer' | 'cover' | 'dynamic-list' | 'qr_code';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum' | 'media_player' | 'people' | 'navigation' | 'timer' | 'cover' | 'dynamic-list' | 'qr_code' | 'energy_display';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -2401,20 +2401,56 @@ export interface TodoItemTemplate {
     /** When true, tapping the row calls todo.update_item to mark item completed (or uncompleted). */
     allow_tap_to_complete?: boolean;
 }
+/** Action config for action-sourced dynamic lists. */
+export interface DynamicListActionSource {
+    /** HA service domain (e.g. "todo"). */
+    domain: string;
+    /** HA service name (e.g. "get_items"). */
+    service: string;
+    /** Service data / target to pass to the action. Supports $variable syntax. */
+    service_data?: Record<string, unknown>;
+    /** How often (in seconds) to re-call the action to refresh data. 0 = only on state_changed events. */
+    refresh_interval?: number;
+    /** Entity ids to watch for state_changed events that trigger a re-fetch. */
+    watch_entities?: string[];
+}
 export interface DynamicListModule extends BaseModule {
     type: 'dynamic-list';
-    /** Source of list items: Jinja2 template or HA todo entity. */
-    source_type?: 'template' | 'todo';
+    /**
+     * Source of list items:
+     *   'template'      — Jinja2 template that outputs a JSON array of module configs.
+     *   'todo'          — HA todo entity with fixed field mapping (legacy simple mode).
+     *   'todo-template' — HA todo entity(ies) fetched, then items injected into a Jinja2 template
+     *                     as `{{ items }}` / `{{ items | tojson }}` so you can build any module structure.
+     *   'action'        — Call any HA service action; response is injected into a Jinja2 template
+     *                     as `{{ response }}` so you can build modules from arbitrary service data.
+     */
+    source_type?: 'template' | 'todo' | 'todo-template' | 'action';
     /** Jinja2 template that must return a JSON array of CardModule config objects via | tojson (used when source_type is 'template'). */
     dynamic_template: string;
-    /** Todo entity id (e.g. todo.shopping). Used when source_type is 'todo'. Empty = first available. */
+    /** Todo entity id (e.g. todo.shopping). Used when source_type is 'todo' or 'todo-template'. Empty = first available. */
     todo_entity?: string;
     /** Additional todo entity ids to include (e.g. M365 sub-lists). Items from all lists are combined. */
     todo_entities?: string[];
-    /** Which statuses to show when source_type is 'todo'. Empty or omitted = both. */
+    /** Which statuses to show when source_type is 'todo' or 'todo-template'. Empty or omitted = both. */
     todo_statuses?: ('needs_action' | 'completed')[];
     /** How to map each todo item to a module when source_type is 'todo'. */
     todo_item_template?: TodoItemTemplate;
+    /**
+     * Jinja2 template used when source_type is 'todo-template'.
+     * The fetched items are injected as `items` — a list of objects with keys:
+     *   summary, status, due, description, uid, entity_id.
+     * Must output a JSON array via | tojson.
+     */
+    todo_dynamic_template?: string;
+    /** Action configuration used when source_type is 'action'. */
+    action_source?: DynamicListActionSource;
+    /**
+     * Jinja2 template used when source_type is 'action'.
+     * The action response object is injected as `response`.
+     * Must output a JSON array via | tojson.
+     */
+    action_template?: string;
     /** Layout direction for the generated modules */
     direction: 'vertical' | 'horizontal';
     /** Gap between generated modules in px */
@@ -2443,7 +2479,56 @@ export interface DynamicListModule extends BaseModule {
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule | MediaPlayerModule | PeopleModule | NavigationModule | TimerModule | CoverModule | DynamicListModule | QrCodeModule;
+/** Energy node type for Energy Display module. */
+export type EnergyNodeType = 'solar' | 'grid' | 'battery' | 'home' | 'device';
+/** Single node in an energy flow display (core or custom device). */
+export interface EnergyNode {
+    id: string;
+    node_type: EnergyNodeType;
+    entity: string;
+    secondary_entity?: string;
+    icon?: string;
+    color?: string;
+    label: string;
+    show_arrow?: boolean;
+    /** Optional position override for circle_flow layout (e.g. 'top' | 'left' | 'right' | 'bottom' or angle). */
+    position?: string;
+    enabled?: boolean;
+}
+/** Display style for Energy Display module. */
+export type EnergyDisplayStyle = 'circle_flow' | 'box_flow' | 'sankey';
+export interface EnergyDisplayModule extends BaseModule {
+    type: 'energy_display';
+    display_style?: EnergyDisplayStyle;
+    nodes: EnergyNode[];
+    show_self_sufficiency?: boolean;
+    self_sufficiency_entity?: string;
+    animation_speed?: 'slow' | 'normal' | 'fast' | 'none';
+    flow_line_width?: number;
+    show_values?: boolean;
+    unit_display?: 'auto' | 'W' | 'kW';
+    show_labels?: boolean;
+    show_icons?: boolean;
+    /** Circle Flow: node circle size in px. */
+    circle_size?: number;
+    /** Box Flow: border width in px. */
+    box_border_width?: number;
+    /** Sankey: diagram width / height. */
+    sankey_width?: number;
+    sankey_curve_factor?: number;
+    /** Circle Flow: spacing between nodes. */
+    node_spacing?: number;
+    /** Box Flow: corner radius. */
+    box_border_radius?: number;
+    /** Box Flow: central gauge size. */
+    gauge_size?: number;
+    /** Sankey: column spacing. */
+    sankey_column_spacing?: number;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+}
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule | MediaPlayerModule | PeopleModule | NavigationModule | TimerModule | CoverModule | DynamicListModule | QrCodeModule | EnergyDisplayModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;

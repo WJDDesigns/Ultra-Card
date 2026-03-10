@@ -139,7 +139,7 @@ class UcModulePreviewService {
                 ? html`
                     <div
                       class="${animationData.class}"
-                      style="display: inherit; width: inherit; height: inherit; flex: inherit; animation-duration: ${animationData.duration};"
+                      style="display: block; min-width: 0; min-height: 0; animation-duration: ${animationData.duration};"
                     >
                       ${moduleContent}
                     </div>

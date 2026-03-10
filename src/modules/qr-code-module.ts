@@ -247,6 +247,28 @@ export class UltraQrCodeModule extends BaseUltraModule {
     return html`
       <style>
         ${this.injectUcFormStyles()} ${BaseUltraModule.getSliderStyles()}
+
+        /* Spacing between text and fields in QR code editor */
+        .settings-section .form-field {
+          margin-bottom: 16px;
+        }
+        .settings-section .form-label {
+          display: block;
+          margin-bottom: 8px;
+        }
+        .settings-section .form-description {
+          margin-top: 8px;
+          margin-bottom: 0;
+          font-size: 13px;
+          color: var(--secondary-text-color);
+          line-height: 1.4;
+        }
+        .settings-section .field-container .field-title {
+          margin-bottom: 6px;
+        }
+        .settings-section .field-container .field-description {
+          margin-bottom: 10px;
+        }
       </style>
 
       <!-- Content source -->

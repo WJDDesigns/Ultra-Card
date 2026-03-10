@@ -166,6 +166,8 @@ export class LayoutTab extends LitElement {
   @state() private _hasModuleClipboard = false;
   @state() private _hasColumnClipboard = false;
   @state() private _hasCardClipboard = false;
+  /** Shortcode text shown when clipboard write fails (e.g. Android WebView); empty = dialog closed */
+  @state() private _shortcodeDialogText = '';
 
   /** Fullscreen card preview height (px), user-resizable via corner handle */
   @state() private _previewHeightPx = 280;
@@ -8049,6 +8051,8 @@ export class LayoutTab extends LitElement {
     } catch (error) {
       if (error instanceof Error && error.message === 'Export cancelled by user') {
         this._showToast('Export cancelled - privacy protection', 'info');
+      } else if (error instanceof Error && error.message.startsWith('CLIPBOARD_UNAVAILABLE:')) {
+        this._showShortcodeDialog(error.message.slice('CLIPBOARD_UNAVAILABLE:'.length));
       } else {
         this._showToast('Failed to export row to clipboard', 'error');
       }
@@ -8908,10 +8912,37 @@ export class LayoutTab extends LitElement {
         // User cancelled, don't show error
         return;
       }
+      if (error instanceof Error && error.message.startsWith('CLIPBOARD_UNAVAILABLE:')) {
+        this._showShortcodeDialog(error.message.slice('CLIPBOARD_UNAVAILABLE:'.length));
+        return;
+      }
       this._showToast(
         localize('editor.layout.card_export_failed', lang, 'Failed to export card'),
         'error'
       );
+    }
+  }
+
+  /**
+   * Show shortcode in a modal when clipboard write fails (e.g. Android WebView).
+   * User can long-press to copy or use the Copy button (desktop).
+   */
+  private _showShortcodeDialog(shortcodeText: string): void {
+    this._shortcodeDialogText = shortcodeText;
+  }
+
+  private _closeShortcodeDialog(): void {
+    this._shortcodeDialogText = '';
+  }
+
+  private async _copyShortcodeFromDialog(): Promise<void> {
+    if (!this._shortcodeDialogText) return;
+    try {
+      await navigator.clipboard.writeText(this._shortcodeDialogText);
+      this._showToast('Copied to clipboard', 'success');
+      this._closeShortcodeDialog();
+    } catch (_) {
+      this._showToast('Copy failed — select and copy the text manually', 'error');
     }
   }
 
@@ -27218,7 +27249,7 @@ export class LayoutTab extends LitElement {
         ${this._showColumnSettings ? this._renderColumnSettings() : ''}
         ${this._showColumnLayoutSelector ? this._renderColumnLayoutSelector() : ''}
         ${this._renderImagePopup()} ${this._renderFavoriteDialog()} ${this._renderImportDialog()}
-        ${this._renderVariableMappingDialog()}
+        ${this._renderVariableMappingDialog()} ${this._renderShortcodeDialog()}
         <!-- Share Preset dialogs — always in DOM so they work regardless of active tab or popup state -->
         ${this._showLoginDialogForSubmit
           ? html`
@@ -30388,6 +30419,41 @@ export class LayoutTab extends LitElement {
         @close=${() => (this._showImportDialog = false)}
         @import=${this._handleImport}
       ></uc-import-dialog>
+    `;
+  }
+
+  private _renderShortcodeDialog(): TemplateResult {
+    if (!this._shortcodeDialogText) return html``;
+    return html`
+      <div
+        class="shortcode-dialog-overlay"
+        @click=${(e: Event) => e.target === e.currentTarget && this._closeShortcodeDialog()}
+      >
+        <div class="shortcode-dialog" @click=${(e: Event) => e.stopPropagation()}>
+          <div class="shortcode-dialog-header">
+            <span class="shortcode-dialog-title">Copy export manually</span>
+            <button class="shortcode-dialog-close" @click=${this._closeShortcodeDialog} aria-label="Close">
+              <ha-icon icon="mdi:close"></ha-icon>
+            </button>
+          </div>
+          <p class="shortcode-dialog-hint">
+            Clipboard isn't available here (e.g. on mobile). Select the text below and copy it yourself, or use the Copy button if it works.
+          </p>
+          <textarea
+            class="shortcode-dialog-textarea"
+            readonly
+            .value=${this._shortcodeDialogText}
+            rows="12"
+          ></textarea>
+          <div class="shortcode-dialog-actions">
+            <button class="shortcode-dialog-copy" @click=${this._copyShortcodeFromDialog}>
+              <ha-icon icon="mdi:content-copy"></ha-icon>
+              Copy
+            </button>
+            <button class="shortcode-dialog-close-btn" @click=${this._closeShortcodeDialog}>Close</button>
+          </div>
+        </div>
+      </div>
     `;
   }
 
@@ -34063,6 +34129,117 @@ export class LayoutTab extends LitElement {
         max-height: calc(90vh - 100px);
         object-fit: contain;
         border-radius: 8px;
+      }
+
+      /* Shortcode fallback dialog when clipboard write fails (e.g. Android) */
+      .shortcode-dialog-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: ${Z_INDEX.DIALOG_OVERLAY};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .shortcode-dialog {
+        background: var(--card-background-color);
+        border-radius: 12px;
+        width: 100%;
+        max-width: 560px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+      .shortcode-dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--divider-color);
+      }
+      .shortcode-dialog-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .shortcode-dialog-close {
+        background: none;
+        border: none;
+        padding: 8px;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        border-radius: 6px;
+      }
+      .shortcode-dialog-close:hover {
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+      }
+      .shortcode-dialog-close ha-icon {
+        --mdc-icon-size: 20px;
+      }
+      .shortcode-dialog-hint {
+        margin: 0;
+        padding: 12px 20px;
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        line-height: 1.4;
+      }
+      .shortcode-dialog-textarea {
+        margin: 0 20px;
+        padding: 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        resize: vertical;
+        flex: 1 1 auto;
+        min-height: 120px;
+        box-sizing: border-box;
+      }
+      .shortcode-dialog-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        padding: 16px 20px;
+        border-top: 1px solid var(--divider-color);
+      }
+      .shortcode-dialog-copy,
+      .shortcode-dialog-close-btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+      }
+      .shortcode-dialog-copy {
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .shortcode-dialog-copy:hover {
+        opacity: 0.9;
+      }
+      .shortcode-dialog-copy ha-icon {
+        --mdc-icon-size: 18px;
+      }
+      .shortcode-dialog-close-btn {
+        background: var(--secondary-background-color);
+        color: var(--secondary-text-color);
+        border: 1px solid var(--divider-color);
+      }
+      .shortcode-dialog-close-btn:hover {
+        background: var(--divider-color);
+        color: var(--primary-text-color);
       }
 
       .selector-content {

@@ -58,6 +58,8 @@ export declare class LayoutTab extends LitElement {
     private _hasModuleClipboard;
     private _hasColumnClipboard;
     private _hasCardClipboard;
+    /** Shortcode text shown when clipboard write fails (e.g. Android WebView); empty = dialog closed */
+    private _shortcodeDialogText;
     /** Fullscreen card preview height (px), user-resizable via corner handle */
     private _previewHeightPx;
     private _previewResizeStartY;
@@ -316,6 +318,13 @@ export declare class LayoutTab extends LitElement {
      * Export entire card configuration to clipboard
      */
     private _exportCard;
+    /**
+     * Show shortcode in a modal when clipboard write fails (e.g. Android WebView).
+     * User can long-press to copy or use the Copy button (desktop).
+     */
+    private _showShortcodeDialog;
+    private _closeShortcodeDialog;
+    private _copyShortcodeFromDialog;
     /**
      * Import card configuration from clipboard
      */
@@ -891,6 +900,7 @@ export declare class LayoutTab extends LitElement {
     private _renderFavoriteDialog;
     private _renderVariableMappingDialog;
     private _renderImportDialog;
+    private _renderShortcodeDialog;
     private _handleImport;
     private _showRowImportMappingDialog;
     private _addImportedRow;

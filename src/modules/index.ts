@@ -38,6 +38,7 @@ export * from './timer-module';
 export * from './cover-module';
 export * from './dynamic-list-module';
 export * from './qr-code-module';
+export * from './energy-display-module';
 
 // Export convenience functions
 export { getModuleRegistry } from './module-registry';

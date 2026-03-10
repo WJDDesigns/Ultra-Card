@@ -1,7 +1,7 @@
 import { TemplateResult, html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
-import { CardModule, DynamicListModule, TodoItemTemplate, UltraCardConfig } from '../types';
+import { CardModule, DynamicListModule, DynamicListActionSource, TodoItemTemplate, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { TemplateService } from '../services/template-service';
@@ -14,6 +14,55 @@ import { localize } from '../localize/localize';
 
 import '../components/ultra-template-editor';
 import '../components/ultra-color-picker';
+
+// ─── Todo-template example ────────────────────────────────────────────────────
+const EXAMPLE_TODO_TEMPLATE = `{# Todo Template — full control over how each item renders.
+   Available variables:
+     items   — list of todo item objects with keys:
+                 summary, status, due, description, uid, entity_id
+   Output a JSON array of module configs via | tojson. #}
+{% set ns = namespace(mods=[]) %}
+{% for item in items %}
+  {% set is_done = item.status == 'completed' %}
+  {% set color = '#9e9e9e' if is_done else 'var(--primary-text-color)' %}
+  {% set icon  = 'mdi:checkbox-marked-circle' if is_done else 'mdi:checkbox-blank-circle-outline' %}
+  {% set label = item.summary ~ (' ✓' if is_done else '') %}
+  {% set label = label ~ (' — ' ~ item.due if item.due else '') %}
+  {% set mod = {
+    'id': 'todo_tpl_' ~ loop.index,
+    'type': 'text',
+    'text': label,
+    'color': color,
+    'icon': icon,
+    'icon_position': 'before',
+    'display_mode': 'always', 'display_conditions': []
+  } %}
+  {% set ns.mods = ns.mods + [mod] %}
+{% endfor %}
+{{ ns.mods | tojson }}`;
+
+// ─── Action-source example ────────────────────────────────────────────────────
+const EXAMPLE_ACTION_TEMPLATE = `{# Action Template — build modules from a HA service response.
+   'response' holds the raw return value of your configured action.
+   For todo.get_items with entity_id 'todo.shopping' the structure is:
+     response['todo.shopping']['items']  — list of items
+
+   Adapt the path below to match your own service response shape. #}
+{% set entity = 'todo.shopping' %}
+{% set raw = response.get(entity, {}).get('items', []) %}
+{% set ns = namespace(mods=[]) %}
+{% for item in raw %}
+  {% set is_done = item.status == 'completed' %}
+  {% set mod = {
+    'id': 'act_' ~ loop.index,
+    'type': 'text',
+    'text': item.summary ~ (' ✓' if is_done else ''),
+    'color': '#4caf50' if is_done else 'var(--primary-text-color)',
+    'display_mode': 'always', 'display_conditions': []
+  } %}
+  {% set ns.mods = ns.mods + [mod] %}
+{% endfor %}
+{{ ns.mods | tojson }}`;
 
 // ─── Example templates ───────────────────────────────────────────────────────
 
@@ -220,6 +269,10 @@ export class UltraDynamicListModule extends BaseUltraModule {
   // Per-module-instance state for show-more and pagination
   private _expandedModules: Map<string, boolean> = new Map();
   private _currentPage: Map<string, number> = new Map();
+  // Action source: cache & debounce timer per module id
+  private _actionCache: Map<string, unknown> = new Map();
+  private _actionFetching: Set<string> = new Set();
+  private _actionTimers: Map<string, ReturnType<typeof setInterval>> = new Map();
 
   private _hashString(str: string): string {
     let hash = 0;
@@ -247,6 +300,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
       source_type: 'template',
       dynamic_template: EXAMPLE_DOORS_WINDOWS,
       todo_entity: undefined,
+      todo_entities: [],
       todo_statuses: [],
       todo_item_template: {
         module_type: 'text',
@@ -254,6 +308,9 @@ export class UltraDynamicListModule extends BaseUltraModule {
         secondary_field: 'due',
         icon: 'mdi:checkbox-marked-circle-outline',
       },
+      todo_dynamic_template: EXAMPLE_TODO_TEMPLATE,
+      action_source: { domain: 'todo', service: 'get_items', service_data: {}, watch_entities: [], refresh_interval: 0 },
+      action_template: EXAMPLE_ACTION_TEMPLATE,
       direction: 'horizontal',
       gap: 8,
       wrap: true,
@@ -280,9 +337,17 @@ export class UltraDynamicListModule extends BaseUltraModule {
     const dynModule = module as DynamicListModule;
     const lang = hass?.locale?.language || 'en';
 
-    const sourceType =
-      String(dynModule.source_type || 'template').toLowerCase() === 'todo' ? 'todo' : 'template';
+    const sourceType = (() => {
+      const raw = String(dynModule.source_type || 'template').toLowerCase();
+      if (raw === 'todo') return 'todo';
+      if (raw === 'todo-template') return 'todo-template';
+      if (raw === 'action') return 'action';
+      return 'template';
+    })();
     const isTodo = sourceType === 'todo';
+    const isTodoTemplate = sourceType === 'todo-template';
+    const isAction = sourceType === 'action';
+    const isTemplate = sourceType === 'template';
     const todoTpl = dynModule.todo_item_template || {
       module_type: 'text',
       primary_field: 'summary',
@@ -316,16 +381,21 @@ export class UltraDynamicListModule extends BaseUltraModule {
             <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">List source</label>
             <ha-selector
               .hass=${hass}
-              .selector=${{ select: { options: [ { value: 'template', label: 'Jinja2 Template' }, { value: 'todo', label: 'Todo List (HA entity)' } ] } }}
+              .selector=${{ select: { options: [
+                { value: 'template', label: 'Jinja2 Template' },
+                { value: 'todo', label: 'Todo List (field mapping)' },
+                { value: 'todo-template', label: 'Todo List + Jinja2 Template' },
+                { value: 'action', label: 'HA Action / Service call' },
+              ] } }}
               .value=${sourceType}
               @value-changed=${(e: CustomEvent) =>
-                updateModule({ source_type: (e.detail.value || 'template') as 'template' | 'todo' } as Partial<CardModule>)}
+                updateModule({ source_type: (e.detail.value || 'template') as 'template' | 'todo' | 'todo-template' | 'action' } as Partial<CardModule>)}
             ></ha-selector>
           </div>
         </div>
 
         ${isTodo ? html`
-        <!-- Todo List source: ha-selector dropdowns (no radios) -->
+        <!-- ── Todo List (field mapping) source ─────────────────────────────── -->
         <div
           class="settings-section"
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
@@ -606,8 +676,272 @@ export class UltraDynamicListModule extends BaseUltraModule {
             <strong>Description JSON (Local Todo, etc.):</strong> You can put JSON in an item’s description to override display or define multiple modules. Object (e.g. <code>{"color": "#f00", "text": "Custom"}</code>) is merged into the row. Array of module configs shows multiple modules for that one item.
           </div>
         </div>
+
+        ` : isTodoTemplate ? html`
+        <!-- ── Todo List + Jinja2 Template source ────────────────────────────── -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 4px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;"
+          >
+            <ha-icon icon="mdi:format-list-checks" style="--mdc-icon-size: 20px;"></ha-icon>
+            Todo List
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 12px; margin-bottom: 12px; color: var(--secondary-text-color); line-height: 1.5;"
+          >
+            Choose one or more todo lists. Items are fetched and injected into your template as <code>items</code> — a list of objects with keys <code>summary</code>, <code>status</code>, <code>due</code>, <code>description</code>, <code>uid</code>, and <code>entity_id</code>.
+          </div>
+          <div class="field-group" style="margin-bottom: 12px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Todo list</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: '', label: 'Default (first available)' },
+                    ...(hass.states
+                      ? Object.keys(hass.states)
+                          .filter((id) => id.startsWith('todo.'))
+                          .map((id) => ({
+                            value: id,
+                            label: (hass.states[id]?.attributes?.friendly_name as string) || id,
+                          }))
+                      : []),
+                  ],
+                },
+              }}
+              .value=${dynModule.todo_entity ?? ''}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ todo_entity: (e.detail.value || undefined) as string | undefined } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+          <div class="field-group" style="margin-bottom: 12px;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Also include</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  multiple: true,
+                  options: [
+                    { value: '', label: 'Default (first available)' },
+                    ...(hass.states
+                      ? Object.keys(hass.states)
+                          .filter((id) => id.startsWith('todo.'))
+                          .map((id) => ({
+                            value: id,
+                            label: (hass.states[id]?.attributes?.friendly_name as string) || id,
+                          }))
+                      : []),
+                  ],
+                },
+              }}
+              .value=${dynModule.todo_entities || []}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ todo_entities: Array.isArray(e.detail.value) ? e.detail.value : [] } as Partial<CardModule>)}
+            ></ha-selector>
+          </div>
+          <div class="field-group" style="margin-bottom: 0;">
+            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Show statuses</label>
+            <ha-selector
+              .hass=${hass}
+              .selector=${{
+                select: {
+                  options: [
+                    { value: 'both', label: 'Both' },
+                    { value: 'needs_action', label: 'Needs action only' },
+                    { value: 'completed', label: 'Completed only' },
+                  ],
+                },
+              }}
+              .value=${(() => {
+                const s = dynModule.todo_statuses || [];
+                if (s.length === 0 || s.length === 2) return 'both';
+                return s[0] === 'completed' ? 'completed' : 'needs_action';
+              })()}
+              @value-changed=${(e: CustomEvent) => {
+                const v = e.detail.value;
+                const statuses: ('needs_action' | 'completed')[] =
+                  v === 'both' ? [] : v === 'completed' ? ['completed'] : ['needs_action'];
+                updateModule({ todo_statuses: statuses } as Partial<CardModule>);
+              }}
+            ></ha-selector>
+          </div>
+        </div>
+
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 4px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;"
+          >
+            <ha-icon icon="mdi:code-braces" style="--mdc-icon-size: 20px;"></ha-icon>
+            Jinja2 Template
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 12px; margin-bottom: 16px; color: var(--secondary-text-color); line-height: 1.5;"
+          >
+            Write a Jinja2 template that receives <code>items</code> (your fetched todo items) and outputs a <strong>JSON array</strong> of module configs via <code>| tojson</code>. Each item has: <code>summary</code>, <code>status</code>, <code>due</code>, <code>description</code>, <code>uid</code>, <code>entity_id</code>.
+          </div>
+          <div class="field-group">
+            <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Template</div>
+            <div
+              @mousedown=${(e: Event) => {
+                const target = e.target as HTMLElement;
+                if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) e.stopPropagation();
+              }}
+              @dragstart=${(e: Event) => e.stopPropagation()}
+            >
+              <ultra-template-editor
+                .hass=${hass}
+                .value=${dynModule.todo_dynamic_template || ''}
+                .placeholder=${EXAMPLE_TODO_TEMPLATE}
+                .minHeight=${220}
+                .maxHeight=${500}
+                @value-changed=${(e: CustomEvent) =>
+                  updateModule({ todo_dynamic_template: e.detail.value } as Partial<CardModule>)}
+              ></ultra-template-editor>
+            </div>
+          </div>
+        </div>
+
+        ` : isAction ? html`
+        <!-- ── Action / Service source ───────────────────────────────────────── -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 4px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;"
+          >
+            <ha-icon icon="mdi:lightning-bolt" style="--mdc-icon-size: 20px;"></ha-icon>
+            Action / Service Call
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 12px; margin-bottom: 12px; color: var(--secondary-text-color); line-height: 1.5;"
+          >
+            Call any HA service with <code>return_response: true</code>. The response is injected into your template as <code>response</code>. Use <strong>Watch entities</strong> to re-fetch when state changes, or set a <strong>Refresh interval</strong> for periodic polling.
+          </div>
+
+          ${((): TemplateResult => {
+            const act: DynamicListActionSource = dynModule.action_source || { domain: '', service: '', service_data: {}, watch_entities: [], refresh_interval: 0 };
+            const updateAction = (patch: Partial<DynamicListActionSource>) =>
+              updateModule({ action_source: { ...act, ...patch } } as Partial<CardModule>);
+            return html`
+              <div class="field-group" style="margin-bottom: 12px;">
+                <ha-form
+                  .hass=${hass}
+                  .data=${{ domain: act.domain || '', service: act.service || '' }}
+                  .schema=${[
+                    { name: 'domain', label: 'Domain', description: 'e.g. todo, weather, calendar', selector: { text: {} } },
+                    { name: 'service', label: 'Service', description: 'e.g. get_items, get_forecasts', selector: { text: {} } },
+                  ]}
+                  .computeLabel=${(s: any) => s.label || s.name}
+                  .computeDescription=${(s: any) => s.description || ''}
+                  @value-changed=${(e: CustomEvent) => {
+                    if (e.detail.value?.domain !== undefined) updateAction({ domain: e.detail.value.domain });
+                    if (e.detail.value?.service !== undefined) updateAction({ service: e.detail.value.service });
+                  }}
+                ></ha-form>
+              </div>
+              <div class="field-group" style="margin-bottom: 12px;">
+                <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 6px;">Service data (JSON)</label>
+                <div class="field-description" style="font-size: 11px; color: var(--secondary-text-color); margin-bottom: 8px;">
+                  Passed as <code>service_data</code>. You may use <code>$variable</code> syntax. E.g. <code>{"entity_id": "todo.shopping"}</code>
+                </div>
+                <ultra-template-editor
+                  .hass=${hass}
+                  .value=${JSON.stringify(act.service_data ?? {}, null, 2)}
+                  .placeholder=${'{\n  "entity_id": "todo.shopping"\n}'}
+                  .minHeight=${80}
+                  .maxHeight=${200}
+                  @value-changed=${(e: CustomEvent) => {
+                    try {
+                      const parsed = JSON.parse(e.detail.value || '{}');
+                      updateAction({ service_data: typeof parsed === 'object' && parsed !== null ? parsed : {} });
+                    } catch { /* keep previous value until JSON is valid */ }
+                  }}
+                ></ultra-template-editor>
+              </div>
+              <div class="field-group" style="margin-bottom: 12px;">
+                <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 6px;">Watch entities (state_changed refresh)</label>
+                <ha-selector
+                  .hass=${hass}
+                  .selector=${{ entity: { multiple: true } }}
+                  .value=${act.watch_entities || []}
+                  @value-changed=${(e: CustomEvent) =>
+                    updateAction({ watch_entities: Array.isArray(e.detail.value) ? e.detail.value : [] })}
+                ></ha-selector>
+              </div>
+              <div class="field-group" style="margin-bottom: 0;">
+                <ha-form
+                  .hass=${hass}
+                  .data=${{ refresh_interval: act.refresh_interval ?? 0 }}
+                  .schema=${[{
+                    name: 'refresh_interval',
+                    label: 'Refresh interval (seconds)',
+                    description: '0 = no polling (rely on watch entities only)',
+                    selector: { number: { min: 0, max: 3600, step: 5, mode: 'box' } },
+                  }]}
+                  .computeLabel=${(s: any) => s.label || s.name}
+                  .computeDescription=${(s: any) => s.description || ''}
+                  @value-changed=${(e: CustomEvent) => updateAction({ refresh_interval: e.detail.value?.refresh_interval ?? 0 })}
+                ></ha-form>
+              </div>
+            `;
+          })()}
+        </div>
+
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 4px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;"
+          >
+            <ha-icon icon="mdi:code-braces" style="--mdc-icon-size: 20px;"></ha-icon>
+            Result Template
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 12px; margin-bottom: 16px; color: var(--secondary-text-color); line-height: 1.5;"
+          >
+            Write a Jinja2 template that processes <code>response</code> (the raw service response object) and outputs a <strong>JSON array</strong> of module configs via <code>| tojson</code>.
+          </div>
+          <div class="field-group">
+            <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Template</div>
+            <div
+              @mousedown=${(e: Event) => {
+                const target = e.target as HTMLElement;
+                if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) e.stopPropagation();
+              }}
+              @dragstart=${(e: Event) => e.stopPropagation()}
+            >
+              <ultra-template-editor
+                .hass=${hass}
+                .value=${dynModule.action_template || ''}
+                .placeholder=${EXAMPLE_ACTION_TEMPLATE}
+                .minHeight=${220}
+                .maxHeight=${500}
+                @value-changed=${(e: CustomEvent) =>
+                  updateModule({ action_template: e.detail.value } as Partial<CardModule>)}
+              ></ultra-template-editor>
+            </div>
+          </div>
+        </div>
+
         ` : html`
-        <!-- Template Section -->
+        <!-- ── Jinja2 Template source ─────────────────────────────────────────── -->
         <div
           class="settings-section"
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
@@ -1380,8 +1714,13 @@ export class UltraDynamicListModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const dynModule = module as DynamicListModule;
-    const sourceType =
-      String(dynModule.source_type || 'template').toLowerCase() === 'todo' ? 'todo' : 'template';
+    const sourceType = (() => {
+      const raw = String(dynModule.source_type || 'template').toLowerCase();
+      if (raw === 'todo') return 'todo';
+      if (raw === 'todo-template') return 'todo-template';
+      if (raw === 'action') return 'action';
+      return 'template';
+    })();
 
     // #region agent log
     fetch('http://127.0.0.1:7242/ingest/36063b29-f1db-4787-bed7-95c789116512',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c2200c'},body:JSON.stringify({sessionId:'c2200c',location:'dynamic-list-module.ts:renderPreview:entry',message:'Dynamic list renderPreview',data:{raw_source_type:dynModule.source_type,typeof_source_type:typeof dynModule.source_type,sourceType,todo_entity:dynModule.todo_entity,branch:sourceType},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
@@ -1504,6 +1843,221 @@ export class UltraDynamicListModule extends BaseUltraModule {
         tpl,
         dynModule.id
       );
+    } else if (sourceType === 'todo-template') {
+      // ─── Todo-template source: fetch items then run a Jinja2 template ─────────
+      const firstTodoEntity =
+        hass.states && Object.keys(hass.states).find((id) => id.startsWith('todo.'));
+      const resolve = (e: string) => (e?.trim() || firstTodoEntity || '').trim();
+      const primaryEntity = resolve(dynModule.todo_entity ?? '');
+      const extraEntities = (dynModule.todo_entities || [])
+        .map((e) => resolve(e))
+        .filter((e) => e && e !== primaryEntity);
+      const entityIds = primaryEntity
+        ? [primaryEntity, ...extraEntities]
+        : extraEntities.length ? extraEntities : firstTodoEntity ? [firstTodoEntity] : [];
+
+      if (entityIds.length === 0) {
+        return this.renderGradientErrorState(
+          'No Todo List',
+          'Choose a to-do list entity in the General tab.',
+          'mdi:format-list-checks'
+        );
+      }
+
+      const tplStr = dynModule.todo_dynamic_template?.trim();
+      if (!tplStr) {
+        return this.renderGradientErrorState(
+          'Add a Template',
+          'Enter a Jinja2 template in the General tab to map your todo items to modules.',
+          'mdi:code-braces'
+        );
+      }
+
+      if (!this._todoService) this._todoService = new UltraCardTodoService();
+      const cache = (hass as any).__uvc_todo_cache as { [entityId: string]: TodoItem[] } | undefined;
+      const onUpdate = () => {
+        if (typeof window !== 'undefined' && !(window as any)._ultraCardUpdateTimer) {
+          (window as any)._ultraCardUpdateTimer = setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+            (window as any)._ultraCardUpdateTimer = null;
+          }, 50);
+        }
+      };
+      let anyMissing = false;
+      for (const eid of entityIds) {
+        if (cache?.[eid] === undefined) {
+          anyMissing = true;
+          this._todoService.getItems(hass, eid, onUpdate);
+        }
+      }
+      if (anyMissing) {
+        return html`
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;color:var(--secondary-text-color);font-size:13px;">
+            <ha-icon icon="mdi:loading" style="--mdc-icon-size:16px;animation:spin 1s linear infinite;"></ha-icon>
+            Loading todo items…
+          </div>`;
+      }
+
+      // Build the flat items array with entity_id added
+      const statuses = dynModule.todo_statuses;
+      const allItems: Record<string, unknown>[] = [];
+      entityIds.forEach((eid) => {
+        const items = cache?.[eid] || [];
+        items.forEach((item) => {
+          if (!statuses || statuses.length === 0 || statuses.includes(item.status)) {
+            allItems.push({ ...item, entity_id: eid });
+          }
+        });
+      });
+
+      // Serialise items to JSON and embed as a Jinja2 variable assignment prefix
+      const itemsJson = JSON.stringify(allItems);
+      const prefixedTemplate = `{% set items = ${itemsJson} %}\n${tplStr}`;
+
+      if (!this._templateService) this._templateService = new TemplateService(hass);
+      if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+
+      const processedTpl = preprocessTemplateVariables(prefixedTemplate, hass, config);
+      const tHash = this._hashString(processedTpl);
+      const tKey = `layout_mods_dynlist_todotpl_${dynModule.id}_${tHash}`;
+
+      if (!this._templateService.hasTemplateSubscription(tKey)) {
+        this._templateService.subscribeToTemplate(processedTpl, tKey, onUpdate, {}, config);
+      }
+      const rawTodo = hass.__uvc_template_strings?.[tKey];
+      if (!rawTodo) {
+        return html`
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;color:var(--secondary-text-color);font-size:13px;">
+            <ha-icon icon="mdi:loading" style="--mdc-icon-size:16px;animation:spin 1s linear infinite;"></ha-icon>
+            Evaluating template…
+          </div>`;
+      }
+      try {
+        const parsed = Array.isArray(rawTodo) ? rawTodo : JSON.parse(String(rawTodo).trim());
+        generatedModules = Array.isArray(parsed) ? (parsed as CardModule[]) : [];
+      } catch (e) {
+        console.error('[UltraCard] Dynamic List (todo-template): parse error', rawTodo, e);
+        return this.renderGradientErrorState(
+          'Invalid Template Output',
+          'Template must output a JSON array via {{ ns.mods | tojson }}.',
+          'mdi:alert-circle-outline'
+        );
+      }
+
+    } else if (sourceType === 'action') {
+      // ─── Action source: call a HA service, inject response into a Jinja2 template
+      const actCfg = dynModule.action_source;
+      if (!actCfg?.domain || !actCfg?.service) {
+        return this.renderGradientErrorState(
+          'Configure an Action',
+          'Set the Domain and Service in the General tab.',
+          'mdi:lightning-bolt'
+        );
+      }
+      const tplStr = dynModule.action_template?.trim();
+      if (!tplStr) {
+        return this.renderGradientErrorState(
+          'Add a Template',
+          'Enter a Jinja2 template in the General tab to map the service response to modules.',
+          'mdi:code-braces'
+        );
+      }
+
+      const cacheKey = `__uvc_action_${dynModule.id}`;
+      const cachedResponse = this._actionCache.get(cacheKey);
+
+      const onUpdate = () => {
+        if (typeof window !== 'undefined' && !(window as any)._ultraCardUpdateTimer) {
+          (window as any)._ultraCardUpdateTimer = setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+            (window as any)._ultraCardUpdateTimer = null;
+          }, 50);
+        }
+      };
+
+      const fetchAction = async () => {
+        if (this._actionFetching.has(cacheKey)) return;
+        this._actionFetching.add(cacheKey);
+        try {
+          const serviceData = actCfg.service_data ? { ...actCfg.service_data } : {};
+          const result = await (hass as any).callService(
+            actCfg.domain,
+            actCfg.service,
+            serviceData,
+            undefined,
+            true,
+            true
+          );
+          this._actionCache.set(cacheKey, result?.response ?? result ?? {});
+        } catch (err) {
+          console.warn('[UltraCard] Dynamic List action source failed:', err);
+          this._actionCache.set(cacheKey, {});
+        } finally {
+          this._actionFetching.delete(cacheKey);
+          onUpdate();
+        }
+      };
+
+      if (cachedResponse === undefined) {
+        fetchAction();
+        return html`
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;color:var(--secondary-text-color);font-size:13px;">
+            <ha-icon icon="mdi:loading" style="--mdc-icon-size:16px;animation:spin 1s linear infinite;"></ha-icon>
+            Calling action…
+          </div>`;
+      }
+
+      // Set up watch entity subscriptions (once per module instance)
+      const watchKey = `__uvc_action_watch_${dynModule.id}`;
+      if (!(window as any)[watchKey] && (actCfg.watch_entities?.length ?? 0) > 0) {
+        (window as any)[watchKey] = true;
+        const connection = (hass as any).connection;
+        connection?.subscribeEvents?.((ev: { data: { entity_id: string } }) => {
+          if (actCfg.watch_entities?.includes(ev?.data?.entity_id)) fetchAction();
+        }, 'state_changed').catch(() => {});
+      }
+
+      // Set up periodic refresh (once per module instance)
+      const interval = actCfg.refresh_interval ?? 0;
+      if (interval > 0 && !this._actionTimers.has(cacheKey)) {
+        const timer = setInterval(fetchAction, interval * 1000);
+        this._actionTimers.set(cacheKey, timer);
+      }
+
+      // Serialise response and inject as Jinja2 variable
+      const responseJson = JSON.stringify(cachedResponse);
+      const prefixedTemplate = `{% set response = ${responseJson} %}\n${tplStr}`;
+
+      if (!this._templateService) this._templateService = new TemplateService(hass);
+      if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+
+      const processedTpl = preprocessTemplateVariables(prefixedTemplate, hass, config);
+      const tHash = this._hashString(processedTpl);
+      const tKey = `layout_mods_dynlist_action_${dynModule.id}_${tHash}`;
+
+      if (!this._templateService.hasTemplateSubscription(tKey)) {
+        this._templateService.subscribeToTemplate(processedTpl, tKey, onUpdate, {}, config);
+      }
+      const rawAction = hass.__uvc_template_strings?.[tKey];
+      if (!rawAction) {
+        return html`
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;color:var(--secondary-text-color);font-size:13px;">
+            <ha-icon icon="mdi:loading" style="--mdc-icon-size:16px;animation:spin 1s linear infinite;"></ha-icon>
+            Evaluating template…
+          </div>`;
+      }
+      try {
+        const parsed = Array.isArray(rawAction) ? rawAction : JSON.parse(String(rawAction).trim());
+        generatedModules = Array.isArray(parsed) ? (parsed as CardModule[]) : [];
+      } catch (e) {
+        console.error('[UltraCard] Dynamic List (action): parse error', rawAction, e);
+        return this.renderGradientErrorState(
+          'Invalid Template Output',
+          'Template must output a JSON array via {{ ns.mods | tojson }}.',
+          'mdi:alert-circle-outline'
+        );
+      }
+
     } else {
       // ─── Template source ──────────────────────────────────────────────────
       // #region agent log
@@ -1601,7 +2155,8 @@ export class UltraDynamicListModule extends BaseUltraModule {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/36063b29-f1db-4787-bed7-95c789116512',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c2200c'},body:JSON.stringify({sessionId:'c2200c',location:'dynamic-list-module.ts:empty-list',message:'Showing empty list message',data:{sourceType,moduleId:dynModule.id},timestamp:Date.now(),hypothesisId:'E',runId:'post-fix'})}).catch(()=>{});
       // #endregion
-      const isTodoEmpty = sourceType === 'todo';
+      const isTodoEmpty = sourceType === 'todo' || sourceType === 'todo-template';
+      const emptyMsg = isTodoEmpty ? 'No to-do items' : 'Template returned an empty list';
       return html`
         <div
           style="
@@ -1615,7 +2170,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
           "
         >
           <ha-icon icon="${isTodoEmpty ? 'mdi:format-list-checks' : 'mdi:playlist-remove'}" style="--mdc-icon-size: 16px;"></ha-icon>
-          ${isTodoEmpty ? 'No to-do items' : 'Template returned an empty list'}
+          ${emptyMsg}
         </div>
       `;
     }
@@ -1776,11 +2331,21 @@ export class UltraDynamicListModule extends BaseUltraModule {
   validate(module: CardModule): { valid: boolean; errors: string[] } {
     const dynModule = module as DynamicListModule;
     const errors: string[] = [];
-    const isTodo =
-      String(dynModule.source_type || 'template').toLowerCase() === 'todo';
-    if (isTodo) {
+    const src = String(dynModule.source_type || 'template').toLowerCase();
+    if (src === 'todo') {
       if (!dynModule.todo_entity || !dynModule.todo_entity.trim()) {
         errors.push('todo_entity is required when source is Todo List');
+      }
+    } else if (src === 'todo-template') {
+      if (!dynModule.todo_dynamic_template || !dynModule.todo_dynamic_template.trim()) {
+        errors.push('todo_dynamic_template is required when source is Todo List + Template');
+      }
+    } else if (src === 'action') {
+      if (!dynModule.action_source?.domain || !dynModule.action_source?.service) {
+        errors.push('action_source.domain and action_source.service are required when source is Action');
+      }
+      if (!dynModule.action_template || !dynModule.action_template.trim()) {
+        errors.push('action_template is required when source is Action');
       }
     } else {
       if (!dynModule.dynamic_template || dynModule.dynamic_template.trim() === '') {

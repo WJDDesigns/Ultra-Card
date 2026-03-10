@@ -45,6 +45,7 @@ import { UltraTimerModule } from './timer-module';
 import { UltraCoverModule } from './cover-module';
 import { UltraDynamicListModule } from './dynamic-list-module';
 import { UltraQrCodeModule } from './qr-code-module';
+import { UltraEnergyDisplayModule } from './energy-display-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -132,6 +133,8 @@ export class ModuleRegistry {
     this.registerModule(new UltraDynamicListModule());
     // Register QR code module (Pro feature)
     this.registerModule(new UltraQrCodeModule());
+    // Register Energy Display module (Pro feature)
+    this.registerModule(new UltraEnergyDisplayModule());
   }
 
   // Register a new module (for core modules or third-party modules)
