@@ -1076,7 +1076,13 @@ export class HubProTab extends LitElement {
 
   updated(changed: Map<string, unknown>): void {
     if (changed.has('hass') && this.hass) {
-      this._cloudUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+      const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+      this._cloudUser = integrationUser;
+      // Ensure the auth service singleton is also updated so snapshot
+      // service calls (isAuthenticated) reflect the sensor state
+      if (integrationUser) {
+        ucCloudAuthService.setIntegrationUser(integrationUser);
+      }
     }
     // Load snapshot list once when Pro tab is shown so summary has data
     const isProUser =

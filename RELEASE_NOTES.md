@@ -1,5 +1,14 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0-beta7
+
+### 🐛 Bug Fixes
+
+- **Fix "Must be logged in" error on snapshot actions** — Resolved a race condition where the Hub Pro tab could call snapshot API methods before the auth service singleton had been populated from the integration sensor. The `hub-pro-tab` now calls `ucCloudAuthService.setIntegrationUser()` directly in its `updated()` hook, ensuring the auth service is always in sync with the sensor state regardless of component load order.
+- **Fix favorite colors disappearing after browser cache clear / reboot** — Favorite colors were previously stored only in `localStorage`, meaning they were lost when clearing the browser cache, using incognito mode, or accessing HA from a different browser or device. Colors are now persisted to Home Assistant's integration store via two new API endpoints (`GET/POST /api/ultra_card_pro_cloud/favorite_colors`). The Colors tab loads favorites from HA on first open and syncs every add, edit, and delete back to HA automatically, with `localStorage` kept as a local cache.
+
+---
+
 ## Version 3.1.0-beta4
 
 ### 🚀 New Features

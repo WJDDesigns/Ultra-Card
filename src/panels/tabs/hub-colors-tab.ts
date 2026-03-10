@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { FavoriteColor } from '../../types';
 import { ucFavoriteColorsService } from '../../services/uc-favorite-colors-service';
 import { panelStyles } from '../panel-styles';
@@ -8,6 +8,8 @@ import { ucCloudSyncService, SyncStatus } from '../../services/uc-cloud-sync-ser
 
 @customElement('hub-colors-tab')
 export class HubColorsTab extends LitElement {
+  @property({ attribute: false }) public hass: any;
+
   @state() private _colors: FavoriteColor[] = [];
   @state() private _toastMsg = '';
   @state() private _showAddForm = false;
@@ -23,6 +25,7 @@ export class HubColorsTab extends LitElement {
   private _authUnsub?: (user: CloudUser | null) => void;
   private _syncUnsub?: (status: SyncStatus) => void;
   private _toastTimer?: ReturnType<typeof setTimeout>;
+  private _haColorsLoaded = false;
 
   static styles = [
     panelStyles,
@@ -448,6 +451,13 @@ export class HubColorsTab extends LitElement {
     ucCloudSyncService.addListener(this._syncUnsub);
   }
 
+  updated(changed: Map<string, unknown>): void {
+    if (changed.has('hass') && this.hass && !this._haColorsLoaded) {
+      this._haColorsLoaded = true;
+      ucFavoriteColorsService.loadFromHA(this.hass).catch(() => {});
+    }
+  }
+
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this._unsub?.();
@@ -535,6 +545,7 @@ export class HubColorsTab extends LitElement {
   private _deleteColor(fav: FavoriteColor): void {
     ucFavoriteColorsService.deleteFavorite(fav.id);
     this._colors = ucFavoriteColorsService.getFavorites();
+    if (this.hass) ucFavoriteColorsService.syncToHA(this.hass).catch(() => {});
   }
 
   private _addColor(): void {
@@ -553,6 +564,7 @@ export class HubColorsTab extends LitElement {
     this._newColorValue = '#3498db';
     this._showAddForm = false;
     this._showToast(`Added "${name}"`);
+    if (this.hass) ucFavoriteColorsService.syncToHA(this.hass).catch(() => {});
   }
 
   private _startEdit(fav: FavoriteColor): void {
@@ -570,6 +582,7 @@ export class HubColorsTab extends LitElement {
     this._colors = ucFavoriteColorsService.getFavorites();
     this._editingId = null;
     this._showToast('Color updated');
+    if (this.hass) ucFavoriteColorsService.syncToHA(this.hass).catch(() => {});
   }
 
   private _cancelEdit(): void {

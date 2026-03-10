@@ -314,7 +314,7 @@ export class UltraCardPanel extends LitElement {
       case 'presets':
         return html`<hub-presets-tab></hub-presets-tab>`;
       case 'colors':
-        return html`<hub-colors-tab></hub-colors-tab>`;
+        return html`<hub-colors-tab .hass=${this.hass}></hub-colors-tab>`;
       case 'variables':
         return html`<hub-variables-tab .hass=${this.hass}></hub-variables-tab>`;
       case 'templates':

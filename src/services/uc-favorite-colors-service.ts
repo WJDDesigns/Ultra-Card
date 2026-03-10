@@ -170,6 +170,45 @@ class UcFavoriteColorsService {
   }
 
   /**
+   * Load favorite colors from Home Assistant backend (integration store).
+   * When HA returns data, it becomes the source of truth and is written to localStorage.
+   * Call when the Colors tab is shown so favorites persist across devices and cache clears.
+   */
+  async loadFromHA(hass: any): Promise<void> {
+    if (!hass?.callApi) return;
+    try {
+      const result = await hass.callApi('GET', 'ultra_card_pro_cloud/favorite_colors');
+      const colors = result?.colors;
+      if (Array.isArray(colors) && colors.length > 0) {
+        const valid = colors.filter((fav: any) => this._isValidFavorite(fav));
+        if (valid.length > 0) {
+          this._favorites = valid;
+          this._saveToStorage();
+          this._notifyListeners();
+          this._broadcastChange();
+        }
+      }
+    } catch (err) {
+      console.debug('Failed to load favorite colors from HA:', err);
+    }
+  }
+
+  /**
+   * Persist current favorite colors to Home Assistant backend.
+   * Call after any mutation (add, update, delete, reorder) when hass is available.
+   */
+  async syncToHA(hass: any): Promise<void> {
+    if (!hass?.callApi) return;
+    try {
+      await hass.callApi('POST', 'ultra_card_pro_cloud/favorite_colors', {
+        colors: this._favorites,
+      });
+    } catch (err) {
+      console.debug('Failed to sync favorite colors to HA:', err);
+    }
+  }
+
+  /**
    * Subscribe to favorite colors changes
    */
   subscribe(listener: (favorites: FavoriteColor[]) => void): () => void {
