@@ -194,7 +194,11 @@ export class LayoutTab extends LitElement {
   @state() private _isCloudAuthenticated = false; // reactive mirror of auth state for toolbar button
 
   // Inline rating & details for builder preset gallery
-  @state() private _builderRatingPreset: { id: string; name: string; existingRating: number } | null = null;
+  @state() private _builderRatingPreset: {
+    id: string;
+    name: string;
+    existingRating: number;
+  } | null = null;
   @state() private _builderPendingRateAfterLogin: { id: string; name: string } | null = null;
   @state() private _builderShowLoginForRating = false;
   @state() private _builderUserReviews: Map<string, number> = new Map();
@@ -364,7 +368,7 @@ export class LayoutTab extends LitElement {
 
     // Track cloud auth state reactively so the Share Preset button renders correctly
     this._isCloudAuthenticated = ucCloudAuthService.isAuthenticated();
-    this._authChangeListener = (user) => {
+    this._authChangeListener = user => {
       this._isCloudAuthenticated = user !== null;
     };
     ucCloudAuthService.addListener(this._authChangeListener);
@@ -1941,7 +1945,8 @@ export class LayoutTab extends LitElement {
             ? html`
                 ${(row as any).columns_template
                   ? html`
-                      <div style="
+                      <div
+                        style="
                         display: flex;
                         align-items: center;
                         gap: 6px;
@@ -1952,16 +1957,20 @@ export class LayoutTab extends LitElement {
                         border-radius: 6px;
                         font-size: 12px;
                         color: var(--primary-color);
-                      ">
+                      "
+                      >
                         <ha-icon icon="mdi:code-braces" style="--mdc-icon-size: 16px;"></ha-icon>
-                        <span><strong>Dynamic Columns</strong> — managed via <code>columns_template</code>. Edit in YAML mode.</span>
+                        <span
+                          ><strong>Dynamic Columns</strong> — managed via
+                          <code>columns_template</code>. Edit in YAML mode.</span
+                        >
                       </div>
                     `
                   : row.columns && row.columns.length > 0
-                  ? row.columns.map((column, columnIndex) =>
-                      this._renderTreeColumn(column, rowIndex, columnIndex, row.columns!.length)
-                    )
-                  : ''}
+                    ? row.columns.map((column, columnIndex) =>
+                        this._renderTreeColumn(column, rowIndex, columnIndex, row.columns!.length)
+                      )
+                    : ''}
                 <div class="tree-add-button-container">
                   <button
                     class="tree-add-btn"
@@ -1974,16 +1983,24 @@ export class LayoutTab extends LitElement {
                     <span>${localize('editor.layout.add_column', lang, 'Add Column')}</span>
                   </button>
                   <button
-                    class="tree-paste-column-btn ${this._hasColumnClipboard || ucExportImportService.hasColumnInLocalStorage() ? 'active' : ''}"
-                    ?disabled=${!this._hasColumnClipboard && !ucExportImportService.hasColumnInLocalStorage()}
+                    class="tree-paste-column-btn ${this._hasColumnClipboard ||
+                    ucExportImportService.hasColumnInLocalStorage()
+                      ? 'active'
+                      : ''}"
+                    ?disabled=${!this._hasColumnClipboard &&
+                    !ucExportImportService.hasColumnInLocalStorage()}
                     @click=${(e: Event) => {
                       e.stopPropagation();
-                      if (this._hasColumnClipboard || ucExportImportService.hasColumnInLocalStorage()) {
+                      if (
+                        this._hasColumnClipboard ||
+                        ucExportImportService.hasColumnInLocalStorage()
+                      ) {
                         this._hasColumnClipboard = true;
                         this._pasteColumn(rowIndex);
                       }
                     }}
-                    title="${this._hasColumnClipboard || ucExportImportService.hasColumnInLocalStorage()
+                    title="${this._hasColumnClipboard ||
+                    ucExportImportService.hasColumnInLocalStorage()
                       ? localize('editor.layout.paste_column', lang, 'Paste Column')
                       : localize('editor.layout.copy_column_first', lang, 'Copy a column first')}"
                   >
@@ -2123,7 +2140,8 @@ export class LayoutTab extends LitElement {
             ? html`
                 ${(column as any).modules_template
                   ? html`
-                      <div style="
+                      <div
+                        style="
                         display: flex;
                         align-items: center;
                         gap: 6px;
@@ -2134,22 +2152,26 @@ export class LayoutTab extends LitElement {
                         border-radius: 6px;
                         font-size: 12px;
                         color: var(--primary-color);
-                      ">
+                      "
+                      >
                         <ha-icon icon="mdi:code-braces" style="--mdc-icon-size: 16px;"></ha-icon>
-                        <span><strong>Dynamic Modules</strong> — managed via <code>modules_template</code>. Edit in YAML mode.</span>
+                        <span
+                          ><strong>Dynamic Modules</strong> — managed via
+                          <code>modules_template</code>. Edit in YAML mode.</span
+                        >
                       </div>
                     `
                   : column.modules && column.modules.length > 0
-                  ? column.modules.map((module, moduleIndex) =>
-                      this._renderTreeModule(
-                        module,
-                        rowIndex,
-                        columnIndex,
-                        moduleIndex,
-                        column.modules!.length
+                    ? column.modules.map((module, moduleIndex) =>
+                        this._renderTreeModule(
+                          module,
+                          rowIndex,
+                          columnIndex,
+                          moduleIndex,
+                          column.modules!.length
+                        )
                       )
-                    )
-                  : ''}
+                    : ''}
                 <div class="tree-add-button-container">
                   <button
                     class="tree-add-btn"
@@ -3059,7 +3081,14 @@ export class LayoutTab extends LitElement {
         @dragend=${this._onDragEnd}
         @dragover=${this._onDragOver}
         @dragenter=${(e: DragEvent) =>
-          this._onDragEnter(e, 'layout-child', rowIndex, columnIndex, parentModuleIndex, childIndex)}
+          this._onDragEnter(
+            e,
+            'layout-child',
+            rowIndex,
+            columnIndex,
+            parentModuleIndex,
+            childIndex
+          )}
         @dragleave=${this._onDragLeave}
         @drop=${(e: DragEvent) =>
           this._onTreeLayoutChildDrop(e, rowIndex, columnIndex, parentModuleIndex, childIndex)}
@@ -6118,7 +6147,8 @@ export class LayoutTab extends LitElement {
    * for position:fixed descendants) and `overflow: hidden` (clips them).
    * This temporarily removes both constraints while a popup is open.
    */
-  private _savedDialogStyles: { el: HTMLElement; overflow: string; transform: string } | null = null;
+  private _savedDialogStyles: { el: HTMLElement; overflow: string; transform: string } | null =
+    null;
 
   private _patchDialogContainment(enable: boolean): void {
     if (enable && !this._savedDialogStyles) {
@@ -6160,7 +6190,7 @@ export class LayoutTab extends LitElement {
           }
           break;
         }
-        el = el.parentElement || ((el.getRootNode() as ShadowRoot)?.host) || null;
+        el = el.parentElement || (el.getRootNode() as ShadowRoot)?.host || null;
       }
     } else if (!enable && this._savedDialogStyles) {
       const { el, overflow, transform } = this._savedDialogStyles;
@@ -11020,7 +11050,8 @@ export class LayoutTab extends LitElement {
     // Use _dropTarget.type for header checks since `node` may have been switched
     // to _dropTargetElement when the resolved element was a parent container.
     const dtType = this._dropTarget.type;
-    const hasHeaderDropZone = dtType === 'layout' || dtType === 'nested-layout' || dtType === 'column' || dtType === 'row';
+    const hasHeaderDropZone =
+      dtType === 'layout' || dtType === 'nested-layout' || dtType === 'column' || dtType === 'row';
     const isOverHeader = hasHeaderDropZone && !!header && !!el && header.contains(el);
     let insertEdge: 'before' | 'after' | 'inside' = 'after';
     let boundary: { element: HTMLElement; edge: 'before' | 'after' } | null = null;
@@ -11134,7 +11165,8 @@ export class LayoutTab extends LitElement {
     const target = e.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
     const header = target.querySelector('.tree-node-header');
-    const hasHeaderDropZone = type === 'layout' || type === 'nested-layout' || type === 'column' || type === 'row';
+    const hasHeaderDropZone =
+      type === 'layout' || type === 'nested-layout' || type === 'column' || type === 'row';
     const isOverHeader = hasHeaderDropZone && !!header && header.contains(e.target as Element);
     let insertEdge: 'before' | 'after' | 'inside' = 'after';
     if (hasHeaderDropZone && isOverHeader && header) {
@@ -11343,8 +11375,7 @@ export class LayoutTab extends LitElement {
         el.dataset.columnIndex != null ? parseInt(el.dataset.columnIndex, 10) : undefined,
       moduleIndex:
         el.dataset.moduleIndex != null ? parseInt(el.dataset.moduleIndex, 10) : undefined,
-      childIndex:
-        el.dataset.childIndex != null ? parseInt(el.dataset.childIndex, 10) : undefined,
+      childIndex: el.dataset.childIndex != null ? parseInt(el.dataset.childIndex, 10) : undefined,
     };
   }
 
@@ -12001,11 +12032,18 @@ export class LayoutTab extends LitElement {
           target.layoutChildIndex--;
         }
         // nested-layout target uses nestedLayoutIndex into the same array
-        if ((target as any).nestedLayoutIndex != null && (target as any).nestedLayoutIndex > removedIdx) {
+        if (
+          (target as any).nestedLayoutIndex != null &&
+          (target as any).nestedLayoutIndex > removedIdx
+        ) {
           (target as any).nestedLayoutIndex--;
         }
         // layout-child target uses childIndex as an insertion position in the same array
-        if (target.type === 'layout-child' && target.childIndex != null && target.childIndex > removedIdx) {
+        if (
+          target.type === 'layout-child' &&
+          target.childIndex != null &&
+          target.childIndex > removedIdx
+        ) {
           target.childIndex--;
         }
       }
@@ -12382,7 +12420,11 @@ export class LayoutTab extends LitElement {
         target.nestedChildIndex--;
       }
       // nested-child-target uses childIndex as insertion position in the same array
-      if (target.type === 'nested-child-target' && target.childIndex != null && target.childIndex > source.nestedChildIndex) {
+      if (
+        target.type === 'nested-child-target' &&
+        target.childIndex != null &&
+        target.childIndex > source.nestedChildIndex
+      ) {
         target.childIndex--;
       }
     }
@@ -12427,8 +12469,7 @@ export class LayoutTab extends LitElement {
       // Moving into a nested layout (e.g. dropping on a nested layout header with 'inside')
       const targetParentLayout =
         layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      const targetNestedLayout =
-        targetParentLayout?.modules?.[(target as any).nestedLayoutIndex];
+      const targetNestedLayout = targetParentLayout?.modules?.[(target as any).nestedLayoutIndex];
       if (targetNestedLayout) {
         if (!targetNestedLayout.modules) {
           targetNestedLayout.modules = [];
@@ -12499,7 +12540,11 @@ export class LayoutTab extends LitElement {
       target.layoutChildIndex === source.layoutChildIndex &&
       target.nestedChildIndex === source.nestedChildIndex;
     if (sameDeepParent) {
-      if (target.type === 'deep-nested-child-target' && target.childIndex != null && target.childIndex > source.deepNestedChildIndex) {
+      if (
+        target.type === 'deep-nested-child-target' &&
+        target.childIndex != null &&
+        target.childIndex > source.deepNestedChildIndex
+      ) {
         target.childIndex--;
       }
     }
@@ -15126,7 +15171,10 @@ export class LayoutTab extends LitElement {
                         @mouseout=${(e: Event) =>
                           ((e.target as HTMLElement).style.background = 'none')}
                       >
-                        <ha-icon icon="mdi:content-duplicate" style="--mdc-icon-size: 18px;"></ha-icon>
+                        <ha-icon
+                          icon="mdi:content-duplicate"
+                          style="--mdc-icon-size: 18px;"
+                        ></ha-icon>
                         <span
                           >${localize(
                             'editor.layout.duplicate_section',
@@ -23575,7 +23623,11 @@ export class LayoutTab extends LitElement {
     return html`
       <div class="settings-popup">
         <div class="popup-overlay" @click=${() => (this._showRowSettings = false)}></div>
-        <div class="popup-content draggable-popup" id="row-popup-${this._selectedRowForSettings}" @click=${(e: Event) => e.stopPropagation()}>
+        <div
+          class="popup-content draggable-popup"
+          id="row-popup-${this._selectedRowForSettings}"
+          @click=${(e: Event) => e.stopPropagation()}
+        >
           <div
             class="popup-header"
             @mousedown=${(e: MouseEvent) => {
@@ -24223,7 +24275,6 @@ export class LayoutTab extends LitElement {
             </select>
           </div>
         </div>
-
       </div>
     `;
   }
@@ -24479,7 +24530,6 @@ export class LayoutTab extends LitElement {
           </option>
         </select>
       </div>
-
     `;
   }
 
@@ -26434,8 +26484,11 @@ export class LayoutTab extends LitElement {
     }
 
     // Patch HA dialog containment when any popup is open, restore when all closed
-    const anyPopupOpen = !!this._selectedModule || !!this._selectedLayoutChild ||
-      !!this._selectedTabsSectionChild || !!this._showModuleSelector;
+    const anyPopupOpen =
+      !!this._selectedModule ||
+      !!this._selectedLayoutChild ||
+      !!this._selectedTabsSectionChild ||
+      !!this._showModuleSelector;
     if (anyPopupOpen) {
       this._patchDialogContainment(true);
     } else if (this._savedDialogStyles) {
@@ -26550,15 +26603,16 @@ export class LayoutTab extends LitElement {
                 <div class="fullscreen-preview-label">
                   ${localize('editor.layout.card_preview', lang, 'Card Preview')}
                 </div>
-                <div
-                  class="fullscreen-preview-card"
-                  style="height: ${this._previewHeightPx}px;"
-                >
+                <div class="fullscreen-preview-card" style="height: ${this._previewHeightPx}px;">
                   <ultra-card .hass=${this.hass} .config=${this.config}></ultra-card>
                 </div>
                 <div
                   class="fullscreen-preview-resize-handle"
-                  title="${localize('editor.layout.resize_preview', lang, 'Drag to resize preview')}"
+                  title="${localize(
+                    'editor.layout.resize_preview',
+                    lang,
+                    'Drag to resize preview'
+                  )}"
                   @mousedown=${this._onPreviewResizeStart}
                 >
                   <ha-icon icon="mdi:arrow-expand-vertical"></ha-icon>
@@ -26647,13 +26701,17 @@ export class LayoutTab extends LitElement {
               class="header-btn icon-only"
               @click=${(e: Event) => {
                 e.stopPropagation();
-                this.dispatchEvent(new CustomEvent('toggle-fullscreen', { bubbles: true, composed: true }));
+                this.dispatchEvent(
+                  new CustomEvent('toggle-fullscreen', { bubbles: true, composed: true })
+                );
               }}
               title="${this.isFullScreen
                 ? localize('editor.tooltips.return_dashboard', lang, 'Return to Dashboard')
                 : localize('editor.tooltips.enter_fullscreen', lang, 'Enter Full Screen')}"
             >
-              <ha-icon icon="${this.isFullScreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
+              <ha-icon
+                icon="${this.isFullScreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"
+              ></ha-icon>
             </button>
           </div>
           ${this._isCloudAuthenticated || this.cloudUser
@@ -27214,18 +27272,34 @@ export class LayoutTab extends LitElement {
                       Add Column
                     </button>
                     <button
-                      class="paste-column-btn ${this._hasColumnClipboard || ucExportImportService.hasColumnInLocalStorage() ? 'paste-column-btn--active' : 'paste-column-btn--empty'}"
-                      ?disabled=${!this._hasColumnClipboard && !ucExportImportService.hasColumnInLocalStorage()}
+                      class="paste-column-btn ${this._hasColumnClipboard ||
+                      ucExportImportService.hasColumnInLocalStorage()
+                        ? 'paste-column-btn--active'
+                        : 'paste-column-btn--empty'}"
+                      ?disabled=${!this._hasColumnClipboard &&
+                      !ucExportImportService.hasColumnInLocalStorage()}
                       @click=${(e: Event) => {
                         e.stopPropagation();
-                        if (this._hasColumnClipboard || ucExportImportService.hasColumnInLocalStorage()) {
+                        if (
+                          this._hasColumnClipboard ||
+                          ucExportImportService.hasColumnInLocalStorage()
+                        ) {
                           this._hasColumnClipboard = true;
                           this._pasteColumn(rowIndex);
                         }
                       }}
-                      title="${this._hasColumnClipboard || ucExportImportService.hasColumnInLocalStorage()
-                        ? localize('editor.layout.paste_column', this.hass?.locale?.language || 'en', 'Paste Column')
-                        : localize('editor.layout.copy_column_first', this.hass?.locale?.language || 'en', 'Copy a column first')}"
+                      title="${this._hasColumnClipboard ||
+                      ucExportImportService.hasColumnInLocalStorage()
+                        ? localize(
+                            'editor.layout.paste_column',
+                            this.hass?.locale?.language || 'en',
+                            'Paste Column'
+                          )
+                        : localize(
+                            'editor.layout.copy_column_first',
+                            this.hass?.locale?.language || 'en',
+                            'Copy a column first'
+                          )}"
                     >
                       <ha-icon icon="mdi:clipboard-arrow-down"></ha-icon>
                       ${localize(
@@ -27263,7 +27337,10 @@ export class LayoutTab extends LitElement {
                     this._showSubmitPresetDialog = true;
                   }
                 }}
-                @close=${(e: Event) => { e.stopPropagation(); this._showLoginDialogForSubmit = false; }}
+                @close=${(e: Event) => {
+                  e.stopPropagation();
+                  this._showLoginDialogForSubmit = false;
+                }}
               ></uc-hub-login-dialog>
             `
           : ''}
@@ -27275,12 +27352,23 @@ export class LayoutTab extends LitElement {
                   this._builderShowLoginForRating = false;
                   this._isCloudAuthenticated = true;
                   if (this._builderPendingRateAfterLogin) {
-                    const existingRating = this._builderUserReviews.get(this._builderPendingRateAfterLogin.id) ?? ucCloudSyncService.getUserReview(this._builderPendingRateAfterLogin.id)?.rating ?? 0;
-                    this._builderRatingPreset = { ...this._builderPendingRateAfterLogin, existingRating };
+                    const existingRating =
+                      this._builderUserReviews.get(this._builderPendingRateAfterLogin.id) ??
+                      ucCloudSyncService.getUserReview(this._builderPendingRateAfterLogin.id)
+                        ?.rating ??
+                      0;
+                    this._builderRatingPreset = {
+                      ...this._builderPendingRateAfterLogin,
+                      existingRating,
+                    };
                     this._builderPendingRateAfterLogin = null;
                   }
                 }}
-                @close=${(e: Event) => { e.stopPropagation(); this._builderShowLoginForRating = false; this._builderPendingRateAfterLogin = null; }}
+                @close=${(e: Event) => {
+                  e.stopPropagation();
+                  this._builderShowLoginForRating = false;
+                  this._builderPendingRateAfterLogin = null;
+                }}
               ></uc-hub-login-dialog>
             `
           : ''}
@@ -27292,7 +27380,10 @@ export class LayoutTab extends LitElement {
                 .existingRating=${this._builderRatingPreset.existingRating}
                 @rating-submitted=${(e: CustomEvent<{ presetId: string; rating: number }>) => {
                   const { presetId, rating } = e.detail;
-                  this._builderUserReviews = new Map(this._builderUserReviews).set(presetId, rating);
+                  this._builderUserReviews = new Map(this._builderUserReviews).set(
+                    presetId,
+                    rating
+                  );
                   this._builderRatingPreset = null;
                 }}
                 @close=${() => (this._builderRatingPreset = null)}
@@ -27305,7 +27396,9 @@ export class LayoutTab extends LitElement {
                 .payload=${this._submitPresetDialogPayload}
                 @preset-submitted=${(e: Event) => {
                   e.stopPropagation();
-                  this._showToast('Your preset has been submitted! It will appear in the gallery once reviewed and approved.');
+                  this._showToast(
+                    'Your preset has been submitted! It will appear in the gallery once reviewed and approved.'
+                  );
                   this._showSubmitPresetDialog = false;
                   this._submitPresetDialogPayload = null;
                 }}
@@ -27579,7 +27672,6 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
       </div>
-
     `;
   }
 
@@ -28550,9 +28642,7 @@ export class LayoutTab extends LitElement {
                         >
                           ${isCommunity ? 'Community' : isDefault ? 'Default' : 'Built-in'}
                         </div>
-                        ${this._isNewPreset(preset)
-                          ? html`<span class="new-badge">New</span>`
-                          : ''}
+                        ${this._isNewPreset(preset) ? html`<span class="new-badge">New</span>` : ''}
                         <div class="preset-title-info">
                           <h4 class="preset-header-title">${preset.name}</h4>
                           ${!isWjdDesigns
@@ -28574,12 +28664,22 @@ export class LayoutTab extends LitElement {
                                 @click=${(e: Event) => {
                                   e.stopPropagation();
                                   if (!this._isCloudAuthenticated) {
-                                    this._builderPendingRateAfterLogin = { id: preset.id, name: preset.name };
+                                    this._builderPendingRateAfterLogin = {
+                                      id: preset.id,
+                                      name: preset.name,
+                                    };
                                     this._builderShowLoginForRating = true;
                                     return;
                                   }
-                                  const existingRating = this._builderUserReviews.get(preset.id) ?? ucCloudSyncService.getUserReview(preset.id)?.rating ?? 0;
-                                  this._builderRatingPreset = { id: preset.id, name: preset.name, existingRating };
+                                  const existingRating =
+                                    this._builderUserReviews.get(preset.id) ??
+                                    ucCloudSyncService.getUserReview(preset.id)?.rating ??
+                                    0;
+                                  this._builderRatingPreset = {
+                                    id: preset.id,
+                                    name: preset.name,
+                                    existingRating,
+                                  };
                                 }}
                                 title=${this._isCloudAuthenticated
                                   ? `Rate: ${(preset.metadata?.rating || 0).toFixed(1)}/5 — ${wpPreset.rating_count || 0} ${(wpPreset.rating_count || 0) === 1 ? 'review' : 'reviews'}`
@@ -28587,8 +28687,12 @@ export class LayoutTab extends LitElement {
                                 style="cursor: pointer; display: flex; align-items: center; gap: 4px;"
                               >
                                 ${[1, 2, 3, 4, 5].map(starNum => {
-                                  const userRating = this._builderUserReviews.get(preset.id) ?? ucCloudSyncService.getUserReview(preset.id)?.rating ?? 0;
-                                  const rating = userRating > 0 ? userRating : (preset.metadata?.rating || 0);
+                                  const userRating =
+                                    this._builderUserReviews.get(preset.id) ??
+                                    ucCloudSyncService.getUserReview(preset.id)?.rating ??
+                                    0;
+                                  const rating =
+                                    userRating > 0 ? userRating : preset.metadata?.rating || 0;
                                   const isFilled = starNum <= Math.floor(rating);
                                   const isHalf = !isFilled && starNum - 0.5 <= rating && rating > 0;
                                   return html`
@@ -28621,11 +28725,18 @@ export class LayoutTab extends LitElement {
                     <!-- Content section -->
                     <div class="preset-content">
                       <div class="preset-description">${unsafeHTML(preset.description)}</div>
-                      ${(preset as any).description_full && (preset as any).description_full !== preset.description
-                        ? html`<button class="read-more-link" @click=${(e: Event) => {
-                            e.stopPropagation();
-                            this._builderReadMoreId = this._builderReadMoreId === preset.id ? null : preset.id;
-                          }}>${this._builderReadMoreId === preset.id ? 'Read Less ↑' : 'Read More ↓'}</button>`
+                      ${(preset as any).description_full &&
+                      (preset as any).description_full !== preset.description
+                        ? html`<button
+                            class="read-more-link"
+                            @click=${(e: Event) => {
+                              e.stopPropagation();
+                              this._builderReadMoreId =
+                                this._builderReadMoreId === preset.id ? null : preset.id;
+                            }}
+                          >
+                            ${this._builderReadMoreId === preset.id ? 'Read Less ↑' : 'Read More ↓'}
+                          </button>`
                         : ''}
 
                       <!-- Tags and integrations -->
@@ -28677,40 +28788,71 @@ export class LayoutTab extends LitElement {
                               class="read-more-btn secondary"
                               @click=${(e: Event) => {
                                 e.stopPropagation();
-                                this._builderExpandedId = this._builderExpandedId === preset.id ? null : preset.id;
+                                this._builderExpandedId =
+                                  this._builderExpandedId === preset.id ? null : preset.id;
                               }}
                               title="View preset details"
                             >
-                              <ha-icon icon=${this._builderExpandedId === preset.id ? 'mdi:chevron-up' : 'mdi:information-outline'}></ha-icon>
-                              <span>${this._builderExpandedId === preset.id ? 'Less' : 'Details'}</span>
+                              <ha-icon
+                                icon=${this._builderExpandedId === preset.id
+                                  ? 'mdi:chevron-up'
+                                  : 'mdi:information-outline'}
+                              ></ha-icon>
+                              <span
+                                >${this._builderExpandedId === preset.id ? 'Less' : 'Details'}</span
+                              >
                             </button>
                           `
                         : ''}
                     </div>
 
                     <!-- Details expansion panel -->
-                    ${this._builderExpandedId === preset.id ? html`
-                      <div class="preset-details">
-                        <dl class="detail-info">
-                          <dt>Category</dt><dd>${preset.category}</dd>
-                          <dt>Version</dt><dd>${preset.version || '—'}</dd>
-                          <dt>Rows</dt><dd>${preset.layout?.rows?.length ?? 0}</dd>
-                          ${preset.customVariables?.length ? html`<dt>Variables</dt><dd>${preset.customVariables.length}</dd>` : ''}
-                          ${preset.cardSettings && Object.keys(preset.cardSettings).length ? html`<dt>Card settings</dt><dd>Included</dd>` : ''}
-                          ${preset.integrations?.length ? html`<dt>Requires</dt><dd>${preset.integrations.join(', ')}</dd>` : ''}
-                        </dl>
-                        ${preset.tags?.filter(t => !['community', 'wordpress', 'standard'].includes(t)).length
-                          ? html`<div class="detail-tags">${preset.tags.filter(t => !['community', 'wordpress', 'standard'].includes(t)).map(t => html`<span class="detail-tag">${t}</span>`)}</div>`
-                          : ''}
-                      </div>
-                    ` : ''}
+                    ${this._builderExpandedId === preset.id
+                      ? html`
+                          <div class="preset-details">
+                            <dl class="detail-info">
+                              <dt>Category</dt>
+                              <dd>${preset.category}</dd>
+                              <dt>Version</dt>
+                              <dd>${preset.version || '—'}</dd>
+                              <dt>Rows</dt>
+                              <dd>${preset.layout?.rows?.length ?? 0}</dd>
+                              ${preset.customVariables?.length
+                                ? html`<dt>Variables</dt>
+                                    <dd>${preset.customVariables.length}</dd>`
+                                : ''}
+                              ${preset.cardSettings && Object.keys(preset.cardSettings).length
+                                ? html`<dt>Card settings</dt>
+                                    <dd>Included</dd>`
+                                : ''}
+                              ${preset.integrations?.length
+                                ? html`<dt>Requires</dt>
+                                    <dd>${preset.integrations.join(', ')}</dd>`
+                                : ''}
+                            </dl>
+                            ${preset.tags?.filter(
+                              t => !['community', 'wordpress', 'standard'].includes(t)
+                            ).length
+                              ? html`<div class="detail-tags">
+                                  ${preset.tags
+                                    .filter(
+                                      t => !['community', 'wordpress', 'standard'].includes(t)
+                                    )
+                                    .map(t => html`<span class="detail-tag">${t}</span>`)}
+                                </div>`
+                              : ''}
+                          </div>
+                        `
+                      : ''}
 
                     <!-- Read More expansion panel -->
-                    ${this._builderReadMoreId === preset.id && (preset as any).description_full ? html`
-                      <div class="preset-details preset-full-desc">
-                        ${unsafeHTML((preset as any).description_full)}
-                      </div>
-                    ` : ''}
+                    ${this._builderReadMoreId === preset.id && (preset as any).description_full
+                      ? html`
+                          <div class="preset-details preset-full-desc">
+                            ${unsafeHTML((preset as any).description_full)}
+                          </div>
+                        `
+                      : ''}
                   </div>
                 `;
               })
@@ -30432,12 +30574,17 @@ export class LayoutTab extends LitElement {
         <div class="shortcode-dialog" @click=${(e: Event) => e.stopPropagation()}>
           <div class="shortcode-dialog-header">
             <span class="shortcode-dialog-title">Copy export manually</span>
-            <button class="shortcode-dialog-close" @click=${this._closeShortcodeDialog} aria-label="Close">
+            <button
+              class="shortcode-dialog-close"
+              @click=${this._closeShortcodeDialog}
+              aria-label="Close"
+            >
               <ha-icon icon="mdi:close"></ha-icon>
             </button>
           </div>
           <p class="shortcode-dialog-hint">
-            Clipboard isn't available here (e.g. on mobile). Select the text below and copy it yourself, or use the Copy button if it works.
+            Clipboard isn't available here (e.g. on mobile). Select the text below and copy it
+            yourself, or use the Copy button if it works.
           </p>
           <textarea
             class="shortcode-dialog-textarea"
@@ -30450,7 +30597,9 @@ export class LayoutTab extends LitElement {
               <ha-icon icon="mdi:content-copy"></ha-icon>
               Copy
             </button>
-            <button class="shortcode-dialog-close-btn" @click=${this._closeShortcodeDialog}>Close</button>
+            <button class="shortcode-dialog-close-btn" @click=${this._closeShortcodeDialog}>
+              Close
+            </button>
           </div>
         </div>
       </div>
@@ -31666,11 +31815,12 @@ export class LayoutTab extends LitElement {
         display: none;
       }
 
-      /* Track collapse button - positioned next to first child */
+      /* Track collapse button - sits at the bottom end of the vertical track line when expanded */
       .tree-track-collapse {
         position: absolute;
         left: 12px; /* Center of track line */
-        top: 28px; /* Aligned with center of first child header (8px padding + ~20px half header) */
+        top: auto;
+        bottom: 4px; /* Sits at the bottom end of the vertical line */
         transform: translateX(-50%);
         width: 24px;
         height: 24px;
@@ -31682,7 +31832,7 @@ export class LayoutTab extends LitElement {
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: top 0.2s ease, bottom 0.2s ease;
       }
 
       .tree-track-collapse:hover {
@@ -32234,17 +32384,22 @@ export class LayoutTab extends LitElement {
         position: absolute;
         left: 12px; /* Aligned with track collapse button center */
         top: 0;
-        bottom: 0; /* Extend full height */
+        bottom: 16px; /* Stop at center of collapse button (button: bottom 4px, height 24px → center at 16px) */
         width: 2px;
         background: var(--tree-level-color); /* Inherits parent's level color */
         border-radius: 1px;
         z-index: 1;
       }
 
-      /* When collapsed, reduce track line but keep minimum for button */
+      /* When collapsed, hide the vertical track line */
       .tree-node.collapsed > .tree-node-children::before {
+        display: none;
+      }
+
+      /* When collapsed, move the caret button up to sit at the corner of the header */
+      .tree-node.collapsed > .tree-node-children > .tree-track-collapse {
+        top: -11px;
         bottom: auto;
-        height: 100%;
       }
 
       /* Row's track line (blue) */
@@ -33136,7 +33291,7 @@ export class LayoutTab extends LitElement {
         display: flex;
         align-items: center;
         padding: 6px 0 2px;
-        border-top: 1px solid var(--divider-color, rgba(0,0,0,0.08));
+        border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.08));
         margin-top: 4px;
       }
 
@@ -34004,9 +34159,9 @@ export class LayoutTab extends LitElement {
 
       /* Empty state — nothing copied yet, shown as inactive */
       .paste-column-btn--empty {
-        border: 2px dashed var(--divider-color, rgba(255,255,255,0.15));
+        border: 2px dashed var(--divider-color, rgba(255, 255, 255, 0.15));
         background: none;
-        color: var(--disabled-text-color, rgba(255,255,255,0.3));
+        color: var(--disabled-text-color, rgba(255, 255, 255, 0.3));
         cursor: not-allowed;
         opacity: 0.5;
       }
@@ -38369,14 +38524,20 @@ export class LayoutTab extends LitElement {
       /* Details expansion panel */
       .preset-details {
         padding: 12px 16px;
-        border-top: 1px solid var(--divider-color, rgba(0,0,0,0.06));
+        border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.06));
         background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.02);
         animation: fadeSlideIn 0.2s ease-out;
       }
 
       @keyframes fadeSlideIn {
-        from { opacity: 0; transform: translateY(-4px); }
-        to   { opacity: 1; transform: translateY(0); }
+        from {
+          opacity: 0;
+          transform: translateY(-4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       .detail-info {

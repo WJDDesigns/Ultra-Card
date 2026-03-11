@@ -153,6 +153,7 @@ export class UltraColorPicker extends LitElement {
 
     // Ensure we have latest from localStorage (sync with favorites added in panel Colors tab)
     ucFavoriteColorsService.refreshFromStorage();
+    if (this.hass) ucFavoriteColorsService.setHass(this.hass);
     // Subscribe to favorite colors changes (re-establishes on each connect)
     this._favoritesUnsubscribe = ucFavoriteColorsService.subscribe(favorites => {
       this._favoriteColors = favorites;
@@ -200,6 +201,9 @@ export class UltraColorPicker extends LitElement {
   }
 
   protected updated(changedProps: Map<string, any>): void {
+    if (changedProps.has('hass') && this.hass) {
+      ucFavoriteColorsService.setHass(this.hass);
+    }
     if (changedProps.has('value')) {
       this._currentValue = this.value;
       this._textInputValue = this.value;

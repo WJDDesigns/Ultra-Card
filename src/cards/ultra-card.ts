@@ -499,6 +499,7 @@ export class UltraCard extends LitElement {
   protected willUpdate(changedProps: PropertyValues): void {
     // Check for integration auth when hass updates
     if (changedProps.has('hass') && this.hass) {
+      ucFavoriteColorsService.setHass(this.hass);
       this._loadCloudUser();
     }
 
@@ -534,7 +535,7 @@ export class UltraCard extends LitElement {
     if (changedProps.has('hass')) {
       const currentTime = Date.now();
 
-      // Update logic service with new hass instance
+      // Update logic service and favorite colors service with new hass instance
       if (this.hass) {
         logicService.setHass(this.hass);
       }

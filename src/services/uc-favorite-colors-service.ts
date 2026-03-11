@@ -14,6 +14,8 @@ class UcFavoriteColorsService {
   private _listeners: Set<(favorites: FavoriteColor[]) => void> = new Set();
   private _instanceId = `inst-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   private _isBroadcasting = false;
+  private _hass: any = null;
+  private _haLoaded = false;
 
   constructor() {
     this._loadFromStorage();
@@ -42,6 +44,7 @@ class UcFavoriteColorsService {
     this._saveToStorage();
     this._notifyListeners();
     this._broadcastChange();
+    this._syncToHAIfAvailable();
 
     // NOTE: Cloud sync disabled - favorites are local-only per user request
     // ucCloudSyncService.queueChange('color', 'create', newFavorite);
@@ -65,6 +68,7 @@ class UcFavoriteColorsService {
     this._saveToStorage();
     this._notifyListeners();
     this._broadcastChange();
+    this._syncToHAIfAvailable();
 
     // NOTE: Cloud sync disabled - favorites are local-only per user request
     // ucCloudSyncService.queueChange('color', 'update', this._favorites[index]);
@@ -84,6 +88,7 @@ class UcFavoriteColorsService {
     this._saveToStorage();
     this._notifyListeners();
     this._broadcastChange();
+    this._syncToHAIfAvailable();
 
     // NOTE: Cloud sync disabled - favorites are local-only per user request
     // ucCloudSyncService.queueChange('color', 'delete', { id });
@@ -115,6 +120,7 @@ class UcFavoriteColorsService {
     this._saveToStorage();
     this._notifyListeners();
     this._broadcastChange();
+    this._syncToHAIfAvailable();
     return true;
   }
 
@@ -143,6 +149,7 @@ class UcFavoriteColorsService {
     this._saveToStorage();
     this._notifyListeners();
     this._broadcastChange();
+    this._syncToHAIfAvailable();
   }
 
   /**
@@ -167,6 +174,19 @@ class UcFavoriteColorsService {
   refreshFromStorage(): void {
     this._loadFromStorage();
     this._notifyListeners();
+  }
+
+  /**
+   * Set hass reference so the service can load from and sync to HA backend.
+   * Call from any component that has hass (card, editor, color picker, Hub Colors tab).
+   * On first set with valid hass, loadFromHA() is called once to restore from HA store.
+   */
+  setHass(hass: any): void {
+    this._hass = hass ?? null;
+    if (!this._haLoaded && hass?.callApi) {
+      this._haLoaded = true;
+      this.loadFromHA(hass).catch(() => {});
+    }
   }
 
   /**
@@ -209,6 +229,15 @@ class UcFavoriteColorsService {
   }
 
   /**
+   * Fire-and-forget sync to HA if hass was set (used after every mutation).
+   */
+  private _syncToHAIfAvailable(): void {
+    if (this._hass?.callApi) {
+      this.syncToHA(this._hass).catch(() => {});
+    }
+  }
+
+  /**
    * Subscribe to favorite colors changes
    */
   subscribe(listener: (favorites: FavoriteColor[]) => void): () => void {
@@ -231,6 +260,7 @@ class UcFavoriteColorsService {
     this._saveToStorage();
     this._notifyListeners();
     this._broadcastChange();
+    this._syncToHAIfAvailable();
   }
 
   /**

@@ -6,17 +6,26 @@ import { css } from 'lit';
 
 export const panelStyles = css`
   :host {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    /* Fill the panel viewport; 100dvh handles mobile browser chrome correctly */
     height: 100%;
+    max-height: 100dvh;
+    /* Prevent the host itself from scrolling — only .hub-content should scroll */
+    overflow: hidden;
     background: var(--primary-background-color);
     color: var(--primary-text-color);
+    box-sizing: border-box;
   }
 
   .hub-container {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    /* Must fill host and be bounded so inner scroll works */
+    flex: 1;
     min-height: 0;
+    /* Clip any overflow so the page itself never scrolls */
+    overflow: hidden;
     box-sizing: border-box;
   }
 
@@ -29,6 +38,8 @@ export const panelStyles = css`
     gap: 12px;
     min-height: 56px;
     box-sizing: border-box;
+    /* Prevent header from ever growing or scrolling away */
+    overflow: hidden;
   }
 
   .hub-header h1 {
@@ -128,9 +139,13 @@ export const panelStyles = css`
 
   .hub-content {
     flex: 1;
-    overflow: auto;
     min-height: 0;
+    /* Only this region scrolls — vertically only */
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 24px;
+    box-sizing: border-box;
   }
 
   /* Section cards (used by pro tab, etc.) */

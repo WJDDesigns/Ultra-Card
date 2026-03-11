@@ -66,7 +66,7 @@ export class UltraCardPanel extends LitElement {
         border-bottom: 2px solid var(--divider-color, rgba(0, 0, 0, 0.08));
         padding: 0 24px;
         background: var(--ha-card-background, var(--card-background-color));
-        /* Horizontal scroll on overflow */
+        /* Horizontal scroll if tabs overflow on narrow screens */
         overflow-x: auto;
         overflow-y: hidden;
         scroll-behavior: smooth;
@@ -74,8 +74,11 @@ export class UltraCardPanel extends LitElement {
         /* Hide scrollbar visually but keep it functional */
         scrollbar-width: none;
         -ms-overflow-style: none;
-        /* Prevent shrinking below content */
+        /* Never shrink — this is the sticky nav bar */
         flex-shrink: 0;
+        /* Ensure it stays on-screen and doesn't participate in vertical scroll */
+        position: relative;
+        z-index: 1;
       }
 
       .tab-strip::-webkit-scrollbar {

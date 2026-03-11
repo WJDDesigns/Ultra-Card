@@ -1148,7 +1148,8 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     const barW = 44;
     const labelFontSize = 10;
     const valueFontSize = 10;
-    const labelH = showLabels ? labelFontSize + 4 : 0;
+    const labelGap = 8;                        // spacing between box edge and first text line
+    const labelH = showLabels ? labelFontSize + labelGap : 0;
     const valueH = showValues ? valueFontSize + 4 : 0;
     const textBelowH = labelH + valueH;        // height reserved below each bar for its label+value
     const barGap = textBelowH + 14;            // gap = text space + breathing room between bars
@@ -1299,8 +1300,8 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
 
           <!-- Home bar: no border radius — flows attach flush to both sides -->
           <rect x="${xHome}" y="${homeY}" width="${barW}" height="${homeH}" rx="0" fill="var(--secondary-background-color)" stroke="var(--divider-color)" stroke-width="1" opacity="0.9"/>
-          ${showLabels ? svg`<text x="${xHome + barW / 2}" y="${homeY - valueH - 2}" text-anchor="middle" font-size="${labelFontSize}" font-weight="600" fill="var(--primary-text-color)">${homeNode?.label || 'Home'}</text>` : svg``}
-          ${showValues ? svg`<text x="${xHome + barW / 2}" y="${homeY - 2}" text-anchor="middle" font-size="${valueFontSize}" fill="var(--secondary-text-color)">${this._formatPower(homePower, module.unit_display || 'auto')}</text>` : svg``}
+          ${showLabels ? svg`<text x="${xHome + barW / 2}" y="${homeY - valueH - labelGap - labelFontSize}" text-anchor="middle" font-size="${labelFontSize}" font-weight="600" fill="var(--primary-text-color)">${homeNode?.label || 'Home'}</text>` : svg``}
+          ${showValues ? svg`<text x="${xHome + barW / 2}" y="${homeY - labelGap}" text-anchor="middle" font-size="${valueFontSize}" fill="var(--secondary-text-color)">${this._formatPower(homePower, module.unit_display || 'auto')}</text>` : svg``}
 
           <!-- Consumer bars: only round the RIGHT (outer) corners -->
           ${conRects.map(r => {

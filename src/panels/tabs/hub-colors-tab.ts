@@ -25,7 +25,6 @@ export class HubColorsTab extends LitElement {
   private _authUnsub?: (user: CloudUser | null) => void;
   private _syncUnsub?: (status: SyncStatus) => void;
   private _toastTimer?: ReturnType<typeof setTimeout>;
-  private _haColorsLoaded = false;
 
   static styles = [
     panelStyles,
@@ -439,6 +438,7 @@ export class HubColorsTab extends LitElement {
     super.connectedCallback();
     // Ensure we have latest from localStorage (sync with favorites added in card settings)
     ucFavoriteColorsService.refreshFromStorage();
+    if (this.hass) ucFavoriteColorsService.setHass(this.hass);
     this._colors = ucFavoriteColorsService.getFavorites();
     this._unsub = ucFavoriteColorsService.subscribe(list => {
       this._colors = list;
@@ -452,9 +452,8 @@ export class HubColorsTab extends LitElement {
   }
 
   updated(changed: Map<string, unknown>): void {
-    if (changed.has('hass') && this.hass && !this._haColorsLoaded) {
-      this._haColorsLoaded = true;
-      ucFavoriteColorsService.loadFromHA(this.hass).catch(() => {});
+    if (changed.has('hass') && this.hass) {
+      ucFavoriteColorsService.setHass(this.hass);
     }
   }
 
@@ -545,7 +544,6 @@ export class HubColorsTab extends LitElement {
   private _deleteColor(fav: FavoriteColor): void {
     ucFavoriteColorsService.deleteFavorite(fav.id);
     this._colors = ucFavoriteColorsService.getFavorites();
-    if (this.hass) ucFavoriteColorsService.syncToHA(this.hass).catch(() => {});
   }
 
   private _addColor(): void {
@@ -564,7 +562,6 @@ export class HubColorsTab extends LitElement {
     this._newColorValue = '#3498db';
     this._showAddForm = false;
     this._showToast(`Added "${name}"`);
-    if (this.hass) ucFavoriteColorsService.syncToHA(this.hass).catch(() => {});
   }
 
   private _startEdit(fav: FavoriteColor): void {
@@ -582,7 +579,6 @@ export class HubColorsTab extends LitElement {
     this._colors = ucFavoriteColorsService.getFavorites();
     this._editingId = null;
     this._showToast('Color updated');
-    if (this.hass) ucFavoriteColorsService.syncToHA(this.hass).catch(() => {});
   }
 
   private _cancelEdit(): void {

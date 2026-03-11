@@ -101,6 +101,7 @@ export class UltraCardEditor extends LitElement {
 
     // Check for integration auth when hass updates
     if (changedProperties.has('hass') && this.hass) {
+      ucFavoriteColorsService.setHass(this.hass);
       const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
 
       // If integration is authenticated, register in auth service so isAuthenticated() works
@@ -215,6 +216,7 @@ export class UltraCardEditor extends LitElement {
 
     // Ensure we have latest favorites from localStorage (sync with panel Colors tab)
     ucFavoriteColorsService.refreshFromStorage();
+    if (this.hass) ucFavoriteColorsService.setHass(this.hass);
     // Subscribe to favorite colors changes to back them up in card config
     this._favoriteColorsUnsubscribe = ucFavoriteColorsService.subscribe(favorites => {
       if (!this.config) return;
