@@ -16,6 +16,7 @@ class UcFavoriteColorsService {
   private _isBroadcasting = false;
   private _hass: any = null;
   private _haLoaded = false;
+  private _logged404 = false;
 
   constructor() {
     this._loadFromStorage();
@@ -193,11 +194,13 @@ class UcFavoriteColorsService {
    * Load favorite colors from Home Assistant backend (integration store).
    * When HA returns data, it becomes the source of truth and is written to localStorage.
    * Call when the Colors tab is shown so favorites persist across devices and cache clears.
+   * On 404 (integration not installed), logs a one-time message and leaves favorites unchanged.
    */
   async loadFromHA(hass: any): Promise<void> {
     if (!hass?.callApi) return;
     try {
       const result = await hass.callApi('GET', 'ultra_card_pro_cloud/favorite_colors');
+      this._haLoaded = true;
       const colors = result?.colors;
       if (Array.isArray(colors) && colors.length > 0) {
         const valid = colors.filter((fav: any) => this._isValidFavorite(fav));
@@ -208,8 +211,20 @@ class UcFavoriteColorsService {
           this._broadcastChange();
         }
       }
-    } catch (err) {
+    } catch (err: any) {
+      const status = err?.status ?? err?.status_code ?? err?.response?.status;
+      if (status === 404) {
+        this._haLoaded = true;
+        if (!this._logged404) {
+          this._logged404 = true;
+          console.info(
+            'Ultra Card: Favorite colors sync requires the "Ultra Card Pro Cloud" integration. Install it from HACS (Integration: Ultra Card Pro Cloud) to persist colors across devices and after logout.'
+          );
+        }
+        return;
+      }
       console.debug('Failed to load favorite colors from HA:', err);
+      this._haLoaded = true;
     }
   }
 
@@ -223,8 +238,18 @@ class UcFavoriteColorsService {
       await hass.callApi('POST', 'ultra_card_pro_cloud/favorite_colors', {
         colors: this._favorites,
       });
-    } catch (err) {
-      console.debug('Failed to sync favorite colors to HA:', err);
+    } catch (err: any) {
+      const status = err?.status ?? err?.status_code ?? err?.response?.status;
+      if (status === 404 && !this._logged404) {
+        this._logged404 = true;
+        console.info(
+          'Ultra Card: Favorite colors sync requires the "Ultra Card Pro Cloud" integration. Install it from HACS (Integration: Ultra Card Pro Cloud) to persist colors across devices and after logout.'
+        );
+        return;
+      }
+      if (status !== 404) {
+        console.debug('Failed to sync favorite colors to HA:', err);
+      }
     }
   }
 

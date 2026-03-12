@@ -97,6 +97,15 @@ export class UltraIconModule extends BaseUltraModule {
     return Math.abs(hash).toString(36); // Convert to base36 for shorter strings
   }
 
+  /**
+   * Read form value from ha-form value-changed event.
+   * Supports both e.detail.value[field] and e.detail[field] for HA version differences.
+   * Use this before calling _updateIcon to avoid writing undefined (which would delete the key in the editor).
+   */
+  private _formValue(e: CustomEvent, field: string): unknown {
+    return (e.detail?.value as Record<string, unknown>)?.[field] ?? (e.detail as Record<string, unknown>)?.[field];
+  }
+
   // Jinja2 syntax highlighting
   private _highlightJinja2(template: string): string {
     if (!template) return '';
@@ -975,7 +984,9 @@ export class UltraIconModule extends BaseUltraModule {
                                           ]),
                                         ],
                                         onChange: (e: CustomEvent) => {
-                                          const next = e.detail.value.inactive_icon_background;
+                                          const raw = this._formValue(e, 'inactive_icon_background');
+                                          if (raw === undefined) return;
+                                          const next = String(raw);
                                           const prev =
                                             iconModule.icons[index].inactive_icon_background ||
                                             'none';
@@ -2211,7 +2222,9 @@ export class UltraIconModule extends BaseUltraModule {
                             ]),
                           ],
                           onChange: (e: CustomEvent) => {
-                            const next = e.detail.value.active_icon_animation;
+                            const raw = this._formValue(e, 'active_icon_animation');
+                            if (raw === undefined) return;
+                            const next = String(raw);
                             const prev = iconModule.icons[index].active_icon_animation || 'none';
                             if (next === prev) return;
                             this._updateIcon(
@@ -2300,7 +2313,9 @@ export class UltraIconModule extends BaseUltraModule {
                             ]),
                           ],
                           onChange: (e: CustomEvent) => {
-                            const next = e.detail.value.inactive_icon_animation;
+                            const raw = this._formValue(e, 'inactive_icon_animation');
+                            if (raw === undefined) return;
+                            const next = String(raw);
                             const prev = iconModule.icons[index].inactive_icon_animation || 'none';
                             if (next === prev) return;
                             this._updateIcon(
@@ -2444,7 +2459,9 @@ export class UltraIconModule extends BaseUltraModule {
               ]),
             ],
             (e: CustomEvent) => {
-              const next = e.detail.value.inactive_icon_background;
+              const raw = this._formValue(e, 'inactive_icon_background');
+              if (raw === undefined) return;
+              const next = String(raw);
               const prev = iconModule.icons[index].inactive_icon_background || 'none';
               if (next === prev) return;
               // For static icons, sync both active and inactive backgrounds
@@ -2555,7 +2572,9 @@ export class UltraIconModule extends BaseUltraModule {
               ]),
             ],
             (e: CustomEvent) => {
-              const next = e.detail.value.inactive_icon_animation;
+              const raw = this._formValue(e, 'inactive_icon_animation');
+              if (raw === undefined) return;
+              const next = String(raw);
               const prev = iconModule.icons[index].inactive_icon_animation || 'none';
               if (next === prev) return;
               // For static icons, sync both active and inactive animations

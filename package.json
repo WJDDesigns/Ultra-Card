@@ -1,6 +1,6 @@
 {
   "name": "ultra-card",
-  "version": "3.1.0-beta8",
+  "version": "3.1.0-beta9",
   "description": "Ultra Card - A modular card builder for Home Assistant",
   "main": "dist/ultra-card.js",
   "scripts": {
@@ -23,6 +23,7 @@
     "validate:translations": "node scripts/validate-translations.js",
     "translations:stats": "node scripts/translation-stats.js",
     "sync:translations": "node prepare-build.js",
+    "sync:panel": "node scripts/sync-panel-to-integration.js",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage"

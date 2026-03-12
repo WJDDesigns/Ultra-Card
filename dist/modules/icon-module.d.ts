@@ -16,6 +16,12 @@ export declare class UltraIconModule extends BaseUltraModule {
     private static readonly _ANIMATION_KEYFRAMES;
     private _injectGlobalStyles;
     private _hashString;
+    /**
+     * Read form value from ha-form value-changed event.
+     * Supports both e.detail.value[field] and e.detail[field] for HA version differences.
+     * Use this before calling _updateIcon to avoid writing undefined (which would delete the key in the editor).
+     */
+    private _formValue;
     private _highlightJinja2;
     createDefault(id?: string, hass?: HomeAssistant): IconModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;

@@ -836,7 +836,13 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
         const power = this._getNodePower(hass, config, node.entity);
         hasFlow = Math.abs(power.value) > 0;
       }
-      const isSource = node.node_type === 'solar' || node.node_type === 'grid';
+      let isSource: boolean;
+      if (node.node_type === 'battery') {
+        const power = this._getNodePower(hass, config, node.entity);
+        isSource = power.value < 0;
+      } else {
+        isSource = node.node_type === 'solar' || node.node_type === 'grid';
+      }
       const pathD = isSource
         ? `M ${x} ${y} L ${cx} ${cy}`
         : `M ${cx} ${cy} L ${x} ${y}`;
@@ -871,9 +877,11 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
             }
             const color = node.color || DEFAULT_NODE_COLORS[node.node_type];
             const label = node.label || DEFAULT_NODE_LABELS[node.node_type];
+            const labelBelow = y >= cy;
+            const labelY = labelBelow ? y + half + 6 : y - half - 6;
             return svg`
               <g class="energy-node" data-node-id="${node.id}">
-                ${showLabels ? svg`<text x="${x}" y="${y - half - 6}" text-anchor="middle" font-size="11" fill="var(--secondary-text-color)">${label}</text>` : svg``}
+                ${showLabels ? svg`<text x="${x}" y="${labelY}" text-anchor="middle" font-size="11" fill="var(--secondary-text-color)" dominant-baseline="${labelBelow ? 'hanging' : 'auto'}">${label}</text>` : svg``}
                 <circle cx="${x}" cy="${y}" r="${half}" fill="var(--card-background-color)" stroke="${color}" stroke-width="2"/>
                 ${showValues ? svg`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="var(--primary-text-color)">${valueText}</text>` : svg``}
                 ${secondaryText ? svg`<text x="${x}" y="${y + 13}" text-anchor="middle" font-size="10" fill="var(--secondary-text-color)">${secondaryText}</text>` : svg``}
@@ -1020,7 +1028,13 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
 
     boxNodes.forEach(node => {
       const [ex, ey] = edgePt(node.node_type);
-      const isSource = node.node_type === 'solar' || node.node_type === 'grid';
+      let isSource: boolean;
+      if (node.node_type === 'battery') {
+        const power = this._getNodePower(hass, config, node.entity);
+        isSource = power.value < 0;
+      } else {
+        isSource = node.node_type === 'solar' || node.node_type === 'grid';
+      }
       const d = isSource
         ? `M ${ex} ${ey} L ${finalHubX} ${hubY}`
         : `M ${finalHubX} ${hubY} L ${ex} ${ey}`;
@@ -1126,10 +1140,13 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     const flowDuration = this._getFlowDuration(module.animation_speed || 'normal');
     const animate = flowDuration !== '0s';
 
-    const sources = core.filter(n => (n.node_type === 'solar' || n.node_type === 'grid') && n.enabled !== false);
+    const sourcesBase = core.filter(n => (n.node_type === 'solar' || n.node_type === 'grid') && n.enabled !== false);
     const homeNode = core.find(n => n.node_type === 'home' && n.enabled !== false);
     const batteryNode = core.find(n => n.node_type === 'battery' && n.enabled !== false);
-    const consumers = ([batteryNode, ...devices]).filter(Boolean) as EnergyNode[];
+    const batterySignedPower = batteryNode ? this._getNodePower(hass, config, batteryNode.entity).value : 0;
+    const batteryAsSource = Boolean(batteryNode && batterySignedPower < 0);
+    const sources = batteryAsSource && batteryNode ? [...sourcesBase, batteryNode] : sourcesBase;
+    const consumers = (batteryNode && !batteryAsSource ? [batteryNode] : []).concat(devices);
 
     const getPower = (node: EnergyNode) => {
       const eid = this.resolveEntity(node.entity, config);

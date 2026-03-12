@@ -1,5 +1,21 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0-beta9
+
+### 🚀 New Features
+
+- **Add** - Sync:panel script added to package.json for syncing Hub panel to the integration
+
+### 🐛 Bug Fixes
+
+- **Fix** - Battery node now correctly reverses flow direction when discharging (acts as source)
+- **Fix** - Energy display node labels no longer clip above the canvas edge — label now renders below the node when node is near the top
+- **Fix** - Icon module editor no longer inadvertently deletes inactive_icon_background, active_icon_animation, or inactive_icon_animation when HA fires a value-changed event with undefined values
+- **Fix** - Favorite colors service now suppresses repeated 404 console spam when Ultra Card Pro Cloud integration is not installed — logs a single informational message instead
+- **Fix** - Favorite colors service correctly sets _haLoaded flag on both success and all error paths, preventing duplicate HA sync requests
+
+---
+
 ## Version 3.1.0-beta7
 
 ### 🐛 Bug Fixes
