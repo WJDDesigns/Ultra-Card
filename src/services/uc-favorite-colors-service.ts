@@ -180,12 +180,12 @@ class UcFavoriteColorsService {
   /**
    * Set hass reference so the service can load from and sync to HA backend.
    * Call from any component that has hass (card, editor, color picker, Hub Colors tab).
-   * On first set with valid hass, loadFromHA() is called once to restore from HA store.
+   * On first successful load from HA, _haLoaded is latched to prevent redundant fetches.
+   * On transient failure (non-404), _haLoaded stays false so the next setHass() will retry.
    */
   setHass(hass: any): void {
     this._hass = hass ?? null;
     if (!this._haLoaded && hass?.callApi) {
-      this._haLoaded = true;
       this.loadFromHA(hass).catch(() => {});
     }
   }
@@ -193,13 +193,15 @@ class UcFavoriteColorsService {
   /**
    * Load favorite colors from Home Assistant backend (integration store).
    * When HA returns data, it becomes the source of truth and is written to localStorage.
-   * Call when the Colors tab is shown so favorites persist across devices and cache clears.
+   * _haLoaded is only set true on success or definitive failure (404/auth error) so
+   * transient network errors allow a retry on the next setHass() call.
    * On 404 (integration not installed), logs a one-time message and leaves favorites unchanged.
    */
   async loadFromHA(hass: any): Promise<void> {
     if (!hass?.callApi) return;
     try {
       const result = await hass.callApi('GET', 'ultra_card_pro_cloud/favorite_colors');
+      // Only latch after a successful response
       this._haLoaded = true;
       const colors = result?.colors;
       if (Array.isArray(colors) && colors.length > 0) {
@@ -214,6 +216,7 @@ class UcFavoriteColorsService {
     } catch (err: any) {
       const status = err?.status ?? err?.status_code ?? err?.response?.status;
       if (status === 404) {
+        // Integration not installed — latch so we don't spam on every hass update
         this._haLoaded = true;
         if (!this._logged404) {
           this._logged404 = true;
@@ -223,8 +226,14 @@ class UcFavoriteColorsService {
         }
         return;
       }
-      console.debug('Failed to load favorite colors from HA:', err);
-      this._haLoaded = true;
+      if (status === 401 || status === 403) {
+        // Auth errors are also definitive for this session
+        this._haLoaded = true;
+        console.debug('Failed to load favorite colors from HA (auth error):', err);
+        return;
+      }
+      // Transient error (network, 5xx, etc.) — leave _haLoaded false so we retry
+      console.debug('Failed to load favorite colors from HA (will retry):', err);
     }
   }
 

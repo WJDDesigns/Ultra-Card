@@ -82,7 +82,7 @@ class UcDashboardScannerService {
         views: views,
         scanned_at: new Date().toISOString(),
         card_count: allCards.length,
-        dashboard_path: this.getCurrentDashboardPath(),
+        dashboard_path: this.getCurrentDashboardPath() ?? 'default',
       };
     } catch (error) {
       console.error('❌ Dashboard scan failed:', error);
@@ -220,13 +220,24 @@ class UcDashboardScannerService {
   }
 
   /**
-   * Get current dashboard path
+   * Get current dashboard path.
+   * When called from the sidebar panel (URL is /ultra-card-hub etc.), the
+   * /lovelace/ regex doesn't match. In that case we fall back to null which
+   * tells HA to return the default lovelace dashboard — which is correct for
+   * the snapshot flow (it tries all dashboards via scanAllDashboards anyway).
    */
-  private getCurrentDashboardPath(): string {
-    // Try to determine current dashboard from URL
+  private getCurrentDashboardPath(): string | null {
     const path = window.location.pathname;
-    const match = path.match(/\/lovelace\/([^\/]+)/);
-    return match ? match[1] : 'default';
+    // Match /lovelace/<view> or /<custom-dashboard-url>
+    const lovelaceMatch = path.match(/\/lovelace\/([^/]+)/);
+    if (lovelaceMatch) return lovelaceMatch[1];
+    // If the URL is a known non-dashboard path (sidebar panel, settings, etc.),
+    // return null so callers use the default dashboard config
+    const nonDashboardPaths = ['/ultra-card-hub', '/config', '/developer-tools', '/hacs', '/logbook', '/history', '/map', '/energy', '/todo'];
+    if (nonDashboardPaths.some(p => path.startsWith(p))) return null;
+    // Could be a custom dashboard at root level — return the path segment
+    const customMatch = path.match(/^\/([^/]+)/);
+    return customMatch ? customMatch[1] : null;
   }
 
   /**
@@ -244,7 +255,7 @@ class UcDashboardScannerService {
       try {
         const config = await this.hass.callWS({
           type: 'lovelace/config',
-          url_path: dashboardPath === 'default' ? null : dashboardPath,
+          url_path: dashboardPath,
         });
 
         if (config) {
@@ -262,10 +273,12 @@ class UcDashboardScannerService {
         });
 
         if (Array.isArray(dashboards)) {
-          // Find our dashboard
-          const targetDashboard = dashboards.find(
-            (d: any) => d.url_path === dashboardPath || d.id === dashboardPath
-          );
+          // Find our dashboard (skip if dashboardPath is null — that means we're in sidebar)
+          const targetDashboard = dashboardPath
+            ? dashboards.find(
+                (d: any) => d.url_path === dashboardPath || d.id === dashboardPath
+              )
+            : null;
 
           if (targetDashboard) {
             // Try to get the config
@@ -278,7 +291,8 @@ class UcDashboardScannerService {
               return config;
             }
           } else {
-            // If not found in list, try getting it as the default lovelace dashboard
+            // Not on a lovelace URL (e.g., sidebar panel) or path not found in list —
+            // fall back to the default lovelace dashboard
             try {
               const defaultConfig = await this.hass.callWS({
                 type: 'lovelace/config',
@@ -566,7 +580,16 @@ class UcDashboardScannerService {
       let ultraCards = 0;
 
       views.forEach((view: any) => {
-        if (view.cards && Array.isArray(view.cards)) {
+        // Modern sections layout: cards live inside view.sections[n].cards
+        if (view.type === 'sections' && Array.isArray(view.sections)) {
+          view.sections.forEach((section: any) => {
+            if (Array.isArray(section.cards)) {
+              totalCards += section.cards.length;
+              ultraCards += section.cards.filter((card: any) => this.isUltraCard(card)).length;
+            }
+          });
+        } else if (Array.isArray(view.cards)) {
+          // Traditional layout
           totalCards += view.cards.length;
           ultraCards += view.cards.filter((card: any) => this.isUltraCard(card)).length;
         }
