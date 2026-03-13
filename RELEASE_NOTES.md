@@ -1,5 +1,18 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0-beta10
+
+### 🐛 Bug Fixes
+
+- **Fix** - Favorite colors _haLoaded flag now only latches after a successful HA load — transient failures during early HA boot or slow connections no longer permanently block retries for the session
+- **Fix** - Hub panel now uses 100dvh instead of 100% for host height, ensuring correct scrolling on all devices including mobile when HA's panel host has no explicit height
+- **Fix** - Dashboard scanner getCurrentDashboardPath now returns null instead of "default" when URL doesn't contain /lovelace/, fixing the sidebar panel incorrectly scanning the wrong dashboard and finding zero cards
+- **Fix** - Dashboard scanner getDashboardStats now counts cards in modern sections-layout views (view.sections[n].cards), fixing card counts of 0 on sections-layout dashboards
+- **Fix** - Icon module active property editor fields now guard against undefined values from ha-form value-changed events, preventing accidental deletion of icon properties across all field types (select, text, toggle)
+- **Fix** - Removed 3rd-party card limit enforcement for free users — 3rd party cards are now unlimited for all users and the "Want Unlimited? Get Pro" upgrade prompt has been removed from the layout tab
+
+---
+
 ## Version 3.1.0-beta9
 
 ### 🚀 New Features

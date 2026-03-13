@@ -29014,14 +29014,7 @@ export class LayoutTab extends LitElement {
           ? html`
               <div class="limit-indicator">
                 <ha-icon icon="mdi:information-outline"></ha-icon>
-                <span
-                  >${Math.min(this._globalExternalCardCount, 5)} / ${5} cards used across
-                  dashboard</span
-                >
-                <div class="upgrade-section">
-                  <span class="upgrade-text">Want Unlimited?</span>
-                  <button class="get-pro-btn" @click=${this._openProPage}>Get Pro</button>
-                </div>
+                <span>${this._globalExternalCardCount} 3rd party cards in dashboard</span>
               </div>
             `
           : html`
@@ -29773,7 +29766,7 @@ export class LayoutTab extends LitElement {
                 ? html`
                     <div class="limit-badge">
                       <ha-icon icon="mdi:information-outline"></ha-icon>
-                      <span>${Math.min(this._globalExternalCardCount, 5)} / 5 used</span>
+                      <span>${this._globalExternalCardCount} 3rd party cards</span>
                     </div>
                   `
                 : html`
@@ -30425,23 +30418,6 @@ export class LayoutTab extends LitElement {
       if (isNativeCard) {
         await this._addNativeCard(cardType);
       } else {
-        // For 3rd party cards, check Pro limits
-        const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-        const isPro =
-          integrationUser?.subscription?.tier === 'pro' &&
-          integrationUser?.subscription?.status === 'active';
-
-        const currentCount = this._countExternalCardModules();
-        const limit = 5;
-
-        if (!isPro && currentCount >= limit) {
-          this._showToast(
-            `Free users are limited to ${limit} 3rd party cards. Upgrade to Pro for unlimited cards!`,
-            'error'
-          );
-          return;
-        }
-
         await this._add3rdPartyCard(cardType);
       }
     } catch (error) {
@@ -30936,28 +30912,6 @@ export class LayoutTab extends LitElement {
 
     // Check if this is a native HA card (hui-* prefix)
     const isNativeCard = cardType.startsWith('hui-');
-
-    // Check Pro access (integration only) - skip for native cards
-    if (!skipProCheck && !isNativeCard) {
-      const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-      const isPro =
-        integrationUser?.subscription?.tier === 'pro' &&
-        integrationUser?.subscription?.status === 'active';
-
-      // For non-Pro users, check the global limit
-      if (!isPro) {
-        const currentGlobalCount = await this._countAllExternalCardModulesGlobally();
-
-        if (currentGlobalCount >= 5) {
-          // Show error toast
-          this._showToast(
-            'You have reached the maximum of 5 external cards across your dashboard. Upgrade to Ultra Card Pro for unlimited external cards.',
-            'error'
-          );
-          return;
-        }
-      }
-    }
 
     const layout = this._ensureLayout();
     const row = layout.rows[this._selectedRowIndex];

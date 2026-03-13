@@ -7332,10 +7332,12 @@ export class UltraIconModule extends BaseUltraModule {
                     [this.iconField(activeProperty)],
                     (e: CustomEvent) => {
                       if (!isLocked) {
+                        const raw = this._formValue(e, activeProperty);
+                        if (raw === undefined) return;
                         this._updateIcon(
                           iconModule,
                           index,
-                          { [activeProperty]: e.detail.value[activeProperty] },
+                          { [activeProperty]: raw },
                           updateModule
                         );
                       }
@@ -7351,10 +7353,12 @@ export class UltraIconModule extends BaseUltraModule {
                     .disabled=${isLocked}
                     @value-changed=${(e: CustomEvent) => {
                       if (!isLocked) {
+                        const val = (e.detail && 'value' in e.detail) ? (e.detail as { value: unknown }).value : undefined;
+                        if (val === undefined) return;
                         this._updateIcon(
                           iconModule,
                           index,
-                          { [activeProperty]: e.detail.value },
+                          { [activeProperty]: val },
                           updateModule
                         );
                       }
@@ -7373,7 +7377,9 @@ export class UltraIconModule extends BaseUltraModule {
                         { [activeProperty]: displayValue },
                         [this.selectField(activeProperty, selectOptions || [])],
                         (e: CustomEvent) => {
-                          const next = e.detail.value[activeProperty];
+                          const raw = this._formValue(e, activeProperty);
+                          if (raw === undefined) return;
+                          const next = String(raw);
                           const prev = (icon as any)[activeProperty];
                           if (next === prev) return;
                           this._updateIcon(
@@ -7416,7 +7422,9 @@ export class UltraIconModule extends BaseUltraModule {
                           { [activeProperty]: displayValue },
                           [this.textField(activeProperty)],
                           (e: CustomEvent) => {
-                            const next = e.detail.value[activeProperty];
+                            const raw = this._formValue(e, activeProperty);
+                            if (raw === undefined) return;
+                            const next = typeof raw === 'string' ? raw : String(raw);
                             const prev = (icon as any)[activeProperty];
                             if (next === prev) return;
                             this._updateIcon(
