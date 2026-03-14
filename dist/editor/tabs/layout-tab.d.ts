@@ -7,6 +7,11 @@ import '../global-design-tab';
 import '../../components/uc-favorite-dialog';
 import '../../components/uc-variable-mapping-dialog';
 import '../../components/uc-import-dialog';
+import '../uc-module-selector-shell';
+import '../uc-card-selector-tab';
+import '../uc-presets-selector-tab';
+import '../uc-favorites-selector-tab';
+import '../uc-modules-selector-tab';
 import '../../panels/components/uc-hub-login-dialog';
 import '../../panels/components/uc-hub-rate-dialog';
 import '../../panels/components/uc-hub-submit-preset-dialog';
@@ -46,7 +51,6 @@ export declare class LayoutTab extends LitElement {
     private _draggingCondition;
     private _globalExternalCardCount;
     private _activeModuleSelectorTab;
-    private _activeModuleCategoryTab;
     private _selectedPresetSource;
     private _showFavoriteDialog;
     private _favoriteRowToSave;
@@ -66,11 +70,6 @@ export declare class LayoutTab extends LitElement {
     private _previewResizeStartHeight;
     private _showVariableMappingDialog;
     private _missingVariables;
-    private _moduleSearchQuery;
-    private _cardSearchQuery;
-    private _presetSearchQuery;
-    private _presetSortBy;
-    private _presetSortDirection;
     private _showLoginDialogForSubmit;
     private _showSubmitPresetDialog;
     private _submitPresetDialogPayload;
@@ -79,8 +78,6 @@ export declare class LayoutTab extends LitElement {
     private _builderPendingRateAfterLogin;
     private _builderShowLoginForRating;
     private _builderUserReviews;
-    private _builderExpandedId;
-    private _builderReadMoreId;
     private _tabsSectionDropHandled;
     private _undoStack;
     private _redoStack;
@@ -262,6 +259,8 @@ export declare class LayoutTab extends LitElement {
     private _getCurrentLayoutDisplay;
     private _openModuleSelector;
     private _addModule;
+    /** Applies an already-created module to the current layout at selected indices (used by sync and async add flows). */
+    private _applyAddedModule;
     private _addPageBreakToSlider;
     private _addPageBreakToColumnSlider;
     /**
@@ -831,70 +830,29 @@ export declare class LayoutTab extends LitElement {
     protected updated(changedProperties: Map<string, any>): void;
     private _renderBorderDesignTab;
     protected render(): TemplateResult;
+    private _handleSelectorClose;
+    private _handleSelectorTabChange;
     private _renderModuleSelector;
+    /** Parent layout type when adding inside a layout module (for slider pagebreak, etc.). */
+    private _getModuleSelectorParentLayoutType;
+    /** Body content for the module selector (tabs content). */
+    private _renderModuleSelectorBody;
+    private _handlePresetSelectorPresetSelected;
+    private _handlePresetSelectorRefresh;
+    private _handlePresetSelectorOpenImage;
+    private _handlePresetSelectorRequestRate;
+    private _handleCardSelectorCardSelected;
+    private _handleCardSelectorRefresh;
     private _formatCategoryTitle;
     /**
      * Focus the search input based on the active tab
      */
     private _focusSearchInput;
     /**
-     * Filter modules based on search query
-     */
-    private _filterModulesBySearch;
-    /**
-     * Filter cards based on search query
-     */
-    private _filterCardsBySearch;
-    /**
-     * Filter presets based on search query
-     */
-    private _filterPresetsBySearch;
-    /**
-     * Sort presets by name, date, or rating
-     */
-    private _sortPresets;
-    /**
-     * Render module search bar
-     */
-    private _renderModuleSearchBar;
-    /**
-     * Render card search bar
-     */
-    private _renderCardSearchBar;
-    /**
-     * Render preset search bar
-     */
-    private _renderPresetSearchBar;
-    private _renderModulesTab;
-    /**
-     * Render module search results in a single column list view
-     */
-    private _renderModuleSearchResults;
-    /**
-     * Render PRO upgrade prompt for non-Pro users
-     */
-    private _renderProUpgradePrompt;
-    /**
      * Handle upgrade button click - navigate to PRO tab
      */
     private _handleUpgradeClick;
-    private _isNewPreset;
-    private _renderPresetImages;
-    private _navigateSlider;
-    private _goToSlide;
-    private _handleSliderMouseDown;
-    private _handleSliderTouchStart;
-    private _renderPresetsTab;
-    private _renderFavoritesTab;
     private _render3rdPartyTab;
-    /**
-     * Render the new Cards tab with both native and 3rd party cards
-     */
-    private _renderCardsTab;
-    /**
-     * Render card search results in a single column list view
-     */
-    private _renderCardSearchResults;
     private _addCardFromTab;
     private _openImagePopup;
     private _renderImagePopup;

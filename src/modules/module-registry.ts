@@ -1,64 +1,34 @@
 import { UltraModule, ModuleMetadata } from './base-module';
-import { UltraTextModule } from './text-module';
-import { UltraSeparatorModule } from './separator-module';
-import { UltraImageModule } from './image-module';
-import { UltraInfoModule } from './info-module';
-import { UltraBarModule } from './bar-module';
-import { UltraGaugeModule } from './gauge-module';
-import { UltraIconModule } from './icon-module';
-import { UltraButtonModule } from './button-module';
-import { UltraSpinboxModule } from './spinbox-module';
-import { UltraMarkdownModule } from './markdown-module';
-import { UltraHorizontalModule } from './horizontal-module';
-import { UltraVerticalModule } from './vertical-module';
-import { UltraAccordionModule } from './accordion-module';
-import { UltraPopupModule } from './popup-module';
-import { UltraSliderModule } from './slider-module';
-import { UltraSliderControlModule } from './slider-control-module';
-import { UltraPageBreakModule } from './pagebreak-module';
-import { UltraCameraModule } from './camera-module';
-import { UltraGraphsModule } from './graphs-module';
-import { UltraDropdownModule } from './dropdown-module';
-import { UltraLightModule } from './light-module';
-import { UltraMapModule } from './map-module';
-import { UltraAnimatedClockModule } from './animated-clock-module';
-import { UltraAnimatedWeatherModule } from './animated-weather-module';
-import { UltraAnimatedForecastModule } from './animated-forecast-module';
-import { UltraExternalCardModule } from './external-card-module';
-import { UltraNativeCardModule } from './native-card-module';
-import { UltraVideoBgModule } from './video-bg-module';
-import { UltraClimateModule } from './climate-module';
-import { UltraDynamicWeatherModule } from './dynamic-weather-module';
-import { UltraBackgroundModule } from './background-module';
-import { UltraStatusSummaryModule } from './status-summary-module';
-import { UltraToggleModule } from './toggle-module';
-import { UltraTabsModule } from './tabs-module';
-import { UltraCalendarModule } from './calendar-module';
-import { UltraSportsScoreModule } from './sports-score-module';
-import { UltraGridModule } from './grid-module';
-import { UltraBadgeOfHonorModule } from './badge-of-honor-module';
-import { UltraVacuumModule } from './vacuum-module';
-import { UltraMediaPlayerModule } from './media-player-module';
-import { UltraPeopleModule } from './people-module';
-import { UltraNavigationModule } from './navigation-module';
-import { UltraTimerModule } from './timer-module';
-import { UltraCoverModule } from './cover-module';
-import { UltraDynamicListModule } from './dynamic-list-module';
-import { UltraQrCodeModule } from './qr-code-module';
-import { UltraEnergyDisplayModule } from './energy-display-module';
+import { CORE_MANIFESTS } from './module-manifest-data';
+import { coreLoaders } from './module-loaders';
 import { CardModule } from '../types';
 
-// Module registry class for managing all available modules
+/** Sync metadata-only view for selector/editor; supports future async implementation loading. */
+export type ModuleManifest = import('./module-manifest-data').ModuleManifest;
+
+// Module registry class for managing all available modules (manifest-first, lazy implementation loading)
 export class ModuleRegistry {
   private static instance: ModuleRegistry;
+  /** Loaded module implementations only. */
   private modules = new Map<string, UltraModule>();
-  private modulesByCategory = new Map<string, UltraModule[]>();
+  /** In-flight lazy loads keyed by module type so concurrent callers share one import. */
+  private pendingLoads = new Map<string, Promise<void>>();
+  /** Manifest: type -> metadata. Populated from static manifest; kept in sync when modules are loaded or third-party registered. */
+  private manifest = new Map<string, ModuleManifest>();
+  /** Category -> type[]. Built from manifest for sync category APIs. */
+  private categoryToTypes = new Map<string, string[]>();
+  /** Combined styles cache for loaded modules; invalidated when a module is registered. */
+  private _stylesCache: string | null = null;
+  /** Core types from static manifest; cannot be unregistered from manifest. */
+  private _coreTypes = new Set(CORE_MANIFESTS.map(m => m.type));
 
   private constructor() {
-    this.registerCoreModules();
+    for (const m of CORE_MANIFESTS) {
+      this.manifest.set(m.type, m);
+      this._addToCategoryMap(m.type, m.category);
+    }
   }
 
-  // Singleton pattern to ensure one registry instance
   public static getInstance(): ModuleRegistry {
     if (!ModuleRegistry.instance) {
       ModuleRegistry.instance = new ModuleRegistry();
@@ -66,130 +36,125 @@ export class ModuleRegistry {
     return ModuleRegistry.instance;
   }
 
-  // Register core modules that come with Ultra Card
-  private registerCoreModules(): void {
-    this.registerModule(new UltraTextModule());
-    this.registerModule(new UltraSeparatorModule());
-    this.registerModule(new UltraImageModule());
-    this.registerModule(new UltraInfoModule());
-    this.registerModule(new UltraBarModule());
-    this.registerModule(new UltraGaugeModule());
-    this.registerModule(new UltraIconModule());
-    this.registerModule(new UltraButtonModule());
-    this.registerModule(new UltraSpinboxModule());
-    this.registerModule(new UltraMarkdownModule());
-    this.registerModule(new UltraHorizontalModule());
-    this.registerModule(new UltraVerticalModule());
-    this.registerModule(new UltraAccordionModule());
-    this.registerModule(new UltraPopupModule());
-    this.registerModule(new UltraSliderModule());
-    this.registerModule(new UltraSliderControlModule());
-    this.registerModule(new UltraPageBreakModule());
-    this.registerModule(new UltraCameraModule());
-    this.registerModule(new UltraGraphsModule());
-    this.registerModule(new UltraDropdownModule());
-    this.registerModule(new UltraLightModule());
-    this.registerModule(new UltraMapModule());
-    this.registerModule(new UltraAnimatedClockModule());
-    this.registerModule(new UltraAnimatedWeatherModule());
-    this.registerModule(new UltraAnimatedForecastModule());
-    // Register external card module for handling existing cards, but hide from selector
-    this.registerModule(new UltraExternalCardModule());
-    this.registerModule(new UltraNativeCardModule());
-    // Register video background module (Pro feature)
-    this.registerModule(new UltraVideoBgModule());
-    // Register climate module (Pro feature)
-    this.registerModule(new UltraClimateModule());
-    // Register dynamic weather module (Pro feature)
-    this.registerModule(new UltraDynamicWeatherModule());
-    // Register background module
-    this.registerModule(new UltraBackgroundModule());
-    // Register status summary module
-    this.registerModule(new UltraStatusSummaryModule());
-    // Register toggle module
-    this.registerModule(new UltraToggleModule());
-    // Register tabs module
-    this.registerModule(new UltraTabsModule());
-    // Register calendar module (Pro feature)
-    this.registerModule(new UltraCalendarModule());
-    // Register sports score module (Pro feature)
-    this.registerModule(new UltraSportsScoreModule());
-    // Register badge of honor module (Pro feature)
-    this.registerModule(new UltraBadgeOfHonorModule());
-    // Register grid module
-    this.registerModule(new UltraGridModule());
-    // Register vacuum module (Pro feature)
-    this.registerModule(new UltraVacuumModule());
-    // Register media player module
-    this.registerModule(new UltraMediaPlayerModule());
-    // Register people module
-    this.registerModule(new UltraPeopleModule());
-    // Register navigation module
-    this.registerModule(new UltraNavigationModule());
-    this.registerModule(new UltraTimerModule());
-    // Register cover module
-    this.registerModule(new UltraCoverModule());
-    // Register dynamic list module
-    this.registerModule(new UltraDynamicListModule());
-    // Register QR code module (Pro feature)
-    this.registerModule(new UltraQrCodeModule());
-    // Register Energy Display module (Pro feature)
-    this.registerModule(new UltraEnergyDisplayModule());
+  private _addToCategoryMap(type: string, category: string): void {
+    if (!this.categoryToTypes.has(category)) {
+      this.categoryToTypes.set(category, []);
+    }
+    const list = this.categoryToTypes.get(category)!;
+    if (!list.includes(type)) list.push(type);
   }
 
-  // Register a new module (for core modules or third-party modules)
+  private _rebuildCategoryMap(): void {
+    this.categoryToTypes.clear();
+    for (const m of this.manifest.values()) {
+      this._addToCategoryMap(m.type, m.category);
+    }
+  }
+
+  // Register a new module (after lazy load or for third-party modules)
   public registerModule(module: UltraModule): void {
     const type = module.metadata.type;
-
-    if (this.modules.has(type)) {
-      console.warn(`Module with type "${type}" is already registered. Overriding...`);
-    }
-
     this.modules.set(type, module);
-    this.updateCategoryMap(module);
-
-    // Module registered successfully
+    this.pendingLoads.delete(type);
+    this.manifest.set(type, module.metadata);
+    this._addToCategoryMap(type, module.metadata.category);
+    this._stylesCache = null;
   }
 
-  // Unregister a module
+  // Unregister a module (manifest entry removed only for non-core types)
   public unregisterModule(type: string): boolean {
-    const module = this.modules.get(type);
-    if (!module) {
+    if (!this.modules.has(type) && !this.manifest.has(type)) {
       return false;
     }
 
     this.modules.delete(type);
-    this.updateCategoryMaps();
-
+    if (!this._coreTypes.has(type)) {
+      this.manifest.delete(type);
+      this._rebuildCategoryMap();
+    }
+    this._stylesCache = null;
     return true;
   }
 
-  // Get a specific module by type
+  // Get a specific module by type (sync; undefined if not yet loaded)
   public getModule(type: string): UltraModule | undefined {
     return this.modules.get(type);
   }
 
-  // Get all registered modules
+  /**
+   * Sync metadata-only lookup (manifest). Use for selector/editor lists and icons
+   * without requiring the full implementation to be loaded.
+   */
+  public getModuleMetadata(type: string): ModuleManifest | undefined {
+    return this.manifest.get(type);
+  }
+
+  /**
+   * Ensure the module implementation for type is loaded. Resolves when the module is registered.
+   * Real implementation boundary: triggers dynamic import and register.
+   */
+  public ensureModuleLoaded(type: string): Promise<void> {
+    if (this.modules.has(type)) return Promise.resolve();
+    const pending = this.pendingLoads.get(type);
+    if (pending) return pending;
+
+    const loader = coreLoaders[type];
+    if (!loader) {
+      return Promise.reject(new Error(`No loader for module type "${type}"`));
+    }
+
+    const loadPromise = loader()
+      .then(module => {
+        this.registerModule(module);
+      })
+      .finally(() => {
+        this.pendingLoads.delete(type);
+      });
+    this.pendingLoads.set(type, loadPromise);
+    return loadPromise;
+  }
+
+  // Get all loaded modules
   public getAllModules(): UltraModule[] {
     return Array.from(this.modules.values());
   }
 
-  // Get modules by category
+  // Get loaded modules by category
   public getModulesByCategory(category: string): UltraModule[] {
-    return this.modulesByCategory.get(category) || [];
+    const types = this.categoryToTypes.get(category);
+    if (!types) return [];
+    return types.map(t => this.modules.get(t)).filter((m): m is UltraModule => m !== undefined);
   }
 
-  // Get all available categories
+  // Get all available categories (from manifest)
   public getCategories(): string[] {
-    return Array.from(this.modulesByCategory.keys());
+    return Array.from(this.categoryToTypes.keys());
   }
 
-  // Get module metadata for all modules
-  public getAllModuleMetadata(): ModuleMetadata[] {
-    return this.getAllModules().map(module => module.metadata);
+  /** Manifest-only: all metadata for selector/editor without loading implementations. */
+  public getAllModuleMetadata(): ModuleManifest[] {
+    return Array.from(this.manifest.values());
   }
 
-  // Search modules by tags or text
+  /** Manifest-only: metadata for a category. */
+  public getManifestByCategory(category: string): ModuleManifest[] {
+    return Array.from(this.manifest.values()).filter(m => m.category === category);
+  }
+
+  /** Manifest-only: search by title, description, tags, type. */
+  public searchModuleMetadata(query: string): ModuleManifest[] {
+    const searchTerm = query.toLowerCase();
+    return Array.from(this.manifest.values()).filter(m => {
+      return (
+        m.title.toLowerCase().includes(searchTerm) ||
+        m.description.toLowerCase().includes(searchTerm) ||
+        m.tags.some(tag => tag.toLowerCase().includes(searchTerm)) ||
+        m.type.toLowerCase().includes(searchTerm)
+      );
+    });
+  }
+
+  // Search modules by tags or text (implementation-backed; prefer searchModuleMetadata for selector)
   public searchModules(query: string): UltraModule[] {
     const searchTerm = query.toLowerCase();
     return this.getAllModules().filter(module => {
@@ -203,16 +168,15 @@ export class ModuleRegistry {
     });
   }
 
-  // Create a default instance of a module
+  // Create a default instance of a module (requires module to be loaded; call ensureModuleLoaded first if needed)
   public createDefaultModule(type: string, id?: string, hass?: any): CardModule | null {
     const module = this.getModule(type);
     if (!module) {
-      console.error(`Module type "${type}" not found in registry`);
+      console.error(`Module type "${type}" not found or not yet loaded in registry`);
       return null;
     }
 
     try {
-      // Check if the module's createDefault method accepts hass parameter
       const defaultModule = (module as any).createDefault(id, hass);
       return defaultModule;
     } catch (error) {
@@ -221,21 +185,23 @@ export class ModuleRegistry {
     }
   }
 
-  // Validate a module configuration
+  // Validate a module configuration (requires module to be loaded)
   public validateModule(moduleConfig: CardModule): { valid: boolean; errors: string[] } {
     const module = this.getModule(moduleConfig.type);
     if (!module) {
       return {
         valid: false,
-        errors: [`Unknown module type: ${moduleConfig.type}`],
+        errors: [`Unknown or not yet loaded module type: ${moduleConfig.type}`],
       };
     }
 
     return module.validate(moduleConfig);
   }
 
-  // Get combined CSS for all registered modules
+  // Get combined CSS for all loaded modules (cached; invalidated when a module is registered)
   public getAllModuleStyles(): string {
+    if (this._stylesCache !== null) return this._stylesCache;
+
     let combinedStyles = '';
 
     for (const module of this.getAllModules()) {
@@ -246,61 +212,35 @@ export class ModuleRegistry {
       }
     }
 
-    // Add common form styles
     combinedStyles += this.getCommonFormStyles();
-
+    this._stylesCache = combinedStyles;
     return combinedStyles;
   }
 
-  // Check if a module type is registered
+  // Check if a module type is registered (in manifest or loaded)
   public isModuleRegistered(type: string): boolean {
-    return this.modules.has(type);
+    return this.manifest.has(type);
   }
 
-  // Get module statistics
+  // Get module statistics (manifest-based so sync without loading all implementations)
   public getRegistryStats(): {
     totalModules: number;
     modulesByCategory: Record<string, number>;
     authors: string[];
   } {
-    const modules = this.getAllModules();
     const modulesByCategory: Record<string, number> = {};
     const authors = new Set<string>();
 
-    modules.forEach(module => {
-      const category = module.metadata.category;
-      modulesByCategory[category] = (modulesByCategory[category] || 0) + 1;
-      authors.add(module.metadata.author);
-    });
+    for (const m of this.manifest.values()) {
+      modulesByCategory[m.category] = (modulesByCategory[m.category] || 0) + 1;
+      authors.add(m.author);
+    }
 
     return {
-      totalModules: modules.length,
+      totalModules: this.manifest.size,
       modulesByCategory,
       authors: Array.from(authors),
     };
-  }
-
-  // Update the category map for a specific module
-  private updateCategoryMap(module: UltraModule): void {
-    const category = module.metadata.category;
-    if (!this.modulesByCategory.has(category)) {
-      this.modulesByCategory.set(category, []);
-    }
-
-    const categoryModules = this.modulesByCategory.get(category)!;
-    const existingIndex = categoryModules.findIndex(m => m.metadata.type === module.metadata.type);
-
-    if (existingIndex >= 0) {
-      categoryModules[existingIndex] = module;
-    } else {
-      categoryModules.push(module);
-    }
-  }
-
-  // Rebuild all category maps
-  private updateCategoryMaps(): void {
-    this.modulesByCategory.clear();
-    this.getAllModules().forEach(module => this.updateCategoryMap(module));
   }
 
   // Common form styles for all modules

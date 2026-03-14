@@ -4,6 +4,10 @@
  * Ultra Card Pro Cloud integration's www/ folder so the sidebar panel
  * served by the integration stays in sync with the card repo.
  *
+ * Single source of truth: Ultra Card repo's dist/ultra-card-panel.js (after npm run build).
+ * The integration's www/ is the deployment target; deploy.js in the Pro Cloud repo
+ * also copies from this path when deploying. Run "npm run build" in Ultra Card first.
+ *
  * Usage:
  *   node scripts/sync-panel-to-integration.js
  *   npm run sync:panel

@@ -60,50 +60,38 @@ export class UcActionConfirmationService {
     const dialog = document.createElement('ha-dialog') as any;
     dialog.open = true;
     dialog.heading = 'Confirm Action';
-    
+
     let confirmed = false;
 
-    // Create content div with Ultra Card styling - simplified and centered
+    // Content
     const contentDiv = document.createElement('div');
     contentDiv.className = 'uc-confirmation-dialog-content';
     contentDiv.innerHTML = `
-      <style>
-        .uc-confirmation-dialog-content {
-          padding: 20px 24px;
-          text-align: center;
-        }
-        .uc-confirmation-dialog-content .confirmation-message {
-          margin: 0;
-          color: var(--primary-text-color);
-          font-size: 15px;
-          line-height: 1.5;
-        }
-      </style>
       <p class="confirmation-message">
         Are you sure you want to execute this action?
       </p>
     `;
     dialog.appendChild(contentDiv);
 
-    // Create cancel button for secondaryAction slot
-    const cancelButton = document.createElement('button');
+    // Use mwc-button for action slots — required by ha-dialog to render correctly
+    const cancelButton = document.createElement('mwc-button') as any;
     cancelButton.slot = 'secondaryAction';
-    cancelButton.className = 'uc-confirmation-btn uc-confirmation-btn-cancel';
+    cancelButton.dialogAction = 'cancel';
     cancelButton.textContent = 'Cancel';
     cancelButton.addEventListener('click', () => {
       confirmed = false;
-      (dialog as any).close();
+      dialog.close();
     });
     dialog.appendChild(cancelButton);
 
-    // Create confirm button for primaryAction slot
-    const confirmButton = document.createElement('button');
+    const confirmButton = document.createElement('mwc-button') as any;
     confirmButton.slot = 'primaryAction';
-    confirmButton.className = 'uc-confirmation-btn uc-confirmation-btn-confirm';
+    confirmButton.dialogAction = 'ok';
+    confirmButton.setAttribute('raised', '');
     confirmButton.textContent = 'Confirm';
     confirmButton.addEventListener('click', () => {
       confirmed = true;
-      (dialog as any).close();
+      dialog.close();
     });
     dialog.appendChild(confirmButton);
 
@@ -117,63 +105,26 @@ export class UcActionConfirmationService {
 
     dialog.addEventListener('closed', handleClosed);
     document.body.appendChild(dialog);
-    
-    // Add styles for buttons in action slots
+
+    // Scoped styles for dialog content and mobile fullscreen fix
     const style = document.createElement('style');
     style.textContent = `
-      ha-dialog .uc-confirmation-btn {
-        padding: 10px 24px;
-        border: none;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        min-width: 100px;
+      .uc-confirmation-dialog-content {
+        padding: 8px 0 16px;
+        text-align: center;
       }
-      ha-dialog .uc-confirmation-btn-cancel {
-        background: var(--secondary-background-color);
-        color: var(--secondary-text-color);
-        border: 1px solid var(--divider-color);
-      }
-      ha-dialog .uc-confirmation-btn-cancel:hover {
-        background: var(--divider-color);
+      .uc-confirmation-dialog-content .confirmation-message {
+        margin: 0;
         color: var(--primary-text-color);
-      }
-      ha-dialog .uc-confirmation-btn-confirm {
-        background: var(--primary-color);
-        color: white;
-      }
-      ha-dialog .uc-confirmation-btn-confirm:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(var(--rgb-primary-color, 33, 150, 243), 0.3);
+        font-size: 15px;
+        line-height: 1.5;
       }
     `;
     document.head.appendChild(style);
-    
-    // Force the dialog to update and show
-    setTimeout(() => {
-      if (dialog.requestUpdate) {
-        dialog.requestUpdate();
-      }
-      // Ensure dialog is visible
-      dialog.style.display = 'block';
-      dialog.style.zIndex = '10000';
-      
-      // Try to open it explicitly
-      if (dialog.show) {
-        dialog.show();
-      }
-      
-      // Clean up style when dialog closes
-      const cleanupStyle = () => {
-        if (style.parentNode) {
-          style.remove();
-        }
-      };
-      dialog.addEventListener('closed', cleanupStyle, { once: true });
-    }, 0);
+
+    dialog.addEventListener('closed', () => {
+      if (style.parentNode) style.remove();
+    }, { once: true });
   }
 
   /**

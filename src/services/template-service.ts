@@ -260,6 +260,34 @@ export class TemplateService {
   }
 
   /**
+   * Unsubscribe from template subscriptions whose key starts with the given prefix.
+   * Used to clear layout_* subscriptions when config.layout changes.
+   */
+  public async unsubscribeTemplatesByPrefix(prefix: string): Promise<void> {
+    const toRemove: string[] = [];
+    for (const key of this._templateSubscriptions.keys()) {
+      if (key.startsWith(prefix)) toRemove.push(key);
+    }
+    for (const key of toRemove) {
+      const subPromise = this._templateSubscriptions.get(key);
+      if (subPromise) {
+        try {
+          const unsubFn = await Promise.resolve(subPromise).catch(() => null);
+          if (unsubFn && typeof unsubFn === 'function') {
+            try {
+              await unsubFn();
+            } catch {}
+          }
+        } catch {}
+      }
+      this._templateSubscriptions.delete(key);
+      this._templateResults.delete(key);
+      this._previousStringResults.delete(key);
+      this._evaluationCache.delete(key);
+    }
+  }
+
+  /**
    * Unsubscribe from all template subscriptions
    */
   public async unsubscribeAllTemplates(): Promise<void> {

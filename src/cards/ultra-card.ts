@@ -9,7 +9,15 @@ import {
   TextModule,
   ImageModule,
   HoverEffectConfig,
+  DeviceBreakpoint,
 } from '../types';
+
+/** Per-render context passed to row/column/module helpers to avoid recomputing per module. */
+interface RenderContext {
+  isHaPreview: boolean;
+  isDashboardEditMode: boolean;
+  breakpoint: DeviceBreakpoint;
+}
 import { getModuleRegistry } from '../modules';
 import { getImageUrl } from '../utils/image-upload';
 import { logicService } from '../services/logic-service';
@@ -37,7 +45,6 @@ import {
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';
 
-import '../editor/ultra-card-editor';
 import { externalCardContainerService } from '../services/external-card-container-service';
 
 @customElement('ultra-card')
@@ -58,11 +65,19 @@ export class UltraCard extends LitElement {
     if (value && value !== oldHass) {
       externalCardContainerService.setHass(value);
       logicService.setHass(value);
-      // Recreate layout template service when connection changes
-      if (this._layoutTemplateService) {
-        this._layoutTemplateService.unsubscribeAllTemplates();
+      try {
+        // Recreate layout template service when connection changes
+        if (this._layoutTemplateService) {
+          this._layoutTemplateService.unsubscribeAllTemplates();
+        }
+        this._layoutTemplateService = new TemplateService(value);
+        // Register layout template subscriptions when hass becomes available (config may already be set)
+        if (this.config?.layout?.rows?.length) {
+          this._registerLayoutTemplateSubscriptions();
+        }
+      } catch (e) {
+        console.warn('[UltraCard] Layout template setup failed:', e);
       }
-      this._layoutTemplateService = new TemplateService(value);
     }
 
     // Let Lit handle the property change for other updates
@@ -91,12 +106,105 @@ export class UltraCard extends LitElement {
   private _moduleStylesInjected = false;
   private _instanceId: string = '';
   private _layoutTemplateService: TemplateService | null = null;
+  /** Parsed layout template results; invalidated when config.layout or template raw string changes. */
+  private _layoutColumnsParsedCache = new Map<string, { raw: string; value: CardColumn[] }>();
+  private _layoutModulesParsedCache = new Map<string, { raw: string; value: CardModule[] }>();
   private _limitUnsub?: () => void;
   private _isEditorPreviewCard = false;
   private _globalTransparencyListener?: () => void;
   private _globalTransparencyApplied = false;
   private _variablesBackupUnsub?: () => void;
   private _variablesBackupVersion = 0;
+
+  /** Cached config-derived data; invalidated when config.layout changes */
+  private _configCache: {
+    layoutKey: string;
+    relevantEntityIds: Set<string>;
+    allModules: CardModule[];
+    moduleTypes: Set<string>;
+    onlyInvisibleModules: boolean;
+    onlyPopupModules: boolean;
+    allPopupsInvisible: boolean;
+    hasLogicConditions: boolean;
+    has3rdPartyCards: boolean;
+    hasNonExternalModules: boolean;
+    videoBgModules: Array<{ id: string; module: CardModule }>;
+    dynamicWeatherModules: Array<{ id: string; module: CardModule }>;
+    backgroundModules: Array<{ id: string; module: CardModule }>;
+    navigationModules: Array<{ id: string; module: CardModule }>;
+  } | null = null;
+
+  private _getConfigCache(): NonNullable<UltraCard['_configCache']> {
+    const layout = this.config?.layout;
+    const layoutKey = layout ? JSON.stringify(layout) : '';
+    if (this._configCache && this._configCache.layoutKey === layoutKey) {
+      return this._configCache;
+    }
+    const relevantEntityIds = this._getRelevantEntityIds();
+    const allModules: CardModule[] = [];
+    const moduleTypes = new Set<string>();
+    const videoBgModules: Array<{ id: string; module: CardModule }> = [];
+    const dynamicWeatherModules: Array<{ id: string; module: CardModule }> = [];
+    const backgroundModules: Array<{ id: string; module: CardModule }> = [];
+    const navigationModules: Array<{ id: string; module: CardModule }> = [];
+
+    if (layout?.rows) {
+      for (const row of layout.rows) {
+        for (const col of row.columns || []) {
+          for (const mod of col.modules || []) {
+            allModules.push(mod);
+            if (mod.type) moduleTypes.add(mod.type);
+            if (mod.type === 'video_bg') videoBgModules.push({ id: mod.id, module: mod });
+            if (mod.type === 'dynamic_weather') dynamicWeatherModules.push({ id: mod.id, module: mod });
+            if (mod.type === 'background') backgroundModules.push({ id: mod.id, module: mod });
+            if (mod.type === 'navigation') navigationModules.push({ id: mod.id, module: mod });
+          }
+        }
+      }
+    }
+
+    const invisibleTypes = ['video_bg', 'dynamic_weather', 'background', 'navigation'];
+    const onlyInvisibleModules =
+      allModules.length > 0 && allModules.every(m => invisibleTypes.includes(m.type));
+    const onlyPopupModules = allModules.length > 0 && allModules.every(m => m.type === 'popup');
+    const allPopupsInvisible =
+      onlyPopupModules &&
+      allModules.every(m => {
+        const popup = m as any;
+        const triggerType = popup.trigger_type || 'button';
+        return triggerType === 'logic' || triggerType === 'page_load';
+      });
+    const hasLogicConditions = !!layout?.rows?.some(
+      row =>
+        (row.display_conditions?.length ?? 0) > 0 ||
+        row.columns?.some(
+          col =>
+            (col.display_conditions?.length ?? 0) > 0 ||
+            col.modules?.some(mod => (mod.display_conditions?.length ?? 0) > 0)
+        )
+    );
+    const has3rdPartyCards = moduleTypes.has('external_card');
+    const hasNonExternalModules = Array.from(moduleTypes).some(t => t !== 'external_card');
+
+    this._configCache = {
+      layoutKey,
+      relevantEntityIds,
+      allModules,
+      moduleTypes,
+      onlyInvisibleModules,
+      onlyPopupModules,
+      allPopupsInvisible,
+      hasLogicConditions,
+      has3rdPartyCards,
+      hasNonExternalModules,
+      videoBgModules,
+      dynamicWeatherModules,
+      backgroundModules,
+      navigationModules,
+    };
+    return this._configCache;
+  }
+
   connectedCallback(): void {
     super.connectedCallback();
 
@@ -483,7 +591,7 @@ export class UltraCard extends LitElement {
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
     const newHass = this.hass;
     if (!newHass?.states) return true;
-    const entityIds = this._getRelevantEntityIds();
+    const entityIds = this._getConfigCache().relevantEntityIds;
     if (entityIds.size === 0) return true;
     for (const id of entityIds) {
       const oldState = oldHass?.states?.[id]?.state;
@@ -517,6 +625,18 @@ export class UltraCard extends LitElement {
         this._columnVisibilityState.clear();
         this._animatingRows.clear();
         this._animatingColumns.clear();
+        // Clear parsed layout template caches and re-register layout subscriptions
+        this._layoutColumnsParsedCache.clear();
+        this._layoutModulesParsedCache.clear();
+        if (this._layoutTemplateService && this.hass) {
+          this._layoutTemplateService.unsubscribeTemplatesByPrefix('layout_').then(() => {
+            try {
+              this._registerLayoutTemplateSubscriptions();
+            } catch (e) {
+              console.warn('[UltraCard] Layout template re-registration failed:', e);
+            }
+          }).catch(() => {});
+        }
       }
 
       // Force re-render when config changes
@@ -534,35 +654,12 @@ export class UltraCard extends LitElement {
     // Handle Home Assistant state changes for logic condition evaluation
     if (changedProps.has('hass')) {
       const currentTime = Date.now();
+      // logicService.setHass is already called in the hass setter when hass reference changes
 
-      // Update logic service and favorite colors service with new hass instance
-      if (this.hass) {
-        logicService.setHass(this.hass);
-      }
-
-      // Check what types of modules we have
-      const moduleTypes = new Set<string>();
-      this.config?.layout?.rows?.forEach(row => {
-        row.columns?.forEach(col => {
-          col.modules?.forEach(mod => {
-            if (mod.type) moduleTypes.add(mod.type);
-          });
-        });
-      });
-
-      const has3rdPartyCards = moduleTypes.has('external_card');
-      const hasNonExternalModules = Array.from(moduleTypes).some(type => type !== 'external_card');
-
-      // Only request update if we have logic conditions or non-3rd party modules that need updates
-      const hasLogicConditions = this.config?.layout?.rows?.some(
-        row =>
-          row.display_conditions?.length > 0 ||
-          row.columns?.some(
-            col =>
-              col.display_conditions?.length > 0 ||
-              col.modules?.some(mod => mod.display_conditions?.length > 0)
-          )
-      );
+      const cache = this._getConfigCache();
+      const has3rdPartyCards = cache.has3rdPartyCards;
+      const hasNonExternalModules = cache.hasNonExternalModules;
+      const hasLogicConditions = cache.hasLogicConditions;
 
       // If we ONLY have 3rd party cards and no logic conditions, skip Ultra Card re-render
       if (has3rdPartyCards && !hasNonExternalModules && !hasLogicConditions) {
@@ -587,79 +684,63 @@ export class UltraCard extends LitElement {
       throw new Error('Invalid configuration');
     }
 
-    // Validate and correct config
-    const validationResult = configValidationService.validateAndCorrectConfig(config);
+    configValidationService.validateAndCorrectConfig(config).then(validationResult => {
+      if (!validationResult.valid) {
+        throw new Error(`Invalid configuration: ${validationResult.errors.join(', ')}`);
+      }
 
-    if (!validationResult.valid) {
-      // Config validation failed (silent)
-      throw new Error(`Invalid configuration: ${validationResult.errors.join(', ')}`);
-    }
+      const isPreviewContext = this._detectEditorPreviewContext();
+      const uniqueIdCheck = configValidationService.validateUniqueModuleIds(
+        validationResult.correctedConfig!
+      );
 
-    // Detect preview context EARLY so we can keep IDs stable in previews
-    const isPreviewContext = this._detectEditorPreviewContext();
+      let finalConfig = validationResult.correctedConfig!;
+      if (!isPreviewContext && !uniqueIdCheck.valid) {
+        finalConfig = configValidationService.fixDuplicateModuleIds(finalConfig);
+      }
 
-    // Check for duplicate module IDs and fix them (skip in previews to avoid ID churn)
-    const uniqueIdCheck = configValidationService.validateUniqueModuleIds(
-      validationResult.correctedConfig!
-    );
+      this.config = { ...finalConfig };
 
-    let finalConfig = validationResult.correctedConfig!;
-    if (!isPreviewContext && !uniqueIdCheck.valid) {
-      // Duplicate module IDs detected; fixing silently (only outside previews)
-      finalConfig = configValidationService.fixDuplicateModuleIds(finalConfig);
-    }
-
-    // Suppress console info; warnings are surfaced in-editor only
-
-    this.config = { ...finalConfig };
-
-    // Register modules with ThirdPartyLimitService for global evaluation (non-breaking)
-    try {
-      const dashboardId = getCurrentDashboardId();
-      const cardInstanceId =
-        this._instanceId || `uc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      // Use the earlier-detected preview flag to keep behavior consistent
-      this._isEditorPreviewCard = isPreviewContext;
-      // Attach a non-enumerable flags for downstream resolution
       try {
-        Object.defineProperty(this.config, '__ucInstanceId', {
-          value: cardInstanceId,
-          enumerable: false,
-          configurable: true,
-          writable: true,
-        });
-        Object.defineProperty(this.config, '__ucIsEditorPreview', {
-          value: this._isEditorPreviewCard,
-          enumerable: false,
-          configurable: true,
-          writable: true,
-        });
+        const dashboardId = getCurrentDashboardId();
+        const cardInstanceId =
+          this._instanceId || `uc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        this._isEditorPreviewCard = isPreviewContext;
+        try {
+          Object.defineProperty(this.config, '__ucInstanceId', {
+            value: cardInstanceId,
+            enumerable: false,
+            configurable: true,
+            writable: true,
+          });
+          Object.defineProperty(this.config, '__ucIsEditorPreview', {
+            value: this._isEditorPreviewCard,
+            enumerable: false,
+            configurable: true,
+            writable: true,
+          });
+        } catch {}
+
+        if (!this._isEditorPreviewCard && !(window as any).__UC_PREVIEW_SUPPRESS_LOCKS) {
+          ThirdPartyLimitService.register(cardInstanceId, dashboardId, this.config);
+        }
       } catch {}
 
-      // Skip registration entirely for editor preview cards so they never affect limits
-      if (!this._isEditorPreviewCard && !(window as any).__UC_PREVIEW_SUPPRESS_LOCKS) {
-        ThirdPartyLimitService.register(cardInstanceId, dashboardId, this.config);
-      }
-    } catch {}
-
-    // Restore favorite colors from card config if localStorage is empty
-    // This handles cases where localStorage was cleared but config has a backup
-    try {
-      if (
-        this.config.favorite_colors &&
-        Array.isArray(this.config.favorite_colors) &&
-        this.config.favorite_colors.length > 0
-      ) {
-        const currentFavorites = ucFavoriteColorsService.getFavorites();
-        if (currentFavorites.length === 0) {
-          // localStorage is empty but config has favorites - restore them
-          ucFavoriteColorsService.importFromConfig(this.config.favorite_colors);
+      try {
+        if (
+          this.config.favorite_colors &&
+          Array.isArray(this.config.favorite_colors) &&
+          this.config.favorite_colors.length > 0
+        ) {
+          const currentFavorites = ucFavoriteColorsService.getFavorites();
+          if (currentFavorites.length === 0) {
+            ucFavoriteColorsService.importFromConfig(this.config.favorite_colors);
+          }
         }
-      }
-    } catch {}
+      } catch {}
 
-    // Request update to ensure re-render with new config
-    this.requestUpdate();
+      this.requestUpdate();
+    }).catch(() => {});
   }
 
   /**
@@ -759,9 +840,6 @@ export class UltraCard extends LitElement {
 
   // Tell Home Assistant this card has a visual editor
   public static getConfigElement(): HTMLElement {
-    if (!customElements.get('ultra-card-editor')) {
-      void import('../editor/ultra-card-editor');
-    }
     return document.createElement('ultra-card-editor');
   }
 
@@ -847,7 +925,7 @@ export class UltraCard extends LitElement {
 
   protected render(): TemplateResult {
     if (!this.config || !this.hass) {
-      return html`<div>Loading...</div>`;
+      return html``;
     }
 
     const cardStyle = this._getCardStyle();
@@ -865,63 +943,16 @@ export class UltraCard extends LitElement {
       `;
     }
 
-    // Check if card only contains video_bg, dynamic_weather or popup modules
-    const allModules: CardModule[] = [];
-    this.config.layout.rows.forEach(row => {
-      row.columns?.forEach(column => {
-        column.modules?.forEach(module => {
-          allModules.push(module);
-        });
-      });
-    });
+    // Use cached config-derived module lists and flags (single walk per config change)
+    const cache = this._getConfigCache();
+    const { allModules, onlyInvisibleModules, onlyPopupModules, allPopupsInvisible } = cache;
 
-    // Modules that render view-wide effects or are invisible on the dashboard
-    const invisibleTypes = ['video_bg', 'dynamic_weather', 'background', 'navigation'];
-    const onlyInvisibleModules =
-      allModules.length > 0 && allModules.every(m => invisibleTypes.includes(m.type));
-
-    const onlyPopupModules = allModules.length > 0 && allModules.every(m => m.type === 'popup');
-
-    // Check if all popups have invisible triggers (logic or page_load)
-    const allPopupsInvisible =
-      onlyPopupModules &&
-      allModules.every(m => {
-        const popup = m as any;
-        const triggerType = popup.trigger_type || 'button';
-        return triggerType === 'logic' || triggerType === 'page_load';
-      });
-
-    // Check if we're in the card editor (not just dashboard edit mode)
+    // Hoist per-render environment checks (computed once per render, passed to row/column/module)
     const isInCardEditor = !!document.querySelector('hui-dialog-edit-card');
-
-    // Check if the dashboard itself is in edit mode using multiple methods
-    const isDashboardEditMode = (() => {
-      try {
-        // Method 1: Check URL parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('edit') === '1') return true;
-
-        // Method 2: Check HA's lovelace editMode property
-        const root = document.querySelector('home-assistant') as any;
-        const lovelace = root?.shadowRoot
-          ?.querySelector('home-assistant-main')
-          ?.shadowRoot?.querySelector('ha-drawer')
-          ?.querySelector('partial-panel-resolver')
-          ?.querySelector('ha-panel-lovelace')?.lovelace;
-        if (lovelace?.editMode) return true;
-
-        // Method 3: Check for edit mode UI elements
-        if (document.querySelector('hui-editor-mode')) return true;
-
-        // Method 4: Check if card has edit mode overlay
-        const hasEditOverlay = !!document.querySelector('hui-card-edit-mode');
-        if (hasEditOverlay) return true;
-
-        return false;
-      } catch {
-        return false;
-      }
-    })();
+    const isDashboardEditMode = this._detectDashboardEditMode();
+    const isHaPreview = this._detectEditorPreviewContext();
+    const breakpoint = responsiveDesignService.getCurrentBreakpoint();
+    const renderCtx: RenderContext = { isHaPreview, isDashboardEditMode, breakpoint };
 
     // If only invisible modules (video_bg, dynamic_weather) and NOT in card editor AND NOT in dashboard edit mode, hide completely
     if (onlyInvisibleModules && !isInCardEditor && !isDashboardEditMode) {
@@ -993,7 +1024,7 @@ export class UltraCard extends LitElement {
     if (allPopupsInvisible && !isInCardEditor) {
       return html`
         <div style="display: contents;">
-          ${this.config.layout.rows.map(row => this._renderRow(row))}
+          ${this.config.layout.rows.map((row, ri) => this._renderRow(row, renderCtx, ri))}
         </div>
       `;
     }
@@ -1002,7 +1033,7 @@ export class UltraCard extends LitElement {
     // Popups need to render their triggers, but still need the card background styling
     if (onlyPopupModules && !isInCardEditor) {
       return html`
-        <div style="${cardStyle}">${this.config.layout.rows.map(row => this._renderRow(row))}</div>
+        <div style="${cardStyle}">${this.config.layout.rows.map((row, ri) => this._renderRow(row, renderCtx, ri))}</div>
       `;
     }
 
@@ -1021,7 +1052,7 @@ export class UltraCard extends LitElement {
         role="region"
         aria-label="Ultra Card"
       >
-        ${this.config.layout.rows.map(row => this._renderRow(row))}
+        ${this.config.layout.rows.map((row, ri) => this._renderRow(row, renderCtx, ri))}
       </div>
     `;
   }
@@ -1453,11 +1484,8 @@ export class UltraCard extends LitElement {
     }
   }
 
-  private _renderRow(row: CardRow): TemplateResult {
-    // Initialize logic service
-    if (this.hass) {
-      logicService.setHass(this.hass);
-    }
+  private _renderRow(row: CardRow, ctx: RenderContext, rowIndex: number): TemplateResult {
+    // logicService already has hass from the card's hass setter
 
     // Check row display conditions (handles both template_mode and regular conditions)
     const shouldShow = logicService.evaluateRowVisibility(row);
@@ -1477,7 +1505,7 @@ export class UltraCard extends LitElement {
     }
 
     // Generate responsive visibility CSS for hidden_on_devices
-    const rowId = row.id || `row-${Math.random().toString(36).slice(2, 9)}`;
+    const rowId = (row as any).id ?? `row-${rowIndex}`;
     const hiddenOnDevices = (row as any).hidden_on_devices;
     const hideOnDevicesCSS = responsiveDesignService.generateHideOnDevicesCSS(
       `.responsive-row-${rowId}`,
@@ -1491,10 +1519,7 @@ export class UltraCard extends LitElement {
     );
 
     // Get effective design for current breakpoint (for animation properties)
-    const effectiveRowDesign = responsiveDesignService.getEffectiveDesign(
-      row.design,
-      responsiveDesignService.getCurrentBreakpoint()
-    );
+    const effectiveRowDesign = responsiveDesignService.getEffectiveDesign(row.design, ctx.breakpoint);
 
     // Row animation handling (state-based + intro/outro)
     const previouslyVisible = this._rowVisibilityState.get(rowId);
@@ -1573,7 +1598,7 @@ export class UltraCard extends LitElement {
     // Update visibility state
     this._rowVisibilityState.set(rowId, isVisible);
 
-    const rowStyles = this._generateRowStyles(row);
+    const rowStyles = this._generateRowStyles(row, ctx.breakpoint);
 
     // Get hover effect configuration from effective row design
     const hoverEffect = effectiveRowDesign.hover_effect;
@@ -1637,7 +1662,7 @@ export class UltraCard extends LitElement {
         @pointercancel=${hasRowActions ? rowHandlers.onPointerCancel : null}
         @pointerleave=${hasRowActions ? rowHandlers.onPointerLeave : null}
       >
-        ${this._resolveColumns(row).map(column => this._renderColumn(column))}
+        ${this._resolveColumns(row, rowId).map((column, colIndex) => this._renderColumn(column, ctx, colIndex))}
       </div>
     `;
 
@@ -1665,47 +1690,81 @@ export class UltraCard extends LitElement {
   }
 
   /**
-   * Resolves the columns for a row, supporting dynamic generation via `columns_template`.
-   * When `columns_template` is set, subscribes to the HA template and parses the JSON result
-   * as a CardColumn array. Falls back to static `columns` array otherwise.
+   * Pre-register layout template subscriptions when config.layout changes.
+   * Called from willUpdate (config change) and hass setter (first load).
    */
-  private _resolveColumns(row: CardRow): CardColumn[] {
-    if (!row.columns_template) return row.columns;
+  private _registerLayoutTemplateSubscriptions(): void {
+    const layout = this.config?.layout;
+    const rows = layout?.rows;
+    if (!rows?.length || !this._layoutTemplateService || !this.hass) return;
 
-    const templateKey = `layout_cols_${row.id}`;
-    if (this._layoutTemplateService && this.hass) {
-      this._layoutTemplateService.subscribeToTemplate(
-        row.columns_template,
-        templateKey,
-        () => this.requestUpdate(),
-        {},
-        this.config
-      );
-    }
+    rows.forEach((row, ri) => {
+      const rowId = (row as any).id ?? `row-${ri}`;
+      if ((row as any).columns_template) {
+        this._layoutTemplateService!.subscribeToTemplate(
+          (row as any).columns_template,
+          `layout_cols_${rowId}`,
+          () => this.requestUpdate(),
+          {},
+          this.config
+        );
+      }
+      const columns = row.columns ?? [];
+      columns.forEach((col, ci) => {
+        const colId = (col as any).id ?? `col-${ci}`;
+        if ((col as any).modules_template) {
+          this._layoutTemplateService!.subscribeToTemplate(
+            (col as any).modules_template,
+            `layout_mods_${colId}`,
+            () => this.requestUpdate(),
+            {},
+            this.config
+          );
+        }
+      });
+    });
+  }
 
+  /**
+   * Resolves the columns for a row, supporting dynamic generation via `columns_template`.
+   * Uses pre-registered subscriptions and cached parsed result; no subscribe/parse in render path.
+   */
+  private _resolveColumns(row: CardRow, rowId: string): CardColumn[] {
+    if (!row.columns_template) return row.columns ?? [];
+
+    const templateKey = `layout_cols_${rowId}`;
     const raw = this.hass?.__uvc_template_strings?.[templateKey];
     if (raw === undefined || raw === null) return [];
 
     if (Array.isArray(raw)) return raw as CardColumn[];
+    const rawStr = String(raw).trim();
+    const cached = this._layoutColumnsParsedCache.get(templateKey);
+    if (cached && cached.raw === rawStr) return cached.value;
     try {
-      const parsed = JSON.parse(String(raw).trim());
-      return Array.isArray(parsed) ? (parsed as CardColumn[]) : [];
+      const parsed = JSON.parse(rawStr);
+      const value = Array.isArray(parsed) ? (parsed as CardColumn[]) : [];
+      this._layoutColumnsParsedCache.set(templateKey, { raw: rawStr, value });
+      return value;
     } catch (e) {
-      console.error(`[UltraCard] columns_template on row "${row.id}" did not return valid JSON:`, e);
+      console.error(`[UltraCard] columns_template on row "${(row as any).id}" did not return valid JSON:`, e);
       return [];
     }
   }
 
   /**
    * Resolves the modules for a column, supporting dynamic generation via `modules_template`.
-   * When `modules_template` is set, subscribes to the HA template and parses the JSON result
-   * as a CardModule array. Falls back to static `modules` array otherwise.
+   * Uses pre-registered subscriptions and cached parsed result; no subscribe/parse in render path.
    */
-  private _resolveModules(column: CardColumn): CardModule[] {
-    if (!column.modules_template) return column.modules;
+  private _resolveModules(column: CardColumn, columnId: string): CardModule[] {
+    if (!column.modules_template) return column.modules ?? [];
 
-    const templateKey = `layout_mods_${column.id}`;
-    if (this._layoutTemplateService && this.hass) {
+    const templateKey = `layout_mods_${columnId}`;
+    // Lazy subscription for dynamic columns (from columns_template result) not pre-registered
+    if (
+      this._layoutTemplateService &&
+      this.hass &&
+      !this._layoutTemplateService.hasTemplateSubscription(templateKey)
+    ) {
       this._layoutTemplateService.subscribeToTemplate(
         column.modules_template,
         templateKey,
@@ -1714,21 +1773,25 @@ export class UltraCard extends LitElement {
         this.config
       );
     }
-
     const raw = this.hass?.__uvc_template_strings?.[templateKey];
     if (raw === undefined || raw === null) return [];
 
     if (Array.isArray(raw)) return raw as CardModule[];
+    const rawStr = String(raw).trim();
+    const cached = this._layoutModulesParsedCache.get(templateKey);
+    if (cached && cached.raw === rawStr) return cached.value;
     try {
-      const parsed = JSON.parse(String(raw).trim());
-      return Array.isArray(parsed) ? (parsed as CardModule[]) : [];
+      const parsed = JSON.parse(rawStr);
+      const value = Array.isArray(parsed) ? (parsed as CardModule[]) : [];
+      this._layoutModulesParsedCache.set(templateKey, { raw: rawStr, value });
+      return value;
     } catch (e) {
-      console.error(`[UltraCard] modules_template on column "${column.id}" did not return valid JSON:`, e);
+      console.error(`[UltraCard] modules_template on column "${(column as any).id}" did not return valid JSON:`, e);
       return [];
     }
   }
 
-  private _renderColumn(column: CardColumn): TemplateResult {
+  private _renderColumn(column: CardColumn, ctx: RenderContext, colIndex: number): TemplateResult {
     // Check column display conditions (handles both template_mode and regular conditions)
     const shouldShow = logicService.evaluateColumnVisibility(column);
 
@@ -1746,8 +1809,8 @@ export class UltraCard extends LitElement {
       return html``;
     }
 
-    // Generate responsive visibility CSS for hidden_on_devices
-    const colId = column.id || `col-${Math.random().toString(36).slice(2, 9)}`;
+    // Stable id for template key and CSS (matches _registerLayoutTemplateSubscriptions)
+    const colId = (column as any).id ?? `col-${colIndex}`;
     const hiddenOnDevices = (column as any).hidden_on_devices;
     const hideOnDevicesCSS = responsiveDesignService.generateHideOnDevicesCSS(
       `.responsive-col-${colId}`,
@@ -1763,11 +1826,11 @@ export class UltraCard extends LitElement {
     // Get effective design for current breakpoint (for animation properties)
     const effectiveColDesign = responsiveDesignService.getEffectiveDesign(
       column.design,
-      responsiveDesignService.getCurrentBreakpoint()
+      ctx.breakpoint
     );
 
     // Column animation handling (state-based + intro/outro)
-    const columnId = (column as any).id || `column-${Math.random()}`;
+    const columnId = colId;
     const previouslyVisible = this._columnVisibilityState.get(columnId);
     const isVisible = true; // Logic checks passed above
 
@@ -1839,7 +1902,7 @@ export class UltraCard extends LitElement {
 
     this._columnVisibilityState.set(columnId, isVisible);
 
-    const columnStyles = this._generateColumnStyles(column);
+    const columnStyles = this._generateColumnStyles(column, ctx.breakpoint);
 
     // Get hover effect configuration from effective column design
     const hoverEffect = effectiveColDesign.hover_effect;
@@ -1896,7 +1959,7 @@ export class UltraCard extends LitElement {
         @pointercancel=${hasColumnActions ? columnHandlers.onPointerCancel : null}
         @pointerleave=${hasColumnActions ? columnHandlers.onPointerLeave : null}
       >
-        ${this._resolveModules(column).map(module => this._renderModule(module))}
+        ${this._resolveModules(column, colId).map(module => this._renderModule(module, ctx))}
       </div>
     `;
 
@@ -1923,7 +1986,7 @@ export class UltraCard extends LitElement {
     return columnContent;
   }
 
-  private _renderModule(module: CardModule): TemplateResult {
+  private _renderModule(module: CardModule, ctx: RenderContext): TemplateResult {
     // Check if this is a pro module and if user has access
     const isProModule = this._isProModule(module);
     const hasProAccess = this._hasProAccess();
@@ -2137,12 +2200,9 @@ export class UltraCard extends LitElement {
       return html``;
     }
 
-    // Detect if we're inside an HA Preview dialog (not the dashboard)
-    const isHaPreview = this._detectEditorPreviewContext();
-
-    // Detect if the dashboard itself is in edit mode (for modules like video_bg
-    // that need to show a visible placeholder when the user is editing the dashboard)
-    const isDashboardEditMode = !isHaPreview && this._detectDashboardEditMode();
+    // Use hoisted render context (computed once per render in render())
+    const isHaPreview = ctx.isHaPreview;
+    const isDashboardEditMode = !ctx.isHaPreview && ctx.isDashboardEditMode;
 
     const moduleContent = ucModulePreviewService.renderModuleContent(
       module,
@@ -2158,6 +2218,7 @@ export class UltraCard extends LitElement {
         shouldTriggerStateAnimation,
         isHaPreview, // Pass the detection result
         isDashboardEditMode, // Pass dashboard edit mode detection
+        onModuleEnsureRequested: () => this.requestUpdate(),
       }
     );
 
@@ -2533,12 +2594,9 @@ export class UltraCard extends LitElement {
   /**
    * Generate CSS styles for a row based on design properties
    */
-  private _generateRowStyles(row: CardRow): string {
-    // Get effective design for current breakpoint
-    const design = responsiveDesignService.getEffectiveDesign(
-      row.design,
-      responsiveDesignService.getCurrentBreakpoint()
-    );
+  private _generateRowStyles(row: CardRow, breakpoint: DeviceBreakpoint): string {
+    // Get effective design for current breakpoint (use precomputed breakpoint from render context)
+    const design = responsiveDesignService.getEffectiveDesign(row.design, breakpoint);
 
     // Map column alignment values to CSS align-items values
     const getAlignItems = (alignment?: string): string | undefined => {
@@ -2705,12 +2763,9 @@ export class UltraCard extends LitElement {
   /**
    * Generate CSS styles for a column based on design properties
    */
-  private _generateColumnStyles(column: CardColumn): string {
-    // Get effective design for current breakpoint
-    const design = responsiveDesignService.getEffectiveDesign(
-      column.design,
-      responsiveDesignService.getCurrentBreakpoint()
-    );
+  private _generateColumnStyles(column: CardColumn, breakpoint: DeviceBreakpoint): string {
+    // Get effective design for current breakpoint (use precomputed breakpoint from render context)
+    const design = responsiveDesignService.getEffectiveDesign(column.design, breakpoint);
 
     // When using space-between, space-around, or justify, switch to horizontal layout
     const useHorizontalLayout =
@@ -3039,24 +3094,17 @@ export class UltraCard extends LitElement {
    */
   private _registerVideoBgModules(): void {
     if (!this.config || !this.hass || !this._instanceId) return;
-
-    // Find all video_bg modules in the configuration
-    this.config.layout?.rows?.forEach(row => {
-      row.columns?.forEach(column => {
-        column.modules?.forEach(module => {
-          if (module.type === 'video_bg') {
-            ucVideoBgService.registerModule(
-              this._instanceId!,
-              module.id,
-              module as any,
-              this.hass!,
-              this.config!,
-              this as any
-            );
-          }
-        });
-      });
-    });
+    const cache = this._getConfigCache();
+    for (const { id, module } of cache.videoBgModules) {
+      ucVideoBgService.registerModule(
+        this._instanceId!,
+        id,
+        module as any,
+        this.hass!,
+        this.config!,
+        this as any
+      );
+    }
   }
 
   /**
@@ -3064,17 +3112,10 @@ export class UltraCard extends LitElement {
    */
   private _unregisterVideoBgModules(): void {
     if (!this.config || !this._instanceId) return;
-
-    // Find all video_bg modules and unregister them
-    this.config.layout?.rows?.forEach(row => {
-      row.columns?.forEach(column => {
-        column.modules?.forEach(module => {
-          if (module.type === 'video_bg') {
-            ucVideoBgService.unregisterModule(this._instanceId!, module.id);
-          }
-        });
-      });
-    });
+    const cache = this._getConfigCache();
+    for (const { id } of cache.videoBgModules) {
+      ucVideoBgService.unregisterModule(this._instanceId!, id);
+    }
   }
 
   /**
@@ -3082,25 +3123,18 @@ export class UltraCard extends LitElement {
    */
   private _registerDynamicWeatherModules(): void {
     if (!this.config || !this.hass || !this._instanceId) return;
-
-    // Find all dynamic_weather modules in the configuration
-    this.config.layout?.rows?.forEach(row => {
-      row.columns?.forEach(column => {
-        column.modules?.forEach(module => {
-          if (module.type === 'dynamic_weather') {
-            ucDynamicWeatherService.registerModule(
-              this._instanceId!,
-              module.id,
-              module as any,
-              this.hass!,
-              this.config!,
-              this as any,
-              this._isEditorPreviewCard
-            );
-          }
-        });
-      });
-    });
+    const cache = this._getConfigCache();
+    for (const { id, module } of cache.dynamicWeatherModules) {
+      ucDynamicWeatherService.registerModule(
+        this._instanceId!,
+        id,
+        module as any,
+        this.hass!,
+        this.config!,
+        this as any,
+        this._isEditorPreviewCard
+      );
+    }
   }
 
   /**
@@ -3108,21 +3142,14 @@ export class UltraCard extends LitElement {
    */
   private _unregisterDynamicWeatherModules(): void {
     if (!this.config || !this._instanceId) return;
-
-    // Find all dynamic_weather modules and unregister them
-    this.config.layout?.rows?.forEach(row => {
-      row.columns?.forEach(column => {
-        column.modules?.forEach(module => {
-          if (module.type === 'dynamic_weather') {
-            ucDynamicWeatherService.unregisterModule(
-              this._instanceId!,
-              module.id,
-              this._isEditorPreviewCard
-            );
-          }
-        });
-      });
-    });
+    const cache = this._getConfigCache();
+    for (const { id } of cache.dynamicWeatherModules) {
+      ucDynamicWeatherService.unregisterModule(
+        this._instanceId!,
+        id,
+        this._isEditorPreviewCard
+      );
+    }
   }
 
   /**
@@ -3130,24 +3157,17 @@ export class UltraCard extends LitElement {
    */
   private _registerBackgroundModules(): void {
     if (!this.config || !this.hass || !this._instanceId) return;
-
-    // Find all background modules in the configuration
-    this.config.layout?.rows?.forEach(row => {
-      row.columns?.forEach(column => {
-        column.modules?.forEach(module => {
-          if (module.type === 'background') {
-            ucBackgroundService.registerModule(
-              this._instanceId!,
-              module.id,
-              module as any,
-              this.hass!,
-              this.config!,
-              this as any
-            );
-          }
-        });
-      });
-    });
+    const cache = this._getConfigCache();
+    for (const { id, module } of cache.backgroundModules) {
+      ucBackgroundService.registerModule(
+        this._instanceId!,
+        id,
+        module as any,
+        this.hass!,
+        this.config!,
+        this as any
+      );
+    }
   }
 
   /**
@@ -3155,17 +3175,10 @@ export class UltraCard extends LitElement {
    */
   private _unregisterBackgroundModules(): void {
     if (!this.config || !this._instanceId) return;
-
-    // Find all background modules and unregister them
-    this.config.layout?.rows?.forEach(row => {
-      row.columns?.forEach(column => {
-        column.modules?.forEach(module => {
-          if (module.type === 'background') {
-            ucBackgroundService.unregisterModule(this._instanceId!, module.id);
-          }
-        });
-      });
-    });
+    const cache = this._getConfigCache();
+    for (const { id } of cache.backgroundModules) {
+      ucBackgroundService.unregisterModule(this._instanceId!, id);
+    }
   }
 
   /**
@@ -3173,23 +3186,17 @@ export class UltraCard extends LitElement {
    */
   private _registerNavigationModules(): void {
     if (!this.config || !this.hass || !this._instanceId) return;
-
-    this.config.layout?.rows?.forEach(row => {
-      row.columns?.forEach(column => {
-        column.modules?.forEach(module => {
-          if (module.type === 'navigation') {
-            ucNavigationService.registerModule(
-              this._instanceId!,
-              module.id,
-              module as any,
-              this.hass!,
-              this.config!,
-              this as any
-            );
-          }
-        });
-      });
-    });
+    const cache = this._getConfigCache();
+    for (const { id, module } of cache.navigationModules) {
+      ucNavigationService.registerModule(
+        this._instanceId!,
+        id,
+        module as any,
+        this.hass!,
+        this.config!,
+        this as any
+      );
+    }
   }
 
   /**
@@ -3198,23 +3205,14 @@ export class UltraCard extends LitElement {
    */
   private _unregisterNavigationModules(force: boolean = false): void {
     if (!this.config || !this._instanceId) return;
-
-    this.config.layout?.rows?.forEach(row => {
-      row.columns?.forEach(column => {
-        column.modules?.forEach(module => {
-          if (module.type === 'navigation') {
-            const navModule = module as any;
-            const scope = navModule.nav_scope || 'all_views';
-
-            // For 'all_views' scope, only unregister if forced (card truly removed)
-            // For 'current_view' scope, always unregister on disconnect
-            if (force || scope === 'current_view') {
-              ucNavigationService.unregisterModule(this._instanceId!, module.id);
-            }
-          }
-        });
-      });
-    });
+    const cache = this._getConfigCache();
+    for (const { id, module } of cache.navigationModules) {
+      const navModule = module as any;
+      const scope = navModule.nav_scope || 'all_views';
+      if (force || scope === 'current_view') {
+        ucNavigationService.unregisterModule(this._instanceId!, id);
+      }
+    }
   }
 
   /**

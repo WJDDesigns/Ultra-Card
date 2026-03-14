@@ -1,0 +1,14 @@
+add: lazy module loading system — module implementations are now loaded on demand via dynamic imports using a new module-loaders registry, reducing initial bundle parse time
+add: module manifest data table — static metadata for all modules is now available without loading implementations, enabling fast module selector and editor rendering
+add: new editor selector tabs — card selector, modules selector, presets selector, and favorites selector are now split into dedicated tab components for better code organisation and maintainability
+add: config validation now runs asynchronously (async/await) so module handlers are guaranteed to be loaded before validate/createDefault is called
+add: template service gains unsubscribeTemplatesByPrefix() — layout template subscriptions are now cleanly torn down and re-registered when config.layout changes
+add: presets service lazy loads WordPress presets only when the Presets tab is first opened, avoiding unnecessary network requests on card initialise
+add: config cache in UltraCard — layout-derived data (entity IDs, module types, logic conditions etc.) is now memoised and only recalculated when config.layout actually changes, reducing per-render work
+fix: loading screen now renders an empty template instead of a visible "Loading..." text flash in both the card and editor
+fix: editor login section simplified — the inline username/password login form and all associated state (_showLoginForm, _loginError, _isLoggingIn) have been removed; authentication is now handled exclusively through the Hub Account tab or Ultra Card Connect integration
+fix: action confirmation dialog buttons replaced with mwc-button elements in the correct HA dialog action slots, fixing buttons not rendering or responding in ha-dialog
+fix: logic service no longer logs console.warn when hass is unavailable — silently returns true (show by default) via a private _canEvaluateLogic() guard
+fix: ultra-card.ts hass setter now wraps layout template service setup in a try/catch so a template subscription failure does not break the entire card update cycle
+fix: setConfig is now non-blocking — config validation and correction run in a .then() chain so the call returns immediately and never blocks the Lit update cycle
+fix: module preview service correctly triggers onModuleEnsureRequested callback when a module type is not yet loaded, allowing the host element to re-render once the module arrives

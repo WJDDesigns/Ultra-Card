@@ -10,6 +10,7 @@ export declare class LogicService {
     private loggedEntityErrors;
     private loggedAttributeErrors;
     private constructor();
+    private _canEvaluateLogic;
     static getInstance(): LogicService;
     setHass(hass: HomeAssistant): void;
     /**

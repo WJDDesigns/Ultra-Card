@@ -1,39 +1,19 @@
 import './cards/ultra-card';
 import './components/navigation-picker';
 import './components/ultra-color-picker';
+import './editor/ultra-card-editor';
 import { CustomCard } from './types';
 import { VERSION } from './version';
 import { ucCloudAuthService } from './services/uc-cloud-auth-service';
 
-// Initialize the module registry (this registers all core modules)
+// Initialize the module registry (manifest-first; no module implementations loaded yet)
 import { getModuleRegistry } from './modules';
 const moduleRegistry = getModuleRegistry();
 
-const loadEditor = () => import('./editor/ultra-card-editor');
-
-const shouldPreloadEditor = () => {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('edit') === '1' || window.location.pathname.includes('/lovelace/');
-  } catch {
-    return false;
-  }
-};
-
-if (shouldPreloadEditor()) {
-  const win = window as typeof window & {
-    requestIdleCallback?: (callback: () => void) => void;
-  };
-  if (typeof win.requestIdleCallback === 'function') {
-    win.requestIdleCallback(() => {
-      void loadEditor();
-    });
-  } else {
-    window.setTimeout(() => {
-      void loadEditor();
-    }, 0);
-  }
-}
+// Preload module implementations in background so dashboard/editor have handlers when needed
+Promise.all(
+  moduleRegistry.getAllModuleMetadata().map(m => moduleRegistry.ensureModuleLoaded(m.type))
+).catch(() => {});
 
 // Log version and module count once on load with styled banner (Bubble Card style)
 const __ucModuleCount = moduleRegistry.getRegistryStats().totalModules;

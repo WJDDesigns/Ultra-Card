@@ -773,16 +773,6 @@ export class HubPresetsTab extends LitElement {
     this._ratingPreset = { id: preset.id, name: preset.name };
   }
 
-  private _handleLoginSuccess(e: CustomEvent<{ user: CloudUser }>): void {
-    this._cloudUser = e.detail.user;
-    this._showLoginDialog = false;
-    ucCloudSyncService.loadUserReviewsFromServer().then(() => this.requestUpdate());
-    if (this._pendingRateAfterLogin) {
-      this._ratingPreset = { ...this._pendingRateAfterLogin };
-      this._pendingRateAfterLogin = null;
-    }
-  }
-
   private _handleRatingSubmitted(e: CustomEvent<{ presetId: string; rating: number }>): void {
     const { presetId, rating } = e.detail;
     this._userReviews = new Map(this._userReviews).set(presetId, rating);
@@ -804,7 +794,6 @@ export class HubPresetsTab extends LitElement {
       ${this._showLoginDialog
         ? html`
             <uc-hub-login-dialog
-              @auth-success=${this._handleLoginSuccess}
               @close=${() => {
                 this._showLoginDialog = false;
                 this._pendingRateAfterLogin = null;

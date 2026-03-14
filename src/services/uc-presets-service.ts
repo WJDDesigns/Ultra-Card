@@ -18,11 +18,22 @@ class UcPresetsService {
   private _listeners: Set<(presets: PresetDefinition[]) => void> = new Set();
   private _statusListeners: Set<(status: { loading: boolean; error: string | null }) => void> =
     new Set();
+  /** True after ensureWordPressLoaded() has been called once (lazy load on first Presets tab use). */
+  private _wordpressLoadTriggered = false;
 
   constructor() {
     this._loadFromStorage();
     this._setupStorageListener();
-    // Load WordPress presets on initialization
+    // WordPress presets are loaded lazily via ensureWordPressLoaded() when Presets tab is first opened
+  }
+
+  /**
+   * Ensure WordPress presets are loaded (once). Call when the Presets tab is first opened
+   * so network work does not run until the user opens that tab.
+   */
+  ensureWordPressLoaded(): void {
+    if (this._wordpressLoadTriggered) return;
+    this._wordpressLoadTriggered = true;
     this._loadWordPressPresets();
   }
 

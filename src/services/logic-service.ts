@@ -16,6 +16,10 @@ export class LogicService {
 
   private constructor() {}
 
+  private _canEvaluateLogic(): boolean {
+    return !!this.hass;
+  }
+
   public static getInstance(): LogicService {
     if (!LogicService.instance) {
       LogicService.instance = new LogicService();
@@ -62,8 +66,7 @@ export class LogicService {
     conditions: DisplayCondition[],
     displayMode: 'always' | 'every' | 'any' = 'always'
   ): boolean {
-    if (!this.hass) {
-      console.warn('[LogicService] HomeAssistant instance not available');
+    if (!this._canEvaluateLogic()) {
       return true; // Show by default if hass not available
     }
 
@@ -92,8 +95,7 @@ export class LogicService {
    * @returns true if element should be visible, false otherwise
    */
   public evaluateModuleVisibility(module: any): boolean {
-    if (!this.hass) {
-      console.warn('[LogicService] HomeAssistant instance not available');
+    if (!this._canEvaluateLogic()) {
       return true; // Show by default if hass not available
     }
 
@@ -121,8 +123,7 @@ export class LogicService {
    * @returns true if element should be visible, false otherwise
    */
   public evaluateRowVisibility(row: any): boolean {
-    if (!this.hass) {
-      console.warn('[LogicService] HomeAssistant instance not available');
+    if (!this._canEvaluateLogic()) {
       return true; // Show by default if hass not available
     }
 
@@ -150,8 +151,7 @@ export class LogicService {
    * @returns true if element should be visible, false otherwise
    */
   public evaluateColumnVisibility(column: any): boolean {
-    if (!this.hass) {
-      console.warn('[LogicService] HomeAssistant instance not available');
+    if (!this._canEvaluateLogic()) {
       return true; // Show by default if hass not available
     }
 

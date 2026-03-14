@@ -14,9 +14,10 @@ export declare class ConfigValidationService {
     private static instance;
     static getInstance(): ConfigValidationService;
     /**
-     * Validates and corrects a complete Ultra Card config
+     * Validates and corrects a complete Ultra Card config.
+     * Ensures module handlers are loaded before validating so implementation-backed validation runs correctly.
      */
-    validateAndCorrectConfig(config: any): ValidationResult;
+    validateAndCorrectConfig(config: any): Promise<ValidationResult>;
     /**
      * Validates and corrects a single row
      */
@@ -26,11 +27,12 @@ export declare class ConfigValidationService {
      */
     private validateAndCorrectColumn;
     /**
-     * Validates and corrects a single module
+     * Validates and corrects a single module.
+     * Ensures the module type is loaded before calling handler validate/createDefault.
      */
-    validateAndCorrectModule(module: any, rowIndex?: number, columnIndex?: number, moduleIndex?: number): ModuleValidationResult & {
+    validateAndCorrectModule(module: any, rowIndex?: number, columnIndex?: number, moduleIndex?: number): Promise<ModuleValidationResult & {
         warnings?: string[];
-    };
+    }>;
     /**
      * Merges a module with its defaults to ensure all properties are present
      */

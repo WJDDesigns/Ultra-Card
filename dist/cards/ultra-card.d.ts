@@ -1,7 +1,6 @@
 import { LitElement, TemplateResult, PropertyValues } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { UltraCardConfig } from '../types';
-import '../editor/ultra-card-editor';
 export declare class UltraCard extends LitElement {
     private _hass?;
     get hass(): HomeAssistant | undefined;
@@ -27,12 +26,18 @@ export declare class UltraCard extends LitElement {
     private _moduleStylesInjected;
     private _instanceId;
     private _layoutTemplateService;
+    /** Parsed layout template results; invalidated when config.layout or template raw string changes. */
+    private _layoutColumnsParsedCache;
+    private _layoutModulesParsedCache;
     private _limitUnsub?;
     private _isEditorPreviewCard;
     private _globalTransparencyListener?;
     private _globalTransparencyApplied;
     private _variablesBackupUnsub?;
     private _variablesBackupVersion;
+    /** Cached config-derived data; invalidated when config.layout changes */
+    private _configCache;
+    private _getConfigCache;
     connectedCallback(): void;
     disconnectedCallback(): void;
     /**
@@ -110,15 +115,18 @@ export declare class UltraCard extends LitElement {
     private _getCardBackgroundImageUrl;
     private _renderRow;
     /**
+     * Pre-register layout template subscriptions when config.layout changes.
+     * Called from willUpdate (config change) and hass setter (first load).
+     */
+    private _registerLayoutTemplateSubscriptions;
+    /**
      * Resolves the columns for a row, supporting dynamic generation via `columns_template`.
-     * When `columns_template` is set, subscribes to the HA template and parses the JSON result
-     * as a CardColumn array. Falls back to static `columns` array otherwise.
+     * Uses pre-registered subscriptions and cached parsed result; no subscribe/parse in render path.
      */
     private _resolveColumns;
     /**
      * Resolves the modules for a column, supporting dynamic generation via `modules_template`.
-     * When `modules_template` is set, subscribes to the HA template and parses the JSON result
-     * as a CardModule array. Falls back to static `modules` array otherwise.
+     * Uses pre-registered subscriptions and cached parsed result; no subscribe/parse in render path.
      */
     private _resolveModules;
     private _renderColumn;

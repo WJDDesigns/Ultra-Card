@@ -55,6 +55,11 @@ export declare class TemplateService {
      */
     parseTemplateResult(result: any, templateKey?: string): boolean;
     /**
+     * Unsubscribe from template subscriptions whose key starts with the given prefix.
+     * Used to clear layout_* subscriptions when config.layout changes.
+     */
+    unsubscribeTemplatesByPrefix(prefix: string): Promise<void>;
+    /**
      * Unsubscribe from all template subscriptions
      */
     unsubscribeAllTemplates(): Promise<void>;

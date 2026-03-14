@@ -19,7 +19,7 @@ import '../../components/uc-breakpoint-preview';
 import { PREVIEW_WIDTHS } from '../../components/uc-breakpoint-preview';
 import { responsiveDesignService } from '../../services/uc-responsive-design-service';
 import '../../components/ultra-color-picker';
-import { getModuleRegistry } from '../../modules/module-registry';
+import { getModuleRegistry, type ModuleManifest } from '../../modules/module-registry';
 import { BaseUltraModule } from '../../modules/base-module';
 import { cleanupExternalCardCache } from '../../modules/external-card-module';
 import { UcHoverEffectsService } from '../../services/uc-hover-effects-service';
@@ -69,6 +69,11 @@ import {
   NATIVE_HA_CARDS,
   WEB_SAFE_FONTS,
 } from './layout-tab-constants';
+import '../uc-module-selector-shell';
+import '../uc-card-selector-tab';
+import '../uc-presets-selector-tab';
+import '../uc-favorites-selector-tab';
+import '../uc-modules-selector-tab';
 import '../../panels/components/uc-hub-login-dialog';
 import '../../panels/components/uc-hub-rate-dialog';
 import '../../panels/components/uc-hub-submit-preset-dialog';
@@ -155,7 +160,6 @@ export class LayoutTab extends LitElement {
   // New state properties for presets, favorites, and export/import
   @state() private _activeModuleSelectorTab: 'modules' | 'cards' | 'presets' | 'favorites' =
     'modules';
-  @state() private _activeModuleCategoryTab: 'standard' | 'pro' = 'standard';
   @state() private _selectedPresetSource: 'all' | 'standard' | 'community' = 'all';
   @state() private _showFavoriteDialog = false;
   @state() private _favoriteRowToSave: CardRow | null = null;
@@ -179,15 +183,6 @@ export class LayoutTab extends LitElement {
   @state() private _showVariableMappingDialog = false;
   @state() private _missingVariables: string[] = [];
 
-  // Search state
-  @state() private _moduleSearchQuery = '';
-  @state() private _cardSearchQuery = '';
-  @state() private _presetSearchQuery = '';
-
-  // Preset sorting state
-  @state() private _presetSortBy: 'name' | 'date' | 'rating' = 'date';
-  @state() private _presetSortDirection: 'asc' | 'desc' = 'desc';
-
   // Share preset on ultracard.io
   @state() private _showLoginDialogForSubmit = false;
   @state() private _showSubmitPresetDialog = false;
@@ -203,8 +198,6 @@ export class LayoutTab extends LitElement {
   @state() private _builderPendingRateAfterLogin: { id: string; name: string } | null = null;
   @state() private _builderShowLoginForRating = false;
   @state() private _builderUserReviews: Map<string, number> = new Map();
-  @state() private _builderExpandedId: string | null = null;
-  @state() private _builderReadMoreId: string | null = null;
 
   // Flag to prevent double-processing of drops in tabs sections
   private _tabsSectionDropHandled = false;
@@ -2202,8 +2195,7 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(module.type);
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(module.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
       description: 'Unknown module type',
@@ -2735,8 +2727,7 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(childModule.type);
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(childModule.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
     };
@@ -3041,8 +3032,7 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(module.type);
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(module.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
     };
@@ -3669,8 +3659,7 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(childModule.type);
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(childModule.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
     };
@@ -4112,8 +4101,7 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(module.type);
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(module.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
     };
@@ -4427,8 +4415,7 @@ export class LayoutTab extends LitElement {
                             <div class="tree-node-content">
                               <div class="tree-node-header child-header">
                                 <ha-icon
-                                  icon="${getModuleRegistry().getModule(deepChild.type)?.metadata
-                                    ?.icon || 'mdi:help-circle'}"
+                                  icon="${getModuleRegistry().getModuleMetadata(deepChild.type)?.icon || 'mdi:help-circle'}"
                                   class="tree-node-icon"
                                 ></ha-icon>
                                 <div class="tree-node-info">
@@ -4578,8 +4565,7 @@ export class LayoutTab extends LitElement {
                             <div class="tree-node-content">
                               <div class="tree-node-header module-header">
                                 <ha-icon
-                                  icon="${getModuleRegistry().getModule(childModule.type)?.metadata
-                                    ?.icon || 'mdi:help-circle'}"
+                                  icon="${getModuleRegistry().getModuleMetadata(childModule.type)?.icon || 'mdi:help-circle'}"
                                   class="tree-node-icon"
                                 ></ha-icon>
                                 <span class="tree-node-title"
@@ -4620,8 +4606,7 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(module.type);
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(module.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
     };
@@ -5027,8 +5012,7 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(module.type);
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(module.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
     };
@@ -5399,8 +5383,7 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(module.type);
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(module.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
     };
@@ -5766,16 +5749,15 @@ export class LayoutTab extends LitElement {
     if (!current) return;
     if (!current.modules) current.modules = [];
 
-    // Create the new module
-    const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(moduleType);
-    if (!moduleHandler) return;
-
-    const newModule = moduleHandler.createDefault(undefined, this.hass);
-    current.modules.push(newModule);
-
-    this._updateLayout(newLayout);
-    this._deepNestedPath = null;
+    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
+      const registry = getModuleRegistry();
+      const moduleHandler = registry.getModule(moduleType);
+      if (!moduleHandler) return;
+      const newModule = moduleHandler.createDefault(undefined, this.hass);
+      current.modules.push(newModule);
+      this._updateLayout(newLayout);
+      this._deepNestedPath = null;
+    });
   }
 
   private _openDeepNestedSettings(parentPath: number[], childIndex: number): void {
@@ -5918,8 +5900,7 @@ export class LayoutTab extends LitElement {
                             <div class="tree-node-content">
                               <div class="tree-node-header module-header">
                                 <ha-icon
-                                  icon="${getModuleRegistry().getModule(childModule.type)?.metadata
-                                    ?.icon || 'mdi:help-circle'}"
+                                  icon="${getModuleRegistry().getModuleMetadata(childModule.type)?.icon || 'mdi:help-circle'}"
                                   class="tree-node-icon"
                                 ></ha-icon>
                                 <span class="tree-node-title"
@@ -7407,31 +7388,51 @@ export class LayoutTab extends LitElement {
         delete (newModule as any).label;
         break;
       default:
-        // Try to use the module registry for other types
-        try {
-          const registry = getModuleRegistry();
-          const registryModule = registry.createDefaultModule(type);
-          if (registryModule) {
-            newModule = registryModule;
-            // Remove any default titles/names that might have been set by the registry
-            delete (newModule as any).name;
-            delete (newModule as any).title;
-            delete (newModule as any).label;
-            break;
-          }
-        } catch (e) {}
-        // Fallback to text module
-        newModule = {
-          id: `text-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: 'text',
-          text: 'Unknown Module Type',
-          text_size: 16,
-        } as TextModule;
-        break;
+        // Ensure module implementation is loaded then create default and apply (event-driven, not in render)
+        getModuleRegistry()
+          .ensureModuleLoaded(type)
+          .then(() => {
+            const registry = getModuleRegistry();
+            const registryModule = registry.createDefaultModule(type, undefined, this.hass);
+            let resolvedModule: CardModule;
+            if (registryModule) {
+              resolvedModule = registryModule;
+              delete (resolvedModule as any).name;
+              delete (resolvedModule as any).title;
+              delete (resolvedModule as any).label;
+            } else {
+              resolvedModule = {
+                id: `text-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                type: 'text',
+                text: 'Unknown Module Type',
+                text_size: 16,
+              } as TextModule;
+            }
+            this._applyAddedModule(resolvedModule);
+          })
+          .catch(() => {
+            const fallback: CardModule = {
+              id: `text-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              type: 'text',
+              text: 'Unknown Module Type',
+              text_size: 16,
+            } as TextModule;
+            this._applyAddedModule(fallback);
+          });
+        return;
     }
 
-    // Create new layout with updated modules
-    let newLayout;
+    this._applyAddedModule(newModule);
+  }
+
+  /** Applies an already-created module to the current layout at selected indices (used by sync and async add flows). */
+  private _applyAddedModule(newModule: CardModule): void {
+    const layout = this._ensureLayout();
+    const row = layout.rows[this._selectedRowIndex];
+    const column = row?.columns[this._selectedColumnIndex];
+    if (!row || !column) return;
+
+    let newLayout: LayoutConfig;
 
     if (this._selectedLayoutModuleIndex >= 0) {
       // Adding to a layout module (horizontal or vertical) or nested layout module
@@ -7545,14 +7546,16 @@ export class LayoutTab extends LitElement {
     this._updateLayout(newLayout);
     this._showModuleSelector = false;
 
-    // Auto-open module settings for the newly added module (only for non-layout modules)
-    if (this._shouldAutoOpenSettings(type)) {
+    if (this._shouldAutoOpenSettings(newModule.type)) {
       if (this._selectedLayoutModuleIndex >= 0) {
-        // Module was added to a layout module - don't auto-open settings for now
-        // TODO: Could implement nested module settings if needed
+        // Nested layout - no auto-open for now
       } else {
-        const moduleIndex = column.modules.length; // The new module will be at this index
-        this._openModuleSettings(this._selectedRowIndex, this._selectedColumnIndex, moduleIndex);
+        const moduleIndex = column.modules.length;
+        this._openModuleSettings(
+          this._selectedRowIndex,
+          this._selectedColumnIndex,
+          moduleIndex
+        );
       }
     }
 
@@ -7588,16 +7591,12 @@ export class LayoutTab extends LitElement {
       return;
     }
 
-    // Create a new page break module
-    const pageBreakModule = registry.createDefaultModule('pagebreak');
-    if (!pageBreakModule) {
-      return;
-    }
-
-    // Add the page break to the end of the slider's modules
-    const newLayout = {
-      rows: layout.rows.map((row, rIndex) => {
-        if (rIndex === parentRowIndex) {
+    registry.ensureModuleLoaded('pagebreak').then(() => {
+      const pageBreakModule = registry.createDefaultModule('pagebreak');
+      if (!pageBreakModule) return;
+      const newLayout = {
+        rows: layout.rows.map((row, rIndex) => {
+          if (rIndex === parentRowIndex) {
           return {
             ...row,
             columns: row.columns.map((col, cIndex) => {
@@ -7635,8 +7634,9 @@ export class LayoutTab extends LitElement {
       }),
     };
 
-    this._updateLayout(newLayout);
-    this.requestUpdate();
+      this._updateLayout(newLayout);
+      this.requestUpdate();
+    });
   }
 
   private _addPageBreakToColumnSlider(
@@ -7647,51 +7647,45 @@ export class LayoutTab extends LitElement {
     const layout = this._ensureLayout();
     const registry = getModuleRegistry();
 
-    // Get the slider module
     const sliderModule = layout.rows[rowIndex].columns[columnIndex].modules[moduleIndex] as any;
 
     if (!sliderModule || sliderModule.type !== 'slider') {
       return;
     }
 
-    // Create a new page break module
-    const pageBreakModule = registry.createDefaultModule('pagebreak');
-    if (!pageBreakModule) {
-      return;
-    }
-
-    // Add the page break to the end of the slider's modules
-    const newLayout = {
-      rows: layout.rows.map((row, rIndex) => {
-        if (rIndex === rowIndex) {
-          return {
-            ...row,
-            columns: row.columns.map((col, cIndex) => {
-              if (cIndex === columnIndex) {
-                return {
-                  ...col,
-                  modules: col.modules.map((module, mIndex) => {
-                    if (mIndex === moduleIndex) {
-                      // This is the slider module we want to add to
-                      return {
-                        ...module,
-                        modules: [...((module as any).modules || []), pageBreakModule],
-                      };
-                    }
-                    return module;
-                  }),
-                };
-              }
-              return col;
-            }),
-          };
-        }
-        return row;
-      }),
-    };
-
-    this._updateLayout(newLayout);
-    this.requestUpdate();
+    registry.ensureModuleLoaded('pagebreak').then(() => {
+      const pageBreakModule = registry.createDefaultModule('pagebreak');
+      if (!pageBreakModule) return;
+      const newLayout = {
+        rows: layout.rows.map((row, rIndex) => {
+          if (rIndex === rowIndex) {
+            return {
+              ...row,
+              columns: row.columns.map((col, cIndex) => {
+                if (cIndex === columnIndex) {
+                  return {
+                    ...col,
+                    modules: col.modules.map((module, mIndex) => {
+                      if (mIndex === moduleIndex) {
+                        return {
+                          ...module,
+                          modules: [...((module as any).modules || []), pageBreakModule],
+                        };
+                      }
+                      return module;
+                    }),
+                  };
+                }
+                return col;
+              }),
+            };
+          }
+          return row;
+        }),
+      };
+      this._updateLayout(newLayout);
+      this.requestUpdate();
+    });
   }
 
   /**
@@ -9455,29 +9449,32 @@ export class LayoutTab extends LitElement {
   private _openModuleSettings(rowIndex: number, columnIndex: number, moduleIndex: number): void {
     const module = this.config.layout?.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
 
-    // All modules (including external cards) now use Ultra Card settings popup
-    this._selectedModule = { rowIndex, columnIndex, moduleIndex };
-    this._showModuleSettings = true;
-
-    // For external cards, check if they have a native editor
-    if (module?.type === 'external_card') {
-      const externalModule = module as any;
-      if (externalModule.card_type) {
-        // Check if card has native editor
-        const editorType = `${externalModule.card_type}-editor`;
-        const editorElement = customElements.get(editorType);
-        const hasEditor =
-          editorElement !== undefined && !(editorElement.prototype instanceof HTMLUnknownElement);
-
-        // If no native editor, switch to YAML tab
-        this._activeModuleTab = hasEditor ? 'general' : 'yaml';
+    const applyState = (): void => {
+      this._selectedModule = { rowIndex, columnIndex, moduleIndex };
+      this._showModuleSettings = true;
+      if (module?.type === 'external_card') {
+        const externalModule = module as any;
+        if (externalModule.card_type) {
+          const editorType = `${externalModule.card_type}-editor`;
+          const editorElement = customElements.get(editorType);
+          const hasEditor =
+            editorElement !== undefined && !(editorElement.prototype instanceof HTMLUnknownElement);
+          this._activeModuleTab = hasEditor ? 'general' : 'yaml';
+        } else {
+          this._activeModuleTab = 'general';
+        }
       } else {
-        // No card type set yet, use general tab
         this._activeModuleTab = 'general';
       }
+    };
+
+    if (module?.type) {
+      getModuleRegistry().ensureModuleLoaded(module.type).then(() => {
+        applyState();
+        this.requestUpdate();
+      });
     } else {
-      // Regular modules start with general tab
-      this._activeModuleTab = 'general';
+      applyState();
     }
   }
 
@@ -12947,10 +12944,7 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const registry = getModuleRegistry();
     const lang = this.hass?.locale?.language || 'en';
-    const moduleHandler = registry.getModule(module.type);
-
-    // Get module metadata for icon and description
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(module.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
       description: 'Unknown module type',
@@ -13359,10 +13353,7 @@ export class LayoutTab extends LitElement {
 
     // For non-layout modules, use the existing simplified rendering
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(childModule.type);
-
-    // Get module metadata for icon and description
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(childModule.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
       description: 'Unknown module type',
@@ -13564,8 +13555,7 @@ export class LayoutTab extends LitElement {
 
     // Get module metadata
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(layoutModule.type);
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(layoutModule.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown Layout',
       description: 'Unknown layout type',
@@ -14028,8 +14018,7 @@ export class LayoutTab extends LitElement {
     const isTabs = layoutModule.type === 'tabs';
 
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(layoutModule.type);
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(layoutModule.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
       description: 'Unknown module type',
@@ -14303,8 +14292,7 @@ export class LayoutTab extends LitElement {
     const hasChildren = veryDeepLayout.modules && veryDeepLayout.modules.length > 0;
 
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(layoutModule.type);
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(layoutModule.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
       description: 'Unknown module type',
@@ -14414,7 +14402,7 @@ export class LayoutTab extends LitElement {
                       : html`
                           <div class="layout-child-simplified-module" style="padding: 8px;">
                             <ha-icon
-                              icon="${registry.getModule(child.type)?.metadata?.icon ||
+                              icon="${registry.getModuleMetadata(child.type)?.icon ||
                               'mdi:help-circle'}"
                             ></ha-icon>
                             <span>${this._getModuleDisplayName(child)}</span>
@@ -14455,9 +14443,7 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(childModule.type);
-
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(childModule.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
       description: 'Unknown module type',
@@ -15384,7 +15370,6 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(childModule.type);
 
     // Check if this child module is itself a layout module
     const isChildLayoutModule =
@@ -15409,7 +15394,7 @@ export class LayoutTab extends LitElement {
       );
     }
 
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(childModule.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
       description: 'Unknown module type',
@@ -15567,11 +15552,10 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(layoutModule.type);
     const nestedModules = layoutModule.modules || [];
     const hasChildren = nestedModules.length > 0;
 
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(layoutModule.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown Layout',
       description: 'Unknown layout type',
@@ -16030,8 +16014,7 @@ export class LayoutTab extends LitElement {
           ${hasModules
             ? sectionModules.map((childModule: any, moduleIdx: number) => {
                 const registry = getModuleRegistry();
-                const moduleHandler = registry.getModule(childModule.type);
-                const metadata = moduleHandler?.metadata || {
+                const metadata = registry.getModuleMetadata(childModule.type) || {
                   icon: 'mdi:help-circle',
                   title: 'Unknown',
                   description: 'Unknown module type',
@@ -16235,8 +16218,7 @@ export class LayoutTab extends LitElement {
           ${hasModules
             ? sectionModules.map((childModule: any, moduleIdx: number) => {
                 const registry = getModuleRegistry();
-                const moduleHandler = registry.getModule(childModule.type);
-                const metadata = moduleHandler?.metadata || {
+                const metadata = registry.getModuleMetadata(childModule.type) || {
                   icon: 'mdi:help-circle',
                   title: 'Unknown',
                   description: 'Unknown module type',
@@ -16353,7 +16335,6 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(childModule.type);
 
     // Check if this child module is itself a layout module
     const isChildLayoutModule =
@@ -16379,7 +16360,7 @@ export class LayoutTab extends LitElement {
       );
     }
 
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(childModule.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
       description: 'Unknown module type',
@@ -16518,11 +16499,10 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(layoutModule.type);
     const nestedModules = layoutModule.modules || [];
     const hasChildren = nestedModules.length > 0;
 
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(layoutModule.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown Layout',
       description: 'Unknown layout type',
@@ -16852,9 +16832,7 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(childModule.type);
-
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(childModule.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
       description: 'Unknown module type',
@@ -17281,39 +17259,29 @@ export class LayoutTab extends LitElement {
       return;
     }
 
-    // Create the new module
-    const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(moduleType);
-    if (!moduleHandler) return;
-
-    const newModule = moduleHandler.createDefault(undefined, this.hass);
-
-    // Initialize modules array if needed
-    if (!tabsModule.sections[sectionIndex].modules) {
-      tabsModule.sections[sectionIndex].modules = [];
-    }
-
-    // Add the module to the section
-    tabsModule.sections[sectionIndex].modules.push(newModule);
-
-    // Update layout
-    this._updateLayout(newLayout);
-
-    // Clear context
-    this._tabsSectionContext = null;
-
-    // Open module settings
-    setTimeout(() => {
-      this._openTabsSectionChildSettings(
-        rowIndex,
-        columnIndex,
-        moduleIndex,
-        sectionIndex,
-        tabsModule.sections[sectionIndex].modules.length - 1,
-        parentLayoutChildIndex,
-        isNested
-      );
-    }, 100);
+    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
+      const registry = getModuleRegistry();
+      const moduleHandler = registry.getModule(moduleType);
+      if (!moduleHandler) return;
+      const newModule = moduleHandler.createDefault(undefined, this.hass);
+      if (!tabsModule.sections[sectionIndex].modules) {
+        tabsModule.sections[sectionIndex].modules = [];
+      }
+      tabsModule.sections[sectionIndex].modules.push(newModule);
+      this._updateLayout(newLayout);
+      this._tabsSectionContext = null;
+      setTimeout(() => {
+        this._openTabsSectionChildSettings(
+          rowIndex,
+          columnIndex,
+          moduleIndex,
+          sectionIndex,
+          tabsModule.sections[sectionIndex].modules.length - 1,
+          parentLayoutChildIndex,
+          isNested
+        );
+      }, 100);
+    });
   }
 
   /**
@@ -17347,43 +17315,33 @@ export class LayoutTab extends LitElement {
       return;
     }
 
-    // Initialize modules array if needed
     if (!tabsModule.sections[sectionIndex].modules) {
       tabsModule.sections[sectionIndex].modules = [];
     }
 
-    // Create new module
-    const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(moduleType);
-    let newModule: any;
-
-    if (moduleHandler?.createDefault) {
-      newModule = moduleHandler.createDefault(undefined, this.hass);
-    } else {
-      newModule = {
-        id: `${moduleType}-${Date.now()}`,
-        type: moduleType,
-      };
-    }
-
-    // Add to section
-    tabsModule.sections[sectionIndex].modules.push(newModule);
-    this._updateLayout(newLayout);
-
-    // Clear context
-    this._nestedTabsSectionContext = null;
-
-    // Open module settings
-    setTimeout(() => {
-      this._openNestedTabsSectionChildSettings(
-        rowIndex,
-        columnIndex,
-        parentModuleIndex,
-        nestedTabsIndex,
-        sectionIndex,
-        tabsModule.sections[sectionIndex].modules.length - 1
-      );
-    }, 100);
+    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
+      const registry = getModuleRegistry();
+      const moduleHandler = registry.getModule(moduleType);
+      let newModule: any;
+      if (moduleHandler?.createDefault) {
+        newModule = moduleHandler.createDefault(undefined, this.hass);
+      } else {
+        newModule = { id: `${moduleType}-${Date.now()}`, type: moduleType };
+      }
+      tabsModule.sections[sectionIndex].modules.push(newModule);
+      this._updateLayout(newLayout);
+      this._nestedTabsSectionContext = null;
+      setTimeout(() => {
+        this._openNestedTabsSectionChildSettings(
+          rowIndex,
+          columnIndex,
+          parentModuleIndex,
+          nestedTabsIndex,
+          sectionIndex,
+          tabsModule.sections[sectionIndex].modules.length - 1
+        );
+      }, 100);
+    });
   }
 
   /**
@@ -17438,35 +17396,27 @@ export class LayoutTab extends LitElement {
     if (!layoutModule) return;
     if (!layoutModule.modules) layoutModule.modules = [];
 
-    // Create the new module
-    const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(moduleType);
-    if (!moduleHandler) {
-      return;
-    }
-
-    const newModule = moduleHandler.createDefault(undefined, this.hass ?? undefined);
-    layoutModule.modules.push(newModule);
-
-    // Update layout
-    this._updateLayout(newLayout);
-
-    // Clear context
-    this._tabsSectionNestedLayoutContext = null;
-
-    // Open module settings
-    setTimeout(() => {
-      this._openTabsSectionNestedLayoutChildSettings(
-        rowIndex,
-        columnIndex,
-        moduleIndex,
-        sectionIndex,
-        layoutChildIndex,
-        layoutModule.modules.length - 1,
-        parentLayoutChildIndex,
-        isNested
-      );
-    }, 100);
+    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
+      const registry = getModuleRegistry();
+      const moduleHandler = registry.getModule(moduleType);
+      if (!moduleHandler) return;
+      const newModule = moduleHandler.createDefault(undefined, this.hass ?? undefined);
+      layoutModule.modules.push(newModule);
+      this._updateLayout(newLayout);
+      this._tabsSectionNestedLayoutContext = null;
+      setTimeout(() => {
+        this._openTabsSectionNestedLayoutChildSettings(
+          rowIndex,
+          columnIndex,
+          moduleIndex,
+          sectionIndex,
+          layoutChildIndex,
+          layoutModule.modules.length - 1,
+          parentLayoutChildIndex,
+          isNested
+        );
+      }, 100);
+    });
   }
 
   /**
@@ -17550,30 +17500,27 @@ export class LayoutTab extends LitElement {
       layoutModule.modules = [];
     }
 
-    // Create the new module
-    const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(moduleType);
-    if (!moduleHandler) return;
-
-    const newModule = moduleHandler.createDefault(undefined, this.hass);
-    layoutModule.modules.push(newModule);
-
-    this._updateLayout(newLayout);
-    this._nestedTabsSectionLayoutChildContext = null;
-
-    // Open module settings
-    setTimeout(() => {
-      this._openTabsSectionNestedLayoutChildSettings(
-        rowIndex,
-        columnIndex,
-        parentModuleIndex,
-        sectionIndex,
-        layoutChildIndex,
-        layoutModule.modules.length - 1,
-        nestedTabsIndex,
-        true
-      );
-    }, 100);
+    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
+      const registry = getModuleRegistry();
+      const moduleHandler = registry.getModule(moduleType);
+      if (!moduleHandler) return;
+      const newModule = moduleHandler.createDefault(undefined, this.hass);
+      layoutModule.modules.push(newModule);
+      this._updateLayout(newLayout);
+      this._nestedTabsSectionLayoutChildContext = null;
+      setTimeout(() => {
+        this._openTabsSectionNestedLayoutChildSettings(
+          rowIndex,
+          columnIndex,
+          parentModuleIndex,
+          sectionIndex,
+          layoutChildIndex,
+          layoutModule.modules.length - 1,
+          nestedTabsIndex,
+          true
+        );
+      }, 100);
+    });
   }
 
   /**
@@ -17667,16 +17614,15 @@ export class LayoutTab extends LitElement {
     if (!deepLayout) return;
     if (!deepLayout.modules) deepLayout.modules = [];
 
-    // Create the new module
-    const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(moduleType);
-    if (!moduleHandler) return;
-
-    const newModule = moduleHandler.createDefault(undefined, this.hass);
-    deepLayout.modules.push(newModule);
-
-    this._updateLayout(newLayout);
-    this._deeplyNestedLayoutContext = null;
+    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
+      const registry = getModuleRegistry();
+      const moduleHandler = registry.getModule(moduleType);
+      if (!moduleHandler) return;
+      const newModule = moduleHandler.createDefault(undefined, this.hass);
+      deepLayout.modules.push(newModule);
+      this._updateLayout(newLayout);
+      this._deeplyNestedLayoutContext = null;
+    });
   }
 
   // Context for level 4 nested layout module selectors
@@ -17753,16 +17699,15 @@ export class LayoutTab extends LitElement {
     if (!level4Layout) return;
     if (!level4Layout.modules) level4Layout.modules = [];
 
-    // Create the new module
-    const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(moduleType);
-    if (!moduleHandler) return;
-
-    const newModule = moduleHandler.createDefault(undefined, this.hass);
-    level4Layout.modules.push(newModule);
-
-    this._updateLayout(newLayout);
-    this._level4NestedLayoutContext = null;
+    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
+      const registry = getModuleRegistry();
+      const moduleHandler = registry.getModule(moduleType);
+      if (!moduleHandler) return;
+      const newModule = moduleHandler.createDefault(undefined, this.hass);
+      level4Layout.modules.push(newModule);
+      this._updateLayout(newLayout);
+      this._level4NestedLayoutContext = null;
+    });
   }
 
   /**
@@ -17955,47 +17900,32 @@ export class LayoutTab extends LitElement {
       return;
     }
 
-    // Get the deeply nested layout module
     const deeplyNestedLayout = layoutModule.modules[nestedChildIndex];
-    if (!deeplyNestedLayout) {
-      return;
-    }
+    if (!deeplyNestedLayout) return;
+    if (!deeplyNestedLayout.modules) deeplyNestedLayout.modules = [];
 
-    // Create the new module
-    const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(moduleType);
-    if (!moduleHandler) return;
-
-    const newModule = moduleHandler.createDefault(undefined, this.hass);
-
-    // Initialize modules array if needed
-    if (!deeplyNestedLayout.modules) {
-      deeplyNestedLayout.modules = [];
-    }
-
-    // Add the module
-    deeplyNestedLayout.modules.push(newModule);
-
-    // Update layout
-    this._updateLayout(newLayout);
-
-    // Clear context
-    this._tabsSectionDeeplyNestedLayoutContext = null;
-
-    // Open module settings
-    setTimeout(() => {
-      this._openTabsSectionDeeplyNestedLayoutChildSettings(
-        rowIndex,
-        columnIndex,
-        moduleIndex,
-        sectionIndex,
-        layoutChildIndex,
-        nestedChildIndex,
-        deeplyNestedLayout.modules.length - 1,
-        parentLayoutChildIndex,
-        isNested
-      );
-    }, 100);
+    getModuleRegistry().ensureModuleLoaded(moduleType).then(() => {
+      const registry = getModuleRegistry();
+      const moduleHandler = registry.getModule(moduleType);
+      if (!moduleHandler) return;
+      const newModule = moduleHandler.createDefault(undefined, this.hass);
+      deeplyNestedLayout.modules.push(newModule);
+      this._updateLayout(newLayout);
+      this._tabsSectionDeeplyNestedLayoutContext = null;
+      setTimeout(() => {
+        this._openTabsSectionDeeplyNestedLayoutChildSettings(
+          rowIndex,
+          columnIndex,
+          moduleIndex,
+          sectionIndex,
+          layoutChildIndex,
+          nestedChildIndex,
+          deeplyNestedLayout.modules.length - 1,
+          parentLayoutChildIndex,
+          isNested
+        );
+      }, 100);
+    });
   }
 
   /**
@@ -19569,10 +19499,7 @@ export class LayoutTab extends LitElement {
 
     // For regular content modules inside nested layouts, use simplified rendering with proper nested indexing
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(childModule.type);
-
-    // Get module metadata for icon and description
-    const metadata = moduleHandler?.metadata || {
+    const metadata = registry.getModuleMetadata(childModule.type) || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
       description: 'Unknown module type',
@@ -21656,6 +21583,7 @@ export class LayoutTab extends LitElement {
     // Use centralized preview service that mirrors HA preview window behavior
     return ucModulePreviewService.renderModuleInCard(module, this.hass, this.config, {
       showLogicOverlay: true,
+      onModuleEnsureRequested: () => this.requestUpdate(),
     });
   }
 
@@ -27282,18 +27210,10 @@ export class LayoutTab extends LitElement {
         ${this._showLoginDialogForSubmit
           ? html`
               <uc-hub-login-dialog
-                @auth-success=${() => {
-                  this._showLoginDialogForSubmit = false;
-                  this._openOverflowMenuKey = null;
-                  const payload = this._buildSubmitPresetPayload();
-                  if (payload) {
-                    this._submitPresetDialogPayload = payload;
-                    this._showSubmitPresetDialog = true;
-                  }
-                }}
                 @close=${(e: Event) => {
                   e.stopPropagation();
                   this._showLoginDialogForSubmit = false;
+                  this._openOverflowMenuKey = null;
                 }}
               ></uc-hub-login-dialog>
             `
@@ -27302,22 +27222,6 @@ export class LayoutTab extends LitElement {
         ${this._builderShowLoginForRating
           ? html`
               <uc-hub-login-dialog
-                @auth-success=${() => {
-                  this._builderShowLoginForRating = false;
-                  this._isCloudAuthenticated = true;
-                  if (this._builderPendingRateAfterLogin) {
-                    const existingRating =
-                      this._builderUserReviews.get(this._builderPendingRateAfterLogin.id) ??
-                      ucCloudSyncService.getUserReview(this._builderPendingRateAfterLogin.id)
-                        ?.rating ??
-                      0;
-                    this._builderRatingPreset = {
-                      ...this._builderPendingRateAfterLogin,
-                      existingRating,
-                    };
-                    this._builderPendingRateAfterLogin = null;
-                  }
-                }}
                 @close=${(e: Event) => {
                   e.stopPropagation();
                   this._builderShowLoginForRating = false;
@@ -27368,265 +27272,160 @@ export class LayoutTab extends LitElement {
     `;
   }
 
+  private _handleSelectorClose(): void {
+    this._showModuleSelector = false;
+    this._selectedLayoutModuleIndex = -1;
+    this._selectedNestedChildIndex = -1;
+    this._selectedNestedNestedChildIndex = -1;
+  }
+
+  private _handleSelectorTabChange(e: CustomEvent<{ tab: 'modules' | 'cards' | 'presets' | 'favorites' }>): void {
+    this._activeModuleSelectorTab = e.detail.tab;
+    if (e.detail.tab === 'presets') ucPresetsService.ensureWordPressLoaded();
+    if (e.detail.tab === 'cards') this._refreshGlobalExternalCardCount();
+    this._focusSearchInput();
+  }
+
   private _renderModuleSelector(): TemplateResult {
+    if (!this._showModuleSelector) return html``;
     const registry = getModuleRegistry();
-    // Get all modules but exclude external_card and native_card from the selector (they're in the Cards tab)
     const allModules = registry
-      .getAllModules()
-      .filter(m => m.metadata.type !== 'external_card' && m.metadata.type !== 'native_card');
+      .getAllModuleMetadata()
+      .filter(m => m.type !== 'external_card' && m.type !== 'native_card');
     const isAddingToLayoutModule = this._selectedLayoutModuleIndex >= 0;
-
     return html`
-      <style>
-        .module-category-tabs {
-          display: flex;
-          gap: 8px;
-          margin-bottom: 16px;
-          padding: 12px;
-          background: var(--secondary-background-color);
-          border-radius: 12px;
-        }
-
-        .category-tab {
-          flex: 1;
-          padding: 12px 16px;
-          border: 2px solid transparent;
-          border-radius: 8px;
-          background: var(--card-background-color);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          font-weight: 600;
-          transition: all 0.3s;
-          font-family: inherit;
-        }
-
-        .category-tab.active {
-          border-color: var(--primary-color);
-          background: linear-gradient(
-            135deg,
-            rgba(3, 169, 244, 0.1) 0%,
-            rgba(3, 169, 244, 0.05) 100%
-          );
-        }
-
-        .category-tab.pro-tab {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          border: none;
-        }
-
-        .category-tab.pro-tab.active {
-          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
-        }
-
-        .pro-badge-mini {
-          font-size: 12px;
-        }
-
-        .pro-upgrade-prompt {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          padding: 32px;
-          border-radius: 16px;
-          text-align: center;
-        }
-
-        .pro-upgrade-prompt .pro-icon {
-          font-size: 64px;
-          margin-bottom: 16px;
-          animation: proPulse 2s ease-in-out infinite;
-        }
-
-        .pro-upgrade-prompt .pro-icon ha-icon {
-          --mdc-icon-size: 64px;
-        }
-
-        @keyframes proPulse {
-          0%,
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.05);
-            opacity: 0.9;
-          }
-        }
-
-        .pro-upgrade-prompt h3 {
-          font-size: 24px;
-          margin: 0 0 12px 0;
-          font-weight: 700;
-        }
-
-        .pro-upgrade-prompt p {
-          opacity: 0.95;
-          margin: 0 0 20px 0;
-          font-size: 16px;
-        }
-
-        .pro-features {
-          list-style: none;
-          padding: 0;
-          margin: 24px 0;
-          display: grid;
-          gap: 12px;
-          text-align: left;
-          max-width: 300px;
-          margin: 24px auto;
-        }
-
-        .pro-features li {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 15px;
-          font-weight: 500;
-        }
-
-        .pro-features li ha-icon {
-          --mdc-icon-size: 20px;
-        }
-
-        .upgrade-btn {
-          padding: 14px 32px;
-          background: rgba(255, 255, 255, 0.25);
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          border-radius: 8px;
-          color: white;
-          font-weight: 700;
-          font-size: 16px;
-          cursor: pointer;
-          backdrop-filter: blur(10px);
-          transition: all 0.3s;
-          font-family: inherit;
-        }
-
-        .upgrade-btn:hover {
-          background: rgba(255, 255, 255, 0.35);
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-        }
-      </style>
-      <div class="module-selector-popup">
-        <div
-          class="popup-overlay"
-          @click=${() => {
-            this._showModuleSelector = false;
-            this._selectedLayoutModuleIndex = -1;
-            this._selectedNestedChildIndex = -1;
-            this._moduleSearchQuery = '';
-            this._cardSearchQuery = '';
-            this._presetSearchQuery = '';
-          }}
-        ></div>
-        <div class="selector-content draggable-popup" id="module-selector-popup">
-          <div class="selector-header-wrapper">
-            <div
-              class="selector-header"
-              @mousedown=${(e: MouseEvent) => {
-                const popup = (e.target as HTMLElement).closest('.selector-content') as HTMLElement;
-                if (popup) this._startPopupDrag(e, popup);
-              }}
-            >
-              <div class="selector-header-top">
-                <h3>Add Module</h3>
-                <button
-                  class="close-button"
-                  title="Close"
-                  @mousedown=${(e: Event) => e.stopPropagation()}
-                  @click=${() => {
-                    this._showModuleSelector = false;
-                    this._selectedLayoutModuleIndex = -1;
-                    this._selectedNestedChildIndex = -1;
-                    this._moduleSearchQuery = '';
-                    this._cardSearchQuery = '';
-                    this._presetSearchQuery = '';
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-              ${isAddingToLayoutModule
-                ? html`<p class="selector-subtitle">
-                    Adding to layout module (content modules and layout modules allowed up to 2
-                    levels deep)
-                  </p>`
-                : ''}
-            </div>
-
-            <!-- Tab Navigation -->
-            <div class="module-selector-tabs">
-              <button
-                class="tab-button ${this._activeModuleSelectorTab === 'modules' ? 'active' : ''}"
-                @click=${() => {
-                  this._activeModuleSelectorTab = 'modules';
-                  this._focusSearchInput();
-                }}
-              >
-                <ha-icon icon="mdi:puzzle"></ha-icon>
-                <span>Modules</span>
-              </button>
-              <button
-                class="tab-button ${this._activeModuleSelectorTab === 'cards' ? 'active' : ''}"
-                @click=${() => {
-                  this._activeModuleSelectorTab = 'cards';
-                  this._focusSearchInput();
-                }}
-              >
-                <ha-icon icon="mdi:card-multiple"></ha-icon>
-                <span>Cards</span>
-              </button>
-              <button
-                class="tab-button ${this._activeModuleSelectorTab === 'presets' ? 'active' : ''}"
-                @click=${() => {
-                  this._activeModuleSelectorTab = 'presets';
-                  // Refresh WordPress presets when presets tab is opened
-                  ucPresetsService.refreshWordPressPresets();
-                  this._focusSearchInput();
-                }}
-              >
-                <ha-icon icon="mdi:palette"></ha-icon>
-                <span>Presets</span>
-              </button>
-              <button
-                class="tab-button ${this._activeModuleSelectorTab === 'favorites' ? 'active' : ''}"
-                @click=${() => (this._activeModuleSelectorTab = 'favorites')}
-              >
-                <ha-icon icon="mdi:heart"></ha-icon>
-                <span>Favorites</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="selector-body">
-            ${this._activeModuleSelectorTab === 'modules'
-              ? this._renderModulesTab(allModules, isAddingToLayoutModule)
-              : ''}
-            ${this._activeModuleSelectorTab === 'cards' ? this._renderCardsTab() : ''}
-            ${this._activeModuleSelectorTab === 'presets' ? this._renderPresetsTab() : ''}
-            ${this._activeModuleSelectorTab === 'favorites' ? this._renderFavoritesTab() : ''}
-          </div>
-
-          <!-- Resize handle -->
-          <div
-            class="resize-handle"
-            @mousedown=${(e: MouseEvent) => {
-              const popup = (e.target as HTMLElement).closest('.selector-content') as HTMLElement;
-              if (popup) this._startPopupResize(e, popup);
-            }}
-            title="Drag to resize"
-          >
-            <ha-icon icon="mdi:resize-bottom-right"></ha-icon>
-          </div>
-        </div>
-      </div>
+      <uc-module-selector-shell
+        .activeTab=${this._activeModuleSelectorTab}
+        .isAddingToLayoutModule=${isAddingToLayoutModule}
+        @close=${this._handleSelectorClose}
+        @tab-change=${this._handleSelectorTabChange}
+      >
+        ${this._renderModuleSelectorBody(allModules, isAddingToLayoutModule)}
+      </uc-module-selector-shell>
     `;
+  }
+
+  /** Parent layout type when adding inside a layout module (for slider pagebreak, etc.). */
+  private _getModuleSelectorParentLayoutType(): string | null {
+    if (this._selectedLayoutModuleIndex < 0) return null;
+    const layout = this.config.layout;
+    let parentModule: any =
+      layout.rows[this._selectedRowIndex]?.columns[this._selectedColumnIndex]?.modules[
+        this._selectedLayoutModuleIndex
+      ];
+    if (this._selectedNestedNestedChildIndex >= 0 && this._selectedNestedChildIndex >= 0) {
+      const level1 = parentModule;
+      if (level1?.modules?.[this._selectedNestedChildIndex]) {
+        const level2 = level1.modules[this._selectedNestedChildIndex];
+        if (level2?.modules?.[this._selectedNestedNestedChildIndex]) {
+          parentModule = level2.modules[this._selectedNestedNestedChildIndex];
+        }
+      }
+    } else if (this._selectedNestedChildIndex >= 0) {
+      const outer = parentModule;
+      if (outer?.modules?.[this._selectedNestedChildIndex]) {
+        parentModule = outer.modules[this._selectedNestedChildIndex];
+      }
+    }
+    return parentModule?.type || null;
+  }
+
+  /** Body content for the module selector (tabs content). */
+  private _renderModuleSelectorBody(allModules: ModuleManifest[], isAddingToLayoutModule: boolean): TemplateResult {
+    if (this._activeModuleSelectorTab === 'cards') {
+      const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+      const isPro =
+        integrationUser?.subscription?.tier === 'pro' &&
+        integrationUser?.subscription?.status === 'active';
+      return html`
+        <uc-card-selector-tab
+          .hass=${this.hass}
+          .globalExternalCardCount=${this._globalExternalCardCount}
+          .isPro=${isPro}
+          @card-selected=${this._handleCardSelectorCardSelected}
+          @refresh=${this._handleCardSelectorRefresh}
+          @open-pro=${this._openProPage}
+        ></uc-card-selector-tab>
+      `;
+    }
+    if (this._activeModuleSelectorTab === 'presets') {
+      return html`
+        <uc-presets-selector-tab
+          .hass=${this.hass}
+          .isCloudAuthenticated=${this._isCloudAuthenticated}
+          .builderUserReviews=${this._builderUserReviews}
+          @preset-selected=${this._handlePresetSelectorPresetSelected}
+          @refresh=${this._handlePresetSelectorRefresh}
+          @open-image=${this._handlePresetSelectorOpenImage}
+          @request-rate=${this._handlePresetSelectorRequestRate}
+        ></uc-presets-selector-tab>
+      `;
+    }
+    if (this._activeModuleSelectorTab === 'modules') {
+      const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+      const isPro =
+        integrationUser?.subscription?.tier === 'pro' &&
+        integrationUser?.subscription?.status === 'active';
+      return html`
+        <uc-modules-selector-tab
+          .hass=${this.hass}
+          .allModules=${allModules}
+          .isAddingToLayoutModule=${isAddingToLayoutModule}
+          .parentLayoutType=${this._getModuleSelectorParentLayoutType()}
+          .isPro=${isPro}
+          .isLoggedIn=${!!integrationUser}
+          @module-selected=${(e: CustomEvent<{ type: string }>) => this._addModule(e.detail.type)}
+          @upgrade-click=${this._handleUpgradeClick}
+        ></uc-modules-selector-tab>
+      `;
+    }
+    if (this._activeModuleSelectorTab === 'favorites') {
+      return html`
+        <uc-favorites-selector-tab
+          @favorite-add=${(e: CustomEvent<{ favorite: FavoriteRow }>) => this._addFavorite(e.detail.favorite)}
+          @favorite-export=${(e: CustomEvent<{ favorite: FavoriteRow }>) => this._exportFavorite(e.detail.favorite)}
+          @favorite-delete=${(e: CustomEvent<{ favoriteId: string }>) => this._deleteFavorite(e.detail.favoriteId)}
+          @import-click=${() => (this._showImportDialog = true)}
+        ></uc-favorites-selector-tab>
+      `;
+    }
+    return html``;
+  }
+
+  private _handlePresetSelectorPresetSelected(e: CustomEvent<{ preset: PresetDefinition }>): void {
+    this._addPreset(e.detail.preset);
+  }
+
+  private _handlePresetSelectorRefresh(): void {
+    ucPresetsService.refreshWordPressPresets();
+  }
+
+  private _handlePresetSelectorOpenImage(e: CustomEvent<{ url: string; title: string }>): void {
+    this._openImagePopup(e.detail.url, e.detail.title);
+  }
+
+  private _handlePresetSelectorRequestRate(
+    e: CustomEvent<{ presetId: string; presetName: string }>
+  ): void {
+    const { presetId, presetName } = e.detail;
+    if (!this._isCloudAuthenticated) {
+      this._builderPendingRateAfterLogin = { id: presetId, name: presetName };
+      this._builderShowLoginForRating = true;
+      return;
+    }
+    const existingRating =
+      this._builderUserReviews.get(presetId) ??
+      ucCloudSyncService.getUserReview(presetId)?.rating ??
+      0;
+    this._builderRatingPreset = { id: presetId, name: presetName, existingRating };
+  }
+
+  private _handleCardSelectorCardSelected(e: CustomEvent<{ type: string }>): void {
+    this._addCardFromTab(e.detail.type);
+  }
+
+  private _handleCardSelectorRefresh(): void {
+    this._handleRefreshCardsTab();
   }
 
   private _formatCategoryTitle(category: string): string {
@@ -27638,536 +27437,28 @@ export class LayoutTab extends LitElement {
    */
   private _focusSearchInput(): void {
     requestAnimationFrame(() => {
-      let inputId = 'module-search-input';
-
       if (this._activeModuleSelectorTab === 'cards') {
-        inputId = 'card-search-input';
-      } else if (this._activeModuleSelectorTab === 'presets') {
-        inputId = 'preset-search-input';
-      }
-
-      const input = this.shadowRoot?.getElementById(inputId) as HTMLInputElement;
-      if (input) {
-        input.focus();
-      }
-    });
-  }
-
-  /**
-   * Filter modules based on search query
-   */
-  private _filterModulesBySearch(modules: any[], query: string): any[] {
-    if (!query || query.trim() === '') {
-      return modules;
-    }
-
-    const searchLower = query.toLowerCase().trim();
-
-    return modules.filter(module => {
-      const metadata = module.metadata;
-      const name = metadata.title?.toLowerCase() || '';
-      const description = metadata.description?.toLowerCase() || '';
-      const type = metadata.type?.toLowerCase() || '';
-      const tags = (metadata.tags || []).join(' ').toLowerCase();
-
-      return (
-        name.includes(searchLower) ||
-        description.includes(searchLower) ||
-        type.includes(searchLower) ||
-        tags.includes(searchLower)
-      );
-    });
-  }
-
-  /**
-   * Filter cards based on search query
-   */
-  private _filterCardsBySearch(
-    cards: Array<{ type: string; name: string; icon?: string; description?: string }>,
-    query: string
-  ): Array<{ type: string; name: string; icon?: string; description?: string }> {
-    if (!query || query.trim() === '') {
-      return cards;
-    }
-
-    const searchLower = query.toLowerCase().trim();
-
-    return cards.filter(card => {
-      const name = card.name?.toLowerCase() || '';
-      const description = card.description?.toLowerCase() || '';
-      const type = card.type?.toLowerCase() || '';
-
-      return (
-        name.includes(searchLower) ||
-        description.includes(searchLower) ||
-        type.includes(searchLower)
-      );
-    });
-  }
-
-  /**
-   * Filter presets based on search query
-   */
-  private _filterPresetsBySearch(presets: any[], query: string): any[] {
-    if (!query || query.trim() === '') {
-      return presets;
-    }
-
-    const searchLower = query.toLowerCase().trim();
-
-    return presets.filter(preset => {
-      const name = preset.name?.toLowerCase() || '';
-      const description = preset.description?.toLowerCase() || '';
-      const author = preset.author?.toLowerCase() || '';
-      const category = preset.category?.toLowerCase() || '';
-
-      return (
-        name.includes(searchLower) ||
-        description.includes(searchLower) ||
-        author.includes(searchLower) ||
-        category.includes(searchLower)
-      );
-    });
-  }
-
-  /**
-   * Sort presets by name, date, or rating
-   */
-  private _sortPresets(
-    presets: any[],
-    sortBy: 'name' | 'date' | 'rating',
-    direction: 'asc' | 'desc'
-  ): any[] {
-    const sorted = [...presets].sort((a, b) => {
-      let compareA, compareB;
-
-      switch (sortBy) {
-        case 'name':
-          compareA = a.name?.toLowerCase() || '';
-          compareB = b.name?.toLowerCase() || '';
-          return direction === 'asc'
-            ? compareA.localeCompare(compareB)
-            : compareB.localeCompare(compareA);
-
-        case 'date':
-          // For WordPress presets, use the date from metadata
-          compareA = a.metadata?.date ? new Date(a.metadata.date).getTime() : 0;
-          compareB = b.metadata?.date ? new Date(b.metadata.date).getTime() : 0;
-          return direction === 'asc' ? compareA - compareB : compareB - compareA;
-
-        case 'rating':
-          // Two-level sort: rating first, then vote count
-          // 5★ with 1 vote > 4.9★ with 1000 votes
-          // 5★ with 20 votes > 5★ with 1 vote
-          const ratingA = a.metadata?.rating || 0;
-          const countA = a.metadata?.rating_count || 0;
-          const ratingB = b.metadata?.rating || 0;
-          const countB = b.metadata?.rating_count || 0;
-
-          // Compare ratings first
-          if (ratingA !== ratingB) {
-            return direction === 'asc' ? ratingA - ratingB : ratingB - ratingA;
-          }
-
-          // If ratings are equal, compare vote counts
-          return direction === 'asc' ? countA - countB : countB - countA;
-
-        default:
-          return 0;
-      }
-    });
-
-    return sorted;
-  }
-
-  /**
-   * Render module search bar
-   */
-  private _renderModuleSearchBar(): TemplateResult {
-    return html`
-      <div class="search-bar-container">
-        <div class="search-bar">
-          <ha-icon icon="mdi:magnify"></ha-icon>
-          <input
-            id="module-search-input"
-            type="text"
-            placeholder="Search modules..."
-            .value=${this._moduleSearchQuery}
-            @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              this._moduleSearchQuery = target.value;
-            }}
-          />
-          ${this._moduleSearchQuery
-            ? html`
-                <button
-                  class="clear-search-btn"
-                  @click=${() => {
-                    this._moduleSearchQuery = '';
-                    this._focusSearchInput();
-                  }}
-                  title="Clear search"
-                >
-                  <ha-icon icon="mdi:close"></ha-icon>
-                </button>
-              `
-            : ''}
-        </div>
-      </div>
-    `;
-  }
-
-  /**
-   * Render card search bar
-   */
-  private _renderCardSearchBar(): TemplateResult {
-    return html`
-      <div class="search-bar-container">
-        <div class="search-bar">
-          <ha-icon icon="mdi:magnify"></ha-icon>
-          <input
-            id="card-search-input"
-            type="text"
-            placeholder="Search cards..."
-            .value=${this._cardSearchQuery}
-            @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              this._cardSearchQuery = target.value;
-            }}
-          />
-          ${this._cardSearchQuery
-            ? html`
-                <button
-                  class="clear-search-btn"
-                  @click=${() => {
-                    this._cardSearchQuery = '';
-                    this._focusSearchInput();
-                  }}
-                  title="Clear search"
-                >
-                  <ha-icon icon="mdi:close"></ha-icon>
-                </button>
-              `
-            : ''}
-        </div>
-      </div>
-    `;
-  }
-
-  /**
-   * Render preset search bar
-   */
-  private _renderPresetSearchBar(): TemplateResult {
-    return html`
-      <div class="search-bar-container">
-        <div class="search-bar">
-          <ha-icon icon="mdi:magnify"></ha-icon>
-          <input
-            id="preset-search-input"
-            type="text"
-            placeholder="Search presets..."
-            .value=${this._presetSearchQuery}
-            @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              this._presetSearchQuery = target.value;
-            }}
-          />
-          ${this._presetSearchQuery
-            ? html`
-                <button
-                  class="clear-search-btn"
-                  @click=${() => {
-                    this._presetSearchQuery = '';
-                    this._focusSearchInput();
-                  }}
-                  title="Clear search"
-                >
-                  <ha-icon icon="mdi:close"></ha-icon>
-                </button>
-              `
-            : ''}
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderModulesTab(allModules: any[], isAddingToLayoutModule: boolean): TemplateResult {
-    // Check integration auth only (no card auth fallback)
-    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-    const isPro =
-      integrationUser?.subscription?.tier === 'pro' &&
-      integrationUser?.subscription?.status === 'active';
-    const isLoggedIn = !!integrationUser;
-
-    // If there's a search query, show search results instead
-    const hasSearchQuery = this._moduleSearchQuery.trim() !== '';
-
-    // Filter modules by PRO status
-    const standardModules = allModules.filter(m => !m.metadata.tags?.includes('pro'));
-    const proModules = allModules.filter(m => m.metadata.tags?.includes('pro'));
-
-    // Apply active category filter (or search filter if searching)
-    const filteredModules = hasSearchQuery
-      ? this._filterModulesBySearch(allModules, this._moduleSearchQuery)
-      : this._activeModuleCategoryTab === 'standard'
-        ? standardModules
-        : proModules;
-
-    const layoutModules = filteredModules
-      .filter(m => m.metadata.category === 'layout' && m.metadata.type !== 'pagebreak')
-      .sort((a, b) => (a.metadata.title || '').localeCompare(b.metadata.title || ''));
-
-    let contentModules = filteredModules
-      .filter(m => m.metadata.category !== 'layout')
-      .sort((a, b) => (a.metadata.title || '').localeCompare(b.metadata.title || ''));
-
-    // Get the parent layout module and check nesting depth if we're adding to a layout module
-    let parentLayoutType: string | null = null;
-    let nestingDepth = 0;
-    if (isAddingToLayoutModule && this._selectedLayoutModuleIndex >= 0) {
-      const layout = this.config.layout;
-      let parentModule =
-        layout.rows[this._selectedRowIndex]?.columns[this._selectedColumnIndex]?.modules[
-          this._selectedLayoutModuleIndex
-        ];
-
-      // Check if we're adding to a deeply nested layout module (3rd level)
-      if (this._selectedNestedNestedChildIndex >= 0 && this._selectedNestedChildIndex >= 0) {
-        // We're adding to a 3rd level nested layout module
-        const level1Module = parentModule as any;
-        if (level1Module?.modules?.[this._selectedNestedChildIndex]) {
-          const level2Module = level1Module.modules[this._selectedNestedChildIndex] as any;
-          if (level2Module?.modules?.[this._selectedNestedNestedChildIndex]) {
-            parentModule = level2Module.modules[this._selectedNestedNestedChildIndex];
-            nestingDepth = 3; // We're at the third level of nesting
-          }
+        const cardTab = this.shadowRoot?.querySelector('uc-card-selector-tab');
+        if (cardTab && 'focusSearchInput' in cardTab) {
+          (cardTab as { focusSearchInput: () => void }).focusSearchInput();
         }
+        return;
       }
-      // Check if we're adding to a nested layout module (2nd level)
-      else if (this._selectedNestedChildIndex >= 0) {
-        // We're adding to a nested layout module (layout inside another layout)
-        const outerLayoutModule = parentModule as any;
-        if (
-          outerLayoutModule &&
-          outerLayoutModule.modules &&
-          outerLayoutModule.modules[this._selectedNestedChildIndex]
-        ) {
-          parentModule = outerLayoutModule.modules[this._selectedNestedChildIndex];
-          nestingDepth = 2; // We're already at the second level of nesting
+      if (this._activeModuleSelectorTab === 'presets') {
+        const presetTab = this.shadowRoot?.querySelector('uc-presets-selector-tab');
+        if (presetTab && 'focusSearchInput' in presetTab) {
+          (presetTab as { focusSearchInput: () => void }).focusSearchInput();
         }
-      } else {
-        nestingDepth = 1; // We're at the first level of nesting
+        return;
       }
-
-      parentLayoutType = parentModule?.type || null;
-
-      // If adding to a slider, include pagebreak in content modules
-      if (parentLayoutType === 'slider') {
-        const pageBreakModule = allModules.find(m => m.metadata.type === 'pagebreak');
-        if (pageBreakModule) {
-          contentModules = [pageBreakModule, ...contentModules];
+      if (this._activeModuleSelectorTab === 'modules') {
+        const modulesTab = this.shadowRoot?.querySelector('uc-modules-selector-tab');
+        if (modulesTab && 'focusSearchInput' in modulesTab) {
+          (modulesTab as { focusSearchInput: () => void }).focusSearchInput();
         }
+        return;
       }
-    }
-
-    // No nesting depth limit: allow layout modules at any level
-    let allowedLayoutModules: any[] = [];
-    if (isAddingToLayoutModule && parentLayoutType) {
-      allowedLayoutModules = layoutModules;
-    } else if (!isAddingToLayoutModule) {
-      allowedLayoutModules = layoutModules;
-    }
-
-    return html`
-      <!-- Search Bar -->
-      ${this._renderModuleSearchBar()}
-      ${hasSearchQuery
-        ? this._renderModuleSearchResults(filteredModules, isPro, isAddingToLayoutModule)
-        : html`
-            <!-- PRO/Standard Tab Navigation -->
-            <div class="module-category-tabs">
-              <button
-                class="category-tab ${this._activeModuleCategoryTab === 'standard' ? 'active' : ''}"
-                @click=${() => (this._activeModuleCategoryTab = 'standard')}
-              >
-                <ha-icon icon="mdi:puzzle"></ha-icon>
-                <span>Standard</span>
-              </button>
-              <button
-                class="category-tab pro-tab ${this._activeModuleCategoryTab === 'pro'
-                  ? 'active'
-                  : ''}"
-                @click=${() => (this._activeModuleCategoryTab = 'pro')}
-              >
-                <ha-icon icon="mdi:star-circle"></ha-icon>
-                <span>PRO</span>
-                <span class="pro-badge-mini">⭐</span>
-              </button>
-            </div>
-
-            ${this._activeModuleCategoryTab === 'pro' && !isPro
-              ? this._renderProUpgradePrompt(isLoggedIn)
-              : html`
-                  ${allowedLayoutModules.length > 0
-                    ? html`
-                        <div class="module-category layout-containers">
-                          <h4 class="category-title">Layout Containers</h4>
-                          <p class="category-description">
-                            ${isAddingToLayoutModule
-                              ? 'Add layout or content modules at any nesting level'
-                              : 'Create containers to organize your modules'}
-                          </p>
-                          <div class="module-types layout-modules">
-                            ${allowedLayoutModules.map(module => {
-                              const metadata = module.metadata;
-                              const isHorizontal = metadata.type === 'horizontal';
-                              const isVertical = metadata.type === 'vertical';
-                              return html`
-                                <button
-                                  class="module-type-btn layout-module ${isHorizontal
-                                    ? 'horizontal-layout'
-                                    : ''} ${isVertical ? 'vertical-layout' : ''}"
-                                  @click=${() => this._addModule(metadata.type)}
-                                  title="${metadata.description}"
-                                >
-                                  <ha-icon icon="${metadata.icon}"></ha-icon>
-                                  <div class="module-info">
-                                    <span class="module-title">${metadata.title}</span>
-                                    <span class="module-description">${metadata.description}</span>
-                                  </div>
-                                </button>
-                              `;
-                            })}
-                          </div>
-                        </div>
-                      `
-                    : ''}
-                  ${contentModules.length > 0
-                    ? html`
-                        <div class="module-category">
-                          <h4 class="category-title">Content Modules</h4>
-                          <p class="category-description">Add content and interactive elements</p>
-                          <div class="module-types content-modules">
-                            ${contentModules.map(module => {
-                              const metadata = module.metadata;
-                              return html`
-                                <button
-                                  class="module-type-btn content-module"
-                                  @click=${() => this._addModule(metadata.type)}
-                                  title="${metadata.description}"
-                                >
-                                  <ha-icon icon="${metadata.icon}"></ha-icon>
-                                  <div class="module-info">
-                                    <span class="module-title">${metadata.title}</span>
-                                    <span class="module-description">${metadata.description}</span>
-                                  </div>
-                                </button>
-                              `;
-                            })}
-                          </div>
-                        </div>
-                      `
-                    : ''}
-                `}
-          `}
-    `;
-  }
-
-  /**
-   * Render module search results in a single column list view
-   */
-  private _renderModuleSearchResults(
-    modules: any[],
-    isPro: boolean,
-    isAddingToLayoutModule: boolean
-  ): TemplateResult {
-    if (modules.length === 0) {
-      return html`
-        <div class="search-results-empty">
-          <ha-icon icon="mdi:magnify-close"></ha-icon>
-          <p>No modules found matching "${this._moduleSearchQuery}"</p>
-          <button
-            class="clear-search-btn-large"
-            @click=${() => {
-              this._moduleSearchQuery = '';
-            }}
-          >
-            Clear Search
-          </button>
-        </div>
-      `;
-    }
-
-    return html`
-      <div class="search-results-container">
-        <div class="search-results-header">
-          <span>${modules.length} module${modules.length !== 1 ? 's' : ''} found</span>
-        </div>
-        <div class="search-results-list">
-          ${modules.map(module => {
-            const metadata = module.metadata;
-            const isProModule = metadata.tags?.includes('pro') || false;
-            const hasAccess = !isProModule || isPro;
-            const tierLabel = isProModule ? 'PRO' : 'Standard';
-
-            return html`
-              <div
-                class="search-result-item ${!hasAccess ? 'locked' : ''}"
-                @click=${() => {
-                  if (hasAccess) {
-                    this._addModule(metadata.type);
-                    this._moduleSearchQuery = '';
-                  }
-                }}
-              >
-                <div class="search-result-icon">
-                  <ha-icon icon="${metadata.icon}"></ha-icon>
-                </div>
-                <div class="search-result-content">
-                  <div class="search-result-header-row">
-                    <span class="search-result-title">${metadata.title}</span>
-                    <span class="search-result-tier ${isProModule ? 'pro' : 'standard'}">
-                      ${isProModule ? '⭐ ' : ''}${tierLabel}
-                    </span>
-                  </div>
-                  <p class="search-result-description">${metadata.description}</p>
-                </div>
-                ${!hasAccess
-                  ? html`<ha-icon class="lock-icon" icon="mdi:lock"></ha-icon>`
-                  : html`<ha-icon class="add-icon" icon="mdi:plus-circle"></ha-icon>`}
-              </div>
-            `;
-          })}
-        </div>
-      </div>
-    `;
-  }
-
-  /**
-   * Render PRO upgrade prompt for non-Pro users
-   */
-  private _renderProUpgradePrompt(isLoggedIn: boolean): TemplateResult {
-    return html`
-      <div class="pro-upgrade-prompt">
-        <div class="pro-icon">
-          <ha-icon icon="mdi:star-circle"></ha-icon>
-        </div>
-        <h3>Ultra Card PRO</h3>
-        <p>
-          Access premium modules like Weather Forecast, advanced animations, and more exclusive
-          features.
-        </p>
-        <ul class="pro-features">
-          <li><ha-icon icon="mdi:check-circle"></ha-icon> Premium Modules</li>
-          <li><ha-icon icon="mdi:check-circle"></ha-icon> Cloud Backups</li>
-          <li><ha-icon icon="mdi:check-circle"></ha-icon> Auto Snapshots</li>
-          <li><ha-icon icon="mdi:check-circle"></ha-icon> Priority Support</li>
-        </ul>
-        <button class="upgrade-btn" @click=${this._handleUpgradeClick}>
-          ${isLoggedIn ? 'Upgrade to PRO' : 'Login or Upgrade'}
-        </button>
-      </div>
-    `;
+    });
   }
 
   /**
@@ -28184,762 +27475,6 @@ export class LayoutTab extends LitElement {
     );
   }
 
-  private _isNewPreset(preset: PresetDefinition): boolean {
-    const dateStr = (preset as any).metadata?.created || (preset as any).metadata?.date;
-    if (!dateStr) return false;
-    const created = new Date(dateStr);
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    return created > thirtyDaysAgo;
-  }
-
-  private _renderPresetImages(preset: any, wpPreset: any): TemplateResult {
-    // Get all available images
-    const images: string[] = [];
-
-    // Add featured image first if it exists (check all possible property locations)
-    const featuredImage =
-      preset.featured_image ||
-      preset.thumbnail ||
-      preset.metadata?.featured_image ||
-      wpPreset.featured_image;
-    if (featuredImage && typeof featuredImage === 'string') {
-      images.push(featuredImage);
-    }
-
-    // Add gallery images if they exist
-    const gallery = preset.gallery || wpPreset.gallery || preset.metadata?.gallery;
-    if (gallery && Array.isArray(gallery) && gallery.length > 0) {
-      gallery.forEach((img: string) => {
-        if (img && typeof img === 'string' && !images.includes(img)) {
-          images.push(img);
-        }
-      });
-    }
-
-    // If no images, show icon
-    if (images.length === 0) {
-      return html`
-        <div class="preset-icon-large">
-          <ha-icon icon="${preset.icon}"></ha-icon>
-        </div>
-      `;
-    }
-
-    // If only one image, show simple thumbnail
-    if (images.length === 1) {
-      return html`
-        <div
-          class="preset-thumbnail"
-          @click=${(e: Event) => {
-            e.stopPropagation();
-            this._openImagePopup(images[0], preset.name);
-          }}
-          style="cursor: pointer;"
-          title="Click to view full image"
-        >
-          <img
-            src="${images[0]}"
-            alt="${preset.name} preview"
-            @error=${(e: Event) => {
-              // Fallback to icon if image fails to load
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-            }}
-          />
-        </div>
-      `;
-    }
-
-    // Multiple images - show slider
-    const sliderId = `slider-${preset.id}`;
-    return html`
-      <div class="preset-image-slider" id="${sliderId}">
-        <div
-          class="preset-slider-container"
-          style="transform: translateX(0%)"
-          @mousedown=${(e: MouseEvent) => this._handleSliderMouseDown(e, sliderId, images.length)}
-          @touchstart=${(e: TouchEvent) => this._handleSliderTouchStart(e, sliderId, images.length)}
-        >
-          ${images.map(
-            (image, index) => html`
-              <div
-                class="preset-slider-image"
-                @click=${(e: Event) => {
-                  e.stopPropagation();
-                  this._openImagePopup(image, preset.name);
-                }}
-                style="cursor: pointer;"
-                title="Click to view full image"
-              >
-                <img src="${image}" alt="${preset.name} preview ${index + 1}" />
-              </div>
-            `
-          )}
-        </div>
-
-        <!-- Navigation arrows -->
-        <button
-          class="preset-slider-nav prev"
-          @click=${(e: Event) => {
-            e.stopPropagation();
-            this._navigateSlider(sliderId, -1, images.length);
-          }}
-        >
-          <ha-icon icon="mdi:chevron-left"></ha-icon>
-        </button>
-        <button
-          class="preset-slider-nav next"
-          @click=${(e: Event) => {
-            e.stopPropagation();
-            this._navigateSlider(sliderId, 1, images.length);
-          }}
-        >
-          <ha-icon icon="mdi:chevron-right"></ha-icon>
-        </button>
-
-        <!-- Dots indicator -->
-        <div class="preset-slider-dots">
-          ${images.map(
-            (_, index) => html`
-              <div
-                class="preset-slider-dot ${index === 0 ? 'active' : ''}"
-                @click=${(e: Event) => {
-                  e.stopPropagation();
-                  this._goToSlide(sliderId, index, images.length);
-                }}
-              ></div>
-            `
-          )}
-        </div>
-      </div>
-    `;
-  }
-
-  private _navigateSlider(sliderId: string, direction: number, totalImages: number): void {
-    const slider = this.shadowRoot?.querySelector(`#${sliderId}`);
-    if (!slider) return;
-
-    const container = slider.querySelector('.preset-slider-container') as HTMLElement;
-    const dots = slider.querySelectorAll('.preset-slider-dot');
-
-    if (!container || !dots.length) return;
-
-    // Get current slide index from transform
-    const currentTransform = container.style.transform || 'translateX(0%)';
-    const currentIndex = Math.abs(parseInt(currentTransform.match(/-?\d+/)?.[0] || '0') / 100);
-
-    // Calculate new index
-    let newIndex = currentIndex + direction;
-    if (newIndex < 0) newIndex = totalImages - 1;
-    if (newIndex >= totalImages) newIndex = 0;
-
-    // Update transform
-    container.style.transform = `translateX(-${newIndex * 100}%)`;
-
-    // Update dots
-    dots.forEach((dot, index) => {
-      dot.classList.toggle('active', index === newIndex);
-    });
-  }
-
-  private _goToSlide(sliderId: string, targetIndex: number, totalImages: number): void {
-    const slider = this.shadowRoot?.querySelector(`#${sliderId}`);
-    if (!slider) return;
-
-    const container = slider.querySelector('.preset-slider-container') as HTMLElement;
-    const dots = slider.querySelectorAll('.preset-slider-dot');
-
-    if (!container || !dots.length) return;
-
-    // Update transform
-    container.style.transform = `translateX(-${targetIndex * 100}%)`;
-
-    // Update dots
-    dots.forEach((dot, index) => {
-      dot.classList.toggle('active', index === targetIndex);
-    });
-  }
-
-  private _handleSliderMouseDown(e: MouseEvent, sliderId: string, totalImages: number): void {
-    e.preventDefault();
-    const startX = e.clientX;
-    let isDragging = false;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const deltaX = e.clientX - startX;
-      if (Math.abs(deltaX) > 10) {
-        isDragging = true;
-      }
-    };
-
-    const handleMouseUp = (e: MouseEvent) => {
-      const deltaX = e.clientX - startX;
-
-      if (isDragging && Math.abs(deltaX) > 50) {
-        const direction = deltaX > 0 ? -1 : 1;
-        this._navigateSlider(sliderId, direction, totalImages);
-      }
-
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }
-
-  private _handleSliderTouchStart(e: TouchEvent, sliderId: string, totalImages: number): void {
-    const startX = e.touches[0].clientX;
-    let isDragging = false;
-
-    const handleTouchMove = (e: TouchEvent) => {
-      const deltaX = e.touches[0].clientX - startX;
-      if (Math.abs(deltaX) > 10) {
-        isDragging = true;
-        e.preventDefault(); // Prevent scrolling
-      }
-    };
-
-    const handleTouchEnd = (e: TouchEvent) => {
-      const deltaX = e.changedTouches[0].clientX - startX;
-
-      if (isDragging && Math.abs(deltaX) > 50) {
-        const direction = deltaX > 0 ? -1 : 1;
-        this._navigateSlider(sliderId, direction, totalImages);
-      }
-
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd);
-  }
-  private _renderPresetsTab(): TemplateResult {
-    const sources = ['all', 'standard', 'community'] as const;
-    let allPresets = ucPresetsService.getPresetsByCategory('all');
-    const wpStatus = ucPresetsService.getWordPressStatus();
-    const wpCount = ucPresetsService.getWordPressPresetsCount();
-
-    // Filter by source (Standard vs Community)
-    if (this._selectedPresetSource === 'standard') {
-      allPresets = allPresets.filter(p => {
-        const isWpPreset = p.id.startsWith('wp-');
-        return !isWpPreset || p.author === 'WJD Designs';
-      });
-    } else if (this._selectedPresetSource === 'community') {
-      allPresets = allPresets.filter(p => {
-        const isWpPreset = p.id.startsWith('wp-');
-        return isWpPreset && p.author !== 'WJD Designs';
-      });
-    }
-
-    // Check if there's a search query
-    const hasSearchQuery = this._presetSearchQuery.trim() !== '';
-
-    // Filter presets if searching
-    let presets = hasSearchQuery
-      ? this._filterPresetsBySearch(allPresets, this._presetSearchQuery)
-      : allPresets;
-
-    // Sort presets based on selected criteria
-    presets = this._sortPresets(presets, this._presetSortBy, this._presetSortDirection);
-
-    return html`
-      <div class="presets-container">
-        <!-- Search Bar -->
-        ${this._renderPresetSearchBar()}
-        ${!hasSearchQuery
-          ? html`
-              <!-- Header with Source Filter -->
-              <div class="presets-header">
-                <div class="preset-categories">
-                  ${sources.map(
-                    source => html`
-                      <button
-                        class="category-btn ${this._selectedPresetSource === source
-                          ? 'active'
-                          : ''}"
-                        @click=${() => (this._selectedPresetSource = source)}
-                      >
-                        <ha-icon
-                          icon="${source === 'all'
-                            ? 'mdi:view-grid'
-                            : source === 'standard'
-                              ? 'mdi:shield-check'
-                              : 'mdi:account-group'}"
-                        ></ha-icon>
-                        <span>${source.charAt(0).toUpperCase() + source.slice(1)}</span>
-                      </button>
-                    `
-                  )}
-                </div>
-
-                <!-- Sort Controls -->
-                <div
-                  class="preset-sort-controls"
-                  style="display: flex; align-items: center; gap: 8px; margin-top: 12px;"
-                >
-                  <span
-                    style="font-size: 12px; color: var(--secondary-text-color); font-weight: 500;"
-                    >Sort by:</span
-                  >
-                  <select
-                    .value=${this._presetSortBy}
-                    @change=${(e: Event) => {
-                      this._presetSortBy = (e.target as HTMLSelectElement).value as
-                        | 'name'
-                        | 'date'
-                        | 'rating';
-                    }}
-                    style="
-                padding: 6px 8px;
-                border-radius: 4px;
-                border: 1px solid var(--divider-color);
-                background: var(--card-background-color);
-                color: var(--primary-text-color);
-                font-size: 12px;
-                cursor: pointer;
-              "
-                  >
-                    <option value="name">Name</option>
-                    <option value="date">Date</option>
-                    <option value="rating">Top Rated</option>
-                  </select>
-                  <button
-                    @click=${() => {
-                      this._presetSortDirection =
-                        this._presetSortDirection === 'asc' ? 'desc' : 'asc';
-                    }}
-                    title="${this._presetSortDirection === 'asc' ? 'Ascending' : 'Descending'}"
-                    style="
-                padding: 6px 8px;
-                border-radius: 4px;
-                border: 1px solid var(--divider-color);
-                background: var(--card-background-color);
-                color: var(--primary-text-color);
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                font-size: 12px;
-              "
-                  >
-                    <ha-icon
-                      icon="mdi:${this._presetSortDirection === 'asc' ? 'arrow-up' : 'arrow-down'}"
-                      style="--mdc-icon-size: 16px;"
-                    ></ha-icon>
-                    <span>${this._presetSortDirection === 'asc' ? 'A→Z' : 'Z→A'}</span>
-                  </button>
-                </div>
-
-                ${wpStatus.error
-                  ? html`
-                      <div class="wordpress-status">
-                        <div class="status-item error">
-                          <ha-icon icon="mdi:alert-circle"></ha-icon>
-                          <span>Failed to load presets</span>
-                          <button
-                            class="retry-btn"
-                            @click=${() => ucPresetsService.refreshWordPressPresets()}
-                            title="Retry loading presets"
-                          >
-                            <ha-icon icon="mdi:refresh"></ha-icon>
-                          </button>
-                        </div>
-                      </div>
-                    `
-                  : ''}
-              </div>
-            `
-          : html`
-              <!-- Search Results Header -->
-              <div class="search-results-header">
-                <span>${presets.length} preset${presets.length !== 1 ? 's' : ''} found</span>
-              </div>
-            `}
-
-        <!-- Presets Grid -->
-        <div class="presets-grid">
-          ${presets.length > 0
-            ? presets.map(preset => {
-                const isWpPreset = preset.id.startsWith('wp-');
-                const isWjdDesigns = preset.author === 'WJD Designs';
-                const isCommunity = isWpPreset && !isWjdDesigns;
-                const isDefault = isWpPreset && isWjdDesigns;
-                const wpPreset = preset as any;
-
-                return html`
-                  <div
-                    class="preset-card ${isWpPreset
-                      ? isCommunity
-                        ? 'community-preset'
-                        : 'default-preset'
-                      : 'builtin-preset'}"
-                    @click=${() => {
-                      this._addPreset(preset);
-                      // Track download for WordPress presets
-                      if (isWpPreset) {
-                        ucPresetsService.trackPresetDownload(preset.id);
-                      }
-                    }}
-                  >
-                    <!-- Header with badge, title, and stats -->
-                    <div class="preset-header">
-                      <div class="preset-header-left">
-                        <div
-                          class="origin-badge ${isCommunity
-                            ? 'community'
-                            : isDefault
-                              ? 'default'
-                              : 'builtin'}"
-                        >
-                          ${isCommunity ? 'Community' : isDefault ? 'Default' : 'Built-in'}
-                        </div>
-                        ${this._isNewPreset(preset) ? html`<span class="new-badge">New</span>` : ''}
-                        <div class="preset-title-info">
-                          <h4 class="preset-header-title">${preset.name}</h4>
-                          ${!isWjdDesigns
-                            ? html`<span class="preset-header-author">by ${preset.author}</span>`
-                            : ''}
-                        </div>
-                      </div>
-                      <div class="preset-stats">
-                        ${preset.metadata?.downloads
-                          ? html`<span class="stat"
-                              ><ha-icon icon="mdi:download"></ha-icon>${preset.metadata
-                                .downloads}</span
-                            >`
-                          : ''}
-                        ${isWpPreset
-                          ? html`
-                              <div
-                                class="preset-rating-stars"
-                                @click=${(e: Event) => {
-                                  e.stopPropagation();
-                                  if (!this._isCloudAuthenticated) {
-                                    this._builderPendingRateAfterLogin = {
-                                      id: preset.id,
-                                      name: preset.name,
-                                    };
-                                    this._builderShowLoginForRating = true;
-                                    return;
-                                  }
-                                  const existingRating =
-                                    this._builderUserReviews.get(preset.id) ??
-                                    ucCloudSyncService.getUserReview(preset.id)?.rating ??
-                                    0;
-                                  this._builderRatingPreset = {
-                                    id: preset.id,
-                                    name: preset.name,
-                                    existingRating,
-                                  };
-                                }}
-                                title=${this._isCloudAuthenticated
-                                  ? `Rate: ${(preset.metadata?.rating || 0).toFixed(1)}/5 — ${wpPreset.rating_count || 0} ${(wpPreset.rating_count || 0) === 1 ? 'review' : 'reviews'}`
-                                  : 'Sign in to rate this preset'}
-                                style="cursor: pointer; display: flex; align-items: center; gap: 4px;"
-                              >
-                                ${[1, 2, 3, 4, 5].map(starNum => {
-                                  const userRating =
-                                    this._builderUserReviews.get(preset.id) ??
-                                    ucCloudSyncService.getUserReview(preset.id)?.rating ??
-                                    0;
-                                  const rating =
-                                    userRating > 0 ? userRating : preset.metadata?.rating || 0;
-                                  const isFilled = starNum <= Math.floor(rating);
-                                  const isHalf = !isFilled && starNum - 0.5 <= rating && rating > 0;
-                                  return html`
-                                    <ha-icon
-                                      icon="mdi:star${isFilled
-                                        ? ''
-                                        : isHalf
-                                          ? '-half-full'
-                                          : '-outline'}"
-                                      style="color: ${isFilled || isHalf
-                                        ? '#ffc107'
-                                        : '#666'}; --mdc-icon-size: 14px;"
-                                    ></ha-icon>
-                                  `;
-                                })}
-                                <span
-                                  class="rating-count"
-                                  style="font-size: 11px; color: var(--secondary-text-color); margin-left: 2px;"
-                                  >(${wpPreset.rating_count || 0})</span
-                                >
-                              </div>
-                            `
-                          : ''}
-                      </div>
-                    </div>
-
-                    <!-- Large preview image or slider -->
-                    <div class="preset-preview">${this._renderPresetImages(preset, wpPreset)}</div>
-
-                    <!-- Content section -->
-                    <div class="preset-content">
-                      <div class="preset-description">${unsafeHTML(preset.description)}</div>
-                      ${(preset as any).description_full &&
-                      (preset as any).description_full !== preset.description
-                        ? html`<button
-                            class="read-more-link"
-                            @click=${(e: Event) => {
-                              e.stopPropagation();
-                              this._builderReadMoreId =
-                                this._builderReadMoreId === preset.id ? null : preset.id;
-                            }}
-                          >
-                            ${this._builderReadMoreId === preset.id ? 'Read Less ↑' : 'Read More ↓'}
-                          </button>`
-                        : ''}
-
-                      <!-- Tags and integrations -->
-                      ${preset.tags.filter(
-                        tag => !['community', 'wordpress', 'standard'].includes(tag)
-                      ).length > 0 ||
-                      (Array.isArray(wpPreset.integrations) && wpPreset.integrations.length > 0)
-                        ? html`
-                            <div class="preset-tags">
-                              ${preset.tags
-                                .filter(
-                                  tag => !['community', 'wordpress', 'standard'].includes(tag)
-                                )
-                                .slice(0, 3)
-                                .map(tag => html`<span class="tag">${tag}</span>`)}
-                              ${Array.isArray(wpPreset.integrations) && wpPreset.integrations.length
-                                ? wpPreset.integrations
-                                    .slice(0, 2)
-                                    .map(
-                                      (i: string) =>
-                                        html`<span class="integration-chip">${i}</span>`
-                                    )
-                                : ''}
-                            </div>
-                          `
-                        : ''}
-                    </div>
-
-                    <!-- Action buttons at bottom -->
-                    <div class="preset-actions">
-                      <button
-                        class="add-preset-btn primary"
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          this._addPreset(preset);
-                          if (isWpPreset) {
-                            ucPresetsService.trackPresetDownload(preset.id);
-                          }
-                        }}
-                        title="Add this preset to your card"
-                      >
-                        <ha-icon icon="mdi:plus"></ha-icon>
-                        <span>Add</span>
-                      </button>
-
-                      ${isWpPreset
-                        ? html`
-                            <button
-                              class="read-more-btn secondary"
-                              @click=${(e: Event) => {
-                                e.stopPropagation();
-                                this._builderExpandedId =
-                                  this._builderExpandedId === preset.id ? null : preset.id;
-                              }}
-                              title="View preset details"
-                            >
-                              <ha-icon
-                                icon=${this._builderExpandedId === preset.id
-                                  ? 'mdi:chevron-up'
-                                  : 'mdi:information-outline'}
-                              ></ha-icon>
-                              <span
-                                >${this._builderExpandedId === preset.id ? 'Less' : 'Details'}</span
-                              >
-                            </button>
-                          `
-                        : ''}
-                    </div>
-
-                    <!-- Details expansion panel -->
-                    ${this._builderExpandedId === preset.id
-                      ? html`
-                          <div class="preset-details">
-                            <dl class="detail-info">
-                              <dt>Category</dt>
-                              <dd>${preset.category}</dd>
-                              <dt>Version</dt>
-                              <dd>${preset.version || '—'}</dd>
-                              <dt>Rows</dt>
-                              <dd>${preset.layout?.rows?.length ?? 0}</dd>
-                              ${preset.customVariables?.length
-                                ? html`<dt>Variables</dt>
-                                    <dd>${preset.customVariables.length}</dd>`
-                                : ''}
-                              ${preset.cardSettings && Object.keys(preset.cardSettings).length
-                                ? html`<dt>Card settings</dt>
-                                    <dd>Included</dd>`
-                                : ''}
-                              ${preset.integrations?.length
-                                ? html`<dt>Requires</dt>
-                                    <dd>${preset.integrations.join(', ')}</dd>`
-                                : ''}
-                            </dl>
-                            ${preset.tags?.filter(
-                              t => !['community', 'wordpress', 'standard'].includes(t)
-                            ).length
-                              ? html`<div class="detail-tags">
-                                  ${preset.tags
-                                    .filter(
-                                      t => !['community', 'wordpress', 'standard'].includes(t)
-                                    )
-                                    .map(t => html`<span class="detail-tag">${t}</span>`)}
-                                </div>`
-                              : ''}
-                          </div>
-                        `
-                      : ''}
-
-                    <!-- Read More expansion panel -->
-                    ${this._builderReadMoreId === preset.id && (preset as any).description_full
-                      ? html`
-                          <div class="preset-details preset-full-desc">
-                            ${unsafeHTML((preset as any).description_full)}
-                          </div>
-                        `
-                      : ''}
-                  </div>
-                `;
-              })
-            : hasSearchQuery
-              ? html`
-                  <div class="search-results-empty">
-                    <ha-icon icon="mdi:magnify-close"></ha-icon>
-                    <p>No presets found matching "${this._presetSearchQuery}"</p>
-                    <button
-                      class="clear-search-btn-large"
-                      @click=${() => {
-                        this._presetSearchQuery = '';
-                        this._focusSearchInput();
-                      }}
-                    >
-                      Clear Search
-                    </button>
-                  </div>
-                `
-              : html`<div class="empty-state">
-                  <ha-icon icon="mdi:palette-outline"></ha-icon>
-                  <p>No presets available in this category</p>
-                  ${wpStatus.error
-                    ? html`<div class="error-details">
-                        <p class="error-hint">
-                          ${wpStatus.error.includes('CORS') ||
-                          wpStatus.error.includes('Failed to fetch')
-                            ? html`
-                                <strong>Connection Issue:</strong> Unable to load presets from
-                                ultracard.io.<br />
-                                This usually happens when accessing Home Assistant via IP address
-                                instead of homeassistant.local.<br /><br />
-                                <strong>Solutions:</strong><br />
-                                • Access HA via <code>http://homeassistant.local:8123</code> instead
-                                of IP address<br />
-                                • Or wait for the server CORS configuration to be updated<br />
-                                • Check your internet connection
-                              `
-                            : html`Error: ${wpStatus.error}<br />Check your internet connection and
-                                try refreshing.`}
-                        </p>
-                      </div>`
-                    : ''}
-                </div>`}
-        </div>
-
-        <!-- Reload Button at Bottom -->
-        <div class="preset-footer">
-          <button
-            class="reload-btn ${wpStatus.loading ? 'loading' : ''}"
-            @click=${() => ucPresetsService.refreshWordPressPresets()}
-            title="Refresh presets from server"
-            ?disabled=${wpStatus.loading}
-          >
-            <ha-icon icon="mdi:refresh" class="${wpStatus.loading ? 'spinning' : ''}"></ha-icon>
-            <span>Reload</span>
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderFavoritesTab(): TemplateResult {
-    const favorites = ucFavoritesService.getFavorites();
-
-    return html`
-      <div class="favorites-container">
-        <div class="favorites-header">
-          <h4>Saved Favorites</h4>
-          <button class="import-btn" @click=${() => (this._showImportDialog = true)}>
-            <ha-icon icon="mdi:import"></ha-icon>
-            <span>Import</span>
-          </button>
-        </div>
-
-        <div class="favorites-grid">
-          ${favorites.length > 0
-            ? favorites.map(
-                favorite => html`
-                  <div class="favorite-card">
-                    <div class="favorite-header">
-                      <h4>${favorite.name}</h4>
-                      <div class="favorite-actions">
-                        <button
-                          class="action-btn"
-                          @click=${() => this._addFavorite(favorite)}
-                          title="Add to layout"
-                        >
-                          <ha-icon icon="mdi:plus"></ha-icon>
-                        </button>
-                        <button
-                          class="action-btn"
-                          @click=${() => this._exportFavorite(favorite)}
-                          title="Export"
-                        >
-                          <ha-icon icon="mdi:export"></ha-icon>
-                        </button>
-                        <button
-                          class="action-btn delete"
-                          @click=${() => this._deleteFavorite(favorite.id)}
-                          title="Delete"
-                        >
-                          <ha-icon icon="mdi:delete"></ha-icon>
-                        </button>
-                      </div>
-                    </div>
-                    ${favorite.description
-                      ? html`<p class="favorite-description">${favorite.description}</p>`
-                      : ''}
-                    <div class="favorite-meta">
-                      <span class="favorite-date">
-                        ${new Date(favorite.created).toLocaleDateString()}
-                      </span>
-                      ${favorite.tags.length > 0
-                        ? html`<div class="favorite-tags">
-                            ${favorite.tags
-                              .slice(0, 2)
-                              .map(tag => html`<span class="tag">${tag}</span>`)}
-                          </div>`
-                        : ''}
-                    </div>
-                  </div>
-                `
-              )
-            : html`<div class="empty-state">
-                <ha-icon icon="mdi:heart-outline"></ha-icon>
-                <p>No favorites saved yet</p>
-                <p class="empty-hint">Use the heart icon on any row to save it as a favorite</p>
-              </div>`}
-        </div>
-      </div>
-    `;
-  }
   private _render3rdPartyTab(): TemplateResult {
     // Check Pro access (integration only)
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
@@ -29581,774 +28116,6 @@ export class LayoutTab extends LitElement {
     `;
   }
 
-  /**
-   * Render the new Cards tab with both native and 3rd party cards
-   */
-  private _renderCardsTab(): TemplateResult {
-    // Check Pro access (integration only)
-    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-    const isPro =
-      integrationUser?.subscription?.tier === 'pro' &&
-      integrationUser?.subscription?.status === 'active';
-
-    // Get native and 3rd party cards
-    const nativeCards = NATIVE_HA_CARDS;
-    const availableCards = ucExternalCardsService.getAvailableCards();
-    const lang = this.hass?.locale?.language || 'en';
-
-    // Refresh global count when tab is rendered
-    this._refreshGlobalExternalCardCount();
-
-    // Check if there's a search query
-    const hasSearchQuery = this._cardSearchQuery.trim() !== '';
-
-    // Filter cards if searching
-    const filteredNativeCards = hasSearchQuery
-      ? this._filterCardsBySearch(nativeCards, this._cardSearchQuery)
-      : nativeCards;
-
-    const filteredAvailableCards = hasSearchQuery
-      ? this._filterCardsBySearch(
-          availableCards.map(c => ({
-            type: c.type,
-            name: c.name,
-            description: c.type,
-          })),
-          this._cardSearchQuery
-        )
-      : availableCards.map(c => ({
-          type: c.type,
-          name: c.name,
-          description: c.type,
-        }));
-
-    return html`
-      <div class="cards-tab-container">
-        <div class="cards-header">
-          <h4>Cards</h4>
-          <button class="refresh-btn" @click=${() => this._handleRefreshCardsTab()}>
-            <ha-icon icon="mdi:refresh"></ha-icon>
-            <span>Refresh</span>
-          </button>
-        </div>
-
-        <!-- Search Bar -->
-        ${this._renderCardSearchBar()}
-
-        <div class="cards-info">
-          <ha-icon icon="mdi:information"></ha-icon>
-          <div class="info-content">
-            <strong>How to use:</strong>
-            <p>
-              Click any card to add it to your selected column. Native HA cards and 3rd party cards
-              will use their native editors when available.
-            </p>
-          </div>
-        </div>
-
-        ${hasSearchQuery
-          ? this._renderCardSearchResults(filteredNativeCards, filteredAvailableCards, isPro)
-          : html`
-
-        <!-- SECTION 1: Native Home Assistant Cards (Unlimited) -->
-        <div class="cards-section native-section">
-          <div class="section-header">
-            <div class="section-title-row">
-              <ha-icon icon="mdi:home-assistant"></ha-icon>
-              <h5>Native Home Assistant</h5>
-            </div>
-            <div class="unlimited-badge">
-              <ha-icon icon="mdi:infinity"></ha-icon>
-              <span>Unlimited</span>
-            </div>
-          </div>
-
-          ${
-            nativeCards.length > 0
-              ? html`
-                  <div class="cards-grid">
-                    ${nativeCards.map(
-                      (card: {
-                        type: string;
-                        name: string;
-                        icon?: string;
-                        description?: string;
-                      }) => html`
-                        <div
-                          class="card-item native-card-item ${card.type === CUSTOM_YAML_CARD_TYPE
-                            ? 'yaml-card-item'
-                            : ''}"
-                          @click=${async () => await this._addNativeCard(card.type)}
-                        >
-                          <div
-                            class="card-icon ${card.type === CUSTOM_YAML_CARD_TYPE
-                              ? 'yaml-icon'
-                              : 'native-icon'}"
-                          >
-                            <ha-icon icon="${card.icon || 'mdi:home-assistant'}"></ha-icon>
-                          </div>
-                          <div class="card-info">
-                            <div class="card-name">${card.name}</div>
-                            <div class="card-type">${card.description || card.type}</div>
-                          </div>
-                          <div class="card-add-hint">
-                            <ha-icon icon="mdi:plus-circle"></ha-icon>
-                          </div>
-                        </div>
-                      `
-                    )}
-                  </div>
-                `
-              : html`
-                  <div class="empty-state-mini">
-                    <ha-icon icon="mdi:information-outline"></ha-icon>
-                    <p>No native cards detected</p>
-                  </div>
-                `
-          }
-        </div>
-
-        <!-- SECTION 2: Community & 3rd Party Cards (Pro Gated) -->
-        <div class="cards-section thirdparty-section-wrapper">
-          <div class="section-header">
-            <div class="section-title-row">
-              <ha-icon icon="mdi:puzzle"></ha-icon>
-              <h5>Community & 3rd Party</h5>
-            </div>
-            ${
-              !isPro
-                ? html`
-                    <div class="limit-badge">
-                      <ha-icon icon="mdi:information-outline"></ha-icon>
-                      <span>${this._globalExternalCardCount} 3rd party cards</span>
-                    </div>
-                  `
-                : html`
-                    <div class="pro-badge-mini">
-                      <ha-icon icon="mdi:crown"></ha-icon>
-                      <span>Unlimited</span>
-                    </div>
-                  `
-            }
-          </div>
-
-          ${
-            !isPro
-              ? html`
-                  <div class="upgrade-notice">
-                    <span>Want unlimited 3rd party cards?</span>
-                    <button class="get-pro-btn-mini" @click=${this._openProPage}>Get Pro</button>
-                  </div>
-                `
-              : ''
-          }
-
-          <div class="thirdparty-notebox">
-            <ha-icon icon="mdi:alert-circle"></ha-icon>
-            <div class="notebox-content">
-              <strong>Compatibility Notice:</strong>
-              <p>Some 3rd party cards may not work as intended. Please report any issues.</p>
-            </div>
-          </div>
-
-          ${
-            availableCards.length > 0
-              ? html`
-                  <div class="cards-grid">
-                    ${availableCards.map(
-                      card => html`
-                        <div
-                          class="card-item"
-                          @click=${async () => await this._addCardFromTab(card.type)}
-                        >
-                          <div class="card-icon">
-                            <ha-icon icon="mdi:card-bulleted"></ha-icon>
-                          </div>
-                          <div class="card-info">
-                            <div class="card-name">${card.name}</div>
-                            <div class="card-type">${card.type}</div>
-                            ${card.version
-                              ? html`<div class="card-version">v${card.version}</div>`
-                              : ''}
-                          </div>
-                          <div class="card-add-hint">
-                            <ha-icon icon="mdi:plus-circle"></ha-icon>
-                          </div>
-                        </div>
-                      `
-                    )}
-                  </div>
-                `
-              : html`
-                  <div class="empty-state-mini">
-                    <ha-icon icon="mdi:card-off"></ha-icon>
-                    <p>No 3rd party cards installed</p>
-                    <p class="empty-hint">Install custom cards via HACS</p>
-                  </div>
-                `
-          }
-
-        </div>
-      </div>
-
-      <style>
-        .cards-tab-container {
-          padding: 20px;
-        }
-
-        .cards-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-          padding-bottom: 12px;
-          border-bottom: 2px solid var(--divider-color);
-        }
-
-        .cards-header h4 {
-          margin: 0;
-          font-size: 18px;
-          font-weight: 600;
-        }
-
-        .refresh-btn {
-          padding: 8px 16px;
-          background: var(--primary-color);
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-weight: 500;
-          transition: background 0.2s;
-        }
-
-        .refresh-btn:hover {
-          background: var(--primary-color-hover);
-        }
-
-        /* Section Styles */
-        .cards-section {
-          margin-bottom: 32px;
-          padding: 16px;
-          background: var(--card-background-color);
-          border: 1px solid var(--divider-color);
-          border-radius: 12px;
-        }
-
-        .native-section {
-          border-left: 4px solid var(--primary-color);
-        }
-
-        .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 16px;
-          padding-bottom: 12px;
-          border-bottom: 1px solid var(--divider-color);
-        }
-
-        .section-title-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .section-title-row ha-icon {
-          color: var(--primary-color);
-          --mdc-icon-size: 20px;
-        }
-
-        .section-title-row h5 {
-          margin: 0;
-          font-size: 16px;
-          font-weight: 600;
-          color: var(--primary-text-color);
-        }
-
-        .unlimited-badge {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 6px 12px;
-          background: var(--success-color, #4caf50);
-          color: white;
-          border-radius: 6px;
-          font-size: 13px;
-          font-weight: 500;
-        }
-
-        .unlimited-badge ha-icon {
-          --mdc-icon-size: 18px;
-        }
-
-        .limit-badge {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 6px 12px;
-          background: var(--warning-color, #ff9800);
-          color: white;
-          border-radius: 6px;
-          font-size: 13px;
-          font-weight: 500;
-        }
-
-        .limit-badge ha-icon {
-          --mdc-icon-size: 18px;
-        }
-
-        .pro-badge-mini {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 6px 12px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          border-radius: 6px;
-          font-size: 13px;
-          font-weight: 500;
-        }
-
-        .pro-badge-mini ha-icon {
-          --mdc-icon-size: 18px;
-        }
-
-        .upgrade-notice {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 12px 16px;
-          background: rgba(var(--rgb-primary-color), 0.1);
-          border-radius: 8px;
-          margin-bottom: 16px;
-          font-size: 14px;
-          gap: 12px;
-        }
-
-        .get-pro-btn-mini {
-          padding: 6px 16px;
-          background: var(--primary-color);
-          color: white;
-          border: none;
-          border-radius: 6px;
-          font-weight: 600;
-          font-size: 13px;
-          cursor: pointer;
-          transition: all 0.2s;
-          white-space: nowrap;
-        }
-
-        .get-pro-btn-mini:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(var(--rgb-primary-color), 0.3);
-        }
-
-        .thirdparty-notebox {
-          display: flex;
-          gap: 12px;
-          padding: 12px;
-          background: rgba(255, 152, 0, 0.1);
-          border: 1px solid rgba(255, 152, 0, 0.3);
-          border-radius: 8px;
-          margin-bottom: 16px;
-          align-items: flex-start;
-        }
-
-        .thirdparty-notebox ha-icon {
-          color: #ff9800;
-          --mdc-icon-size: 18px;
-          flex-shrink: 0;
-          margin-top: 2px;
-        }
-
-        .notebox-content {
-          flex: 1;
-          font-size: 12px;
-          line-height: 1.5;
-        }
-
-        .notebox-content strong {
-          display: block;
-          margin-bottom: 4px;
-          font-weight: 600;
-        }
-
-        .notebox-content p {
-          margin: 0;
-          opacity: 0.9;
-        }
-
-        .cards-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-          gap: 12px;
-        }
-
-        .card-item {
-          padding: 14px;
-          background: var(--secondary-background-color);
-          border: 2px solid var(--divider-color);
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .card-item:hover {
-          border-color: var(--primary-color);
-          box-shadow: 0 4px 12px rgba(var(--rgb-primary-color), 0.2);
-          transform: translateY(-2px);
-        }
-
-        .native-card-item .card-icon {
-          background: rgba(var(--rgb-primary-color), 0.15);
-        }
-
-        /* Custom YAML Card styling - stands out with a different color scheme */
-        .yaml-card-item {
-          border: 2px dashed var(--primary-color);
-          background: rgba(var(--rgb-primary-color), 0.05);
-        }
-
-        .yaml-card-item .card-icon {
-          background: var(--primary-color);
-        }
-
-        .yaml-card-item .card-icon ha-icon {
-          color: white;
-        }
-
-        .yaml-card-item:hover {
-          border-color: var(--primary-color);
-          border-style: solid;
-        }
-
-        .card-icon {
-          width: 38px;
-          height: 38px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(var(--rgb-primary-color), 0.1);
-          border-radius: 8px;
-          flex-shrink: 0;
-        }
-
-        .card-icon ha-icon {
-          --mdc-icon-size: 22px;
-          color: var(--primary-color);
-        }
-
-        .card-info {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .card-name {
-          font-weight: 600;
-          font-size: 14px;
-          margin-bottom: 3px;
-        }
-
-        .card-type {
-          font-size: 11px;
-          color: var(--secondary-text-color);
-          font-family: 'Courier New', monospace;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .card-version {
-          font-size: 10px;
-          color: var(--secondary-text-color);
-          margin-top: 2px;
-        }
-
-        .card-add-hint {
-          opacity: 0.4;
-          transition: opacity 0.2s;
-          color: var(--primary-color);
-        }
-
-        .card-add-hint ha-icon {
-          --mdc-icon-size: 22px;
-        }
-
-        .card-item:hover .card-add-hint {
-          opacity: 1;
-        }
-
-        .empty-state-mini {
-          padding: 32px 16px;
-          text-align: center;
-          color: var(--secondary-text-color);
-        }
-
-        .empty-state-mini ha-icon {
-          --mdc-icon-size: 48px;
-          opacity: 0.3;
-          margin-bottom: 12px;
-        }
-
-        .empty-state-mini p {
-          margin: 6px 0;
-          font-size: 14px;
-        }
-
-        .empty-hint {
-          font-size: 12px;
-          opacity: 0.7;
-        }
-
-        .popular-cards-section {
-          margin-top: 20px;
-          padding-top: 20px;
-          border-top: 1px solid var(--divider-color);
-        }
-
-        .subsection-title {
-          margin: 0 0 12px 0;
-          font-size: 13px;
-          font-weight: 600;
-          color: var(--secondary-text-color);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .popular-cards-list {
-          display: grid;
-          gap: 8px;
-        }
-
-        .popular-card {
-          padding: 10px;
-          background: var(--secondary-background-color);
-          border: 1px solid var(--divider-color);
-          border-radius: 6px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 10px;
-          font-size: 13px;
-        }
-
-        .popular-card.not-installed {
-          background: rgba(255, 152, 0, 0.05);
-          border-color: rgba(255, 152, 0, 0.2);
-        }
-
-        .popular-card-content {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex: 1;
-        }
-
-        .status-icon {
-          --mdc-icon-size: 18px;
-          flex-shrink: 0;
-        }
-
-        .popular-card.installed .status-icon {
-          color: #4caf50;
-        }
-
-        .popular-card.not-installed .status-icon {
-          color: #ff9800;
-        }
-
-        .popular-card-info {
-          flex: 1;
-        }
-
-        .popular-card-name {
-          font-weight: 600;
-          margin-bottom: 2px;
-        }
-
-        .popular-card-desc {
-          font-size: 12px;
-          opacity: 0.8;
-        }
-
-        .install-link {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 4px 10px;
-          background: var(--primary-color);
-          color: white;
-          border-radius: 4px;
-          text-decoration: none;
-          font-size: 12px;
-          font-weight: 500;
-          transition: all 0.2s;
-        }
-
-        .install-link:hover {
-          opacity: 0.9;
-          transform: translateY(-1px);
-        }
-
-        .installed-badge {
-          padding: 4px 10px;
-          background: var(--success-color, #4caf50);
-          color: white;
-          border-radius: 4px;
-          font-size: 11px;
-          font-weight: 500;
-        }
-
-        .cards-info {
-          display: flex;
-          gap: 12px;
-          padding: 12px;
-          background: rgba(var(--rgb-primary-color), 0.05);
-          border: 1px solid rgba(var(--rgb-primary-color), 0.2);
-          border-radius: 8px;
-          align-items: flex-start;
-          margin-top: 16px;
-          margin-bottom: 20px;
-        }
-
-        .cards-info ha-icon {
-          color: var(--primary-color);
-          --mdc-icon-size: 18px;
-          flex-shrink: 0;
-          margin-top: 2px;
-        }
-
-        .info-content {
-          flex: 1;
-          font-size: 12px;
-          line-height: 1.5;
-        }
-
-        .info-content strong {
-          display: block;
-          margin-bottom: 4px;
-          font-weight: 600;
-        }
-
-        .info-content p {
-          margin: 0;
-          opacity: 0.9;
-        }
-      </style>
-          `}
-      </div>
-    `;
-  }
-
-  /**
-   * Render card search results in a single column list view
-   */
-  private _renderCardSearchResults(
-    nativeCards: Array<{ type: string; name: string; icon?: string; description?: string }>,
-    thirdPartyCards: Array<{ type: string; name: string; description?: string }>,
-    isPro: boolean
-  ): TemplateResult {
-    const totalResults = nativeCards.length + thirdPartyCards.length;
-
-    if (totalResults === 0) {
-      return html`
-        <div class="search-results-empty">
-          <ha-icon icon="mdi:magnify-close"></ha-icon>
-          <p>No cards found matching "${this._cardSearchQuery}"</p>
-          <button
-            class="clear-search-btn-large"
-            @click=${() => {
-              this._cardSearchQuery = '';
-            }}
-          >
-            Clear Search
-          </button>
-        </div>
-      `;
-    }
-
-    return html`
-      <div class="search-results-container">
-        <div class="search-results-header">
-          <span>${totalResults} card${totalResults !== 1 ? 's' : ''} found</span>
-        </div>
-        <div class="search-results-list">
-          ${nativeCards.length > 0
-            ? html`
-                <div class="search-category-header">
-                  <ha-icon icon="mdi:home-assistant"></ha-icon>
-                  <span>Native Home Assistant Cards</span>
-                </div>
-                ${nativeCards.map(
-                  card => html`
-                    <div
-                      class="search-result-item"
-                      @click=${async () => await this._addNativeCard(card.type)}
-                    >
-                      <div class="search-result-icon">
-                        <ha-icon icon="${card.icon || 'mdi:home-assistant'}"></ha-icon>
-                      </div>
-                      <div class="search-result-content">
-                        <div class="search-result-header-row">
-                          <span class="search-result-title">${card.name}</span>
-                          <span class="search-result-tier standard">Native</span>
-                        </div>
-                        <p class="search-result-description">${card.description || card.type}</p>
-                      </div>
-                      <ha-icon class="add-icon" icon="mdi:plus-circle"></ha-icon>
-                    </div>
-                  `
-                )}
-              `
-            : ''}
-          ${thirdPartyCards.length > 0
-            ? html`
-                <div class="search-category-header">
-                  <ha-icon icon="mdi:puzzle"></ha-icon>
-                  <span>Community & 3rd Party Cards</span>
-                </div>
-                ${thirdPartyCards.map(card => {
-                  const actualCard = ucExternalCardsService
-                    .getAvailableCards()
-                    .find(c => c.type === card.type);
-
-                  return html`
-                    <div
-                      class="search-result-item"
-                      @click=${async () => await this._addCardFromTab(card.type)}
-                    >
-                      <div class="search-result-icon">
-                        <ha-icon icon="mdi:card-bulleted"></ha-icon>
-                      </div>
-                      <div class="search-result-content">
-                        <div class="search-result-header-row">
-                          <span class="search-result-title">${card.name}</span>
-                          <span class="search-result-tier ${isPro ? 'pro' : 'standard'}">
-                            ${isPro ? '⭐ Pro' : '3rd Party'}
-                          </span>
-                        </div>
-                        <p class="search-result-description">${card.description}</p>
-                        ${actualCard?.version
-                          ? html`<p class="search-result-version">v${actualCard.version}</p>`
-                          : ''}
-                      </div>
-                      <ha-icon class="add-icon" icon="mdi:plus-circle"></ha-icon>
-                    </div>
-                  `;
-                })}
-              `
-            : ''}
-        </div>
-      </div>
-    `;
-  }
 
   private async _addCardFromTab(cardType: string): Promise<void> {
     // Check if a column is selected
@@ -31546,6 +29313,86 @@ export class LayoutTab extends LitElement {
         --tree-dot-size: 8px;
         --tree-indent: 16px;
         --tree-line-width: 1px;
+      }
+
+      /* Module selector body (slotted into uc-module-selector-shell) */
+      .module-category-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        padding: 12px;
+        background: var(--secondary-background-color);
+        border-radius: 12px;
+      }
+      .category-tab {
+        flex: 1;
+        padding: 12px 16px;
+        border: 2px solid transparent;
+        border-radius: 8px;
+        background: var(--card-background-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+        font-family: inherit;
+      }
+      .category-tab.active {
+        border-color: var(--primary-color);
+        background: linear-gradient(135deg, rgba(3, 169, 244, 0.1) 0%, rgba(3, 169, 244, 0.05) 100%);
+      }
+      .category-tab.pro-tab {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+      }
+      .category-tab.pro-tab.active {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+      }
+      .pro-badge-mini { font-size: 12px; }
+      .pro-upgrade-prompt {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 32px;
+        border-radius: 16px;
+        text-align: center;
+      }
+      .pro-upgrade-prompt .pro-icon { font-size: 64px; margin-bottom: 16px; }
+      .pro-upgrade-prompt .pro-icon ha-icon { --mdc-icon-size: 64px; }
+      .pro-upgrade-prompt h3 { font-size: 24px; margin: 0 0 12px 0; font-weight: 700; }
+      .pro-upgrade-prompt p { opacity: 0.95; margin: 0 0 20px 0; font-size: 16px; }
+      .pro-features {
+        list-style: none;
+        padding: 0;
+        margin: 24px auto;
+        display: grid;
+        gap: 12px;
+        text-align: left;
+        max-width: 300px;
+      }
+      .pro-features li { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; }
+      .pro-features li ha-icon { --mdc-icon-size: 20px; }
+      .upgrade-btn {
+        padding: 14px 32px;
+        background: rgba(255, 255, 255, 0.25);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        color: white;
+        font-weight: 700;
+        font-size: 16px;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s;
+        font-family: inherit;
+      }
+      .upgrade-btn:hover {
+        background: rgba(255, 255, 255, 0.35);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
       }
 
       /* ========================================
@@ -38570,156 +36417,6 @@ export class LayoutTab extends LitElement {
         border: 1px solid rgba(var(--rgb-primary-color), 0.2);
       }
 
-      /* Favorites Tab */
-      .favorites-container {
-        padding: 16px;
-      }
-
-      .favorites-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 20px;
-      }
-
-      .favorites-header h4 {
-        margin: 0;
-        color: var(--primary-text-color);
-      }
-
-      .import-btn {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 16px;
-        background: var(--primary-color);
-        color: white;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 12px;
-        transition: all 0.2s ease;
-      }
-
-      .import-btn:hover {
-        background: var(--primary-color-dark);
-      }
-
-      .import-btn ha-icon {
-        --mdc-icon-size: 14px;
-      }
-
-      .favorites-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 16px;
-      }
-
-      .favorite-card {
-        padding: 16px;
-        background: var(--card-background-color);
-        border: 1px solid var(--divider-color);
-        border-radius: 12px;
-      }
-
-      .favorite-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        margin-bottom: 8px;
-      }
-
-      .favorite-header h4 {
-        margin: 0;
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--primary-text-color);
-      }
-
-      .favorite-actions {
-        display: flex;
-        gap: 4px;
-      }
-
-      .action-btn {
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--secondary-background-color);
-        border: 1px solid var(--divider-color);
-        border-radius: 6px;
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .action-btn:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-      }
-
-      .action-btn.delete:hover {
-        border-color: var(--error-color);
-        color: var(--error-color);
-      }
-
-      .action-btn ha-icon {
-        --mdc-icon-size: 14px;
-      }
-
-      .favorite-description {
-        margin: 0 0 8px 0;
-        font-size: 12px;
-        color: var(--secondary-text-color);
-        line-height: 1.4;
-      }
-
-      .favorite-meta {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-      }
-
-      .favorite-date {
-        font-size: 11px;
-        color: var(--secondary-text-color);
-      }
-
-      .favorite-tags {
-        display: flex;
-        gap: 4px;
-      }
-
-      /* Empty States */
-      .empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 40px 20px;
-        text-align: center;
-        color: var(--secondary-text-color);
-      }
-
-      .empty-state ha-icon {
-        --mdc-icon-size: 48px;
-        margin-bottom: 16px;
-        opacity: 0.6;
-      }
-
-      .empty-state p {
-        margin: 0 0 8px 0;
-        font-size: 14px;
-      }
-
-      .empty-hint {
-        font-size: 12px;
-        opacity: 0.8;
-      }
-
       .error-details {
         margin-top: 16px;
         padding: 16px;
@@ -38894,8 +36591,7 @@ export class LayoutTab extends LitElement {
 
       /* Responsive Design */
       @media (max-width: 768px) {
-        .presets-grid,
-        .favorites-grid {
+        .presets-grid {
           grid-template-columns: 1fr;
           gap: 16px;
         }
@@ -39010,10 +36706,6 @@ export class LayoutTab extends LitElement {
         .preset-slider-dot {
           width: 6px;
           height: 6px;
-        }
-
-        .favorite-card {
-          padding: 12px;
         }
 
         /* Hide column layout text on mobile to save space */

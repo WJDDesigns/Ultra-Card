@@ -1,49 +1,10 @@
-// Export the module system components
+// Lightweight module system exports: registry and manifest-only APIs.
+// Importing from here does not pull in individual module implementations; they load on demand via ensureModuleLoaded().
 export * from './base-module';
 export * from './module-registry';
-
-// Export individual modules
-export * from './text-module';
-export * from './separator-module';
-export * from './image-module';
-export * from './info-module';
-export * from './bar-module';
-export * from './gauge-module';
-export * from './icon-module';
-export * from './button-module';
-export * from './spinbox-module';
-export * from './markdown-module';
-export * from './horizontal-module';
-export * from './vertical-module';
-export * from './camera-module';
-export * from './graphs-module';
-export * from './dropdown-module';
-export * from './light-module';
-export * from './map-module';
-export * from './animated-clock-module';
-export * from './animated-weather-module';
-export * from './animated-forecast-module';
-export * from './external-card-module';
-export * from './background-module';
-export * from './status-summary-module';
-export * from './toggle-module';
-export * from './calendar-module';
-export * from './calendar-module-views';
-export * from './grid-module';
-export * from './badge-of-honor-module';
-export * from './vacuum-module';
-export * from './people-module';
-export * from './navigation-module';
-export * from './timer-module';
-export * from './cover-module';
-export * from './dynamic-list-module';
-export * from './qr-code-module';
-export * from './energy-display-module';
-
-// Export convenience functions
 export { getModuleRegistry } from './module-registry';
 
-// Export new services
+// Export new services (used by editor/card)
 export { ucPresetsService } from '../services/uc-presets-service';
 export { ucFavoritesService } from '../services/uc-favorites-service';
 export { ucExportImportService } from '../services/uc-export-import-service';

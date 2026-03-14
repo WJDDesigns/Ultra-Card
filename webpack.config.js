@@ -133,6 +133,9 @@ module.exports = (env, argv) => {
             }
             const haDeployPath =
               process.env.HA_DEPLOY_PATH || '/Volumes/config/www/community/Ultra-Card';
+            const panelIntegrationPath =
+              process.env.HA_PANEL_DEPLOY_PATH ||
+              '/Volumes/config/custom_components/ultra_card_pro_cloud/www';
             const sourceFile = path.resolve(__dirname, 'dist/ultra-card.js');
             const targetFile = path.join(haDeployPath, 'ultra-card.js');
 
@@ -177,6 +180,43 @@ module.exports = (env, argv) => {
                       // Ignore individual file copy errors
                     }
                   });
+                }
+
+                // Copy emitted lazy chunks so manifest-first module loaders can resolve in HA.
+                const distRootFiles = fs.readdirSync(path.resolve(__dirname, 'dist'));
+                distRootFiles
+                  .filter(
+                    file =>
+                      file.startsWith('uc-') && (file.endsWith('.js') || file.endsWith('.js.LICENSE.txt'))
+                  )
+                  .forEach(file => {
+                    fs.copyFileSync(
+                      path.resolve(__dirname, 'dist', file),
+                      path.join(haDeployPath, file)
+                    );
+                  });
+
+                if (fs.existsSync(panelIntegrationPath)) {
+                  if (fs.existsSync(panelSource)) {
+                    fs.copyFileSync(panelSource, path.join(panelIntegrationPath, 'ultra-card-panel.js'));
+                  }
+                  if (fs.existsSync(panelLicense)) {
+                    fs.copyFileSync(
+                      panelLicense,
+                      path.join(panelIntegrationPath, 'ultra-card-panel.js.LICENSE.txt')
+                    );
+                  }
+                  distRootFiles
+                    .filter(
+                      file =>
+                        file.startsWith('uc-') && (file.endsWith('.js') || file.endsWith('.js.LICENSE.txt'))
+                    )
+                    .forEach(file => {
+                      fs.copyFileSync(
+                        path.resolve(__dirname, 'dist', file),
+                        path.join(panelIntegrationPath, file)
+                      );
+                    });
                 }
 
                 console.log(`\x1b[32m✓ Auto-deployed to HA: ${haDeployPath}\x1b[0m`);

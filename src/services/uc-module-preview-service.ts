@@ -1,7 +1,7 @@
 import { html, TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { CardModule, UltraCardConfig, DeviceBreakpoint } from '../types';
-import { getModuleRegistry } from '../modules';
+import { getModuleRegistry } from '../modules/module-registry';
 import { logicService } from './logic-service';
 import { UcHoverEffectsService } from './uc-hover-effects-service';
 import { localize } from '../localize/localize';
@@ -94,6 +94,7 @@ class UcModulePreviewService {
     config: UltraCardConfig,
     options?: {
       showLogicOverlay?: boolean; // Show "Hidden by Logic" overlay if logic conditions not met
+      onModuleEnsureRequested?: () => void; // Called after ensureModuleLoaded resolves so caller can re-render
     }
   ): TemplateResult {
     const showLogicOverlay = options?.showLogicOverlay ?? true;
@@ -115,7 +116,13 @@ class UcModulePreviewService {
 
     // Get module content from module handler
     // Pass 'live' context to prevent lock overlays and use separate DOM element
-    const moduleContent = this._getModuleContent(module, hass, config, 'live');
+    const moduleContent = this._getModuleContent(
+      module,
+      hass,
+      config,
+      'live',
+      options?.onModuleEnsureRequested
+    );
 
     // Get animation data for preview
     const animationData = this._getPreviewAnimationData(moduleWithDesign);
@@ -187,6 +194,7 @@ class UcModulePreviewService {
       shouldTriggerStateAnimation?: boolean;
       isHaPreview?: boolean; // Explicitly mark as HA Preview rendering (not dashboard)
       isDashboardEditMode?: boolean; // Dashboard is in edit mode (show placeholders for invisible modules)
+      onModuleEnsureRequested?: () => void; // Called after ensureModuleLoaded resolves so caller can re-render
     }
   ): TemplateResult {
     const moduleWithDesign = module as any;
@@ -198,7 +206,13 @@ class UcModulePreviewService {
       : options?.isDashboardEditMode
         ? 'dashboard'
         : undefined;
-    const moduleContent = this._getModuleContent(module, hass, config, previewContext);
+    const moduleContent = this._getModuleContent(
+      module,
+      hass,
+      config,
+      previewContext,
+      options?.onModuleEnsureRequested
+    );
 
     // Get hover effect configuration
     const hoverEffect = moduleWithDesign.design?.hover_effect;
@@ -258,33 +272,30 @@ class UcModulePreviewService {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    previewContext?: 'live' | 'ha-preview' | 'dashboard'
+    previewContext?: 'live' | 'ha-preview' | 'dashboard',
+    onModuleEnsureRequested?: () => void
   ): TemplateResult {
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(module.type);
 
-    if (moduleHandler) {
-      // Step 1: Resolve all variable references in the module
-      // This converts $varname entity fields to their actual entity IDs
-      // IMPORTANT: Pass the card config so card-specific variables can be resolved
-      const resolvedModule = ucCustomVariablesService.resolveModuleVariables(module, config);
-      
-      // Step 2: In 'live' preview context, apply the preview breakpoint design
-      // This merges device-specific design properties so modules render correctly
-      // without relying on CSS media queries (which check viewport, not container)
-      const moduleToRender = previewContext === 'live' 
-        ? this._applyPreviewBreakpointDesign(resolvedModule)
-        : resolvedModule;
-      
-      return moduleHandler.renderPreview(moduleToRender, hass, config, previewContext);
+    if (!moduleHandler) {
+      if (onModuleEnsureRequested) {
+        registry.ensureModuleLoaded(module.type).then(() => onModuleEnsureRequested());
+      }
+      return html`
+        <div class="unknown-module">
+          <span>Unknown Module: ${module.type}</span>
+        </div>
+      `;
     }
 
-    // Fallback for unknown module types
-    return html`
-      <div class="unknown-module">
-        <span>Unknown Module: ${module.type}</span>
-      </div>
-    `;
+    // Step 1: Resolve all variable references in the module
+    const resolvedModule = ucCustomVariablesService.resolveModuleVariables(module, config);
+    const moduleToRender =
+      previewContext === 'live'
+        ? this._applyPreviewBreakpointDesign(resolvedModule)
+        : resolvedModule;
+    return moduleHandler.renderPreview(moduleToRender, hass, config, previewContext);
   }
 
   /**

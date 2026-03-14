@@ -1,26 +1,31 @@
 /**
  * Ultra Card Hub - Home Assistant sidebar panel.
  * Dashboard (welcome + stats), Favorites, Presets, Colors, Variables, Templates, Pro, About.
+ * Tab implementations are lazy-loaded when first opened.
  */
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { panelStyles } from './panel-styles';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
-import './tabs/hub-account-tab';
-import './tabs/hub-dashboard-tab';
-import './tabs/hub-favorites-tab';
-import './tabs/hub-presets-tab';
-import './tabs/hub-colors-tab';
-import './tabs/hub-variables-tab';
-import './tabs/hub-templates-tab';
-import './tabs/hub-pro-tab';
-import '../editor/tabs/about-tab';
 import type { HubProTab } from './tabs/hub-pro-tab';
 
 const SENSOR_ENTITY = 'sensor.ultra_card_pro_cloud_authentication_status';
 
 type HubTab = 'dashboard' | 'account' | 'favorites' | 'presets' | 'colors' | 'variables' | 'templates' | 'pro' | 'about';
+
+/** Lazy-load a tab chunk; resolves when the custom element is registered. */
+const TAB_LOADERS: Record<HubTab, () => Promise<unknown>> = {
+  dashboard: () => import('./tabs/hub-dashboard-tab'),
+  account: () => import('./tabs/hub-account-tab'),
+  favorites: () => import('./tabs/hub-favorites-tab'),
+  presets: () => import('./tabs/hub-presets-tab'),
+  colors: () => import('./tabs/hub-colors-tab'),
+  variables: () => import('./tabs/hub-variables-tab'),
+  templates: () => import('./tabs/hub-templates-tab'),
+  pro: () => import('./tabs/hub-pro-tab'),
+  about: () => import('../editor/tabs/about-tab'),
+};
 
 interface TabDef {
   key: HubTab;
@@ -49,9 +54,11 @@ export class UltraCardPanel extends LitElement {
   @state() private _showProTab = false;
   @state() private _cloudUser: CloudUser | null = null;
   @state() private _narrow = window.matchMedia('(max-width: 870px)').matches;
+  /** Tabs whose chunk has been loaded (so we can render the custom element). */
+  @state() private _loadedTabs = new Set<HubTab>();
+  /** In-flight load promises so we don't double-load. */
+  private _tabLoadPromises = new Map<HubTab, Promise<void>>();
 
-  // subscribeEvents returns Promise<() => void>; store the resolved unsub only
-  private _unsub?: (() => void) | (() => Promise<void>);
   private _authListener?: (user: CloudUser | null) => void;
   private _mql?: MediaQueryList;
   private _onMqlChange = (e: MediaQueryListEvent) => { this._narrow = e.matches; };
@@ -172,6 +179,23 @@ export class UltraCardPanel extends LitElement {
           --mdc-icon-size: 18px;
         }
       }
+
+      .tab-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 24px;
+        color: var(--secondary-text-color);
+        font-size: 14px;
+      }
+      .tab-loading ha-icon {
+        --mdc-icon-size: 24px;
+        margin-right: 8px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     `,
   ];
 
@@ -185,15 +209,7 @@ export class UltraCardPanel extends LitElement {
       this._cloudUser = user;
     };
     ucCloudAuthService.addListener(this._authListener);
-    if (this.hass?.connection) {
-      // subscribeEvents is async — store the resolved unsub function, not the Promise,
-      // so that disconnectedCallback can safely call it.
-      this.hass.connection.subscribeEvents(() => {
-        this._updateProState();
-      }, 'state_changed').then((unsub) => {
-        this._unsub = unsub;
-      }).catch(() => {/* ignore subscribe errors */});
-    }
+    // Pro state is updated when hass changes (updated()) — no global state_changed subscription
     this.addEventListener('hub-navigate-tab', this._onNavigateTab as EventListener);
   }
 
@@ -201,10 +217,6 @@ export class UltraCardPanel extends LitElement {
     super.disconnectedCallback();
     this._mql?.removeEventListener('change', this._onMqlChange);
     this._mql = undefined;
-    if (this._unsub) {
-      try { this._unsub(); } catch { /* ignore */ }
-      this._unsub = undefined;
-    }
     if (this._authListener) {
       ucCloudAuthService.removeListener(this._authListener);
       this._authListener = undefined;
@@ -302,8 +314,40 @@ export class UltraCardPanel extends LitElement {
     `;
   }
 
+  /** Start loading a tab chunk if not already loaded; updates _loadedTabs when done. */
+  private _ensureTabLoaded(tab: HubTab): void {
+    if (this._loadedTabs.has(tab)) return;
+    let promise = this._tabLoadPromises.get(tab);
+    if (!promise) {
+      const loader = TAB_LOADERS[tab];
+      promise = (loader ? loader() : Promise.resolve()).then(() => {
+        this._loadedTabs = new Set(this._loadedTabs);
+        this._loadedTabs.add(tab);
+        this._tabLoadPromises.delete(tab);
+        this.requestUpdate();
+        return undefined;
+      }).catch(() => {
+        this._tabLoadPromises.delete(tab);
+        return undefined;
+      }) as Promise<void>;
+      this._tabLoadPromises.set(tab, promise);
+    }
+  }
+
   private _renderTabContent(): unknown {
-    switch (this._activeTab) {
+    const tab = this._activeTab;
+    this._ensureTabLoaded(tab);
+
+    if (!this._loadedTabs.has(tab)) {
+      return html`
+        <div class="tab-loading" aria-busy="true">
+          <ha-icon icon="mdi:loading"></ha-icon>
+          <span>Loading…</span>
+        </div>
+      `;
+    }
+
+    switch (tab) {
       case 'dashboard':
         return html`<hub-dashboard-tab .hass=${this.hass}></hub-dashboard-tab>`;
       case 'account':

@@ -20,9 +20,6 @@ export declare class UltraCardEditor extends LitElement {
     private _cloudUser;
     private _syncStatus;
     private _backupStatus;
-    private _showLoginForm;
-    private _loginError;
-    private _isLoggingIn;
     private _showBackupHistory;
     private _showCreateSnapshot;
     private _showManualBackup;
@@ -64,6 +61,7 @@ export declare class UltraCardEditor extends LitElement {
     private _dismissHubBanner;
     private _renderSyncNotificationBanner;
     private _toggleFullScreen;
+    private _setActiveTab;
     protected render(): TemplateResult<1>;
     private _renderSettingsTab;
     private static readonly SKIP_DEFAULT_MODULES_KEY;
@@ -208,13 +206,10 @@ export declare class UltraCardEditor extends LitElement {
     private _handleLoadNewerBackup;
     private _handleDismissSyncNotification;
     /**
-     * Render login section for unauthenticated users
+     * Render login section for unauthenticated users.
+     * Auth is via the Ultra Card hub (Account tab) or Ultra Card Connect integration only.
      */
     private _renderLoginSection;
-    /**
-     * Render login form
-     */
-    private _renderLoginForm;
     /**
      * Render sync controls for authenticated users
      */
@@ -228,10 +223,6 @@ export declare class UltraCardEditor extends LitElement {
      * Called both on fresh login and when restoring session from storage
      */
     private _initializeProServices;
-    /**
-     * Handle login form submission
-     */
-    private _handleLogin;
     /**
      * Handle logout
      */

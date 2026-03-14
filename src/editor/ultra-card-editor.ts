@@ -51,9 +51,6 @@ export class UltraCardEditor extends LitElement {
   @state() private _cloudUser: CloudUser | null = null;
   @state() private _syncStatus: SyncStatus | null = null;
   @state() private _backupStatus: BackupStatus | null = null;
-  @state() private _showLoginForm: boolean = false;
-  @state() private _loginError: string = '';
-  @state() private _isLoggingIn: boolean = false;
   @state() private _showBackupHistory: boolean = false;
   @state() private _showCreateSnapshot: boolean = false;
   @state() private _showManualBackup: boolean = false;
@@ -340,13 +337,10 @@ export class UltraCardEditor extends LitElement {
       clearTimeout(this._configDebounceTimeout);
     }
 
-    // Debounce the validation to prevent excessive calls
-    this._configDebounceTimeout = window.setTimeout(() => {
-      // Validate config before dispatching
-      const validationResult = configValidationService.validateAndCorrectConfig(newConfig);
+    this._configDebounceTimeout = window.setTimeout(async () => {
+      const validationResult = await configValidationService.validateAndCorrectConfig(newConfig);
 
       if (!validationResult.valid) {
-        // Config validation failed in editor (silent); still dispatch original config
         const event = new CustomEvent('config-changed', {
           detail: { config: newConfig, isInternal: true },
           bubbles: true,
@@ -356,18 +350,15 @@ export class UltraCardEditor extends LitElement {
         return;
       }
 
-      // Check for duplicate module IDs and fix them
       const uniqueIdCheck = configValidationService.validateUniqueModuleIds(
         validationResult.correctedConfig!
       );
 
       let finalConfig = validationResult.correctedConfig!;
       if (!uniqueIdCheck.valid) {
-        // Duplicate module IDs detected; fixing silently
         finalConfig = configValidationService.fixDuplicateModuleIds(finalConfig);
       }
 
-      // Include global variables backup in config (for persistence across cache clears)
       const globalVarsBackup = ucCustomVariablesService.getVariablesForBackup();
       if (globalVarsBackup.variables.length > 0) {
         finalConfig = {
@@ -375,9 +366,6 @@ export class UltraCardEditor extends LitElement {
           _globalVariablesBackup: globalVarsBackup,
         };
       }
-
-      // Only log validation info when there are meaningful warnings
-      // Suppress info logs for warnings
 
       const event = new CustomEvent('config-changed', {
         detail: { config: finalConfig, isInternal: true },
@@ -514,9 +502,13 @@ export class UltraCardEditor extends LitElement {
     }
   }
 
+  private _setActiveTab(tab: EditorTab): void {
+    this._activeTab = tab;
+  }
+
   protected render() {
     if (!this.hass || !this.config) {
-      return html`<div>Loading...</div>`;
+      return html``;
     }
     const lang = this.hass.locale?.language || 'en';
     const hubPanelExists = !!(this.hass as any).panels?.['ultra-card-hub'];
@@ -529,7 +521,7 @@ export class UltraCardEditor extends LitElement {
         <div class="tabs">
           <button
             class="tab ${this._activeTab === 'layout' ? 'active' : ''}"
-            @click=${() => (this._activeTab = 'layout')}
+            @click=${() => this._setActiveTab('layout')}
           >
             ${this._isFullScreen
               ? 'Ultra Card Layout Builder'
@@ -539,7 +531,7 @@ export class UltraCardEditor extends LitElement {
             ? html`
                 <button
                   class="tab ${this._activeTab === 'settings' ? 'active' : ''}"
-                  @click=${() => (this._activeTab = 'settings')}
+                  @click=${() => this._setActiveTab('settings')}
                 >
                   ${localize('editor.tabs.card_settings', lang, 'Card Settings')}
                 </button>
@@ -4159,7 +4151,6 @@ export class UltraCardEditor extends LitElement {
       const iUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
       if (iUser) ucCloudAuthService.setIntegrationUser(iUser);
       this._cloudUser = iUser || user;
-      this._loginError = '';
       this.requestUpdate();
     };
     ucCloudAuthService.addListener(this._authListener);
@@ -6093,105 +6084,29 @@ export class UltraCardEditor extends LitElement {
   }
 
   /**
-   * Render login section for unauthenticated users
+   * Render login section for unauthenticated users.
+   * Auth is via the Ultra Card hub (Account tab) or Ultra Card Connect integration only.
    */
   private _renderLoginSection(lang: string): TemplateResult {
     return html`
       <div class="login-section">
-        ${!this._showLoginForm
-          ? html`
-              <div class="login-prompt">
-                <div class="login-benefits">
-                  <h5>Benefits of Cloud Sync:</h5>
-                  <ul>
-                    <li>✅ Access your favorites on any device</li>
-                    <li>✅ Automatic backup of your custom colors</li>
-                    <li>✅ Sync your preset reviews and ratings</li>
-                    <li>✅ Never lose your configurations</li>
-                  </ul>
-                </div>
-
-                <div class="login-actions">
-                  <button class="login-btn primary" @click=${() => (this._showLoginForm = true)}>
-                    Sign In to Ultra Card Cloud <span class="beta-badge">BETA</span>
-                  </button>
-                  <p class="login-note">
-                    Don't have an account?
-                    <a href="https://ultracard.io/register" target="_blank" rel="noopener">
-                      Create one free at ultracard.io
-                    </a>
-                  </p>
-                </div>
-              </div>
-            `
-          : this._renderLoginForm(lang)}
-      </div>
-    `;
-  }
-
-  /**
-   * Render login form
-   */
-  private _renderLoginForm(lang: string): TemplateResult {
-    return html`
-      <div class="login-form">
-        <h5>Sign In to Ultra Card Cloud <span class="beta-badge">BETA</span></h5>
-
-        ${this._loginError
-          ? html`<div class="error-message">${unsafeHTML(this._loginError)}</div>`
-          : ''}
-
-        <form @submit=${this._handleLogin}>
-          <div class="form-group">
-            <label for="username">Username or Email</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              required
-              ?disabled=${this._isLoggingIn}
-              placeholder="Enter your username or email"
-            />
+        <div class="login-prompt">
+          <div class="login-benefits">
+            <h5>Benefits of Cloud Sync:</h5>
+            <ul>
+              <li>✅ Access your favorites on any device</li>
+              <li>✅ Automatic backup of your custom colors</li>
+              <li>✅ Sync your preset reviews and ratings</li>
+              <li>✅ Never lose your configurations</li>
+            </ul>
           </div>
 
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              required
-              ?disabled=${this._isLoggingIn}
-              placeholder="Enter your password"
-            />
+          <div class="login-actions">
+            <p class="login-note integration-only">
+              To sign in, open the <strong>Ultra Card hub</strong> and go to the <strong>Account</strong> tab,
+              or configure the <strong>Ultra Card Connect</strong> integration in Settings → Devices & Services.
+            </p>
           </div>
-
-          <div class="form-actions">
-            <button
-              type="button"
-              class="cancel-btn"
-              @click=${() => {
-                this._showLoginForm = false;
-                this._loginError = '';
-              }}
-              ?disabled=${this._isLoggingIn}
-            >
-              Cancel
-            </button>
-            <button type="submit" class="login-btn primary" ?disabled=${this._isLoggingIn}>
-              ${this._isLoggingIn ? 'Signing In...' : 'Sign In'}
-            </button>
-          </div>
-        </form>
-
-        <div class="login-links">
-          <a href="https://ultracard.io/forgot-password" target="_blank" rel="noopener">
-            Forgot Password?
-          </a>
-          <span>•</span>
-          <a href="https://ultracard.io/register" target="_blank" rel="noopener">
-            Create Account
-          </a>
         </div>
       </div>
     `;
@@ -6361,42 +6276,6 @@ export class UltraCardEditor extends LitElement {
   }
 
   /**
-   * Handle login form submission
-   */
-  private async _handleLogin(e: Event): Promise<void> {
-    e.preventDefault();
-
-    const form = e.target as HTMLFormElement;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const formData = new (FormData as any)(form) as FormData;
-    const username = formData.get('username') as string;
-    const password = formData.get('password') as string;
-
-    if (!username || !password) {
-      this._loginError = 'Please enter both username and password';
-      return;
-    }
-
-    this._isLoggingIn = true;
-    this._loginError = '';
-
-    try {
-      const user = await ucCloudAuthService.login({ username, password });
-      this._showLoginForm = false;
-
-      // Initialize Pro services
-      await this._initializeProServices(user);
-
-      console.log('✅ Successfully logged in and initialized all services');
-    } catch (error) {
-      this._loginError = error instanceof Error ? error.message : 'Login failed';
-      console.error('❌ Login failed:', error);
-    } finally {
-      this._isLoggingIn = false;
-    }
-  }
-
-  /**
    * Handle logout
    */
   private async _handleLogout(): Promise<void> {
@@ -6406,7 +6285,6 @@ export class UltraCardEditor extends LitElement {
       this._snapshotSchedulerStatus = null;
 
       await ucCloudAuthService.logout();
-      this._showLoginForm = false;
       console.log('✅ Successfully logged out');
     } catch (error) {
       console.error('❌ Logout failed:', error);

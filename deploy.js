@@ -27,8 +27,18 @@ const CONFIG = {
   // These extra copies ensure the sidebar panel is always up to date.
   integrationPanelCopies: [
     '/Volumes/config/custom_components/ultra_card_pro_cloud/www/ultra-card-panel.js',
+    '/Volumes/config/custom_components/ultra_card_pro_cloud/www/ultra-card-panel.js.LICENSE.txt',
   ],
 };
+
+function getChunkFiles() {
+  const distDir = path.resolve(__dirname, 'dist');
+  if (!fs.existsSync(distDir)) return [];
+  return fs
+    .readdirSync(distDir)
+    .filter(file => file.startsWith('uc-') && (file.endsWith('.js') || file.endsWith('.js.LICENSE.txt')))
+    .map(file => `dist/${file}`);
+}
 
 console.log('🚀 Ultra Card Deployment Script\n');
 
@@ -81,7 +91,7 @@ function deployFiles(targetPath) {
     // Check if source files exist and get their sizes
     console.log(`  🔍 Verifying source files...`);
     let sourceFilesValid = true;
-    CONFIG.sourceFiles.forEach(file => {
+    [...CONFIG.sourceFiles, ...getChunkFiles()].forEach(file => {
       const sourcePath = path.resolve(__dirname, file);
       if (fs.existsSync(sourcePath)) {
         const stats = fs.statSync(sourcePath);
@@ -120,7 +130,7 @@ function deployFiles(targetPath) {
     // Copy files
     console.log(`  📦 Copying files...`);
     let copiedCount = 0;
-    CONFIG.sourceFiles.forEach(file => {
+    [...CONFIG.sourceFiles, ...getChunkFiles()].forEach(file => {
       const sourcePath = path.resolve(__dirname, file);
       const targetFile = path.join(targetPath, path.basename(file));
 
@@ -138,7 +148,7 @@ function deployFiles(targetPath) {
     // Verify deployment by checking file sizes
     console.log(`  🔍 Verifying deployment...`);
     let allFilesValid = true;
-    CONFIG.sourceFiles.forEach(file => {
+    [...CONFIG.sourceFiles, ...getChunkFiles()].forEach(file => {
       const targetFile = path.join(targetPath, path.basename(file));
       if (fs.existsSync(targetFile)) {
         const stats = fs.statSync(targetFile);
@@ -216,13 +226,20 @@ async function deploy() {
   const panelSrc = path.resolve(__dirname, 'dist/ultra-card-panel.js');
   if (fs.existsSync(panelSrc) && CONFIG.integrationPanelCopies?.length) {
     console.log('🔌 Updating integration panel copies...');
+    const chunkFiles = getChunkFiles().map(file => path.resolve(__dirname, file));
     for (const dest of CONFIG.integrationPanelCopies) {
       const destDir = path.dirname(dest);
       if (fs.existsSync(destDir)) {
         try {
-          fs.copyFileSync(panelSrc, dest);
-          const sizeMB = (fs.statSync(dest).size / (1024 * 1024)).toFixed(2);
-          console.log(`  ✅ Copied panel → ${dest} (${sizeMB} MB)`);
+          const sourcePath = path.resolve(__dirname, 'dist', path.basename(dest));
+          if (fs.existsSync(sourcePath)) {
+            fs.copyFileSync(sourcePath, dest);
+            const sizeMB = (fs.statSync(dest).size / (1024 * 1024)).toFixed(2);
+            console.log(`  ✅ Copied panel asset → ${dest} (${sizeMB} MB)`);
+          }
+          chunkFiles.forEach(chunkPath => {
+            fs.copyFileSync(chunkPath, path.join(destDir, path.basename(chunkPath)));
+          });
         } catch (err) {
           console.warn(`  ⚠️  Could not copy to ${dest}: ${err.message}`);
         }

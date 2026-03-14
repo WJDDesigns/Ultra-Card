@@ -1,5 +1,29 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0-beta13
+
+### 🚀 New Features
+
+- **Add** - Lazy module loading system — module implementations are now loaded on demand via dynamic imports using a new module-loaders registry, reducing initial bundle parse time
+- **Add** - Module manifest data table — static metadata for all modules is now available without loading implementations, enabling fast module selector and editor rendering
+- **Add** - New editor selector tabs — card selector, modules selector, presets selector, and favorites selector are now split into dedicated tab components for better code organisation and maintainability
+- **Add** - Config validation now runs asynchronously (async/await) so module handlers are guaranteed to be loaded before validate/createDefault is called
+- **Add** - Template service gains unsubscribeTemplatesByPrefix() — layout template subscriptions are now cleanly torn down and re-registered when config.layout changes
+- **Add** - Presets service lazy loads WordPress presets only when the Presets tab is first opened, avoiding unnecessary network requests on card initialise
+- **Add** - Config cache in UltraCard — layout-derived data (entity IDs, module types, logic conditions etc.) is now memoised and only recalculated when config.layout actually changes, reducing per-render work
+
+### 🐛 Bug Fixes
+
+- **Fix** - Loading screen now renders an empty template instead of a visible "Loading..." text flash in both the card and editor
+- **Fix** - Editor login section simplified — the inline username/password login form and all associated state (_showLoginForm, _loginError, _isLoggingIn) have been removed; authentication is now handled exclusively through the Hub Account tab or Ultra Card Connect integration
+- **Fix** - Action confirmation dialog buttons replaced with mwc-button elements in the correct HA dialog action slots, fixing buttons not rendering or responding in ha-dialog
+- **Fix** - Logic service no longer logs console.warn when hass is unavailable — silently returns true (show by default) via a private _canEvaluateLogic() guard
+- **Fix** - Ultra-card.ts hass setter now wraps layout template service setup in a try/catch so a template subscription failure does not break the entire card update cycle
+- **Fix** - SetConfig is now non-blocking — config validation and correction run in a .then() chain so the call returns immediately and never blocks the Lit update cycle
+- **Fix** - Module preview service correctly triggers onModuleEnsureRequested callback when a module type is not yet loaded, allowing the host element to re-render once the module arrives
+
+---
+
 ## Version 3.1.0-beta10
 
 ### 🐛 Bug Fixes

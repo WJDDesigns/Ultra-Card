@@ -25,13 +25,13 @@ export class ConfigValidationService {
   }
 
   /**
-   * Validates and corrects a complete Ultra Card config
+   * Validates and corrects a complete Ultra Card config.
+   * Ensures module handlers are loaded before validating so implementation-backed validation runs correctly.
    */
-  validateAndCorrectConfig(config: any): ValidationResult {
+  async validateAndCorrectConfig(config: any): Promise<ValidationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    // Create a working copy
     let correctedConfig: UltraCardConfig;
 
     try {
@@ -44,10 +44,8 @@ export class ConfigValidationService {
       };
     }
 
-    // Migrate flat design structures to responsive format
     this._migrateDesignToResponsive(correctedConfig);
 
-    // Validate basic structure
     if (!correctedConfig.type) {
       correctedConfig.type = 'custom:ultra-card';
       warnings.push('Added missing card type');
@@ -57,7 +55,6 @@ export class ConfigValidationService {
       errors.push(`Invalid card type: ${correctedConfig.type}`);
     }
 
-    // Ensure layout exists
     if (!correctedConfig.layout) {
       correctedConfig.layout = { rows: [] };
       warnings.push('Added missing layout structure');
@@ -68,40 +65,40 @@ export class ConfigValidationService {
       warnings.push('Added missing rows array');
     }
 
-    // Validate and correct each row
-    correctedConfig.layout.rows = correctedConfig.layout.rows.map((row, rowIndex) => {
-      const rowResult = this.validateAndCorrectRow(row, rowIndex);
+    const rowResults = await Promise.all(
+      correctedConfig.layout.rows.map((row, rowIndex) =>
+        this.validateAndCorrectRow(row, rowIndex)
+      )
+    );
+
+    rowResults.forEach((rowResult, i) => {
       errors.push(...rowResult.errors);
       warnings.push(...rowResult.warnings);
-      return rowResult.correctedRow;
+      correctedConfig.layout.rows[i] = rowResult.correctedRow;
     });
 
-    // Remove any rows that couldn't be corrected
     correctedConfig.layout.rows = correctedConfig.layout.rows.filter(row => row !== null);
 
-    const result: ValidationResult = {
+    const result = {
       valid: errors.length === 0,
       errors,
       warnings,
       correctedConfig,
     };
-
-    // Suppress console logs in production; return results to caller UI only
-
     return result;
   }
 
   /**
    * Validates and corrects a single row
    */
-  private validateAndCorrectRow(
+  private async validateAndCorrectRow(
     row: any,
     rowIndex: number
-  ): {
+  ): Promise<{
     correctedRow: CardRow;
     errors: string[];
     warnings: string[];
-  } {
+  }> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -121,15 +118,17 @@ export class ConfigValidationService {
       warnings.push(`Row ${rowIndex}: Added missing columns array`);
     }
 
-    // Validate and correct each column
-    row.columns = row.columns
-      .map((column: any, columnIndex: number) => {
-        const columnResult = this.validateAndCorrectColumn(column, rowIndex, columnIndex);
-        errors.push(...columnResult.errors);
-        warnings.push(...columnResult.warnings);
-        return columnResult.correctedColumn;
-      })
-      .filter((column: any) => column !== null);
+    const columnResults = await Promise.all(
+      row.columns.map((column: any, columnIndex: number) =>
+        this.validateAndCorrectColumn(column, rowIndex, columnIndex)
+      )
+    );
+    columnResults.forEach((columnResult, i) => {
+      errors.push(...columnResult.errors);
+      warnings.push(...columnResult.warnings);
+      row.columns[i] = columnResult.correctedColumn;
+    });
+    row.columns = row.columns.filter((column: any) => column !== null);
 
     // Ensure at least one column exists
     if (row.columns.length === 0) {
@@ -152,15 +151,15 @@ export class ConfigValidationService {
   /**
    * Validates and corrects a single column
    */
-  private validateAndCorrectColumn(
+  private async validateAndCorrectColumn(
     column: any,
     rowIndex: number,
     columnIndex: number
-  ): {
+  ): Promise<{
     correctedColumn: CardColumn;
     errors: string[];
     warnings: string[];
-  } {
+  }> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -175,15 +174,14 @@ export class ConfigValidationService {
       warnings.push(`Row ${rowIndex}, Column ${columnIndex}: Added missing modules array`);
     }
 
-    // Validate and correct each module
+    const moduleResults = await Promise.all(
+      column.modules.map((module: any, moduleIndex: number) =>
+        this.validateAndCorrectModule(module, rowIndex, columnIndex, moduleIndex)
+      )
+    );
     column.modules = column.modules
       .map((module: any, moduleIndex: number) => {
-        const moduleResult = this.validateAndCorrectModule(
-          module,
-          rowIndex,
-          columnIndex,
-          moduleIndex
-        );
+        const moduleResult = moduleResults[moduleIndex];
         if (moduleResult.valid) {
           if (moduleResult.correctedModule) {
             warnings.push(...(moduleResult.warnings || []));
@@ -192,7 +190,7 @@ export class ConfigValidationService {
           return module;
         } else {
           errors.push(...moduleResult.errors);
-          return null; // Mark for removal
+          return null;
         }
       })
       .filter((module: any) => module !== null);
@@ -205,19 +203,19 @@ export class ConfigValidationService {
   }
 
   /**
-   * Validates and corrects a single module
+   * Validates and corrects a single module.
+   * Ensures the module type is loaded before calling handler validate/createDefault.
    */
-  validateAndCorrectModule(
+  async validateAndCorrectModule(
     module: any,
     rowIndex?: number,
     columnIndex?: number,
     moduleIndex?: number
-  ): ModuleValidationResult & { warnings?: string[] } {
+  ): Promise<ModuleValidationResult & { warnings?: string[] }> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const registry = getModuleRegistry();
 
-    // Ensure module has required properties
     if (!module.id) {
       module.id = `${module.type || 'unknown'}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       warnings.push(`Module: Added missing ID`);
@@ -228,13 +226,12 @@ export class ConfigValidationService {
       return { valid: false, errors, warnings };
     }
 
-    // Check if module type is registered
     if (!registry.isModuleRegistered(module.type)) {
       errors.push(`Module ${module.id}: Unknown module type "${module.type}"`);
       return { valid: false, errors, warnings };
     }
 
-    // Get the module handler and validate
+    await registry.ensureModuleLoaded(module.type);
     const moduleHandler = registry.getModule(module.type);
     if (moduleHandler) {
       const validationResult = moduleHandler.validate(module);
@@ -243,9 +240,7 @@ export class ConfigValidationService {
         return { valid: false, errors, warnings };
       }
 
-      // If module is valid, ensure it has all required default properties
       const defaultModule = moduleHandler.createDefault(module.id);
-
       const correctedModule = this.mergeWithDefaults(module, defaultModule);
 
       return {
