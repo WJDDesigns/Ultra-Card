@@ -1006,7 +1006,12 @@ class UcNavigationService {
       return html``;
     }
 
-    const { isSelected, selectedColor } = this.getRouteSelection(resolvedRoute, navModule, hass);
+    const { isSelected, selectedColor } = this.getRouteSelection(
+      resolvedRoute,
+      navModule,
+      hass,
+      registered.config
+    );
 
     const resolvedImage = isSelected
       ? resolvedRoute.image_selected || resolvedRoute.image
@@ -1039,7 +1044,13 @@ class UcNavigationService {
       viewLayer
     );
 
-    const badgeTemplate = this.renderBadge(resolvedRoute.badge, hass, navModule, resolvedRoute);
+    const badgeTemplate = this.renderBadge(
+      resolvedRoute.badge,
+      hass,
+      navModule,
+      resolvedRoute,
+      registered.config
+    );
 
     return html`
       <div
@@ -1096,7 +1107,7 @@ class UcNavigationService {
     viewLayer: ViewNavLayer,
     showLabels: NavShowLabels
   ): TemplateResult {
-    const hidden = this.resolveBoolean(stack.hidden, false, hass, navModule, stack);
+    const hidden = this.resolveBoolean(stack.hidden, false, hass, navModule, stack, registered.config);
     if (hidden) return html``;
 
     const icon = stack.icon || 'mdi:dots-horizontal';
@@ -1172,7 +1183,7 @@ class UcNavigationService {
     };
 
     // Badge for stack
-    const badgeTemplate = this.renderBadge(stack.badge, hass, navModule, stack as any);
+    const badgeTemplate = this.renderBadge(stack.badge, hass, navModule, stack as any, registered.config);
 
     // Children popup is rendered outside .navbar-card via renderActiveStackPopup()
     // to avoid overflow clipping on mobile (see renderNavigation)
@@ -1303,7 +1314,14 @@ class UcNavigationService {
     // Resolve route properties (templates, images, etc.) the same way top-level routes do
     const resolvedChild = this.resolveRoute(child, hass, navModule, registered.config);
 
-    const hidden = this.resolveBoolean(resolvedChild.hidden, false, hass, navModule, resolvedChild);
+    const hidden = this.resolveBoolean(
+      resolvedChild.hidden,
+      false,
+      hass,
+      navModule,
+      resolvedChild,
+      registered.config
+    );
     if (hidden) return html``;
 
     const url = resolvedChild.url || '';
@@ -1322,7 +1340,13 @@ class UcNavigationService {
       : resolvedChild.icon_color;
 
     // Badge
-    const badgeTemplate = this.renderBadge(resolvedChild.badge, hass, navModule, resolvedChild);
+    const badgeTemplate = this.renderBadge(
+      resolvedChild.badge,
+      hass,
+      navModule,
+      resolvedChild,
+      registered.config
+    );
 
     const handleClick = async (e?: Event) => {
       const actionElement = (e?.currentTarget as HTMLElement) || undefined;
@@ -1433,7 +1457,8 @@ class UcNavigationService {
     badge: NavBadgeConfig | undefined,
     hass: HomeAssistant,
     navModule: NavigationModule,
-    context: NavRoute
+    context: NavRoute,
+    config?: UltraCardConfig
   ): TemplateResult {
     if (!badge) return html``;
 
@@ -1457,13 +1482,13 @@ class UcNavigationService {
         badge.count_template,
         hass,
         navModule,
-        undefined,
+        config,
         context
       );
       count = resolved !== undefined && resolved !== null ? String(resolved) : undefined;
     } else {
       // Static mode - use count field
-      count = this.resolveString(badge.count, hass, navModule, context);
+      count = this.resolveString(badge.count, hass, navModule, context, config);
     }
 
     // Convert to string for display
@@ -1478,7 +1503,7 @@ class UcNavigationService {
 
     // Check explicit show condition
     const hasContent = !!countStr;
-    const show = this.resolveBoolean(badge.show, hasContent, hass, navModule, context);
+    const show = this.resolveBoolean(badge.show, hasContent, hass, navModule, context, config);
     if (!show) {
       return html``;
     }
@@ -2529,14 +2554,14 @@ class UcNavigationService {
     navModule: NavigationModule,
     config?: UltraCardConfig
   ) {
-    const icon = this.resolveString(route.icon, hass, navModule, route);
-    const iconSelected = this.resolveString(route.icon_selected, hass, navModule, route);
-    const image = this.resolveString(route.image, hass, navModule, route);
-    const imageSelected = this.resolveString(route.image_selected, hass, navModule, route);
-    const label = this.resolveString(route.label, hass, navModule, route);
-    const url = this.resolveString(route.url, hass, navModule, route);
+    const icon = this.resolveString(route.icon, hass, navModule, route, config);
+    const iconSelected = this.resolveString(route.icon_selected, hass, navModule, route, config);
+    const image = this.resolveString(route.image, hass, navModule, route, config);
+    const imageSelected = this.resolveString(route.image_selected, hass, navModule, route, config);
+    const label = this.resolveString(route.label, hass, navModule, route, config);
+    const url = this.resolveString(route.url, hass, navModule, route, config);
 
-    const hidden = this.resolveBoolean(route.hidden, false, hass, navModule, route);
+    const hidden = this.resolveBoolean(route.hidden, false, hass, navModule, route, config);
 
     return {
       ...route,
@@ -2546,20 +2571,25 @@ class UcNavigationService {
       icon_selected: iconSelected,
       image: this.getResolvedImage(image, hass),
       image_selected: this.getResolvedImage(imageSelected, hass),
-      icon_color: this.resolveString(route.icon_color, hass, navModule, route) || undefined,
+      icon_color: this.resolveString(route.icon_color, hass, navModule, route, config) || undefined,
       selected: route.selected,
-      selected_color: this.resolveString(route.selected_color, hass, navModule, route) || undefined,
+      selected_color: this.resolveString(route.selected_color, hass, navModule, route, config) || undefined,
       hidden,
     };
   }
 
-  private getRouteSelection(route: NavRoute, navModule: NavigationModule, hass: HomeAssistant) {
+  private getRouteSelection(
+    route: NavRoute,
+    navModule: NavigationModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ) {
     let isSelected = false;
 
     if (typeof route.selected === 'boolean') {
       isSelected = route.selected;
     } else if (typeof route.selected === 'string') {
-      isSelected = this.resolveBoolean(route.selected, false, hass, navModule, route);
+      isSelected = this.resolveBoolean(route.selected, false, hass, navModule, route, config);
     } else if (route.url) {
       isSelected = this.isCurrentUrl(route.url);
     }
@@ -2585,14 +2615,15 @@ class UcNavigationService {
     defaultValue: boolean | undefined,
     hass: HomeAssistant,
     navModule: NavigationModule,
-    context: any
+    context: any,
+    config?: UltraCardConfig
   ): boolean {
     if (typeof value === 'boolean') return value;
     if (typeof value === 'string') {
       const trimmed = value.trim();
       if (trimmed === 'true') return true;
       if (trimmed === 'false') return false;
-      const resolved = this.resolveJsTemplate(trimmed, hass, navModule, undefined, context);
+      const resolved = this.resolveJsTemplate(trimmed, hass, navModule, config, context);
       if (typeof resolved === 'boolean') return resolved;
       if (typeof resolved === 'string') {
         if (resolved.trim() === 'true') return true;
@@ -2606,14 +2637,20 @@ class UcNavigationService {
     value: string | undefined,
     hass: HomeAssistant,
     navModule: NavigationModule,
-    context: any
+    context: any,
+    config?: UltraCardConfig
   ): string | undefined {
     if (typeof value !== 'string') return value;
     const trimmed = value.trim();
     if (!trimmed) return '';
-    const resolved = this.resolveJsTemplate(trimmed, hass, navModule, undefined, context);
+    const resolved = this.resolveJsTemplate(trimmed, hass, navModule, config, context);
     if (resolved === undefined || resolved === null) return '';
     return String(resolved);
+  }
+
+  private shouldAllowJsTemplateExecution(config?: UltraCardConfig): boolean {
+    const origin = config?._contentOrigin;
+    return origin !== 'imported' && origin !== 'preset_community';
   }
 
   private resolveJsTemplate(
@@ -2626,6 +2663,10 @@ class UcNavigationService {
     if (!value.includes('[[[')) return value;
     const match = value.match(/\[\[\[([\s\S]*)\]\]\]/);
     if (!match) return value;
+    if (!this.shouldAllowJsTemplateExecution(config)) {
+      console.warn('[UltraCard] Blocking JS template execution for imported/community content.');
+      return '';
+    }
 
     const code = match[1];
     try {

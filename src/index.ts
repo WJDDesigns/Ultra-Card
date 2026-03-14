@@ -1,5 +1,4 @@
 import './cards/ultra-card';
-import './editor/ultra-card-editor';
 import './components/navigation-picker';
 import './components/ultra-color-picker';
 import { CustomCard } from './types';
@@ -10,6 +9,32 @@ import { ucCloudAuthService } from './services/uc-cloud-auth-service';
 import { getModuleRegistry } from './modules';
 const moduleRegistry = getModuleRegistry();
 
+const loadEditor = () => import('./editor/ultra-card-editor');
+
+const shouldPreloadEditor = () => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('edit') === '1' || window.location.pathname.includes('/lovelace/');
+  } catch {
+    return false;
+  }
+};
+
+if (shouldPreloadEditor()) {
+  const win = window as typeof window & {
+    requestIdleCallback?: (callback: () => void) => void;
+  };
+  if (typeof win.requestIdleCallback === 'function') {
+    win.requestIdleCallback(() => {
+      void loadEditor();
+    });
+  } else {
+    window.setTimeout(() => {
+      void loadEditor();
+    }, 0);
+  }
+}
+
 // Log version and module count once on load with styled banner (Bubble Card style)
 const __ucModuleCount = moduleRegistry.getRegistryStats().totalModules;
 
@@ -19,12 +44,10 @@ setTimeout(() => {
     // Try to find any ultra-card element instance that has hass
     const ultraCards = document.querySelectorAll('ultra-card');
     let integrationUser = null;
-    let hassFound = false;
 
     for (const card of Array.from(ultraCards)) {
       const hass = (card as any).hass;
       if (hass) {
-        hassFound = true;
         integrationUser = ucCloudAuthService.checkIntegrationAuth(hass);
 
         // Debug: Check sensor directly

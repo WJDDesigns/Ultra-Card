@@ -8,9 +8,6 @@ export const panelStyles = css`
   :host {
     display: flex;
     flex-direction: column;
-    /* Use dvh units directly so this works whether parent has explicit height or not.
-       100% collapses when HA's panel host is display:block with no height set. */
-    height: 100dvh;
     /* Prevent the host itself from scrolling — only .hub-content should scroll */
     overflow: hidden;
     background: var(--primary-background-color);

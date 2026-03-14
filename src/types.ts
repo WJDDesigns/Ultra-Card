@@ -4860,6 +4860,8 @@ export interface ExportData {
 export interface UltraCardConfig {
   type: string;
   layout: LayoutConfig;
+  // Internal trust/origin metadata used to harden imported/shared content.
+  _contentOrigin?: 'local' | 'imported' | 'preset_standard' | 'preset_community';
   global_css?: string;
   card_background?: string;
   card_border_radius?: number;

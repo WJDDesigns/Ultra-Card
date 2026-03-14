@@ -1084,7 +1084,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
           ${showGauge ? svg`
             <circle cx="${finalHubX}" cy="${hubY}" r="${gaugeR}" fill="var(--card-background-color)" stroke="var(--divider-color)" stroke-width="2"/>
             <circle cx="${finalHubX}" cy="${hubY}" r="${gaugeR - 4}" fill="none" stroke="${homeColor}" stroke-width="4"
-              stroke-dasharray="${(selfPct / 100) * (2 * Math.PI * (gaugeR - 4)).toFixed(1)} ${(2 * Math.PI * (gaugeR - 4)).toFixed(1)}"
+              stroke-dasharray="${((selfPct / 100) * (2 * Math.PI * (gaugeR - 4))).toFixed(1)} ${(2 * Math.PI * (gaugeR - 4)).toFixed(1)}"
               stroke-dashoffset="${((2 * Math.PI * (gaugeR - 4)) * 0.25).toFixed(1)}"
               stroke-linecap="round"
               style="transition: stroke-dasharray 0.5s ease; transform: rotate(-90deg); transform-origin: ${finalHubX}px ${hubY}px;"/>

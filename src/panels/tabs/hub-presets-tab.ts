@@ -7,6 +7,7 @@ import { ucCloudAuthService } from '../../services/uc-cloud-auth-service';
 import { ucCloudSyncService } from '../../services/uc-cloud-sync-service';
 import type { CloudUser } from '../../services/uc-cloud-auth-service';
 import { panelStyles } from '../panel-styles';
+import { sanitizePresetHtml } from '../../utils/html-sanitizer';
 import '../components/uc-hub-login-dialog';
 import '../components/uc-hub-rate-dialog';
 
@@ -31,6 +32,14 @@ export class HubPresetsTab extends LitElement {
   private _statusUnsub?: () => void;
   private _authListener?: (user: CloudUser | null) => void;
   private _toastTimer?: ReturnType<typeof setTimeout>;
+
+  private _getSanitizedPresetDescription(preset: PresetDefinition): string {
+    const rawDescription =
+      this._readMoreId === preset.id
+        ? ((preset as any).description_full || preset.description)
+        : preset.description;
+    return sanitizePresetHtml(rawDescription || '');
+  }
 
   static styles = [
     panelStyles,
@@ -944,9 +953,7 @@ export class HubPresetsTab extends LitElement {
           ${preset.description
             ? html`
                 <div class="preset-description ${this._readMoreId === preset.id ? 'expanded' : ''}">${
-                  unsafeHTML(this._readMoreId === preset.id
-                    ? ((preset as any).description_full || preset.description)
-                    : preset.description)
+                  unsafeHTML(this._getSanitizedPresetDescription(preset))
                 }</div>
                 ${(preset as any).description_full && (preset as any).description_full !== preset.description
                   ? html`<button class="read-more-link" @click=${(e: Event) => {

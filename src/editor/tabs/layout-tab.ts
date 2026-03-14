@@ -38,6 +38,7 @@ import { isThirdParty } from '../../pro/is-third-party';
 import { ucExportImportService } from '../../services/uc-export-import-service';
 import { ucCustomVariablesService } from '../../services/uc-custom-variables-service';
 import { ucDashboardScannerService } from '../../services/uc-dashboard-scanner-service';
+import { getPresetCardSettingsUpdates } from '../utils/preset-card-settings';
 import { ucModulePreviewService } from '../../services/uc-module-preview-service';
 import { ucCloudAuthService } from '../../services/uc-cloud-auth-service';
 import { ucCloudSyncService } from '../../services/uc-cloud-sync-service';
@@ -7780,6 +7781,16 @@ export class LayoutTab extends LitElement {
     );
   }
 
+  private _getPresetContentOrigin(preset: PresetDefinition): UltraCardConfig['_contentOrigin'] {
+    if (preset.tags?.includes('community')) {
+      return 'preset_community';
+    }
+    if (preset.id?.startsWith('wp-') || preset.tags?.includes('standard')) {
+      return 'preset_standard';
+    }
+    return this.config._contentOrigin || 'local';
+  }
+
   private _applyPresetToLayout(preset: PresetDefinition, mappings: EntityMapping[]): void {
     try {
       const currentLayout = this._ensureLayout();
@@ -7838,72 +7849,11 @@ export class LayoutTab extends LitElement {
 
       const shouldUpdateCardVars = updatedCardVars !== currentCardVars;
 
-      // Apply card-level settings if this is a full card preset
-      const cardSettingsUpdates: Record<string, any> = {};
-      if (preset.cardSettings) {
-        // Apply each card setting
-        if (preset.cardSettings.card_background !== undefined) {
-          cardSettingsUpdates.card_background = preset.cardSettings.card_background;
-        }
-        if (preset.cardSettings.card_border_radius !== undefined) {
-          cardSettingsUpdates.card_border_radius = preset.cardSettings.card_border_radius;
-        }
-        if (preset.cardSettings.card_border_color !== undefined) {
-          cardSettingsUpdates.card_border_color = preset.cardSettings.card_border_color;
-        }
-        if (preset.cardSettings.card_border_width !== undefined) {
-          cardSettingsUpdates.card_border_width = preset.cardSettings.card_border_width;
-        }
-        if (preset.cardSettings.card_padding !== undefined) {
-          cardSettingsUpdates.card_padding = preset.cardSettings.card_padding;
-        }
-        if (preset.cardSettings.card_margin !== undefined) {
-          cardSettingsUpdates.card_margin = preset.cardSettings.card_margin;
-        }
-        if (preset.cardSettings.card_overflow !== undefined) {
-          cardSettingsUpdates.card_overflow = preset.cardSettings.card_overflow;
-        }
-        // Card shadow settings
-        if (preset.cardSettings.card_shadow_enabled !== undefined) {
-          cardSettingsUpdates.card_shadow_enabled = preset.cardSettings.card_shadow_enabled;
-        }
-        if (preset.cardSettings.card_shadow_color !== undefined) {
-          cardSettingsUpdates.card_shadow_color = preset.cardSettings.card_shadow_color;
-        }
-        if (preset.cardSettings.card_shadow_horizontal !== undefined) {
-          cardSettingsUpdates.card_shadow_horizontal = preset.cardSettings.card_shadow_horizontal;
-        }
-        if (preset.cardSettings.card_shadow_vertical !== undefined) {
-          cardSettingsUpdates.card_shadow_vertical = preset.cardSettings.card_shadow_vertical;
-        }
-        if (preset.cardSettings.card_shadow_blur !== undefined) {
-          cardSettingsUpdates.card_shadow_blur = preset.cardSettings.card_shadow_blur;
-        }
-        if (preset.cardSettings.card_shadow_spread !== undefined) {
-          cardSettingsUpdates.card_shadow_spread = preset.cardSettings.card_shadow_spread;
-        }
-        // Background image settings
-        if (preset.cardSettings.card_background_image_type !== undefined) {
-          cardSettingsUpdates.card_background_image_type =
-            preset.cardSettings.card_background_image_type;
-        }
-        if (preset.cardSettings.card_background_image !== undefined) {
-          cardSettingsUpdates.card_background_image = preset.cardSettings.card_background_image;
-        }
-        if (preset.cardSettings.card_background_size !== undefined) {
-          cardSettingsUpdates.card_background_size = preset.cardSettings.card_background_size;
-        }
-        if (preset.cardSettings.card_background_repeat !== undefined) {
-          cardSettingsUpdates.card_background_repeat = preset.cardSettings.card_background_repeat;
-        }
-        if (preset.cardSettings.card_background_position !== undefined) {
-          cardSettingsUpdates.card_background_position =
-            preset.cardSettings.card_background_position;
-        }
-      }
+      const cardSettingsUpdates = getPresetCardSettingsUpdates(preset.cardSettings);
 
       const configUpdates: Partial<UltraCardConfig> = {
         layout: newLayout,
+        _contentOrigin: this._getPresetContentOrigin(preset),
         ...(shouldUpdateCardVars ? { _customVariables: updatedCardVars } : {}),
         ...cardSettingsUpdates,
       };
@@ -9016,6 +8966,7 @@ export class LayoutTab extends LitElement {
 
         // Preserve the card type
         cardConfig.type = 'custom:ultra-card';
+        cardConfig._contentOrigin = 'imported';
 
         // Handle variables - always import as card-specific (local)
         if (ucExportImportService.hasCustomVariables(importData)) {
@@ -9080,7 +9031,10 @@ export class LayoutTab extends LitElement {
         }
 
         const newLayout = importData.data as { rows: CardRow[] };
-        this._updateLayout(newLayout);
+        this._updateConfig({
+          layout: newLayout,
+          _contentOrigin: 'imported',
+        });
         this._showToast(
           `Layout "${importData.metadata?.name || 'Imported Layout'}" imported successfully!`,
           'success'
@@ -30659,7 +30613,10 @@ export class LayoutTab extends LitElement {
       this._selectedRowIndex >= 0 ? this._selectedRowIndex + 1 : layout.rows.length;
     layout.rows.splice(insertIndex, 0, newRow);
 
-    this._updateLayout(layout);
+    this._updateConfig({
+      layout,
+      _contentOrigin: 'imported',
+    });
     this._showToast(`Row "${rowName}" imported successfully!`, 'success');
 
     // Check for missing variables in the imported row
@@ -30686,7 +30643,10 @@ export class LayoutTab extends LitElement {
       this._selectedRowIndex >= 0 ? this._selectedRowIndex + 1 : layout.rows.length;
     layout.rows.splice(insertIndex, 0, newRow);
 
-    this._updateLayout(layout);
+    this._updateConfig({
+      layout,
+      _contentOrigin: 'imported',
+    });
     this._showToast(
       `Row "${rowName}" imported successfully with ${mappings.length} entity mapping(s)!`,
       'success'

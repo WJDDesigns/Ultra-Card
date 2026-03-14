@@ -42,7 +42,7 @@ export interface LoginCredentials {
 export interface RegisterData {
   username: string;
   email: string;
-  password: string;
+  password?: string;
   firstName?: string;
   lastName?: string;
 }
@@ -73,6 +73,8 @@ class UcCloudAuthService {
   private _currentUser: CloudUser | null = null;
   private _listeners: Set<(user: CloudUser | null) => void> = new Set();
   private _refreshTimer?: number;
+  /** When using integration auth (no token in frontend), hass is used to call the integration proxy. */
+  private _integrationHass: any = null;
 
   constructor() {
     // Do NOT load from localStorage on startup — the HA integration sensor is the
@@ -111,7 +113,7 @@ class UcCloudAuthService {
         username: attrs.username || '',
         email: attrs.email || '',
         displayName: attrs.display_name || attrs.username || '',
-        token: attrs.token || '', // Use token from sensor attributes for API calls
+        token: '', // Token never exposed in sensor; API calls go through integration proxy
         expiresAt: 0, // Managed by integration server-side
         subscription: {
           tier: attrs.subscription_tier || 'free',
@@ -349,17 +351,17 @@ class UcCloudAuthService {
 
   /**
    * Called whenever the integration sensor updates — keeps _currentUser in sync.
-   * Does NOT write to localStorage; the sensor is the authoritative store.
-   * Guard: skip notification if user hasn't changed, preventing re-entrant loops
-   * when _authListener is itself a registered listener (hass updates fire on every entity change).
+   * When user has no token (integration auth), pass hass so authenticatedFetch can use the proxy.
    */
-  setIntegrationUser(user: CloudUser): void {
+  setIntegrationUser(user: CloudUser, hass?: any): void {
     if (
       this._currentUser?.email === user.email &&
       this._currentUser?.token === user.token
     ) {
+      if (!user.token && hass) this._integrationHass = hass;
       return;
     }
+    this._integrationHass = user?.token ? null : (hass ?? null);
     this._setCurrentUser(user);
   }
 
@@ -409,41 +411,43 @@ class UcCloudAuthService {
     if (!result?.success || !result?.user) {
       throw new Error(result?.error || 'Authentication failed');
     }
-    // Sensor will update momentarily; populate from response immediately
     const user = this._sensorAttrsToCloudUser(result.user);
+    this._integrationHass = hass;
     this._setCurrentUser(user);
-    this._notifyListeners();
     return user;
   }
 
   /**
    * Register a new account via HA integration.
-   * Creates the WordPress account then stores credentials in HA config entries.
+   * Account creation finishes by email on ultracard.io; no shared HA sign-in is changed here.
    */
-  async registerViaHass(hass: any, username: string, email: string, password: string): Promise<CloudUser> {
-    const result = await hass.callApi('POST', 'ultra_card_pro_cloud/register', {
-      username,
-      email,
-      password,
-    });
-    if (!result?.success) {
-      throw new Error(result?.error || 'Registration failed');
+  async registerViaHass(
+    hass: any,
+    username: string,
+    email: string,
+    displayName?: string
+  ): Promise<string> {
+    try {
+      const result = await hass.callApi('POST', 'ultra_card_pro_cloud/register', {
+        username,
+        email,
+        display_name: displayName || username,
+      });
+      if (!result?.success) {
+        throw new Error(result?.error || 'Registration failed');
+      }
+      return (
+        result?.message ||
+        'Account created. Check your email inbox, junk, or spam for the ultracard.io message to finish setting your password.'
+      );
+    } catch (error) {
+      const message =
+        (error as { body?: { message?: string; error?: string }; message?: string })?.body?.message ||
+        (error as { body?: { message?: string; error?: string }; message?: string })?.body?.error ||
+        (error as { message?: string })?.message ||
+        'Registration failed';
+      throw new Error(message);
     }
-    if (result.user) {
-      const user = this._sensorAttrsToCloudUser(result.user);
-      this._setCurrentUser(user);
-      this._notifyListeners();
-      return user;
-    }
-    // If sensor isn't ready yet (async setup), return a minimal user
-    return {
-      id: 0,
-      username,
-      email,
-      displayName: username,
-      token: '',
-      expiresAt: 0,
-    };
   }
 
   /**
@@ -468,7 +472,7 @@ class UcCloudAuthService {
       username: attrs.username || '',
       email: attrs.email || '',
       displayName: attrs.display_name || attrs.username || '',
-      token: attrs.token || '',
+      token: '', // Token never sent from integration; API calls use proxy
       expiresAt: 0,
       subscription: {
         tier: attrs.subscription_tier || 'free',
@@ -554,6 +558,9 @@ class UcCloudAuthService {
    */
   async register(data: RegisterData): Promise<CloudUser> {
     try {
+      if (!data.password) {
+        throw new Error('Password is required for direct registration.');
+      }
       const registerResponse = await fetch(
         `${UcCloudAuthService.API_BASE}/ultra-card/v1/register`,
         {
@@ -723,25 +730,59 @@ class UcCloudAuthService {
   }
 
   /**
-   * Get valid authorization header
+   * Get valid authorization header. Returns null when using integration auth (proxy path).
    */
   getAuthHeader(): string | null {
     if (!this.isAuthenticated()) {
       return null;
     }
+    if (!this._currentUser!.token) {
+      return null; // Integration auth: token stays server-side, use authenticatedFetch (proxy)
+    }
     return `Bearer ${this._currentUser!.token}`;
   }
 
   /**
-   * Make authenticated API request
+   * Make authenticated API request. Uses integration proxy when token is not in frontend.
    */
   async authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
+    if (!this.isAuthenticated()) {
+      throw new Error('Not authenticated');
+    }
+
+    // Integration auth: token is server-side; proxy the request through HA
+    if (!this._currentUser!.token && this._integrationHass) {
+      const method = (options.method || 'GET').toUpperCase();
+      let body: any = undefined;
+      if (options.body !== undefined && options.body !== null) {
+        body = options.body instanceof FormData ? undefined : options.body;
+        if (typeof body === 'string') try { body = JSON.parse(body); } catch { /* pass as string */ }
+      }
+      const callApi = (this._integrationHass as any).callApi;
+      if (typeof callApi !== 'function') {
+        throw new Error('Integration proxy unavailable');
+      }
+      const res = await callApi('POST', 'ultra_card_pro_cloud/proxy', {
+        method,
+        url,
+        body: body !== undefined ? body : null,
+      });
+      const status = res?._status ?? 0;
+      const _body = res?._body;
+      const ok = status >= 200 && status < 300;
+      return {
+        ok,
+        status,
+        json: () => Promise.resolve(_body),
+        text: () => Promise.resolve(typeof _body === 'string' ? _body : JSON.stringify(_body)),
+      } as Response;
+    }
+
     const authHeader = this.getAuthHeader();
     if (!authHeader) {
       throw new Error('Not authenticated');
     }
 
-    // Don't set Content-Type for FormData — browser sets it with the correct multipart boundary
     const isFormData = options.body instanceof FormData;
     const baseHeaders: Record<string, string> = { Authorization: authHeader };
     if (!isFormData) baseHeaders['Content-Type'] = 'application/json';
@@ -751,7 +792,6 @@ class UcCloudAuthService {
       headers: { ...options.headers, ...baseHeaders },
     });
 
-    // If token expired, try to refresh and retry once
     if (response.status === 401 && this._currentUser?.refreshToken) {
       try {
         await this.refreshToken();
@@ -810,6 +850,7 @@ class UcCloudAuthService {
    * Set current user and notify listeners
    */
   private _setCurrentUser(user: CloudUser | null): void {
+    if (!user) this._integrationHass = null;
     this._currentUser = user;
     this._notifyListeners();
   }

@@ -17,6 +17,8 @@ export interface ProAuthData {
   subscription_expires?: number;
 }
 
+const ULTRA_CARD_PRO_URL = 'https://ultracard.io/product/ultra-card-pro/';
+
 @customElement('hub-pro-tab')
 export class HubProTab extends LitElement {
   @property({ attribute: false }) auth: ProAuthData | null = null;
@@ -250,6 +252,57 @@ export class HubProTab extends LitElement {
 
       .banner-badge ha-icon {
         --mdc-icon-size: 16px;
+      }
+
+      .banner-side {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .banner-upgrade-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 18px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.96);
+        color: #5b46b1;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+        box-shadow: 0 10px 24px rgba(24, 35, 52, 0.18);
+      }
+
+      .banner-upgrade-btn:hover {
+        background: white;
+        transform: translateY(-1px);
+      }
+
+      .banner-upgrade-btn ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      @media (max-width: 720px) {
+        .pro-banner {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .banner-side {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .banner-badge,
+        .banner-upgrade-btn {
+          justify-content: center;
+        }
       }
 
       /* Account card */
@@ -734,7 +787,8 @@ export class HubProTab extends LitElement {
       /* Features grid */
       .features-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 280px));
+        justify-content: center;
         gap: 14px;
       }
 
@@ -1213,9 +1267,24 @@ export class HubProTab extends LitElement {
           </h3>
           <p>${isPro ? 'Thank you for being a Pro member!' : 'Upgrade to unlock all features'}</p>
         </div>
-        <div class="banner-badge">
-          ${isPro ? html`<ha-icon icon="mdi:check-decagram"></ha-icon>` : ''}
-          ${isPro ? 'PRO' : 'FREE'}
+        <div class="banner-side">
+          <div class="banner-badge">
+            ${isPro ? html`<ha-icon icon="mdi:check-decagram"></ha-icon>` : ''}
+            ${isPro ? 'PRO' : 'FREE'}
+          </div>
+          ${!isPro
+            ? html`
+                <a
+                  class="banner-upgrade-btn"
+                  href=${ULTRA_CARD_PRO_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ha-icon icon="mdi:star"></ha-icon>
+                  Upgrade to Pro
+                </a>
+              `
+            : nothing}
         </div>
       </div>
     `;
@@ -1528,12 +1597,12 @@ export class HubProTab extends LitElement {
         </ul>
         <a
           class="upgrade-btn"
-          href="https://ultracard.io/product/ultra-card-pro/"
+          href=${ULTRA_CARD_PRO_URL}
           target="_blank"
-          rel="noopener"
+          rel="noopener noreferrer"
         >
           <ha-icon icon="mdi:star"></ha-icon>
-          Upgrade to Pro — $4.99/month
+          Upgrade to Pro
         </a>
       </div>
     `;

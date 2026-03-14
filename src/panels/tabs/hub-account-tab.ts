@@ -33,7 +33,6 @@ export class HubAccountTab extends LitElement {
   @state() private _password = '';
   @state() private _email = '';
   @state() private _displayName = '';
-  @state() private _confirmPassword = '';
   @state() private _loading = false;
   @state() private _error = '';
   @state() private _autoConfigNote = '';
@@ -645,60 +644,32 @@ export class HubAccountTab extends LitElement {
   private async _handleRegister(e: Event): Promise<void> {
     e.preventDefault();
     this._error = '';
+    this._autoConfigNote = '';
 
-    if (!this._username.trim() || !this._email.trim() || !this._password) {
+    if (!this._username.trim() || !this._email.trim()) {
       this._error = 'Please fill in all required fields.';
-      return;
-    }
-    if (this._password !== this._confirmPassword) {
-      this._error = 'Passwords do not match.';
-      return;
-    }
-    if (this._password.length < 8) {
-      this._error = 'Password must be at least 8 characters.';
       return;
     }
 
     this._loading = true;
     try {
-      // Creates the ultracard.io account AND stores credentials in HA config entry
-      await ucCloudAuthService.registerViaHass(
+      const message = await ucCloudAuthService.registerViaHass(
         this.hass,
         this._username.trim(),
         this._email.trim(),
-        this._password,
+        this._displayName.trim(),
       );
       this._username = '';
       this._email = '';
-      this._password = '';
-      this._confirmPassword = '';
       this._displayName = '';
+      this._autoConfigNote =
+        message ||
+        'Account created. Check your email inbox, junk, or spam for the ultracard.io message to finish setting your password, then come back here to sign in.';
     } catch (err) {
       this._error = err instanceof Error ? err.message : 'Registration failed. Please try again.';
     } finally {
       this._loading = false;
     }
-  }
-
-  private _getPasswordStrength(password: string): {
-    score: 0 | 1 | 2 | 3 | 4;
-    label: string;
-    color: string;
-  } {
-    if (!password) return { score: 0, label: '', color: '' };
-    if (password.length < 8) return { score: 1, label: 'Too short', color: '#e74c3c' };
-
-    let score = 0;
-    if (/[a-z]/.test(password)) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[^a-zA-Z0-9]/.test(password)) score++;
-    if (password.length >= 12) score++;
-
-    if (score <= 1) return { score: 1, label: 'Very Weak', color: '#e74c3c' };
-    if (score === 2) return { score: 2, label: 'Weak', color: '#f39c12' };
-    if (score === 3) return { score: 3, label: 'Good', color: '#2980b9' };
-    return { score: 4, label: 'Strong', color: '#27ae60' };
   }
 
   private async _handleLogout(): Promise<void> {
@@ -959,15 +930,13 @@ export class HubAccountTab extends LitElement {
   }
 
   private _renderRegisterForm(): TemplateResult {
-    const strength = this._getPasswordStrength(this._password);
-
     return html`
       <form class="form-section" @submit=${this._handleRegister}>
         <div class="register-notice">
           <ha-icon icon="mdi:cloud-check"></ha-icon>
           <span>
             Create a free account to cloud-sync your Favorites, Colors &amp; Variables across devices.
-            Upgrade to Pro anytime for advanced features.
+            After you register, we will email you from ultracard.io so you can set your password.
           </span>
         </div>
         <div class="form-field">
@@ -976,7 +945,11 @@ export class HubAccountTab extends LitElement {
             id="account-reg-display"
             type="text"
             .value=${this._displayName}
-            @input=${(e: Event) => { this._displayName = (e.target as HTMLInputElement).value; }}
+            @input=${(e: Event) => {
+              this._displayName = (e.target as HTMLInputElement).value;
+              this._error = '';
+              this._autoConfigNote = '';
+            }}
             autocomplete="name"
           />
         </div>
@@ -986,7 +959,11 @@ export class HubAccountTab extends LitElement {
             id="account-reg-email"
             type="email"
             .value=${this._email}
-            @input=${(e: Event) => { this._email = (e.target as HTMLInputElement).value; }}
+            @input=${(e: Event) => {
+              this._email = (e.target as HTMLInputElement).value;
+              this._error = '';
+              this._autoConfigNote = '';
+            }}
             autocomplete="email"
           />
         </div>
@@ -996,64 +973,24 @@ export class HubAccountTab extends LitElement {
             id="account-reg-username"
             type="text"
             .value=${this._username}
-            @input=${(e: Event) => { this._username = (e.target as HTMLInputElement).value; }}
+            @input=${(e: Event) => {
+              this._username = (e.target as HTMLInputElement).value;
+              this._error = '';
+              this._autoConfigNote = '';
+            }}
             autocomplete="username"
           />
         </div>
-        <div class="form-field">
-          <label for="account-reg-password">Password</label>
-          <input
-            id="account-reg-password"
-            type="password"
-            .value=${this._password}
-            @input=${(e: Event) => {
-              this._password = (e.target as HTMLInputElement).value;
-            }}
-            autocomplete="new-password"
-            placeholder="At least 8 characters"
-          />
-          ${this._password
-            ? html`
-                <div class="strength-meter">
-                  <div class="strength-bar">
-                    ${[1, 2, 3, 4].map(
-                      i => html`<div
-                        class="strength-segment"
-                        style="background: ${strength.score >= i ? strength.color : ''}"
-                      ></div>`
-                    )}
-                  </div>
-                  ${strength.label
-                    ? html`<span class="strength-label" style="color: ${strength.color}"
-                        >${strength.label}</span
-                      >`
-                    : ''}
-                </div>
-              `
-            : ''}
-        </div>
-        <div class="form-field">
-          <label for="account-reg-confirm">Confirm password</label>
-          <input
-            id="account-reg-confirm"
-            type="password"
-            .value=${this._confirmPassword}
-            @input=${(e: Event) => { this._confirmPassword = (e.target as HTMLInputElement).value; }}
-            autocomplete="new-password"
-          />
-          ${this._confirmPassword && this._password !== this._confirmPassword
-            ? html`<p class="form-error" style="margin:4px 0 0">Passwords do not match</p>`
-            : ''}
-        </div>
         ${this._error ? html`<p class="form-error">${this._error}</p>` : ''}
+        ${this._autoConfigNote ? html`<p class="form-note">${this._autoConfigNote}</p>` : ''}
         <button
           type="submit"
           class="form-submit-btn"
-          ?disabled=${this._loading || !this._username || !this._email || !this._password || this._password !== this._confirmPassword}
+          ?disabled=${this._loading || !this._username.trim() || !this._email.trim()}
         >
           ${this._loading
             ? html`<ha-icon icon="mdi:loading" class="spin"></ha-icon> Creating account…`
-            : html`<ha-icon icon="mdi:account-plus"></ha-icon> Create Account`}
+            : html`<ha-icon icon="mdi:email-fast"></ha-icon> Create Account`}
         </button>
       </form>
     `;

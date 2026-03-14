@@ -2814,6 +2814,7 @@ export interface ExportData {
 export interface UltraCardConfig {
     type: string;
     layout: LayoutConfig;
+    _contentOrigin?: 'local' | 'imported' | 'preset_standard' | 'preset_community';
     global_css?: string;
     card_background?: string;
     card_border_radius?: number;

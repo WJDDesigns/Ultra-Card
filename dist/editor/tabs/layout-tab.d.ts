@@ -274,6 +274,7 @@ export declare class LayoutTab extends LitElement {
     private _openSharePresetDialog;
     private _addPreset;
     private _showEntityMappingDialog;
+    private _getPresetContentOrigin;
     private _applyPresetToLayout;
     private _remapRowEntities;
     private _applyMappingsToRow;

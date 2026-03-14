@@ -78,8 +78,8 @@ class UcSnapshotService {
     }
 
     try {
-      // Scan dashboard for all Ultra Cards
-      const dashboardSnapshot = await ucDashboardScannerService.scanDashboard();
+      // Scan ALL dashboards so cards on custom dashboards are included
+      const dashboardSnapshot = await ucDashboardScannerService.scanAllDashboards();
 
       if (dashboardSnapshot.card_count === 0) {
         throw new Error('No Ultra Cards found in dashboard');
@@ -125,7 +125,7 @@ class UcSnapshotService {
     try {
       console.log('🤖 Creating automatic daily snapshot...');
 
-      const dashboardSnapshot = await ucDashboardScannerService.scanDashboard();
+      const dashboardSnapshot = await ucDashboardScannerService.scanAllDashboards();
 
       if (dashboardSnapshot.card_count === 0) {
         console.log('⚠️ No Ultra Cards found, skipping auto snapshot');
@@ -384,22 +384,19 @@ class UcSnapshotService {
   }
 
   /**
-   * Make API call to WordPress backend
+   * Make API call to WordPress backend.
+   * Uses authenticatedFetch so integration auth (proxy) works when token is not in frontend.
    */
   private async apiCall(endpoint: string, options: RequestInit = {}): Promise<any> {
-    const authHeader = ucCloudAuthService.getAuthHeader();
-
-    if (!authHeader) {
+    if (!ucCloudAuthService.isAuthenticated()) {
       throw new Error('Not authenticated');
     }
 
     const url = `${this.apiBase}${endpoint}`;
-
-    const response = await fetch(url, {
+    const response = await ucCloudAuthService.authenticatedFetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: authHeader,
         ...(options.headers || {}),
       },
     });

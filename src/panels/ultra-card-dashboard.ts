@@ -250,7 +250,7 @@ export class UltraCardPanel extends LitElement {
     // when user only has the panel open (no Ultra Card on the dashboard).
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
     if (integrationUser) {
-      ucCloudAuthService.setIntegrationUser(integrationUser);
+      ucCloudAuthService.setIntegrationUser(integrationUser, this.hass);
     }
   }
 

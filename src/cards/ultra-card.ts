@@ -759,6 +759,9 @@ export class UltraCard extends LitElement {
 
   // Tell Home Assistant this card has a visual editor
   public static getConfigElement(): HTMLElement {
+    if (!customElements.get('ultra-card-editor')) {
+      void import('../editor/ultra-card-editor');
+    }
     return document.createElement('ultra-card-editor');
   }
 
@@ -3007,8 +3010,7 @@ export class UltraCard extends LitElement {
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
     if (integrationUser) {
       this._cloudUser = integrationUser;
-      // Set the user in the auth service so isAuthenticated() works properly
-      ucCloudAuthService.setIntegrationUser(integrationUser);
+      ucCloudAuthService.setIntegrationUser(integrationUser, this.hass);
       return;
     }
 

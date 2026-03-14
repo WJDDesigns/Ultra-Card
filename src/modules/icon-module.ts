@@ -32,6 +32,9 @@ import {
 } from '../utils/template-migration';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 
+type IconAnimation = NonNullable<IconConfig['active_icon_animation']>;
+type IconBackgroundShape = NonNullable<IconConfig['active_icon_background']>;
+
 export class UltraIconModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'icon',
@@ -2224,7 +2227,7 @@ export class UltraIconModule extends BaseUltraModule {
                           onChange: (e: CustomEvent) => {
                             const raw = this._formValue(e, 'active_icon_animation');
                             if (raw === undefined) return;
-                            const next = String(raw);
+                            const next = String(raw) as IconAnimation;
                             const prev = iconModule.icons[index].active_icon_animation || 'none';
                             if (next === prev) return;
                             this._updateIcon(
@@ -2315,7 +2318,7 @@ export class UltraIconModule extends BaseUltraModule {
                           onChange: (e: CustomEvent) => {
                             const raw = this._formValue(e, 'inactive_icon_animation');
                             if (raw === undefined) return;
-                            const next = String(raw);
+                            const next = String(raw) as IconAnimation;
                             const prev = iconModule.icons[index].inactive_icon_animation || 'none';
                             if (next === prev) return;
                             this._updateIcon(
@@ -2461,7 +2464,7 @@ export class UltraIconModule extends BaseUltraModule {
             (e: CustomEvent) => {
               const raw = this._formValue(e, 'inactive_icon_background');
               if (raw === undefined) return;
-              const next = String(raw);
+              const next = String(raw) as IconBackgroundShape;
               const prev = iconModule.icons[index].inactive_icon_background || 'none';
               if (next === prev) return;
               // For static icons, sync both active and inactive backgrounds
@@ -2574,7 +2577,7 @@ export class UltraIconModule extends BaseUltraModule {
             (e: CustomEvent) => {
               const raw = this._formValue(e, 'inactive_icon_animation');
               if (raw === undefined) return;
-              const next = String(raw);
+              const next = String(raw) as IconAnimation;
               const prev = iconModule.icons[index].inactive_icon_animation || 'none';
               if (next === prev) return;
               // For static icons, sync both active and inactive animations
