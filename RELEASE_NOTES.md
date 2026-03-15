@@ -1,5 +1,17 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0-beta16
+
+### 🔧 Hotfix — Panel Version & Chunk Delivery
+
+> ⚠️ **After updating, please also update Ultra Card Connect (the integration) via HACS, restart Home Assistant, then hard reload your browser (Ctrl+Shift+R / Cmd+Shift+R).**
+
+- **Fix** - Hub sidebar panel showing wrong version (e.g. beta11) while cards showed beta15 — the panel is served by the Ultra Card Connect integration, not HACS. The integration now ships all 174 uc-*.js chunk files alongside ultra-card-panel.js so the panel loads correctly and shows the right version
+- **Fix** - sync:panel script now copies all chunk files to the integration www/ folder (previously only the panel bundle was copied, leaving stale chunks from older builds)
+- **Fix** - Cards still blank after beta15 install — confirmed root cause: HACS serves individual release assets, not zip contents. All 174 module chunk files are now attached as individual GitHub release assets so HACS downloads them correctly on install/update
+
+---
+
 ## Version 3.1.0-beta15
 
 ### 🔧 Hotfix
