@@ -46,11 +46,26 @@ jobs:
           echo "Checking main files..."
           ls -la ultra-card.js* hacs.json README.md license
 
+      - name: Copy chunk files to root for HACS serving
+        run: |
+          echo "Copying lazy-load chunk files to root..."
+          cp dist/uc-*.js . 2>/dev/null || true
+          cp dist/uc-*.js.LICENSE.txt . 2>/dev/null || true
+          cp dist/ultra-card-panel.js . 2>/dev/null || true
+          cp dist/ultra-card-panel.js.LICENSE.txt . 2>/dev/null || true
+          echo "Root JS files after copy:"
+          ls -la *.js | head -20
+          echo "Total uc-* chunk files: $(ls uc-*.js 2>/dev/null | wc -l)"
+
       - name: Create Release Archive
         run: |
           mkdir -p release
           cp ultra-card.js release/
-          cp ultra-card.js.LICENSE.txt release/
+          cp ultra-card.js.LICENSE.txt release/ 2>/dev/null || true
+          cp ultra-card-panel.js release/ 2>/dev/null || true
+          cp ultra-card-panel.js.LICENSE.txt release/ 2>/dev/null || true
+          cp uc-*.js release/ 2>/dev/null || true
+          cp uc-*.js.LICENSE.txt release/ 2>/dev/null || true
           cp hacs.json release/
           cp README.md release/
           cp license release/
@@ -138,6 +153,7 @@ jobs:
           files: |
             ultra-card-${{ github.ref_name }}.zip
             ultra-card.js
+            ultra-card-panel.js
 
       - name: Announce to Discord
         if: success()

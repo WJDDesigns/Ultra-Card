@@ -1,13 +1,13 @@
 {
   "name": "ultra-card",
-  "version": "3.1.0-beta13",
+  "version": "3.1.0-beta14",
   "description": "Ultra Card - A modular card builder for Home Assistant",
   "main": "dist/ultra-card.js",
   "scripts": {
     "prebuild": "node prepare-build.js",
     "build": "webpack --mode production",
     "build:analyze": "ANALYZE=1 webpack --mode production",
-    "postbuild": "cp dist/ultra-card.js . && cp dist/ultra-card.js.LICENSE.txt .",
+    "postbuild": "cp dist/ultra-card.js . && cp dist/ultra-card.js.LICENSE.txt . 2>/dev/null; cp dist/ultra-card-panel.js . 2>/dev/null; cp dist/uc-*.js . 2>/dev/null; cp dist/uc-*.js.LICENSE.txt . 2>/dev/null; echo 'Build artifacts copied to root'",
     "build:deploy": "SKIP_HA_DEPLOY=1 npm run build && node deploy.js",
     "build:release": "node scripts/release.js",
     "build:prerelease": "node scripts/release.js --prerelease",
