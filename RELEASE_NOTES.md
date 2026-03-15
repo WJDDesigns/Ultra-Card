@@ -1,5 +1,16 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0-beta15
+
+### 🔧 Hotfix
+
+> ⚠️ **After updating, please do a hard reload in your browser (Ctrl+Shift+R / Cmd+Shift+R) or clear your browser cache.**
+
+- **Fix** - All uc-*.js lazy-load chunk files are now correctly attached as individual release assets so HACS downloads them properly. Beta14 included the files in the zip archive but HACS downloads individual release assets, not zip contents — all 174 module chunk files are now attached directly to the release
+- **Fix** - Release workflow updated to automatically attach all uc-*.js chunks as individual GitHub release assets on every future release
+
+---
+
 ## Version 3.1.0-beta14
 
 ### 🔧 Critical Hotfix
