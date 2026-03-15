@@ -6,9 +6,9 @@
 
 > ⚠️ **After updating, please do a hard reload in your browser (Ctrl+Shift+R / Cmd+Shift+R) or clear your browser cache to ensure the new files are loaded correctly.**
 
-- **Fix** - All Ultra Cards showing blank / "Unknown Module: text" after installing beta13 — the release packaging now correctly includes all lazy-load chunk files (`uc-*.js`) that the module system requires. Beta13 introduced webpack code splitting so each module loads on demand; those chunk files were missing from the HACS release, causing every module fetch to 404 and every card to render blank
-- **Fix** - Ultra Card Hub panel version mismatch (showing "beta11" while card was "beta13") — `ultra-card-panel.js` is now included in the release package
-- **Fix** - `postbuild` script now copies all chunk files and panel bundle to the repo root on every build, keeping local dev deployments and HACS releases consistent
+- **Fix** - All Ultra Cards showing blank / "Unknown Module: text" after installing beta13 — the release packaging now correctly includes all lazy-load chunk files (uc-*.js) that the module system requires. Beta13 introduced webpack code splitting so each module loads on demand; those chunk files were missing from the HACS release, causing every module fetch to 404 and every card to render blank
+- **Fix** - Ultra Card Hub panel version mismatch (showing "beta11" while card was "beta13") — ultra-card-panel.js is now included in the release package
+- **Fix** - postbuild script now copies all chunk files and panel bundle to the repo root on every build, keeping local dev deployments and HACS releases consistent
 
 ---
 
