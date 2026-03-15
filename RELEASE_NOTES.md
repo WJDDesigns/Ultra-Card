@@ -1,5 +1,17 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0-beta17
+
+### 🔧 Emergency HACS Compatibility Fix
+
+> ⚠️ **After updating, do a hard reload in your browser (Ctrl+Shift+R / Cmd+Shift+R).**
+
+- **Fix** - Eliminates runtime `ChunkLoadError` / `uc-*.js` 404 failures for core modules by changing module loaders to webpack eager mode. Core module implementations are now bundled into `ultra-card.js` while keeping the async loader API, so cards continue to work even if an installation only fetches the main bundle
+- **Fix** - Removed `filename` from `hacs.json` to avoid single-file download behavior in HACS setups and improve multi-file asset compatibility
+- **Fix** - Resolves blank cards and editor module settings failing to open when chunk files are missing (`uc-509.js`, `uc-6900.js`, etc.)
+
+---
+
 ## Version 3.1.0-beta16
 
 ### 🔧 Hotfix — Panel Version & Chunk Delivery

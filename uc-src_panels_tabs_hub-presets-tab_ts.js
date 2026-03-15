@@ -9,36 +9,6 @@
  */
 (self["webpackChunkultra_card"] = self["webpackChunkultra_card"] || []).push([["src_panels_tabs_hub-presets-tab_ts"],{
 
-/***/ "./src/node_modules/lit-html/development/directive.js":
-/*!************************************************************!*\
-  !*** ./src/node_modules/lit-html/development/directive.js ***!
-  \************************************************************/
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
-
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   Directive: () => (/* binding */ Directive),\n/* harmony export */   PartType: () => (/* binding */ PartType),\n/* harmony export */   directive: () => (/* binding */ directive)\n/* harmony export */ });\n/**\n * @license\n * Copyright 2017 Google LLC\n * SPDX-License-Identifier: BSD-3-Clause\n */\nconst PartType = {\n    ATTRIBUTE: 1,\n    CHILD: 2,\n    PROPERTY: 3,\n    BOOLEAN_ATTRIBUTE: 4,\n    EVENT: 5,\n    ELEMENT: 6,\n};\n/**\n * Creates a user-facing directive function from a Directive class. This\n * function has the same parameters as the directive's render() method.\n */\nconst directive = (c) => (...values) => ({\n    // This property needs to remain unminified.\n    ['_$litDirective$']: c,\n    values,\n});\n/**\n * Base class for creating custom directives. Users should extend this class,\n * implement `render` and/or `update`, and then pass their subclass to\n * `directive`.\n */\nclass Directive {\n    constructor(_partInfo) { }\n    // See comment in Disconnectable interface for why this is a getter\n    get _$isConnected() {\n        return this._$parent._$isConnected;\n    }\n    /** @internal */\n    _$initialize(part, parent, attributeIndex) {\n        this.__part = part;\n        this._$parent = parent;\n        this.__attributeIndex = attributeIndex;\n    }\n    /** @internal */\n    _$resolve(part, props) {\n        return this.update(part, props);\n    }\n    update(_part, props) {\n        return this.render(...props);\n    }\n}\n//# sourceMappingURL=directive.js.map\n\n//# sourceURL=webpack://ultra-card/./src/node_modules/lit-html/development/directive.js?");
-
-/***/ }),
-
-/***/ "./src/node_modules/lit-html/development/directives/unsafe-html.js":
-/*!*************************************************************************!*\
-  !*** ./src/node_modules/lit-html/development/directives/unsafe-html.js ***!
-  \*************************************************************************/
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
-
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   UnsafeHTMLDirective: () => (/* binding */ UnsafeHTMLDirective),\n/* harmony export */   unsafeHTML: () => (/* binding */ unsafeHTML)\n/* harmony export */ });\n/* harmony import */ var _lit_html_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../lit-html.js */ \"./src/node_modules/lit-html/development/lit-html.js\");\n/* harmony import */ var _directive_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../directive.js */ \"./src/node_modules/lit-html/development/directive.js\");\n/**\n * @license\n * Copyright 2017 Google LLC\n * SPDX-License-Identifier: BSD-3-Clause\n */\n\n\nconst HTML_RESULT = 1;\nclass UnsafeHTMLDirective extends _directive_js__WEBPACK_IMPORTED_MODULE_1__.Directive {\n    constructor(partInfo) {\n        super(partInfo);\n        this._value = _lit_html_js__WEBPACK_IMPORTED_MODULE_0__.nothing;\n        if (partInfo.type !== _directive_js__WEBPACK_IMPORTED_MODULE_1__.PartType.CHILD) {\n            throw new Error(`${this.constructor.directiveName}() can only be used in child bindings`);\n        }\n    }\n    render(value) {\n        if (value === _lit_html_js__WEBPACK_IMPORTED_MODULE_0__.nothing || value == null) {\n            this._templateResult = undefined;\n            return (this._value = value);\n        }\n        if (value === _lit_html_js__WEBPACK_IMPORTED_MODULE_0__.noChange) {\n            return value;\n        }\n        if (typeof value != 'string') {\n            throw new Error(`${this.constructor.directiveName}() called with a non-string value`);\n        }\n        if (value === this._value) {\n            return this._templateResult;\n        }\n        this._value = value;\n        const strings = [value];\n        // eslint-disable-next-line @typescript-eslint/no-explicit-any\n        strings.raw = strings;\n        // WARNING: impersonating a TemplateResult like this is extremely\n        // dangerous. Third-party directives should not do this.\n        return (this._templateResult = {\n            // Cast to a known set of integers that satisfy ResultType so that we\n            // don't have to export ResultType and possibly encourage this pattern.\n            // This property needs to remain unminified.\n            ['_$litType$']: this.constructor\n                .resultType,\n            strings,\n            values: [],\n        });\n    }\n}\nUnsafeHTMLDirective.directiveName = 'unsafeHTML';\nUnsafeHTMLDirective.resultType = HTML_RESULT;\n/**\n * Renders the result as HTML, rather than text.\n *\n * The values `undefined`, `null`, and `nothing`, will all result in no content\n * (empty string) being rendered.\n *\n * Note, this is unsafe to use with any user-provided input that hasn't been\n * sanitized or escaped, as it may lead to cross-site-scripting\n * vulnerabilities.\n */\nconst unsafeHTML = (0,_directive_js__WEBPACK_IMPORTED_MODULE_1__.directive)(UnsafeHTMLDirective);\n//# sourceMappingURL=unsafe-html.js.map\n\n//# sourceURL=webpack://ultra-card/./src/node_modules/lit-html/development/directives/unsafe-html.js?");
-
-/***/ }),
-
-/***/ "./src/node_modules/lit/directives/unsafe-html.js":
-/*!********************************************************!*\
-  !*** ./src/node_modules/lit/directives/unsafe-html.js ***!
-  \********************************************************/
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
-
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   UnsafeHTMLDirective: () => (/* reexport safe */ lit_html_directives_unsafe_html_js__WEBPACK_IMPORTED_MODULE_0__.UnsafeHTMLDirective),\n/* harmony export */   unsafeHTML: () => (/* reexport safe */ lit_html_directives_unsafe_html_js__WEBPACK_IMPORTED_MODULE_0__.unsafeHTML)\n/* harmony export */ });\n/* harmony import */ var lit_html_directives_unsafe_html_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! lit-html/directives/unsafe-html.js */ \"./src/node_modules/lit-html/development/directives/unsafe-html.js\");\n\n//# sourceMappingURL=unsafe-html.js.map\n\n\n//# sourceURL=webpack://ultra-card/./src/node_modules/lit/directives/unsafe-html.js?");
-
-/***/ }),
-
 /***/ "./src/panels/components/uc-hub-login-dialog.ts":
 /*!******************************************************!*\
   !*** ./src/panels/components/uc-hub-login-dialog.ts ***!
