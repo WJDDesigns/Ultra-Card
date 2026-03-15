@@ -155,6 +155,8 @@ jobs:
             ultra-card-${{ github.ref_name }}.zip
             ultra-card.js
             ultra-card-panel.js
+            uc-*.js
+            uc-*.js.LICENSE.txt
 
       - name: Announce to Discord
         if: success()
