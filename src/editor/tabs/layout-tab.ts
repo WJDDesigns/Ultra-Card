@@ -6288,6 +6288,17 @@ export class LayoutTab extends LitElement {
   private _startPopupDrag(e: MouseEvent, element: HTMLElement): void {
     // Disable dragging on mobile for predictable centered UX
     if (this._isMobileDevice()) return;
+    // Only start drag from non-interactive header areas.
+    // This prevents the dialog from jumping when clicking close/action buttons.
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement | null;
+    if (
+      target?.closest(
+        'button, a, input, textarea, select, option, label, ha-icon-button, mwc-button, ha-switch, ha-select, ha-textfield, .header-actions'
+      )
+    ) {
+      return;
+    }
     e.preventDefault();
 
     const rect = element.getBoundingClientRect();

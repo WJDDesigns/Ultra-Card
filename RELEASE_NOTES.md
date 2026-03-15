@@ -1,5 +1,14 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0-beta18
+
+### 🛠 UI/UX Fixes
+
+- **Fix** - Row and Column settings dialogs no longer jump/move off-screen when clicking the close (×) button. Dragging now starts only from non-interactive header areas, so header action buttons (close/duplicate/delete) do not trigger popup drag
+- **Fix** - Preserves existing draggable dialog behavior for intentional drag interactions while preventing accidental movement on action clicks
+
+---
+
 ## Version 3.1.0-beta17
 
 ### 🔧 Emergency HACS Compatibility Fix
