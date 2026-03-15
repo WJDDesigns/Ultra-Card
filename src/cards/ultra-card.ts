@@ -1,4 +1,4 @@
-import { LitElement, html, css, TemplateResult, PropertyValues, nothing } from 'lit';
+import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -39,7 +39,6 @@ import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { generateCSSVariables } from '../utils/css-variable-utils';
 import {
   ThirdPartyLimitService,
-  computeCardInstanceId,
   getCurrentDashboardId,
 } from '../pro/third-party-limit-service';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
@@ -239,12 +238,12 @@ export class UltraCard extends LitElement {
       let id = '';
       try {
         id = localStorage.getItem(persistKey) || '';
-      } catch {}
+      } catch (_e) { /* ignore */ }
       if (!id) {
         id = `uc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         try {
           localStorage.setItem(persistKey, id);
-        } catch {}
+        } catch (_e) { /* ignore */ }
       }
       this._instanceId = id;
     }
@@ -263,7 +262,7 @@ export class UltraCard extends LitElement {
           this.requestUpdate();
         }
       });
-    } catch {}
+    } catch (_e) { /* ignore */ }
 
     // Inject combined CSS from all registered modules so that any module-specific
     // styles (e.g. icon animations) are available inside this card's shadow-root.
@@ -436,7 +435,7 @@ export class UltraCard extends LitElement {
       const l = (this as any)._ucPreviewFlagListener;
       if (l) window.removeEventListener('uc-preview-suppress-locks-changed', l);
       (this as any)._ucPreviewFlagListener = undefined;
-    } catch {}
+    } catch (_e) { /* ignore */ }
 
     // Clean up auth listener
     if (this._authListener) {
@@ -476,7 +475,7 @@ export class UltraCard extends LitElement {
       if (this._instanceId) {
         ThirdPartyLimitService.unregister(this._instanceId);
       }
-    } catch {}
+    } catch (_e) { /* ignore */ }
 
     // Unregister video background modules
     this._unregisterVideoBgModules();
@@ -719,12 +718,12 @@ export class UltraCard extends LitElement {
             configurable: true,
             writable: true,
           });
-        } catch {}
+        } catch (_e) { /* ignore */ }
 
         if (!this._isEditorPreviewCard && !(window as any).__UC_PREVIEW_SUPPRESS_LOCKS) {
           ThirdPartyLimitService.register(cardInstanceId, dashboardId, this.config);
         }
-      } catch {}
+      } catch (_e) { /* ignore */ }
 
       try {
         if (
@@ -737,7 +736,7 @@ export class UltraCard extends LitElement {
             ucFavoriteColorsService.importFromConfig(this.config.favorite_colors);
           }
         }
-      } catch {}
+      } catch (_e) { /* ignore */ }
 
       this.requestUpdate();
     }).catch(() => {});
@@ -768,7 +767,7 @@ export class UltraCard extends LitElement {
         }
         depth++;
       }
-    } catch {}
+    } catch (_e) { /* ignore */ }
     return false;
   }
 
@@ -822,7 +821,7 @@ export class UltraCard extends LitElement {
       try {
         (this.config as any).__ucInstanceId = this._instanceId;
         (this.config as any).__ucIsEditorPreview = this._isEditorPreviewCard;
-      } catch {}
+      } catch (_e) { /* ignore */ }
     }
   }
 
@@ -831,7 +830,7 @@ export class UltraCard extends LitElement {
     try {
       (this as any).dataset = (this as any).dataset || {};
       (this as any).dataset.ucInstanceId = this._instanceId;
-    } catch {}
+    } catch (_e) { /* ignore */ }
   }
 
   private _generatePreviewInstanceId(): string {
@@ -945,7 +944,7 @@ export class UltraCard extends LitElement {
 
     // Use cached config-derived module lists and flags (single walk per config change)
     const cache = this._getConfigCache();
-    const { allModules, onlyInvisibleModules, onlyPopupModules, allPopupsInvisible } = cache;
+    const { onlyInvisibleModules, onlyPopupModules, allPopupsInvisible } = cache;
 
     // Hoist per-render environment checks (computed once per render, passed to row/column/module)
     const isInCardEditor = !!document.querySelector('hui-dialog-edit-card');
@@ -1537,7 +1536,7 @@ export class UltraCard extends LitElement {
 
     // Determine animation class
     let animationClass = '';
-    let willStartAnimation = false;
+    let _willStartAnimation = false;
     const isAnimating = this._animatingRows.has(rowId);
 
     if (stateAnimationClass) {
@@ -1546,7 +1545,7 @@ export class UltraCard extends LitElement {
       if (isVisible && introAnimation !== 'none') {
         if (!isAnimating) {
           animationClass = `animation-${introAnimation}`;
-          willStartAnimation = true;
+          _willStartAnimation = true;
           this._animatingRows.add(rowId);
           setTimeout(
             () => {
@@ -1562,7 +1561,7 @@ export class UltraCard extends LitElement {
       } else if (!isVisible && outroAnimation !== 'none') {
         if (!isAnimating) {
           animationClass = `animation-${outroAnimation}`;
-          willStartAnimation = true;
+          _willStartAnimation = true;
           this._animatingRows.add(rowId);
           setTimeout(
             () => {
@@ -1579,7 +1578,7 @@ export class UltraCard extends LitElement {
     } else if (previouslyVisible === undefined && isVisible && introAnimation !== 'none') {
       // Initial mount: play intro once
       animationClass = `animation-${introAnimation}`;
-      willStartAnimation = true;
+      _willStartAnimation = true;
       this._animatingRows.add(rowId);
       setTimeout(
         () => {
@@ -1843,7 +1842,7 @@ export class UltraCard extends LitElement {
     const stateAnimationClass = this._getStateBasedAnimationClass(effectiveColDesign as any);
 
     let animationClass = '';
-    let willStartAnimation = false;
+    let _willStartAnimation = false;
     const isAnimating = this._animatingColumns.has(columnId);
 
     if (stateAnimationClass) {
@@ -1852,7 +1851,7 @@ export class UltraCard extends LitElement {
       if (isVisible && introAnimation !== 'none') {
         if (!isAnimating) {
           animationClass = `animation-${introAnimation}`;
-          willStartAnimation = true;
+          _willStartAnimation = true;
           this._animatingColumns.add(columnId);
           setTimeout(
             () => {
@@ -1868,7 +1867,7 @@ export class UltraCard extends LitElement {
       } else if (!isVisible && outroAnimation !== 'none') {
         if (!isAnimating) {
           animationClass = `animation-${outroAnimation}`;
-          willStartAnimation = true;
+          _willStartAnimation = true;
           this._animatingColumns.add(columnId);
           setTimeout(
             () => {
@@ -1884,7 +1883,7 @@ export class UltraCard extends LitElement {
       }
     } else if (previouslyVisible === undefined && isVisible && introAnimation !== 'none') {
       animationClass = `animation-${introAnimation}`;
-      willStartAnimation = true;
+      _willStartAnimation = true;
       this._animatingColumns.add(columnId);
       setTimeout(
         () => {
