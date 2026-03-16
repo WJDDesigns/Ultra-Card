@@ -359,7 +359,7 @@ export class UltraIconModule extends BaseUltraModule {
 
     return html`
       ${this.injectUcFormStyles()}
-      <div class="module-general-settings">
+      <div class="module-general-settings icon-module-general-settings">
         <!-- Module-Wide Size Controls -->
         <div class="settings-section" style="margin-bottom: 32px;">
           <div class="section-title">SIZE CONTROLS</div>
@@ -5600,68 +5600,14 @@ export class UltraIconModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
-      /* Hide unwanted form labels with underscores and slots */
-      [slot='label'] {
-        display: none !important;
-      }
-
-      ha-form .mdc-form-field > label,
-      ha-form .mdc-text-field > label,
-      ha-form .mdc-floating-label,
-      ha-form .mdc-notched-outline__leading,
-      ha-form .mdc-notched-outline__notch,
-      ha-form .mdc-notched-outline__trailing,
-      ha-form .mdc-floating-label--float-above,
-      ha-form label[for],
-      ha-form .ha-form-label,
-      ha-form .form-label {
-        display: none !important;
-      }
-
-      /* Hide any labels containing underscores */
-      ha-form label[data-label*='_'],
-      ha-form .label-text:contains('_'),
-      label:contains('_') {
-        display: none !important;
-      }
-        .label {
-          display: none !important;
-        }
-
-      /* Additional safeguards for underscore labels */
-      ha-form .mdc-text-field-character-counter,
-      ha-form .mdc-text-field-helper-text,
-      ha-form mwc-formfield,
-      ha-form .formfield {
-        display: none !important;
-      }
-
-      /* Hide form field labels that match underscore patterns */
-      ha-form[data-field*='_'] label,
-      ha-form[data-field*='_'] .mdc-floating-label,
-      ha-form[data-field*='_'] .mdc-notched-outline__notch > .mdc-floating-label {
-        display: none !important;
-      }
-
-      /* Target specific underscore field names */
-      ha-form[data-field='use_entity_color_for_icon'] label,
-      ha-form[data-field='use_entity_color_for_icon_background'] label,
-      ha-form[data-field='show_name_when_active'] label,
-      ha-form[data-field='show_state_when_active'] label,
-      ha-form[data-field='show_icon_when_active'] label,
-      ha-form[data-field='show_name_when_inactive'] label,
-      ha-form[data-field='show_state_when_inactive'] label,
-      ha-form[data-field='show_icon_when_inactive'] label,
-      ha-form[data-field='active_template_mode'] label,
-      ha-form[data-field='inactive_template_mode'] label,
-      ha-form[data-field='dynamic_icon_template_mode'] label,
-      ha-form[data-field='dynamic_color_template_mode'] label {
+      /* Scope all icon-form tweaks to icon module editor only */
+      .icon-module-general-settings [slot='label'] {
         display: none !important;
       }
 
       /* Make dynamic template toggles more compact */
-      ha-form[data-field='dynamic_icon_template_mode'] ha-switch,
-      ha-form[data-field='dynamic_color_template_mode'] ha-switch {
+      .icon-module-general-settings ha-form[data-field='dynamic_icon_template_mode'] ha-switch,
+      .icon-module-general-settings ha-form[data-field='dynamic_color_template_mode'] ha-switch {
         --mdc-switch-track-width: 36px !important;
         --mdc-switch-track-height: 20px !important;
         --switch-checked-track-color: var(--primary-color) !important;
@@ -5669,21 +5615,9 @@ export class UltraIconModule extends BaseUltraModule {
         transform: scale(0.8) !important;
       }
 
-      ha-form[data-field='dynamic_icon_template_mode'] .mdc-switch,
-      ha-form[data-field='dynamic_color_template_mode'] .mdc-switch {
+      .icon-module-general-settings ha-form[data-field='dynamic_icon_template_mode'] .mdc-switch,
+      .icon-module-general-settings ha-form[data-field='dynamic_color_template_mode'] .mdc-switch {
         transform: scale(0.8) !important;
-      }
-
-      /* Hide any element with underscore in text content */
-      *:not(script):not(style) {
-        text-decoration: none !important;
-      }
-      
-      /* Target elements that might show underscore text */
-      .mdc-form-field__label:contains('_'),
-      .mdc-text-field__input + label:contains('_'),
-      .mdc-select__selected-text:contains('_') {
-        display: none !important;
       }
 
 
@@ -7568,51 +7502,34 @@ export class UltraIconModule extends BaseUltraModule {
   }
 
   private _updateIconAnimationClasses(
-    entityId: string,
+    _entityId: string,
     newAnimationClass: string,
-    isActive: boolean
+    _isActive: boolean
   ): void {
-    // Find all ha-icon elements that might be associated with this entity
-    const allSearchRoots = [
-      document,
-      document.body,
-      (this as any).shadowRoot,
-      (this as any).renderRoot,
-      ...Array.from(document.querySelectorAll('*'))
-        .filter(el => el.shadowRoot)
-        .map(el => el.shadowRoot!),
-    ].filter(Boolean);
+    const selector = 'ha-icon[data-animation-debug]:not([data-animation-debug="none"])';
+    const roots: Array<Document | ShadowRoot> = [document];
+    const renderRoot = (this as any).renderRoot as ShadowRoot | undefined;
+    const shadowRoot = (this as any).shadowRoot as ShadowRoot | undefined;
 
-    allSearchRoots.forEach((root, index) => {
+    if (renderRoot) roots.push(renderRoot);
+    if (shadowRoot && shadowRoot !== renderRoot) roots.push(shadowRoot);
+
+    roots.forEach(root => {
       try {
-        const allIcons = root.querySelectorAll('ha-icon');
+        const allIcons = root.querySelectorAll(selector);
+        allIcons.forEach((icon: Element) => {
+          const iconEl = icon as HTMLElement;
+          const desiredClass = iconEl.getAttribute('data-animation-debug') || '';
+          if (desiredClass !== newAnimationClass) return;
 
-        allIcons.forEach((icon: HTMLElement) => {
-          // Only touch icons that are meant to use this animation. Each icon tells us
-          // what it *should* be running through the data-animation-debug attribute that
-          // we set when rendering.
-          const desiredClass = icon.getAttribute('data-animation-debug') || '';
-
-          // Skip if this icon isn't the one we're currently updating. This prevents one
-          // icon's update from unintentionally overwriting every other icon's animation.
-          if (desiredClass !== newAnimationClass) {
-            return;
-          }
-
-          // Remove any previous animation classes so we start clean.
-          const currentClasses = icon.className.split(' ');
+          const currentClasses = iconEl.className.split(' ');
           const filteredClasses = currentClasses.filter(cls => !cls.startsWith('icon-animation-'));
-
-          // Add the new animation class when applicable.
           if (newAnimationClass && !newAnimationClass.includes('none')) {
             filteredClasses.push(newAnimationClass);
           }
+          iconEl.className = filteredClasses.join(' ');
 
-          // Update the class list in one shot.
-          icon.className = filteredClasses.join(' ');
-
-          // Provide an inline fallback as well (helps inside deep shadow DOMs).
-          const animKey = newAnimationClass.replace('icon-animation-', ''); // e.g., rotate-left -> rotateLeft
+          const animKey = newAnimationClass.replace('icon-animation-', '');
           if (animKey && animKey !== 'none') {
             const keyframeName =
               'icon' +
@@ -7620,26 +7537,21 @@ export class UltraIconModule extends BaseUltraModule {
                 .split('-')
                 .map(part => part.charAt(0).toUpperCase() + part.slice(1))
                 .join('');
-
             const timing =
               animKey.includes('spin') || animKey.includes('rotate')
                 ? '2s linear infinite'
                 : '1s ease-in-out infinite';
-
-            (icon.style as any).animation = `${keyframeName} ${timing}`;
+            iconEl.style.animation = `${keyframeName} ${timing}`;
           } else {
-            (icon.style as any).animation = '';
+            iconEl.style.animation = '';
           }
 
-          // Make sure keyframes exist inside this ha-icon's shadow root so the
-          // animation actually plays.
-          this._injectKeyframesIntoHaIcon(icon);
-
-          // Force a reflow so that the browser notices the new animation.
-          (icon as any).offsetHeight;
+          this._injectKeyframesIntoHaIcon(iconEl);
+          (iconEl as any).offsetHeight;
         });
-      } catch (e) {
-        // Silently handle animation errors
+      } catch (_error) {
+        // Ignore animation sync errors to keep editor responsive.
+        return;
       }
     });
   }
@@ -7698,43 +7610,28 @@ export class UltraIconModule extends BaseUltraModule {
 
   // Inject keyframes into ha-icon shadowRoot so animations work inside dialog previews
   private _injectKeyframesForAllSplitPreviewIcons(): void {
-    // Use multiple attempts with different strategies to find and inject keyframes
-    const attemptInjection = (attempt: number = 1) => {
-      // Strategy 1: Find ALL ha-icon elements with animation data attributes
-      const allAnimatedIcons = document.querySelectorAll(
-        'ha-icon[data-animation-debug]:not([data-animation-debug="none"])'
-      );
+    const selector = 'ha-icon[data-animation-debug]:not([data-animation-debug="none"])';
+    const collectAndInject = () => {
+      const uniqueIcons = new Set<HTMLElement>();
+      const roots: Array<Document | ShadowRoot> = [document];
+      const renderRoot = (this as any).renderRoot as ShadowRoot | undefined;
+      const shadowRoot = (this as any).shadowRoot as ShadowRoot | undefined;
 
-      // Strategy 2: Also search within all shadow roots for nested ha-icons
-      const allShadowRoots = [
-        ...Array.from(document.querySelectorAll('*'))
-          .filter(el => el.shadowRoot)
-          .map(el => el.shadowRoot!),
-      ];
+      if (renderRoot) roots.push(renderRoot);
+      if (shadowRoot && shadowRoot !== renderRoot) roots.push(shadowRoot);
 
-      // Convert NodeList to Array so we can push to it
-      const iconsArray = Array.from(allAnimatedIcons);
-
-      allShadowRoots.forEach(shadowRoot => {
-        const nestedIcons = shadowRoot.querySelectorAll(
-          'ha-icon[data-animation-debug]:not([data-animation-debug="none"])'
-        );
-        nestedIcons.forEach(icon => iconsArray.push(icon));
+      roots.forEach(root => {
+        root.querySelectorAll(selector).forEach(icon => uniqueIcons.add(icon as HTMLElement));
       });
 
-      let injected = 0;
-      iconsArray.forEach(icon => {
-        this._injectKeyframesIntoHaIcon(icon as HTMLElement);
-        injected++;
-      });
-
-      // If no icons found and we haven't tried too many times, try again
-      if (injected === 0 && attempt < 10) {
-        setTimeout(() => attemptInjection(attempt + 1), 150);
-      }
+      uniqueIcons.forEach(icon => this._injectKeyframesIntoHaIcon(icon));
+      return uniqueIcons.size;
     };
 
-    attemptInjection();
+    const injected = collectAndInject();
+    if (injected === 0) {
+      setTimeout(() => collectAndInject(), 120);
+    }
   }
 
   /**

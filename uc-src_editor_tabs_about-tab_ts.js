@@ -205,7 +205,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
   \************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   VERSION: () => (/* binding */ VERSION)\n/* harmony export */ });\n/**\n * Ultra Card Version\n *\n *\n * This is the single source of truth for version information\n\n* Build timestamp: 2026-01-27\n */\nconst VERSION = '3.1.0-beta18';\n\n\n//# sourceURL=webpack://ultra-card/./src/version.ts?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   VERSION: () => (/* binding */ VERSION)\n/* harmony export */ });\n/**\n * Ultra Card Version\n *\n *\n * This is the single source of truth for version information\n\n* Build timestamp: 2026-01-27\n */\nconst VERSION = '3.1.0-beta19';\n\n\n//# sourceURL=webpack://ultra-card/./src/version.ts?");
 
 /***/ })
 

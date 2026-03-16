@@ -364,6 +364,7 @@ export class ModuleRegistry {
       }
     `;
   }
+
 }
 
 // Export a convenience function to get the registry instance

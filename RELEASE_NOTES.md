@@ -1,5 +1,20 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0-beta19
+
+### 🐛 Bug Fixes
+
+- **Fix** - Editor dialog close buttons no longer cause a jump/snap when clicked — all settings popups (module, row, column, layout child, tabs section child) now use a 180ms closing animation guard before hiding, preventing the drag-position reset from firing mid-animation
+- **Fix** - Row settings dialog close button, duplicate, and delete actions now route through the new _closeRowSettings() method with the animation guard instead of directly setting _showRowSettings = false
+- **Fix** - Icon module animation update no longer walks all shadow roots in the document — _updateIconAnimationClasses now only queries the card's own renderRoot/shadowRoot with a scoped selector, eliminating O(n) DOM traversal on every state update
+- **Fix** - Icon module _injectKeyframesForAllSplitPreviewIcons simplified — uses a Set to deduplicate icons, queries only the card's own roots, and retries once after 120ms only when zero icons were found (removed the 10-attempt retry loop)
+- **Fix** - Removed invalid CSS rules from icon module that used :contains() (not supported in CSS) which caused unintended side effects on labels in some browsers
+- **Fix** - Icon module CSS selectors for dynamic_icon_template_mode and dynamic_color_template_mode switches now scoped under .icon-module-general-settings to avoid bleeding into other ha-form instances
+- **Fix** - Removed debug/instrumentation fetch call (agent log) left in uc-todo-service.ts that was sending internal session data to a local debug endpoint on every todo entity refresh
+- **Fix** - Dynamic list module and module registry whitespace/lint cleanup
+
+---
+
 ## Version 3.1.0-beta18
 
 ### 🛠 UI/UX Fixes

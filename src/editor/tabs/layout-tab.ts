@@ -89,6 +89,7 @@ export class LayoutTab extends LitElement {
   @state() private _selectedRowIndex = -1;
   @state() private _selectedColumnIndex = -1;
   @state() private _showModuleSettings = false;
+  @state() private _isClosingModuleSettings = false;
   @state() private _selectedModule: {
     rowIndex: number;
     columnIndex: number;
@@ -99,11 +100,13 @@ export class LayoutTab extends LitElement {
 
   // Row settings state
   @state() private _showRowSettings = false;
+  @state() private _isClosingRowSettings = false;
   @state() private _selectedRowForSettings = -1;
   @state() private _activeRowTab = 'general';
 
   // Column settings state
   @state() private _showColumnSettings = false;
+  @state() private _isClosingColumnSettings = false;
   @state() private _selectedColumnForSettings: {
     rowIndex: number;
     columnIndex: number;
@@ -112,6 +115,7 @@ export class LayoutTab extends LitElement {
 
   // Tabs section child settings state
   @state() private _showTabsSectionChildSettings = false;
+  @state() private _isClosingTabsSectionChildSettings = false;
   @state() private _selectedTabsSectionChild: {
     rowIndex: number;
     columnIndex: number;
@@ -6077,6 +6081,7 @@ export class LayoutTab extends LitElement {
 
   // Layout child module settings state
   @state() private _showLayoutChildSettings = false;
+  @state() private _isClosingLayoutChildSettings = false;
   @state() private _selectedLayoutChild: {
     parentRowIndex: number;
     parentColumnIndex: number;
@@ -6116,6 +6121,8 @@ export class LayoutTab extends LitElement {
     initialHeight: 0,
     element: null,
   };
+
+  private static readonly POPUP_CLOSE_ANIMATION_MS = 180;
 
   private _windowResizeListener: (() => void) | null = null;
   private _resizeTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -10527,21 +10534,26 @@ export class LayoutTab extends LitElement {
   }
 
   private _closeModuleSettings(): void {
-    // Clean up external card editor cache when closing module settings
-    if (this._selectedModule) {
-      const layout = this._ensureLayout();
-      const row = layout.rows[this._selectedModule.rowIndex];
-      if (row && row.columns[this._selectedModule.columnIndex]) {
-        const column = row.columns[this._selectedModule.columnIndex];
-        const module = column.modules?.[this._selectedModule.moduleIndex];
-        if (module?.type === 'external_card') {
-          cleanupExternalCardCache(module.id);
+    if (!this._showModuleSettings || this._isClosingModuleSettings) return;
+    this._isClosingModuleSettings = true;
+    window.setTimeout(() => {
+      // Clean up external card editor cache when closing module settings
+      if (this._selectedModule) {
+        const layout = this._ensureLayout();
+        const row = layout.rows[this._selectedModule.rowIndex];
+        if (row && row.columns[this._selectedModule.columnIndex]) {
+          const column = row.columns[this._selectedModule.columnIndex];
+          const module = column.modules?.[this._selectedModule.moduleIndex];
+          if (module?.type === 'external_card') {
+            cleanupExternalCardCache(module.id);
+          }
         }
       }
-    }
-
-    this._showModuleSettings = false;
-    this._selectedModule = null;
+      this._showModuleSettings = false;
+      this._selectedModule = null;
+      this._isClosingModuleSettings = false;
+      this.requestUpdate();
+    }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
     this.requestUpdate();
   }
 
@@ -10556,16 +10568,28 @@ export class LayoutTab extends LitElement {
   }
 
   private _closeLayoutChildSettings(): void {
-    this._showLayoutChildSettings = false;
-    this._selectedLayoutChild = null;
-    this._selectedNestedChildIndex = -1; // Reset nested child index
-    this._selectedNestedNestedChildIndex = -1; // Reset deep nested child index
+    if (!this._showLayoutChildSettings || this._isClosingLayoutChildSettings) return;
+    this._isClosingLayoutChildSettings = true;
+    window.setTimeout(() => {
+      this._showLayoutChildSettings = false;
+      this._selectedLayoutChild = null;
+      this._selectedNestedChildIndex = -1; // Reset nested child index
+      this._selectedNestedNestedChildIndex = -1; // Reset deep nested child index
+      this._isClosingLayoutChildSettings = false;
+      this.requestUpdate();
+    }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
     this.requestUpdate();
   }
 
   private _closeTabsSectionChildSettings(): void {
-    this._showTabsSectionChildSettings = false;
-    this._selectedTabsSectionChild = null;
+    if (!this._showTabsSectionChildSettings || this._isClosingTabsSectionChildSettings) return;
+    this._isClosingTabsSectionChildSettings = true;
+    window.setTimeout(() => {
+      this._showTabsSectionChildSettings = false;
+      this._selectedTabsSectionChild = null;
+      this._isClosingTabsSectionChildSettings = false;
+      this.requestUpdate();
+    }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
     this.requestUpdate();
   }
 
@@ -12740,12 +12764,28 @@ export class LayoutTab extends LitElement {
   }
 
   private _closeColumnSettings(): void {
-    this._showColumnSettings = false;
-    this._selectedColumnForSettings = null;
-    this._selectedRowForLayout = -1;
-    this._customSizingInput = '';
-    this._customSizingValid = false;
-    this._customSizingError = '';
+    if (!this._showColumnSettings || this._isClosingColumnSettings) return;
+    this._isClosingColumnSettings = true;
+    window.setTimeout(() => {
+      this._showColumnSettings = false;
+      this._selectedColumnForSettings = null;
+      this._selectedRowForLayout = -1;
+      this._customSizingInput = '';
+      this._customSizingValid = false;
+      this._customSizingError = '';
+      this._isClosingColumnSettings = false;
+      this.requestUpdate();
+    }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
+  }
+
+  private _closeRowSettings(): void {
+    if (!this._showRowSettings || this._isClosingRowSettings) return;
+    this._isClosingRowSettings = true;
+    window.setTimeout(() => {
+      this._showRowSettings = false;
+      this._isClosingRowSettings = false;
+      this.requestUpdate();
+    }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
   }
 
   private _updateColumn(updates: Partial<CardColumn>): void {
@@ -21995,7 +22035,7 @@ export class LayoutTab extends LitElement {
 
     const lang = this.hass?.locale?.language || 'en';
     return html`
-      <div class="module-settings-popup">
+      <div class="module-settings-popup ${this._isClosingTabsSectionChildSettings ? 'is-closing' : ''}">
         <div class="popup-overlay" @click=${() => this._closeTabsSectionChildSettings()}></div>
         <div
           class="popup-content draggable-popup"
@@ -22639,7 +22679,7 @@ export class LayoutTab extends LitElement {
 
     const lang = this.hass?.locale?.language || 'en';
     return html`
-      <div class="module-settings-popup">
+      <div class="module-settings-popup ${this._isClosingModuleSettings ? 'is-closing' : ''}">
         <div class="popup-overlay" @click=${() => this._closeModuleSettings()}></div>
         <div
           class="popup-content draggable-popup"
@@ -22912,7 +22952,7 @@ export class LayoutTab extends LitElement {
 
     const lang = this.hass?.locale?.language || 'en';
     return html`
-      <div class="module-settings-popup">
+      <div class="module-settings-popup ${this._isClosingLayoutChildSettings ? 'is-closing' : ''}">
         <div class="popup-overlay" @click=${() => this._closeLayoutChildSettings()}></div>
         <div
           class="popup-content draggable-popup"
@@ -23514,8 +23554,8 @@ export class LayoutTab extends LitElement {
     if (!row) return html``;
 
     return html`
-      <div class="settings-popup">
-        <div class="popup-overlay" @click=${() => (this._showRowSettings = false)}></div>
+      <div class="settings-popup ${this._isClosingRowSettings ? 'is-closing' : ''}">
+        <div class="popup-overlay" @click=${() => this._closeRowSettings()}></div>
         <div
           class="popup-content draggable-popup"
           id="row-popup-${this._selectedRowForSettings}"
@@ -23540,7 +23580,7 @@ export class LayoutTab extends LitElement {
                 class="action-button duplicate-button"
                 @click=${() => {
                   this._duplicateRow(this._selectedRowForSettings);
-                  this._showRowSettings = false;
+                  this._closeRowSettings();
                 }}
                 title="Duplicate Row"
               >
@@ -23550,13 +23590,13 @@ export class LayoutTab extends LitElement {
                 class="action-button delete-button"
                 @click=${() => {
                   this._deleteRow(this._selectedRowForSettings);
-                  this._showRowSettings = false;
+                  this._closeRowSettings();
                 }}
                 title="Delete Row"
               >
                 <ha-icon icon="mdi:delete"></ha-icon>
               </button>
-              <button class="close-button" @click=${() => (this._showRowSettings = false)}>
+              <button class="close-button" @click=${() => this._closeRowSettings()}>
                 ×
               </button>
             </div>
@@ -23635,7 +23675,7 @@ export class LayoutTab extends LitElement {
     if (!column) return html``;
 
     return html`
-      <div class="settings-popup">
+      <div class="settings-popup ${this._isClosingColumnSettings ? 'is-closing' : ''}">
         <div class="popup-overlay" @click=${() => this._closeColumnSettings()}></div>
         <div
           class="popup-content draggable-popup"
@@ -23666,7 +23706,7 @@ export class LayoutTab extends LitElement {
                       this._selectedColumnForSettings.rowIndex,
                       this._selectedColumnForSettings.columnIndex
                     );
-                    this._showColumnSettings = false;
+                    this._closeColumnSettings();
                   }
                 }}
                 title="Duplicate Column"
@@ -23681,7 +23721,7 @@ export class LayoutTab extends LitElement {
                       this._selectedColumnForSettings.rowIndex,
                       this._selectedColumnForSettings.columnIndex
                     );
-                    this._showColumnSettings = false;
+                    this._closeColumnSettings();
                   }
                 }}
                 title="Delete Column"
@@ -27209,11 +27249,19 @@ export class LayoutTab extends LitElement {
         </div>
 
         ${this._showModuleSelector ? this._renderModuleSelector() : ''}
-        ${this._showModuleSettings ? this._renderModuleSettings() : ''}
-        ${this._showLayoutChildSettings ? this._renderLayoutChildSettings() : ''}
-        ${this._showTabsSectionChildSettings ? this._renderTabsSectionChildSettings() : ''}
-        ${this._showRowSettings ? this._renderRowSettings() : ''}
-        ${this._showColumnSettings ? this._renderColumnSettings() : ''}
+        ${this._showModuleSettings || this._isClosingModuleSettings
+          ? this._renderModuleSettings()
+          : ''}
+        ${this._showLayoutChildSettings || this._isClosingLayoutChildSettings
+          ? this._renderLayoutChildSettings()
+          : ''}
+        ${this._showTabsSectionChildSettings || this._isClosingTabsSectionChildSettings
+          ? this._renderTabsSectionChildSettings()
+          : ''}
+        ${this._showRowSettings || this._isClosingRowSettings ? this._renderRowSettings() : ''}
+        ${this._showColumnSettings || this._isClosingColumnSettings
+          ? this._renderColumnSettings()
+          : ''}
         ${this._showColumnLayoutSelector ? this._renderColumnLayoutSelector() : ''}
         ${this._renderImagePopup()} ${this._renderFavoriteDialog()} ${this._renderImportDialog()}
         ${this._renderVariableMappingDialog()} ${this._renderShortcodeDialog()}
@@ -33089,6 +33137,85 @@ export class LayoutTab extends LitElement {
         padding: 20px;
         overflow-y: hidden; /* scrolling handled inside popup-content for sticky header */
         overflow-x: visible;
+      }
+
+      /* Smooth open animation for row/column/module settings dialogs */
+      @keyframes ucDialogOverlayIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes ucDialogContentIn {
+        from {
+          opacity: 0;
+          transform: translateY(14px) scale(0.985);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes ucDialogOverlayOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+
+      @keyframes ucDialogContentOut {
+        from {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(10px) scale(0.99);
+        }
+      }
+
+      .settings-popup .popup-overlay,
+      .module-settings-popup .popup-overlay {
+        animation: ucDialogOverlayIn 180ms ease-out both;
+        backdrop-filter: blur(2px);
+      }
+
+      .settings-popup .popup-content,
+      .module-settings-popup .popup-content {
+        animation: ucDialogContentIn 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        transform-origin: top center;
+        will-change: transform, opacity;
+      }
+
+      .settings-popup.is-closing .popup-overlay,
+      .module-settings-popup.is-closing .popup-overlay {
+        animation: ucDialogOverlayOut ${LayoutTab.POPUP_CLOSE_ANIMATION_MS}ms ease-in both;
+      }
+
+      .settings-popup.is-closing .popup-content,
+      .module-settings-popup.is-closing .popup-content {
+        animation: ucDialogContentOut ${LayoutTab.POPUP_CLOSE_ANIMATION_MS}ms ease-in both;
+      }
+
+      .popup-content.popup-dragging,
+      .popup-content.popup-resizing {
+        animation: none !important;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .settings-popup .popup-overlay,
+        .module-settings-popup .popup-overlay,
+        .settings-popup .popup-content,
+        .module-settings-popup .popup-content {
+          animation: none !important;
+          backdrop-filter: none;
+        }
       }
 
       .popup-content {

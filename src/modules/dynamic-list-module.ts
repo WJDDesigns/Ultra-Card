@@ -1722,10 +1722,6 @@ export class UltraDynamicListModule extends BaseUltraModule {
       return 'template';
     })();
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/36063b29-f1db-4787-bed7-95c789116512',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c2200c'},body:JSON.stringify({sessionId:'c2200c',location:'dynamic-list-module.ts:renderPreview:entry',message:'Dynamic list renderPreview',data:{raw_source_type:dynModule.source_type,typeof_source_type:typeof dynModule.source_type,sourceType,todo_entity:dynModule.todo_entity,branch:sourceType},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
-
     if (!hass) {
       return this.renderGradientErrorState(
         'Waiting for Home Assistant',
@@ -1738,9 +1734,6 @@ export class UltraDynamicListModule extends BaseUltraModule {
 
     // ─── Todo list source ───────────────────────────────────────────────────
     if (sourceType === 'todo') {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/36063b29-f1db-4787-bed7-95c789116512',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c2200c'},body:JSON.stringify({sessionId:'c2200c',location:'dynamic-list-module.ts:todo-branch',message:'Entered todo branch',data:{todo_entity:dynModule.todo_entity,todo_entities:dynModule.todo_entities},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       const firstTodoEntity =
         hass.states &&
         Object.keys(hass.states).find((id) => id.startsWith('todo.'));
@@ -2060,9 +2053,6 @@ export class UltraDynamicListModule extends BaseUltraModule {
 
     } else {
       // ─── Template source ──────────────────────────────────────────────────
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/36063b29-f1db-4787-bed7-95c789116512',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c2200c'},body:JSON.stringify({sessionId:'c2200c',location:'dynamic-list-module.ts:template-branch',message:'Entered template branch',data:{hasTemplate:!!(dynModule.dynamic_template && dynModule.dynamic_template.trim())},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       if (!dynModule.dynamic_template || dynModule.dynamic_template.trim() === '') {
         return this.renderGradientErrorState(
           'Add a Jinja2 Template',
@@ -2152,9 +2142,6 @@ export class UltraDynamicListModule extends BaseUltraModule {
     }
 
     if (generatedModules.length === 0) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/36063b29-f1db-4787-bed7-95c789116512',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c2200c'},body:JSON.stringify({sessionId:'c2200c',location:'dynamic-list-module.ts:empty-list',message:'Showing empty list message',data:{sourceType,moduleId:dynModule.id},timestamp:Date.now(),hypothesisId:'E',runId:'post-fix'})}).catch(()=>{});
-      // #endregion
       const isTodoEmpty = sourceType === 'todo' || sourceType === 'todo-template';
       const emptyMsg = isTodoEmpty ? 'No to-do items' : 'Template returned an empty list';
       return html`

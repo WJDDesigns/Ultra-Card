@@ -77,9 +77,6 @@ export class UltraCardTodoService {
           true,
           true
         );
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/36063b29-f1db-4787-bed7-95c789116512',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c2200c'},body:JSON.stringify({sessionId:'c2200c',location:'uc-todo-service.ts:fetchAndCache',message:'todo.get_items result',data:{entityId,hasResponse:!!result?.response,responseKeys:result?.response?Object.keys(result.response):[],entryKeys:result?.response?.[entityId]?Object.keys(result.response[entityId]||{}):[],firstEntryItemsLength:Array.isArray((result?.response?.[entityId] as any)?.items)?(result.response[entityId] as any).items.length:'n/a'},timestamp:Date.now(),hypothesisId:'F'})}).catch(()=>{});
-        // #endregion
         const response = result?.response ?? {};
         let items: TodoItem[] = [];
         const entry = response[entityId];
