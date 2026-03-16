@@ -504,6 +504,22 @@ function generateChangelog(version, entries) {
 }
 
 /**
+ * Extract the "## Version X" section from RELEASE_NOTES for the given version.
+ * Returns the section content (including the ## Version line) or null if not found.
+ */
+function extractVersionSectionFromReleaseNotes(version) {
+  if (!fs.existsSync(CONFIG.releaseNotesFile)) return null;
+  const content = fs.readFileSync(CONFIG.releaseNotesFile, 'utf8');
+  const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const sectionRegex = new RegExp(
+    `(## Version ${escapedVersion}\\n[\\s\\S]*?)(?=\\n---\\n|\\n## Version )`,
+    'm'
+  );
+  const match = content.match(sectionRegex);
+  return match ? match[1].trim() + '\n' : null;
+}
+
+/**
  * Update RELEASE_NOTES.md file
  */
 function updateReleaseNotes(version, newChangelog) {
@@ -735,6 +751,7 @@ async function main() {
   const forcePrerelease = args.includes('--prerelease');
   const skipBuild = args.includes('--skip-build');
   const skipPush = args.includes('--skip-push');
+  const useExistingReleaseNotes = args.includes('--use-existing-release-notes');
 
   log.header('Ultra Card Release Script');
 
@@ -753,12 +770,24 @@ async function main() {
   // Sync package.json version
   const versionSynced = syncPackageVersion(version);
 
-  // Collect changelog entries (from file if --changelog-file provided)
-  log.step('Collecting changelog entries...');
-  let entries = await collectChangelogEntries(args);
+  let changelog;
+  if (useExistingReleaseNotes) {
+    log.step('Using existing release notes from RELEASE_NOTES.md...');
+    const existing = extractVersionSectionFromReleaseNotes(version);
+    if (!existing) {
+      log.error(`No "## Version ${version}" section found in RELEASE_NOTES.md`);
+      process.exit(1);
+    }
+    log.success(`Found existing changelog for ${version}`);
+    changelog = existing + '\n\n---\n\n';
+  } else {
+    // Collect changelog entries (from file if --changelog-file provided)
+    log.step('Collecting changelog entries...');
+    const entries = await collectChangelogEntries(args);
 
-  // Generate changelog
-  let changelog = generateChangelog(version, entries);
+    // Generate changelog
+    changelog = generateChangelog(version, entries);
+  }
 
   // Preview and confirm (skip if --yes flag provided)
   const autoConfirm = args.includes('--yes');
@@ -774,8 +803,12 @@ async function main() {
     if (response === 'yes' || response === 'y') {
       confirmed = true;
     } else if (response === 'edit' || response === 'e') {
+      if (useExistingReleaseNotes) {
+        log.warn('Cannot edit when using --use-existing-release-notes; edit RELEASE_NOTES.md and re-run');
+        process.exit(0);
+      }
       log.info('Re-entering changelog entries...');
-      entries = await collectChangelogEntries(args);
+      const entries = await collectChangelogEntries(args);
       changelog = generateChangelog(version, entries);
     } else {
       log.warn('Release cancelled by user');
@@ -790,9 +823,13 @@ async function main() {
     log.warn('Skipping build (--skip-build flag)');
   }
 
-  // Update RELEASE_NOTES.md
-  log.step('Updating RELEASE_NOTES.md...');
-  updateReleaseNotes(version, changelog);
+  // Update RELEASE_NOTES.md (skip when using existing section)
+  if (!useExistingReleaseNotes) {
+    log.step('Updating RELEASE_NOTES.md...');
+    updateReleaseNotes(version, changelog);
+  } else {
+    log.info('Skipping RELEASE_NOTES.md update (using existing section)');
+  }
 
   // Commit changes
   log.step('Committing changes...');

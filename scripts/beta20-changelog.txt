@@ -1,6 +1,0 @@
-add: action confirmation dialog now supports custom button text and show/hide controls — new config fields confirm_action_show_confirm_button, confirm_action_show_cancel_button, confirm_action_confirm_text, and confirm_action_cancel_text let you tailor the dialog to each action
-add: confirmation dialog settings panel in the editor — when confirm_action is enabled a collapsible sub-section appears with toggles to show/hide each button and text inputs for button labels
-add: new ConfirmationDialogOptions interface passed through ultra-link to the confirmation service so confirm/cancel customisations are honoured at runtime
-add: confirmation dialog replaced with a fully custom overlay modal — fixes the ha-dialog button rendering issues seen in some HA versions; the new modal uses a fixed-position backdrop, proper ARIA roles, keyboard (Escape) dismissal, and scoped CSS variables for theming
-add: simple entity mapper dialog now appends to the active open dialog in the DOM (via findOverlayHost) instead of always appending to document.body, fixing cases where it appeared behind the editor panel
-fix: removed all debug/instrumentation fetch calls (agent log regions) left in ultra-link.ts and uc-action-confirmation-service.ts including the private _debugLog method that was POSTing data to a local debug endpoint

@@ -1,5 +1,42 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0
+
+### What's New
+
+- **New Energy Display module** — See your home's energy usage at a glance with a visual flow diagram showing solar, grid, battery, home, and EV consumption all in one place.
+- **New Dynamic List module** — Automatically display a live list of items from your Home Assistant to-do lists or custom templates — great for shopping lists, chores, or any HA to-do entity.
+- **New QR Code module** — Generate a QR code right on your dashboard from any text, entity state, or template. Fully styleable with custom colors and a logo overlay.
+- **Hub tabs overhaul** — The Hub sidebar now has dedicated tabs for Templates, Variables, Colors, Favorites, Presets, Dashboards, Account, and Pro — all easier to navigate.
+- **Preset sharing** — Share your card presets with the community directly from the Hub, or import presets shared by others.
+- **Dynamic layout templates** — Use Home Assistant templates to control your card's layout in real time, showing or hiding sections automatically based on your entity states.
+- **Catalan language support** — Ultra Card is now available in Catalan.
+
+### Improvements
+
+- **Favorite colors now saved to Home Assistant** — Your favorite colors are stored in the integration, so they survive browser cache clears and work across all your devices and browsers.
+- **Smarter editor loading** — The card editor now loads much faster. Module settings and presets only load when you actually open them, so the editor feels snappier.
+- **To-do list sorting** — Sort your Dynamic List items by name, due date, or status, in ascending or descending order.
+- **Timer module syncs with HA** — Timer modules linked to a Home Assistant `timer.*` entity now stay in sync automatically.
+- **No more third-party card limits** — All users can now add unlimited third-party cards to their layouts.
+- **Hub sidebar scrolls correctly on mobile** — The Hub panel now scrolls properly on phones and tablets.
+- **Action confirmation dialogs are fully customizable** — You can now set custom text for the confirm and cancel buttons, or hide either button entirely.
+
+### Bug Fixes
+
+- **Blank card after install fixed** — A major issue where all cards showed blank after installing a beta was fully resolved. All module files now install correctly through HACS.
+- **Cards no longer flash "Loading..." on startup** — The brief loading text visible when a card first renders has been removed.
+- **Close buttons in editor dialogs no longer cause jumps** — Clicking the X button on row, column, and module settings dialogs no longer causes the dialog to snap or move.
+- **Login form removed from editor** — The inline username/password login in the card editor has been removed. Authentication is now handled through the Hub Account tab only, which is cleaner and more secure.
+- **Snapshot actions (Pro) no longer fail on fresh load** — Fixed a timing issue where Hub Pro snapshot actions could fail with a "must be logged in" error immediately after the page loaded.
+- **Dashboard card counts now accurate** — The Hub Dashboard tab now correctly counts cards on modern dashboard layouts that use sections.
+- **Favorite colors no longer disappear** — Colors previously lost when clearing the browser cache are now safely stored in Home Assistant.
+- **Icon module animations now display correctly** — Custom icon animations now render properly inside the card's shadow DOM.
+- **Editor popup pickers no longer appear behind dialogs** — Module picker dropdowns now correctly appear in front of the editor panel.
+- **Various performance and stability improvements** — Icon module rendering is faster, template subscriptions are cleaned up properly, and many internal operations that could slow the card down have been optimized.
+
+---
+
 ## Version 3.1.0-beta20
 
 ### 🚀 New Features
