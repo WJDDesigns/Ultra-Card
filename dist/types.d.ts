@@ -88,6 +88,10 @@ export interface BaseModule {
     animation_timing?: 'ease' | 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'cubic-bezier(0.25,0.1,0.25,1)';
     design?: SharedDesignProperties;
     confirm_action?: boolean;
+    confirm_action_show_confirm_button?: boolean;
+    confirm_action_show_cancel_button?: boolean;
+    confirm_action_confirm_text?: string;
+    confirm_action_cancel_text?: string;
 }
 export interface TextModule extends BaseModule {
     type: 'text';

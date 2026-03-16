@@ -1,5 +1,21 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.1.0-beta20
+
+### 🚀 New Features
+
+- **Add** - Action confirmation dialog now supports custom button text and show/hide controls — new config fields confirm_action_show_confirm_button, confirm_action_show_cancel_button, confirm_action_confirm_text, and confirm_action_cancel_text let you tailor the dialog to each action
+- **Add** - Confirmation dialog settings panel in the editor — when confirm_action is enabled a collapsible sub-section appears with toggles to show/hide each button and text inputs for button labels
+- **Add** - New ConfirmationDialogOptions interface passed through ultra-link to the confirmation service so confirm/cancel customisations are honoured at runtime
+- **Add** - Confirmation dialog replaced with a fully custom overlay modal — fixes the ha-dialog button rendering issues seen in some HA versions; the new modal uses a fixed-position backdrop, proper ARIA roles, keyboard (Escape) dismissal, and scoped CSS variables for theming
+- **Add** - Simple entity mapper dialog now appends to the active open dialog in the DOM (via findOverlayHost) instead of always appending to document.body, fixing cases where it appeared behind the editor panel
+
+### 🐛 Bug Fixes
+
+- **Fix** - Removed all debug/instrumentation fetch calls (agent log regions) left in ultra-link.ts and uc-action-confirmation-service.ts including the private _debugLog method that was POSTing data to a local debug endpoint
+
+---
+
 ## Version 3.1.0-beta19
 
 ### 🐛 Bug Fixes

@@ -216,6 +216,11 @@ export interface BaseModule {
   design?: SharedDesignProperties;
   // Action confirmation - when enabled, shows a confirmation dialog before executing actions
   confirm_action?: boolean;
+  // Confirmation dialog customization
+  confirm_action_show_confirm_button?: boolean;
+  confirm_action_show_cancel_button?: boolean;
+  confirm_action_confirm_text?: string;
+  confirm_action_cancel_text?: string;
 }
 
 // Text Module

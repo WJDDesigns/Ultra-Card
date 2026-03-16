@@ -108,8 +108,10 @@ export class UcSimpleEntityMapper {
     const html = this.buildDialogHTML(title);
     this.container.innerHTML = html;
     
-    // Add to body
-    document.body.appendChild(this.container);
+    // Add to the active top-layer host when available (HA uses native dialog top-layer).
+    // Appending to document.body can place this UI behind the editor dialog regardless of z-index.
+    const overlayHost = this.findOverlayHost();
+    overlayHost.appendChild(this.container);
     
     // Force the dialog to be interactive and on top
     setTimeout(() => {
@@ -136,7 +138,7 @@ export class UcSimpleEntityMapper {
         if (dialogContainer) {
           dialogContainer.style.pointerEvents = 'auto';
         }
-        
+
         console.log('🎆 Dialog made interactive - removed inert attributes');
       }
     }, 100);
@@ -146,6 +148,37 @@ export class UcSimpleEntityMapper {
     
     console.log('✅ Dialog created and events bound');
     console.log('📍 Dialog parent:', this.container?.parentElement);
+  }
+
+  private findOverlayHost(): HTMLElement {
+    const findOpenDialog = (root: Document | ShadowRoot): HTMLElement | null => {
+      const dialogs = Array.from(root.querySelectorAll('dialog, ha-dialog, mwc-dialog'));
+      for (const dialog of dialogs) {
+        const htmlDialog = dialog as HTMLDialogElement;
+        const isOpen =
+          Boolean((htmlDialog as any).open) ||
+          dialog.hasAttribute('open') ||
+          dialog.classList.contains('open') ||
+          dialog.getAttribute('aria-hidden') === 'false';
+        if (isOpen) {
+          return dialog as HTMLElement;
+        }
+      }
+
+      const allElements = Array.from(root.querySelectorAll('*')) as HTMLElement[];
+      for (const el of allElements) {
+        if (el.shadowRoot) {
+          const nested = findOpenDialog(el.shadowRoot);
+          if (nested) {
+            return nested;
+          }
+        }
+      }
+
+      return null;
+    };
+
+    return findOpenDialog(document) || document.body;
   }
 
   private buildDialogHTML(title: string): string {

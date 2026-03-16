@@ -112,6 +112,12 @@ export class GlobalActionsTab extends LitElement {
         hold_action: (this.module as any).hold_action,
         double_tap_action: (this.module as any).double_tap_action,
         confirm_action: (this.module as any).confirm_action || false,
+        confirm_action_show_confirm_button:
+          (this.module as any).confirm_action_show_confirm_button !== false,
+        confirm_action_show_cancel_button:
+          (this.module as any).confirm_action_show_cancel_button !== false,
+        confirm_action_confirm_text: (this.module as any).confirm_action_confirm_text || 'Yes',
+        confirm_action_cancel_text: (this.module as any).confirm_action_cancel_text || 'Cancel',
       };
     }
   }
@@ -366,7 +372,17 @@ export class GlobalActionsTab extends LitElement {
               this.dispatchEvent(
                 new CustomEvent('module-changed', {
                   detail: {
-                    updates: { confirm_action: confirmAction },
+                    updates: {
+                      confirm_action: confirmAction,
+                      confirm_action_show_confirm_button:
+                        (this.module as any).confirm_action_show_confirm_button !== false,
+                      confirm_action_show_cancel_button:
+                        (this.module as any).confirm_action_show_cancel_button !== false,
+                      confirm_action_confirm_text:
+                        (this.module as any).confirm_action_confirm_text || 'Yes',
+                      confirm_action_cancel_text:
+                        (this.module as any).confirm_action_cancel_text || 'Cancel',
+                    },
                   },
                   bubbles: true,
                   composed: true,
@@ -375,6 +391,166 @@ export class GlobalActionsTab extends LitElement {
               this._triggerPreviewUpdate();
             }
           )}
+          ${(this._config.confirm_action || false)
+            ? html`
+                <div
+                  style="margin-left: 16px; padding-left: 16px; border-left: 2px solid rgba(var(--rgb-primary-color), 0.25);"
+                >
+                  ${UcFormUtils.renderFieldSection(
+                    localize(
+                      'editor.actions.confirm_action_show_confirm_button',
+                      lang,
+                      'Show Confirm (opt-in) Button'
+                    ),
+                    localize(
+                      'editor.actions.confirm_action_show_confirm_button_desc',
+                      lang,
+                      'Show or hide the button users use to continue with the action.'
+                    ),
+                    this.hass,
+                    {
+                      confirm_action_show_confirm_button:
+                        this._config.confirm_action_show_confirm_button !== false,
+                    },
+                    [
+                      {
+                        name: 'confirm_action_show_confirm_button',
+                        selector: { boolean: {} },
+                      },
+                    ],
+                    (e: CustomEvent) => {
+                      const value = e.detail.value?.confirm_action_show_confirm_button !== false;
+                      this._config = { ...this._config, confirm_action_show_confirm_button: value };
+                      this.requestUpdate();
+                      this.dispatchEvent(
+                        new CustomEvent('module-changed', {
+                          detail: { updates: { confirm_action_show_confirm_button: value } },
+                          bubbles: true,
+                          composed: true,
+                        })
+                      );
+                      this._triggerPreviewUpdate();
+                    }
+                  )}
+
+                  ${UcFormUtils.renderFieldSection(
+                    localize(
+                      'editor.actions.confirm_action_show_cancel_button',
+                      lang,
+                      'Show Cancel (opt-out) Button'
+                    ),
+                    localize(
+                      'editor.actions.confirm_action_show_cancel_button_desc',
+                      lang,
+                      'Show or hide the button users use to back out of the action.'
+                    ),
+                    this.hass,
+                    {
+                      confirm_action_show_cancel_button:
+                        this._config.confirm_action_show_cancel_button !== false,
+                    },
+                    [
+                      {
+                        name: 'confirm_action_show_cancel_button',
+                        selector: { boolean: {} },
+                      },
+                    ],
+                    (e: CustomEvent) => {
+                      const value = e.detail.value?.confirm_action_show_cancel_button !== false;
+                      this._config = { ...this._config, confirm_action_show_cancel_button: value };
+                      this.requestUpdate();
+                      this.dispatchEvent(
+                        new CustomEvent('module-changed', {
+                          detail: { updates: { confirm_action_show_cancel_button: value } },
+                          bubbles: true,
+                          composed: true,
+                        })
+                      );
+                      this._triggerPreviewUpdate();
+                    }
+                  )}
+
+                  ${(this._config.confirm_action_show_confirm_button !== false)
+                    ? UcFormUtils.renderFieldSection(
+                        localize(
+                          'editor.actions.confirm_action_confirm_text',
+                          lang,
+                          'Confirm Button Text'
+                        ),
+                        localize(
+                          'editor.actions.confirm_action_confirm_text_desc',
+                          lang,
+                          'Text shown on the opt-in button.'
+                        ),
+                        this.hass,
+                        {
+                          confirm_action_confirm_text: this._config.confirm_action_confirm_text || 'Yes',
+                        },
+                        [
+                          {
+                            name: 'confirm_action_confirm_text',
+                            selector: { text: {} },
+                          },
+                        ],
+                        (e: CustomEvent) => {
+                          const rawValue = e.detail.value?.confirm_action_confirm_text;
+                          const value = typeof rawValue === 'string' && rawValue.trim() ? rawValue : 'Yes';
+                          this._config = { ...this._config, confirm_action_confirm_text: value };
+                          this.requestUpdate();
+                          this.dispatchEvent(
+                            new CustomEvent('module-changed', {
+                              detail: { updates: { confirm_action_confirm_text: value } },
+                              bubbles: true,
+                              composed: true,
+                            })
+                          );
+                          this._triggerPreviewUpdate();
+                        }
+                      )
+                    : html``}
+
+                  ${(this._config.confirm_action_show_cancel_button !== false)
+                    ? UcFormUtils.renderFieldSection(
+                        localize(
+                          'editor.actions.confirm_action_cancel_text',
+                          lang,
+                          'Cancel Button Text'
+                        ),
+                        localize(
+                          'editor.actions.confirm_action_cancel_text_desc',
+                          lang,
+                          'Text shown on the opt-out button.'
+                        ),
+                        this.hass,
+                        {
+                          confirm_action_cancel_text: this._config.confirm_action_cancel_text || 'Cancel',
+                        },
+                        [
+                          {
+                            name: 'confirm_action_cancel_text',
+                            selector: { text: {} },
+                          },
+                        ],
+                        (e: CustomEvent) => {
+                          const rawValue = e.detail.value?.confirm_action_cancel_text;
+                          const value =
+                            typeof rawValue === 'string' && rawValue.trim() ? rawValue : 'Cancel';
+                          this._config = { ...this._config, confirm_action_cancel_text: value };
+                          this.requestUpdate();
+                          this.dispatchEvent(
+                            new CustomEvent('module-changed', {
+                              detail: { updates: { confirm_action_cancel_text: value } },
+                              bubbles: true,
+                              composed: true,
+                            })
+                          );
+                          this._triggerPreviewUpdate();
+                        }
+                      )
+                    : html``}
+                </div>
+              `
+            : html``}
         </div>
       </div>
 

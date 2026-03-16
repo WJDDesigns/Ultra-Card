@@ -738,7 +738,12 @@ export class UltraLinkComponent {
 
       // Show confirmation dialog BEFORE executing the action
       // This will block execution until user confirms or cancels
-      const confirmed = await ucActionConfirmationService.showConfirmation(resolvedAction);
+      const confirmed = await ucActionConfirmationService.showConfirmation(resolvedAction, {
+        showConfirmButton: module?.confirm_action_show_confirm_button,
+        showCancelButton: module?.confirm_action_show_cancel_button,
+        confirmText: module?.confirm_action_confirm_text,
+        cancelText: module?.confirm_action_cancel_text,
+      });
 
       // If user cancelled, don't execute the action
       if (!confirmed) {
