@@ -54,9 +54,11 @@ Or add `https://github.com/WJDDesigns/Ultra-Card` as a custom Lovelace repositor
 
 **Manual**
 
-1. Download `ultra-card.js` from the [latest release](https://github.com/WJDDesigns/Ultra-Card/releases).
-2. Place it in `config/www`.
-3. Add a resource: _Settings_ → _Dashboards_ → _Resources_ → Add Resource → URL `/local/ultra-card.js`, type `JavaScript Module`.
+1. From the [latest release](https://github.com/WJDDesigns/Ultra-Card/releases), download **all** release assets for that version—not only `ultra-card.js`. The card is split into multiple JavaScript files (for example `ultra-card.js`, `ultra-card-panel.js`, and any `uc-*.js` chunks). They must stay **in the same folder** so the browser can load them.
+2. Copy that entire folder’s contents into `config/www` (for example `config/www/ultra-card/`), keeping the same filenames next to each other.
+3. Add **one** Lovelace resource: _Settings_ → _Dashboards_ → _Resources_ → Add Resource → URL pointing at the **main** bundle only, for example `/local/ultra-card/ultra-card.js` (or `/local/ultra-card.js` if you put files directly under `www`), type **JavaScript Module**.
+
+If you use the Ultra Card dashboard panel or Hub features, ensure `ultra-card-panel.js` is in that same directory as well (HACS installs everything automatically).
 
 ### Create your first card
 
