@@ -253,6 +253,23 @@
 
 ---
 
+## Version 3.1.0-beta1
+
+Early access to the **3.1** line. This beta focuses on the Hub sidebar, sharing presets with the community, and layouts that respond to your home’s state.
+
+### What's new
+
+- **Clearer Hub tabs** — Favorites, colors, variables, presets, and account-related items are organized into dedicated tabs in the sidebar so everyday tasks are easier to find.
+- **Preset sharing** — Share a preset with the community or pull in presets others have shared, without leaving the Hub.
+- **Layouts that follow your entities** — Use Home Assistant templates so parts of your card’s layout (such as rows or modules) can show or hide based on real conditions.
+- **Connection feedback** — Improved messaging around Ultra Card Connect so it’s easier to see when the integration is linked and the Hub is ready to use.
+
+### Install notes
+
+- This release includes corrected version tagging for the bundles and adds an integration zip so the sidebar Hub can be installed alongside the card when you need a manual or bundle-based setup.
+
+---
+
 ## Version 3.0.0
 
 ### 🔗 Ultra Card Connect
