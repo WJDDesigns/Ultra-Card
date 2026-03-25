@@ -683,10 +683,6 @@ class UcCloudSyncService {
   }
 
   /**
-   * Submit a user preset to ultracard.io (authenticated users only).
-   * Backend creates a draft/pending post for moderation.
-   */
-  /**
    * Upload a single photo to the media library.
    * Returns the WordPress attachment ID and URL so the dialog can report
    * per-photo progress before submitting the preset.
@@ -699,14 +695,21 @@ class UcCloudSyncService {
     const body = new FormData();
     body.append('photo', file, file.name);
 
-    const response = await ucCloudAuthService.authenticatedFetch(
-      `${UcCloudSyncService.API_BASE}/media`,
-      { method: 'POST', body }
-    );
+    const targetUrl = `${UcCloudSyncService.API_BASE}/media`;
+    const response = await ucCloudAuthService.authenticatedFetch(targetUrl, { method: 'POST', body });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ message: 'Upload failed' }));
-      throw new Error((err as { message?: string }).message || `HTTP ${response.status}`);
+      const err = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+      const dataMsg =
+        err?.data && typeof err.data === 'object' && err.data !== null && 'message' in err.data
+          ? String((err.data as { message?: unknown }).message)
+          : '';
+      const msg =
+        (typeof err?.message === 'string' && err.message) ||
+        (typeof err?.error === 'string' && err.error) ||
+        dataMsg ||
+        `Upload failed (HTTP ${response.status})`;
+      throw new Error(msg);
     }
     return response.json() as Promise<{ id: number; url: string }>;
   }

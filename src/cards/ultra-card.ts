@@ -29,6 +29,7 @@ import { clockUpdateService } from '../services/clock-update-service';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
 import { ucVideoBgService } from '../services/uc-video-bg-service';
 import { ucDynamicWeatherService } from '../services/uc-dynamic-weather-service';
+import { ucLivingCanvasService } from '../services/uc-living-canvas-service';
 import { ucBackgroundService } from '../services/uc-background-service';
 import { ucNavigationService } from '../services/uc-navigation-service';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
@@ -129,6 +130,7 @@ export class UltraCard extends LitElement {
     hasNonExternalModules: boolean;
     videoBgModules: Array<{ id: string; module: CardModule }>;
     dynamicWeatherModules: Array<{ id: string; module: CardModule }>;
+    livingCanvasModules: Array<{ id: string; module: CardModule }>;
     backgroundModules: Array<{ id: string; module: CardModule }>;
     navigationModules: Array<{ id: string; module: CardModule }>;
   } | null = null;
@@ -144,6 +146,7 @@ export class UltraCard extends LitElement {
     const moduleTypes = new Set<string>();
     const videoBgModules: Array<{ id: string; module: CardModule }> = [];
     const dynamicWeatherModules: Array<{ id: string; module: CardModule }> = [];
+    const livingCanvasModules: Array<{ id: string; module: CardModule }> = [];
     const backgroundModules: Array<{ id: string; module: CardModule }> = [];
     const navigationModules: Array<{ id: string; module: CardModule }> = [];
 
@@ -155,6 +158,7 @@ export class UltraCard extends LitElement {
             if (mod.type) moduleTypes.add(mod.type);
             if (mod.type === 'video_bg') videoBgModules.push({ id: mod.id, module: mod });
             if (mod.type === 'dynamic_weather') dynamicWeatherModules.push({ id: mod.id, module: mod });
+            if (mod.type === 'living_canvas') livingCanvasModules.push({ id: mod.id, module: mod });
             if (mod.type === 'background') backgroundModules.push({ id: mod.id, module: mod });
             if (mod.type === 'navigation') navigationModules.push({ id: mod.id, module: mod });
           }
@@ -162,7 +166,7 @@ export class UltraCard extends LitElement {
       }
     }
 
-    const invisibleTypes = ['video_bg', 'dynamic_weather', 'background', 'navigation'];
+    const invisibleTypes = ['video_bg', 'dynamic_weather', 'living_canvas', 'background', 'navigation'];
     const onlyInvisibleModules =
       allModules.length > 0 && allModules.every(m => invisibleTypes.includes(m.type));
     const onlyPopupModules = allModules.length > 0 && allModules.every(m => m.type === 'popup');
@@ -198,6 +202,7 @@ export class UltraCard extends LitElement {
       hasNonExternalModules,
       videoBgModules,
       dynamicWeatherModules,
+      livingCanvasModules,
       backgroundModules,
       navigationModules,
     };
@@ -386,6 +391,7 @@ export class UltraCard extends LitElement {
 
     // Register dynamic weather modules with the service
     this._registerDynamicWeatherModules();
+    this._registerLivingCanvasModules();
     this._registerBackgroundModules();
     this._registerNavigationModules();
   }
@@ -482,6 +488,8 @@ export class UltraCard extends LitElement {
 
     // Unregister dynamic weather modules
     this._unregisterDynamicWeatherModules();
+
+    this._unregisterLivingCanvasModules();
 
     // Unregister background modules so per-view backgrounds are cleaned up
     this._unregisterBackgroundModules();
@@ -953,7 +961,7 @@ export class UltraCard extends LitElement {
     const breakpoint = responsiveDesignService.getCurrentBreakpoint();
     const renderCtx: RenderContext = { isHaPreview, isDashboardEditMode, breakpoint };
 
-    // If only invisible modules (video_bg, dynamic_weather) and NOT in card editor AND NOT in dashboard edit mode, hide completely
+    // If only invisible modules (video_bg, dynamic_weather, living_canvas, etc.) and NOT in card editor AND NOT in dashboard edit mode, hide completely
     if (onlyInvisibleModules && !isInCardEditor && !isDashboardEditMode) {
       // Set attribute for CSS to hide the host element
       this.setAttribute('data-invisible', 'true');
@@ -1041,6 +1049,7 @@ export class UltraCard extends LitElement {
     if (this.config && this.hass && this._instanceId) {
       requestAnimationFrame(() => {
         this._registerDynamicWeatherModules();
+        this._registerLivingCanvasModules();
       });
     }
 
@@ -1068,6 +1077,7 @@ export class UltraCard extends LitElement {
 
       // Re-register dynamic weather modules when config changes
       this._registerDynamicWeatherModules();
+      this._registerLivingCanvasModules();
 
       // Re-register background modules when config changes
       this._registerBackgroundModules();
@@ -1079,6 +1089,7 @@ export class UltraCard extends LitElement {
     // Also re-register service-based modules when hass changes (for automatic mode updates and entity state changes)
     if (changedProperties.has('hass')) {
       this._registerDynamicWeatherModules();
+      this._registerLivingCanvasModules();
       this._registerBackgroundModules();
       this._registerNavigationModules();
     }
@@ -3148,6 +3159,33 @@ export class UltraCard extends LitElement {
         id,
         this._isEditorPreviewCard
       );
+    }
+  }
+
+  /**
+   * Register all Living Canvas modules with the view-wide canvas service
+   */
+  private _registerLivingCanvasModules(): void {
+    if (!this.config || !this.hass || !this._instanceId) return;
+    const cache = this._getConfigCache();
+    for (const { id, module } of cache.livingCanvasModules) {
+      ucLivingCanvasService.registerModule(
+        this._instanceId!,
+        id,
+        module as any,
+        this.hass!,
+        this.config!,
+        this as any,
+        this._isEditorPreviewCard
+      );
+    }
+  }
+
+  private _unregisterLivingCanvasModules(): void {
+    if (!this.config || !this._instanceId) return;
+    const cache = this._getConfigCache();
+    for (const { id } of cache.livingCanvasModules) {
+      ucLivingCanvasService.unregisterModule(this._instanceId!, id, this._isEditorPreviewCard);
     }
   }
 

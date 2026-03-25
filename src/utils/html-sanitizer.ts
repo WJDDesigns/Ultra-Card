@@ -17,6 +17,10 @@ export function sanitizeMarkdownHtml(html: string, enableHtml: boolean): string 
   return DOMPurify.sanitize(html, {
     USE_PROFILES: { html: true },
     FORBID_TAGS: enableHtml ? FORBIDDEN_ACTIVE_TAGS : [...FORBIDDEN_ACTIVE_TAGS, 'style'],
+    // DOMParser moves raw <style> (and similar) out of implicit body fragments; DOMPurify then
+    // serializes only body.innerHTML, so stylesheet blocks vanish. FORCE_BODY keeps markup in the
+    // body subtree so sanitized output still contains <style> when HTML is enabled.
+    FORCE_BODY: enableHtml,
   });
 }
 

@@ -26,6 +26,11 @@ export function normalizeNativeCardConfigType(cardType: string): string {
   return normalized;
 }
 
+/** Strip Home Assistant's `custom:` Lovelace type prefix. */
+function stripCustomPrefix(type: string): string {
+  return type.startsWith('custom:') ? type.slice('custom:'.length) : type;
+}
+
 class UcExternalCardsService {
   /**
    * Get all available custom cards registered in Home Assistant
@@ -47,25 +52,56 @@ class UcExternalCardsService {
   }
 
   /**
+   * Registered community card (HACS / JS module) — renders as its own custom element (e.g. mushroom-entity-card).
+   */
+  private _isCommunityCardType(typeWithoutPrefix: string): boolean {
+    return !!window.customCards?.some(card => card.type === typeWithoutPrefix);
+  }
+
+  /**
+   * Core Lovelace cards use hui-*-card tags and lazy chunks; `hui-card` + tryCreateCardElement handles them.
+   */
+  private _shouldUseHuiCardWrapper(configLovelaceType: string): boolean {
+    if (!configLovelaceType || !configLovelaceType.startsWith('custom:')) {
+      const base = stripCustomPrefix(configLovelaceType);
+      if (this._isCommunityCardType(base)) {
+        return false;
+      }
+    } else {
+      // custom:foo → always embed via community element path
+      return false;
+    }
+    return customElements.get('hui-card') !== undefined;
+  }
+
+  /**
    * Check if a specific card type is available/registered
    */
   isCardAvailable(cardType: string): boolean {
     if (!cardType) return false;
 
-    // Check if the custom element is defined
+    const stripped = stripCustomPrefix(cardType);
+
+    // Community card: same tag as type (often loads shortly after registry entry)
     try {
-      const elementExists = customElements.get(cardType) !== undefined;
-      if (elementExists) return true;
+      if (customElements.get(stripped) !== undefined) return true;
     } catch (e) {
       // Element check failed
     }
 
-    // Also check window.customCards registry
-    if (window.customCards && Array.isArray(window.customCards)) {
-      return window.customCards.some(card => card.type === cardType);
+    if (this._isCommunityCardType(stripped)) {
+      return true;
     }
 
-    return false;
+    // Native card chunk may already be registered (eager or previously lazy-loaded)
+    try {
+      if (customElements.get(`hui-${stripped}-card`) !== undefined) return true;
+    } catch (e) {
+      // Element check failed
+    }
+
+    // Native types are always created through HA's `hui-card` (handles lazy loading like picture-entity)
+    return customElements.get('hui-card') !== undefined;
   }
 
   /**
@@ -137,20 +173,67 @@ class UcExternalCardsService {
    */
   createCardElement(cardType: string, config: any, hass: any): HTMLElement | null {
     try {
-      // Determine the element tag name to create
-      // Cards are registered as elements, not with custom: prefix
-      let elementName = cardType;
+      const fullConfig =
+        config && typeof config === 'object' && !Array.isArray(config) ? { ...config } : {};
 
-      // Remove custom: prefix if present for element creation
-      if (elementName.startsWith('custom:')) {
-        elementName = elementName.substring(7); // Remove 'custom:' prefix
+      const rawType = (fullConfig.type as string) || cardType;
+      if (!rawType) {
+        console.error('[External Card Service] No card type in config');
+        return null;
+      }
+      if (!fullConfig.type) {
+        fullConfig.type = rawType;
       }
 
-      if (!this.isCardAvailable(elementName)) {
-        console.error(`[External Card Service] Card ${elementName} is not available/registered`);
+      const strippedForCheck = stripCustomPrefix(rawType);
+      if (!this.isCardAvailable(strippedForCheck)) {
+        console.error(
+          `[External Card Service] Card ${strippedForCheck} is not available/registered`
+        );
         return null;
       }
 
+      // Built-in Lovelace cards: prefer direct hui-*-card + setConfig like native_card / core
+      // so behavior (state_image, media-source URLs, etc.) matches the dashboard picture-entity card.
+      // If the class is not registered yet (lazy chunk), fall back to hui-card + tryCreateCardElement.
+      if (this._shouldUseHuiCardWrapper(rawType)) {
+        const typeBase = stripCustomPrefix(rawType);
+        const nativeTag = `hui-${typeBase}-card`;
+
+        if (customElements.get(nativeTag)) {
+          const element = document.createElement(nativeTag) as any;
+          if (hass) {
+            element.hass = hass;
+          }
+          if (typeof element.setConfig === 'function') {
+            try {
+              element.setConfig(fullConfig);
+            } catch (configError) {
+              console.error(
+                `[External Card] Failed to set config for ${nativeTag}:`,
+                configError
+              );
+              throw configError;
+            }
+          } else {
+            element.config = fullConfig;
+          }
+          return element as HTMLElement;
+        }
+
+        const wrapper = document.createElement('hui-card') as any;
+        wrapper.config = fullConfig;
+        if (hass) {
+          wrapper.hass = hass;
+        }
+        if (typeof wrapper.load === 'function') {
+          wrapper.load();
+        }
+        return wrapper as HTMLElement;
+      }
+
+      // Community cards: element tag matches type without custom:
+      const elementName = strippedForCheck;
       const element = document.createElement(elementName) as any;
 
       // IMPORTANT: Set config FIRST, then hass
@@ -160,13 +243,13 @@ class UcExternalCardsService {
         // Most cards expect setConfig method
         if (typeof element.setConfig === 'function') {
           try {
-            element.setConfig(config);
+            element.setConfig(fullConfig);
           } catch (configError) {
             console.error(`[External Card] Failed to set config for ${elementName}:`, configError);
             throw configError;
           }
         } else {
-          element.config = config;
+          element.config = fullConfig;
         }
       }
 

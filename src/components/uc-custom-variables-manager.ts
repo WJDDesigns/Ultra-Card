@@ -4,6 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 import { CustomVariable, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
+import { readHaSelectSelectedValue } from '../utils/form-utils';
 
 @customElement('uc-custom-variables-manager')
 export class UcCustomVariablesManager extends LitElement {
@@ -695,7 +696,14 @@ export class UcCustomVariablesManager extends LitElement {
             <ha-select
               .value=${this._newVariableValueType}
               @selected=${(e: CustomEvent) => {
-                this._newVariableValueType = (e.target as any).value;
+                const v = readHaSelectSelectedValue(e) as
+                  | 'entity_id'
+                  | 'state'
+                  | 'attribute'
+                  | undefined;
+                if (v === 'entity_id' || v === 'state' || v === 'attribute') {
+                  this._newVariableValueType = v;
+                }
               }}
               @closed=${(e: Event) => e.stopPropagation()}
             >
@@ -838,7 +846,14 @@ export class UcCustomVariablesManager extends LitElement {
             <ha-select
               .value=${this._editingValueType}
               @selected=${(e: CustomEvent) => {
-                this._editingValueType = (e.target as any).value;
+                const v = readHaSelectSelectedValue(e) as
+                  | 'entity_id'
+                  | 'state'
+                  | 'attribute'
+                  | undefined;
+                if (v === 'entity_id' || v === 'state' || v === 'attribute') {
+                  this._editingValueType = v;
+                }
               }}
               @closed=${(e: Event) => e.stopPropagation()}
             >

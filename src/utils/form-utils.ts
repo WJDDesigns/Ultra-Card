@@ -534,3 +534,19 @@ export class FormUtils {
     `;
   }
 }
+
+/**
+ * Read the chosen value from a Home Assistant `ha-select` `selected` event.
+ * Current HA fires `selected` with `{ value }` on `event.detail`; older mwc-based selects used `target.value`.
+ */
+export function readHaSelectSelectedValue(e: CustomEvent): string | undefined {
+  const detail = e.detail as { value?: string } | undefined;
+  if (detail && typeof detail.value === 'string') {
+    return detail.value;
+  }
+  const t = e.target as { value?: string } | undefined;
+  if (t && typeof t.value === 'string') {
+    return t.value;
+  }
+  return undefined;
+}

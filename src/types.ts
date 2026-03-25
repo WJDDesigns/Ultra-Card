@@ -132,7 +132,8 @@ export interface BaseModule {
     | 'cover'
     | 'dynamic-list'
     | 'qr_code'
-    | 'energy_display';
+    | 'energy_display'
+    | 'living_canvas';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -4347,6 +4348,44 @@ export interface EnergyDisplayModule extends BaseModule {
   double_tap_action?: ModuleActionConfig;
 }
 
+/** Visual preset for Living Canvas (Pro) WebGL module. */
+export type LivingCanvasPreset = 'aurora' | 'plasma' | 'particles' | 'mesh';
+
+/** Performance / pixel ratio cap for Living Canvas. */
+export type LivingCanvasQuality = 'low' | 'medium' | 'high';
+
+export interface LivingCanvasModule extends BaseModule {
+  type: 'living_canvas';
+  /** When false, view effect is off. */
+  enabled?: boolean;
+  /** Behind cards (background) or above (foreground). */
+  position?: 'background' | 'foreground';
+  /** Canvas opacity 0–100 (default 100). Applied in WebGL alpha, not the Lovelace card. */
+  opacity?: number;
+  /** When false, hide on narrow viewports (same idea as Dynamic Weather). */
+  enable_on_mobile?: boolean;
+  preset?: LivingCanvasPreset;
+  /** Custom background / base color (CSS). Empty uses the preset default. */
+  canvas_color_background?: string;
+  /** Custom primary accent (CSS). Empty uses the preset default. */
+  canvas_color_primary?: string;
+  /** Custom secondary accent (CSS). Empty uses the preset default. */
+  canvas_color_secondary?: string;
+  /** Animation speed multiplier (0.25–3, default 1). */
+  speed?: number;
+  /** Visual intensity 0–100 (default 70). */
+  intensity?: number;
+  respect_reduced_motion?: boolean;
+  quality?: LivingCanvasQuality;
+  /** Optional entity whose numeric state maps to 0–1 as driver A. */
+  driver_entity_a?: string;
+  /** Optional entity whose numeric state maps to 0–1 as driver B. */
+  driver_entity_b?: string;
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+}
+
 // Union type for all module types
 export type CardModule =
   | TextModule
@@ -4395,7 +4434,8 @@ export type CardModule =
   | CoverModule
   | DynamicListModule
   | QrCodeModule
-  | EnergyDisplayModule;
+  | EnergyDisplayModule
+  | LivingCanvasModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {

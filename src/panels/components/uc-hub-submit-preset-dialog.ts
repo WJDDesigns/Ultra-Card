@@ -55,8 +55,14 @@ export class UcHubSubmitPresetDialog extends LitElement {
     }
 
     ha-dialog {
+      /* New ha-dialog (wa-dialog) width + legacy fallbacks */
+      --ha-dialog-width-lg: min(680px, calc(100vw - 16px));
+      --ha-dialog-max-width: min(680px, calc(100vw - 16px));
       --mdc-dialog-min-width: min(560px, calc(100vw - 32px));
       --mdc-dialog-max-width: min(680px, calc(100vw - 16px));
+      /* Comfortable body padding (HA default is 0 top — header carries the title) */
+      --dialog-content-padding: var(--ha-space-4) var(--ha-space-6) var(--ha-space-6)
+        var(--ha-space-6);
       /* Boost above ALL editor overlays (context menus at 5005, popups at 1002, etc.) */
       --mdc-dialog-z-index: 8000;
       --dialog-z-index: 8000;
@@ -64,6 +70,8 @@ export class UcHubSubmitPresetDialog extends LitElement {
 
     @media (max-width: 600px) {
       ha-dialog {
+        --ha-dialog-width-lg: calc(100vw - 16px);
+        --ha-dialog-max-width: calc(100vw - 16px);
         --mdc-dialog-min-width: calc(100vw - 32px);
         --mdc-dialog-max-width: calc(100vw - 16px);
         /* Full-screen-ish on mobile: anchor to bottom of viewport */
@@ -72,10 +80,31 @@ export class UcHubSubmitPresetDialog extends LitElement {
     }
 
     .dialog-body {
-      padding: 4px 0 8px;
+      padding: 0;
       display: flex;
       flex-direction: column;
       gap: 0;
+    }
+
+    /* Footer bar: ha-dialog assigns slot="footer"; border separates from scrollable body */
+    /* Suppress default leading close button content (close is in headerActionItems). */
+    .header-nav-placeholder {
+      display: inline-block;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .dialog-footer-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+      gap: var(--ha-space-3);
+      width: 100%;
+      box-sizing: border-box;
+      border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
     }
 
     .dialog-subtitle {
@@ -450,8 +479,9 @@ export class UcHubSubmitPresetDialog extends LitElement {
     }
 
     @media (max-width: 480px) {
-      .dialog-body {
-        padding: 0;
+      ha-dialog {
+        --dialog-content-padding: var(--ha-space-3) var(--ha-space-4) var(--ha-space-4)
+          var(--ha-space-4);
       }
       .dialog-subtitle {
         font-size: 12px;
@@ -697,13 +727,16 @@ export class UcHubSubmitPresetDialog extends LitElement {
             );
             await this.updateComplete;
           } catch (photoErr) {
+            const detail =
+              photoErr instanceof Error ? photoErr.message : 'Upload failed';
             this._photoStates = this._photoStates.map((s, idx) =>
               idx === i
-                ? { ...s, status: 'error' as const, error: photoErr instanceof Error ? photoErr.message : 'Upload failed' }
+                ? { ...s, status: 'error' as const, error: detail }
                 : s
             );
             await this.updateComplete;
-            throw new Error(`Failed to upload photo "${file.name}". Please try again.`);
+            if (photoErr instanceof Error) throw photoErr;
+            throw new Error(String(photoErr));
           }
         }
       }
@@ -732,10 +765,17 @@ export class UcHubSubmitPresetDialog extends LitElement {
 
   protected render(): TemplateResult {
     return html`
-      <ha-dialog open @closed=${this._close} .heading=${'Share Preset on ultracard.io'}>
-        <!-- X close button in dialog header slot -->
+      <ha-dialog
+        open
+        width="large"
+        header-title="Share your layout"
+        header-subtitle="Submit to ultracard.io"
+        @closed=${this._close}
+      >
+        <!-- Replace default leading close; close control lives in headerActionItems (right). -->
+        <span slot="headerNavigationIcon" class="header-nav-placeholder"></span>
         <ha-icon-button
-          slot="navigationIcon"
+          slot="headerActionItems"
           .label=${'Close'}
           @click=${this._close}
         >
@@ -748,33 +788,35 @@ export class UcHubSubmitPresetDialog extends LitElement {
             : this._renderForm()}
         </div>
 
-        ${this._submitted ? '' : html`
-          <!-- Footer action buttons -->
-          <button
-            slot="secondaryAction"
-            class="btn btn-secondary footer-btn"
-            @click=${this._close}
-            ?disabled=${this._submitting}
-          >
-            <ha-icon icon="mdi:close"></ha-icon>
-            Cancel
-          </button>
-          <button
-            slot="primaryAction"
-            class="btn btn-primary footer-btn"
-            ?disabled=${!this._canSubmit || this._submitting}
-            @click=${this._trySubmit}
-          >
-            ${this._submitting
-              ? this._submitStep === 'photos'
-                ? html`<ha-icon icon="mdi:loading" class="spin"></ha-icon>
-                    Uploading photo
-                    ${this._photoStates.filter(s => s.status !== 'pending').length}
-                    of ${this._photos.length}…`
-                : html`<ha-icon icon="mdi:loading" class="spin"></ha-icon> Submitting…`
-              : html`<ha-icon icon="mdi:cloud-upload"></ha-icon> Submit for Review`}
-          </button>
-        `}
+        ${this._submitted
+          ? ''
+          : html`
+              <div slot="footer" class="dialog-footer-actions">
+                <button
+                  type="button"
+                  class="btn btn-secondary footer-btn"
+                  @click=${this._close}
+                  ?disabled=${this._submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary footer-btn"
+                  ?disabled=${!this._canSubmit || this._submitting}
+                  @click=${this._trySubmit}
+                >
+                  ${this._submitting
+                    ? this._submitStep === 'photos'
+                      ? html`<ha-icon icon="mdi:loading" class="spin"></ha-icon>
+                          Uploading photo
+                          ${this._photoStates.filter(s => s.status !== 'pending').length}
+                          of ${this._photos.length}…`
+                      : html`<ha-icon icon="mdi:loading" class="spin"></ha-icon> Sending…`
+                    : html`<ha-icon icon="mdi:send"></ha-icon> Send`}
+                </button>
+              </div>
+            `}
       </ha-dialog>
     `;
   }

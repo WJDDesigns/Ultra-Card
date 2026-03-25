@@ -56,40 +56,67 @@ class ExternalCardContainerService {
     // Pass hass to all card elements - cards handle their own optimization
     this.containers.forEach((containerInfo, moduleId) => {
       if (containerInfo.cardElement?.isConnected) {
-        try {
-          // Set hass property directly - let cards decide if they need to update
-          (containerInfo.cardElement as any).hass = hass;
-
-          // ApexCharts needs extra handling when reconnecting
-          const elementName = containerInfo.cardType.startsWith('custom:')
-            ? containerInfo.cardType.substring(7)
-            : containerInfo.cardType;
-
-          if (elementName.includes('apexcharts')) {
-            // Force a render update for ApexCharts
-            if (typeof (containerInfo.cardElement as any).requestUpdate === 'function') {
-              (containerInfo.cardElement as any).requestUpdate();
-            }
-          }
-
-          // WebRTC camera cards need refresh on hass updates
-          if (elementName.includes('webrtc-camera') || elementName.includes('webrtc')) {
-            // Trigger update after hass change
-            if (typeof (containerInfo.cardElement as any).requestUpdate === 'function') {
-              (containerInfo.cardElement as any).requestUpdate();
-            }
-          }
-        } catch (error) {
-          // Silent - card might not be ready yet
-        }
+        this._applyHassToCardElement(containerInfo, hass);
       }
     });
   }
 
   /**
-   * Get or create a persistent container for a 3rd party card
+   * Push hass onto a single embedded card (used by global setHass and per-preview context hass).
    */
-  public getContainer(moduleId: string, cardType: string, config: any): HTMLElement {
+  private _applyHassToCardElement(
+    containerInfo: ContainerInfo,
+    hass: HomeAssistant | undefined
+  ): void {
+    if (!hass || !containerInfo.cardElement?.isConnected) {
+      return;
+    }
+    try {
+      (containerInfo.cardElement as any).hass = hass;
+
+      const elementName = containerInfo.cardType.startsWith('custom:')
+        ? containerInfo.cardType.substring(7)
+        : containerInfo.cardType;
+
+      if (elementName.includes('apexcharts')) {
+        if (typeof (containerInfo.cardElement as any).requestUpdate === 'function') {
+          (containerInfo.cardElement as any).requestUpdate();
+        }
+      }
+
+      if (elementName.includes('webrtc-camera') || elementName.includes('webrtc')) {
+        if (typeof (containerInfo.cardElement as any).requestUpdate === 'function') {
+          (containerInfo.cardElement as any).requestUpdate();
+        }
+      }
+    } catch {
+      // Card might not be ready yet
+    }
+  }
+
+  /**
+   * Apply hass from the current render context (e.g. Live Preview) so embedded cards
+   * see the same states as the editor. Falls back to singleton last hass from UltraCard.
+   */
+  private _applyContextHass(
+    containerInfo: ContainerInfo,
+    contextHass?: HomeAssistant
+  ): void {
+    const h = contextHass ?? this.currentHass;
+    this._applyHassToCardElement(containerInfo, h);
+  }
+
+  /**
+   * Get or create a persistent container for a 3rd party card
+   * @param contextHass - hass from the host render (editor preview); ensures cards get states even
+   *                      before/without UltraCard's singleton setHass running for this view.
+   */
+  public getContainer(
+    moduleId: string,
+    cardType: string,
+    config: any,
+    contextHass?: HomeAssistant
+  ): HTMLElement {
     // Normalize card type - ensure we store it consistently
     const normalizedCardType = cardType.startsWith('custom:') ? cardType : `custom:${cardType}`;
 
@@ -104,9 +131,10 @@ class ExternalCardContainerService {
 
     // Create new container if needed
     if (!containerInfo) {
-      containerInfo = this.createContainer(moduleId, normalizedCardType, config);
+      containerInfo = this.createContainer(moduleId, normalizedCardType, config, contextHass);
       this.containers.set(moduleId, containerInfo);
     } else {
+      this._applyContextHass(containerInfo, contextHass);
       // Update config if changed
       this._updateConfig(containerInfo, config);
 
@@ -177,7 +205,12 @@ class ExternalCardContainerService {
   /**
    * Create a new isolated container with a 3rd party card
    */
-  private createContainer(moduleId: string, cardType: string, config: any): ContainerInfo {
+  private createContainer(
+    moduleId: string,
+    cardType: string,
+    config: any,
+    contextHass?: HomeAssistant
+  ): ContainerInfo {
     // Create container div
     const container = document.createElement('div');
     container.className = 'external-card-isolated-container';
@@ -190,6 +223,8 @@ class ExternalCardContainerService {
     const elementName = cardType.startsWith('custom:') ? cardType.substring(7) : cardType;
 
     // Create the card element
+    const hassForCreate = contextHass ?? this.currentHass;
+
     let cardElement: HTMLElement;
     try {
       // Create element WITH hass if available - critical for WebRTC and other streaming cards
@@ -197,7 +232,7 @@ class ExternalCardContainerService {
       cardElement = ucExternalCardsService.createCardElement(
         elementName,
         config,
-        this.currentHass || null
+        hassForCreate || null
       ) as HTMLElement;
 
       if (!cardElement) {
@@ -222,7 +257,7 @@ class ExternalCardContainerService {
       };
 
       // Set initial hass if available, otherwise mark as pending
-      if (this.currentHass) {
+      if (hassForCreate) {
         this._initializeCardHass(containerInfo);
       } else {
         this.pendingHassSetup.add(moduleId);
@@ -254,10 +289,13 @@ class ExternalCardContainerService {
   /**
    * Update the configuration of an existing card by module ID
    */
-  public updateConfig(moduleId: string, newConfig: any): void {
+  public updateConfig(moduleId: string, newConfig: any, contextHass?: HomeAssistant): void {
     const containerInfo = this.containers.get(moduleId);
     if (!containerInfo) {
       return;
+    }
+    if (contextHass) {
+      this._applyContextHass(containerInfo, contextHass);
     }
     this._updateConfig(containerInfo, newConfig);
   }
@@ -269,23 +307,30 @@ class ExternalCardContainerService {
     // Check if config actually changed
     const configChanged = JSON.stringify(containerInfo.config) !== JSON.stringify(newConfig);
 
-    if (configChanged) {
-      containerInfo.config = newConfig;
+    if (!configChanged) {
+      return;
+    }
 
-      // Update the card's config
-      if (
-        containerInfo.cardElement &&
-        typeof (containerInfo.cardElement as any).setConfig === 'function'
-      ) {
-        try {
-          (containerInfo.cardElement as any).setConfig(newConfig);
-        } catch (error) {
-          console.error(
-            `[External Card Container] Failed to update config for ${containerInfo.cardType}:`,
-            error
-          );
-        }
+    containerInfo.config = newConfig;
+    const el = containerInfo.cardElement as any;
+    if (!el) {
+      return;
+    }
+
+    try {
+      if (typeof el.setConfig === 'function') {
+        el.setConfig(newConfig);
+      } else if (el.tagName?.toLowerCase() === 'hui-card' && typeof el.load === 'function') {
+        el.config = newConfig;
+        el.load();
+      } else if ('config' in el) {
+        el.config = newConfig;
       }
+    } catch (error) {
+      console.error(
+        `[External Card Container] Failed to update config for ${containerInfo.cardType}:`,
+        error
+      );
     }
   }
 
@@ -309,22 +354,29 @@ class ExternalCardContainerService {
       // Give card a moment to initialize
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      if (cardElement.isConnected && this.currentHass) {
+      // Prefer singleton hass from UltraCard; fall back to hass already on the element
+      // (e.g. Live Preview passed context hass before setHass() ever ran)
+      const effectiveHass =
+        this.currentHass || ((cardElement as any).hass as HomeAssistant | undefined);
+
+      if (cardElement.isConnected && effectiveHass) {
         // Set hass using both methods for compatibility
-        (cardElement as any).hass = this.currentHass;
+        (cardElement as any).hass = effectiveHass;
 
         if (typeof (cardElement as any).setHass === 'function') {
-          (cardElement as any).setHass(this.currentHass);
+          (cardElement as any).setHass(effectiveHass);
         }
 
         // For mushroom chips, force a second update after delay
         if (elementName.includes('mushroom-chips')) {
           setTimeout(() => {
-            if (cardElement.isConnected && this.currentHass) {
-              (cardElement as any).hass = this.currentHass;
+            const h =
+              this.currentHass || ((cardElement as any).hass as HomeAssistant | undefined);
+            if (cardElement.isConnected && h) {
+              (cardElement as any).hass = h;
 
               if (typeof (cardElement as any).setHass === 'function') {
-                (cardElement as any).setHass(this.currentHass);
+                (cardElement as any).setHass(h);
               }
 
               // Force re-render
@@ -340,8 +392,10 @@ class ExternalCardContainerService {
         if (elementName.includes('apexcharts')) {
           // First update to ensure card is ready
           setTimeout(() => {
-            if (cardElement.isConnected && this.currentHass) {
-              (cardElement as any).hass = this.currentHass;
+            const h =
+              this.currentHass || ((cardElement as any).hass as HomeAssistant | undefined);
+            if (cardElement.isConnected && h) {
+              (cardElement as any).hass = h;
 
               // Force re-render to trigger chart initialization
               if (typeof (cardElement as any).requestUpdate === 'function') {
@@ -355,8 +409,10 @@ class ExternalCardContainerService {
 
           // Second update after chart has had time to initialize
           setTimeout(() => {
-            if (cardElement.isConnected && this.currentHass) {
-              (cardElement as any).hass = this.currentHass;
+            const h =
+              this.currentHass || ((cardElement as any).hass as HomeAssistant | undefined);
+            if (cardElement.isConnected && h) {
+              (cardElement as any).hass = h;
 
               // Force another re-render
               if (typeof (cardElement as any).requestUpdate === 'function') {
@@ -384,8 +440,10 @@ class ExternalCardContainerService {
         if (elementName.includes('webrtc-camera') || elementName.includes('webrtc')) {
           // First attempt - initial setup
           setTimeout(() => {
-            if (cardElement.isConnected && this.currentHass) {
-              (cardElement as any).hass = this.currentHass;
+            const h =
+              this.currentHass || ((cardElement as any).hass as HomeAssistant | undefined);
+            if (cardElement.isConnected && h) {
+              (cardElement as any).hass = h;
 
               // Force re-render to trigger stream initialization
               if (typeof (cardElement as any).requestUpdate === 'function') {
@@ -399,8 +457,10 @@ class ExternalCardContainerService {
 
           // Second attempt - ensure stream starts
           setTimeout(() => {
-            if (cardElement.isConnected && this.currentHass) {
-              (cardElement as any).hass = this.currentHass;
+            const h =
+              this.currentHass || ((cardElement as any).hass as HomeAssistant | undefined);
+            if (cardElement.isConnected && h) {
+              (cardElement as any).hass = h;
 
               if (typeof (cardElement as any).requestUpdate === 'function') {
                 (cardElement as any).requestUpdate();
@@ -417,8 +477,10 @@ class ExternalCardContainerService {
 
           // Third attempt - handle slow connections
           setTimeout(() => {
-            if (cardElement.isConnected && this.currentHass) {
-              (cardElement as any).hass = this.currentHass;
+            const h =
+              this.currentHass || ((cardElement as any).hass as HomeAssistant | undefined);
+            if (cardElement.isConnected && h) {
+              (cardElement as any).hass = h;
 
               if (typeof (cardElement as any).requestUpdate === 'function') {
                 (cardElement as any).requestUpdate();

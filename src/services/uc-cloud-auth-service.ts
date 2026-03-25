@@ -6,6 +6,74 @@
 
 import { ucSessionSyncService } from './uc-session-sync-service';
 
+/** HA integration endpoint that forwards multipart files to ultracard.io (JWT stays on the server). */
+const UC_MEDIA_UPLOAD_PATH = '/api/ultra_card_pro_cloud/media_upload';
+
+function formDataContainsFile(fd: FormData): boolean {
+  for (const [, value] of fd.entries()) {
+    if (value instanceof File) return true;
+  }
+  return false;
+}
+
+/**
+ * Convert FormData with only string fields to a JSON object for the integration JSON proxy.
+ * Handles repeated keys like `photo_ids[]`.
+ */
+function formDataToJsonBody(fd: FormData): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of fd.entries()) {
+    if (value instanceof File) continue;
+    const str = value as string;
+    if (key.endsWith('[]')) {
+      const base = key.slice(0, -2);
+      const arr = (out[base] as string[] | undefined) ?? [];
+      arr.push(str);
+      out[base] = arr;
+    } else if (out[key] !== undefined) {
+      const existing = out[key];
+      if (Array.isArray(existing)) {
+        (existing as string[]).push(str);
+      } else {
+        out[key] = [existing as string, str];
+      }
+    } else {
+      out[key] = str;
+    }
+  }
+  if (Array.isArray(out.photo_ids)) {
+    out.photo_ids = (out.photo_ids as string[]).map((id) => parseInt(id, 10));
+  }
+  return out;
+}
+
+function firstFileFromFormData(fd: FormData): { fieldName: string; file: File } | null {
+  for (const [fieldName, value] of fd.entries()) {
+    if (value instanceof File) return { fieldName, file: value };
+  }
+  return null;
+}
+
+function fileToBase64DataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const s = reader.result as string;
+      const comma = s.indexOf(',');
+      resolve(comma >= 0 ? s.slice(comma + 1) : s);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+/** ASCII-safe filename for multipart (avoids REST 400 on some WP setups). */
+function safeUploadFilename(name: string): string {
+  const base = name.replace(/[^\x20-\x7E]+/g, '_').replace(/[\\/:*?"<>|]/g, '_').trim();
+  const withExt = base || 'upload.png';
+  return withExt.length > 180 ? withExt.slice(0, 180) : withExt;
+}
+
 export interface SubscriptionFeatures {
   auto_backups: boolean;
   snapshots_enabled: boolean;
@@ -753,9 +821,86 @@ class UcCloudAuthService {
     // Integration auth: token is server-side; proxy the request through HA
     if (!this._currentUser!.token && this._integrationHass) {
       const method = (options.method || 'GET').toUpperCase();
+
+      // Multipart uploads: the JSON proxy cannot forward file bytes. Use the integration
+      // media upload endpoint (multipart → ultracard.io with server JWT).
+      if (options.body instanceof FormData) {
+        const fd = options.body;
+        if (formDataContainsFile(fd)) {
+          const isMediaUrl =
+            url.includes('/ultra-card/v1/media') || url.endsWith('/ultra-card/v1/media');
+          if (!isMediaUrl) {
+            throw new Error(
+              'This request includes files and is not supported through Home Assistant integration auth.'
+            );
+          }
+          let r = await fetch(UC_MEDIA_UPLOAD_PATH, {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin',
+          });
+
+          // Dedicated route missing on older integration builds (404) — forward via JSON proxy + base64.
+          if (r.status === 404) {
+            const first = firstFileFromFormData(fd);
+            if (!first) {
+              throw new Error('No file in FormData');
+            }
+            const dataB64 = await fileToBase64DataUrl(first.file);
+            const callApi = (this._integrationHass as any).callApi;
+            if (typeof callApi !== 'function') {
+              throw new Error('Integration proxy unavailable');
+            }
+            const res = await callApi('POST', 'ultra_card_pro_cloud/proxy', {
+              method: 'POST',
+              url,
+              body: {
+                __media_upload_b64: {
+                  field: 'photo',
+                  filename: safeUploadFilename(first.file.name),
+                  content_type: first.file.type || 'application/octet-stream',
+                  data: dataB64,
+                },
+              },
+            });
+            const status = res?._status ?? 0;
+            const _body = res?._body;
+            const ok = status >= 200 && status < 300;
+            return {
+              ok,
+              status,
+              json: () => Promise.resolve(_body),
+              text: () => Promise.resolve(typeof _body === 'string' ? _body : JSON.stringify(_body)),
+            } as Response;
+          }
+
+          return r;
+        }
+        // String-only FormData (e.g. preset submit with photo_ids) → JSON for the proxy
+        const jsonBody = formDataToJsonBody(fd);
+        const callApi = (this._integrationHass as any).callApi;
+        if (typeof callApi !== 'function') {
+          throw new Error('Integration proxy unavailable');
+        }
+        const res = await callApi('POST', 'ultra_card_pro_cloud/proxy', {
+          method,
+          url,
+          body: jsonBody,
+        });
+        const status = res?._status ?? 0;
+        const _body = res?._body;
+        const ok = status >= 200 && status < 300;
+        return {
+          ok,
+          status,
+          json: () => Promise.resolve(_body),
+          text: () => Promise.resolve(typeof _body === 'string' ? _body : JSON.stringify(_body)),
+        } as Response;
+      }
+
       let body: any = undefined;
       if (options.body !== undefined && options.body !== null) {
-        body = options.body instanceof FormData ? undefined : options.body;
+        body = options.body;
         if (typeof body === 'string') try { body = JSON.parse(body); } catch { /* pass as string */ }
       }
       const callApi = (this._integrationHass as any).callApi;

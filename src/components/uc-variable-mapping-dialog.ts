@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 import { localize } from '../localize/localize';
+import { readHaSelectSelectedValue } from '../utils/form-utils';
 
 export interface VariableMapping {
   variableName: string;
@@ -216,7 +217,14 @@ export class UcVariableMappingDialog extends LitElement {
               <ha-select
                 .value=${mapping.valueType}
                 @selected=${(e: CustomEvent) => {
-                  this._handleValueTypeChange(varName, (e.target as any).value);
+                  const v = readHaSelectSelectedValue(e) as
+                    | 'entity_id'
+                    | 'state'
+                    | 'attribute'
+                    | undefined;
+                  if (v === 'entity_id' || v === 'state' || v === 'attribute') {
+                    this._handleValueTypeChange(varName, v);
+                  }
                 }}
                 @closed=${(e: Event) => e.stopPropagation()}
               >

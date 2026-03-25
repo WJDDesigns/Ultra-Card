@@ -1,5 +1,27 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.2.0-beta1
+
+This is an **early beta** of the 3.2 line. Thanks for testing — if something feels off, let us know.
+
+### What's new
+
+- **Living Canvas (Pro)** — Add a full-view animated backdrop to your dashboard with several mood presets (including aurora, plasma, particles, and a soft mesh gradient). Tune speed and intensity, pick quality for your device, optionally tie the look to entities, and respect “reduce motion” when that’s enabled on your system.
+
+### Improvements
+
+- **Share Preset dialog** — Updated layout for newer Home Assistant dialog styles: clearer title, roomier content, and footer actions that behave well on desktop and phone. Photo uploads show clearer errors when something goes wrong.
+- **Preset photos through Ultra Card Connect** — When you’re signed in via the integration (no token stored in the browser), preset photo uploads now travel through Home Assistant safely, with a fallback path if your integration build doesn’t yet expose the dedicated upload route.
+- **Third-party cards in the editor** — Live Preview keeps embedded cards in sync with the Home Assistant instance you’re editing with, so states and updates look right while you build.
+- **Show / hide logic** — Straightforward template conditions can resolve immediately from live entity state when possible, so visibility rules feel snappier.
+- **Variables** — Value-type dropdowns in custom variables and mapping dialogs read selection events reliably across current and older Home Assistant UI components.
+
+### Bug fixes
+
+- **Editor dialogs** — Clicks on header actions (including the × control) no longer get misread as dragging, and mousedown on action buttons won’t bubble into the drag handler the way it could before.
+
+---
+
 ## Version 3.1.0
 
 ### What's New

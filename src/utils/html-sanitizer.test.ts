@@ -14,6 +14,27 @@ describe('html-sanitizer', () => {
     expect(sanitized).not.toContain('<iframe');
   });
 
+  it('preserves style blocks when HTML is enabled (DOMParser body fragment quirk)', () => {
+    const sanitized = sanitizeMarkdownHtml(
+      '<style>.day-box { color: var(--primary-color); }</style><p><span class="day-box">X</span></p>',
+      true
+    );
+
+    expect(sanitized).toContain('<style>');
+    expect(sanitized).toContain('.day-box');
+    expect(sanitized).toContain('class="day-box"');
+  });
+
+  it('forbids style tags when HTML is disabled', () => {
+    const sanitized = sanitizeMarkdownHtml(
+      '<style>.x{display:none}</style><p class="x">ok</p>',
+      false
+    );
+
+    expect(sanitized).not.toContain('<style');
+    expect(sanitized).toContain('<p');
+  });
+
   it('strips unsafe event handlers from preset html', () => {
     const sanitized = sanitizePresetHtml('<p><a href="https://example.com" onclick="steal()">Open</a></p>');
 

@@ -6291,6 +6291,18 @@ export class LayoutTab extends LitElement {
     });
   }
 
+  /**
+   * Resolve event.target to an Element so Element.closest() is safe.
+   * Clicks on text inside buttons (e.g. the × close character) can report a Text node,
+   * which does not implement closest() and would throw or skip interactive detection.
+   */
+  private _composeEventTargetToElement(e: Event): Element | null {
+    const t = e.target;
+    if (t instanceof Element) return t;
+    if (t instanceof Text && t.parentElement) return t.parentElement;
+    return null;
+  }
+
   // Popup drag and resize functionality
   private _startPopupDrag(e: MouseEvent, element: HTMLElement): void {
     // Disable dragging on mobile for predictable centered UX
@@ -6298,9 +6310,9 @@ export class LayoutTab extends LitElement {
     // Only start drag from non-interactive header areas.
     // This prevents the dialog from jumping when clicking close/action buttons.
     if (e.button !== 0) return;
-    const target = e.target as HTMLElement | null;
+    const targetEl = this._composeEventTargetToElement(e);
     if (
-      target?.closest(
+      targetEl?.closest(
         'button, a, input, textarea, select, option, label, ha-icon-button, mwc-button, ha-switch, ha-select, ha-textfield, .header-actions'
       )
     ) {
@@ -22050,7 +22062,7 @@ export class LayoutTab extends LitElement {
             }}
           >
             <h3>${this._getModuleSettingsTitle(module, lang)}</h3>
-            <div class="header-actions">
+            <div class="header-actions" @mousedown=${(e: Event) => e.stopPropagation()}>
               <button
                 class="action-button duplicate-button"
                 @click=${() => {
@@ -22695,7 +22707,7 @@ export class LayoutTab extends LitElement {
             }}
           >
             <h3>${this._getModuleSettingsTitle(module, lang)}</h3>
-            <div class="header-actions">
+            <div class="header-actions" @mousedown=${(e: Event) => e.stopPropagation()}>
               <button
                 class="action-button duplicate-button"
                 @click=${() => {
@@ -22980,7 +22992,7 @@ export class LayoutTab extends LitElement {
                 ''
               )}
             </h3>
-            <div class="header-actions">
+            <div class="header-actions" @mousedown=${(e: Event) => e.stopPropagation()}>
               <button
                 class="action-button duplicate-button"
                 @click=${() => {
@@ -23575,7 +23587,7 @@ export class LayoutTab extends LitElement {
                 'Row Settings'
               )}
             </h3>
-            <div class="header-actions">
+            <div class="header-actions" @mousedown=${(e: Event) => e.stopPropagation()}>
               <button
                 class="action-button duplicate-button"
                 @click=${() => {
@@ -23697,7 +23709,7 @@ export class LayoutTab extends LitElement {
                 'Column Settings'
               )}
             </h3>
-            <div class="header-actions">
+            <div class="header-actions" @mousedown=${(e: Event) => e.stopPropagation()}>
               <button
                 class="action-button duplicate-button"
                 @click=${() => {

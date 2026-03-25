@@ -371,7 +371,106 @@ export class LogicService {
   }
 
   /**
-   * Evaluate template-based condition
+   * Fast path: resolve simple template conditions purely from `hass` (no WebSocket).
+   * @returns boolean when resolved locally, or null when Home Assistant `render_template` is required
+   */
+  private _tryEvaluateTemplateConditionLocally(condition: DisplayCondition): boolean | null {
+    if (!condition.template || !this.hass) {
+      return null;
+    }
+
+    const template = condition.template;
+
+    // Handle simple {% if %} conditions
+    if (template.includes('{% if ') && template.includes(' %}')) {
+      const ifMatch = template.match(/\{\%\s*if\s+(.+?)\s*\%\}/);
+      if (ifMatch) {
+        const conditionStr = ifMatch[1];
+
+        const stateCompareMatch = conditionStr.match(
+          /states\(['"]([^'"]+)['"]\)\s*(==|!=)\s*['"]([^'"]+)['"]/
+        );
+        if (stateCompareMatch) {
+          const entityId = stateCompareMatch[1];
+          const operator = stateCompareMatch[2];
+          const compareValue = stateCompareMatch[3];
+
+          const entity = this.hass.states[entityId];
+          if (entity) {
+            const entityState = entity.state;
+            if (operator === '==') {
+              return entityState === compareValue;
+            }
+            if (operator === '!=') {
+              return entityState !== compareValue;
+            }
+          }
+        }
+      }
+    }
+
+    // Handle {{ states('entity') == 'value' }} pattern matching
+    const stateComparePattern =
+      /\{\{\s*states\(['"]([^'"]+)['"]\)\s*(==|!=)\s*['"]([^'"]+)['"]\s*\}\}/g;
+    let match;
+    while ((match = stateComparePattern.exec(template)) !== null) {
+      const entityId = match[1];
+      const operator = match[2];
+      const compareValue = match[3];
+
+      const entity = this.hass.states[entityId];
+      if (entity) {
+        const entityState = entity.state;
+        let result = false;
+
+        if (operator === '==') {
+          result = entityState === compareValue;
+        } else if (operator === '!=') {
+          result = entityState !== compareValue;
+        }
+
+        if (template.trim() === match[0].trim()) {
+          return result;
+        }
+      }
+    }
+
+    // Simple {{ states('entity.id') }} substitution for basic conditions
+    const statePattern = /\{\{\s*states\(['"]([^'"]+)['"]\)\s*\}\}/g;
+    let evaluatedTemplate = template;
+    while ((match = statePattern.exec(template)) !== null) {
+      const entityId = match[1];
+      const entity = this.hass.states[entityId];
+      const value = entity ? entity.state : 'unknown';
+      evaluatedTemplate = evaluatedTemplate.replace(match[0], value);
+    }
+
+    if (evaluatedTemplate !== template) {
+      if (!evaluatedTemplate.includes('{{')) {
+        if (this.templateService) {
+          return this.templateService.parseTemplateResult(
+            evaluatedTemplate.trim(),
+            'logic_condition_local'
+          );
+        }
+        const trimmed = evaluatedTemplate.toLowerCase().trim();
+        if (['true', 'on', 'yes', '1'].includes(trimmed)) {
+          return true;
+        }
+        if (
+          ['false', 'off', 'no', '0', 'unavailable', 'unknown', 'none', ''].includes(trimmed)
+        ) {
+          return false;
+        }
+        return trimmed.length > 0;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Evaluate template-based condition (local heuristics first, then HA render_template).
    */
   private evaluateTemplateCondition(condition: DisplayCondition): boolean {
     if (!condition.template || !this.hass) {
@@ -379,115 +478,42 @@ export class LogicService {
     }
 
     try {
-      // Create a unique key for this template (use only template hash to prevent subscription leaks)
+      const localResult = this._tryEvaluateTemplateConditionLocally(condition);
+      if (localResult !== null) {
+        return localResult;
+      }
+
+      if (!this.templateService) {
+        return false;
+      }
+
       const templateHash = this._hashString(condition.template);
       const templateKey = `logic_condition_${templateHash}`;
 
-      // If we have a template service, try to get cached result
-      if (this.templateService) {
-        // Check if we already have a subscription for this template
-        if (this.templateService.hasTemplateSubscription(templateKey)) {
-          const cachedResult = this.templateService.getTemplateResult(templateKey);
-          if (cachedResult !== undefined) {
-            return cachedResult;
+      if (!this.templateService.hasTemplateSubscription(templateKey)) {
+        void this.templateService.subscribeToTemplate(condition.template, templateKey, () => {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('ultra-card-template-update', {
+                bubbles: true,
+                composed: true,
+                detail: { moduleType: 'logic_template' },
+              })
+            );
           }
-        } else {
-          // Subscribe to the template for future updates
-          this.templateService.subscribeToTemplate(condition.template, templateKey, () => {
-            // Template result changed, but we can't trigger a re-render from here
-            // The parent component should handle this by re-evaluating conditions periodically
-          });
-        }
+        });
       }
 
-      // NOTE: API fallback completely removed to prevent resource exhaustion
-      // Template conditions rely entirely on WebSocket subscriptions
-      // which are initialized above and update the cache automatically
-
-      // For immediate evaluation, try basic pattern matching
-      const template = condition.template;
-
-      // Handle simple {% if %} conditions
-      if (template.includes('{% if ') && template.includes(' %}')) {
-        // Extract the condition from {% if condition %}
-        const ifMatch = template.match(/\{\%\s*if\s+(.+?)\s*\%\}/);
-        if (ifMatch) {
-          const conditionStr = ifMatch[1];
-
-          // Handle states('entity') == 'value' patterns
-          const stateCompareMatch = conditionStr.match(
-            /states\(['"]([^'"]+)['"]\)\s*(==|!=)\s*['"]([^'"]+)['"]/
-          );
-          if (stateCompareMatch) {
-            const entityId = stateCompareMatch[1];
-            const operator = stateCompareMatch[2];
-            const compareValue = stateCompareMatch[3];
-
-            const entity = this.hass.states[entityId];
-            if (entity) {
-              const entityState = entity.state;
-              if (operator === '==') {
-                return entityState === compareValue;
-              } else if (operator === '!=') {
-                return entityState !== compareValue;
-              }
-            }
-          }
-        }
+      const cachedResult = this.templateService.getTemplateResult(templateKey);
+      if (cachedResult !== undefined) {
+        return cachedResult;
       }
 
-      // Handle {{ states('entity') == 'value' }} pattern matching
-      const stateComparePattern =
-        /\{\{\s*states\(['"]([^'"]+)['"]\)\s*(==|!=)\s*['"]([^'"]+)['"]\s*\}\}/g;
-      let match;
-      while ((match = stateComparePattern.exec(template)) !== null) {
-        const entityId = match[1];
-        const operator = match[2];
-        const compareValue = match[3];
-
-        const entity = this.hass.states[entityId];
-        if (entity) {
-          const entityState = entity.state;
-          let result = false;
-
-          if (operator === '==') {
-            result = entityState === compareValue;
-          } else if (operator === '!=') {
-            result = entityState !== compareValue;
-          }
-
-          // If this is the only pattern in the template, return the result directly
-          if (template.trim() === match[0].trim()) {
-            return result;
-          }
-        }
-      }
-
-      // Simple {{ states('entity.id') }} pattern matching for basic conditions
-      const statePattern = /\{\{\s*states\(['"]([^'"]+)['"]\)\s*\}\}/g;
-      let evaluatedTemplate = template;
-      while ((match = statePattern.exec(template)) !== null) {
-        const entityId = match[1];
-        const entity = this.hass.states[entityId];
-        const value = entity ? entity.state : 'unknown';
-        evaluatedTemplate = evaluatedTemplate.replace(match[0], value);
-      }
-
-      // If the template was simple substitution, try to evaluate the result
-      if (evaluatedTemplate !== template) {
-        const trimmed = evaluatedTemplate.toLowerCase().trim();
-        if (['true', 'on', 'yes', '1'].includes(trimmed)) {
-          return true;
-        } else if (
-          ['false', 'off', 'no', '0', 'unavailable', 'unknown', 'none', ''].includes(trimmed)
-        ) {
-          return false;
-        }
-      }
-
-      return true; // Default to true for unrecognized patterns
+      // No result yet from WebSocket — hide until the first render_template message arrives
+      return false;
     } catch (error) {
-      return true; // Show by default on error
+      console.warn('[LogicService] evaluateTemplateCondition error:', error);
+      return true;
     }
   }
 

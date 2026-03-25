@@ -583,10 +583,14 @@ export class UltraExternalCardModule extends BaseUltraModule {
               // This ensures the Live Preview shows changes immediately
               // Note: Pass full config WITH card_mod to the actual card for rendering
               const liveContainerId = `${module.id}-live`;
-              externalCardContainerService.updateConfig(liveContainerId, {
-                type: module.card_type,
-                ...mergedConfig,
-              });
+              externalCardContainerService.updateConfig(
+                liveContainerId,
+                {
+                  type: module.card_type,
+                  ...mergedConfig,
+                },
+                hass
+              );
 
               // Clear any existing debounce timer
               const existingTimer = updateDebounceTimers.get(module.id);
@@ -1050,9 +1054,21 @@ export class UltraExternalCardModule extends BaseUltraModule {
       // Check if we already have the card element in the service
       const hasExistingContainer = externalCardContainerService.hasContainer(containerId);
 
-      // FAST PATH: If this DOM already has the right card mounted, skip everything
+      // FAST PATH: DOM already has the right container mounted — still sync hass from this render
+      // (Live Preview uses editor hass; singleton currentHass may lag or never match preview timing)
       if (isAlreadyInitialized && currentChild && hasExistingContainer) {
-        // Already correctly mounted with the right card element, do nothing
+        if (hass) {
+          const cardConfig = {
+            type: module.card_type,
+            ...(module.card_config || {}),
+          };
+          externalCardContainerService.getContainer(
+            containerId,
+            module.card_type,
+            cardConfig,
+            hass
+          );
+        }
         return;
       }
 
@@ -1068,7 +1084,8 @@ export class UltraExternalCardModule extends BaseUltraModule {
         const isolatedContainer = externalCardContainerService.getContainer(
           containerId,
           module.card_type,
-          cardConfig
+          cardConfig,
+          hass
         );
 
         // Mount the existing container to the new DOM
@@ -1087,7 +1104,8 @@ export class UltraExternalCardModule extends BaseUltraModule {
       const isolatedContainer = externalCardContainerService.getContainer(
         containerId,
         module.card_type,
-        cardConfig
+        cardConfig,
+        hass
       );
 
       // Mount or remount the container
