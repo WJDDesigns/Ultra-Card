@@ -49,6 +49,7 @@ export const coreLoaders: Record<string, ModuleLoader> = {
   navigation: () => import(/* webpackMode: "eager" */ './navigation-module').then(m => new m.UltraNavigationModule()),
   timer: () => import(/* webpackMode: "eager" */ './timer-module').then(m => new m.UltraTimerModule()),
   cover: () => import(/* webpackMode: "eager" */ './cover-module').then(m => new m.UltraCoverModule()),
+  fan: () => import(/* webpackMode: "eager" */ './fan-module').then(m => new m.UltraFanModule()),
   'dynamic-list': () => import(/* webpackMode: "eager" */ './dynamic-list-module').then(m => new m.UltraDynamicListModule()),
   qr_code: () => import(/* webpackMode: "eager" */ './qr-code-module').then(m => new m.UltraQrCodeModule()),
   energy_display: () => import(/* webpackMode: "eager" */ './energy-display-module').then(m => new m.UltraEnergyDisplayModule()),

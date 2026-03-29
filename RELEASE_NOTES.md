@@ -1,5 +1,17 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.2.0-beta2
+
+### What's new
+
+- **Fan Control module** — A dedicated module for controlling Home Assistant fan entities. Control speed via a smooth slider or step buttons, switch between preset modes, toggle oscillation, and flip direction (forward / reverse). The hero layout shows a large animated fan graphic that spins faster as the speed increases. Standard and compact layouts suit tighter spaces. All controls are shown only when the connected fan entity actually supports that feature, so the UI stays clean regardless of your hardware.
+
+### Improvements
+
+- **Fan module translations** — All Fan Control editor labels and runtime strings are fully translated into all 14 supported languages (English, English (GB), French, German, Spanish, Italian, Dutch, Norwegian, Swedish, Danish, Polish, Czech, Catalan, and Nynorsk).
+
+---
+
 ## Version 3.2.0-beta1
 
 This is an **early beta** of the 3.2 line. Thanks for testing — if something feels off, let us know.

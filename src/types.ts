@@ -130,6 +130,7 @@ export interface BaseModule {
     | 'navigation'
     | 'timer'
     | 'cover'
+    | 'fan'
     | 'dynamic-list'
     | 'qr_code'
     | 'energy_display'
@@ -4189,6 +4190,39 @@ export interface CoverModule extends BaseModule {
   display_conditions?: DisplayCondition[];
 }
 
+// ============================================
+// FAN MODULE TYPES
+// ============================================
+
+export interface FanModule extends BaseModule {
+  type: 'fan';
+
+  /** Fan entity */
+  entity: string;
+  name?: string;
+  icon?: string;
+
+  layout?: 'hero' | 'standard' | 'compact';
+  alignment?: 'left' | 'center' | 'right';
+
+  show_title?: boolean;
+  show_icon?: boolean;
+  show_state?: boolean;
+  show_percentage?: boolean;
+  show_percentage_control?: boolean;
+  show_preset_modes?: boolean;
+  show_oscillate?: boolean;
+  show_direction?: boolean;
+  show_speed_steppers?: boolean;
+
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
+  display_mode?: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
 /** Field mapping for todo item → module (used when source_type is 'todo'). */
 export interface TodoItemTemplate {
   /** Module type to render per item: text, icon, or bar */
@@ -4432,6 +4466,7 @@ export type CardModule =
   | NavigationModule
   | TimerModule
   | CoverModule
+  | FanModule
   | DynamicListModule
   | QrCodeModule
   | EnergyDisplayModule
