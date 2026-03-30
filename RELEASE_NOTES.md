@@ -1,5 +1,13 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.2.0-beta3
+
+### Bug fixes
+
+- **HACS install / update** — Declared the main bundle as `ultra-card.js` in `hacs.json` so HACS can resolve the entry file (repo name is `Ultra-Card`, which does not match lowercase `ultra-card.js`). This fixes the post-install “Unknown error” / `TypeError` when HACS registers the Lovelace resource.
+
+---
+
 ## Version 3.2.0-beta2
 
 ### What's new

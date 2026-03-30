@@ -1,5 +1,6 @@
 {
   "name": "Ultra Card",
+  "filename": "ultra-card.js",
   "render_readme": true,
   "content_in_root": true,
   "homeassistant": "2024.1.0"
