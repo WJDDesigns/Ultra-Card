@@ -5,6 +5,7 @@ import { ucCustomVariablesService } from '../services/uc-custom-variables-servic
 import { CustomVariable, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
 import { readHaSelectSelectedValue } from '../utils/form-utils';
+import { ucVariableValueTypeHaSelectOptions } from '../utils/uc-variable-value-type-options';
 
 @customElement('uc-custom-variables-manager')
 export class UcCustomVariablesManager extends LitElement {
@@ -695,6 +696,7 @@ export class UcCustomVariablesManager extends LitElement {
             <label>${localize('editor.custom_variables.value_type', lang, 'Value Type')}</label>
             <ha-select
               .value=${this._newVariableValueType}
+              .options=${ucVariableValueTypeHaSelectOptions(lang, 'long')}
               @selected=${(e: CustomEvent) => {
                 const v = readHaSelectSelectedValue(e) as
                   | 'entity_id'
@@ -707,15 +709,6 @@ export class UcCustomVariablesManager extends LitElement {
               }}
               @closed=${(e: Event) => e.stopPropagation()}
             >
-              <mwc-list-item value="entity_id">
-                ${localize('editor.custom_variables.value_type_entity_id_desc', lang, 'Entity ID (e.g., sensor.temperature)')}
-              </mwc-list-item>
-              <mwc-list-item value="state">
-                ${localize('editor.custom_variables.value_type_state_desc', lang, 'State Value (e.g., 23.5)')}
-              </mwc-list-item>
-              <mwc-list-item value="attribute">
-                ${localize('editor.custom_variables.value_type_attribute_desc', lang, 'Attribute Value (e.g., temperature, friendly_name)')}
-              </mwc-list-item>
             </ha-select>
           </div>
         </div>
@@ -845,6 +838,7 @@ export class UcCustomVariablesManager extends LitElement {
             <label>${localize('editor.custom_variables.value_type', lang, 'Value Type')}</label>
             <ha-select
               .value=${this._editingValueType}
+              .options=${ucVariableValueTypeHaSelectOptions(lang, 'short')}
               @selected=${(e: CustomEvent) => {
                 const v = readHaSelectSelectedValue(e) as
                   | 'entity_id'
@@ -857,9 +851,6 @@ export class UcCustomVariablesManager extends LitElement {
               }}
               @closed=${(e: Event) => e.stopPropagation()}
             >
-              <mwc-list-item value="entity_id">${localize('editor.custom_variables.value_type_entity_id', lang, 'Entity ID')}</mwc-list-item>
-              <mwc-list-item value="state">${localize('editor.custom_variables.value_type_state', lang, 'State')}</mwc-list-item>
-              <mwc-list-item value="attribute">${localize('editor.custom_variables.value_type_attribute', lang, 'Attribute')}</mwc-list-item>
             </ha-select>
           </div>
 

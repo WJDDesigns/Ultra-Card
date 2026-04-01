@@ -50,6 +50,7 @@ export const coreLoaders: Record<string, ModuleLoader> = {
   timer: () => import(/* webpackMode: "eager" */ './timer-module').then(m => new m.UltraTimerModule()),
   cover: () => import(/* webpackMode: "eager" */ './cover-module').then(m => new m.UltraCoverModule()),
   fan: () => import(/* webpackMode: "eager" */ './fan-module').then(m => new m.UltraFanModule()),
+  lock: () => import(/* webpackMode: "eager" */ './lock-module').then(m => new m.UltraLockModule()),
   'dynamic-list': () => import(/* webpackMode: "eager" */ './dynamic-list-module').then(m => new m.UltraDynamicListModule()),
   qr_code: () => import(/* webpackMode: "eager" */ './qr-code-module').then(m => new m.UltraQrCodeModule()),
   energy_display: () => import(/* webpackMode: "eager" */ './energy-display-module').then(m => new m.UltraEnergyDisplayModule()),

@@ -54,14 +54,19 @@ import {
   HoverEffectConfig,
   EntityMapping,
   EntityReference,
+  PresetWizardApplyResult,
 } from '../../types';
 import '../../components/uc-favorite-dialog';
 import '../../components/uc-variable-mapping-dialog';
 import { findMissingVariables } from '../../utils/uc-template-processor';
+import { buildAutoPresetWizard } from '../../utils/uc-preset-wizard-auto';
 import '../../components/uc-import-dialog';
 import { simpleEntityMapper } from '../../components/uc-simple-entity-mapper';
+import '../../components/uc-preset-wizard-dialog';
+import { presetWizardDialog } from '../../components/uc-preset-wizard-dialog';
 import { entityDetector } from '../../services/uc-entity-detector';
 import { entityMapper } from '../../services/uc-entity-mapper';
+import { ucWizardAdaptationEngine } from '../../services/uc-wizard-adaptation-engine';
 import {
   DEFAULT_FONTS,
   TYPOGRAPHY_FONTS,
@@ -7757,26 +7762,85 @@ export class LayoutTab extends LitElement {
     try {
       // debug removed
 
-      const currentLayout = this._ensureLayout();
+      this._ensureLayout();
 
       if (!preset.layout || !preset.layout.rows || preset.layout.rows.length === 0) {
         this._showToast(`Error: Invalid preset "${preset.name}" - missing layout rows`, 'error');
         return;
       }
 
-      // Detect entities in the preset
-      const entityReferences = entityDetector.scanLayout(preset.layout);
+      const entityReferences = entityDetector.scanLayout(preset.layout, preset.wizard);
 
-      if (entityReferences.length > 0) {
-        // Show entity mapping dialog
-        this._showEntityMappingDialog(preset, entityReferences);
-      } else {
-        // No entities, add preset directly
+      if (entityReferences.length === 0) {
         this._applyPresetToLayout(preset, []);
+        return;
       }
+
+      // Every preset with entity references opens the setup wizard (authored or auto-generated).
+      const effectiveWizard =
+        preset.wizard?.steps?.length
+          ? preset.wizard
+          : buildAutoPresetWizard(this.hass, entityReferences);
+      if (!effectiveWizard?.steps?.length) {
+        this._showEntityMappingDialog(preset, entityReferences);
+        return;
+      }
+
+      const presetForWizard: PresetDefinition = { ...preset, wizard: effectiveWizard };
+
+      if (this._entityMappingOpen) {
+        return;
+      }
+      this._entityMappingOpen = true;
+      presetWizardDialog.show(
+        this.hass,
+        presetForWizard,
+        (result: PresetWizardApplyResult) => {
+          this._entityMappingOpen = false;
+          this._applyPresetWithWizardResults(presetForWizard, result);
+        },
+        () => {
+          this._entityMappingOpen = false;
+          this._applyPresetToLayout(preset, []);
+        }
+      );
     } catch (error) {
       this._showToast(
         `Error adding preset: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'error'
+      );
+    }
+  }
+
+  /**
+   * Apply preset after wizard: adaptations use original preset entity IDs, then entity mapping runs.
+   */
+  private _applyPresetWithWizardResults(
+    preset: PresetDefinition,
+    result: PresetWizardApplyResult
+  ): void {
+    try {
+      let layout: LayoutConfig = JSON.parse(JSON.stringify(preset.layout)) as LayoutConfig;
+      if (preset.wizard?.adaptations?.length && result.fieldValues) {
+        layout = ucWizardAdaptationEngine.applyAdaptations(
+          layout,
+          preset.wizard.adaptations,
+          result.fieldValues
+        );
+      }
+      if (result.mappings.length > 0) {
+        layout = entityMapper.applyMappingToLayout(layout, result.mappings);
+      }
+      const cn = result.fieldValues['card_name'];
+      const additionalConfig: Partial<UltraCardConfig> =
+        typeof cn === 'string' && cn.trim() ? { card_name: cn.trim() } : {};
+      this._applyPresetToLayout(preset, result.mappings, {
+        preprocessedLayout: layout,
+        additionalConfig,
+      });
+    } catch (error) {
+      this._showToast(
+        `Error applying preset: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'error'
       );
     }
@@ -7815,15 +7879,29 @@ export class LayoutTab extends LitElement {
     return this.config._contentOrigin || 'local';
   }
 
-  private _applyPresetToLayout(preset: PresetDefinition, mappings: EntityMapping[]): void {
+  private _applyPresetToLayout(
+    preset: PresetDefinition,
+    mappings: EntityMapping[],
+    options?: {
+      preprocessedLayout?: LayoutConfig;
+      additionalConfig?: Partial<UltraCardConfig>;
+    }
+  ): void {
     try {
       const currentLayout = this._ensureLayout();
 
-      // Apply entity mappings to preset layout
-      let mappedLayout = preset.layout;
-      if (mappings.length > 0) {
-        mappedLayout = entityMapper.applyMappingToLayout(preset.layout, mappings);
+      // Apply entity mappings to preset layout (or use wizard-preprocessed layout)
+      let mappedLayout: LayoutConfig;
+      if (options?.preprocessedLayout) {
+        mappedLayout = options.preprocessedLayout;
+      } else {
+        mappedLayout = preset.layout;
+        if (mappings.length > 0) {
+          mappedLayout = entityMapper.applyMappingToLayout(preset.layout, mappings);
+        }
+      }
 
+      if (mappings.length > 0) {
         // Store mappings in preset metadata for future export
         if (!preset.metadata.entityMappings) {
           preset.metadata.entityMappings = [];
@@ -7880,6 +7958,7 @@ export class LayoutTab extends LitElement {
         _contentOrigin: this._getPresetContentOrigin(preset),
         ...(shouldUpdateCardVars ? { _customVariables: updatedCardVars } : {}),
         ...cardSettingsUpdates,
+        ...(options?.additionalConfig || {}),
       };
 
       if (!this._isUndoRedoAction) {

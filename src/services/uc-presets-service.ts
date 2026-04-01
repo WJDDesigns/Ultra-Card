@@ -324,11 +324,35 @@ class UcPresetsService {
       let layout: LayoutConfig;
       let cardSettings: PresetDefinition['cardSettings'] | undefined;
       let customVariables: PresetDefinition['customVariables'] | undefined;
+      let wizard: PresetDefinition['wizard'];
 
       try {
-        // Try to parse as direct JSON first
-        layout = JSON.parse(wpPreset.shortcode);
-        // Successfully parsed direct JSON (silent)
+        // Try to parse as direct JSON first (pure layout or bundle with wizard / cardSettings)
+        const raw = JSON.parse(wpPreset.shortcode) as Record<string, unknown>;
+        wizard = this._tryExtractWizard(raw);
+
+        if (raw && typeof raw === 'object' && raw.layout && Array.isArray((raw.layout as LayoutConfig).rows)) {
+          layout = raw.layout as LayoutConfig;
+          if (raw.cardSettings && typeof raw.cardSettings === 'object') {
+            cardSettings = raw.cardSettings as PresetDefinition['cardSettings'];
+          }
+          if (Array.isArray(raw.customVariables)) {
+            customVariables = raw.customVariables as PresetDefinition['customVariables'];
+          }
+        } else if (raw && typeof raw === 'object' && Array.isArray(raw.rows)) {
+          layout = {
+            rows: raw.rows as LayoutConfig['rows'],
+            ...(typeof raw.gap === 'number' ? { gap: raw.gap } : {}),
+          };
+          if (raw.cardSettings && typeof raw.cardSettings === 'object') {
+            cardSettings = raw.cardSettings as PresetDefinition['cardSettings'];
+          }
+          if (Array.isArray(raw.customVariables)) {
+            customVariables = raw.customVariables as PresetDefinition['customVariables'];
+          }
+        } else {
+          throw new Error('Layout has no rows');
+        }
 
         // Validate that the layout has rows with actual content
         if (!layout.rows || !Array.isArray(layout.rows) || layout.rows.length === 0) {
@@ -392,6 +416,11 @@ class UcPresetsService {
             } else {
               throw new Error('No valid layout found in shortcode');
             }
+
+            wizard =
+              this._tryExtractWizard(importData) ||
+              this._tryExtractWizard(importData.data) ||
+              wizard;
           } else {
             throw new Error('No shortcode format found');
           }
@@ -432,6 +461,7 @@ class UcPresetsService {
         // Include card-level settings if this is a full card export
         ...(cardSettings && { cardSettings }),
         ...(customVariables && customVariables.length > 0 ? { customVariables } : {}),
+        ...(wizard ? { wizard } : {}),
         metadata: {
           created: wpPreset.created,
           updated: wpPreset.updated || wpPreset.created,
@@ -650,6 +680,23 @@ class UcPresetsService {
 
   private _broadcastChange(): void {
     window.dispatchEvent(new CustomEvent(UcPresetsService.SYNC_EVENT));
+  }
+
+  /** Optional guided setup bundled with preset export JSON / shortcode. */
+  private _tryExtractWizard(source: unknown): PresetDefinition['wizard'] {
+    if (!source || typeof source !== 'object') {
+      return undefined;
+    }
+    const w = (source as { wizard?: unknown }).wizard;
+    if (
+      w &&
+      typeof w === 'object' &&
+      Array.isArray((w as { steps?: unknown }).steps) &&
+      (w as { steps: unknown[] }).steps.length > 0
+    ) {
+      return w as NonNullable<PresetDefinition['wizard']>;
+    }
+    return undefined;
   }
 
   private _isValidPreset(preset: any): preset is PresetDefinition {

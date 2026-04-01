@@ -4,6 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 import { localize } from '../localize/localize';
 import { readHaSelectSelectedValue } from '../utils/form-utils';
+import { ucVariableValueTypeHaSelectOptions } from '../utils/uc-variable-value-type-options';
 
 export interface VariableMapping {
   variableName: string;
@@ -216,6 +217,7 @@ export class UcVariableMappingDialog extends LitElement {
               <label>${localize('editor.custom_variables.value_type', lang, 'Value Type')}</label>
               <ha-select
                 .value=${mapping.valueType}
+                .options=${ucVariableValueTypeHaSelectOptions(lang, 'short')}
                 @selected=${(e: CustomEvent) => {
                   const v = readHaSelectSelectedValue(e) as
                     | 'entity_id'
@@ -228,9 +230,6 @@ export class UcVariableMappingDialog extends LitElement {
                 }}
                 @closed=${(e: Event) => e.stopPropagation()}
               >
-                <mwc-list-item value="entity_id">Entity ID</mwc-list-item>
-                <mwc-list-item value="state">State Value</mwc-list-item>
-                <mwc-list-item value="attribute">Attribute</mwc-list-item>
               </ha-select>
             </div>
           </div>

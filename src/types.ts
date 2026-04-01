@@ -131,6 +131,7 @@ export interface BaseModule {
     | 'timer'
     | 'cover'
     | 'fan'
+    | 'lock'
     | 'dynamic-list'
     | 'qr_code'
     | 'energy_display'
@@ -4223,6 +4224,35 @@ export interface FanModule extends BaseModule {
   display_conditions?: DisplayCondition[];
 }
 
+// ============================================
+// LOCK MODULE TYPES
+// ============================================
+
+export interface LockModule extends BaseModule {
+  type: 'lock';
+
+  /** Lock entity */
+  entity: string;
+  name?: string;
+  icon?: string;
+
+  layout?: 'hero' | 'standard' | 'compact';
+  alignment?: 'left' | 'center' | 'right';
+
+  show_title?: boolean;
+  show_icon?: boolean;
+  show_state?: boolean;
+  /** Show Open / unlatch when entity supports LockEntityFeature.OPEN */
+  show_open_button?: boolean;
+
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
+  display_mode?: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
 /** Field mapping for todo item → module (used when source_type is 'todo'). */
 export interface TodoItemTemplate {
   /** Module type to render per item: text, icon, or bar */
@@ -4467,6 +4497,7 @@ export type CardModule =
   | TimerModule
   | CoverModule
   | FanModule
+  | LockModule
   | DynamicListModule
   | QrCodeModule
   | EnergyDisplayModule
@@ -4867,6 +4898,57 @@ export interface EntityMapping {
   domain: string; // Entity domain (light, sensor, etc.)
 }
 
+/** Optional guided setup when applying a preset (authored in preset export / ultracard.io). */
+export interface PresetWizardConfig {
+  steps: PresetWizardStep[];
+  adaptations?: PresetWizardAdaptation[];
+}
+
+export interface PresetWizardStep {
+  id: string;
+  title: string;
+  description?: string;
+  icon?: string;
+  fields: PresetWizardField[];
+}
+
+export interface PresetWizardField {
+  id: string;
+  label: string;
+  description: string;
+  type: 'entity' | 'unit_system' | 'text' | 'number' | 'select';
+  required?: boolean;
+  /** For type `entity`: restrict picker to this domain */
+  entityDomain?: string;
+  /** For type `entity`: restrict to sensors with this device_class */
+  entityDeviceClass?: string;
+  options?: { value: string; label: string }[];
+  default?: unknown;
+  /** Original entity IDs in the preset layout this field maps to */
+  targetEntityIds?: string[];
+  /** Another field id — user may reuse that field's entity (e.g. same climate for temp + humidity) */
+  allowSameAs?: string;
+}
+
+export interface PresetWizardAdaptation {
+  when: { fieldId: string; equals: string };
+  apply: PresetWizardChange[];
+}
+
+export interface PresetWizardChange {
+  targetModuleTypes?: string[];
+  targetEntityIds?: string[];
+  /** Module property to set (e.g. value_format, min_value) */
+  property: string;
+  value: unknown;
+}
+
+/** Result from the preset wizard dialog before applying to layout */
+export interface PresetWizardApplyResult {
+  mappings: EntityMapping[];
+  fieldValues: Record<string, unknown>;
+}
+
 export interface PresetDefinition {
   id: string;
   name: string;
@@ -4882,6 +4964,8 @@ export interface PresetDefinition {
   layout: LayoutConfig; // The actual preset configuration
   // Optional custom variables included with the preset
   customVariables?: CustomVariable[];
+  /** Guided setup: when present, applying the preset opens the wizard instead of the flat entity mapper */
+  wizard?: PresetWizardConfig;
   // Card-level settings from full card exports
   cardSettings?: {
     card_background?: string;

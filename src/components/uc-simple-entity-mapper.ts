@@ -1,6 +1,7 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { EntityReference, EntityMapping } from '../types';
 import { entityMapper } from '../services/uc-entity-mapper';
+import { inferEntityDomainFromReference } from '../utils/uc-preset-wizard-auto';
 
 interface MappingState {
   original: string;
@@ -63,25 +64,53 @@ export class UcSimpleEntityMapper {
         console.warn('⚠️ Invalid reference:', ref);
         return;
       }
-      
-      const domain = this.getDomain(ref.entityId);
+
+      const inferredDomain = inferEntityDomainFromReference(this.hass, ref.entityId);
+      const domain = inferredDomain || this.getDomain(ref.entityId);
       const exists = this.hass.states[ref.entityId] !== undefined;
-      const suggestions = entityMapper.suggestEntities(ref.entityId, availableEntities);
-      
+      const needsPick = this.rowNeedsUserPick(ref.entityId);
+
+      // Fuzzy match uses domain.entity_id shape; $placeholders have no domain until inferred
+      let suggestKey = ref.entityId;
+      if (needsPick && inferredDomain) {
+        const tail = ref.entityId.startsWith('$')
+          ? ref.entityId.slice(1).replace(/\./g, '_')
+          : ref.entityId.replace(/\./g, '_');
+        suggestKey = `${inferredDomain}.${tail || 'entity'}`;
+      }
+      let suggestions = entityMapper.suggestEntities(suggestKey, availableEntities);
+      if (needsPick && inferredDomain && suggestions.length === 0) {
+        suggestions = availableEntities
+          .filter(e => e.startsWith(`${inferredDomain}.`))
+          .sort()
+          .slice(0, 15);
+      }
+
       // Use location as unique key to handle duplicate entities in different modules
       const uniqueKey = `${ref.entityId}__${ref.locations[0]}`;
-      
+
+      let mappedVal: string;
+      if (exists) {
+        mappedVal = ref.entityId;
+      } else if (needsPick && suggestions.length > 0) {
+        mappedVal = suggestions[0];
+      } else {
+        mappedVal = '';
+      }
+
       console.log(`🔍 Processing entity reference ${index}: ${ref.entityId} at ${ref.locations[0]}`, {
         domain,
+        inferredDomain,
         exists,
+        needsPick,
         moduleType: ref.moduleType,
         suggestionsCount: suggestions.length,
-        suggestions: suggestions.slice(0, 3)
+        suggestions: suggestions.slice(0, 3),
       });
 
       this.mappings.set(uniqueKey, {
         original: ref.entityId,
-        mapped: exists ? ref.entityId : suggestions[0] || ref.entityId,
+        mapped: mappedVal,
         suggestions,
         domain,
         context: ref.context,
@@ -190,32 +219,53 @@ export class UcSimpleEntityMapper {
     
     let entityRows = '';
     this.mappings.forEach((state, uniqueKey) => {
-      const options = [`<option value="${state.original}">Keep Original: ${state.original}</option>`];
-      
+      const keepLabel = this.rowNeedsUserPick(state.original)
+        ? `Keep placeholder (invalid until mapped): ${state.original}`
+        : `Keep original: ${state.original}`;
+      const options = [`<option value="${state.original}">${keepLabel}</option>`];
+
       // Add suggestions first (top matches)
       if (state.suggestions.length > 0) {
-        options.push(`<optgroup label="Suggested Matches">`);
+        options.push(`<optgroup label="Suggested matches">`);
         state.suggestions.forEach(suggestion => {
           const selected = state.mapped === suggestion ? 'selected' : '';
           options.push(`<option value="${suggestion}" ${selected}>${suggestion}</option>`);
         });
         options.push(`</optgroup>`);
       }
-      
-      // Add all entities of the same domain
+
       const allEntities = Object.keys(this.hass.states);
-      const domainEntities = allEntities
-        .filter(e => e.startsWith(state.domain + '.'))
-        .filter(e => e !== state.original && !state.suggestions.includes(e))
-        .sort();
-      
+      // Domain-scoped list (works for inferred domain on $variables)
+      const domainEntities = state.domain
+        ? allEntities
+            .filter(e => e.startsWith(state.domain + '.'))
+            .filter(e => e !== state.original && !state.suggestions.includes(e))
+            .sort()
+        : [];
+
       if (domainEntities.length > 0) {
-        options.push(`<optgroup label="All ${state.domain.charAt(0).toUpperCase() + state.domain.slice(1)} Entities">`);
+        const label =
+          state.domain.charAt(0).toUpperCase() + state.domain.slice(1).replace(/_/g, ' ');
+        options.push(`<optgroup label="All ${label} entities">`);
         domainEntities.forEach(entity => {
           const selected = state.mapped === entity ? 'selected' : '';
           options.push(`<option value="${entity}" ${selected}>${entity}</option>`);
         });
         options.push(`</optgroup>`);
+      } else if (!state.domain) {
+        // Placeholders / unknown domain: still list entities so the user can pick
+        const rest = allEntities
+          .filter(e => e !== state.original && !state.suggestions.includes(e))
+          .sort()
+          .slice(0, 1500);
+        if (rest.length > 0) {
+          options.push(`<optgroup label="All entities (search in list)">`);
+          rest.forEach(entity => {
+            const selected = state.mapped === entity ? 'selected' : '';
+            options.push(`<option value="${entity}" ${selected}>${entity}</option>`);
+          });
+          options.push(`</optgroup>`);
+        }
       }
       
       entityRows += `
@@ -593,9 +643,9 @@ export class UcSimpleEntityMapper {
   private handleAutoMap(): void {
     console.log('🤖 Auto-map button handler called!');
     let changes = 0;
-    this.mappings.forEach((state, original) => {
+    this.mappings.forEach((state, uniqueKey) => {
       if (state.suggestions.length > 0) {
-        console.log(`🔄 Auto-mapping ${original} to ${state.suggestions[0]}`);
+        console.log(`🔄 Auto-mapping ${uniqueKey} to ${state.suggestions[0]}`);
         state.mapped = state.suggestions[0];
         changes++;
       }
@@ -654,12 +704,16 @@ export class UcSimpleEntityMapper {
   private handleApply(): void {
     const mappings: EntityMapping[] = [];
 
-    this.mappings.forEach((state, uniqueKey) => {
-      if (state.mapped && state.mapped !== state.original) {
+    this.mappings.forEach(state => {
+      if (
+        state.mapped &&
+        state.mapped !== state.original &&
+        this.hass.states[state.mapped]
+      ) {
         mappings.push({
           original: state.original,
           mapped: state.mapped,
-          domain: state.domain,
+          domain: state.domain || this.getDomain(state.mapped),
         });
         console.log(`📝 Adding mapping: ${state.original} → ${state.mapped} (at ${state.location})`);
       }
@@ -700,16 +754,29 @@ export class UcSimpleEntityMapper {
     }
   }
 
+  private rowNeedsUserPick(original: string): boolean {
+    return (
+      original.startsWith('$') ||
+      (!!original && !this.hass.states[original])
+    );
+  }
+
   private getSummary(): { total: number; mapped: number; unmapped: number } {
     let mapped = 0;
     let unmapped = 0;
 
     this.mappings.forEach(state => {
-      if (state.mapped && state.mapped !== state.original) {
-        mapped++;
-      } else if (!state.mapped || state.mapped === '') {
-        unmapped++;
+      const needsPick = this.rowNeedsUserPick(state.original);
+      const m = state.mapped;
+      const validTarget = !!(m && this.hass.states[m]);
+      let ok = false;
+      if (needsPick) {
+        ok = validTarget && m !== state.original;
+      } else {
+        ok = validTarget;
       }
+      if (ok) mapped++;
+      else unmapped++;
     });
 
     return {

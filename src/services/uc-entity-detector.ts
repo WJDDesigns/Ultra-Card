@@ -16,6 +16,7 @@ import {
   TextModule,
   SliderModule,
   ImageModule,
+  PresetWizardConfig,
 } from '../types';
 
 /**
@@ -24,11 +25,34 @@ import {
  */
 class UcEntityDetectorService {
   /**
-   * Scan an entire layout for entity references
+   * If preset wizard maps an entity id to a field, use that label + description as mapper context.
    */
-  scanLayout(layout: LayoutConfig): EntityReference[] {
+  private _wizardContextForEntity(
+    entityId: string,
+    wizard?: PresetWizardConfig
+  ): string | undefined {
+    if (!wizard?.steps?.length) return undefined;
+    for (const step of wizard.steps) {
+      for (const f of step.fields) {
+        if (
+          f.type === 'entity' &&
+          Array.isArray(f.targetEntityIds) &&
+          f.targetEntityIds.includes(entityId)
+        ) {
+          return `${f.label}: ${f.description}`;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Scan an entire layout for entity references
+   * @param wizard Optional preset wizard — enriches entity mapper context for targetEntityIds
+   */
+  scanLayout(layout: LayoutConfig, wizard?: PresetWizardConfig): EntityReference[] {
     const references: EntityReference[] = [];
-    
+
     console.log('🔍 Entity Detector: Scanning layout:', layout);
 
     if (!layout || !layout.rows || !Array.isArray(layout.rows)) {
@@ -43,7 +67,16 @@ class UcEntityDetectorService {
     });
 
     console.log(`🔍 Entity Detector: Total entity references found: ${references.length}`);
-    return references;
+
+    if (!wizard?.steps?.length) {
+      return references;
+    }
+
+    return references.map(ref => {
+      if (ref.context) return ref;
+      const ctx = this._wizardContextForEntity(ref.entityId, wizard);
+      return ctx ? { ...ref, context: ctx } : ref;
+    });
   }
 
   /**

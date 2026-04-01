@@ -27,14 +27,21 @@ export class LogicService {
     return LogicService.instance;
   }
 
-  public setHass(hass: HomeAssistant): void {
-    this.hass = hass;
-    // Clean up old template service before creating a new one to prevent WebSocket subscription leaks
-    if (this.templateService) {
-      this.templateService.unsubscribeAllTemplates();
+  public setHass(hass: HomeAssistant | undefined): void {
+    this.hass = hass ?? null;
+    if (!hass) {
+      if (this.templateService) {
+        this.templateService.unsubscribeAllTemplates();
+        this.templateService = null;
+      }
+      return;
     }
-    // Initialize template service when hass is available
-    if (hass) {
+    // Reuse the existing TemplateService and only update the hass reference.
+    // Tearing down on every hass object swap (each HA state update) caused
+    // render_template re-subscribe loops and sustained high CPU for template logic.
+    if (this.templateService) {
+      this.templateService.updateHass(hass);
+    } else {
       this.templateService = new TemplateService(hass);
     }
     // Note: We do NOT clear logged errors here because setHass is called frequently

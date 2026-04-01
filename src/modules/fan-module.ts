@@ -37,6 +37,14 @@ function spinDurationSec(percentage: number | undefined, isOn: boolean): string 
 }
 
 /** Preset / mode labels for display only (service calls still use raw HA strings). */
+/** Hero stage circle (px) — keep aligned with `.uc-fan-circle` width/height in getStyles */
+const FAN_HERO_CIRCLE_PX = 148;
+/**
+ * Hero fan graphic size (px): same fill ratio as standard layout (46px SVG in a 46px well),
+ * i.e. the blades span the circle diameter like the header icon fills its disc.
+ */
+const FAN_HERO_GRAPHIC_PX = FAN_HERO_CIRCLE_PX;
+
 function formatPresetDisplay(pm: string): string {
   const s = pm.trim();
   if (!s) return s;
@@ -54,6 +62,13 @@ function formatPresetDisplay(pm: string): string {
  * Fan Module — control Home Assistant fan entities with animated visuals.
  */
 export class UltraFanModule extends BaseUltraModule {
+  /**
+   * Optimistic fan speed (0–100) keyed by entity id. Home Assistant applies
+   * `set_percentage` asynchronously; this keeps the slider, gauge, chip %, and
+   * spin animation in sync until state catches up.
+   */
+  private _fanSpeedOverride = new Map<string, number>();
+
   metadata: ModuleMetadata = {
     type: 'fan',
     title: 'Fan Control',
@@ -378,8 +393,31 @@ export class UltraFanModule extends BaseUltraModule {
       : [];
     const oscillating = attrs.oscillating === true;
     const direction = typeof attrs.direction === 'string' ? attrs.direction : undefined;
-    const pctForBar = percentage ?? (isOn ? 100 : 0);
-    const spinDur = spinDurationSec(percentage, isOn);
+
+    let speedOverride = this._fanSpeedOverride.get(entityId);
+    if (speedOverride !== undefined && percentage !== undefined) {
+      if (Math.abs(percentage - speedOverride) <= 1) {
+        this._fanSpeedOverride.delete(entityId);
+        speedOverride = undefined;
+      }
+    }
+    const displaySpeedPct = Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(
+          speedOverride !== undefined
+            ? speedOverride
+            : percentage !== undefined
+              ? percentage
+              : isOn
+                ? 100
+                : 0
+        )
+      )
+    );
+    const pctForBar = displaySpeedPct;
+    const spinDur = spinDurationSec(isOn ? displaySpeedPct : undefined, isOn);
 
     const showTitle   = fan.show_title !== false;
     const showIcon    = fan.show_icon !== false;
@@ -405,7 +443,7 @@ export class UltraFanModule extends BaseUltraModule {
       if (isUnavailable) return localize('editor.fan.unavailable', lang, 'Unavailable');
       if (isOn) {
         if (presetMode) return formatPresetDisplay(presetMode);
-        if (percentage !== undefined) return `${percentage}% Speed`;
+        if (hasSetSpeed) return `${displaySpeedPct}% Speed`;
         return localize('editor.fan.state_on', lang, 'On');
       }
       return localize('editor.fan.state_off', lang, 'Off');
@@ -415,14 +453,23 @@ export class UltraFanModule extends BaseUltraModule {
       hass.callService('fan', service, { entity_id: entityId, ...data });
     };
     const toggleFan = () => {
+      this._fanSpeedOverride.delete(entityId);
       if (hasTurnOn && hasTurnOff) hass.callService('fan', 'toggle', { entity_id: entityId });
       else if (isOn && hasTurnOff) call('turn_off');
       else if (!isOn && hasTurnOn) call('turn_on');
+      this.triggerPreviewUpdate(true);
     };
     const setPercentage = (pct: number) => {
       const v = Math.max(0, Math.min(100, Math.round(pct)));
       if (v === 0 && hasTurnOff) call('turn_off');
       else call('set_percentage', { percentage: v });
+    };
+    /** Slider input: optimistic UI + service call + force card re-render */
+    const onSpeedInput = (e: Event) => {
+      const v = Math.max(0, Math.min(100, Math.round(Number((e.target as HTMLInputElement).value))));
+      this._fanSpeedOverride.set(entityId, v);
+      setPercentage(v);
+      this.triggerPreviewUpdate(true);
     };
 
     /** Fan graphic — SVG or MDI icon */
@@ -451,23 +498,26 @@ export class UltraFanModule extends BaseUltraModule {
                 <span class="uc-fan-section-label">
                   ${localize('editor.fan.speed', lang, 'Speed')}
                 </span>
-                ${showPct && percentage !== undefined
+                ${showPct && hasSetSpeed
                   ? big
-                    ? html`<span class="uc-fan-speed__big">${percentage}<span class="uc-fan-speed__unit">%</span></span>`
-                    : html`<span class="uc-fan-speed__sm">${percentage}%</span>`
+                    ? html`<span class="uc-fan-speed__big">${displaySpeedPct}<span class="uc-fan-speed__unit">%</span></span>`
+                    : html`<span class="uc-fan-speed__sm">${displaySpeedPct}%</span>`
                   : nothing}
               </div>
               ${showPctCtrl
                 ? html`
-                    <div class="uc-fan-slider-combo">
-                      <div class="uc-fan-slider-fill" style="width: ${pctForBar}%;"></div>
+                    <div
+                      class="uc-fan-slider-combo"
+                      style="--uc-fan-pct: ${displaySpeedPct};"
+                    >
+                      <div class="uc-fan-slider-fill"></div>
                       <input
                         type="range"
                         class="uc-fan-range"
                         min="0"
                         max="100"
-                        .value=${String(percentage ?? (isOn ? 100 : 0))}
-                        @input=${(e: Event) => setPercentage(Number((e.target as HTMLInputElement).value))}
+                        .value=${String(displaySpeedPct)}
+                        @input=${onSpeedInput}
                         ?disabled=${isUnavailable}
                       />
                     </div>
@@ -584,8 +634,7 @@ export class UltraFanModule extends BaseUltraModule {
             <!-- Circle stage -->
             <div class="uc-fan-hero__stage">
               <div class="uc-fan-circle ${isOn ? 'uc-fan-circle--on' : ''}">
-                <div class="uc-fan-circle__ring" aria-hidden="true"></div>
-                ${fanGraphic(108)}
+                ${fanGraphic(FAN_HERO_GRAPHIC_PX)}
               </div>
               ${showTitle || showState
                 ? html`
@@ -627,27 +676,34 @@ export class UltraFanModule extends BaseUltraModule {
               ${showTitle ? html`<h2 class="uc-fan-title uc-fan-title--compact">${name}</h2>` : nothing}
               ${showState ? html`<p class="uc-fan-subtitle">${stateLabel}</p>` : nothing}
             </div>
-            ${showPct && hasSetSpeed && percentage !== undefined
-              ? html`<span class="uc-fan-chip uc-fan-chip--speed">${percentage}%</span>`
+            ${showPct && hasSetSpeed
+              ? html`<span class="uc-fan-chip uc-fan-chip--speed">${displaySpeedPct}%</span>`
               : nothing}
             ${powerBtn('compact')}
           </div>
-          ${hasSetSpeed && (showPct || showPctCtrl)
+          ${hasSetSpeed && showPctCtrl
             ? html`
-                <div class="uc-fan-slider-combo">
-                  <div class="uc-fan-slider-fill" style="width: ${pctForBar}%;"></div>
+                <div
+                  class="uc-fan-slider-combo"
+                  style="--uc-fan-pct: ${displaySpeedPct};"
+                >
+                  <div class="uc-fan-slider-fill"></div>
                   <input
                     type="range"
                     class="uc-fan-range"
                     min="0"
                     max="100"
-                    .value=${String(percentage ?? (isOn ? 100 : 0))}
-                    @input=${(e: Event) => setPercentage(Number((e.target as HTMLInputElement).value))}
+                    .value=${String(displaySpeedPct)}
+                    @input=${onSpeedInput}
                     ?disabled=${isUnavailable}
                   />
                 </div>
               `
-            : nothing}
+            : hasSetSpeed && showPct && !showPctCtrl
+              ? html`<div class="uc-fan-track">
+                  <div class="uc-fan-track__fill" style="width: ${pctForBar}%;"></div>
+                </div>`
+              : nothing}
         </div>
       `;
     } else {
@@ -682,7 +738,7 @@ export class UltraFanModule extends BaseUltraModule {
       ${this.injectFanStyles()}
       <div
         class="uc-fan-wrapper ${hoverClass}"
-        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: 18px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--divider-color) 45%, transparent); box-shadow: 0 4px 28px rgba(0,0,0,0.12); ${styleStr}"
+        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: 18px; overflow: hidden; ${styleStr}"
       >
         ${this.wrapWithAnimation(content, module, hass)}
       </div>
@@ -730,17 +786,10 @@ export class UltraFanModule extends BaseUltraModule {
       }
       .uc-fan-circle--on {
         border-color: color-mix(in srgb, var(--primary-color) 40%, transparent);
+        /* Soft glow only — avoid a second ring (no duplicate outline vs. border) */
         box-shadow:
           inset 0 2px 12px rgba(0,0,0,0.18),
-          0 0 0 2px color-mix(in srgb, var(--primary-color) 16%, transparent),
-          0 16px 48px color-mix(in srgb, var(--primary-color) 12%, transparent);
-      }
-      .uc-fan-circle__ring {
-        position: absolute;
-        inset: 12px;
-        border-radius: 50%;
-        border: 1px solid color-mix(in srgb, var(--primary-color) 10%, var(--divider-color));
-        pointer-events: none;
+          0 10px 36px color-mix(in srgb, var(--primary-color) 14%, transparent);
       }
       .uc-fan-hero__ident { text-align: center; }
       .uc-fan-hero__controls {
@@ -903,6 +952,9 @@ export class UltraFanModule extends BaseUltraModule {
         height: 26px;
         display: flex;
         align-items: center;
+        /* Thumb width must match ::-webkit-slider-thumb / ::-moz-range-thumb for alignment */
+        --uc-fan-thumb: 20px;
+        --uc-fan-pct: 0;
       }
       .uc-fan-slider-fill {
         position: absolute;
@@ -911,6 +963,11 @@ export class UltraFanModule extends BaseUltraModule {
         transform: translateY(-50%);
         height: 6px;
         border-radius: 999px;
+        /* Fill to the range thumb *center* (inset by half-thumb at each end) */
+        width: calc(
+          (var(--uc-fan-thumb) / 2) + (100% - var(--uc-fan-thumb)) * var(--uc-fan-pct) / 100
+        );
+        max-width: 100%;
         background: linear-gradient(
           90deg,
           color-mix(in srgb, var(--primary-color) 55%, transparent),
@@ -918,7 +975,6 @@ export class UltraFanModule extends BaseUltraModule {
         );
         box-shadow: 0 0 10px color-mix(in srgb, var(--primary-color) 25%, transparent);
         pointer-events: none;
-        transition: width 0.15s ease;
       }
 
       /* ── Range slider ───────────────────────────── */
@@ -961,8 +1017,8 @@ export class UltraFanModule extends BaseUltraModule {
         background: color-mix(in srgb, var(--divider-color) 45%, transparent);
       }
       .uc-fan-range::-moz-range-thumb {
-        width: 18px;
-        height: 18px;
+        width: 20px;
+        height: 20px;
         border-radius: 50%;
         background: var(--card-background-color, var(--ha-card-background));
         border: 2.5px solid var(--primary-color);

@@ -66,14 +66,20 @@ export class UltraCard extends LitElement {
       externalCardContainerService.setHass(value);
       logicService.setHass(value);
       try {
-        // Recreate layout template service when connection changes
+        // Reuse layout TemplateService: only update hass ref so render_template subs stay alive.
         if (this._layoutTemplateService) {
-          this._layoutTemplateService.unsubscribeAllTemplates();
+          this._layoutTemplateService.updateHass(value);
+        } else {
+          this._layoutTemplateService = new TemplateService(value);
         }
-        this._layoutTemplateService = new TemplateService(value);
-        // Register layout template subscriptions when hass becomes available (config may already be set)
-        if (this.config?.layout?.rows?.length) {
+        // Register layout template subscriptions once per service lifecycle (not on every hass tick)
+        if (
+          this.config?.layout?.rows?.length &&
+          this._layoutTemplateService &&
+          !this._layoutTemplatesRegistered
+        ) {
           this._registerLayoutTemplateSubscriptions();
+          this._layoutTemplatesRegistered = true;
         }
       } catch (e) {
         console.warn('[UltraCard] Layout template setup failed:', e);
@@ -106,6 +112,9 @@ export class UltraCard extends LitElement {
   private _moduleStylesInjected = false;
   private _instanceId: string = '';
   private _layoutTemplateService: TemplateService | null = null;
+  /** True after layout columns_template / modules_template subs are registered for this service instance */
+  private _layoutTemplatesRegistered = false;
+  private _templateUpdateDebounceTimer?: ReturnType<typeof setTimeout>;
   /** Parsed layout template results; invalidated when config.layout or template raw string changes. */
   private _layoutColumnsParsedCache = new Map<string, { raw: string; value: CardColumn[] }>();
   private _layoutModulesParsedCache = new Map<string, { raw: string; value: CardModule[] }>();
@@ -177,15 +186,17 @@ export class UltraCard extends LitElement {
         const triggerType = popup.trigger_type || 'button';
         return triggerType === 'logic' || triggerType === 'page_load';
       });
-    const hasLogicConditions = !!layout?.rows?.some(
-      row =>
-        (row.display_conditions?.length ?? 0) > 0 ||
-        row.columns?.some(
-          col =>
-            (col.display_conditions?.length ?? 0) > 0 ||
-            col.modules?.some(mod => (mod.display_conditions?.length ?? 0) > 0)
-        )
-    );
+    const hasLogicConditions = !!layout?.rows?.some(row => {
+      const rowAny = row as any;
+      if ((row.display_conditions?.length ?? 0) > 0) return true;
+      if (rowAny.template_mode && rowAny.template) return true;
+      return !!row.columns?.some(col => {
+        const colAny = col as any;
+        if ((col.display_conditions?.length ?? 0) > 0) return true;
+        if (colAny.template_mode && colAny.template) return true;
+        return col.modules?.some(mod => (mod.display_conditions?.length ?? 0) > 0);
+      });
+    });
     const has3rdPartyCards = moduleTypes.has('external_card');
     const hasNonExternalModules = Array.from(moduleTypes).some(t => t !== 'external_card');
 
@@ -323,9 +334,14 @@ export class UltraCard extends LitElement {
         return; // Skip updates from external cards
       }
 
-      this.requestUpdate();
-      // Update hover styles when configuration changes
-      this._updateHoverEffectStyles();
+      if (this._templateUpdateDebounceTimer !== undefined) {
+        clearTimeout(this._templateUpdateDebounceTimer);
+      }
+      this._templateUpdateDebounceTimer = window.setTimeout(() => {
+        this._templateUpdateDebounceTimer = undefined;
+        this.requestUpdate();
+        this._updateHoverEffectStyles();
+      }, 150);
     };
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
 
@@ -414,10 +430,15 @@ export class UltraCard extends LitElement {
     logicService.cleanup();
 
     // Clean up layout template service
+    if (this._templateUpdateDebounceTimer !== undefined) {
+      clearTimeout(this._templateUpdateDebounceTimer);
+      this._templateUpdateDebounceTimer = undefined;
+    }
     if (this._layoutTemplateService) {
       this._layoutTemplateService.unsubscribeAllTemplates();
       this._layoutTemplateService = null;
     }
+    this._layoutTemplatesRegistered = false;
 
     // Clean up event listener
     if (this._templateUpdateListener) {
@@ -598,8 +619,18 @@ export class UltraCard extends LitElement {
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
     const newHass = this.hass;
     if (!newHass?.states) return true;
-    const entityIds = this._getConfigCache().relevantEntityIds;
-    if (entityIds.size === 0) return true;
+    const cache = this._getConfigCache();
+    const entityIds = cache.relevantEntityIds;
+    if (entityIds.size === 0) {
+      // Template / template_mode logic is driven by render_template + ultra-card-template-update;
+      // skip re-rendering on every hass reference change when there are no entity IDs to diff.
+      if (cache.hasLogicConditions) {
+        // First hass assignment must still paint (template subs may not have fired yet)
+        if (!oldHass?.states) return true;
+        return false;
+      }
+      return true;
+    }
     for (const id of entityIds) {
       const oldState = oldHass?.states?.[id]?.state;
       const newState = newHass.states?.[id]?.state;
@@ -639,6 +670,7 @@ export class UltraCard extends LitElement {
           this._layoutTemplateService.unsubscribeTemplatesByPrefix('layout_').then(() => {
             try {
               this._registerLayoutTemplateSubscriptions();
+              this._layoutTemplatesRegistered = true;
             } catch (e) {
               console.warn('[UltraCard] Layout template re-registration failed:', e);
             }
