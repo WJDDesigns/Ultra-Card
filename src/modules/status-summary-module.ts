@@ -6,9 +6,28 @@ import { UcFormUtils } from '../utils/uc-form-utils';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
-import { TemplateService } from '../services/template-service';
+import { DynamicColorService } from '../services/dynamic-color-service';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { localize } from '../localize/localize';
 import '../components/ultra-color-picker';
+
+/** One DynamicColorService per hass (shared across cards) so subscriptions dedupe by template key. */
+function getSharedDynamicColorService(hass: HomeAssistant): DynamicColorService {
+  const h = hass as HomeAssistant & { __ucDynamicColorService?: DynamicColorService };
+  if (!h.__ucDynamicColorService) {
+    h.__ucDynamicColorService = new DynamicColorService(hass);
+  } else {
+    h.__ucDynamicColorService.updateHass(hass);
+  }
+  return h.__ucDynamicColorService;
+}
+
+function dispatchStatusSummaryTemplateUpdate(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent('ultra-card-template-update', { detail: { moduleType: 'status_summary' } })
+  );
+}
 
 export class UltraStatusSummaryModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -22,7 +41,6 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
     tags: ['status', 'activity', 'monitor', 'summary', 'entities', 'tracking'],
   };
 
-  private _templateService?: TemplateService;
   private _expandedEntities: Set<string> = new Set();
   private _draggedItem: StatusSummaryEntity | null = null;
   private _hass?: HomeAssistant;
@@ -1906,6 +1924,8 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
     const displayedEntities = maxItems > 0 ? sortedEntities.slice(0, maxItems) : sortedEntities;
     const hiddenCount = sortedEntities.length - displayedEntities.length;
 
+    this._ensureStatusSummaryColorSubscriptions(summaryModule, hass, config);
+
     return html`
       <style>
         .status-summary-container {
@@ -2041,7 +2061,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
             const stateObj = hass.states[item.entity.entity];
             if (!stateObj) return '';
 
-            const color = this.getEntityColor(item.entity, stateObj, summaryModule);
+            const color = this.getEntityColor(item.entity, stateObj, summaryModule, hass);
             const iconName =
               item.entity.icon ||
               stateObj.attributes.icon ||
@@ -2218,18 +2238,62 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
     return stateObj?.attributes.friendly_name || entity.entity;
   }
 
+  /** Subscribe to HA render_template for custom color templates (idempotent per key). */
+  private _ensureStatusSummaryColorSubscriptions(
+    summaryModule: StatusSummaryModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
+    const svc = getSharedDynamicColorService(hass);
+    if (
+      summaryModule.global_color_mode === 'custom' &&
+      summaryModule.global_custom_color_template?.trim()
+    ) {
+      const tpl = preprocessTemplateVariables(
+        summaryModule.global_custom_color_template.trim(),
+        hass,
+        config
+      );
+      void svc.subscribeToColorTemplate(
+        tpl,
+        `uc_status_summary_${summaryModule.id}_global_color`,
+        dispatchStatusSummaryTemplateUpdate
+      );
+    }
+    for (const ent of summaryModule.entities || []) {
+      if (ent.color_mode === 'custom' && ent.custom_color_template?.trim()) {
+        const tpl = preprocessTemplateVariables(ent.custom_color_template.trim(), hass, config);
+        void svc.subscribeToColorTemplate(
+          tpl,
+          `uc_status_summary_${summaryModule.id}_entity_${ent.id}_color`,
+          dispatchStatusSummaryTemplateUpdate
+        );
+      }
+    }
+  }
+
   private getEntityColor(
     entity: StatusSummaryEntity,
     stateObj: any,
-    module: StatusSummaryModule
+    module: StatusSummaryModule,
+    hass: HomeAssistant
   ): string {
     // Priority: per-entity color mode > global color mode > default
 
     // Check per-entity color mode first (if not 'none')
     if (entity.color_mode !== 'none') {
       if (entity.color_mode === 'custom' && entity.custom_color_template) {
-        // TODO: Evaluate template (requires template service integration)
-        // For now, fall through to global
+        const svc = getSharedDynamicColorService(hass);
+        const key = `uc_status_summary_${module.id}_entity_${entity.id}_color`;
+        const resolved = svc.getColorResult(key);
+        if (resolved && resolved !== 'var(--primary-color)') {
+          return resolved;
+        }
+        const raw = (hass as HomeAssistant & { __uvc_dynamic_colors?: Record<string, string> })
+          .__uvc_dynamic_colors?.[key];
+        if (typeof raw === 'string' && raw.trim()) {
+          return svc.parseColorResult(raw);
+        }
       } else if (entity.color_mode === 'state' && entity.state_colors) {
         const stateColor = entity.state_colors[stateObj.state];
         if (stateColor) return stateColor;
@@ -2245,8 +2309,17 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
     // Fall back to global color mode
     if (module.global_color_mode !== 'none') {
       if (module.global_color_mode === 'custom' && module.global_custom_color_template) {
-        // TODO: Evaluate template (requires template service integration)
-        // For now, fall through to default
+        const svc = getSharedDynamicColorService(hass);
+        const key = `uc_status_summary_${module.id}_global_color`;
+        const resolved = svc.getColorResult(key);
+        if (resolved && resolved !== 'var(--primary-color)') {
+          return resolved;
+        }
+        const raw = (hass as HomeAssistant & { __uvc_dynamic_colors?: Record<string, string> })
+          .__uvc_dynamic_colors?.[key];
+        if (typeof raw === 'string' && raw.trim()) {
+          return svc.parseColorResult(raw);
+        }
       } else if (module.global_color_mode === 'state' && module.global_state_colors) {
         const stateColor = module.global_state_colors[stateObj.state];
         if (stateColor) return stateColor;

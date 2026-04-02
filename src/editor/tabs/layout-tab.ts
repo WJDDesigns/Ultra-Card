@@ -61,6 +61,7 @@ import '../../components/uc-variable-mapping-dialog';
 import { findMissingVariables } from '../../utils/uc-template-processor';
 import { buildAutoPresetWizard } from '../../utils/uc-preset-wizard-auto';
 import '../../components/uc-import-dialog';
+import '../../components/uc-entity-replace-dialog';
 import { simpleEntityMapper } from '../../components/uc-simple-entity-mapper';
 import '../../components/uc-preset-wizard-dialog';
 import { presetWizardDialog } from '../../components/uc-preset-wizard-dialog';
@@ -173,6 +174,7 @@ export class LayoutTab extends LitElement {
   @state() private _showFavoriteDialog = false;
   @state() private _favoriteRowToSave: CardRow | null = null;
   @state() private _showImportDialog = false;
+  @state() private _showEntityReplaceDialog = false;
   @state() private _showImagePopup = false;
   @state() private _imagePopupUrl = '';
   @state() private _imagePopupTitle = '';
@@ -184,7 +186,7 @@ export class LayoutTab extends LitElement {
   @state() private _shortcodeDialogText = '';
 
   /** Fullscreen card preview height (px), user-resizable via corner handle */
-  @state() private _previewHeightPx = 280;
+  @state() private _previewHeightPx = 160;
   private _previewResizeStartY = 0;
   private _previewResizeStartHeight = 0;
 
@@ -602,6 +604,28 @@ export class LayoutTab extends LitElement {
         this.requestUpdate();
       }
     }
+  }
+
+  /** Collapse every row in the layout tree (no per-row animation). */
+  private _collapseAllRows(e?: Event): void {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const rows = this.config?.layout?.rows ?? [];
+    if (rows.length === 0) return;
+    this._collapsedRows = new Set(rows.map((_, i) => i));
+    this.requestUpdate();
+  }
+
+  /** Expand every row in the layout tree. */
+  private _expandAllRows(e?: Event): void {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    this._collapsedRows = new Set();
+    this.requestUpdate();
   }
 
   // Toggle column collapsed state
@@ -6748,6 +6772,61 @@ export class LayoutTab extends LitElement {
     }
 
     this._updateConfig({ layout });
+  }
+
+  /**
+   * Replace every occurrence of an entity ID within the card layout (string replace on layout JSON).
+   */
+  private _applyEntityReplaceInLayout(fromId: string, toId: string): void {
+    const from = fromId.trim();
+    const to = toId.trim();
+    if (!from || !to || from === to) {
+      this._showToast(
+        localize('editor.layout.entity_replace_pick_two', this.hass?.locale?.language || 'en', 'Pick two different entities.'),
+        'error'
+      );
+      return;
+    }
+    const layout = this._ensureLayout();
+    const json = JSON.stringify(layout);
+    const count = json.split(from).length - 1;
+    if (count === 0) {
+      this._showToast(
+        localize(
+          'editor.layout.entity_replace_none',
+          this.hass?.locale?.language || 'en',
+          'No references to "{id}" in this layout.'
+        ).replace('{id}', from),
+        'info'
+      );
+      return;
+    }
+    let newLayout: { rows: CardRow[] };
+    try {
+      newLayout = JSON.parse(json.split(from).join(to));
+    } catch {
+      this._showToast(
+        localize(
+          'editor.layout.entity_replace_invalid',
+          this.hass?.locale?.language || 'en',
+          'Replace failed: layout became invalid.'
+        ),
+        'error'
+      );
+      return;
+    }
+    this._updateLayout(newLayout);
+    this._showToast(
+      localize(
+        'editor.layout.entity_replace_done',
+        this.hass?.locale?.language || 'en',
+        'Replaced {n} occurrence(s) in layout ({from} → {to}).'
+      )
+        .replace('{n}', String(count))
+        .replace('{from}', from)
+        .replace('{to}', to),
+      'success'
+    );
   }
 
   // Undo/Redo functionality
@@ -26644,117 +26723,150 @@ export class LayoutTab extends LitElement {
               </div>
             `
           : ''}
-        <div class="builder-header">
-          <h3>${localize('editor.tabs.layout', lang, 'Layout Builder')}</h3>
-          <div class="header-buttons">
-            <button
-              class="header-btn icon-only undo-btn"
-              @click=${(e: Event) => {
-                e.stopPropagation();
-                this._undo();
-              }}
-              ?disabled=${!this._canUndo()}
-              title="${localize('editor.layout.undo_tooltip', lang, 'Undo last change (Ctrl+Z)')}"
-            >
-              <ha-icon icon="mdi:undo"></ha-icon>
-            </button>
-            <button
-              class="header-btn icon-only redo-btn"
-              @click=${(e: Event) => {
-                e.stopPropagation();
-                this._redo();
-              }}
-              ?disabled=${!this._canRedo()}
-              title="${localize(
-                'editor.layout.redo_tooltip',
-                lang,
-                'Redo last undone change (Ctrl+Y)'
-              )}"
-            >
-              <ha-icon icon="mdi:redo"></ha-icon>
-            </button>
-            <button
-              class="header-btn with-text add-row-btn"
-              @click=${(e: Event) => {
-                e.stopPropagation();
-                this._addRow();
-              }}
-              title="${localize(
-                'editor.layout.add_row_tooltip',
-                lang,
-                'Add a new row to your layout'
-              )}"
-            >
-              <ha-icon icon="mdi:plus"></ha-icon>
-              <span>${localize('editor.layout.add_row', lang, 'Add Row')}</span>
-            </button>
-            <button
-              class="header-btn with-text export-card-btn"
-              @click=${(e: Event) => {
-                e.stopPropagation();
-                this._exportCard();
-              }}
-              title="${localize(
-                'editor.layout.export_card_tooltip',
-                lang,
-                'Export entire card configuration to clipboard'
-              )}"
-            >
-              <ha-icon icon="mdi:export"></ha-icon>
-              <span>${localize('editor.layout.export_card', lang, 'Export Card')}</span>
-            </button>
-            <button
-              class="header-btn with-text import-card-btn ${this._hasCardClipboard
-                ? 'has-clipboard'
-                : ''}"
-              @click=${(e: Event) => {
-                e.stopPropagation();
-                this._importCard();
-              }}
-              @mouseenter=${() => this._checkCardClipboard()}
-              title="${localize(
-                'editor.layout.import_card_tooltip',
-                lang,
-                'Import card configuration from clipboard'
-              )}"
-            >
-              <ha-icon icon="mdi:clipboard-text"></ha-icon>
-              <span>${localize('editor.layout.import_card', lang, 'Import Card')}</span>
-            </button>
-            <button
-              class="header-btn icon-only"
-              @click=${(e: Event) => {
-                e.stopPropagation();
-                this.dispatchEvent(
-                  new CustomEvent('toggle-fullscreen', { bubbles: true, composed: true })
-                );
-              }}
-              title="${this.isFullScreen
-                ? localize('editor.tooltips.return_dashboard', lang, 'Return to Dashboard')
-                : localize('editor.tooltips.enter_fullscreen', lang, 'Enter Full Screen')}"
-            >
-              <ha-icon
-                icon="${this.isFullScreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"
-              ></ha-icon>
-            </button>
+        <div class="builder-toolbar">
+          <div class="toolbar-row">
+            <!-- History group -->
+            <div class="toolbar-group">
+              <button
+                class="tb-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._undo();
+                }}
+                ?disabled=${!this._canUndo()}
+                title="${localize('editor.layout.undo_tooltip', lang, 'Undo last change (Ctrl+Z)')}"
+              >
+                <ha-icon icon="mdi:undo"></ha-icon>
+              </button>
+              <button
+                class="tb-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._redo();
+                }}
+                ?disabled=${!this._canRedo()}
+                title="${localize(
+                  'editor.layout.redo_tooltip',
+                  lang,
+                  'Redo last undone change (Ctrl+Y)'
+                )}"
+              >
+                <ha-icon icon="mdi:redo"></ha-icon>
+              </button>
+            </div>
+            <!-- View group -->
+            <div class="toolbar-group">
+              <button
+                class="tb-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._collapseAllRows(e);
+                }}
+                ?disabled=${(this.config?.layout?.rows?.length ?? 0) === 0}
+                title="${localize(
+                  'editor.layout.collapse_all_rows_tooltip',
+                  lang,
+                  'Collapse all rows'
+                )}"
+              >
+                <ha-icon icon="mdi:unfold-less-horizontal"></ha-icon>
+              </button>
+              <button
+                class="tb-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._expandAllRows(e);
+                }}
+                ?disabled=${this._collapsedRows.size === 0}
+                title="${localize(
+                  'editor.layout.expand_all_rows_tooltip',
+                  lang,
+                  'Expand all rows'
+                )}"
+              >
+                <ha-icon icon="mdi:unfold-more-horizontal"></ha-icon>
+              </button>
+              <button
+                class="tb-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._showEntityReplaceDialog = true;
+                }}
+                title="${localize(
+                  'editor.layout.entity_replace_tooltip',
+                  lang,
+                  'Find and replace entity IDs in this layout'
+                )}"
+              >
+                <ha-icon icon="mdi:find-replace"></ha-icon>
+              </button>
+            </div>
+            <!-- Transfer group -->
+            <div class="toolbar-group">
+              <button
+                class="tb-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._exportCard();
+                }}
+                title="${localize(
+                  'editor.layout.export_card_tooltip',
+                  lang,
+                  'Export entire card configuration to clipboard'
+                )}"
+              >
+                <ha-icon icon="mdi:export"></ha-icon>
+              </button>
+              <button
+                class="tb-btn ${this._hasCardClipboard ? 'has-clipboard' : ''}"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._importCard();
+                }}
+                @mouseenter=${() => this._checkCardClipboard()}
+                title="${localize(
+                  'editor.layout.import_card_tooltip',
+                  lang,
+                  'Import card configuration from clipboard'
+                )}"
+              >
+                <ha-icon icon="mdi:import"></ha-icon>
+              </button>
+              ${this._isCloudAuthenticated || this.cloudUser
+                ? html`
+                    <button
+                      class="tb-btn"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._openSharePresetDialog();
+                      }}
+                      title="Share your current layout on ultracard.io"
+                    >
+                      <ha-icon icon="mdi:share-variant"></ha-icon>
+                    </button>
+                  `
+                : ''}
+            </div>
+            <!-- Fullscreen -->
+            <div class="toolbar-group toolbar-group-end">
+              <button
+                class="tb-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this.dispatchEvent(
+                    new CustomEvent('toggle-fullscreen', { bubbles: true, composed: true })
+                  );
+                }}
+                title="${this.isFullScreen
+                  ? localize('editor.tooltips.return_dashboard', lang, 'Return to Dashboard')
+                  : localize('editor.tooltips.enter_fullscreen', lang, 'Enter Full Screen')}"
+              >
+                <ha-icon
+                  icon="${this.isFullScreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"
+                ></ha-icon>
+              </button>
+            </div>
           </div>
-          ${this._isCloudAuthenticated || this.cloudUser
-            ? html`
-                <div class="header-btn-row">
-                  <button
-                    class="header-btn with-text share-preset-btn"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._openSharePresetDialog();
-                    }}
-                    title="Share your current layout on ultracard.io"
-                  >
-                    <ha-icon icon="mdi:share-variant"></ha-icon>
-                    <span>Share Preset</span>
-                  </button>
-                </div>
-              `
-            : ''}
         </div>
 
         ${this._renderBreadcrumbs()}
@@ -27355,6 +27467,7 @@ export class LayoutTab extends LitElement {
           : ''}
         ${this._showColumnLayoutSelector ? this._renderColumnLayoutSelector() : ''}
         ${this._renderImagePopup()} ${this._renderFavoriteDialog()} ${this._renderImportDialog()}
+        ${this._renderEntityReplaceDialog()}
         ${this._renderVariableMappingDialog()} ${this._renderShortcodeDialog()}
         <!-- Share Preset dialogs — always in DOM so they work regardless of active tab or popup state -->
         ${this._showLoginDialogForSubmit
@@ -28408,6 +28521,21 @@ export class LayoutTab extends LitElement {
         @close=${() => (this._showImportDialog = false)}
         @import=${this._handleImport}
       ></uc-import-dialog>
+    `;
+  }
+
+  private _renderEntityReplaceDialog(): TemplateResult {
+    return html`
+      <uc-entity-replace-dialog
+        .open=${this._showEntityReplaceDialog}
+        .hass=${this.hass}
+        @dialog-closed=${() => (this._showEntityReplaceDialog = false)}
+        @entity-replace=${(e: CustomEvent<{ from: string; to: string }>) => {
+          const { from, to } = e.detail;
+          this._showEntityReplaceDialog = false;
+          this._applyEntityReplaceInLayout(from, to);
+        }}
+      ></uc-entity-replace-dialog>
     `;
   }
 
@@ -31045,7 +31173,7 @@ export class LayoutTab extends LitElement {
       /* Fullscreen: card preview at top (height controlled by inline style + resize handle) */
       .layout-builder.fullscreen .fullscreen-preview {
         flex-shrink: 0;
-        margin-bottom: 16px;
+        margin-bottom: 8px;
         border: 1px solid var(--divider-color);
         border-radius: 8px;
         overflow: hidden;
@@ -31096,125 +31224,87 @@ export class LayoutTab extends LitElement {
         opacity: 0.9;
       }
 
-      .builder-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+      /* ── Builder toolbar ───────────────────────────────── */
+      .builder-toolbar {
         margin-bottom: 12px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid var(--divider-color);
-        flex-wrap: wrap;
-        gap: 8px;
+        padding: 4px 6px;
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+        border-radius: 10px;
         flex-shrink: 0;
       }
 
-      .builder-header h3 {
-        margin: 0;
-        flex: 1;
-        min-width: 120px;
-        font-size: 18px;
-      }
-
-      .header-buttons {
+      .toolbar-row {
         display: flex;
         align-items: center;
-        gap: 6px;
-        flex-wrap: wrap;
+        gap: 0;
       }
 
-      .header-btn {
+      .toolbar-group {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        padding: 0 6px;
+      }
+
+      .toolbar-group + .toolbar-group {
+        border-left: 1px solid var(--divider-color, rgba(128, 128, 128, 0.25));
+      }
+
+      .toolbar-group:first-child {
+        padding-left: 2px;
+      }
+
+      .toolbar-group-end {
+        margin-left: auto;
+        border-left: none !important;
+        padding-right: 2px;
+      }
+
+      .tb-btn {
         display: flex;
         align-items: center;
         justify-content: center;
-        height: 36px;
-        padding: 0;
-        background: var(--primary-color);
-        color: white;
+        height: 32px;
+        min-width: 32px;
+        padding: 0 6px;
+        gap: 5px;
+        background: transparent;
+        color: var(--primary-text-color, #000);
         border: none;
         border-radius: 6px;
         cursor: pointer;
+        font-size: 12px;
         font-weight: 500;
-        transition: all 0.2s ease;
         white-space: nowrap;
+        transition: background 0.15s, color 0.15s;
       }
 
-      /* Icon-only buttons (undo/redo) */
-      .header-btn.icon-only {
-        width: 36px;
-        padding: 0;
+      .tb-btn ha-icon {
+        --mdc-icon-size: 18px;
+        flex-shrink: 0;
       }
 
-      /* Buttons with text (add row, export, import) */
-      .header-btn.with-text {
-        padding: 0 12px;
-        gap: 6px;
-      }
-
-      .header-btn ha-icon {
-        --mdc-icon-size: 20px;
-      }
-
-      .header-btn:hover {
-        background: var(--primary-color-dark, var(--primary-color));
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      }
-
-      .header-btn:disabled {
-        background: var(--disabled-color, #ccc);
-        color: var(--text-color, #999);
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-        opacity: 1;
-      }
-
-      .header-btn:disabled:hover {
-        background: var(--disabled-color, #ccc);
-        transform: none;
-        box-shadow: none;
-      }
-
-      /* Import button - neutral/secondary styling */
-      .import-card-btn {
-        background: rgba(128, 128, 128, 0.3);
-        border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.4));
-        color: var(--primary-text-color);
-      }
-
-      .import-card-btn:hover {
-        background: rgba(128, 128, 128, 0.5);
-        border-color: var(--divider-color, rgba(128, 128, 128, 0.6));
-      }
-
-      /* Import button "lights up" when clipboard has valid card data */
-      .import-card-btn.has-clipboard {
-        background: var(--success-color, #4caf50);
-        animation: pulse-glow 2s ease-in-out infinite;
-      }
-
-      .import-card-btn.has-clipboard:hover {
-        background: var(--success-color-dark, #388e3c);
-        animation: none;
-      }
-
-      .header-btn-row {
-        display: flex;
-        align-items: center;
-        padding: 6px 0 2px;
-        border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.08));
-        margin-top: 4px;
-      }
-
-      .share-preset-btn {
-        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12);
-        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.3);
+      .tb-btn:hover {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.15);
         color: var(--primary-color);
       }
 
-      .share-preset-btn:hover {
-        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.22);
-        border-color: rgba(var(--rgb-primary-color, 3, 169, 244), 0.5);
+      .tb-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+
+      .tb-btn:disabled:hover {
+        background: transparent;
+        color: var(--primary-text-color, #000);
+      }
+
+      .tb-btn.has-clipboard {
+        color: var(--success-color, #4caf50);
+      }
+
+      .tb-btn.has-clipboard:hover {
+        background: rgba(76, 175, 80, 0.15);
       }
 
       @keyframes pulse-glow {
@@ -31227,39 +31317,9 @@ export class LayoutTab extends LitElement {
         }
       }
 
-      /* Mobile optimization */
-      @media (max-width: 768px) {
-        .header-buttons {
-          gap: 4px;
-        }
-
-        .header-btn {
-          height: 32px;
-        }
-
-        .header-btn.icon-only {
-          width: 32px;
-        }
-
-        .header-btn.with-text {
-          padding: 0 10px;
-          gap: 4px;
-          font-size: 12px;
-        }
-
-        .header-btn ha-icon {
-          --mdc-icon-size: 18px;
-        }
-      }
-
-      /* Hide text on very small screens */
       @media (max-width: 480px) {
-        .header-btn.with-text span {
+        .tb-btn span {
           display: none;
-        }
-        .header-btn.with-text {
-          width: 32px;
-          padding: 0;
         }
       }
 

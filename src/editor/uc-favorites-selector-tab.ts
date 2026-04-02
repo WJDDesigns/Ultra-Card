@@ -3,12 +3,14 @@
  * Add/export/delete/import stay in the parent (layout-tab); this component emits events.
  */
 import { LitElement, html, css, TemplateResult } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { customElement, state } from 'lit/decorators.js';
 import type { FavoriteRow } from '../types';
 import { ucFavoritesService } from '../services/uc-favorites-service';
 
 @customElement('uc-favorites-selector-tab')
 export class UcFavoritesSelectorTab extends LitElement {
+  @state() private _favoritesSearchQuery = '';
+
   private _unsub?: () => void;
 
   connectedCallback(): void {
@@ -24,6 +26,81 @@ export class UcFavoritesSelectorTab extends LitElement {
   static styles = css`
     .favorites-container {
       padding: 16px;
+    }
+    .search-bar-container {
+      margin-bottom: 16px;
+    }
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--secondary-background-color);
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+      transition: border-color 0.2s ease;
+    }
+    .search-bar:focus-within {
+      border-color: var(--primary-color);
+    }
+    .search-bar ha-icon {
+      --mdc-icon-size: 20px;
+      color: var(--secondary-text-color);
+    }
+    .search-bar input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--primary-text-color);
+      font-size: 14px;
+      outline: none;
+    }
+    .clear-search-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--secondary-text-color);
+      cursor: pointer;
+    }
+    .clear-search-btn:hover {
+      color: var(--primary-color);
+    }
+    .clear-search-btn ha-icon {
+      --mdc-icon-size: 18px;
+    }
+    .search-results-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      text-align: center;
+      color: var(--secondary-text-color);
+    }
+    .search-results-empty ha-icon {
+      --mdc-icon-size: 40px;
+      margin-bottom: 12px;
+      opacity: 0.6;
+    }
+    .clear-search-btn-large {
+      margin-top: 12px;
+      padding: 8px 16px;
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .clear-search-btn-large:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
     }
     .favorites-header {
       display: flex;
@@ -125,6 +202,13 @@ export class UcFavoritesSelectorTab extends LitElement {
       display: flex;
       gap: 4px;
     }
+    .tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--secondary-background-color);
+      color: var(--secondary-text-color);
+    }
     .empty-state {
       display: flex;
       flex-direction: column;
@@ -181,8 +265,21 @@ export class UcFavoritesSelectorTab extends LitElement {
     this.dispatchEvent(new CustomEvent('import-click', { bubbles: true, composed: true }));
   }
 
+  private _filterFavorites(favorites: FavoriteRow[], query: string): FavoriteRow[] {
+    const q = query.toLowerCase().trim();
+    if (!q) return favorites;
+    return favorites.filter(f => {
+      const name = (f.name || '').toLowerCase();
+      const desc = (f.description || '').toLowerCase();
+      const tags = (f.tags || []).join(' ').toLowerCase();
+      return name.includes(q) || desc.includes(q) || tags.includes(q);
+    });
+  }
+
   protected render(): TemplateResult {
     const favorites = ucFavoritesService.getFavorites();
+    const hasSearch = this._favoritesSearchQuery.trim() !== '';
+    const filtered = this._filterFavorites(favorites, this._favoritesSearchQuery);
 
     return html`
       <div class="favorites-container">
@@ -194,9 +291,58 @@ export class UcFavoritesSelectorTab extends LitElement {
           </button>
         </div>
 
+        <div class="search-bar-container">
+          <div class="search-bar">
+            <ha-icon icon="mdi:magnify"></ha-icon>
+            <input
+              id="favorites-search-input"
+              type="text"
+              placeholder="Search favorites..."
+              .value=${this._favoritesSearchQuery}
+              @input=${(e: Event) => {
+                const target = e.target as HTMLInputElement;
+                this._favoritesSearchQuery = target.value;
+              }}
+            />
+            ${this._favoritesSearchQuery
+              ? html`
+                  <button
+                    class="clear-search-btn"
+                    @click=${() => {
+                      this._favoritesSearchQuery = '';
+                      requestAnimationFrame(() => {
+                        const input = this.shadowRoot?.getElementById(
+                          'favorites-search-input'
+                        ) as HTMLInputElement;
+                        input?.focus();
+                      });
+                    }}
+                    title="Clear search"
+                  >
+                    <ha-icon icon="mdi:close"></ha-icon>
+                  </button>
+                `
+              : ''}
+          </div>
+        </div>
+
         <div class="favorites-grid">
-          ${favorites.length > 0
-            ? favorites.map(
+          ${hasSearch && filtered.length === 0 && favorites.length > 0
+            ? html`
+                <div class="search-results-empty" style="grid-column: 1 / -1;">
+                  <ha-icon icon="mdi:magnify-close"></ha-icon>
+                  <p>No favorites match "${this._favoritesSearchQuery}"</p>
+                  <button
+                    class="clear-search-btn-large"
+                    @click=${() => (this._favoritesSearchQuery = '')}
+                  >
+                    Clear search
+                  </button>
+                </div>
+              `
+            : ''}
+          ${filtered.length > 0
+            ? filtered.map(
                 favorite => html`
                   <div class="favorite-card">
                     <div class="favorite-header">
@@ -243,11 +389,13 @@ export class UcFavoritesSelectorTab extends LitElement {
                   </div>
                 `
               )
-            : html`<div class="empty-state">
-                <ha-icon icon="mdi:heart-outline"></ha-icon>
-                <p>No favorites saved yet</p>
-                <p class="empty-hint">Use the heart icon on any row to save it as a favorite</p>
-              </div>`}
+            : !hasSearch
+              ? html`<div class="empty-state">
+                  <ha-icon icon="mdi:heart-outline"></ha-icon>
+                  <p>No favorites saved yet</p>
+                  <p class="empty-hint">Use the heart icon on any row to save it as a favorite</p>
+                </div>`
+              : ''}
         </div>
       </div>
     `;

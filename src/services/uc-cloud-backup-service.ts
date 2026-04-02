@@ -59,11 +59,33 @@ export interface BackupStatus {
  * Cloud backup service for Ultra Card
  * Manages automatic backups and manual snapshots
  */
-class UcCloudBackupService {
+export class UcCloudBackupService {
   private static readonly API_BASE = 'https://ultracard.io/wp-json/ultra-card/v1';
   private static readonly AUTO_SAVE_DEBOUNCE = 5000; // 5 seconds
   private static readonly STORAGE_KEY_LAST_BACKUP = 'ultra-card-last-backup';
   private static readonly STORAGE_KEY_PENDING = 'ultra-card-pending-backup';
+  /** When `'false'` in localStorage, debounced cloud auto-save is disabled (manual snapshots unchanged). */
+  static readonly STORAGE_KEY_AUTO_SAVE_ENABLED = 'ultra-card-auto-save-enabled';
+
+  /** Real-time auto-save to cloud on edit; default on unless user set preference to false. */
+  static isAutoSaveEnabled(): boolean {
+    try {
+      return localStorage.getItem(UcCloudBackupService.STORAGE_KEY_AUTO_SAVE_ENABLED) !== 'false';
+    } catch {
+      return true;
+    }
+  }
+
+  static setAutoSaveEnabled(enabled: boolean): void {
+    try {
+      localStorage.setItem(
+        UcCloudBackupService.STORAGE_KEY_AUTO_SAVE_ENABLED,
+        enabled ? 'true' : 'false'
+      );
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }
 
   private _status: BackupStatus = {
     lastBackup: null,
@@ -95,6 +117,11 @@ class UcCloudBackupService {
   async autoSave(config: UltraCardConfig): Promise<void> {
     if (!ucCloudAuthService.isAuthenticated()) {
       console.log('Auto-save skipped: not authenticated');
+      return;
+    }
+
+    if (!UcCloudBackupService.isAutoSaveEnabled()) {
+      console.log('Auto-save skipped: disabled in snapshot / backup settings');
       return;
     }
 
@@ -480,8 +507,12 @@ class UcCloudBackupService {
         this._pendingConfig = JSON.parse(stored);
         this._status.pendingBackup = true;
 
-        // Try to save pending backup if authenticated
-        if (ucCloudAuthService.isAuthenticated() && this._pendingConfig) {
+        // Try to save pending backup if authenticated and real-time auto-save is allowed
+        if (
+          ucCloudAuthService.isAuthenticated() &&
+          this._pendingConfig &&
+          UcCloudBackupService.isAutoSaveEnabled()
+        ) {
           console.log('Found pending backup, attempting to save...');
           this._executeSave(this._pendingConfig, 'auto').then(() => {
             this._pendingConfig = undefined;
@@ -514,6 +545,20 @@ class UcCloudBackupService {
     } catch (error) {
       console.error('Failed to clear pending backup:', error);
     }
+  }
+
+  /**
+   * Clear debounced auto-save timer and pending queue (e.g. when user disables real-time auto-save).
+   */
+  cancelDebouncedAutoSave(): void {
+    if (this._autoSaveTimer !== undefined) {
+      clearTimeout(this._autoSaveTimer);
+      this._autoSaveTimer = undefined;
+    }
+    this._pendingConfig = undefined;
+    this._clearPendingBackup();
+    this._status.pendingBackup = false;
+    this._notifyListeners();
   }
 }
 

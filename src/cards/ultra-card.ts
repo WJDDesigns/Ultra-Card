@@ -560,10 +560,112 @@ export class UltraCard extends LitElement {
    * Collect all entity IDs referenced in the card config (display conditions, module entities).
    * Used by shouldUpdate to skip re-renders when only unrelated hass state changed.
    */
+  /**
+   * Collect entity IDs from a single module object (non-recursive).
+   * Captures: top-level `entity`, `entities`, any property whose name contains
+   * "entity" (e.g. left_entity, weather_entity, timer_entity), and entity
+   * fields inside any array-of-objects property (icons, bars, nodes, markers, etc.).
+   */
+  private _collectModuleEntityIds(mod: any, ids: Set<string>): void {
+    if (!mod || typeof mod !== 'object') return;
+
+    for (const key of Object.keys(mod)) {
+      const val = mod[key];
+
+      if (key === 'display_conditions' && Array.isArray(val)) {
+        val.forEach((c: any) => {
+          if (c?.entity && typeof c.entity === 'string') ids.add(c.entity);
+        });
+        continue;
+      }
+
+      // Skip non-entity config keys to avoid false positives
+      if (key === 'type' || key === 'id' || key.startsWith('_')) continue;
+
+      // String property whose name contains "entity" → likely an entity ID
+      if (typeof val === 'string' && val.includes('.') && key.toLowerCase().includes('entity')) {
+        ids.add(val);
+        continue;
+      }
+
+      // `entities` array: string[] or { entity: string }[]
+      if (key === 'entities' && Array.isArray(val)) {
+        val.forEach((e: any) => {
+          if (typeof e === 'string') ids.add(e);
+          else if (e?.entity && typeof e.entity === 'string') ids.add(e.entity);
+        });
+        continue;
+      }
+
+      // Any array-of-objects: scan each item for `entity` and `*_entity` fields
+      // (covers icons, bars, nodes, markers, calendars, presets, toggle_points, rules, etc.)
+      if (Array.isArray(val)) {
+        for (const item of val) {
+          if (!item || typeof item !== 'object') {
+            if (typeof item === 'string' && item.includes('.')) ids.add(item);
+            continue;
+          }
+          for (const itemKey of Object.keys(item)) {
+            const itemVal = item[itemKey];
+            if (
+              typeof itemVal === 'string' &&
+              itemVal.includes('.') &&
+              itemKey.toLowerCase().includes('entity')
+            ) {
+              ids.add(itemVal);
+            }
+            // Handle nested entities arrays inside items (e.g. presets[].entities)
+            if (itemKey === 'entities' && Array.isArray(itemVal)) {
+              itemVal.forEach((e: any) => {
+                if (typeof e === 'string') ids.add(e);
+                else if (e?.entity && typeof e.entity === 'string') ids.add(e.entity);
+              });
+            }
+          }
+        }
+        continue;
+      }
+
+      // Shallow object scan (e.g. nav_media_player.entity, banner_settings.background_entity)
+      if (val && typeof val === 'object' && !Array.isArray(val)) {
+        for (const subKey of Object.keys(val)) {
+          const subVal = val[subKey];
+          if (
+            typeof subVal === 'string' &&
+            subVal.includes('.') &&
+            subKey.toLowerCase().includes('entity')
+          ) {
+            ids.add(subVal);
+          }
+        }
+      }
+    }
+  }
+
   private _getRelevantEntityIds(): Set<string> {
     const ids = new Set<string>();
     const config = this.config;
     if (!config?.layout?.rows) return ids;
+
+    const processModules = (modules: any[]) => {
+      for (const mod of modules) {
+        this._collectModuleEntityIds(mod, ids);
+        // Recurse into container modules (accordion, tabs, slider, horizontal, vertical)
+        const m = mod as any;
+        if (Array.isArray(m.modules)) processModules(m.modules);
+        if (Array.isArray(m.panels)) {
+          for (const panel of m.panels) {
+            if (Array.isArray(panel?.modules)) processModules(panel.modules);
+          }
+        }
+        if (Array.isArray(m.tabs)) {
+          for (const tab of m.tabs) {
+            if (Array.isArray(tab?.modules)) processModules(tab.modules);
+          }
+        }
+      }
+    };
+
     for (const row of config.layout.rows) {
       row.display_conditions?.forEach(c => {
         if (c.entity && typeof c.entity === 'string') ids.add(c.entity);
@@ -572,42 +674,7 @@ export class UltraCard extends LitElement {
         col.display_conditions?.forEach(c => {
           if (c.entity && typeof c.entity === 'string') ids.add(c.entity);
         });
-        for (const mod of col.modules || []) {
-          mod.display_conditions?.forEach(c => {
-            if (c.entity && typeof c.entity === 'string') ids.add(c.entity);
-          });
-          const m = mod as any;
-          if (typeof m.entity === 'string') ids.add(m.entity);
-          // entities can be string[] (legacy) or an array of objects with an entity field
-          if (Array.isArray(m.entities)) {
-            m.entities.forEach((e: any) => {
-              if (typeof e === 'string') ids.add(e);
-              else if (e?.entity && typeof e.entity === 'string') ids.add(e.entity);
-            });
-          }
-          // Collect entities from nested item arrays (icons, info_entities, data_items, etc.)
-          // so that shouldUpdate() fires when those entities change, even when display_conditions
-          // are present and have populated entityIds (which would otherwise prevent the
-          // "size === 0 → always update" fallback from applying).
-          const nestedArrayKeys = [
-            'icons',
-            'info_entities',
-            'data_items',
-            'data_items_compact',
-            'data_items_banner',
-            'data_items_horizontal_compact',
-            'data_items_horizontal_detailed',
-            'data_items_header',
-            'data_items_music_overlay',
-          ];
-          for (const key of nestedArrayKeys) {
-            if (Array.isArray(m[key])) {
-              for (const item of m[key]) {
-                if (item?.entity && typeof item.entity === 'string') ids.add(item.entity);
-              }
-            }
-          }
-        }
+        processModules(col.modules || []);
       }
     }
     return ids;
@@ -632,12 +699,12 @@ export class UltraCard extends LitElement {
       return true;
     }
     for (const id of entityIds) {
-      const oldState = oldHass?.states?.[id]?.state;
-      const newState = newHass.states?.[id]?.state;
-      if (oldState !== newState) return true;
-      const oldChanged = oldHass?.states?.[id]?.last_changed;
-      const newChanged = newHass.states?.[id]?.last_changed;
-      if (oldChanged !== newChanged) return true;
+      const oldEntity = oldHass?.states?.[id];
+      const newEntity = newHass.states?.[id];
+      if (oldEntity?.state !== newEntity?.state) return true;
+      if (oldEntity?.last_changed !== newEntity?.last_changed) return true;
+      // last_updated changes on attribute-only updates (last_changed only tracks state)
+      if (oldEntity?.last_updated !== newEntity?.last_updated) return true;
     }
     return false;
   }

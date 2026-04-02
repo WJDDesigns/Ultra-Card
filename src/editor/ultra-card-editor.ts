@@ -274,8 +274,9 @@ export class UltraCardEditor extends LitElement {
       window.removeEventListener('uc-qr-data-ready', this._qrDataReadyListener);
     }
 
-    // Clean up full screen class if still applied
+    // Clean up full screen class and dialog styles if still applied
     document.body.classList.remove('ultra-card-fullscreen');
+    this._restoreFromFullscreen();
 
     // Cleanup cloud sync listeners
     this._cleanupCloudSyncListeners();
@@ -487,19 +488,185 @@ export class UltraCardEditor extends LitElement {
     `;
   }
 
+  private _fullscreenRestoreMap: Array<{ el: HTMLElement; prev: string }> = [];
+  private _fullscreenAttrRestore: Array<{ el: HTMLElement; attr: string; prev: string | null }> = [];
+  private _fullscreenInjectedStyles: HTMLStyleElement[] = [];
+  private static readonly FULLSCREEN_INSET_PX = 24;
+
   private _toggleFullScreen(): void {
     this._isFullScreen = !this._isFullScreen;
 
-    // Apply/remove the full screen class to the document body to hide preview
     if (this._isFullScreen) {
       document.body.classList.add('ultra-card-fullscreen');
-      // Force switch to Layout tab when entering fullscreen mode
+      this._applyFullscreen();
       if (this._activeTab !== 'layout') {
         this._activeTab = 'layout';
       }
     } else {
       document.body.classList.remove('ultra-card-fullscreen');
+      this._restoreFromFullscreen();
     }
+  }
+
+  private _saveAndStyle(el: HTMLElement, css: string): void {
+    this._fullscreenRestoreMap.push({ el, prev: el.style.cssText });
+    el.style.cssText += '; ' + css;
+  }
+
+  private _saveAndSetAttr(el: HTMLElement, attr: string, value: string): void {
+    this._fullscreenAttrRestore.push({ el, attr, prev: el.getAttribute(attr) });
+    el.setAttribute(attr, value);
+  }
+
+  private _findContainingHaDialog(): HTMLElement | null {
+    let node: Node | null = this as unknown as Node;
+    while (node && node !== document && node !== document.documentElement) {
+      if (node instanceof HTMLElement && node.tagName.toLowerCase() === 'ha-dialog') {
+        return node;
+      }
+      if (node.parentNode) {
+        node = node.parentNode;
+      } else if (node.getRootNode() instanceof ShadowRoot) {
+        node = (node.getRootNode() as ShadowRoot).host;
+      } else {
+        break;
+      }
+    }
+    return null;
+  }
+
+  private _applyFullscreen(): void {
+    this._fullscreenRestoreMap = [];
+    this._fullscreenInjectedStyles = [];
+
+    const neutralize =
+      'transform:none!important;will-change:auto!important;' +
+      'contain:none!important;filter:none!important;perspective:none!important;';
+
+    this._saveAndStyle(document.body, 'overflow:hidden!important;');
+
+    const dialog = this._findContainingHaDialog();
+    if (dialog) {
+      this._makeHaDialogFullscreen(dialog, neutralize);
+    }
+  }
+
+  private _makeHaDialogFullscreen(dialog: HTMLElement, neutralize: string): void {
+    this._saveAndSetAttr(dialog, 'width', 'fullscreen');
+
+    this._saveAndStyle(
+      dialog,
+      `position:fixed!important;top:${UltraCardEditor.FULLSCREEN_INSET_PX}px!important;left:${UltraCardEditor.FULLSCREEN_INSET_PX}px!important;` +
+        `width:calc(100vw - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px)!important;height:calc(100vh - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px)!important;` +
+        `max-width:calc(100vw - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px)!important;max-height:calc(100vh - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px)!important;` +
+        'z-index:99999!important;margin:0!important;padding:0!important;' +
+        'border-radius:12px!important;' +
+        neutralize
+    );
+
+    const sr = dialog.shadowRoot;
+    if (sr) {
+      const style = document.createElement('style');
+      style.setAttribute('data-uc-fullscreen', '');
+      style.textContent = `
+        :host {
+          --md-dialog-container-max-block-size: calc(100vh - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+          --md-dialog-container-max-inline-size: calc(100vw - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+          --md-dialog-container-min-block-size: calc(100vh - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+          --md-dialog-container-min-inline-size: calc(100vw - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+          --mdc-dialog-max-width: calc(100vw - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+          --mdc-dialog-min-width: calc(100vw - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+          --mdc-dialog-max-height: calc(100vh - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+          --ha-dialog-border-radius: 12px !important;
+          position: fixed !important;
+          top: ${UltraCardEditor.FULLSCREEN_INSET_PX}px !important;
+          left: ${UltraCardEditor.FULLSCREEN_INSET_PX}px !important;
+          width: calc(100vw - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+          height: calc(100vh - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+        }
+        :host > div,
+        :host > div > div,
+        :host > div > div > div {
+          width: 100% !important;
+          max-width: 100% !important;
+          height: 100% !important;
+          max-height: 100% !important;
+          margin: 0 !important;
+          border-radius: 0 !important;
+          transform: none !important;
+        }
+        wa-dialog,
+        wa-dialog::part(base),
+        wa-dialog::part(dialog),
+        wa-dialog::part(panel) {
+          width: calc(100vw - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+          max-width: calc(100vw - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+          min-width: calc(100vw - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+          height: calc(100vh - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+          max-height: calc(100vh - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px) !important;
+          border-radius: 12px !important;
+        }
+        slot[name="header"]::slotted(*),
+        slot[name="footer"]::slotted(*),
+        slot:not([name])::slotted(*) {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+      `;
+      sr.appendChild(style);
+      this._fullscreenInjectedStyles.push(style);
+
+      const waDialog = sr.querySelector('wa-dialog') as HTMLElement | null;
+      if (waDialog) {
+        this._saveAndStyle(
+          waDialog,
+          `width:calc(100vw - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px)!important;` +
+            `max-width:calc(100vw - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px)!important;` +
+            `min-width:calc(100vw - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px)!important;` +
+            `height:calc(100vh - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px)!important;` +
+            `max-height:calc(100vh - ${UltraCardEditor.FULLSCREEN_INSET_PX * 2}px)!important;`
+        );
+      }
+    }
+
+    const preview = dialog.querySelector('.element-preview') as HTMLElement;
+    if (preview) {
+      this._saveAndStyle(preview, 'display:none!important;');
+    }
+
+    const content = dialog.querySelector('.content') as HTMLElement;
+    if (content) {
+      this._saveAndStyle(
+        content,
+        'width:100%!important;max-width:100%!important;' +
+          'flex:1 1 auto!important;overflow-y:auto!important;'
+      );
+    }
+
+    const editor = dialog.querySelector('.element-editor') as HTMLElement;
+    if (editor) {
+      this._saveAndStyle(editor, 'width:100%!important;max-width:100%!important;');
+    }
+  }
+
+  private _restoreFromFullscreen(): void {
+    for (const style of this._fullscreenInjectedStyles) {
+      style.remove();
+    }
+    this._fullscreenInjectedStyles = [];
+
+    for (let i = this._fullscreenRestoreMap.length - 1; i >= 0; i--) {
+      const { el, prev } = this._fullscreenRestoreMap[i];
+      el.style.cssText = prev;
+    }
+    this._fullscreenRestoreMap = [];
+
+    for (let i = this._fullscreenAttrRestore.length - 1; i >= 0; i--) {
+      const { el, attr, prev } = this._fullscreenAttrRestore[i];
+      if (prev === null) el.removeAttribute(attr);
+      else el.setAttribute(attr, prev);
+    }
+    this._fullscreenAttrRestore = [];
   }
 
   private _setActiveTab(tab: EditorTab): void {
@@ -1932,24 +2099,26 @@ export class UltraCardEditor extends LitElement {
       /* Full screen mode styles */
       .card-config.fullscreen {
         max-width: none !important;
-        width: 100vw !important;
+        width: 100% !important;
         margin: 0 !important;
-        padding: 20px !important;
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        height: 100vh !important;
-        z-index: ${Z_INDEX.FULLSCREEN_EDITOR} !important;
+        padding: 16px !important;
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        height: auto !important;
+        z-index: auto !important;
         background: var(--card-background-color) !important;
-        overflow-y: auto !important;
+        overflow: visible !important;
         box-sizing: border-box !important;
+        border-radius: 0 !important;
       }
 
       /* Full screen mode tab content */
       .card-config.fullscreen .tab-content {
-        min-height: calc(100vh - 120px) !important;
+        min-height: 0 !important;
         width: 100% !important;
         max-width: none !important;
+        overflow: visible !important;
       }
 
       /* Full screen mode header adjustments - not sticky so it scrolls with content */
@@ -1985,62 +2154,6 @@ export class UltraCardEditor extends LitElement {
         opacity: 0.9;
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(var(--rgb-primary-color), 0.4);
-      }
-
-      /* Hide Home Assistant preview when in full screen mode */
-      :global(body.ultra-card-fullscreen) {
-        overflow: hidden !important;
-      }
-
-      :global(body.ultra-card-fullscreen *) {
-        .element-preview,
-        .element-preview-container,
-        .preview-container,
-        .card-preview,
-        .preview-pane,
-        hui-card-preview,
-        .card-config > div:last-child:not(.card-config),
-        .card-config-row > div:last-child,
-        .mdc-dialog .mdc-dialog__container .mdc-dialog__surface > div:last-child:not(.card-config) {
-          display: none !important;
-        }
-
-        .card-config-container,
-        .editor-container,
-        .card-config-row,
-        .mdc-dialog .mdc-dialog__container .mdc-dialog__surface {
-          width: 100% !important;
-          max-width: none !important;
-        }
-
-        /* Override HA dialog sizing */
-        .mdc-dialog .mdc-dialog__container {
-          max-width: 100vw !important;
-          width: 100vw !important;
-          position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          z-index: ${Z_INDEX.DIALOG_CONTENT} !important;
-        }
-
-        .mdc-dialog .mdc-dialog__surface {
-          max-width: 100vw !important;
-          width: 100vw !important;
-          max-height: 100vh !important;
-          height: 100vh !important;
-          position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          margin: 0 !important;
-          border-radius: 0 !important;
-        }
-
-        /* Hide the backdrop */
-        .mdc-dialog .mdc-dialog__scrim {
-          display: none !important;
-        }
       }
 
       /* Allow action forms to display all their elements properly */
@@ -4255,6 +4368,7 @@ export class UltraCardEditor extends LitElement {
           ? html`
               <uc-manual-backup-dialog
                 .open="${this._showManualBackup}"
+                .hass="${this.hass}"
                 .config="${this.config}"
                 @dialog-closed="${() => (this._showManualBackup = false)}"
                 @backup-created="${this._handleManualBackupCreated}"
@@ -4318,6 +4432,7 @@ export class UltraCardEditor extends LitElement {
           ? html`
               <uc-manual-backup-dialog
                 .open="${this._showManualBackup}"
+                .hass="${this.hass}"
                 .config="${this.config}"
                 @dialog-closed="${() => (this._showManualBackup = false)}"
                 @backup-created="${this._handleManualBackupCreated}"

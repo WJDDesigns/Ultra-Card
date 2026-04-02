@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import type { HomeAssistant } from 'custom-card-helpers';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { localize } from '../localize/localize';
 import { ucCardBackupService } from '../services/uc-card-backup-service';
@@ -7,6 +8,7 @@ import { UltraCardConfig } from '../types';
 
 @customElement('uc-manual-backup-dialog')
 export class UcManualBackupDialog extends LitElement {
+  @property({ attribute: false }) public hass?: HomeAssistant;
   @property({ attribute: false }) public config!: UltraCardConfig;
   @property({ type: Boolean }) public open = false;
 
@@ -212,7 +214,7 @@ export class UcManualBackupDialog extends LitElement {
   render() {
     if (!this.open) return html``;
 
-    const lang = 'en'; // TODO: Get from hass if available
+    const lang = this.hass?.locale?.language || 'en';
     const cardName =
       this.config.card_name ||
       localize('editor.ultra_card_pro.card_name_placeholder', lang, 'My Ultra Card');

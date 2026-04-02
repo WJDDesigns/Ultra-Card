@@ -137,7 +137,14 @@
       "confirm_import_card": "This will replace your entire card configuration. Are you sure?",
       "copy_column_first": "Copy a column first",
       "card_preview": "Card Preview",
-      "resize_preview": "Drag to resize preview"
+      "resize_preview": "Drag to resize preview",
+      "collapse_all_rows_tooltip": "Collapse all rows",
+      "expand_all_rows_tooltip": "Expand all rows",
+      "entity_replace_tooltip": "Find and replace entity IDs in this layout",
+      "entity_replace_pick_two": "Pick two different entities.",
+      "entity_replace_none": "No references to \"{id}\" in this layout.",
+      "entity_replace_invalid": "Replace failed: layout became invalid.",
+      "entity_replace_done": "Replaced {n} occurrence(s) in layout ({from} → {to})."
     },
     "about": {
       "developed_by": "Vyvinuto",

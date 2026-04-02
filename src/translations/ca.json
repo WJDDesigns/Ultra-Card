@@ -645,7 +645,14 @@
       "max_columns_reached": "Es permet un màxim de 6 columnes",
       "card_preview": "Card Preview",
       "resize_preview": "Drag to resize preview",
-      "copy_column_first": "Copy a column first"
+      "copy_column_first": "Copy a column first",
+      "collapse_all_rows_tooltip": "Collapse all rows",
+      "expand_all_rows_tooltip": "Expand all rows",
+      "entity_replace_tooltip": "Find and replace entity IDs in this layout",
+      "entity_replace_pick_two": "Pick two different entities.",
+      "entity_replace_none": "No references to \"{id}\" in this layout.",
+      "entity_replace_invalid": "Replace failed: layout became invalid.",
+      "entity_replace_done": "Replaced {n} occurrence(s) in layout ({from} → {to})."
     },
     "entity_mapper": {
       "title": "Assigna les entitats",

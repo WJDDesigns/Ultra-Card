@@ -7,6 +7,7 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { ucSnapshotService, SnapshotSettings } from '../services/uc-snapshot-service';
+import { UcCloudBackupService, ucCloudBackupService } from '../services/uc-cloud-backup-service';
 
 @customElement('uc-snapshot-settings-dialog')
 export class UcSnapshotSettingsDialog extends LitElement {
@@ -17,6 +18,8 @@ export class UcSnapshotSettingsDialog extends LitElement {
     time: '03:00',
     timezone: 'UTC',
   };
+  /** Local preference: debounced cloud backup on each edit (not daily snapshots). */
+  @state() private _realtimeAutoSaveEnabled = true;
   @state() private _loading = false;
   @state() private _saving = false;
   @state() private _error: string | null = null;
@@ -39,6 +42,7 @@ export class UcSnapshotSettingsDialog extends LitElement {
     this._error = null;
 
     try {
+      this._realtimeAutoSaveEnabled = UcCloudBackupService.isAutoSaveEnabled();
       this._settings = await ucSnapshotService.getSettings();
     } catch (error) {
       console.error('Failed to load snapshot settings:', error);
@@ -75,6 +79,16 @@ export class UcSnapshotSettingsDialog extends LitElement {
   private _handleEnabledToggle(e: Event) {
     const target = e.target as HTMLInputElement;
     this._settings = { ...this._settings, enabled: target.checked };
+  }
+
+  private _handleRealtimeAutoSaveToggle(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const enabled = target.checked;
+    this._realtimeAutoSaveEnabled = enabled;
+    UcCloudBackupService.setAutoSaveEnabled(enabled);
+    if (!enabled) {
+      ucCloudBackupService.cancelDebouncedAutoSave();
+    }
   }
 
   private _handleTimeChange(e: Event) {
@@ -134,6 +148,24 @@ export class UcSnapshotSettingsDialog extends LitElement {
                 ? html`<div class="error">${this._error}</div>`
                 : html`
                     <div class="settings-form">
+                      <!-- ENABLE/DISABLE REAL-TIME CLOUD AUTO-SAVE (per edit) -->
+                      <div class="form-group">
+                        <label class="toggle-label">
+                          <input
+                            type="checkbox"
+                            .checked="${this._realtimeAutoSaveEnabled}"
+                            @change="${this._handleRealtimeAutoSaveToggle}"
+                          />
+                          <span class="toggle-text">
+                            <strong>Enable Real-time Auto-save</strong>
+                            <p class="help-text">
+                              Automatically save a cloud backup when you edit this card (debounced).
+                              Turn off if you prefer manual snapshots only.
+                            </p>
+                          </span>
+                        </label>
+                      </div>
+
                       <!-- ENABLE/DISABLE AUTO SNAPSHOTS -->
                       <div class="form-group">
                         <label class="toggle-label">
