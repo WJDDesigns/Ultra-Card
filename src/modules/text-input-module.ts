@@ -10,6 +10,8 @@ import '../components/ultra-color-picker';
 
 export class UltraTextInputModule extends BaseUltraModule {
   private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private _localValue: string | null = null;
+  private _localValueTimer: ReturnType<typeof setTimeout> | null = null;
 
   metadata: ModuleMetadata = {
     type: 'text_input',
@@ -18,7 +20,7 @@ export class UltraTextInputModule extends BaseUltraModule {
     author: 'WJD Designs',
     version: '1.0.0',
     icon: 'mdi:form-textbox',
-    category: 'interactive',
+    category: 'input',
     tags: ['text', 'input', 'form', 'helper', 'interactive'],
   };
 
@@ -172,6 +174,29 @@ export class UltraTextInputModule extends BaseUltraModule {
               setTimeout(() => this.triggerPreviewUpdate(), 50);
             }
           )}
+
+          ${this.renderFieldSection(
+            localize('editor.text_input.multiline', lang, 'Multiline'),
+            localize(
+              'editor.text_input.multiline_desc',
+              lang,
+              'Allow multiple lines of text (textarea)'
+            ),
+            hass,
+            { multiline: textInputModule.multiline === true },
+            [{ name: 'multiline', selector: { boolean: {} } }],
+            (e: CustomEvent) => {
+              updateModule(e.detail.value);
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
+          )}
+
+          ${textInputModule.multiline ? this.renderSliderField(
+            localize('editor.text_input.rows', lang, 'Rows'),
+            localize('editor.text_input.rows_desc', lang, 'Number of visible text rows'),
+            textInputModule.rows ?? 4, 4, 2, 12, 1,
+            (value: number) => { updateModule({ rows: value }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
+          ) : ''}
         </div>
 
         <!-- Icons & Controls -->
@@ -336,7 +361,7 @@ export class UltraTextInputModule extends BaseUltraModule {
       );
     }
 
-    const currentValue = entityState.state || '';
+    const currentValue = this._localValue !== null ? this._localValue : (entityState.state || '');
     const entityMaxLength = entityState.attributes?.max;
     const entityMode = entityState.attributes?.mode || 'text';
 
@@ -394,24 +419,31 @@ export class UltraTextInputModule extends BaseUltraModule {
     const hoverEffect = designProperties.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
+    const isMultiline = textInputModule.multiline === true;
+    const rows = textInputModule.rows ?? 4;
     const inputType = entityMode === 'password' ? 'password' : 'text';
 
     const handleInput = (e: Event) => {
       const input = e.target as HTMLInputElement;
       const newValue = input.value;
 
-      if (this._debounceTimer) {
-        clearTimeout(this._debounceTimer);
-      }
+      this._localValue = newValue;
+      if (this._localValueTimer) clearTimeout(this._localValueTimer);
+      if (this._debounceTimer) clearTimeout(this._debounceTimer);
 
       this._debounceTimer = setTimeout(() => {
         this.setEntityValue(textInputModule.entity!, newValue, hass);
+        this._localValueTimer = setTimeout(() => { this._localValue = null; }, 1000);
       }, 300);
     };
 
     const handleClear = (e: Event) => {
       e.stopPropagation();
+      if (this._debounceTimer) { clearTimeout(this._debounceTimer); this._debounceTimer = null; }
+      if (this._localValueTimer) clearTimeout(this._localValueTimer);
+      this._localValue = '';
       this.setEntityValue(textInputModule.entity!, '', hass);
+      this._localValueTimer = setTimeout(() => { this._localValue = null; }, 1000);
     };
 
     let appearanceBorder = '';
@@ -444,7 +476,7 @@ export class UltraTextInputModule extends BaseUltraModule {
         .text-input-wrapper-${moduleId} {
           position: relative;
           display: flex;
-          align-items: center;
+          align-items: ${isMultiline ? 'flex-start' : 'center'};
           background: ${appearanceBg};
           border: ${appearanceBorder};
           border-radius: 8px;
@@ -471,6 +503,10 @@ export class UltraTextInputModule extends BaseUltraModule {
         .text-input-field-${moduleId}::placeholder {
           color: var(--secondary-text-color);
           opacity: 0.6;
+        }
+        textarea.text-input-field-${moduleId} {
+          resize: vertical;
+          line-height: 1.5;
         }
         .text-input-icon {
           display: flex;
@@ -523,24 +559,32 @@ export class UltraTextInputModule extends BaseUltraModule {
           : ''}
         <div class="text-input-wrapper-${moduleId}">
           ${textInputModule.prefix_icon
-            ? html`<div class="text-input-icon">
+            ? html`<div class="text-input-icon" style="${isMultiline ? 'padding-top: 12px;' : ''}">
                 <ha-icon icon="${textInputModule.prefix_icon}"></ha-icon>
               </div>`
             : ''}
-          <input
-            class="text-input-field-${moduleId}"
-            type="${inputType}"
-            .value=${currentValue}
-            placeholder="${placeholder}"
-            @input=${handleInput}
-          />
+          ${isMultiline
+            ? html`<textarea
+                class="text-input-field-${moduleId}"
+                rows=${rows}
+                .value=${currentValue}
+                placeholder="${placeholder}"
+                @input=${handleInput}
+              ></textarea>`
+            : html`<input
+                class="text-input-field-${moduleId}"
+                type="${inputType}"
+                .value=${currentValue}
+                placeholder="${placeholder}"
+                @input=${handleInput}
+              />`}
           ${showClear && currentValue
-            ? html`<button class="text-input-clear-btn" @click=${handleClear}>
+            ? html`<button class="text-input-clear-btn" style="${isMultiline ? 'padding-top: 10px; align-self: flex-start;' : ''}" @click=${handleClear}>
                 <ha-icon icon="mdi:close-circle"></ha-icon>
               </button>`
             : ''}
           ${textInputModule.suffix_icon
-            ? html`<div class="text-input-icon">
+            ? html`<div class="text-input-icon" style="${isMultiline ? 'padding-top: 12px;' : ''}">
                 <ha-icon icon="${textInputModule.suffix_icon}"></ha-icon>
               </div>`
             : ''}

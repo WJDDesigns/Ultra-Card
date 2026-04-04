@@ -2663,7 +2663,11 @@
       "font_size": "Font Size",
       "font_size_desc": "Font size of the input text in pixels",
       "text_color": "Text Color",
-      "focus_color": "Focus/Accent Color"
+      "focus_color": "Focus/Accent Color",
+      "multiline": "Multiline",
+      "multiline_desc": "Allow multiple lines of text (textarea)",
+      "rows": "Rows",
+      "rows_desc": "Number of visible text rows"
     },
     "datetime_input": {
       "entity": {
@@ -2698,6 +2702,243 @@
       "font_size_desc": "Font size of the date/time inputs in pixels",
       "text_color": "Text Color",
       "focus_color": "Focus/Accent Color"
+    },
+    "number_input": {
+      "entity": {
+        "title": "Entity Configuration",
+        "desc": "Link to a Home Assistant input_number helper entity."
+      },
+      "entity_field": "Entity",
+      "entity_field_desc": "Select an input_number entity to bind this field to.",
+      "appearance": {
+        "title": "Appearance",
+        "desc": "Configure how the number input field looks."
+      },
+      "input_appearance": "Input Style",
+      "input_appearance_desc": "Visual style of the input field",
+      "appearance_options": {
+        "outlined": "Outlined",
+        "filled": "Filled",
+        "underlined": "Underlined"
+      },
+      "label": "Label",
+      "label_desc": "Label displayed above the input field",
+      "show_label": "Show Label",
+      "show_label_desc": "Display the label above the input",
+      "controls": {
+        "title": "Controls"
+      },
+      "show_stepper": "Show +/- Buttons",
+      "show_stepper_desc": "Display increment/decrement stepper buttons",
+      "show_unit": "Show Unit",
+      "show_unit_desc": "Display the unit of measurement",
+      "styling": {
+        "title": "Styling"
+      },
+      "font_size": "Font Size",
+      "font_size_desc": "Font size of the input text in pixels",
+      "text_color": "Text Color",
+      "focus_color": "Focus/Accent Color"
+    },
+    "slider_input": {
+      "entity": {
+        "title": "Entity Configuration",
+        "desc": "Link to a Home Assistant input_number helper entity."
+      },
+      "entity_field": "Entity",
+      "entity_field_desc": "Select an input_number entity to bind this slider to.",
+      "display": {
+        "title": "Display",
+        "desc": "Configure what information to show with the slider."
+      },
+      "label": "Label",
+      "label_desc": "Label displayed above the slider",
+      "show_label": "Show Label",
+      "show_label_desc": "Display the label",
+      "show_value": "Show Value",
+      "show_value_desc": "Display the current numeric value",
+      "show_min_max": "Show Min/Max",
+      "show_min_max_desc": "Display min and max values at the ends",
+      "show_unit": "Show Unit",
+      "show_unit_desc": "Display the unit of measurement",
+      "styling": {
+        "title": "Styling"
+      },
+      "slider_height": "Track Height",
+      "slider_height_desc": "Height of the slider track in pixels",
+      "thumb_size": "Thumb Size",
+      "thumb_size_desc": "Size of the slider thumb in pixels",
+      "font_size": "Font Size",
+      "font_size_desc": "Font size of labels and value",
+      "slider_color": "Slider Color",
+      "track_color": "Track Color",
+      "text_color": "Text Color"
+    },
+    "select_input": {
+      "entity": {
+        "title": "Entity Configuration",
+        "desc": "Link to a Home Assistant input_select or select entity."
+      },
+      "entity_field": "Entity",
+      "entity_field_desc": "Select an input_select entity to bind to.",
+      "appearance": {
+        "title": "Appearance",
+        "desc": "Choose how the options are displayed."
+      },
+      "select_style": "Selection Style",
+      "select_style_desc": "How options are presented to the user",
+      "style_options": {
+        "dropdown": "Dropdown",
+        "segmented": "Segmented Buttons",
+        "chips": "Chips / Pills"
+      },
+      "label": "Label",
+      "label_desc": "Label displayed above the selector",
+      "show_label": "Show Label",
+      "show_label_desc": "Display the label",
+      "styling": {
+        "title": "Styling"
+      },
+      "font_size": "Font Size",
+      "font_size_desc": "Font size in pixels",
+      "active_color": "Active/Selected Color",
+      "text_color": "Text Color"
+    },
+    "boolean_input": {
+      "entity": {
+        "title": "Entity Configuration",
+        "desc": "Link to a Home Assistant input_boolean or switch entity."
+      },
+      "entity_field": "Entity",
+      "entity_field_desc": "Select an input_boolean or switch entity.",
+      "appearance": {
+        "title": "Appearance",
+        "desc": "Configure the toggle style and labels."
+      },
+      "toggle_style": "Toggle Style",
+      "toggle_style_desc": "Visual style of the toggle",
+      "style_options": {
+        "switch": "Switch",
+        "checkbox": "Checkbox",
+        "pill": "Pill Toggle"
+      },
+      "label": "Label",
+      "label_desc": "Label displayed beside the toggle",
+      "show_label": "Show Label",
+      "show_label_desc": "Display the label",
+      "show_state_text": "Show State Text",
+      "show_state_text_desc": "Display On/Off text beside the toggle",
+      "on_text": "On Text",
+      "on_text_desc": "Custom text for the On state (default: On)",
+      "off_text": "Off Text",
+      "off_text_desc": "Custom text for the Off state (default: Off)",
+      "styling": {
+        "title": "Styling"
+      },
+      "font_size": "Font Size",
+      "font_size_desc": "Font size in pixels",
+      "on_color": "On Color",
+      "off_color": "Off Color",
+      "text_color": "Text Color"
+    },
+    "button_input": {
+      "entity": {
+        "title": "Entity Configuration",
+        "desc": "Link to a Home Assistant input_button helper entity."
+      },
+      "entity_field": "Entity",
+      "entity_field_desc": "Select an input_button entity to trigger on press.",
+      "appearance": {
+        "title": "Appearance",
+        "desc": "Configure the button label, icon, and style."
+      },
+      "button_label": "Button Label",
+      "button_label_desc": "Text displayed on the button (uses entity name if empty)",
+      "button_icon": "Icon",
+      "button_icon_desc": "Icon displayed on the button",
+      "button_style": "Button Style",
+      "button_style_desc": "Visual style of the button",
+      "style_options": {
+        "filled": "Filled",
+        "outlined": "Outlined",
+        "text": "Text Only"
+      },
+      "styling": {
+        "title": "Styling"
+      },
+      "font_size": "Font Size",
+      "font_size_desc": "Font size in pixels",
+      "button_color": "Button Color",
+      "text_color": "Text Color"
+    },
+    "counter_input": {
+      "entity": {
+        "title": "Entity Configuration",
+        "desc": "Link to a Home Assistant counter helper entity."
+      },
+      "entity_field": "Entity",
+      "entity_field_desc": "Select a counter entity to control.",
+      "appearance": {
+        "title": "Appearance",
+        "desc": "Configure layout and display options."
+      },
+      "counter_style": "Layout Style",
+      "counter_style_desc": "How the counter and buttons are arranged",
+      "style_options": {
+        "inline": "Inline (- value +)",
+        "stacked": "Stacked (buttons below)",
+        "compact": "Compact (small)"
+      },
+      "label": "Label",
+      "label_desc": "Label displayed above the counter",
+      "show_label": "Show Label",
+      "show_label_desc": "Display the label",
+      "show_reset": "Show Reset Button",
+      "show_reset_desc": "Display a reset button",
+      "styling": {
+        "title": "Styling"
+      },
+      "font_size": "Value Font Size",
+      "font_size_desc": "Font size of the counter value",
+      "button_color": "Button Color",
+      "text_color": "Text Color"
+    },
+    "color_input": {
+      "mode": {
+        "title": "Color Mode",
+        "desc": "Choose how the color value is stored."
+      },
+      "color_mode": "Color Mode",
+      "color_mode_desc": "Hex stores to input_text, Light RGB controls a light entity",
+      "mode_options": {
+        "hex": "Hex (input_text)",
+        "light_rgb": "Light RGB Color"
+      },
+      "entity": {
+        "title": "Entity Configuration",
+        "desc": "Select an entity to store or control color."
+      },
+      "entity_field": "Entity",
+      "entity_field_desc": "Select an entity.",
+      "display": {
+        "title": "Display"
+      },
+      "label": "Label",
+      "label_desc": "Label above the color picker",
+      "show_label": "Show Label",
+      "show_label_desc": "Display the label",
+      "show_hex_input": "Show Hex Input",
+      "show_hex_input_desc": "Display a text field with the hex value",
+      "show_preview": "Show Color Preview",
+      "show_preview_desc": "Display a color swatch preview",
+      "styling": {
+        "title": "Styling"
+      },
+      "preview_size": "Preview Size",
+      "preview_size_desc": "Size of the color preview swatch",
+      "font_size": "Font Size",
+      "font_size_desc": "Font size in pixels",
+      "text_color": "Text Color"
     }
   }
 }

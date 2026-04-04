@@ -75,7 +75,11 @@ export class UcModulesSelectorTab extends LitElement {
       .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
 
     let contentModules = filteredModules
-      .filter(m => m.category !== 'layout')
+      .filter(m => m.category !== 'layout' && m.category !== 'input')
+      .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+
+    const inputModules = filteredModules
+      .filter(m => m.category === 'input')
       .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
 
     if (this.isAddingToLayoutModule && this.parentLayoutType === 'slider') {
@@ -155,6 +159,32 @@ export class UcModulesSelectorTab extends LitElement {
                             <p class="category-description">Add content and interactive elements</p>
                             <div class="module-types content-modules">
                               ${contentModules.map(meta => html`
+                                <button
+                                  class="module-type-btn content-module"
+                                  @click=${() => this._emitModuleSelected(meta.type)}
+                                  title="${meta.description}"
+                                >
+                                  <ha-icon icon="${meta.icon}"></ha-icon>
+                                  <div class="module-info">
+                                    <span class="module-title">${meta.title}</span>
+                                    <span class="module-description">${meta.description}</span>
+                                  </div>
+                                </button>
+                              `)}
+                            </div>
+                          </div>
+                        `
+                      : ''}
+                    ${inputModules.length > 0
+                      ? html`
+                          <div class="module-category input-modules-category">
+                            <h4 class="category-title">
+                              <ha-icon icon="mdi:form-textbox" style="--mdc-icon-size: 18px; margin-right: 6px; vertical-align: middle; opacity: 0.7;"></ha-icon>
+                              Input Modules
+                            </h4>
+                            <p class="category-description">Link to Home Assistant input helpers for interactive control</p>
+                            <div class="module-types content-modules">
+                              ${inputModules.map(meta => html`
                                 <button
                                   class="module-type-btn content-module"
                                   @click=${() => this._emitModuleSelected(meta.type)}

@@ -16,7 +16,7 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
     author: 'WJD Designs',
     version: '1.0.0',
     icon: 'mdi:calendar-clock',
-    category: 'interactive',
+    category: 'input',
     tags: ['date', 'time', 'datetime', 'input', 'form', 'helper', 'interactive', 'calendar'],
   };
 

@@ -4480,6 +4480,8 @@ export interface TextInputModule extends BaseModule {
   entity?: string;
   placeholder?: string;
   input_appearance?: 'outlined' | 'filled' | 'underlined';
+  multiline?: boolean;
+  rows?: number;
   prefix_icon?: string;
   suffix_icon?: string;
   show_clear_button?: boolean;
@@ -4504,6 +4506,125 @@ export interface DatetimeInputModule extends BaseModule {
   font_size?: number;
   text_color?: string;
   focus_color?: string;
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+}
+
+// Number Input Module (number textbox linked to input_number helpers)
+export interface NumberInputModule extends BaseModule {
+  type: 'number_input';
+  entity?: string;
+  input_appearance?: 'outlined' | 'filled' | 'underlined';
+  show_stepper?: boolean;
+  show_unit?: boolean;
+  label?: string;
+  show_label?: boolean;
+  font_size?: number;
+  text_color?: string;
+  focus_color?: string;
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+}
+
+// Slider Input Module (range slider linked to input_number helpers)
+export interface SliderInputModule extends BaseModule {
+  type: 'slider_input';
+  entity?: string;
+  show_value?: boolean;
+  show_min_max?: boolean;
+  show_unit?: boolean;
+  slider_height?: number;
+  slider_color?: string;
+  track_color?: string;
+  thumb_size?: number;
+  label?: string;
+  show_label?: boolean;
+  font_size?: number;
+  text_color?: string;
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+}
+
+// Select Input Module (dropdown/chips linked to input_select helpers)
+export interface SelectInputModule extends BaseModule {
+  type: 'select_input';
+  entity?: string;
+  select_style?: 'dropdown' | 'segmented' | 'chips';
+  label?: string;
+  show_label?: boolean;
+  font_size?: number;
+  text_color?: string;
+  active_color?: string;
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+}
+
+// Boolean Input Module (toggle linked to input_boolean / switch entities)
+export interface BooleanInputModule extends BaseModule {
+  type: 'boolean_input';
+  entity?: string;
+  toggle_style?: 'switch' | 'checkbox' | 'pill';
+  show_state_text?: boolean;
+  on_text?: string;
+  off_text?: string;
+  label?: string;
+  show_label?: boolean;
+  font_size?: number;
+  text_color?: string;
+  on_color?: string;
+  off_color?: string;
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+}
+
+// Button Input Module (press button linked to input_button helpers)
+export interface ButtonInputModule extends BaseModule {
+  type: 'button_input';
+  entity?: string;
+  button_label?: string;
+  button_icon?: string;
+  button_style?: 'filled' | 'outlined' | 'text';
+  font_size?: number;
+  text_color?: string;
+  button_color?: string;
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+}
+
+// Counter Input Module (counter with +/- and reset linked to counter helpers)
+export interface CounterInputModule extends BaseModule {
+  type: 'counter_input';
+  entity?: string;
+  counter_style?: 'inline' | 'stacked' | 'compact';
+  show_reset?: boolean;
+  label?: string;
+  show_label?: boolean;
+  font_size?: number;
+  text_color?: string;
+  button_color?: string;
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+}
+
+// Color Input Module (color picker linked to input_text or light entities)
+export interface ColorInputModule extends BaseModule {
+  type: 'color_input';
+  entity?: string;
+  color_mode?: 'hex' | 'light_rgb';
+  show_hex_input?: boolean;
+  show_preview?: boolean;
+  preview_size?: number;
+  label?: string;
+  show_label?: boolean;
+  font_size?: number;
+  text_color?: string;
   tap_action?: ModuleActionConfig;
   hold_action?: ModuleActionConfig;
   double_tap_action?: ModuleActionConfig;
@@ -4562,7 +4683,14 @@ export type CardModule =
   | EnergyDisplayModule
   | LivingCanvasModule
   | TextInputModule
-  | DatetimeInputModule;
+  | DatetimeInputModule
+  | NumberInputModule
+  | SliderInputModule
+  | SelectInputModule
+  | BooleanInputModule
+  | ButtonInputModule
+  | CounterInputModule
+  | ColorInputModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {

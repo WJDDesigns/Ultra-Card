@@ -57,4 +57,11 @@ export const coreLoaders: Record<string, ModuleLoader> = {
   living_canvas: () => import(/* webpackMode: "eager" */ './living-canvas-module').then(m => new m.UltraLivingCanvasModule()),
   text_input: () => import(/* webpackMode: "eager" */ './text-input-module').then(m => new m.UltraTextInputModule()),
   datetime_input: () => import(/* webpackMode: "eager" */ './datetime-input-module').then(m => new m.UltraDatetimeInputModule()),
+  number_input: () => import(/* webpackMode: "eager" */ './number-input-module').then(m => new m.UltraNumberInputModule()),
+  slider_input: () => import(/* webpackMode: "eager" */ './slider-input-module').then(m => new m.UltraSliderInputModule()),
+  select_input: () => import(/* webpackMode: "eager" */ './select-input-module').then(m => new m.UltraSelectInputModule()),
+  boolean_input: () => import(/* webpackMode: "eager" */ './boolean-input-module').then(m => new m.UltraBooleanInputModule()),
+  button_input: () => import(/* webpackMode: "eager" */ './button-input-module').then(m => new m.UltraButtonInputModule()),
+  counter_input: () => import(/* webpackMode: "eager" */ './counter-input-module').then(m => new m.UltraCounterInputModule()),
+  color_input: () => import(/* webpackMode: "eager" */ './color-input-module').then(m => new m.UltraColorInputModule()),
 };
