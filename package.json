@@ -1,6 +1,6 @@
 {
   "name": "ultra-card",
-  "version": "3.2.0-beta6",
+  "version": "3.2.0-beta7",
   "description": "Ultra Card - A modular card builder for Home Assistant",
   "main": "dist/ultra-card.js",
   "scripts": {
@@ -54,6 +54,15 @@
     "@codemirror/view": "^6.34.2",
     "@lezer/highlight": "^1.2.1",
     "@mdi/js": "^7.4.47",
+    "@tiptap/core": "3.22.1",
+    "@tiptap/extension-color": "3.22.1",
+    "@tiptap/extension-highlight": "3.22.1",
+    "@tiptap/extension-link": "3.22.1",
+    "@tiptap/extension-text-align": "3.22.1",
+    "@tiptap/extension-text-style": "3.22.1",
+    "@tiptap/extension-underline": "3.22.1",
+    "@tiptap/pm": "3.22.1",
+    "@tiptap/starter-kit": "3.22.1",
     "@types/leaflet": "1.9.21",
     "@types/three": "0.181.0",
     "custom-card-helpers": "^1.9.0",

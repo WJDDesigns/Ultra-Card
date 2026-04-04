@@ -1,6 +1,7 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { keyed } from 'lit/directives/keyed.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
   UltraCardConfig,
@@ -6746,6 +6747,10 @@ export class LayoutTab extends LitElement {
   private _updateConfig(updates: Partial<UltraCardConfig>): void {
     const newConfig = { ...this.config, ...updates };
 
+    // Apply locally before dispatching so module settings, ha-form pickers, and any
+    // same-turn re-render read the updated layout (HA may re-assign config asynchronously).
+    this.config = newConfig;
+
     // Update hover styles when configuration changes
     setTimeout(() => {
       this._updateHoverEffectStyles();
@@ -13016,8 +13021,9 @@ export class LayoutTab extends LitElement {
 
     if (!module) return html``;
 
-    // Always use _renderSingleModuleWithAnimation which wraps in card container
-    const previewContent = this._renderSingleModuleWithAnimation(module);
+    // Key by module identity + entity + breakpoint so Live Preview DOM is recreated when the
+    // user binds an entity (or changes breakpoint). Avoids stale nested preview subtrees.
+    const previewKey = `${module.id}:${(module as any).entity ?? ''}:${this._previewBreakpoint}`;
 
     return html`
       <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
@@ -13086,7 +13092,7 @@ export class LayoutTab extends LitElement {
             class="preview-breakpoint-container ${this._previewBreakpoint}"
             style="${this._getPreviewBreakpointStyle()}"
           >
-            ${previewContent}
+            ${keyed(previewKey, this._renderSingleModuleWithAnimation(module))}
           </div>
         </div>
       </div>
@@ -21800,12 +21806,44 @@ export class LayoutTab extends LitElement {
     }
   }
 
+  /**
+   * Hass for isolated module Live Preview. When the editor's `.hass` omits the bound
+   * entity from `states` (split card UI / timing), use root `home-assistant.hass` so
+   * previews match the entity picker (see ultra-card `_effectiveHass`).
+   */
+  private _hassForModulePreview(module: CardModule): HomeAssistant {
+    const ha = this.hass;
+    const eid = ((module as any)?.entity as string | undefined)?.trim();
+    if (!eid) {
+      return ha;
+    }
+    try {
+      const root = (document.querySelector('home-assistant') as any)?.hass as HomeAssistant | undefined;
+      const inHa = !!ha?.states?.[eid];
+      const inRoot = !!root?.states?.[eid];
+      if (inRoot && !inHa) {
+        return root;
+      }
+      if (!ha && root) {
+        return root;
+      }
+    } catch {
+      /* ignore */
+    }
+    return ha;
+  }
+
   private _renderSingleModuleWithAnimation(module: CardModule): TemplateResult {
     // Use centralized preview service that mirrors HA preview window behavior
-    return ucModulePreviewService.renderModuleInCard(module, this.hass, this.config, {
-      showLogicOverlay: true,
-      onModuleEnsureRequested: () => this.requestUpdate(),
-    });
+    return ucModulePreviewService.renderModuleInCard(
+      module,
+      this._hassForModulePreview(module),
+      this.config,
+      {
+        showLogicOverlay: true,
+        onModuleEnsureRequested: () => this.requestUpdate(),
+      }
+    );
   }
 
   private _getRowPreviewAnimationData(row: any): { class: string; duration: string } {

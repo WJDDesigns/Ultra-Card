@@ -10,6 +10,7 @@ import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { getImageUrl } from '../utils/image-upload';
 import { registerPopupTrigger, unregisterPopupTrigger } from '../services/popup-trigger-registry';
+import '../components/ultra-color-picker';
 
 // Global store to persist popup state across module re-instantiation/reloads
 // This survives HA preview/dash re-renders because it's kept on window
@@ -109,6 +110,16 @@ export class UltraPopupModule extends BaseUltraModule {
       trigger_icon_size: 24,
       trigger_icon_color: '',
 
+      // Trigger button styling
+      trigger_button_style: 'flat',
+      trigger_button_background_color: 'var(--primary-color)',
+      trigger_button_text_color: 'white',
+      trigger_button_icon_position: 'before',
+      trigger_button_icon_size: '24px',
+      trigger_button_use_entity_color: false,
+      trigger_button_color_entity: '',
+      trigger_button_state_colors: {},
+
       // Layout settings
       layout: 'default',
       animation: 'fade',
@@ -182,30 +193,7 @@ export class UltraPopupModule extends BaseUltraModule {
       </style>
 
       <div class="module-design-settings">
-        <!-- Trigger Styling Section -->
-        ${popupModule.trigger_type === 'button'
-          ? html`
-              <div class="design-subsection">
-                <div class="subsection-title">
-                  ${localize('editor.popup.design.trigger_button', lang, 'Trigger Button Styling')}
-                </div>
-                <div
-                  style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-                >
-                  ${localize(
-                    'editor.popup.design.trigger_button_desc',
-                    lang,
-                    'Customize the appearance of the trigger button.'
-                  )}
-                </div>
-
-                <!-- Button styling would go here - using global design tab for now -->
-                <div style="color: var(--secondary-text-color); font-style: italic; padding: 12px;">
-                  Use the General Design tab below for button styling options.
-                </div>
-              </div>
-            `
-          : ''}
+        <!-- Trigger Styling Section - controls are in the General tab -->
 
         <!-- Title Styling Section -->
         ${popupModule.show_title
@@ -624,6 +612,163 @@ export class UltraPopupModule extends BaseUltraModule {
                               },
                             },
                           ])}
+                        `
+                      )}
+                    </div>
+
+                    <!-- Button Styling -->
+                    <div style="margin-top: -16px; margin-bottom: 32px;">
+                      ${this.renderConditionalFieldsGroup(
+                        localize('editor.popup.design.trigger_button', lang, 'Trigger Button Styling'),
+                        html`
+                          <!-- Button Style -->
+                          ${this.renderFieldSection(
+                            localize('editor.button.style.title', lang, 'Button Style'),
+                            localize('editor.button.style.desc', lang, 'Visual style of the button'),
+                            hass,
+                            { trigger_button_style: popupModule.trigger_button_style || 'flat' },
+                            [
+                              this.selectField('trigger_button_style', [
+                                { value: 'flat', label: localize('editor.button.styles.flat', lang, 'Flat (Default)') },
+                                { value: 'glossy', label: localize('editor.button.styles.glossy', lang, 'Glossy') },
+                                { value: 'embossed', label: localize('editor.button.styles.embossed', lang, 'Embossed') },
+                                { value: 'inset', label: localize('editor.button.styles.inset', lang, 'Inset') },
+                                { value: 'gradient-overlay', label: localize('editor.button.styles.gradient_overlay', lang, 'Gradient Overlay') },
+                                { value: 'neon-glow', label: localize('editor.button.styles.neon_glow', lang, 'Neon Glow') },
+                                { value: 'outline', label: localize('editor.button.styles.outline', lang, 'Outline') },
+                                { value: 'glass', label: localize('editor.button.styles.glass', lang, 'Glass') },
+                                { value: 'metallic', label: localize('editor.button.styles.metallic', lang, 'Metallic') },
+                              ]),
+                            ],
+                            (e: CustomEvent) => {
+                              const next = e.detail.value.trigger_button_style;
+                              const prev = popupModule.trigger_button_style || 'flat';
+                              if (next === prev) return;
+                              updateModule(e.detail.value);
+                              setTimeout(() => this.triggerPreviewUpdate(), 50);
+                            }
+                          )}
+
+                          <!-- Icon Position & Size (only when icon is set) -->
+                          ${popupModule.trigger_button_icon
+                            ? html`
+                                <div style="margin-top: 16px;">
+                                  ${this.renderFieldSection(
+                                    localize('editor.button.icon_position', lang, 'Icon Position'),
+                                    localize('editor.button.icon_position_desc', lang, 'Position of the icon relative to text'),
+                                    hass,
+                                    { trigger_button_icon_position: popupModule.trigger_button_icon_position || 'before' },
+                                    [
+                                      this.selectField('trigger_button_icon_position', [
+                                        { value: 'before', label: localize('editor.button.icon.before', lang, 'Before Text') },
+                                        { value: 'after', label: localize('editor.button.icon.after', lang, 'After Text') },
+                                      ]),
+                                    ],
+                                    (e: CustomEvent) => {
+                                      updateModule(e.detail.value);
+                                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                                    }
+                                  )}
+                                </div>
+                                <div style="margin-top: 16px;">
+                                  ${this.renderSliderField(
+                                    localize('editor.button.icon_size', lang, 'Icon Size'),
+                                    localize('editor.button.icon_size_desc', lang, 'Size of the icon in pixels'),
+                                    parseInt(String(popupModule.trigger_button_icon_size || '24').replace('px', '')) || 24,
+                                    24,
+                                    12,
+                                    64,
+                                    1,
+                                    (value: number) => {
+                                      updateModule({ trigger_button_icon_size: `${value}px` });
+                                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                                    }
+                                  )}
+                                </div>
+                              `
+                            : ''}
+
+                          <!-- Colors Section -->
+                          <div style="margin-top: 16px;">
+                            ${this.renderSettingsSection(
+                              localize('editor.button.colors.title', lang, 'Colors'),
+                              '',
+                              [
+                                {
+                                  title: localize('editor.button.use_entity_color', lang, 'Use Entity Color'),
+                                  description: localize('editor.button.use_entity_color_desc', lang, 'Change button background color based on entity state'),
+                                  hass,
+                                  data: { trigger_button_use_entity_color: popupModule.trigger_button_use_entity_color || false },
+                                  schema: [this.booleanField('trigger_button_use_entity_color')],
+                                  onChange: (e: CustomEvent) => {
+                                    const enabled = e.detail.value.trigger_button_use_entity_color;
+                                    updateModule({
+                                      trigger_button_use_entity_color: enabled,
+                                      trigger_button_color_entity: enabled ? popupModule.trigger_button_color_entity : '',
+                                    });
+                                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                                  },
+                                },
+                              ]
+                            )}
+                          </div>
+
+                          ${popupModule.trigger_button_use_entity_color
+                            ? html`
+                                <div style="margin-top: 16px;">
+                                  ${this.renderFieldSection(
+                                    localize('editor.button.background_color_entity', lang, 'Entity'),
+                                    localize('editor.button.background_color_entity_desc', lang, 'Entity to watch for color changes'),
+                                    hass,
+                                    { trigger_button_color_entity: popupModule.trigger_button_color_entity || '' },
+                                    [this.entityField('trigger_button_color_entity')],
+                                    (e: CustomEvent) => {
+                                      updateModule(e.detail.value);
+                                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                                    }
+                                  )}
+                                </div>
+                                <div style="margin-top: 16px;">
+                                  <div class="field-title" style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 8px;">
+                                    ${localize('editor.button.state_colors', lang, 'State Colors')}
+                                  </div>
+                                  <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);">
+                                    ${localize('editor.button.state_colors_desc', lang, 'Optional: Map specific entity states to colors (e.g., on: green, off: gray). If not set, will use entity RGB color or state-based defaults.')}
+                                  </div>
+                                  ${this._renderTriggerStateColorsEditor(
+                                    popupModule.trigger_button_state_colors || {},
+                                    hass,
+                                    lang,
+                                    (stateColors: { [state: string]: string }) => {
+                                      updateModule({ trigger_button_state_colors: stateColors });
+                                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                                    }
+                                  )}
+                                </div>
+                              `
+                            : html`
+                                <div style="margin-top: 16px;">
+                                  <ultra-color-picker
+                                    .label=${localize('editor.button.colors.background', lang, 'Background Color')}
+                                    .value=${popupModule.trigger_button_background_color || 'var(--primary-color)'}
+                                    .defaultValue=${'var(--primary-color)'}
+                                    .hass=${hass}
+                                    @value-changed=${(e: CustomEvent) =>
+                                      updateModule({ trigger_button_background_color: e.detail.value })}
+                                  ></ultra-color-picker>
+                                </div>
+                              `}
+
+                          <div style="margin-top: 16px;">
+                            <ultra-color-picker
+                              .label=${localize('editor.button.colors.text', lang, 'Text Color')}
+                              .value=${popupModule.trigger_button_text_color || 'white'}
+                              .defaultValue=${'white'}
+                              .hass=${hass}
+                              @value-changed=${(e: CustomEvent) =>
+                                updateModule({ trigger_button_text_color: e.detail.value })}
+                            ></ultra-color-picker>
+                          </div>
                         `
                       )}
                     </div>
@@ -1474,6 +1619,138 @@ export class UltraPopupModule extends BaseUltraModule {
           : ''}
       </div>
     `;
+  }
+
+  private _renderTriggerStateColorsEditor(
+    stateColors: { [state: string]: string },
+    hass: HomeAssistant,
+    lang: string,
+    onUpdate: (stateColors: { [state: string]: string }) => void
+  ): TemplateResult {
+    return html`
+      <div class="state-color-editor">
+        ${Object.entries(stateColors).map(
+          ([state, color]) => html`
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; min-width: 0; overflow: hidden;">
+              <input
+                type="text"
+                placeholder="State (e.g., on, off)"
+                .value=${state}
+                style="flex: 0 0 120px; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--secondary-background-color); color: var(--primary-text-color); flex-shrink: 0;"
+                @input=${(e: Event) => {
+                  const newState = (e.target as HTMLInputElement).value;
+                  const updated = { ...stateColors };
+                  delete updated[state];
+                  if (newState.trim()) {
+                    updated[newState.trim()] = color;
+                  }
+                  onUpdate(updated);
+                }}
+              />
+              <div style="flex: 1; min-width: 0; overflow: hidden;">
+                <ultra-color-picker
+                  .label=${''}
+                  .value=${color}
+                  .defaultValue=${'gray'}
+                  .hass=${hass}
+                  style="width: 100%;"
+                  @value-changed=${(e: CustomEvent) => {
+                    const updated = { ...stateColors, [state]: e.detail.value };
+                    onUpdate(updated);
+                  }}
+                ></ultra-color-picker>
+              </div>
+              <ha-icon
+                icon="mdi:delete"
+                style="cursor: pointer; color: var(--error-color); margin-left: 8px; flex-shrink: 0;"
+                @click=${() => {
+                  const updated = { ...stateColors };
+                  delete updated[state];
+                  onUpdate(updated);
+                }}
+              ></ha-icon>
+            </div>
+          `
+        )}
+        <button
+          style="margin-top: 8px; padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
+          @click=${() => {
+            const updated = { ...stateColors, new_state: 'gray' };
+            onUpdate(updated);
+          }}
+        >
+          <ha-icon icon="mdi:plus" style="margin-right: 4px;"></ha-icon>
+          ${localize('editor.button.add_state_color', lang, 'Add State Color')}
+        </button>
+      </div>
+    `;
+  }
+
+  private _getTriggerButtonEntityColor(
+    popupModule: PopupModule,
+    hass: HomeAssistant
+  ): string | null {
+    if (
+      !popupModule.trigger_button_use_entity_color ||
+      !popupModule.trigger_button_color_entity ||
+      !hass
+    ) {
+      return null;
+    }
+    const entityState = hass.states[popupModule.trigger_button_color_entity];
+    if (!entityState) return null;
+
+    const stateColors = popupModule.trigger_button_state_colors;
+    if (stateColors && Object.keys(stateColors).length > 0) {
+      const mapped = stateColors[entityState.state];
+      if (mapped) return mapped;
+    }
+
+    if (!entityState.attributes) return null;
+
+    if (entityState.attributes.rgb_color && Array.isArray(entityState.attributes.rgb_color)) {
+      return `rgb(${entityState.attributes.rgb_color.join(',')})`;
+    }
+    if (entityState.attributes.hs_color && Array.isArray(entityState.attributes.hs_color)) {
+      const [h, s] = entityState.attributes.hs_color;
+      const hNorm = h / 360;
+      const sNorm = s / 100;
+      const v = 1;
+      const i = Math.floor(hNorm * 6);
+      const f = hNorm * 6 - i;
+      const p = v * (1 - sNorm);
+      const q = v * (1 - f * sNorm);
+      const t = v * (1 - (1 - f) * sNorm);
+      let r = 0, g = 0, b = 0;
+      switch (i % 6) {
+        case 0: r = v; g = t; b = p; break;
+        case 1: r = q; g = v; b = p; break;
+        case 2: r = p; g = v; b = t; break;
+        case 3: r = p; g = q; b = v; break;
+        case 4: r = t; g = p; b = v; break;
+        case 5: r = v; g = p; b = q; break;
+      }
+      return `rgb(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)})`;
+    }
+    if (entityState.attributes.color_name) return entityState.attributes.color_name;
+    if (entityState.attributes.color && typeof entityState.attributes.color === 'string') {
+      return entityState.attributes.color;
+    }
+
+    if (entityState.entity_id) {
+      const domain = entityState.entity_id.split('.')[0];
+      const state = entityState.state;
+      switch (domain) {
+        case 'light': return state === 'on' ? '#FFA500' : '#666666';
+        case 'switch': return state === 'on' ? '#4CAF50' : '#666666';
+        case 'binary_sensor': return state === 'on' ? '#F44336' : '#4CAF50';
+        default:
+          return state === 'on' || state === 'open' || state === 'active'
+            ? 'var(--primary-color)'
+            : '#666666';
+      }
+    }
+    return null;
   }
 
   /**
@@ -2674,27 +2951,96 @@ export class UltraPopupModule extends BaseUltraModule {
         const buttonText = popupModule.trigger_button_text || 'Open Popup';
         const buttonIcon = popupModule.trigger_button_icon || '';
         const isFullWidth = popupModule.trigger_button_full_width || false;
+        const styleClass = popupModule.trigger_button_style || 'flat';
+        const iconPosition = popupModule.trigger_button_icon_position || 'before';
+        const iconSize = popupModule.trigger_button_icon_size || '24px';
+        const hasCustomTextColor = !!popupModule.trigger_button_text_color;
+
+        let bgColor = popupModule.trigger_button_background_color || 'var(--primary-color)';
+        const entityColor = this._getTriggerButtonEntityColor(popupModule, hass);
+        if (entityColor) bgColor = entityColor;
+
+        const textColor = popupModule.trigger_button_text_color || 'white';
+
+        const styleOverrides: Record<string, Record<string, string>> = {
+          flat: { background: bgColor, border: 'none', boxShadow: 'none' },
+          glossy: {
+            background: `linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)), ${bgColor}`,
+            border: 'none',
+          },
+          embossed: {
+            background: bgColor,
+            border: '1px solid rgba(0,0,0,0.15)',
+            boxShadow: 'inset 0 2px 2px rgba(255,255,255,0.2), inset 0 -2px 2px rgba(0,0,0,0.15)',
+          },
+          inset: { background: bgColor, border: 'none', boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)' },
+          'gradient-overlay': {
+            background: `linear-gradient(135deg, rgba(255,255,255,0.15), rgba(0,0,0,0.15)), ${bgColor}`,
+            border: 'none',
+          },
+          'neon-glow': {
+            background: bgColor,
+            border: 'none',
+            boxShadow: `0 0 10px ${bgColor}, 0 0 20px ${bgColor}`,
+          },
+          outline: { background: 'transparent', border: `2px solid ${bgColor}` },
+          glass: { background: bgColor, backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.25)' },
+          metallic: { background: 'linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7)', border: '1px solid #bbb' },
+        };
+
+        const overrides = styleOverrides[styleClass] || styleOverrides.flat;
+
+        let resolvedTextColor = textColor;
+        if (!hasCustomTextColor) {
+          if (styleClass === 'outline') resolvedTextColor = bgColor;
+          else if (styleClass === 'metallic') resolvedTextColor = '#333';
+        }
+
+        const btnStyle = [
+          'display: flex',
+          'align-items: center',
+          'justify-content: center',
+          `gap: ${buttonIcon ? '8px' : '0'}`,
+          'padding: 12px 24px',
+          `color: ${resolvedTextColor}`,
+          'border-radius: 8px',
+          'cursor: pointer',
+          'font-size: 16px',
+          'font-weight: 500',
+          'transition: all 0.2s ease',
+          'touch-action: manipulation',
+          'pointer-events: auto',
+          'min-height: 40px',
+          isFullWidth ? 'width: 100%' : '',
+          `background: ${overrides.background || bgColor}`,
+          `border: ${overrides.border || 'none'}`,
+          overrides.boxShadow ? `box-shadow: ${overrides.boxShadow}` : '',
+          overrides.backdropFilter ? `backdrop-filter: ${overrides.backdropFilter}` : '',
+        ]
+          .filter(Boolean)
+          .join('; ');
+
+        const iconHtml = buttonIcon
+          ? html`<ha-icon
+              icon="${buttonIcon}"
+              style="--mdc-icon-size: ${iconSize}; width: ${iconSize}; height: ${iconSize};"
+            ></ha-icon>`
+          : '';
 
         triggerElement = html`
           <button
             class="swiper-no-swiping popup-trigger"
             @click=${handleTriggerClick}
             @touchend=${(e: Event) => {
-              // Explicitly handle touch end to ensure popup opens on mobile
               e.preventDefault();
               e.stopPropagation();
               handleTriggerClick(e);
             }}
-            style="display: flex; align-items: center; justify-content: center; gap: ${buttonIcon
-              ? '8px'
-              : '0'}; padding: 12px 24px; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; ${isFullWidth
-              ? 'width: 100%;'
-              : ''}"
+            style="${btnStyle}"
           >
-            ${buttonIcon
-              ? html`<ha-icon icon="${buttonIcon}" style="--mdc-icon-size: 24px;"></ha-icon>`
-              : ''}
+            ${buttonIcon && iconPosition === 'before' ? iconHtml : ''}
             ${buttonText}
+            ${buttonIcon && iconPosition === 'after' ? iconHtml : ''}
           </button>
         `;
       } else if (triggerType === 'image') {

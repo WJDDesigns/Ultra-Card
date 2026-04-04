@@ -17,6 +17,7 @@ interface RenderContext {
   isHaPreview: boolean;
   isDashboardEditMode: boolean;
   breakpoint: DeviceBreakpoint;
+  hass: HomeAssistant;
 }
 import { getModuleRegistry } from '../modules';
 import { getImageUrl } from '../utils/image-upload';
@@ -859,7 +860,14 @@ export class UltraCard extends LitElement {
       const isTarget = (el: Element | null | undefined): boolean => {
         if (!el) return false;
         const tag = el.tagName?.toLowerCase?.();
-        return tag === 'hui-card-preview' || tag === 'hui-dialog-edit-card';
+        return (
+          tag === 'hui-card-preview' ||
+          tag === 'hui-dialog-edit-card' ||
+          tag === 'hui-dialog-create-card' ||
+          tag === 'hui-dialog-edit-lovelace' ||
+          tag === 'hui-dialog-edit-dashboard' ||
+          tag === 'hui-dialog-edit-view'
+        );
       };
 
       let node: any = this as any;
@@ -876,6 +884,25 @@ export class UltraCard extends LitElement {
       }
     } catch (_e) { /* ignore */ }
     return false;
+  }
+
+  /**
+   * Hass for the current paint. HA's split card-configuration UI can mount the preview
+   * `ultra-card` before `.hass` is set; we fall back to the root `home-assistant` object
+   * only while inside the editor preview to avoid a blank preview panel.
+   */
+  private _effectiveHass(): HomeAssistant | undefined {
+    if (this._hass) {
+      return this._hass;
+    }
+    if (!this._detectEditorPreviewContext()) {
+      return undefined;
+    }
+    try {
+      return (document.querySelector('home-assistant') as any)?.hass as HomeAssistant | undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   /**
@@ -1030,8 +1057,17 @@ export class UltraCard extends LitElement {
   }
 
   protected render(): TemplateResult {
-    if (!this.config || !this.hass) {
+    if (!this.config) {
       return html``;
+    }
+
+    const hass = this._effectiveHass();
+    if (!hass) {
+      return html``;
+    }
+
+    if (!this._hass) {
+      logicService.setHass(hass);
     }
 
     const cardStyle = this._getCardStyle();
@@ -1054,11 +1090,11 @@ export class UltraCard extends LitElement {
     const { onlyInvisibleModules, onlyPopupModules, allPopupsInvisible } = cache;
 
     // Hoist per-render environment checks (computed once per render, passed to row/column/module)
-    const isInCardEditor = !!document.querySelector('hui-dialog-edit-card');
-    const isDashboardEditMode = this._detectDashboardEditMode();
     const isHaPreview = this._detectEditorPreviewContext();
+    const isInCardEditor = isHaPreview || !!document.querySelector('hui-dialog-edit-card');
+    const isDashboardEditMode = this._detectDashboardEditMode();
     const breakpoint = responsiveDesignService.getCurrentBreakpoint();
-    const renderCtx: RenderContext = { isHaPreview, isDashboardEditMode, breakpoint };
+    const renderCtx: RenderContext = { isHaPreview, isDashboardEditMode, breakpoint, hass };
 
     // If only invisible modules (video_bg, dynamic_weather, living_canvas, etc.) and NOT in card editor AND NOT in dashboard edit mode, hide completely
     if (onlyInvisibleModules && !isInCardEditor && !isDashboardEditMode) {
@@ -1145,7 +1181,7 @@ export class UltraCard extends LitElement {
 
     // Register weather modules after render to catch immediate changes
     // Use requestAnimationFrame to avoid performance issues
-    if (this.config && this.hass && this._instanceId) {
+    if (this.config && hass && this._instanceId) {
       requestAnimationFrame(() => {
         this._registerDynamicWeatherModules();
         this._registerLivingCanvasModules();
@@ -1743,7 +1779,7 @@ export class UltraCard extends LitElement {
 
     // Create gesture handlers for row-level actions if configured
     let rowHandlers: any = {};
-    if (hasRowActions && this.hass) {
+    if (hasRowActions && ctx.hass) {
       const gestureService = UcGestureService.getInstance();
       rowHandlers = gestureService.createGestureHandlers(
         `row-${rowId}`,
@@ -1754,7 +1790,7 @@ export class UltraCard extends LitElement {
           entity: (rowWithActions as any).entity,
           module: undefined,
         },
-        this.hass,
+        ctx.hass,
         this.config
       );
     }
@@ -2040,7 +2076,7 @@ export class UltraCard extends LitElement {
 
     // Create gesture handlers for column-level actions if configured
     let columnHandlers: any = {};
-    if (hasColumnActions && this.hass) {
+    if (hasColumnActions && ctx.hass) {
       const gestureService = UcGestureService.getInstance();
       columnHandlers = gestureService.createGestureHandlers(
         `column-${colId}`,
@@ -2051,7 +2087,7 @@ export class UltraCard extends LitElement {
           entity: (columnWithActions as any).entity,
           module: undefined,
         },
-        this.hass,
+        ctx.hass,
         this.config
       );
     }
@@ -2218,8 +2254,8 @@ export class UltraCard extends LitElement {
     if (stateAnimationType && stateAnimationType !== 'none') {
       if (!stateAnimationEntity) {
         shouldTriggerStateAnimation = true;
-      } else if (stateAnimationState && this.hass) {
-        const entity = this.hass.states[stateAnimationEntity];
+      } else if (stateAnimationState && ctx.hass) {
+        const entity = ctx.hass.states[stateAnimationEntity];
         if (entity) {
           if (stateAnimationTriggerType === 'attribute' && stateAnimationAttribute) {
             const attributeValue = entity.attributes[stateAnimationAttribute];
@@ -2305,7 +2341,7 @@ export class UltraCard extends LitElement {
     }
 
     // Use centralized preview service for consistent rendering
-    if (!this.hass || !this.config) {
+    if (!ctx.hass || !this.config) {
       return html``;
     }
 
@@ -2315,7 +2351,7 @@ export class UltraCard extends LitElement {
 
     const moduleContent = ucModulePreviewService.renderModuleContent(
       module,
-      this.hass,
+      ctx.hass,
       this.config,
       {
         animationClass,
@@ -2518,11 +2554,12 @@ export class UltraCard extends LitElement {
     }
 
     // If entity is configured, check the state/attribute condition
-    if (!stateAnimationState || !this.hass) {
+    const eff = this._effectiveHass();
+    if (!stateAnimationState || !eff) {
       return '';
     }
 
-    const entity = this.hass.states[stateAnimationEntity];
+    const entity = eff.states[stateAnimationEntity];
     if (!entity) return '';
 
     let shouldTriggerStateAnimation = false;

@@ -55,4 +55,6 @@ export const coreLoaders: Record<string, ModuleLoader> = {
   qr_code: () => import(/* webpackMode: "eager" */ './qr-code-module').then(m => new m.UltraQrCodeModule()),
   energy_display: () => import(/* webpackMode: "eager" */ './energy-display-module').then(m => new m.UltraEnergyDisplayModule()),
   living_canvas: () => import(/* webpackMode: "eager" */ './living-canvas-module').then(m => new m.UltraLivingCanvasModule()),
+  text_input: () => import(/* webpackMode: "eager" */ './text-input-module').then(m => new m.UltraTextInputModule()),
+  datetime_input: () => import(/* webpackMode: "eager" */ './datetime-input-module').then(m => new m.UltraDatetimeInputModule()),
 };

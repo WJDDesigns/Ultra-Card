@@ -13,13 +13,16 @@ import { localize } from '../localize/localize';
 import { buildEntityContext } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { sanitizeRichTextHtml } from '../utils/html-sanitizer';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
+import '../components/ultra-wysiwyg-editor';
 
 export class UltraTextModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'text',
-    title: 'Text Module',
+    title: 'Text',
     description: 'Display custom text content',
     author: 'WJD Designs',
     version: '1.0.0',
@@ -51,6 +54,8 @@ export class UltraTextModule extends BaseUltraModule {
       template: '',
       unified_template_mode: false,
       unified_template: '',
+      // Rich text (WYSIWYG) content — always active for non-template mode
+      rich_text_content: '<p>Sample Text</p>',
       // Hover configuration
       enable_hover_effect: true,
       hover_background_color: 'var(--divider-color)',
@@ -205,7 +210,6 @@ export class UltraTextModule extends BaseUltraModule {
         </div>
 
         <!-- Content Configuration -->
-        <!-- Content Configuration -->
         <div
           class="settings-section"
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
@@ -220,60 +224,70 @@ export class UltraTextModule extends BaseUltraModule {
             style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
           >
             ${localize(
-              'editor.text.content_section.desc',
+              'editor.text.rich_text_content_section.desc',
               lang,
-              'Configure the text content and basic settings for this module.'
+              'Use the toolbar to format your text with bold, italic, colors, links and more.'
             )}
           </div>
-          <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-            ${localize('editor.text.text_content', lang, 'Text Content')}
-          </div>
-          <div
-            class="field-description"
-            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-          >
-            ${localize(
-              'editor.text.text_content_desc',
-              lang,
-              'Enter the text content to display in this module.'
-            )}
-          </div>
-          <ha-textfield
-            .value=${textModule.text || ''}
-            placeholder="Enter text content"
-            @input=${(e: Event) => {
-              const target = e.target as any;
-              const input = target.shadowRoot?.querySelector('input') || target;
-              const value = target.value;
-              const cursorPosition = input.selectionStart;
-              const cursorEnd = input.selectionEnd;
 
-              updateModule({ text: value });
+          ${!textModule.template_mode
+            ? (() => {
+                const dp = (textModule as any).design || {};
+                const mwd = textModule as any;
+                const editorStyles: Record<string, string> = {};
+                const fw = dp.font_weight || mwd.font_weight;
+                if (fw) editorStyles.fontWeight = fw;
+                const fs = dp.font_style || mwd.font_style;
+                if (fs && fs !== 'inherit') editorStyles.fontStyle = fs;
+                const tt = dp.text_transform || mwd.text_transform;
+                if (tt && tt !== 'none') editorStyles.textTransform = tt;
+                const td = dp.text_decoration || mwd.text_decoration;
+                if (td && td !== 'none') editorStyles.textDecoration = td;
+                const ff = dp.font_family || mwd.font_family;
+                if (ff && ff !== 'inherit') editorStyles.fontFamily = ff;
+                const lh = dp.line_height || mwd.line_height;
+                if (lh && lh !== 'inherit') editorStyles.lineHeight = lh;
+                const ls = dp.letter_spacing || mwd.letter_spacing;
+                if (ls && ls !== 'inherit') editorStyles.letterSpacing = ls;
+                const clr = dp.color || textModule.color;
+                if (clr && clr !== 'inherit') editorStyles.color = clr;
 
-              requestAnimationFrame(() => {
-                if (input && typeof cursorPosition === 'number') {
-                  target.value = value;
-                  input.value = value;
-                  input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                }
-              });
-              setTimeout(() => {
-                if (input && typeof cursorPosition === 'number') {
-                  target.value = value;
-                  input.value = value;
-                  input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                }
-              }, 0);
-              setTimeout(() => {
-                if (input && typeof cursorPosition === 'number') {
-                  target.value = value;
-                  input.value = value;
-                  input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                }
-              }, 10);
-            }}
-            style="width: 100%; --mdc-theme-primary: var(--primary-color);"
-          ></ha-textfield>
+                const fontSize = (() => {
+                  if (dp.font_size && typeof dp.font_size === 'string' && dp.font_size.trim() !== '') {
+                    return /[a-zA-Z%]/.test(dp.font_size) ? dp.font_size : `${dp.font_size}px`;
+                  }
+                  if (mwd.font_size !== undefined) return `${mwd.font_size}px`;
+                  if (textModule.text_size !== undefined) return `${textModule.text_size}px`;
+                  return undefined;
+                })();
+                if (fontSize) editorStyles.fontSize = fontSize;
+
+                return html`
+                <div
+                  @mousedown=${(e: Event) => {
+                    const target = e.target as HTMLElement;
+                    if (
+                      !target.closest('ultra-wysiwyg-editor') &&
+                      !target.closest('.ProseMirror')
+                    ) {
+                      e.stopPropagation();
+                    }
+                  }}
+                  @dragstart=${(e: Event) => e.stopPropagation()}
+                >
+                  <ultra-wysiwyg-editor
+                    .content=${this._getEffectiveRichContent(textModule)}
+                    .placeholder=${'Start typing...'}
+                    .editorStyles=${editorStyles}
+                    @content-changed=${(e: CustomEvent) => {
+                      updateModule({ rich_text_content: e.detail.value });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
+                  ></ultra-wysiwyg-editor>
+                </div>
+              `;
+              })()
+            : ''}
         </div>
 
         <!-- Icon Configuration -->
@@ -615,7 +629,8 @@ export class UltraTextModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
 
     // GRACEFUL RENDERING: Check for incomplete configuration
-    if (!textModule.template_mode && (!textModule.text || textModule.text.trim() === '')) {
+    const effectiveContent = this._getEffectiveRichContent(textModule);
+    if (!textModule.template_mode && !effectiveContent) {
       return this.renderGradientErrorState(
         'Enter Text Content',
         'Add text in the General tab',
@@ -691,19 +706,9 @@ export class UltraTextModule extends BaseUltraModule {
       // Use 'inherit' when no explicit color is set, allowing parent row/column CSS variables to work
       color: designProperties.color || displayColor || textModule.color || 'inherit',
       textAlign: chosenAlign,
-      fontWeight: (() => {
-        if (designProperties.font_weight) return designProperties.font_weight;
-        if (moduleWithDesign.font_weight !== undefined) return moduleWithDesign.font_weight;
-        // Default font weight for text modules
-        return '700';
-      })(),
+      fontWeight: designProperties.font_weight || moduleWithDesign.font_weight || 'inherit',
       fontStyle: designProperties.font_style || moduleWithDesign.font_style || 'inherit',
-      textTransform: (() => {
-        if (designProperties.text_transform) return designProperties.text_transform;
-        if (moduleWithDesign.text_transform !== undefined) return moduleWithDesign.text_transform;
-        // Default text transform for text modules
-        return 'uppercase';
-      })(),
+      textTransform: designProperties.text_transform || moduleWithDesign.text_transform || 'none',
       textDecoration: 'none',
       lineHeight: designProperties.line_height || moduleWithDesign.line_height || 'inherit',
       letterSpacing:
@@ -853,7 +858,9 @@ export class UltraTextModule extends BaseUltraModule {
       }
     }
 
-    const textElement = html`<span>${displayText}</span>`;
+    const textElement = !textModule.template_mode && effectiveContent
+      ? html`<span class="rich-text-content">${unsafeHTML(sanitizeRichTextHtml(effectiveContent))}</span>`
+      : html`<span>${displayText}</span>`;
 
     let content;
     if (textModule.icon_position === 'before' || !textModule.icon_position) {
@@ -1310,6 +1317,24 @@ export class UltraTextModule extends BaseUltraModule {
         min-height: 20px;
         word-wrap: break-word;
       }
+
+      .rich-text-content p {
+        margin: 0 0 0.4em 0;
+      }
+
+      .rich-text-content p:last-child {
+        margin-bottom: 0;
+      }
+
+      .rich-text-content a {
+        color: var(--primary-color);
+        text-decoration: underline;
+      }
+
+      .rich-text-content mark {
+        border-radius: 2px;
+        padding: 0 2px;
+      }
       
       .text-module-hidden {
         color: var(--secondary-text-color);
@@ -1537,6 +1562,25 @@ export class UltraTextModule extends BaseUltraModule {
 
     // Otherwise return as-is (already has units like px, em, %, etc.)
     return value;
+  }
+
+  /**
+   * Returns the effective rich text HTML content for this module.
+   * Handles backward-compatibility migration from the legacy plain `text` field:
+   * if `rich_text_content` is empty but `text` exists, wraps it in a `<p>` tag.
+   */
+  private _getEffectiveRichContent(textModule: TextModule): string {
+    if (textModule.rich_text_content && textModule.rich_text_content.trim() !== '') {
+      return textModule.rich_text_content;
+    }
+    if (textModule.text && textModule.text.trim() !== '') {
+      const escaped = textModule.text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      return `<p>${escaped}</p>`;
+    }
+    return '';
   }
 
   // Simple, stable string hash for template keys

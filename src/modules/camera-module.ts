@@ -44,7 +44,7 @@ export class UltraCameraModule extends BaseUltraModule {
 
   metadata: ModuleMetadata = {
     type: 'camera',
-    title: 'Camera Module',
+    title: 'Camera',
     description: 'Display live camera feeds with comprehensive control options',
     author: 'WJD Designs',
     version: '1.0.0',

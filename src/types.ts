@@ -135,7 +135,9 @@ export interface BaseModule {
     | 'dynamic-list'
     | 'qr_code'
     | 'energy_display'
-    | 'living_canvas';
+    | 'living_canvas'
+    | 'text_input'
+    | 'datetime_input';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -314,6 +316,9 @@ export interface TextModule extends BaseModule {
   hover_background_color?: string;
   hover_effect?: 'none' | 'color' | 'scale' | 'glow' | 'lift';
   hover_glow_color?: string;
+  // Rich text (WYSIWYG) content — always active for non-template text modules.
+  // Legacy `text` field is auto-migrated into this on first render.
+  rich_text_content?: string;
 }
 
 // Separator Module
@@ -1724,8 +1729,27 @@ export interface PopupModule extends BaseModule {
   trigger_alignment?: 'left' | 'center' | 'right';
   trigger_button_full_width?: boolean;
   trigger_image_full_width?: boolean;
-  trigger_icon_size?: number; // Size of the trigger icon in pixels (default: 24)
-  trigger_icon_color?: string; // Color of the trigger icon
+  trigger_icon_size?: number;
+  trigger_icon_color?: string;
+
+  // Trigger button styling (mirrors ButtonModule styling options)
+  trigger_button_style?:
+    | 'flat'
+    | 'glossy'
+    | 'embossed'
+    | 'inset'
+    | 'gradient-overlay'
+    | 'neon-glow'
+    | 'outline'
+    | 'glass'
+    | 'metallic';
+  trigger_button_background_color?: string;
+  trigger_button_text_color?: string;
+  trigger_button_icon_position?: 'before' | 'after';
+  trigger_button_icon_size?: string;
+  trigger_button_use_entity_color?: boolean;
+  trigger_button_color_entity?: string;
+  trigger_button_state_colors?: { [state: string]: string };
 
   // Layout settings
   layout?: 'default' | 'full_screen' | 'left_panel' | 'right_panel' | 'top_panel' | 'bottom_panel';
@@ -4450,6 +4474,41 @@ export interface LivingCanvasModule extends BaseModule {
   double_tap_action?: ModuleActionConfig;
 }
 
+// Text Input Module (text input linked to input_text helpers)
+export interface TextInputModule extends BaseModule {
+  type: 'text_input';
+  entity?: string;
+  placeholder?: string;
+  input_appearance?: 'outlined' | 'filled' | 'underlined';
+  prefix_icon?: string;
+  suffix_icon?: string;
+  show_clear_button?: boolean;
+  show_character_count?: boolean;
+  label?: string;
+  show_label?: boolean;
+  font_size?: number;
+  text_color?: string;
+  focus_color?: string;
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+}
+
+// DateTime Input Module (date/time picker linked to input_datetime helpers)
+export interface DatetimeInputModule extends BaseModule {
+  type: 'datetime_input';
+  entity?: string;
+  display_mode_datetime?: 'auto' | 'date' | 'time' | 'datetime';
+  label?: string;
+  show_label?: boolean;
+  font_size?: number;
+  text_color?: string;
+  focus_color?: string;
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+}
+
 // Union type for all module types
 export type CardModule =
   | TextModule
@@ -4501,7 +4560,9 @@ export type CardModule =
   | DynamicListModule
   | QrCodeModule
   | EnergyDisplayModule
-  | LivingCanvasModule;
+  | LivingCanvasModule
+  | TextInputModule
+  | DatetimeInputModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {

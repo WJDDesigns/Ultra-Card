@@ -210,4 +210,4 @@
       .version-badge ha-icon {
         --mdc-icon-size: 16px;
       }
-    `],d([(0,s.MZ)({attribute:!1})],l.prototype,"hass",void 0),d([(0,s.wk)()],l.prototype,"_stats",void 0),d([(0,s.wk)()],l.prototype,"_statsLoading",void 0),d([(0,s.wk)()],l.prototype,"_statsError",void 0),d([(0,s.wk)()],l.prototype,"_changelogBody",void 0),d([(0,s.wk)()],l.prototype,"_changelogLoading",void 0),d([(0,s.wk)()],l.prototype,"_changelogError",void 0),d([(0,s.wk)()],l.prototype,"_changelogTitle",void 0),l=d([(0,s.EM)("hub-dashboard-tab")],l)},4541:(a,o,t)=>{t.d(o,{x:()=>r});const r="3.2.0-beta6"}}]);
+    `],d([(0,s.MZ)({attribute:!1})],l.prototype,"hass",void 0),d([(0,s.wk)()],l.prototype,"_stats",void 0),d([(0,s.wk)()],l.prototype,"_statsLoading",void 0),d([(0,s.wk)()],l.prototype,"_statsError",void 0),d([(0,s.wk)()],l.prototype,"_changelogBody",void 0),d([(0,s.wk)()],l.prototype,"_changelogLoading",void 0),d([(0,s.wk)()],l.prototype,"_changelogError",void 0),d([(0,s.wk)()],l.prototype,"_changelogTitle",void 0),l=d([(0,s.EM)("hub-dashboard-tab")],l)},4541:(a,o,t)=>{t.d(o,{x:()=>r});const r="3.2.0-beta7"}}]);

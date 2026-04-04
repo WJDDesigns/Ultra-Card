@@ -11,7 +11,7 @@ import { localize } from '../localize/localize';
 export class UltraSeparatorModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'separator',
-    title: 'Separator Module',
+    title: 'Separator',
     description: 'Visual dividers and spacing',
     author: 'WJD Designs',
     version: '1.0.0',

@@ -30,3 +30,14 @@ export function sanitizePresetHtml(html: string): string {
     FORBID_TAGS: [...FORBIDDEN_ACTIVE_TAGS, 'style'],
   });
 }
+
+export function sanitizeRichTextHtml(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'span', 'a', 'mark',
+    ],
+    ALLOWED_ATTR: [
+      'style', 'href', 'target', 'rel', 'class', 'data-color',
+    ],
+  });
+}

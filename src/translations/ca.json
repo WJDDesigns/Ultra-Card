@@ -889,7 +889,13 @@
       "text_color_desc": "Trieu el color per al contingut del text.",
       "icon_color": "Color de la icona",
       "icon_color_desc": "Trieu el color per a la icona.",
-      "hidden_no_link": "Amagat (sense enllaç)"
+      "hidden_no_link": "Amagat (sense enllaç)",
+      "rich_text_mode": "Rich Text Mode",
+      "rich_text_mode_desc": "Enable a WYSIWYG editor for mixed inline formatting (bold, italic, colors per-word).",
+      "rich_text_content_section": {
+        "title": "Rich Text Content",
+        "desc": "Use the toolbar to format your text with bold, italic, colors, links and more."
+      }
     },
     "markdown": {
       "content": {
@@ -2614,6 +2620,84 @@
       "action_unlock": "Unlock",
       "action_open": "Open",
       "actions": "Lock actions"
+    },
+    "text_input": {
+      "entity": {
+        "title": "Entity Configuration",
+        "desc": "Link to a Home Assistant input_text helper entity."
+      },
+      "entity_field": "Entity",
+      "entity_field_desc": "Select an input_text entity to bind this text field to.",
+      "entity_info": "Entity attributes detected:",
+      "appearance": {
+        "title": "Appearance",
+        "desc": "Configure how the text input field looks."
+      },
+      "input_appearance": "Input Style",
+      "input_appearance_desc": "Visual style of the input field",
+      "appearance_options": {
+        "outlined": "Outlined",
+        "filled": "Filled",
+        "underlined": "Underlined"
+      },
+      "placeholder": "Placeholder",
+      "placeholder_desc": "Placeholder text shown when the field is empty",
+      "label": "Label",
+      "label_desc": "Label displayed above the input field",
+      "show_label": "Show Label",
+      "show_label_desc": "Display the label above the input",
+      "controls": {
+        "title": "Icons & Controls"
+      },
+      "prefix_icon": "Prefix Icon",
+      "prefix_icon_desc": "Icon displayed at the start of the input field",
+      "suffix_icon": "Suffix Icon",
+      "suffix_icon_desc": "Icon displayed at the end of the input field",
+      "show_clear_button": "Show Clear Button",
+      "show_clear_button_desc": "Show a button to clear the input field",
+      "show_character_count": "Show Character Count",
+      "show_character_count_desc": "Display a character counter below the input",
+      "styling": {
+        "title": "Styling"
+      },
+      "font_size": "Font Size",
+      "font_size_desc": "Font size of the input text in pixels",
+      "text_color": "Text Color",
+      "focus_color": "Focus/Accent Color"
+    },
+    "datetime_input": {
+      "entity": {
+        "title": "Entity Configuration",
+        "desc": "Link to a Home Assistant input_datetime helper entity."
+      },
+      "entity_field": "Entity",
+      "entity_field_desc": "Select an input_datetime entity to bind this picker to.",
+      "entity_info": "Entity attributes detected:",
+      "display": {
+        "title": "Display Configuration",
+        "desc": "Configure which pickers to show and how they appear."
+      },
+      "display_mode_datetime": "Display Mode",
+      "display_mode_datetime_desc": "Which pickers to show. Auto detects from the entity.",
+      "display_mode_options": {
+        "auto": "Auto (from entity)",
+        "date": "Date Only",
+        "time": "Time Only",
+        "datetime": "Date & Time"
+      },
+      "label": "Label",
+      "label_desc": "Label displayed above the picker fields",
+      "show_label": "Show Label",
+      "show_label_desc": "Display the label above the pickers",
+      "date_label": "Date",
+      "time_label": "Time",
+      "styling": {
+        "title": "Styling"
+      },
+      "font_size": "Font Size",
+      "font_size_desc": "Font size of the date/time inputs in pixels",
+      "text_color": "Text Color",
+      "focus_color": "Focus/Accent Color"
     }
   }
 }

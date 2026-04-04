@@ -71,7 +71,7 @@ export class UltraMarkdownModule extends BaseUltraModule {
 
   metadata: ModuleMetadata = {
     type: 'markdown',
-    title: 'Markdown Module',
+    title: 'Markdown',
     description: 'Display rich markdown content',
     author: 'WJD Designs',
     version: '1.0.0',
