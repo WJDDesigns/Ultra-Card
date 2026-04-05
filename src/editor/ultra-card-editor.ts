@@ -83,6 +83,7 @@ export class UltraCardEditor extends LitElement {
   private _moduleStylesInjected = false;
 
   private _qrDataReadyListener?: () => void;
+  private _moduleUpdateListener?: () => void;
 
   private static readonly HUB_BANNER_DISMISSED_KEY = 'ultra-card-hub-banner-dismissed';
 
@@ -208,6 +209,10 @@ export class UltraCardEditor extends LitElement {
     this._qrDataReadyListener = () => this.requestUpdate();
     window.addEventListener('uc-qr-data-ready', this._qrDataReadyListener);
 
+    // Re-render when modules toggle internal UI state (accordions, expanded sections)
+    this._moduleUpdateListener = () => this.requestUpdate();
+    window.addEventListener('ultra-card-module-update', this._moduleUpdateListener);
+
     // Setup cloud sync listeners
     this._setupCloudSyncListeners();
 
@@ -272,6 +277,10 @@ export class UltraCardEditor extends LitElement {
 
     if (this._qrDataReadyListener) {
       window.removeEventListener('uc-qr-data-ready', this._qrDataReadyListener);
+    }
+
+    if (this._moduleUpdateListener) {
+      window.removeEventListener('ultra-card-module-update', this._moduleUpdateListener);
     }
 
     // Clean up full screen class and dialog styles if still applied

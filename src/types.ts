@@ -137,7 +137,9 @@ export interface BaseModule {
     | 'energy_display'
     | 'living_canvas'
     | 'text_input'
-    | 'datetime_input';
+    | 'datetime_input'
+    | 'activity_feed'
+    | 'virtual_pet';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -4690,7 +4692,126 @@ export type CardModule =
   | BooleanInputModule
   | ButtonInputModule
   | CounterInputModule
-  | ColorInputModule;
+  | ColorInputModule
+  | ActivityFeedModule
+  | VirtualPetModule;
+
+// Activity Feed Module - Pro module for displaying entity state change history
+export interface ActivityFeedEntity {
+  id: string;
+  entity: string;
+  label?: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface ActivityFeedModule extends BaseModule {
+  type: 'activity_feed';
+
+  entities: ActivityFeedEntity[];
+
+  // Auto-filtering
+  enable_auto_filter?: boolean;
+  include_domains?: string[];
+  exclude_domains?: string[];
+  exclude_patterns?: string[];
+
+  // View mode
+  view_mode: 'timeline' | 'feed';
+
+  // Display
+  title?: string;
+  show_title?: boolean;
+  max_items?: number;
+  show_entity_icon?: boolean;
+  show_relative_time?: boolean;
+  show_absolute_time?: boolean;
+  show_state_change?: boolean;
+  group_by_time?: boolean;
+
+  // Timeline-specific
+  timeline_line_color?: string;
+  timeline_dot_color?: string;
+  timeline_dot_size?: number;
+
+  // Feed-specific
+  feed_card_style?: 'flat' | 'elevated' | 'outlined';
+  show_avatar?: boolean;
+  avatar_style?: 'circle' | 'rounded' | 'square';
+
+  // Sorting
+  sort_direction?: 'newest_first' | 'oldest_first';
+
+  // Colors
+  accent_color?: string;
+  text_color?: string;
+  secondary_text_color?: string;
+  card_background_color?: string;
+
+  // Actions
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
+  // Logic
+  display_mode?: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
+// Virtual Pet Module - Pro module with a digital pet driven by smart home data
+export type PetSpecies = 'cat' | 'dog' | 'fox' | 'rabbit' | 'owl' | 'penguin' | 'robot' | 'shrimp' | 'snail' | 'snake' | 'turtle' | 'frog';
+export type PetMood = 'ecstatic' | 'happy' | 'content' | 'neutral' | 'bored' | 'sad' | 'sleepy' | 'cold' | 'hot' | 'alert';
+
+export interface PetEntityBinding {
+  id: string;
+  entity: string;
+  role: 'happiness' | 'energy' | 'temperature' | 'activity' | 'security' | 'custom';
+  label?: string;
+  happy_state?: string;
+  sad_state?: string;
+  weight?: number;
+  invert?: boolean;
+  range_min?: number;
+  range_max?: number;
+  temp_preset?: string;
+  cold_threshold?: number;
+  hot_threshold?: number;
+}
+
+export interface VirtualPetModule extends BaseModule {
+  type: 'virtual_pet';
+
+  pet_name: string;
+  species: PetSpecies;
+
+  entity_bindings: PetEntityBinding[];
+
+  show_name?: boolean;
+  show_mood?: boolean;
+  show_stats?: boolean;
+  show_speech_bubble?: boolean;
+  show_background_scene?: boolean;
+
+  pet_size?: number;
+  background_scene?: 'auto' | 'living_room' | 'garden' | 'night_sky' | 'cozy' | 'none';
+  enable_animations?: boolean;
+  enable_particles?: boolean;
+  enable_idle_animations?: boolean;
+  lcd_filter?: boolean;
+
+  accent_color?: string;
+  pet_primary_color?: string;
+  pet_secondary_color?: string;
+  bubble_color?: string;
+  stats_color?: string;
+
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
+  display_mode?: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
 
 // Hover effects configuration
 export interface HoverEffectConfig {

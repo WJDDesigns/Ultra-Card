@@ -64,4 +64,6 @@ export const coreLoaders: Record<string, ModuleLoader> = {
   button_input: () => import(/* webpackMode: "eager" */ './button-input-module').then(m => new m.UltraButtonInputModule()),
   counter_input: () => import(/* webpackMode: "eager" */ './counter-input-module').then(m => new m.UltraCounterInputModule()),
   color_input: () => import(/* webpackMode: "eager" */ './color-input-module').then(m => new m.UltraColorInputModule()),
+  activity_feed: () => import(/* webpackMode: "eager" */ './activity-feed-module').then(m => new m.UltraActivityFeedModule()),
+  virtual_pet: () => import(/* webpackMode: "eager" */ './virtual-pet-module').then(m => new m.UltraVirtualPetModule()),
 };
