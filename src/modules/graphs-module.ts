@@ -192,6 +192,9 @@ export class UltraGraphsModule extends BaseUltraModule {
       // Bar chart display limit
       bar_display_limit: 0, // 0 = unlimited
 
+      // Layout: 'default' = padded axes, 'full' = edge-to-edge with overlay axes
+      chart_layout: 'default',
+
       // Fixed Y-axis scale
       use_fixed_y_axis: false,
       y_axis_min: undefined,
@@ -2185,6 +2188,47 @@ export class UltraGraphsModule extends BaseUltraModule {
                     >
                   </label>`
                 : ''}
+              ${graphsModule.chart_type === 'line'
+                ? html`
+                    <div style="padding: 8px;">
+                      <div style="font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; color: var(--primary-text-color);">
+                        ${localize('editor.graphs.display.chart_layout', lang, 'Chart Layout')}
+                      </div>
+                      <div style="display: flex; gap: 6px;">
+                        <button
+                          type="button"
+                          style="
+                            flex: 1;
+                            padding: 8px 12px;
+                            border-radius: 8px;
+                            border: 1px solid ${(graphsModule as any).chart_layout !== 'full' ? 'var(--primary-color)' : 'var(--divider-color)'};
+                            background: ${(graphsModule as any).chart_layout !== 'full' ? 'rgba(var(--rgb-primary-color, 3,169,244), 0.15)' : 'var(--secondary-background-color, transparent)'};
+                            color: var(--primary-text-color);
+                            cursor: pointer;
+                            font-size: 0.82rem;
+                            font-weight: 500;
+                          "
+                          @click=${() => updateModule({ chart_layout: 'default' } as any)}
+                        >Default</button>
+                        <button
+                          type="button"
+                          style="
+                            flex: 1;
+                            padding: 8px 12px;
+                            border-radius: 8px;
+                            border: 1px solid ${(graphsModule as any).chart_layout === 'full' ? 'var(--primary-color)' : 'var(--divider-color)'};
+                            background: ${(graphsModule as any).chart_layout === 'full' ? 'rgba(var(--rgb-primary-color, 3,169,244), 0.15)' : 'var(--secondary-background-color, transparent)'};
+                            color: var(--primary-text-color);
+                            cursor: pointer;
+                            font-size: 0.82rem;
+                            font-weight: 500;
+                          "
+                          @click=${() => updateModule({ chart_layout: 'full' } as any)}
+                        >Full</button>
+                      </div>
+                    </div>
+                  `
+                : ''}
               ${['pie', 'donut'].includes(graphsModule.chart_type)
                 ? html`
                     <label
@@ -2599,12 +2643,12 @@ export class UltraGraphsModule extends BaseUltraModule {
     }
 
     const headerPos = graphsModule.info_position || 'top_left';
+    const isFullChartLayout = (graphsModule as any).chart_layout === 'full';
     const showGridValues =
       graphsModule.chart_type === 'line' &&
       graphsModule.show_grid !== false &&
       (graphsModule as any).show_grid_values !== false;
-    // Only add extra padding when grid values are shown AND position is on the left side
-    const leftPadding = showGridValues ? '32px' : '16px';
+    const leftPadding = showGridValues && !isFullChartLayout ? '32px' : '16px';
     const posMap: Record<string, string> = {
       top_left: `top:12px; left:${leftPadding}; text-align:left;`,
       top_right: 'top:12px; right:16px; text-align:right;',
@@ -2626,7 +2670,12 @@ export class UltraGraphsModule extends BaseUltraModule {
       }
     })();
 
-    const header = ['pie', 'donut'].includes((graphsModule as any).chart_type)
+    const showTitle = (graphsModule as any).show_display_name !== false &&
+      (graphsModule as any).show_title !== false;
+    const showValue = (graphsModule as any).show_entity_value !== false;
+    const hideHeader = ['pie', 'donut'].includes((graphsModule as any).chart_type) ||
+      (!showTitle && !showValue);
+    const header = hideHeader
       ? html``
       : html`
           <div
@@ -2646,8 +2695,7 @@ export class UltraGraphsModule extends BaseUltraModule {
               -webkit-backdrop-filter: blur(4px);
             "
           >
-            ${(graphsModule as any).show_display_name !== false &&
-            (graphsModule as any).show_title !== false
+            ${showTitle
               ? html`<div
                   class="graph-title"
                   style="
@@ -2667,7 +2715,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                   ${primaryName}
                 </div>`
               : ''}
-            ${(graphsModule as any).show_entity_value !== false
+            ${showValue
               ? html`<div
                   class="graph-value"
                   style="
@@ -3408,12 +3456,12 @@ export class UltraGraphsModule extends BaseUltraModule {
     const dataSourceInfo = isUsingRealData ? 'Real HA History' : 'Fallback Data';
 
     // SVG padding constants to prevent clipping
-    // Increase left padding when grid values are shown to prevent Y-axis overlap
+    const isFullLayout = (module as any).chart_layout === 'full';
     const showGridValues = (module as any).show_grid_values !== false && grid;
-    const padLeft = showGridValues ? 28 : 10;
-    const padRight = 5;
-    const padTop = 12;
-    const padBottom = showTimeIntervals ? 18 : 8;
+    const padLeft = isFullLayout ? 2 : showGridValues ? 28 : 10;
+    const padRight = isFullLayout ? 2 : 5;
+    const padTop = isFullLayout ? 2 : 12;
+    const padBottom = isFullLayout ? 2 : showTimeIntervals ? 18 : 8;
     const usableWidth = 300 - padLeft - padRight;
     const usableHeight = 100 - padTop - padBottom;
     const labelStep = Math.max(1, Math.ceil(timePoints.length / 6));
@@ -3448,7 +3496,6 @@ export class UltraGraphsModule extends BaseUltraModule {
         >
           ${grid
             ? svg`${Array.from({ length: 4 }, (_, i) => {
-                // Grid lines within padded area
                 const gridY = padTop + ((i + 1) / 5) * usableHeight;
                 const gridValue = maxValue - ((i + 1) / 5) * valueRange;
                 const showValues = (module as any).show_grid_values !== false;
@@ -3464,17 +3511,45 @@ export class UltraGraphsModule extends BaseUltraModule {
                   />
                   ${
                     showValues
-                      ? svg`<text 
-                          x="${padLeft - 3}" 
-                          y="${gridY + 2}" 
-                          font-size="7" 
-                          fill="var(--secondary-text-color)" 
-                          opacity="0.6"
-                          text-anchor="end"
-                        >${Math.round(gridValue)}</text>`
+                      ? isFullLayout
+                        ? svg`
+                          <rect x="${padLeft}" y="${gridY - 5}" width="22" height="8" rx="2" fill="rgba(0,0,0,0.45)" />
+                          <text 
+                            x="${padLeft + 2}" 
+                            y="${gridY + 1.5}" 
+                            font-size="6" 
+                            fill="var(--secondary-text-color)" 
+                            opacity="0.85"
+                            text-anchor="start"
+                          >${Math.round(gridValue)}</text>`
+                        : svg`<text 
+                            x="${padLeft - 3}" 
+                            y="${gridY + 2}" 
+                            font-size="7" 
+                            fill="var(--secondary-text-color)" 
+                            opacity="0.6"
+                            text-anchor="end"
+                          >${Math.round(gridValue)}</text>`
                       : ''
                   }
                 `;
+              })}`
+            : ''}
+          ${isFullLayout && grid
+            ? svg`${timePoints.map((_, index) => {
+                const shouldShow = index % labelStep === 0 || index === timePoints.length - 1;
+                if (!shouldShow) return svg``;
+                const x =
+                  timePoints.length > 1
+                    ? padLeft + (index / (timePoints.length - 1)) * usableWidth
+                    : padLeft + usableWidth / 2;
+                return svg`<line 
+                  x1="${x}" y1="${padTop}" 
+                  x2="${x}" y2="${padTop + usableHeight}" 
+                  stroke="rgba(255,255,255,.06)" 
+                  stroke-width="0.5"
+                  vector-effect="non-scaling-stroke"
+                />`;
               })}`
             : ''}
           ${(() => {
@@ -3600,6 +3675,20 @@ export class UltraGraphsModule extends BaseUltraModule {
                   timePoints.length > 1
                     ? padLeft + (index / (timePoints.length - 1)) * usableWidth
                     : padLeft + usableWidth / 2;
+                if (isFullLayout) {
+                  const labelY = padTop + usableHeight - 3;
+                  const textWidth = timePoint.length * 4 + 4;
+                  return svg`
+                    <rect x="${x - textWidth / 2}" y="${labelY - 5}" width="${textWidth}" height="8" rx="2" fill="rgba(0,0,0,0.45)" />
+                    <text
+                      x="${x}"
+                      y="${labelY + 1.5}"
+                      font-size="6"
+                      fill="var(--secondary-text-color)"
+                      opacity="0.85"
+                      text-anchor="middle"
+                    >${timePoint}</text>`;
+                }
                 const y = padTop + usableHeight + 10;
                 return svg`<text
                   x="${x}"
@@ -4158,14 +4247,38 @@ export class UltraGraphsModule extends BaseUltraModule {
     let count = 12;
     let interval = 'hour';
 
+    let intervalMinutes = 60;
+
     switch (timePeriod) {
       case '1h':
         count = 12;
         interval = '5min';
+        intervalMinutes = 5;
+        break;
+      case '3h':
+        count = 12;
+        interval = '15min';
+        intervalMinutes = 15;
+        break;
+      case '6h':
+        count = 12;
+        interval = '30min';
+        intervalMinutes = 30;
+        break;
+      case '12h':
+        count = 12;
+        interval = 'hour';
+        intervalMinutes = 60;
         break;
       case '24h':
         count = 24;
         interval = 'hour';
+        intervalMinutes = 60;
+        break;
+      case '2d':
+        count = 12;
+        interval = '4hour';
+        intervalMinutes = 240;
         break;
       case '7d':
         count = 7;
@@ -4187,12 +4300,15 @@ export class UltraGraphsModule extends BaseUltraModule {
 
     for (let i = count - 1; i >= 0; i--) {
       const date = new Date(now);
-      if (interval === '5min') {
-        date.setMinutes(date.getMinutes() - i * 5);
+      if (interval === '5min' || interval === '15min' || interval === '30min') {
+        date.setMinutes(date.getMinutes() - i * intervalMinutes);
         points.push(date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       } else if (interval === 'hour') {
         date.setHours(date.getHours() - i);
         points.push(date.toLocaleTimeString([], { hour: '2-digit' }));
+      } else if (interval === '4hour') {
+        date.setHours(date.getHours() - i * 4);
+        points.push(date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       } else if (interval === 'day') {
         date.setDate(date.getDate() - i);
         points.push(date.toLocaleDateString([], { month: 'short', day: 'numeric' }));

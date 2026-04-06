@@ -7915,6 +7915,9 @@ export class LayoutTab extends LitElement {
       if (result.mappings.length > 0) {
         layout = entityMapper.applyMappingToLayout(layout, result.mappings);
       }
+      if (result.skippedEntityIds?.length) {
+        layout = this._removeModulesWithEntities(layout, result.skippedEntityIds);
+      }
       const cn = result.fieldValues['card_name'];
       const additionalConfig: Partial<UltraCardConfig> =
         typeof cn === 'string' && cn.trim() ? { card_name: cn.trim() } : {};
@@ -7928,6 +7931,75 @@ export class LayoutTab extends LitElement {
         'error'
       );
     }
+  }
+
+  private _removeModulesWithEntities(layout: LayoutConfig, entityIds: string[]): LayoutConfig {
+    const idSet = new Set(entityIds);
+
+    const moduleReferencesEntity = (mod: any): boolean => {
+      if (!mod || typeof mod !== 'object') return false;
+      for (const key of Object.keys(mod)) {
+        const val = mod[key];
+        if (typeof val === 'string' && idSet.has(val) && key.toLowerCase().includes('entity')) {
+          return true;
+        }
+        if (key === 'entities' && Array.isArray(val)) {
+          if (val.some((e: any) =>
+            typeof e === 'string' ? idSet.has(e) : e?.entity && idSet.has(e.entity)
+          )) return true;
+        }
+        if (Array.isArray(val)) {
+          for (const item of val) {
+            if (item && typeof item === 'object') {
+              for (const ik of Object.keys(item)) {
+                if (typeof item[ik] === 'string' && idSet.has(item[ik]) && ik.toLowerCase().includes('entity')) {
+                  return true;
+                }
+              }
+            }
+          }
+        }
+      }
+      return false;
+    };
+
+    const filterModules = (modules: any[]): any[] => {
+      return modules
+        .filter(mod => !moduleReferencesEntity(mod))
+        .map(mod => {
+          if (Array.isArray(mod.modules)) {
+            return { ...mod, modules: filterModules(mod.modules) };
+          }
+          if (Array.isArray(mod.panels)) {
+            return {
+              ...mod,
+              panels: mod.panels.map((p: any) =>
+                p?.modules ? { ...p, modules: filterModules(p.modules) } : p
+              ),
+            };
+          }
+          if (Array.isArray(mod.tabs)) {
+            return {
+              ...mod,
+              tabs: mod.tabs.map((t: any) =>
+                t?.modules ? { ...t, modules: filterModules(t.modules) } : t
+              ),
+            };
+          }
+          return mod;
+        });
+    };
+
+    return {
+      ...layout,
+      rows: layout.rows.map(row => ({
+        ...row,
+        columns: (row.columns || []).map(col => ({
+          ...col,
+          modules: filterModules(col.modules || []),
+        })),
+      })),
+    };
   }
 
   private _showEntityMappingDialog(preset: PresetDefinition, entityReferences: any[]): void {

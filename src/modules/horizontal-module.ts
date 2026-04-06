@@ -1,4 +1,5 @@
 import { TemplateResult, html } from 'lit';
+import { repeat } from 'lit/directives/repeat.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, UltraCardConfig } from '../types';
@@ -449,62 +450,58 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   });
                   return visibleByModule && visibleByGlobal;
                 });
-                return visibleChildren.map((childModule, index) => {
-                  // Apply negative margin for overlapping when gap is negative
-                  const childMargin = gapValue < 0 && index > 0 ? `0 0 0 ${gapValue}rem` : '0';
-                  const isNegativeGap = gapValue < 0;
+                return repeat(
+                  visibleChildren,
+                  (cm) => cm.id || cm.type,
+                  (childModule, index) => {
+                    const childMargin = gapValue < 0 && index > 0 ? `0 0 0 ${gapValue}rem` : '0';
+                    const isNegativeGap = gapValue < 0;
 
-                  // Only apply flex-grow when user explicitly sets 'justify' alignment
-                  const layoutShouldGrow = horizontalModule.alignment === 'justify';
-                  const childShouldGrow = this.childShouldFillAvailableSpace(childModule);
+                    const layoutShouldGrow = horizontalModule.alignment === 'justify';
+                    const childShouldGrow = this.childShouldFillAvailableSpace(childModule);
 
-                  // Get preferred width for modules (bars, separators, etc.)
-                  // getChildPreferredWidth handles the logic:
-                  // - Bars < 100%: returns preferred width (fixed sizing)
-                  // - Bars >= 100%: returns null (allows grow flex)
-                  // - Other modules: applies similar logic
-                  const childPreferredWidth =
-                    !layoutShouldGrow && !childShouldGrow
-                      ? this.getChildPreferredWidth(childModule)
-                      : null;
+                    const childPreferredWidth =
+                      !layoutShouldGrow && !childShouldGrow
+                        ? this.getChildPreferredWidth(childModule)
+                        : null;
 
-                  const flexSegments = [
-                    layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
-                    childShouldGrow
-                      ? 'flex-grow: 1; flex-shrink: 1; flex-basis: auto; min-width: 10%;'
-                      : '',
-                    !layoutShouldGrow && !childShouldGrow && childPreferredWidth
-                      ? `flex: 0 0 ${childPreferredWidth}; max-width: ${childPreferredWidth}; width: ${childPreferredWidth};`
-                      : '',
-                  ].filter(Boolean);
+                    const flexSegments = [
+                      layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
+                      childShouldGrow
+                        ? 'flex-grow: 1; flex-shrink: 1; flex-basis: auto; min-width: 10%;'
+                        : '',
+                      !layoutShouldGrow && !childShouldGrow && childPreferredWidth
+                        ? `flex: 0 0 ${childPreferredWidth}; max-width: ${childPreferredWidth}; width: ${childPreferredWidth};`
+                        : '',
+                    ].filter(Boolean);
 
-                  // Build style string - let flexbox handle sizing naturally
-                  const baseStyles = `
-                    overflow: visible;
-                    ${flexSegments.join(' ')}
-                    box-sizing: border-box;
-                    margin: ${childMargin};
-                  `;
-                  const negativeGapStyles = isNegativeGap
-                    ? 'padding: 0; border: none; background: transparent;'
-                    : '';
+                    const baseStyles = `
+                      overflow: visible;
+                      ${flexSegments.join(' ')}
+                      box-sizing: border-box;
+                      margin: ${childMargin};
+                    `;
+                    const negativeGapStyles = isNegativeGap
+                      ? 'padding: 0; border: none; background: transparent;'
+                      : '';
 
-                  return html`
-                    <div
-                      class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
-                      data-flex-constrained="${childPreferredWidth ? 'true' : 'false'}"
-                      style="${baseStyles} ${negativeGapStyles}"
-                    >
-                      ${this._renderChildModulePreview(
-                        childModule,
-                        hass,
-                        moduleWithDesign,
-                        (this as any)._currentConfig,
-                        (this as any)._currentPreviewContext
-                      )}
-                    </div>
-                  `;
-                });
+                    return html`
+                      <div
+                        class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
+                        data-flex-constrained="${childPreferredWidth ? 'true' : 'false'}"
+                        style="${baseStyles} ${negativeGapStyles}"
+                      >
+                        ${this._renderChildModulePreview(
+                          childModule,
+                          hass,
+                          moduleWithDesign,
+                          (this as any)._currentConfig,
+                          (this as any)._currentPreviewContext
+                        )}
+                      </div>
+                    `;
+                  }
+                );
               })()
             : html`
                 <div class="empty-layout-message">

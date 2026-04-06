@@ -79,6 +79,7 @@ export class UcPresetWizardDialog extends LitElement {
   @state() private _stepIndex = 0;
   @state() private _values: Record<string, unknown> = {};
   @state() private _sameAs: Record<string, boolean> = {};
+  @state() private _skipped: Record<string, boolean> = {};
 
   static styles = css`
     :host {
@@ -349,6 +350,36 @@ export class UcPresetWizardDialog extends LitElement {
     .status-chip ha-icon {
       --mdc-icon-size: 13px;
     }
+    .status-chip.skipped {
+      background: rgba(158,158,158,.18);
+      color: var(--secondary-text-color);
+    }
+    .field-card.skipped {
+      border-color: var(--divider-color);
+      opacity: 0.6;
+    }
+    .skip-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      margin-top: 10px;
+      cursor: pointer;
+      color: var(--secondary-text-color);
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: var(--secondary-background-color, rgba(120,120,128,.06));
+      transition: background 0.15s;
+    }
+    .skip-row:hover {
+      background: var(--divider-color);
+    }
+    .skip-row input[type="checkbox"] {
+      accent-color: var(--secondary-text-color);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
 
     .original-id {
       font-family: monospace;
@@ -521,6 +552,7 @@ export class UcPresetWizardDialog extends LitElement {
     }
     this._values = next;
     this._sameAs = same;
+    this._skipped = {};
   }
 
   /** Auto-map: for every unmapped entity field, pick best suggestion from hass */
@@ -635,6 +667,7 @@ export class UcPresetWizardDialog extends LitElement {
     for (const step of w.steps) {
       for (const f of step.fields) {
         if (f.type !== 'entity') continue;
+        if (this._skipped[f.id]) { count++; continue; }
         const val = this._resolvedEntityValue(f);
         if (val && this.hass?.states?.[val]) count++;
       }
@@ -658,6 +691,7 @@ export class UcPresetWizardDialog extends LitElement {
     for (const f of step.fields) {
       if (!f.required) continue;
       if (f.type === 'entity') {
+        if (this._skipped[f.id]) continue;
         const ent = this._resolvedEntityValue(f).trim();
         if (!ent) return false;
         if (this.hass?.states && !this.hass.states[ent]) return false;
@@ -676,6 +710,7 @@ export class UcPresetWizardDialog extends LitElement {
     for (const step of w.steps) {
       for (const f of step.fields) {
         if (f.type !== 'entity' || !f.targetEntityIds?.length) continue;
+        if (this._skipped[f.id]) continue;
         const selected = this._resolvedEntityValue(f).trim();
         if (!selected) continue;
         for (const orig of f.targetEntityIds) {
@@ -687,10 +722,27 @@ export class UcPresetWizardDialog extends LitElement {
     return mappings;
   }
 
+  private _buildSkippedEntityIds(): string[] {
+    const ids: string[] = [];
+    const w = this.preset.wizard;
+    if (!w) return ids;
+    for (const step of w.steps) {
+      for (const f of step.fields) {
+        if (f.type !== 'entity' || !this._skipped[f.id]) continue;
+        if (f.targetEntityIds?.length) {
+          ids.push(...f.targetEntityIds.filter(Boolean));
+        }
+      }
+    }
+    return ids;
+  }
+
   private _onApply(): void {
+    const skippedEntityIds = this._buildSkippedEntityIds();
     const result: PresetWizardApplyResult = {
       mappings: this._buildMappings(),
       fieldValues: { ...this._values },
+      ...(skippedEntityIds.length > 0 ? { skippedEntityIds } : {}),
     };
     this.dispatchEvent(
       new CustomEvent('wizard-apply', { detail: { result }, bubbles: true, composed: true })
@@ -705,13 +757,14 @@ export class UcPresetWizardDialog extends LitElement {
 
   private _renderEntityField(field: PresetWizardField): TemplateResult {
     const useSame = field.allowSameAs ? this._sameAs[field.id] : false;
+    const isSkipped = !!this._skipped[field.id];
     const currentVal = this._resolvedEntityValue(field);
-    const isMapped = !!(currentVal && this.hass?.states?.[currentVal]);
+    const isMapped = !isSkipped && !!(currentVal && this.hass?.states?.[currentVal]);
     const origId = field.targetEntityIds?.[0] ?? '';
     const domain = field.entityDomain || getDomain(origId) || getDomain(currentVal);
 
     return html`
-      <div class="field-card ${isMapped ? 'mapped' : field.required ? 'required-empty' : ''}">
+      <div class="field-card ${isSkipped ? 'skipped' : isMapped ? 'mapped' : field.required ? 'required-empty' : ''}">
         <div class="field-card-top">
           <div class="field-icon">
             <ha-icon icon=${domainIcon(domain)}></ha-icon>
@@ -723,14 +776,18 @@ export class UcPresetWizardDialog extends LitElement {
               : nothing}
           </div>
           <div class="field-status">
-            ${isMapped
-              ? html`<span class="status-chip mapped">
-                  <ha-icon icon="mdi:check-circle"></ha-icon>Mapped
+            ${isSkipped
+              ? html`<span class="status-chip skipped">
+                  <ha-icon icon="mdi:skip-next"></ha-icon>Skipped
                 </span>`
-              : html`<span class="status-chip empty">
-                  <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
-                  ${field.required ? 'Required' : 'Optional'}
-                </span>`}
+              : isMapped
+                ? html`<span class="status-chip mapped">
+                    <ha-icon icon="mdi:check-circle"></ha-icon>Mapped
+                  </span>`
+                : html`<span class="status-chip empty">
+                    <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
+                    ${field.required ? 'Required' : 'Optional'}
+                  </span>`}
           </div>
         </div>
 
@@ -766,7 +823,7 @@ export class UcPresetWizardDialog extends LitElement {
             `
           : nothing}
 
-        ${!useSame
+        ${!useSame && !isSkipped
           ? html`
               <ha-form
                 .hass=${this.hass}
@@ -786,6 +843,19 @@ export class UcPresetWizardDialog extends LitElement {
               ></ha-form>
             `
           : nothing}
+
+        <label class="skip-row">
+          <input
+            type="checkbox"
+            .checked=${isSkipped}
+            @change=${(e: Event) => {
+              const checked = (e.target as HTMLInputElement).checked;
+              this._skipped = { ...this._skipped, [field.id]: checked };
+              this.requestUpdate();
+            }}
+          />
+          Skip this entity (modules using it will be removed)
+        </label>
       </div>
     `;
   }
@@ -889,21 +959,30 @@ export class UcPresetWizardDialog extends LitElement {
     const rows: TemplateResult[] = [];
     for (const step of w.steps) {
       for (const f of step.fields) {
-        const display =
-          f.type === 'entity' ? this._resolvedEntityValue(f) : String(this._values[f.id] ?? '');
+        const isSkipped = f.type === 'entity' && !!this._skipped[f.id];
+        const display = isSkipped
+          ? ''
+          : f.type === 'entity'
+            ? this._resolvedEntityValue(f)
+            : String(this._values[f.id] ?? '');
         rows.push(html`
           <div class="review-row">
             <span class="review-key">${f.label}</span>
-            <span class="review-val ${!display ? 'empty' : ''}"
-              >${display || 'Not set'}</span
+            <span class="review-val ${isSkipped ? 'empty' : !display ? 'empty' : ''}"
+              >${isSkipped ? 'Skipped — modules removed' : display || 'Not set'}</span
             >
           </div>
         `);
       }
     }
+    const skippedCount = Object.values(this._skipped).filter(Boolean).length;
     return html`
       <p class="review-intro">
         Everything looks good! Review your selections below, then apply the preset to your card.
+        ${skippedCount > 0
+          ? html`<br /><strong>${skippedCount} skipped entit${skippedCount === 1 ? 'y' : 'ies'}</strong>
+              — modules using ${skippedCount === 1 ? 'it' : 'them'} will be removed from the card.`
+          : nothing}
       </p>
       <div class="review-table">${rows}</div>
     `;

@@ -1,4 +1,5 @@
 import { TemplateResult, html } from 'lit';
+import { repeat } from 'lit/directives/repeat.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, UltraCardConfig } from '../types';
@@ -382,32 +383,35 @@ export class UltraVerticalModule extends BaseUltraModule {
                   });
                   return visibleByModule && visibleByGlobal;
                 });
-                return visibleChildren.map((childModule, index) => {
-                  // Apply negative margin for overlapping when gap is negative and not using space distribution
-                  const useNegativeMargin =
-                    gapValue < 0 &&
-                    index > 0 &&
-                    verticalModule.alignment !== 'space-between' &&
-                    verticalModule.alignment !== 'space-around';
-                  const childMargin = useNegativeMargin ? `${gapValue}rem 0 0 0` : '0';
-                  const isNegativeGap = useNegativeMargin;
-                  return html`
-                    <div
-                      class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
-                      style="max-width: 100%; box-sizing: border-box; margin: ${childMargin}; ${isNegativeGap
-                        ? 'padding: 0; border: none; background: transparent;'
-                        : ''}"
-                    >
-                      ${this._renderChildModulePreview(
-                        childModule,
-                        hass,
-                        moduleWithDesign,
-                        (this as any)._currentConfig,
-                        (this as any)._currentPreviewContext
-                      )}
-                    </div>
-                  `;
-                });
+                return repeat(
+                  visibleChildren,
+                  (cm) => cm.id || cm.type,
+                  (childModule, index) => {
+                    const useNegativeMargin =
+                      gapValue < 0 &&
+                      index > 0 &&
+                      verticalModule.alignment !== 'space-between' &&
+                      verticalModule.alignment !== 'space-around';
+                    const childMargin = useNegativeMargin ? `${gapValue}rem 0 0 0` : '0';
+                    const isNegativeGap = useNegativeMargin;
+                    return html`
+                      <div
+                        class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
+                        style="max-width: 100%; box-sizing: border-box; margin: ${childMargin}; ${isNegativeGap
+                          ? 'padding: 0; border: none; background: transparent;'
+                          : ''}"
+                      >
+                        ${this._renderChildModulePreview(
+                          childModule,
+                          hass,
+                          moduleWithDesign,
+                          (this as any)._currentConfig,
+                          (this as any)._currentPreviewContext
+                        )}
+                      </div>
+                    `;
+                  }
+                );
               })()
             : html`
                 <div class="empty-layout-message">

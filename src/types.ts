@@ -2763,6 +2763,7 @@ export interface GraphsModule extends BaseModule {
   show_grid_values?: boolean;
   show_time_intervals?: boolean;
   grid_color?: string;
+  chart_layout?: 'default' | 'full';
 
   background_color?: string;
   // Width can be CSS length or percentage (e.g., '100%', 'auto', '320px')
@@ -5257,6 +5258,7 @@ export interface PresetWizardChange {
 export interface PresetWizardApplyResult {
   mappings: EntityMapping[];
   fieldValues: Record<string, unknown>;
+  skippedEntityIds?: string[];
 }
 
 export interface PresetDefinition {

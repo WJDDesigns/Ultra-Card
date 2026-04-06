@@ -211,4 +211,4 @@
     .version-info p {
       margin: 4px 0;
     }
-  `,R([(0,a.MZ)({attribute:!1})],M.prototype,"hass",void 0),M=R([(0,a.EM)("ultra-about-tab")],M)},4541:(e,t,o)=>{o.d(t,{x:()=>i});const i="3.2.0-beta8"}}]);
+  `,R([(0,a.MZ)({attribute:!1})],M.prototype,"hass",void 0),M=R([(0,a.EM)("ultra-about-tab")],M)},4541:(e,t,o)=>{o.d(t,{x:()=>i});const i="3.2.0-beta10"}}]);

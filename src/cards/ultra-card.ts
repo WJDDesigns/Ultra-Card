@@ -1,4 +1,5 @@
 import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
+import { repeat } from 'lit/directives/repeat.js';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -690,10 +691,7 @@ export class UltraCard extends LitElement {
     const cache = this._getConfigCache();
     const entityIds = cache.relevantEntityIds;
     if (entityIds.size === 0) {
-      // Template / template_mode logic is driven by render_template + ultra-card-template-update;
-      // skip re-rendering on every hass reference change when there are no entity IDs to diff.
       if (cache.hasLogicConditions) {
-        // First hass assignment must still paint (template subs may not have fired yet)
         if (!oldHass?.states) return true;
         return false;
       }
@@ -704,7 +702,6 @@ export class UltraCard extends LitElement {
       const newEntity = newHass.states?.[id];
       if (oldEntity?.state !== newEntity?.state) return true;
       if (oldEntity?.last_changed !== newEntity?.last_changed) return true;
-      // last_updated changes on attribute-only updates (last_changed only tracks state)
       if (oldEntity?.last_updated !== newEntity?.last_updated) return true;
     }
     return false;
@@ -768,19 +765,15 @@ export class UltraCard extends LitElement {
       const hasNonExternalModules = cache.hasNonExternalModules;
       const hasLogicConditions = cache.hasLogicConditions;
 
-      // If we ONLY have 3rd party cards and no logic conditions, skip Ultra Card re-render
       if (has3rdPartyCards && !hasNonExternalModules && !hasLogicConditions) {
-        return; // 3rd party cards update via direct hass passthrough
+        return;
       }
 
-      // Throttle Ultra Card re-renders only when needed for logic or other modules
       const throttleDelay = has3rdPartyCards ? 500 : 100;
       const shouldUpdate = currentTime - this._lastHassChangeTime > throttleDelay;
 
-      // Only update if we have a reason to (logic conditions or non-external modules)
       if (shouldUpdate && (hasLogicConditions || hasNonExternalModules)) {
         this._lastHassChangeTime = currentTime;
-        // Request update to re-evaluate logic conditions or update non-3rd party modules
         this.requestUpdate();
       }
     }
@@ -1166,7 +1159,7 @@ export class UltraCard extends LitElement {
     if (allPopupsInvisible && !isInCardEditor) {
       return html`
         <div style="display: contents;">
-          ${this.config.layout.rows.map((row, ri) => this._renderRow(row, renderCtx, ri))}
+          ${repeat(this.config.layout.rows, (row) => row.id, (row, ri) => this._renderRow(row, renderCtx, ri))}
         </div>
       `;
     }
@@ -1175,7 +1168,7 @@ export class UltraCard extends LitElement {
     // Popups need to render their triggers, but still need the card background styling
     if (onlyPopupModules && !isInCardEditor) {
       return html`
-        <div style="${cardStyle}">${this.config.layout.rows.map((row, ri) => this._renderRow(row, renderCtx, ri))}</div>
+        <div style="${cardStyle}">${repeat(this.config.layout.rows, (row) => row.id, (row, ri) => this._renderRow(row, renderCtx, ri))}</div>
       `;
     }
 
@@ -1195,7 +1188,7 @@ export class UltraCard extends LitElement {
         role="region"
         aria-label="Ultra Card"
       >
-        ${this.config.layout.rows.map((row, ri) => this._renderRow(row, renderCtx, ri))}
+        ${repeat(this.config.layout.rows, (row) => row.id, (row, ri) => this._renderRow(row, renderCtx, ri))}
       </div>
     `;
   }
@@ -1807,7 +1800,11 @@ export class UltraCard extends LitElement {
         @pointercancel=${hasRowActions ? rowHandlers.onPointerCancel : null}
         @pointerleave=${hasRowActions ? rowHandlers.onPointerLeave : null}
       >
-        ${this._resolveColumns(row, rowId).map((column, colIndex) => this._renderColumn(column, ctx, colIndex))}
+        ${repeat(
+          this._resolveColumns(row, rowId),
+          (col) => (col as any).id || `col-${row.id}`,
+          (column, colIndex) => this._renderColumn(column, ctx, colIndex)
+        )}
       </div>
     `;
 
@@ -2104,7 +2101,11 @@ export class UltraCard extends LitElement {
         @pointercancel=${hasColumnActions ? columnHandlers.onPointerCancel : null}
         @pointerleave=${hasColumnActions ? columnHandlers.onPointerLeave : null}
       >
-        ${this._resolveModules(column, colId).map(module => this._renderModule(module, ctx))}
+        ${repeat(
+          this._resolveModules(column, colId),
+          (mod) => mod.id || mod.type,
+          (module) => this._renderModule(module, ctx)
+        )}
       </div>
     `;
 

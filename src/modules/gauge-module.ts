@@ -1918,8 +1918,28 @@ export class UltraGaugeModule extends BaseUltraModule {
     const value = this.calculateGaugeValue(gaugeModule, hass);
     const displayName = this.getDisplayName(gaugeModule, hass);
 
+    const gestureHandlers = this.createGestureHandlers(
+      gaugeModule.id || 'gauge',
+      {
+        tap_action: gaugeModule.tap_action,
+        hold_action: gaugeModule.hold_action,
+        double_tap_action: gaugeModule.double_tap_action,
+        entity: gaugeModule.entity,
+        module: gaugeModule,
+      },
+      hass,
+      config
+    );
+
     return html`
-      <div class="uc-gauge-container" style="${containerStyleStr}">
+      <div
+        class="uc-gauge-container"
+        style="${containerStyleStr}; touch-action: manipulation; cursor: pointer;"
+        @pointerdown=${gestureHandlers.onPointerDown}
+        @pointerup=${gestureHandlers.onPointerUp}
+        @pointerleave=${gestureHandlers.onPointerLeave}
+        @pointercancel=${gestureHandlers.onPointerCancel}
+      >
         ${gaugeModule.show_name && gaugeModule.name_position === 'top'
           ? html`
               <div class="uc-gauge-name" style="${this.getNameStyles(gaugeModule)}">

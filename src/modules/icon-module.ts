@@ -2946,12 +2946,10 @@ export class UltraIconModule extends BaseUltraModule {
           "
           >
             ${validIcons.slice(0, 6).map(icon => {
-              // Static icons have no entity - use fallback values
               const isStaticIcon = icon.icon_mode === 'static';
               const entityState = isStaticIcon ? undefined : hass?.states[icon.entity];
               const currentState = entityState?.state || 'unknown';
 
-              // Static icons are always in "inactive" state (single state, no active/inactive distinction)
               const isActive = isStaticIcon ? false : this._evaluateIconState(icon, hass);
 
               // Store template results in local variables (icons may be read-only)
