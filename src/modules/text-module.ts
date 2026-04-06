@@ -54,8 +54,11 @@ export class UltraTextModule extends BaseUltraModule {
       template: '',
       unified_template_mode: false,
       unified_template: '',
-      // Rich text (WYSIWYG) content — always active for non-template mode
-      rich_text_content: '<p>Sample Text</p>',
+      // Rich text (WYSIWYG) content — empty by default so that
+      // _getEffectiveRichContent() falls through to the legacy `text` field.
+      // This prevents overwriting user text when mergeWithDefaults adds the key
+      // to configs that predate the WYSIWYG feature (pre-3.2.0).
+      rich_text_content: '',
       // Hover configuration
       enable_hover_effect: true,
       hover_background_color: 'var(--divider-color)',

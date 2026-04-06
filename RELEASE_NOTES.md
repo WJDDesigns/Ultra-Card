@@ -1,5 +1,11 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.2.1
+
+Maybe 3.2.0 was not as stable as I thought it would be — this patch release fixes a regression where **Text** modules created before the WYSIWYG update could display **“Sample Text”** after upgrading from 3.1.x, instead of your saved content. The default `rich_text_content` now stays empty until you edit in the WYSIWYG editor, so legacy `text` values are preserved correctly when the config is merged with defaults.
+
+---
+
 ## Version 3.2.0
 
 Ultra Card 3.2.0 is the biggest release since 3.0 — packed with new modules, a smarter editor, and a faster card under the hood. Here's everything that's new since 3.1.0.
