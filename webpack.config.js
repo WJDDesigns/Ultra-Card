@@ -53,6 +53,7 @@ module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
 
   return {
+    devtool: isProduction ? 'hidden-source-map' : 'eval-source-map',
     entry: {
       'ultra-card': './src/index.ts',
       'ultra-card-panel': './src/panels/ultra-card-dashboard.ts',
@@ -80,6 +81,20 @@ module.exports = (env, argv) => {
       filename: '[name].js',
       path: path.resolve(__dirname, 'dist'),
       chunkFilename: 'uc-[name].js',
+      publicPath: 'auto',
+    },
+    optimization: {
+      splitChunks: {
+        chunks: 'async',
+        cacheGroups: {
+          three: { test: /[\\/]node_modules[\\/]three/, name: 'three', priority: 20 },
+          leaflet: { test: /[\\/]node_modules[\\/]leaflet/, name: 'leaflet', priority: 20 },
+          codemirror: { test: /[\\/]node_modules[\\/]@codemirror/, name: 'codemirror', priority: 20 },
+          swiper: { test: /[\\/]node_modules[\\/]swiper/, name: 'swiper', priority: 20 },
+          tiptap: { test: /[\\/]node_modules[\\/]@tiptap/, name: 'tiptap', priority: 20 },
+        },
+      },
+      usedExports: true,
     },
     plugins: [
       new CopyWebpackPlugin({

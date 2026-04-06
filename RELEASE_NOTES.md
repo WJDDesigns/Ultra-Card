@@ -1,44 +1,72 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
-## Version 3.2.0-beta3
+## Version 3.2.0
 
-### Bug fixes
-
-- **HACS install / update** — Declared the main bundle as `ultra-card.js` in `hacs.json` so HACS can resolve the entry file (repo name is `Ultra-Card`, which does not match lowercase `ultra-card.js`). This fixes the post-install “Unknown error” / `TypeError` when HACS registers the Lovelace resource.
+Ultra Card 3.2.0 is the biggest release since 3.0 — packed with new modules, a smarter editor, and a faster card under the hood. Here's everything that's new since 3.1.0.
 
 ---
 
-## Version 3.2.0-beta2
+### New Modules
 
-### What's new
+- **Fan Control** — Control speed, preset modes, oscillation, and direction for any fan entity. The hero layout features an animated fan graphic that spins faster as you crank up the speed. Only shows controls your fan actually supports, keeping the UI clean.
+- **Lock Control** — Lock, unlock, and open (when supported) any lock entity. Includes optimistic UI so the state updates instantly while Home Assistant catches up.
+- **Living Canvas (Pro)** — A full-view animated WebGL backdrop with mood presets like aurora, plasma, particles, and mesh gradients. Tune speed and intensity, or tie the visuals to entity states.
+- **Activity Feed (Pro)** — A real-time timeline of your home's activity, showing entity state changes as they happen. Choose between timeline and social-style views.
+- **Virtual Pet (Pro)** — A digital companion whose mood is driven by your smart home data. Think Tamagotchi meets Home Assistant.
+- **Text Input** — A text field linked to `input_text` helpers, with optional multiline support and a rich text (WYSIWYG) editor.
+- **DateTime Input** — Date and time picker linked to `input_datetime` helpers.
+- **Number Input** — Number field with optional stepper buttons, linked to `input_number` helpers.
+- **Slider Input** — Range slider linked to `input_number` helpers.
+- **Select Input** — Dropdown or chip-style selector linked to `input_select` helpers.
+- **Boolean Input** — Toggle, checkbox, or pill-style switch linked to `input_boolean` or switch entities.
+- **Button Input** — A press button linked to `input_button` helpers.
+- **Counter Input** — Increment, decrement, and reset controls linked to counter helpers.
+- **Color Input** — Color picker linked to `input_text` or light entities.
 
-- **Fan Control module** — A dedicated module for controlling Home Assistant fan entities. Control speed via a smooth slider or step buttons, switch between preset modes, toggle oscillation, and flip direction (forward / reverse). The hero layout shows a large animated fan graphic that spins faster as the speed increases. Standard and compact layouts suit tighter spaces. All controls are shown only when the connected fan entity actually supports that feature, so the UI stays clean regardless of your hardware.
+### New Tools & Features
+
+- **Entity Find & Replace** — Swap entity IDs across your entire card layout in one step. Great for migrating or cloning cards.
+- **Preset Wizard** — When applying a preset, a guided setup dialog walks you through customizing the entities and settings before it's applied to your card.
+- **Collapse / Expand All Rows** — Quickly collapse or expand every row in the editor for easier navigation on large cards.
+- **Favorites Search** — Filter your saved favorites by name, description, or tags.
+- **Popup Button Styling** — Popup trigger buttons now support 9 different styles, icon positioning, entity-based colors, and state color mapping.
 
 ### Improvements
 
-- **Fan module translations** — All Fan Control editor labels and runtime strings are fully translated into all 14 supported languages (English, English (GB), French, German, Spanish, Italian, Dutch, Norwegian, Swedish, Danish, Polish, Czech, Catalan, and Nynorsk).
+- **Faster card rendering** — Modules now load on demand instead of all at once, cutting the initial load time nearly in half. The card intelligently preloads what it needs in the background.
+- **Smarter editor** — The editor now shows a loading indicator while initializing, and the module selector is organized into clear categories including a new "Input Modules" section.
+- **Smoother updates** — Multiple rapid state changes are batched together so the card re-renders once instead of many times, resulting in a noticeably snappier feel.
+- **Smaller download** — The main file is about half the size it was, with the rest loaded only when needed. Your browser does less work on every page load.
+- **Better error handling** — Saved settings (favorites, colors, presets) are now protected against private browsing and full-storage edge cases, so nothing silently disappears.
+- **Cleaner console** — Debug messages that used to flood the browser console are now silent by default. Developers can re-enable them with `window.__UC_DEBUG = true`.
+- **Dynamic color templates** — Status Summary custom color templates are now fully functional.
+- **Fullscreen editor** — The fullscreen editing experience has been rewritten for better compatibility with recent Home Assistant dialog changes.
+- **Cloud backup toggle** — You can now enable or disable real-time auto-save for cloud backups from snapshot settings.
+- **All 14 languages updated** — Every new module and feature is fully translated.
 
----
+### Bug Fixes
 
-## Version 3.2.0-beta1
+- **Horizontal layout re-render** — Fixed a case where horizontal layouts wouldn't update when their children changed.
+- **Bar module editor** — Fixed editor fields that weren't saving correctly.
+- **Graph module full-card mode** — Graphs now properly fill the entire card when configured to do so.
+- **Preset skip** — Fixed an issue where skipping a preset wizard step could leave the card in a broken state.
+- **Editor accordion** — Fixed accordion sections in the editor not expanding or collapsing properly.
+- **Color picker** — Fixed a double-swatch display issue in the Color Input module.
+- **Text Input clear button** — The clear button now responds instantly instead of waiting for a delay.
+- **Editor preview** — Fixed the live preview not updating when switching entities or breakpoints.
+- **Text module defaults** — Text modules no longer default to bold uppercase; they now inherit the page font weight and use normal casing.
+- **Memory leaks fixed** — Fixed event listeners that weren't being cleaned up when a card was removed from the dashboard.
+- **Popup button rendering** — Fixed trigger buttons not showing correctly in certain popup configurations.
 
-This is an **early beta** of the 3.2 line. Thanks for testing — if something feels off, let us know.
+### Known Issue: HACS Download Error on HA 2026.04
 
-### What's new
+Some users on Home Assistant 2026.04.1 may see an "Unknown error" when installing or updating through HACS. This is a bug in HACS itself (not Ultra Card) where it fails to read the plugin filename during post-install. If you hit this:
 
-- **Living Canvas (Pro)** — Add a full-view animated backdrop to your dashboard with several mood presets (including aurora, plasma, particles, and a soft mesh gradient). Tune speed and intensity, pick quality for your device, optionally tie the look to entities, and respect “reduce motion” when that’s enabled on your system.
+1. **Update HACS** to the latest version from Settings > Devices & Services
+2. **Clear HACS data** — go to HACS > three-dot menu > "Clear all data" > restart HA > try again
+3. **Manual install** as a fallback — download all files from the GitHub release and place them in your `config/www/community/Ultra-Card/` folder
 
-### Improvements
-
-- **Share Preset dialog** — Updated layout for newer Home Assistant dialog styles: clearer title, roomier content, and footer actions that behave well on desktop and phone. Photo uploads show clearer errors when something goes wrong.
-- **Preset photos through Ultra Card Connect** — When you’re signed in via the integration (no token stored in the browser), preset photo uploads now travel through Home Assistant safely, with a fallback path if your integration build doesn’t yet expose the dedicated upload route.
-- **Third-party cards in the editor** — Live Preview keeps embedded cards in sync with the Home Assistant instance you’re editing with, so states and updates look right while you build.
-- **Show / hide logic** — Straightforward template conditions can resolve immediately from live entity state when possible, so visibility rules feel snappier.
-- **Variables** — Value-type dropdowns in custom variables and mapping dialogs read selection events reliably across current and older Home Assistant UI components.
-
-### Bug fixes
-
-- **Editor dialogs** — Clicks on header actions (including the × control) no longer get misread as dragging, and mousedown on action buttons won’t bubble into the drag handler the way it could before.
+This has been reported upstream and needs a fix in HACS.
 
 ---
 

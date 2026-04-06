@@ -22,6 +22,7 @@ import {
 import { UcConfigEncoder } from '../utils/uc-config-encoder';
 import { uploadImage } from '../utils/image-upload';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { safeGetItem, safeSetItem } from '../utils/safe-storage';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
 import '../components/uc-custom-variables-manager';
@@ -46,6 +47,7 @@ export class UltraCardEditor extends LitElement {
   @state() private _configDebounceTimeout?: number;
   @state() private _isFullScreen: boolean = false;
   @state() private _isMobile: boolean = false;
+  @state() private _expandedCardSections: Set<string> = new Set(['appearance']);
 
   // Cloud sync state
   @state() private _cloudUser: CloudUser | null = null;
@@ -169,7 +171,7 @@ export class UltraCardEditor extends LitElement {
     // Initialize Pro settings from localStorage
     this._skipDefaultModules = UltraCardEditor.getSkipDefaultModulesSetting();
     try {
-      this._hubBannerDismissed = localStorage.getItem(UltraCardEditor.HUB_BANNER_DISMISSED_KEY) === 'true';
+      this._hubBannerDismissed = safeGetItem(UltraCardEditor.HUB_BANNER_DISMISSED_KEY) === 'true';
     } catch {
       /* ignore */
     }
@@ -439,7 +441,7 @@ export class UltraCardEditor extends LitElement {
 
   private _dismissHubBanner(): void {
     try {
-      localStorage.setItem(UltraCardEditor.HUB_BANNER_DISMISSED_KEY, 'true');
+      safeSetItem(UltraCardEditor.HUB_BANNER_DISMISSED_KEY, 'true');
       this._hubBannerDismissed = true;
     } catch {
       this._hubBannerDismissed = true;
@@ -682,9 +684,24 @@ export class UltraCardEditor extends LitElement {
     this._activeTab = tab;
   }
 
+  private _toggleCardSection(section: string): void {
+    if (this._expandedCardSections.has(section)) {
+      this._expandedCardSections.delete(section);
+    } else {
+      this._expandedCardSections.clear();
+      this._expandedCardSections.add(section);
+    }
+    this.requestUpdate();
+  }
+
   protected render() {
     if (!this.hass || !this.config) {
-      return html``;
+      return html`
+        <div class="editor-loading">
+          <ha-circular-progress indeterminate></ha-circular-progress>
+          <span>Loading editor...</span>
+        </div>
+      `;
     }
     const lang = this.hass.locale?.language || 'en';
     const hubPanelExists = !!(this.hass as any).panels?.['ultra-card-hub'];
@@ -748,915 +765,859 @@ export class UltraCardEditor extends LitElement {
 
   private _renderSettingsTab() {
     const lang = this.hass?.locale?.language || 'en';
-    const defaultCardBackground = 'var(--card-background-color)'; // Use HA default
+    const defaultCardBackground = 'var(--card-background-color)';
 
     return html`
       <div class="settings-tab">
         <div class="settings-header">
-          <h3>${localize('editor.settings.title', lang, 'Card Settings')}</h3>
-          <p>
-            ${localize(
-              'editor.settings.description',
-              lang,
-              'Configure global card appearance and behavior.'
-            )}
-          </p>
+          <div class="settings-header-content">
+            <ha-icon icon="mdi:cog-outline" style="--mdc-icon-size: 24px; color: var(--primary-color);"></ha-icon>
+            <div>
+              <h3>${localize('editor.settings.title', lang, 'Card Settings')}</h3>
+              <p>
+                ${localize(
+                  'editor.settings.description',
+                  lang,
+                  'Configure global card appearance and behavior.'
+                )}
+              </p>
+            </div>
+          </div>
         </div>
 
         <div class="settings-container">
-          <!-- Card Name Section -->
-          <div class="settings-section">
-            <div class="section-header">
-              <h4>${localize('editor.ultra_card_pro.card_name', lang, 'Card Name')}</h4>
-              <p>
-                ${localize(
-                  'editor.ultra_card_pro.card_name_desc',
-                  lang,
-                  'Give this card a name to identify it in your backups'
-                )}
-              </p>
-            </div>
 
-            <div class="setting-item">
-              <label for="card-name">
-                ${localize('editor.ultra_card_pro.card_name', lang, 'Card Name')}
-              </label>
-              <ha-textfield
-                id="card-name"
-                .value="${this.config.card_name || ''}"
-                @input="${this._handleCardNameChange}"
-                placeholder="${localize(
-                  'editor.ultra_card_pro.card_name_placeholder',
-                  lang,
-                  'My Ultra Card'
-                )}"
-                maxlength="100"
-              ></ha-textfield>
-            </div>
+          <!-- Card Name (always visible, compact) -->
+          <div class="card-name-bar">
+            <ha-icon icon="mdi:label-outline" style="--mdc-icon-size: 18px; color: var(--secondary-text-color);"></ha-icon>
+            <ha-textfield
+              .value="${this.config.card_name || ''}"
+              @input="${this._handleCardNameChange}"
+              placeholder="${localize(
+                'editor.ultra_card_pro.card_name_placeholder',
+                lang,
+                'My Ultra Card'
+              )}"
+              maxlength="100"
+              style="flex: 1;"
+              .label=${localize('editor.ultra_card_pro.card_name', lang, 'Card Name')}
+            ></ha-textfield>
           </div>
 
-          <!-- Appearance Section -->
-          <div class="settings-section">
-            <div class="section-header">
-              <h4>${localize('editor.appearance.title', lang, 'Appearance')}</h4>
-              <p>
-                ${localize(
-                  'editor.appearance.description',
-                  lang,
-                  'Control the visual appearance of your card'
-                )}
-              </p>
-            </div>
+          <!-- Appearance Accordion -->
+          <div class="cs-accordion">
+            <button
+              class="cs-accordion-header ${this._expandedCardSections.has('appearance') ? 'expanded' : ''}"
+              @click=${() => this._toggleCardSection('appearance')}
+            >
+              <ha-icon icon="mdi:palette-outline" style="--mdc-icon-size: 20px;"></ha-icon>
+              <span class="cs-accordion-title">
+                ${localize('editor.appearance.title', lang, 'Appearance')}
+              </span>
+              <ha-icon icon="mdi:chevron-${this._expandedCardSections.has('appearance') ? 'up' : 'down'}" style="--mdc-icon-size: 20px; margin-left: auto;"></ha-icon>
+            </button>
+            ${this._expandedCardSections.has('appearance') ? html`
+              <div class="cs-accordion-content">
+                <div class="settings-grid">
+                  <div class="setting-item">
+                    <label>
+                      ${localize('editor.fields.card_background_color', lang, 'Card Background Color')}
+                    </label>
+                    <ultra-color-picker
+                      .label=${'Card Background Color'}
+                      .value=${this.config.card_background || defaultCardBackground}
+                      .defaultValue=${defaultCardBackground}
+                      .hass=${this.hass}
+                      @value-changed=${(e: CustomEvent) =>
+                        this._updateConfig({ card_background: e.detail.value })}
+                    ></ultra-color-picker>
+                  </div>
 
-            <div class="settings-grid">
-              <div class="setting-item">
-                <label>
-                  ${localize('editor.fields.card_background_color', lang, 'Card Background Color')}
-                </label>
-                <div class="setting-description">
-                  ${localize(
-                    'editor.fields.card_background_color_desc',
-                    lang,
-                    'The background color of the entire card'
-                  )}
-                </div>
-                <ultra-color-picker
-                  .label=${'Card Background Color'}
-                  .value=${this.config.card_background || defaultCardBackground}
-                  .defaultValue=${defaultCardBackground}
-                  .hass=${this.hass}
-                  @value-changed=${(e: CustomEvent) =>
-                    this._updateConfig({ card_background: e.detail.value })}
-                ></ultra-color-picker>
-              </div>
-
-              <!-- Card Background Image Settings -->
-              <div class="setting-item" style="grid-column: 1 / -1;">
-                <label>
-                  ${localize(
-                    'editor.fields.card_background_image_type',
-                    lang,
-                    'Background Image Type'
-                  )}
-                </label>
-                <div class="setting-description">
-                  ${localize(
-                    'editor.fields.card_background_image_type_desc',
-                    lang,
-                    'Add a background image to your card'
-                  )}
-                </div>
-                <select
-                  .value=${this.config.card_background_image_type || 'none'}
-                  @change=${(e: Event) => {
-                    const value = (e.target as HTMLSelectElement).value as
-                      | 'none'
-                      | 'upload'
-                      | 'entity'
-                      | 'url';
-                    this._updateConfig({ card_background_image_type: value });
-                  }}
-                  class="property-select"
-                  style="width: 100%;"
-                >
-                  <option value="none">${localize('editor.design.bg_none', lang, 'None')}</option>
-                  <option value="upload">
-                    ${localize('editor.design.bg_upload', lang, 'Upload Image')}
-                  </option>
-                  <option value="entity">
-                    ${localize('editor.design.bg_entity', lang, 'Entity Image')}
-                  </option>
-                  <option value="url">
-                    ${localize('editor.design.bg_url', lang, 'Image URL')}
-                  </option>
-                </select>
-              </div>
-
-              ${this.config.card_background_image_type === 'upload'
-                ? html`
-                    <div
-                      class="conditional-fields-group"
-                      style="grid-column: 1 / -1; padding: 16px; margin-top: 8px;"
+                  <div class="setting-item">
+                    <label>
+                      ${localize(
+                        'editor.fields.card_background_image_type',
+                        lang,
+                        'Background Image Type'
+                      )}
+                    </label>
+                    <select
+                      .value=${this.config.card_background_image_type || 'none'}
+                      @change=${(e: Event) => {
+                        const value = (e.target as HTMLSelectElement).value as
+                          | 'none'
+                          | 'upload'
+                          | 'entity'
+                          | 'url';
+                        this._updateConfig({ card_background_image_type: value });
+                      }}
+                      class="property-select"
+                      style="width: 100%;"
                     >
-                      <div class="settings-grid">
-                        <div class="setting-item" style="grid-column: 1 / -1;">
-                          <label>
-                            ${localize(
-                              'editor.design.upload_bg_image',
-                              lang,
-                              'Upload Background Image'
-                            )}
-                          </label>
-                          <div class="upload-container" style="margin-top: 8px;">
-                            <div class="file-upload-row">
-                              <label class="file-upload-button">
-                                <div class="button-content">
-                                  <ha-icon icon="mdi:upload"></ha-icon>
-                                  <span class="button-label"
-                                    >${localize(
-                                      'editor.design.choose_file',
-                                      lang,
-                                      'Choose File'
-                                    )}</span
-                                  >
-                                </div>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  @change=${this._handleCardBackgroundImageUpload}
-                                  style="display: none"
-                                />
+                      <option value="none">${localize('editor.design.bg_none', lang, 'None')}</option>
+                      <option value="upload">
+                        ${localize('editor.design.bg_upload', lang, 'Upload Image')}
+                      </option>
+                      <option value="entity">
+                        ${localize('editor.design.bg_entity', lang, 'Entity Image')}
+                      </option>
+                      <option value="url">
+                        ${localize('editor.design.bg_url', lang, 'Image URL')}
+                      </option>
+                    </select>
+                  </div>
+
+                  ${this.config.card_background_image_type === 'upload'
+                    ? html`
+                        <div class="conditional-fields-group">
+                          <div class="settings-grid">
+                            <div class="setting-item">
+                              <label>
+                                ${localize(
+                                  'editor.design.upload_bg_image',
+                                  lang,
+                                  'Upload Background Image'
+                                )}
                               </label>
-                              <div class="path-display">
-                                ${this.config.card_background_image
-                                  ? html`<span
-                                      class="uploaded-path"
-                                      title="${this.config.card_background_image}"
-                                    >
-                                      ${this._truncatePath(this.config.card_background_image)}
-                                    </span>`
-                                  : html`<span class="no-file"
-                                      >${localize(
-                                        'editor.design.no_file_chosen',
-                                        lang,
-                                        'No file chosen'
-                                      )}</span
-                                    >`}
+                              <div class="upload-container" style="margin-top: 8px;">
+                                <div class="file-upload-row">
+                                  <label class="file-upload-button">
+                                    <div class="button-content">
+                                      <ha-icon icon="mdi:upload"></ha-icon>
+                                      <span class="button-label"
+                                        >${localize(
+                                          'editor.design.choose_file',
+                                          lang,
+                                          'Choose File'
+                                        )}</span
+                                      >
+                                    </div>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      @change=${this._handleCardBackgroundImageUpload}
+                                      style="display: none"
+                                    />
+                                  </label>
+                                  <div class="path-display">
+                                    ${this.config.card_background_image
+                                      ? html`<span
+                                          class="uploaded-path"
+                                          title="${this.config.card_background_image}"
+                                        >
+                                          ${this._truncatePath(this.config.card_background_image)}
+                                        </span>`
+                                      : html`<span class="no-file"
+                                          >${localize(
+                                            'editor.design.no_file_chosen',
+                                            lang,
+                                            'No file chosen'
+                                          )}</span
+                                        >`}
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  `
-                : ''}
-              ${this.config.card_background_image_type === 'entity'
-                ? html`
-                    <div
-                      class="conditional-fields-group"
-                      style="grid-column: 1 / -1; padding: 16px; margin-top: 8px;"
-                    >
-                      <div class="settings-grid">
-                        <div class="setting-item" style="grid-column: 1 / -1;">
-                          <label>
-                            ${localize(
-                              'editor.design.bg_image_entity',
-                              lang,
-                              'Background Image Entity'
-                            )}
-                          </label>
-                          <ha-entity-picker
-                            .hass=${this.hass}
-                            .value=${this.config.card_background_image_entity || ''}
-                            @value-changed=${(e: CustomEvent) =>
-                              this._updateConfig({ card_background_image_entity: e.detail.value })}
-                            .label=${'Select entity with image attribute'}
-                            allow-custom-entity
-                          ></ha-entity-picker>
+                      `
+                    : ''}
+                  ${this.config.card_background_image_type === 'entity'
+                    ? html`
+                        <div class="conditional-fields-group">
+                          <div class="settings-grid">
+                            <div class="setting-item">
+                              <label>
+                                ${localize(
+                                  'editor.design.bg_image_entity',
+                                  lang,
+                                  'Background Image Entity'
+                                )}
+                              </label>
+                              <ha-entity-picker
+                                .hass=${this.hass}
+                                .value=${this.config.card_background_image_entity || ''}
+                                @value-changed=${(e: CustomEvent) =>
+                                  this._updateConfig({ card_background_image_entity: e.detail.value })}
+                                .label=${'Select entity with image attribute'}
+                                allow-custom-entity
+                              ></ha-entity-picker>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  `
-                : ''}
-              ${this.config.card_background_image_type === 'url'
-                ? html`
-                    <div
-                      class="conditional-fields-group"
-                      style="grid-column: 1 / -1; padding: 16px; margin-top: 8px;"
-                    >
-                      <div class="settings-grid">
-                        <div class="setting-item" style="grid-column: 1 / -1;">
-                          <label>
-                            ${localize('editor.design.bg_image_url', lang, 'Background Image URL')}
-                          </label>
-                          <input
-                            type="text"
-                            .value=${this.config.card_background_image || ''}
-                            @input=${(e: Event) => {
-                              const value = (e.target as HTMLInputElement).value;
-                              this._updateConfig({ card_background_image: value });
-                            }}
-                            placeholder="https://example.com/image.jpg"
-                            class="property-input"
-                            style="width: 100%;"
-                          />
+                      `
+                    : ''}
+                  ${this.config.card_background_image_type === 'url'
+                    ? html`
+                        <div class="conditional-fields-group">
+                          <div class="settings-grid">
+                            <div class="setting-item">
+                              <label>
+                                ${localize('editor.design.bg_image_url', lang, 'Background Image URL')}
+                              </label>
+                              <input
+                                type="text"
+                                .value=${this.config.card_background_image || ''}
+                                @input=${(e: Event) => {
+                                  const value = (e.target as HTMLInputElement).value;
+                                  this._updateConfig({ card_background_image: value });
+                                }}
+                                placeholder="https://example.com/image.jpg"
+                                class="property-input"
+                                style="width: 100%;"
+                              />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  `
-                : ''}
-              ${this.config.card_background_image_type &&
-              this.config.card_background_image_type !== 'none'
-                ? html`
-                    <div
-                      class="conditional-fields-group"
-                      style="grid-column: 1 / -1; padding: 16px; margin-top: 8px;"
-                    >
-                      <div class="settings-grid">
-                        <div class="setting-item">
-                          <label>Background Size</label>
-                          <div class="setting-description">How the image fills the card area</div>
-                          <select
-                            .value=${this._getBackgroundSizeDropdownValue(
-                              this.config.card_background_size
-                            )}
-                            @change=${(e: Event) => {
-                              const value = (e.target as HTMLSelectElement).value;
-                              this._updateConfig({ card_background_size: value });
-                            }}
-                            class="property-select"
-                            style="width: 100%;"
-                          >
-                            <option value="cover">Cover</option>
-                            <option value="contain">Contain</option>
-                            <option value="auto">Auto</option>
-                            <option value="custom">Custom</option>
-                          </select>
-                        </div>
+                      `
+                    : ''}
+                  ${this.config.card_background_image_type &&
+                  this.config.card_background_image_type !== 'none'
+                    ? html`
+                        <div class="conditional-fields-group">
+                          <div class="settings-grid">
+                            <div class="setting-item">
+                              <label>Background Size</label>
+                              <select
+                                .value=${this._getBackgroundSizeDropdownValue(
+                                  this.config.card_background_size
+                                )}
+                                @change=${(e: Event) => {
+                                  const value = (e.target as HTMLSelectElement).value;
+                                  this._updateConfig({ card_background_size: value });
+                                }}
+                                class="property-select"
+                                style="width: 100%;"
+                              >
+                                <option value="cover">Cover</option>
+                                <option value="contain">Contain</option>
+                                <option value="auto">Auto</option>
+                                <option value="custom">Custom</option>
+                              </select>
+                            </div>
 
-                        ${this._getBackgroundSizeDropdownValue(this.config.card_background_size) ===
-                        'custom'
-                          ? html`
-                              <div class="setting-item">
-                                <label>Custom Width</label>
+                            ${this._getBackgroundSizeDropdownValue(this.config.card_background_size) ===
+                            'custom'
+                              ? html`
+                                  <div class="setting-item">
+                                    <label>Custom Width</label>
+                                    <input
+                                      type="text"
+                                      .value=${this._getCustomSizeValue(
+                                        this.config.card_background_size,
+                                        'width'
+                                      )}
+                                      @input=${(e: Event) => {
+                                        const width = (e.target as HTMLInputElement).value;
+                                        const height = this._getCustomSizeValue(
+                                          this.config.card_background_size,
+                                          'height'
+                                        );
+                                        const customSize =
+                                          width && height
+                                            ? `${width} ${height}`
+                                            : width || height || 'auto';
+                                        this._updateConfig({ card_background_size: customSize });
+                                      }}
+                                      placeholder="100px, 50%, auto"
+                                      class="property-input"
+                                      style="width: 100%;"
+                                    />
+                                  </div>
+                                  <div class="setting-item">
+                                    <label>Custom Height</label>
+                                    <input
+                                      type="text"
+                                      .value=${this._getCustomSizeValue(
+                                        this.config.card_background_size,
+                                        'height'
+                                      )}
+                                      @input=${(e: Event) => {
+                                        const height = (e.target as HTMLInputElement).value;
+                                        const width = this._getCustomSizeValue(
+                                          this.config.card_background_size,
+                                          'width'
+                                        );
+                                        const customSize =
+                                          width && height
+                                            ? `${width} ${height}`
+                                            : width || height || 'auto';
+                                        this._updateConfig({ card_background_size: customSize });
+                                      }}
+                                      placeholder="100px, 50%, auto"
+                                      class="property-input"
+                                      style="width: 100%;"
+                                    />
+                                  </div>
+                                `
+                              : ''}
+
+                            <div class="setting-item">
+                              <label>Background Repeat</label>
+                              <select
+                                .value=${this.config.card_background_repeat || 'no-repeat'}
+                                @change=${(e: Event) => {
+                                  const value = (e.target as HTMLSelectElement).value as
+                                    | 'repeat'
+                                    | 'repeat-x'
+                                    | 'repeat-y'
+                                    | 'no-repeat';
+                                  this._updateConfig({ card_background_repeat: value });
+                                }}
+                                class="property-select"
+                                style="width: 100%;"
+                              >
+                                <option value="no-repeat">No Repeat</option>
+                                <option value="repeat">Repeat</option>
+                                <option value="repeat-x">Repeat X</option>
+                                <option value="repeat-y">Repeat Y</option>
+                              </select>
+                            </div>
+
+                            <div class="setting-item">
+                              <label>Background Position</label>
+                              <select
+                                .value=${this.config.card_background_position || 'center center'}
+                                @change=${(e: Event) => {
+                                  const value = (e.target as HTMLSelectElement).value;
+                                  this._updateConfig({ card_background_position: value });
+                                }}
+                                class="property-select"
+                                style="width: 100%;"
+                              >
+                                <option value="left top">Left Top</option>
+                                <option value="left center">Left Center</option>
+                                <option value="left bottom">Left Bottom</option>
+                                <option value="center top">Center Top</option>
+                                <option value="center center">Center</option>
+                                <option value="center bottom">Center Bottom</option>
+                                <option value="right top">Right Top</option>
+                                <option value="right center">Right Center</option>
+                                <option value="right bottom">Right Bottom</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      `
+                    : ''}
+
+                  <div class="setting-item">
+                    <label>
+                      ${localize('editor.fields.card_overflow', lang, 'Content Overflow')}
+                    </label>
+                    <div class="setting-description">
+                      ${localize(
+                        'editor.fields.card_overflow_desc',
+                        lang,
+                        'How to handle content that extends beyond the card boundaries'
+                      )}
+                    </div>
+                    <select
+                      .value=${this.config.card_overflow || 'visible'}
+                      @change=${(e: Event) => {
+                        const value = (e.target as HTMLSelectElement).value as 'visible' | 'hidden' | 'scroll' | 'auto';
+                        this._updateConfig({ card_overflow: value === 'visible' ? undefined : value });
+                      }}
+                      class="property-select"
+                      style="width: 100%;"
+                    >
+                      <option value="visible">
+                        ${localize('editor.fields.overflow_visible', lang, 'Visible (default)')}
+                      </option>
+                      <option value="hidden">
+                        ${localize('editor.fields.overflow_hidden', lang, 'Hidden (clip content)')}
+                      </option>
+                      <option value="scroll">
+                        ${localize('editor.fields.overflow_scroll', lang, 'Scroll')}
+                      </option>
+                      <option value="auto">
+                        ${localize('editor.fields.overflow_auto', lang, 'Auto')}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Border Accordion -->
+          <div class="cs-accordion">
+            <button
+              class="cs-accordion-header ${this._expandedCardSections.has('border') ? 'expanded' : ''}"
+              @click=${() => this._toggleCardSection('border')}
+            >
+              <ha-icon icon="mdi:border-all-variant" style="--mdc-icon-size: 20px;"></ha-icon>
+              <span class="cs-accordion-title">
+                ${localize('editor.fields.border_radius', lang, 'Border')} & ${localize('editor.fields.card_shadow_enabled', lang, 'Shadow')}
+              </span>
+              <ha-icon icon="mdi:chevron-${this._expandedCardSections.has('border') ? 'up' : 'down'}" style="--mdc-icon-size: 20px; margin-left: auto;"></ha-icon>
+            </button>
+            ${this._expandedCardSections.has('border') ? html`
+              <div class="cs-accordion-content">
+                <div class="settings-grid">
+                  <div class="setting-item">
+                    <label> ${localize('editor.fields.border_radius', lang, 'Border Radius')} </label>
+                    <div class="setting-description">
+                      ${localize(
+                        'editor.fields.border_radius_desc',
+                        lang,
+                        'Rounded corners for the card (in pixels)'
+                      )}
+                    </div>
+                    <div class="input-with-unit">
+                      <input
+                        type="number"
+                        min="0"
+                        max="50"
+                        .value=${this.config.card_border_radius ?? ''}
+                        placeholder="12"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = target.value.trim();
+                          this._updateConfig({
+                            card_border_radius: value === '' ? undefined : Number(value),
+                          });
+                        }}
+                      />
+                      <span class="unit">${localize('editor.fields.unit_px', lang, 'px')}</span>
+                      <button
+                        class="reset-btn"
+                        @click=${() => this._updateConfig({ card_border_radius: 12 })}
+                        title=${localize(
+                          'editor.fields.reset_default_value',
+                          lang,
+                          'Reset to default ({value})'
+                        ).replace('{value}', '12px')}
+                      >
+                        ↺
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="setting-item">
+                    <label>
+                      ${localize('editor.fields.card_border_color', lang, 'Border Color')}
+                    </label>
+                    <ultra-color-picker
+                      .label=${'Card Border Color'}
+                      .value=${this.config.card_border_color || 'var(--divider-color)'}
+                      .defaultValue=${'var(--divider-color)'}
+                      .hass=${this.hass}
+                      @value-changed=${(e: CustomEvent) =>
+                        this._updateConfig({ card_border_color: e.detail.value })}
+                    ></ultra-color-picker>
+                  </div>
+
+                  <div class="setting-item">
+                    <label>
+                      ${localize('editor.fields.card_border_width', lang, 'Border Width')}
+                    </label>
+                    <div class="input-with-unit">
+                      <input
+                        type="number"
+                        min="0"
+                        max="10"
+                        .value=${this.config.card_border_width ?? ''}
+                        placeholder="1"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = target.value.trim();
+                          this._updateConfig({
+                            card_border_width: value === '' ? undefined : Number(value),
+                          });
+                        }}
+                      />
+                      <span class="unit">${localize('editor.fields.unit_px', lang, 'px')}</span>
+                      <button
+                        class="reset-btn"
+                        @click=${() => this._updateConfig({ card_border_width: 1 })}
+                        title=${localize(
+                          'editor.fields.reset_default_value',
+                          lang,
+                          'Reset to default ({value})'
+                        ).replace('{value}', '1px')}
+                      >
+                        ↺
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="cs-divider"></div>
+
+                  <div class="setting-item">
+                    <div class="cs-inline-toggle">
+                      <label>
+                        ${localize('editor.fields.card_shadow_enabled', lang, 'Custom Drop Shadow')}
+                      </label>
+                      <ha-switch
+                        .checked=${this.config.card_shadow_enabled || false}
+                        @change=${(e: Event) => {
+                          const target = e.target as any;
+                          this._updateConfig({ card_shadow_enabled: target.checked });
+                        }}
+                      ></ha-switch>
+                    </div>
+                    <div class="setting-description">
+                      ${localize(
+                        'editor.fields.card_shadow_enabled_desc',
+                        lang,
+                        'Enable custom shadow for the card'
+                      )}
+                    </div>
+                  </div>
+
+                  ${this.config.card_shadow_enabled
+                    ? html`
+                        <div class="conditional-fields-group">
+                          <div class="settings-grid">
+                            <div class="setting-item">
+                              <label>
+                                ${localize('editor.fields.card_shadow_color', lang, 'Shadow Color')}
+                              </label>
+                              <ultra-color-picker
+                                .label=${'Shadow Color'}
+                                .value=${this.config.card_shadow_color || 'rgba(0, 0, 0, 0.15)'}
+                                .defaultValue=${'rgba(0, 0, 0, 0.15)'}
+                                .hass=${this.hass}
+                                @value-changed=${(e: CustomEvent) =>
+                                  this._updateConfig({ card_shadow_color: e.detail.value })}
+                              ></ultra-color-picker>
+                            </div>
+
+                            <div class="setting-item">
+                              <label>
+                                ${localize(
+                                  'editor.fields.card_shadow_horizontal',
+                                  lang,
+                                  'Horizontal Offset'
+                                )}
+                              </label>
+                              <div class="input-with-unit">
                                 <input
-                                  type="text"
-                                  .value=${this._getCustomSizeValue(
-                                    this.config.card_background_size,
-                                    'width'
-                                  )}
+                                  type="number"
+                                  min="-50"
+                                  max="50"
+                                  .value=${this.config.card_shadow_horizontal ?? 0}
                                   @input=${(e: Event) => {
-                                    const width = (e.target as HTMLInputElement).value;
-                                    const height = this._getCustomSizeValue(
-                                      this.config.card_background_size,
-                                      'height'
-                                    );
-                                    const customSize =
-                                      width && height
-                                        ? `${width} ${height}`
-                                        : width || height || 'auto';
-                                    this._updateConfig({ card_background_size: customSize });
+                                    const target = e.target as HTMLInputElement;
+                                    this._updateConfig({
+                                      card_shadow_horizontal: Number(target.value),
+                                    });
                                   }}
-                                  placeholder="100px, 50%, auto"
-                                  class="property-input"
-                                  style="width: 100%;"
                                 />
+                                <span class="unit"
+                                  >${localize('editor.fields.unit_px', lang, 'px')}</span
+                                >
+                                <button
+                                  class="reset-btn"
+                                  @click=${() => this._updateConfig({ card_shadow_horizontal: 0 })}
+                                  title=${localize(
+                                    'editor.fields.reset_default_value',
+                                    lang,
+                                    'Reset to default ({value})'
+                                  ).replace('{value}', '0px')}
+                                >
+                                  ↺
+                                </button>
                               </div>
-                              <div class="setting-item">
-                                <label>Custom Height</label>
+                            </div>
+
+                            <div class="setting-item">
+                              <label>
+                                ${localize(
+                                  'editor.fields.card_shadow_vertical',
+                                  lang,
+                                  'Vertical Offset'
+                                )}
+                              </label>
+                              <div class="input-with-unit">
                                 <input
-                                  type="text"
-                                  .value=${this._getCustomSizeValue(
-                                    this.config.card_background_size,
-                                    'height'
-                                  )}
+                                  type="number"
+                                  min="-50"
+                                  max="50"
+                                  .value=${this.config.card_shadow_vertical ?? 2}
                                   @input=${(e: Event) => {
-                                    const height = (e.target as HTMLInputElement).value;
-                                    const width = this._getCustomSizeValue(
-                                      this.config.card_background_size,
-                                      'width'
-                                    );
-                                    const customSize =
-                                      width && height
-                                        ? `${width} ${height}`
-                                        : width || height || 'auto';
-                                    this._updateConfig({ card_background_size: customSize });
+                                    const target = e.target as HTMLInputElement;
+                                    this._updateConfig({
+                                      card_shadow_vertical: Number(target.value),
+                                    });
                                   }}
-                                  placeholder="100px, 50%, auto"
-                                  class="property-input"
-                                  style="width: 100%;"
                                 />
+                                <span class="unit"
+                                  >${localize('editor.fields.unit_px', lang, 'px')}</span
+                                >
+                                <button
+                                  class="reset-btn"
+                                  @click=${() => this._updateConfig({ card_shadow_vertical: 2 })}
+                                  title=${localize(
+                                    'editor.fields.reset_default_value',
+                                    lang,
+                                    'Reset to default ({value})'
+                                  ).replace('{value}', '2px')}
+                                >
+                                  ↺
+                                </button>
                               </div>
-                            `
-                          : ''}
+                            </div>
 
-                        <div class="setting-item">
-                          <label>Background Repeat</label>
-                          <div class="setting-description">How the image repeats</div>
-                          <select
-                            .value=${this.config.card_background_repeat || 'no-repeat'}
-                            @change=${(e: Event) => {
-                              const value = (e.target as HTMLSelectElement).value as
-                                | 'repeat'
-                                | 'repeat-x'
-                                | 'repeat-y'
-                                | 'no-repeat';
-                              this._updateConfig({ card_background_repeat: value });
-                            }}
-                            class="property-select"
-                            style="width: 100%;"
-                          >
-                            <option value="no-repeat">No Repeat</option>
-                            <option value="repeat">Repeat</option>
-                            <option value="repeat-x">Repeat X</option>
-                            <option value="repeat-y">Repeat Y</option>
-                          </select>
-                        </div>
+                            <div class="setting-item">
+                              <label>
+                                ${localize('editor.fields.card_shadow_blur', lang, 'Blur Radius')}
+                              </label>
+                              <div class="input-with-unit">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  .value=${this.config.card_shadow_blur ?? 8}
+                                  @input=${(e: Event) => {
+                                    const target = e.target as HTMLInputElement;
+                                    this._updateConfig({
+                                      card_shadow_blur: Number(target.value),
+                                    });
+                                  }}
+                                />
+                                <span class="unit"
+                                  >${localize('editor.fields.unit_px', lang, 'px')}</span
+                                >
+                                <button
+                                  class="reset-btn"
+                                  @click=${() => this._updateConfig({ card_shadow_blur: 8 })}
+                                  title=${localize(
+                                    'editor.fields.reset_default_value',
+                                    lang,
+                                    'Reset to default ({value})'
+                                  ).replace('{value}', '8px')}
+                                >
+                                  ↺
+                                </button>
+                              </div>
+                            </div>
 
-                        <div class="setting-item">
-                          <label>Background Position</label>
-                          <div class="setting-description">Where the image is positioned</div>
-                          <select
-                            .value=${this.config.card_background_position || 'center center'}
-                            @change=${(e: Event) => {
-                              const value = (e.target as HTMLSelectElement).value;
-                              this._updateConfig({ card_background_position: value });
-                            }}
-                            class="property-select"
-                            style="width: 100%;"
-                          >
-                            <option value="left top">Left Top</option>
-                            <option value="left center">Left Center</option>
-                            <option value="left bottom">Left Bottom</option>
-                            <option value="center top">Center Top</option>
-                            <option value="center center">Center</option>
-                            <option value="center bottom">Center Bottom</option>
-                            <option value="right top">Right Top</option>
-                            <option value="right center">Right Center</option>
-                            <option value="right bottom">Right Bottom</option>
-                          </select>
+                            <div class="setting-item">
+                              <label>
+                                ${localize('editor.fields.card_shadow_spread', lang, 'Spread Radius')}
+                              </label>
+                              <div class="input-with-unit">
+                                <input
+                                  type="number"
+                                  min="-50"
+                                  max="50"
+                                  .value=${this.config.card_shadow_spread ?? 0}
+                                  @input=${(e: Event) => {
+                                    const target = e.target as HTMLInputElement;
+                                    this._updateConfig({
+                                      card_shadow_spread: Number(target.value),
+                                    });
+                                  }}
+                                />
+                                <span class="unit"
+                                  >${localize('editor.fields.unit_px', lang, 'px')}</span
+                                >
+                                <button
+                                  class="reset-btn"
+                                  @click=${() => this._updateConfig({ card_shadow_spread: 0 })}
+                                  title=${localize(
+                                    'editor.fields.reset_default_value',
+                                    lang,
+                                    'Reset to default ({value})'
+                                  ).replace('{value}', '0px')}
+                                >
+                                  ↺
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      `
+                    : ''}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Spacing Accordion -->
+          <div class="cs-accordion">
+            <button
+              class="cs-accordion-header ${this._expandedCardSections.has('spacing') ? 'expanded' : ''}"
+              @click=${() => this._toggleCardSection('spacing')}
+            >
+              <ha-icon icon="mdi:arrow-expand-horizontal" style="--mdc-icon-size: 20px;"></ha-icon>
+              <span class="cs-accordion-title">
+                ${localize('editor.spacing.title', lang, 'Spacing')}
+              </span>
+              <ha-icon icon="mdi:chevron-${this._expandedCardSections.has('spacing') ? 'up' : 'down'}" style="--mdc-icon-size: 20px; margin-left: auto;"></ha-icon>
+            </button>
+            ${this._expandedCardSections.has('spacing') ? html`
+              <div class="cs-accordion-content">
+                <div class="settings-grid">
+                  <div class="setting-item">
+                    <label>${localize('editor.fields.card_padding', lang, 'Card Padding')}</label>
+                    <div class="setting-description">
+                      ${localize(
+                        'editor.fields.card_padding_desc',
+                        lang,
+                        'Internal spacing within the card'
+                      )}
                     </div>
-                  `
-                : ''}
-
-              <div class="setting-item">
-                <label> ${localize('editor.fields.border_radius', lang, 'Border Radius')} </label>
-                <div class="setting-description">
-                  ${localize(
-                    'editor.fields.border_radius_desc',
-                    lang,
-                    'Rounded corners for the card (in pixels)'
-                  )}
-                </div>
-                <div class="input-with-unit">
-                  <input
-                    type="number"
-                    min="0"
-                    max="50"
-                    .value=${this.config.card_border_radius ?? ''}
-                    placeholder="12"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value.trim();
-                      this._updateConfig({
-                        // Allow clearing to fall back to theme/HA default. Undefined removes the key.
-                        card_border_radius: value === '' ? undefined : Number(value),
-                      });
-                    }}
-                  />
-                  <span class="unit">${localize('editor.fields.unit_px', lang, 'px')}</span>
-                  <button
-                    class="reset-btn"
-                    @click=${() => this._updateConfig({ card_border_radius: 12 })}
-                    title=${localize(
-                      'editor.fields.reset_default_value',
-                      lang,
-                      'Reset to default ({value})'
-                    ).replace('{value}', '12px')}
-                  >
-                    ↺
-                  </button>
-                </div>
-              </div>
-
-              <div class="setting-item">
-                <label>
-                  ${localize('editor.fields.card_border_color', lang, 'Border Color')}
-                </label>
-                <div class="setting-description">
-                  ${localize(
-                    'editor.fields.card_border_color_desc',
-                    lang,
-                    'The border color of the card'
-                  )}
-                </div>
-                <ultra-color-picker
-                  .label=${'Card Border Color'}
-                  .value=${this.config.card_border_color || 'var(--divider-color)'}
-                  .defaultValue=${'var(--divider-color)'}
-                  .hass=${this.hass}
-                  @value-changed=${(e: CustomEvent) =>
-                    this._updateConfig({ card_border_color: e.detail.value })}
-                ></ultra-color-picker>
-              </div>
-
-              <div class="setting-item">
-                <label>
-                  ${localize('editor.fields.card_border_width', lang, 'Border Width')}
-                </label>
-                <div class="setting-description">
-                  ${localize(
-                    'editor.fields.card_border_width_desc',
-                    lang,
-                    'The thickness of the card border (in pixels)'
-                  )}
-                </div>
-                <div class="input-with-unit">
-                  <input
-                    type="number"
-                    min="0"
-                    max="10"
-                    .value=${this.config.card_border_width ?? ''}
-                    placeholder="1"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value.trim();
-                      this._updateConfig({
-                        card_border_width: value === '' ? undefined : Number(value),
-                      });
-                    }}
-                  />
-                  <span class="unit">${localize('editor.fields.unit_px', lang, 'px')}</span>
-                  <button
-                    class="reset-btn"
-                    @click=${() => this._updateConfig({ card_border_width: 1 })}
-                    title=${localize(
-                      'editor.fields.reset_default_value',
-                      lang,
-                      'Reset to default ({value})'
-                    ).replace('{value}', '1px')}
-                  >
-                    ↺
-                  </button>
-                </div>
-              </div>
-
-              <!-- Card Overflow Setting -->
-              <div class="setting-item">
-                <label>
-                  ${localize('editor.fields.card_overflow', lang, 'Content Overflow')}
-                </label>
-                <div class="setting-description">
-                  ${localize(
-                    'editor.fields.card_overflow_desc',
-                    lang,
-                    'How to handle content that extends beyond the card boundaries'
-                  )}
-                </div>
-                <ha-select
-                  .value=${this.config.card_overflow || 'visible'}
-                  @selected=${(e: CustomEvent) => {
-                    const value = (e.target as any).value;
-                    this._updateConfig({ card_overflow: value === 'visible' ? undefined : value });
-                  }}
-                  @closed=${(e: Event) => e.stopPropagation()}
-                  style="width: 100%;"
-                >
-                  <mwc-list-item value="visible">
-                    ${localize('editor.fields.overflow_visible', lang, 'Visible (default)')}
-                  </mwc-list-item>
-                  <mwc-list-item value="hidden">
-                    ${localize('editor.fields.overflow_hidden', lang, 'Hidden (clip content)')}
-                  </mwc-list-item>
-                  <mwc-list-item value="scroll">
-                    ${localize('editor.fields.overflow_scroll', lang, 'Scroll')}
-                  </mwc-list-item>
-                  <mwc-list-item value="auto">
-                    ${localize('editor.fields.overflow_auto', lang, 'Auto')}
-                  </mwc-list-item>
-                </ha-select>
-              </div>
-
-              <!-- Card Shadow Settings -->
-              <div class="setting-item" style="grid-column: 1 / -1;">
-                <div
-                  style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;"
-                >
-                  <label style="margin: 0; font-weight: 500;">
-                    ${localize('editor.fields.card_shadow_enabled', lang, 'Custom Drop Shadow')}
-                  </label>
-                  <ha-switch
-                    .checked=${this.config.card_shadow_enabled || false}
-                    @change=${(e: Event) => {
-                      const target = e.target as any;
-                      this._updateConfig({ card_shadow_enabled: target.checked });
-                    }}
-                  ></ha-switch>
-                </div>
-                <div class="setting-description">
-                  ${localize(
-                    'editor.fields.card_shadow_enabled_desc',
-                    lang,
-                    'Enable custom shadow for the card'
-                  )}
-                </div>
-              </div>
-
-              ${this.config.card_shadow_enabled
-                ? html`
-                    <div
-                      class="conditional-fields-group"
-                      style="grid-column: 1 / -1; padding: 16px; margin-top: 8px;"
-                    >
-                      <div class="settings-grid">
-                        <div class="setting-item">
-                          <label>
-                            ${localize('editor.fields.card_shadow_color', lang, 'Shadow Color')}
-                          </label>
-                          <div class="setting-description">
-                            ${localize(
-                              'editor.fields.card_shadow_color_desc',
-                              lang,
-                              'The color of the card shadow'
-                            )}
-                          </div>
-                          <ultra-color-picker
-                            .label=${'Shadow Color'}
-                            .value=${this.config.card_shadow_color || 'rgba(0, 0, 0, 0.15)'}
-                            .defaultValue=${'rgba(0, 0, 0, 0.15)'}
-                            .hass=${this.hass}
-                            @value-changed=${(e: CustomEvent) =>
-                              this._updateConfig({ card_shadow_color: e.detail.value })}
-                          ></ultra-color-picker>
-                        </div>
-
-                        <div class="setting-item">
-                          <label>
-                            ${localize(
-                              'editor.fields.card_shadow_horizontal',
-                              lang,
-                              'Horizontal Offset'
-                            )}
-                          </label>
-                          <div class="setting-description">
-                            ${localize(
-                              'editor.fields.card_shadow_horizontal_desc',
-                              lang,
-                              'Horizontal position of the shadow (negative = left, positive = right)'
-                            )}
-                          </div>
-                          <div class="input-with-unit">
-                            <input
-                              type="number"
-                              min="-50"
-                              max="50"
-                              .value=${this.config.card_shadow_horizontal ?? 0}
-                              @input=${(e: Event) => {
-                                const target = e.target as HTMLInputElement;
-                                this._updateConfig({
-                                  card_shadow_horizontal: Number(target.value),
-                                });
-                              }}
-                            />
-                            <span class="unit"
-                              >${localize('editor.fields.unit_px', lang, 'px')}</span
-                            >
-                            <button
-                              class="reset-btn"
-                              @click=${() => this._updateConfig({ card_shadow_horizontal: 0 })}
-                              title=${localize(
-                                'editor.fields.reset_default_value',
-                                lang,
-                                'Reset to default ({value})'
-                              ).replace('{value}', '0px')}
-                            >
-                              ↺
-                            </button>
-                          </div>
-                        </div>
-
-                        <div class="setting-item">
-                          <label>
-                            ${localize(
-                              'editor.fields.card_shadow_vertical',
-                              lang,
-                              'Vertical Offset'
-                            )}
-                          </label>
-                          <div class="setting-description">
-                            ${localize(
-                              'editor.fields.card_shadow_vertical_desc',
-                              lang,
-                              'Vertical position of the shadow (negative = up, positive = down)'
-                            )}
-                          </div>
-                          <div class="input-with-unit">
-                            <input
-                              type="number"
-                              min="-50"
-                              max="50"
-                              .value=${this.config.card_shadow_vertical ?? 2}
-                              @input=${(e: Event) => {
-                                const target = e.target as HTMLInputElement;
-                                this._updateConfig({
-                                  card_shadow_vertical: Number(target.value),
-                                });
-                              }}
-                            />
-                            <span class="unit"
-                              >${localize('editor.fields.unit_px', lang, 'px')}</span
-                            >
-                            <button
-                              class="reset-btn"
-                              @click=${() => this._updateConfig({ card_shadow_vertical: 2 })}
-                              title=${localize(
-                                'editor.fields.reset_default_value',
-                                lang,
-                                'Reset to default ({value})'
-                              ).replace('{value}', '2px')}
-                            >
-                              ↺
-                            </button>
-                          </div>
-                        </div>
-
-                        <div class="setting-item">
-                          <label>
-                            ${localize('editor.fields.card_shadow_blur', lang, 'Blur Radius')}
-                          </label>
-                          <div class="setting-description">
-                            ${localize(
-                              'editor.fields.card_shadow_blur_desc',
-                              lang,
-                              'How blurred the shadow appears'
-                            )}
-                          </div>
-                          <div class="input-with-unit">
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              .value=${this.config.card_shadow_blur ?? 8}
-                              @input=${(e: Event) => {
-                                const target = e.target as HTMLInputElement;
-                                this._updateConfig({
-                                  card_shadow_blur: Number(target.value),
-                                });
-                              }}
-                            />
-                            <span class="unit"
-                              >${localize('editor.fields.unit_px', lang, 'px')}</span
-                            >
-                            <button
-                              class="reset-btn"
-                              @click=${() => this._updateConfig({ card_shadow_blur: 8 })}
-                              title=${localize(
-                                'editor.fields.reset_default_value',
-                                lang,
-                                'Reset to default ({value})'
-                              ).replace('{value}', '8px')}
-                            >
-                              ↺
-                            </button>
-                          </div>
-                        </div>
-
-                        <div class="setting-item">
-                          <label>
-                            ${localize('editor.fields.card_shadow_spread', lang, 'Spread Radius')}
-                          </label>
-                          <div class="setting-description">
-                            ${localize(
-                              'editor.fields.card_shadow_spread_desc',
-                              lang,
-                              'How much the shadow expands or contracts'
-                            )}
-                          </div>
-                          <div class="input-with-unit">
-                            <input
-                              type="number"
-                              min="-50"
-                              max="50"
-                              .value=${this.config.card_shadow_spread ?? 0}
-                              @input=${(e: Event) => {
-                                const target = e.target as HTMLInputElement;
-                                this._updateConfig({
-                                  card_shadow_spread: Number(target.value),
-                                });
-                              }}
-                            />
-                            <span class="unit"
-                              >${localize('editor.fields.unit_px', lang, 'px')}</span
-                            >
-                            <button
-                              class="reset-btn"
-                              @click=${() => this._updateConfig({ card_shadow_spread: 0 })}
-                              title=${localize(
-                                'editor.fields.reset_default_value',
-                                lang,
-                                'Reset to default ({value})'
-                              ).replace('{value}', '0px')}
-                            >
-                              ↺
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                    <div class="input-with-unit">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        .value=${this.config.card_padding ?? ''}
+                        placeholder="16"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = target.value.trim();
+                          this._updateConfig({
+                            card_padding: value === '' ? 16 : Number(value),
+                          });
+                        }}
+                      />
+                      <span class="unit">${localize('editor.fields.unit_px', lang, 'px')}</span>
+                      <button
+                        class="reset-btn"
+                        @click=${() => this._updateConfig({ card_padding: 16 })}
+                        title=${localize(
+                          'editor.fields.reset_default_value',
+                          lang,
+                          'Reset to default ({value})'
+                        ).replace('{value}', '16px')}
+                      >
+                        ↺
+                      </button>
                     </div>
-                  `
-                : ''}
-            </div>
-          </div>
+                  </div>
 
-          <!-- Spacing Section -->
-          <div class="settings-section">
-            <div class="section-header">
-              <h4>${localize('editor.spacing.title', lang, 'Spacing')}</h4>
-              <p>
-                ${localize(
-                  'editor.spacing.description',
-                  lang,
-                  'Control the spacing and positioning of your card'
-                )}
-              </p>
-            </div>
-
-            <div class="settings-grid">
-              <div class="setting-item">
-                <label>${localize('editor.fields.card_padding', lang, 'Card Padding')}</label>
-                <div class="setting-description">
-                  ${localize(
-                    'editor.fields.card_padding_desc',
-                    lang,
-                    'Internal spacing within the card'
-                  )}
-                </div>
-                <div class="input-with-unit">
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    .value=${this.config.card_padding ?? ''}
-                    placeholder="16"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value.trim();
-                      this._updateConfig({
-                        card_padding: value === '' ? 16 : Number(value),
-                      });
-                    }}
-                  />
-                  <span class="unit">${localize('editor.fields.unit_px', lang, 'px')}</span>
-                  <button
-                    class="reset-btn"
-                    @click=${() => this._updateConfig({ card_padding: 16 })}
-                    title=${localize(
-                      'editor.fields.reset_default_value',
-                      lang,
-                      'Reset to default ({value})'
-                    ).replace('{value}', '16px')}
-                  >
-                    ↺
-                  </button>
+                  <div class="setting-item">
+                    <label>${localize('editor.fields.card_margin', lang, 'Card Margin')}</label>
+                    <div class="setting-description">
+                      ${localize(
+                        'editor.fields.card_margin_desc',
+                        lang,
+                        'External spacing around the card'
+                      )}
+                    </div>
+                    <div class="input-with-unit">
+                      <input
+                        type="number"
+                        min="0"
+                        max="50"
+                        .value=${this.config.card_margin ?? ''}
+                        placeholder="0"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = target.value.trim();
+                          this._updateConfig({
+                            card_margin: value === '' ? 0 : Number(value),
+                          });
+                        }}
+                      />
+                      <span class="unit">${localize('editor.fields.unit_px', lang, 'px')}</span>
+                      <button
+                        class="reset-btn"
+                        @click=${() => this._updateConfig({ card_margin: 0 })}
+                        title=${localize(
+                          'editor.fields.reset_default_value',
+                          lang,
+                          'Reset to default ({value})'
+                        ).replace('{value}', '0px')}
+                      >
+                        ↺
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <div class="setting-item">
-                <label>${localize('editor.fields.card_margin', lang, 'Card Margin')}</label>
-                <div class="setting-description">
-                  ${localize(
-                    'editor.fields.card_margin_desc',
-                    lang,
-                    'External spacing around the card'
-                  )}
-                </div>
-                <div class="input-with-unit">
-                  <input
-                    type="number"
-                    min="0"
-                    max="50"
-                    .value=${this.config.card_margin ?? ''}
-                    placeholder="0"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value.trim();
-                      this._updateConfig({
-                        card_margin: value === '' ? 0 : Number(value),
-                      });
-                    }}
-                  />
-                  <span class="unit">${localize('editor.fields.unit_px', lang, 'px')}</span>
-                  <button
-                    class="reset-btn"
-                    @click=${() => this._updateConfig({ card_margin: 0 })}
-                    title=${localize(
-                      'editor.fields.reset_default_value',
-                      lang,
-                      'Reset to default ({value})'
-                    ).replace('{value}', '0px')}
-                  >
-                    ↺
-                  </button>
-                </div>
-              </div>
-            </div>
+            ` : ''}
           </div>
 
-          <!-- Behavior Section -->
-          <div class="settings-section">
-            <div class="section-header">
-              <h4>${localize('editor.behavior.title', lang, 'Behavior')}</h4>
-              <p>
-                ${localize(
-                  'editor.behavior.description',
-                  lang,
-                  'Configure how your card responds to user interactions'
-                )}
-              </p>
-            </div>
-
-            <div class="settings-grid">
-              <div class="setting-item setting-inline">
-                <label>
-                  ${localize('editor.actions.haptic_feedback', lang, 'Haptic Feedback')}
-                </label>
-                <div class="setting-description">
-                  ${localize(
-                    'editor.actions.haptic_feedback_desc',
-                    lang,
-                    'Provide tactile feedback when buttons are pressed on supported devices'
-                  )}
-                  <br /><small style="opacity: 0.7;"
-                    >Uses Home Assistant's native haptic system. Respects OS-level haptic
-                    settings.</small
-                  >
+          <!-- Behavior Accordion -->
+          <div class="cs-accordion">
+            <button
+              class="cs-accordion-header ${this._expandedCardSections.has('behavior') ? 'expanded' : ''}"
+              @click=${() => this._toggleCardSection('behavior')}
+            >
+              <ha-icon icon="mdi:gesture-tap" style="--mdc-icon-size: 20px;"></ha-icon>
+              <span class="cs-accordion-title">
+                ${localize('editor.behavior.title', lang, 'Behavior')}
+              </span>
+              <ha-icon icon="mdi:chevron-${this._expandedCardSections.has('behavior') ? 'up' : 'down'}" style="--mdc-icon-size: 20px; margin-left: auto;"></ha-icon>
+            </button>
+            ${this._expandedCardSections.has('behavior') ? html`
+              <div class="cs-accordion-content">
+                <div class="settings-grid">
+                  <div class="setting-item">
+                    <div class="cs-inline-toggle">
+                      <label>
+                        ${localize('editor.actions.haptic_feedback', lang, 'Haptic Feedback')}
+                      </label>
+                      <ha-form
+                        .hass=${this.hass}
+                        .data=${{ haptic_feedback: this.config.haptic_feedback !== false }}
+                        .schema=${[
+                          {
+                            name: 'haptic_feedback',
+                            label: '',
+                            selector: {
+                              boolean: {},
+                            },
+                          },
+                        ]}
+                        .computeLabel=${() => ''}
+                        @value-changed=${(e: CustomEvent) => {
+                          const enabled = (e.detail as any)?.value?.haptic_feedback;
+                          if (enabled !== undefined) {
+                            this._updateConfig({ haptic_feedback: enabled });
+                          }
+                        }}
+                      ></ha-form>
+                    </div>
+                    <div class="setting-description">
+                      ${localize(
+                        'editor.actions.haptic_feedback_desc',
+                        lang,
+                        'Provide tactile feedback when buttons are pressed on supported devices'
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <ha-form
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Variables Accordion -->
+          <div class="cs-accordion">
+            <button
+              class="cs-accordion-header ${this._expandedCardSections.has('variables') ? 'expanded' : ''}"
+              @click=${() => this._toggleCardSection('variables')}
+            >
+              <ha-icon icon="mdi:variable" style="--mdc-icon-size: 20px;"></ha-icon>
+              <span class="cs-accordion-title">
+                ${localize('editor.custom_variables.card_variables', lang, 'Card Variables')}
+              </span>
+              <ha-icon icon="mdi:chevron-${this._expandedCardSections.has('variables') ? 'up' : 'down'}" style="--mdc-icon-size: 20px; margin-left: auto;"></ha-icon>
+            </button>
+            ${this._expandedCardSections.has('variables') ? html`
+              <div class="cs-accordion-content">
+                <div class="setting-description" style="margin-bottom: 12px;">
+                  ${localize(
+                    'editor.custom_variables.card_section_description',
+                    lang,
+                    'Variables that apply only to this card. For shared variables used across cards, use the Ultra Card Hub → Variables tab in the sidebar.'
+                  )}
+                </div>
+                <uc-custom-variables-manager
                   .hass=${this.hass}
-                  .data=${{ haptic_feedback: this.config.haptic_feedback !== false }}
-                  .schema=${[
-                    {
-                      name: 'haptic_feedback',
-                      label: '',
-                      selector: {
-                        boolean: {},
-                      },
-                    },
-                  ]}
-                  .computeLabel=${() => ''}
-                  @value-changed=${(e: CustomEvent) => {
-                    const enabled = (e.detail as any)?.value?.haptic_feedback;
-                    if (enabled !== undefined) {
-                      this._updateConfig({ haptic_feedback: enabled });
-                    }
-                  }}
-                ></ha-form>
+                  .config=${this.config}
+                  .cardOnly=${true}
+                  @card-variables-changed=${this._handleCardVariablesChanged}
+                ></uc-custom-variables-manager>
               </div>
-            </div>
+            ` : ''}
           </div>
 
-          <!-- Card-Only Variables Section (global variables managed in Ultra Card Hub → Variables tab) -->
-          <div class="settings-section">
-            <div class="section-header">
-              <h4>${localize('editor.custom_variables.card_variables', lang, 'Card Variables')}</h4>
-              <p>
-                ${localize(
-                  'editor.custom_variables.card_section_description',
-                  lang,
-                  'Variables that apply only to this card. For shared variables used across cards, use the Ultra Card Hub → Variables tab in the sidebar.'
-                )}
-              </p>
-            </div>
-
-            <uc-custom-variables-manager
-              .hass=${this.hass}
-              .config=${this.config}
-              .cardOnly=${true}
-              @card-variables-changed=${this._handleCardVariablesChanged}
-            ></uc-custom-variables-manager>
-          </div>
         </div>
       </div>
     `;
@@ -1686,7 +1647,7 @@ export class UltraCardEditor extends LitElement {
     }
     // Finally check localStorage
     try {
-      return localStorage.getItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY) === 'true';
+      return safeGetItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY) === 'true';
     } catch {
       return false;
     }
@@ -1713,7 +1674,7 @@ export class UltraCardEditor extends LitElement {
 
     // Also try localStorage for persistence across browser restarts
     try {
-      localStorage.setItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY, enabled ? 'true' : 'false');
+      safeSetItem(UltraCardEditor.SKIP_DEFAULT_MODULES_KEY, enabled ? 'true' : 'false');
       savedTo = 'localStorage';
     } catch {
       /* localStorage full */
@@ -1828,6 +1789,17 @@ export class UltraCardEditor extends LitElement {
 
   static get styles() {
     return css`
+      .editor-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 16px;
+        gap: 16px;
+        color: var(--secondary-text-color);
+        font-size: 14px;
+      }
+
       /* Global styles for hiding preview in full screen */
       :host {
         --ultra-editor-transition: all 0.3s ease;
@@ -2330,9 +2302,9 @@ export class UltraCardEditor extends LitElement {
 
       .settings-tab,
       .pro-tab-content {
-        padding: 12px;
+        padding: 16px;
         background: var(--card-background-color);
-        border-radius: 8px;
+        border-radius: 12px;
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
@@ -2342,38 +2314,126 @@ export class UltraCardEditor extends LitElement {
       }
 
       .settings-header {
-        margin-bottom: 24px;
+        margin-bottom: 20px;
         padding-bottom: 16px;
         border-bottom: 1px solid var(--divider-color);
       }
 
+      .settings-header-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
       .settings-header h3 {
-        margin: 0 0 8px 0;
+        margin: 0;
         color: var(--primary-text-color);
         font-size: 18px;
         font-weight: 600;
       }
 
       .settings-header p {
-        margin: 0;
+        margin: 4px 0 0 0;
         color: var(--secondary-text-color);
-        font-size: 14px;
+        font-size: 13px;
         line-height: 1.4;
       }
 
       .settings-container {
         display: flex;
         flex-direction: column;
-        gap: 24px;
+        gap: 8px;
         flex: 1;
       }
 
+      /* Card name compact bar */
+      .card-name-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 12px;
+        background: var(--secondary-background-color);
+        border-radius: 10px;
+        margin-bottom: 4px;
+      }
+
+      .card-name-bar ha-textfield {
+        --mdc-text-field-filled-border-radius: 8px;
+      }
+
+      /* Card Settings Accordion */
+      .cs-accordion {
+        border: 1px solid var(--divider-color);
+        border-radius: 10px;
+        overflow: visible;
+        transition: border-color 0.2s ease;
+      }
+
+      .cs-accordion:has(.cs-accordion-header.expanded) {
+        border-color: var(--primary-color);
+      }
+
+      .cs-accordion-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 14px 16px;
+        background: var(--secondary-background-color);
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        color: var(--primary-text-color);
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+      }
+
+      .cs-accordion-header:hover {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .cs-accordion-header.expanded {
+        background: var(--primary-color);
+        color: white;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .cs-accordion-title {
+        flex: 1;
+        text-align: left;
+      }
+
+      .cs-accordion-content {
+        padding: 20px;
+        background: var(--card-background-color);
+        border-top: 1px solid var(--divider-color);
+        border-radius: 0 0 10px 10px;
+      }
+
+      .cs-inline-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .cs-divider {
+        height: 1px;
+        background: var(--divider-color);
+        margin: 4px 0;
+      }
+
+      /* Legacy settings-section (kept for backwards compat with other tabs) */
       .settings-section {
         background: var(--secondary-background-color);
         border: 2px solid var(--primary-color);
         border-radius: 8px;
         padding: 20px;
         box-sizing: border-box;
+        overflow: visible;
       }
 
       .section-header {
@@ -2419,7 +2479,7 @@ export class UltraCardEditor extends LitElement {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        flex-wrap: wrap; /* allow description on its own row */
+        flex-wrap: wrap;
         gap: 12px;
         width: 100%;
       }
@@ -2428,11 +2488,11 @@ export class UltraCardEditor extends LitElement {
         margin-right: 12px;
       }
       .setting-inline ha-form {
-        margin-left: auto; /* push toggle to right */
+        margin-left: auto;
       }
       .setting-inline > .setting-description {
         order: 3;
-        width: 100%; /* force onto next line below title+toggle */
+        width: 100%;
         margin: 6px 0 0 0;
       }
 
@@ -2441,6 +2501,7 @@ export class UltraCardEditor extends LitElement {
         background: var(--secondary-background-color, rgba(0, 0, 0, 0.05));
         border-left: 3px solid var(--primary-color);
         border-radius: 4px;
+        padding: 16px;
       }
 
       /* Upload container styling */
@@ -2583,13 +2644,37 @@ export class UltraCardEditor extends LitElement {
         max-width: none;
       }
 
+      .property-select,
+      .property-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 14px;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .property-select:focus,
+      .property-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+      }
+
       /* Responsive adjustments */
       @media (max-width: 768px) {
         .settings-tab {
-          padding: 16px 12px;
+          padding: 12px 10px;
         }
 
-        .settings-section {
+        .cs-accordion-header {
+          padding: 12px 14px;
+        }
+
+        .cs-accordion-content {
           padding: 16px;
         }
 

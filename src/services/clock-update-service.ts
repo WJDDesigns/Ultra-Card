@@ -75,6 +75,7 @@ class ClockUpdateService {
   clearAll(): void {
     this.timers.forEach(timer => clearInterval(timer.intervalId));
     this.timers.clear();
+    this.updateCallback = undefined;
   }
 
   /**

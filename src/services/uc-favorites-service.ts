@@ -1,4 +1,5 @@
 import { FavoriteRow, CardRow } from '../types';
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
 // NOTE: Cloud sync disabled - import removed as favorites are local-only per user request
 // import { ucCloudSyncService } from './uc-cloud-sync-service';
 
@@ -134,7 +135,7 @@ class UcFavoritesService {
     console.log('LocalStorage Available:', this._isLocalStorageAvailable());
 
     try {
-      const stored = localStorage.getItem(UcFavoritesService.STORAGE_KEY);
+      const stored = safeGetItem(UcFavoritesService.STORAGE_KEY);
       console.log('Raw Storage Data:', stored ? `${stored.length} characters` : 'null');
       console.log('Storage Data Valid:', stored ? 'Valid JSON' : 'No data');
 
@@ -193,7 +194,7 @@ class UcFavoritesService {
         return;
       }
 
-      const stored = localStorage.getItem(UcFavoritesService.STORAGE_KEY);
+      const stored = safeGetItem(UcFavoritesService.STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
@@ -218,7 +219,7 @@ class UcFavoritesService {
       }
 
       const dataToSave = JSON.stringify(this._favorites);
-      localStorage.setItem(UcFavoritesService.STORAGE_KEY, dataToSave);
+      safeSetItem(UcFavoritesService.STORAGE_KEY, dataToSave);
     } catch (error) {
       console.error('Failed to save favorites to storage:', error);
 
@@ -274,8 +275,8 @@ class UcFavoritesService {
   private _isLocalStorageAvailable(): boolean {
     try {
       const testKey = '__ultra_card_storage_test__';
-      localStorage.setItem(testKey, 'test');
-      localStorage.removeItem(testKey);
+      safeSetItem(testKey, 'test');
+      safeRemoveItem(testKey);
       return true;
     } catch (error) {
       return false;
@@ -308,7 +309,7 @@ class UcFavoritesService {
     // Try to save again
     try {
       const dataToSave = JSON.stringify(this._favorites);
-      localStorage.setItem(UcFavoritesService.STORAGE_KEY, dataToSave);
+      safeSetItem(UcFavoritesService.STORAGE_KEY, dataToSave);
       console.log('Successfully saved favorites after cleanup');
       this._notifyListeners();
       this._broadcastChange();

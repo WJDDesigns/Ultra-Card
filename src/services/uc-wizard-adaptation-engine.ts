@@ -19,7 +19,7 @@ function cloneLayout(layout: LayoutConfig): LayoutConfig {
  */
 function getModuleEntityIds(module: CardModule): string[] {
   const ids: string[] = [];
-  const m = module as Record<string, unknown>;
+  const m = module as unknown as Record<string, unknown>;
   const keys = [
     'entity',
     'value_entity',
@@ -69,9 +69,9 @@ function moduleMatchesChange(module: CardModule, change: PresetWizardChange): bo
 }
 
 function applyChangeToModule(module: CardModule, change: PresetWizardChange): CardModule {
-  const next = { ...module } as Record<string, unknown>;
+  const next = { ...module } as unknown as Record<string, unknown>;
   next[change.property] = change.value;
-  return next as CardModule;
+  return next as unknown as CardModule;
 }
 
 function mapModuleRecursive(module: CardModule, mutator: (m: CardModule) => CardModule): CardModule {

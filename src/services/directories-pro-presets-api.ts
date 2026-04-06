@@ -3,6 +3,8 @@
  * Fetches presets from ultracard.io WordPress site using Directories Pro
  */
 
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
+
 export interface WordPressPreset {
   id: number;
   name: string;
@@ -340,7 +342,7 @@ export class DirectoriesProPresetsAPI {
     const keys = Object.keys(localStorage);
     keys.forEach(key => {
       if (key.startsWith('wp-presets-cache-')) {
-        localStorage.removeItem(key);
+        safeRemoveItem(key);
       }
     });
   }
@@ -425,7 +427,7 @@ export class DirectoriesProPresetsAPI {
       }
       
       const storageKey = `wp-presets-cache-${key}`;
-      localStorage.setItem(storageKey, serialized);
+      safeSetItem(storageKey, serialized);
     } catch (error) {
       // If quota exceeded, try cleaning up more aggressively and retry
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
@@ -440,7 +442,7 @@ export class DirectoriesProPresetsAPI {
           // Only retry if the entry isn't too large
           if (estimatedSize <= DirectoriesProPresetsAPI.MAX_ENTRY_SIZE) {
             const storageKey = `wp-presets-cache-${key}`;
-            localStorage.setItem(storageKey, serialized);
+            safeSetItem(storageKey, serialized);
           }
           // If too large, silently skip (already cached in memory)
         } catch (retryError) {
@@ -471,7 +473,7 @@ export class DirectoriesProPresetsAPI {
 
     try {
       const storageKey = `wp-presets-cache-${key}`;
-      const stored = localStorage.getItem(storageKey);
+      const stored = safeGetItem(storageKey);
 
       if (!stored) return null;
 
@@ -485,7 +487,7 @@ export class DirectoriesProPresetsAPI {
 
       if (cacheAge > maxAge) {
         if (!allowStale) {
-          localStorage.removeItem(storageKey);
+          safeRemoveItem(storageKey);
         }
         return allowStale ? parsed : null;
       }
@@ -685,7 +687,7 @@ export class DirectoriesProPresetsAPI {
       let cleanedCount = 0;
       presetCacheKeys.forEach(key => {
         try {
-          const stored = localStorage.getItem(key);
+          const stored = safeGetItem(key);
           if (!stored) return;
 
           const parsed = JSON.parse(stored);
@@ -693,12 +695,12 @@ export class DirectoriesProPresetsAPI {
 
           // Remove expired entries (beyond regular cache duration)
           if (cacheAge > DirectoriesProPresetsAPI.CACHE_DURATION) {
-            localStorage.removeItem(key);
+            safeRemoveItem(key);
             cleanedCount++;
           }
         } catch {
           // Invalid entry, remove it
-          localStorage.removeItem(key);
+          safeRemoveItem(key);
           cleanedCount++;
         }
       });
@@ -713,7 +715,7 @@ export class DirectoriesProPresetsAPI {
         const entriesWithTimestamps = remainingKeys
           .map(key => {
             try {
-              const stored = localStorage.getItem(key);
+              const stored = safeGetItem(key);
               if (!stored) return null;
               const parsed = JSON.parse(stored);
               return { key, timestamp: parsed.timestamp };
@@ -731,7 +733,7 @@ export class DirectoriesProPresetsAPI {
 
         toRemove.forEach(entry => {
           if (entry?.key) {
-            localStorage.removeItem(entry.key);
+            safeRemoveItem(entry.key);
             cleanedCount++;
           }
         });
@@ -759,7 +761,7 @@ export class DirectoriesProPresetsAPI {
       const entriesWithTimestamps = presetCacheKeys
         .map(key => {
           try {
-            const stored = localStorage.getItem(key);
+            const stored = safeGetItem(key);
             if (!stored) return null;
             const parsed = JSON.parse(stored);
             return { key, timestamp: parsed.timestamp };
@@ -779,7 +781,7 @@ export class DirectoriesProPresetsAPI {
 
       entriesToRemove.forEach(entry => {
         if (entry?.key) {
-          localStorage.removeItem(entry.key);
+          safeRemoveItem(entry.key);
         }
       });
 
@@ -799,7 +801,7 @@ export class DirectoriesProPresetsAPI {
       
       presetCacheKeys.forEach(key => {
         try {
-          localStorage.removeItem(key);
+          safeRemoveItem(key);
         } catch {
           // Ignore errors during cleanup
         }
@@ -828,7 +830,7 @@ export class DirectoriesProPresetsAPI {
       const sortedKeys = presetCacheKeys
         .map(key => {
           try {
-            const data = localStorage.getItem(key);
+            const data = safeGetItem(key);
             if (!data) return null;
             const parsed = JSON.parse(data);
             return { key, timestamp: parsed.timestamp, data: parsed.data };

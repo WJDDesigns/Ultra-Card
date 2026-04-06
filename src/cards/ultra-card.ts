@@ -108,6 +108,7 @@ export class UltraCard extends LitElement {
   private _templateUpdateListener?: (event: Event) => void;
   private _qrDataReadyListener?: () => void;
   private _authListener?: (user: CloudUser | null) => void;
+  private _sliderStateHandler?: (e: Event) => void;
   /**
    * Flag to ensure module CSS is injected only once per card instance.
    */
@@ -116,7 +117,18 @@ export class UltraCard extends LitElement {
   private _layoutTemplateService: TemplateService | null = null;
   /** True after layout columns_template / modules_template subs are registered for this service instance */
   private _layoutTemplatesRegistered = false;
-  private _templateUpdateDebounceTimer?: ReturnType<typeof setTimeout>;
+  private _templateUpdateDebounceTimer?: number;
+  /** Monotonic counter bumped on every config change; used as a cheap cache key instead of JSON.stringify. */
+  private _configVersion = 0;
+  /** Coalesces multiple requestUpdate calls within the same microtask. */
+  private _pendingUpdate = false;
+  /** Cached dashboard edit mode with staleness window. */
+  private _cachedDashboardEditMode: boolean | null = null;
+  private _cachedDashboardEditModeTs = 0;
+  /** Tracks which config version the service modules were last registered for. */
+  private _lastRegisteredConfigVersion = -1;
+  /** Tracks invisible state across renders for parent visibility side-effects. */
+  private _lastInvisibleState: boolean | null = null;
   /** Parsed layout template results; invalidated when config.layout or template raw string changes. */
   private _layoutColumnsParsedCache = new Map<string, { raw: string; value: CardColumn[] }>();
   private _layoutModulesParsedCache = new Map<string, { raw: string; value: CardModule[] }>();
@@ -127,9 +139,9 @@ export class UltraCard extends LitElement {
   private _variablesBackupUnsub?: () => void;
   private _variablesBackupVersion = 0;
 
-  /** Cached config-derived data; invalidated when config.layout changes */
+  /** Cached config-derived data; invalidated when _configVersion changes */
   private _configCache: {
-    layoutKey: string;
+    layoutKey: number;
     relevantEntityIds: Set<string>;
     allModules: CardModule[];
     moduleTypes: Set<string>;
@@ -148,7 +160,7 @@ export class UltraCard extends LitElement {
 
   private _getConfigCache(): NonNullable<UltraCard['_configCache']> {
     const layout = this.config?.layout;
-    const layoutKey = layout ? JSON.stringify(layout) : '';
+    const layoutKey = this._configVersion;
     if (this._configCache && this._configCache.layoutKey === layoutKey) {
       return this._configCache;
     }
@@ -277,7 +289,7 @@ export class UltraCard extends LitElement {
           row.columns?.some(col => col.modules?.some(mod => mod.type === 'external_card'))
         );
         if (has3rdPartyCards) {
-          this.requestUpdate();
+          this._scheduleUpdate();
         }
       });
     } catch (_e) { /* ignore */ }
@@ -310,7 +322,7 @@ export class UltraCard extends LitElement {
       );
 
       if (hasClockModules) {
-        this.requestUpdate();
+        this._scheduleUpdate();
       }
     });
 
@@ -348,7 +360,7 @@ export class UltraCard extends LitElement {
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
 
     // Re-render when QR code module finishes generating (async toDataURL)
-    this._qrDataReadyListener = () => this.requestUpdate();
+    this._qrDataReadyListener = () => this._scheduleUpdate();
     window.addEventListener('uc-qr-data-ready', this._qrDataReadyListener);
 
     // React to preview flag toggles so open editor Save/Done updates unlocks immediately
@@ -356,26 +368,26 @@ export class UltraCard extends LitElement {
       // Do not change registration on preview open/close, just re-render.
       // Registration is idempotent and deduped; keys are card-agnostic now.
       dbg3p('card:preview-flag', e?.detail);
-      this.requestUpdate();
+      this._scheduleUpdate();
     };
     window.addEventListener('uc-preview-suppress-locks-changed', previewListener);
     // Store to remove later
     (this as any)._ucPreviewFlagListener = previewListener;
 
     // Listen for slider state changes (both on element and window for reliability)
-    const sliderStateHandler = (e: Event) => {
+    this._sliderStateHandler = (e: Event) => {
       e.stopPropagation?.();
-      this.requestUpdate();
+      this._scheduleUpdate();
     };
-    this.addEventListener('slider-state-changed', sliderStateHandler);
-    window.addEventListener('slider-state-changed', sliderStateHandler);
+    this.addEventListener('slider-state-changed', this._sliderStateHandler);
+    window.addEventListener('slider-state-changed', this._sliderStateHandler);
 
     // Set up auth listener to track pro status changes
     this._cloudUser = ucCloudAuthService.getCurrentUser();
     this._authListener = (user: CloudUser | null) => {
       this._cloudUser = user;
       dbg3p('card:auth-changed');
-      this.requestUpdate(); // Re-render when auth status changes
+      this._scheduleUpdate();
     };
     ucCloudAuthService.addListener(this._authListener);
 
@@ -457,6 +469,13 @@ export class UltraCard extends LitElement {
         'ultra-card-global-transparency-changed',
         this._globalTransparencyListener
       );
+    }
+
+    // Remove slider state listeners
+    if (this._sliderStateHandler) {
+      this.removeEventListener('slider-state-changed', this._sliderStateHandler);
+      window.removeEventListener('slider-state-changed', this._sliderStateHandler);
+      this._sliderStateHandler = undefined;
     }
 
     // Remove preview flag listener
@@ -556,6 +575,32 @@ export class UltraCard extends LitElement {
     // NOTE: We no longer dispatch config-changed events automatically for backup
     // This was causing HA's card picker to pre-select UC card when adding new cards
     // Backup is now only saved when user explicitly saves through the editor
+  }
+
+  /**
+   * Coalesce multiple requestUpdate() calls within the same microtask into a single update.
+   * Use instead of bare requestUpdate() in event listeners and callbacks.
+   */
+  private _scheduleUpdate(): void {
+    if (this._pendingUpdate) return;
+    this._pendingUpdate = true;
+    queueMicrotask(() => {
+      this._pendingUpdate = false;
+      this.requestUpdate();
+    });
+  }
+
+  /**
+   * Returns cached dashboard edit mode, refreshed at most once per second.
+   */
+  private _getCachedDashboardEditMode(): boolean {
+    const now = Date.now();
+    if (this._cachedDashboardEditMode !== null && now - this._cachedDashboardEditModeTs < 1000) {
+      return this._cachedDashboardEditMode;
+    }
+    this._cachedDashboardEditMode = this._detectDashboardEditMode();
+    this._cachedDashboardEditModeTs = now;
+    return this._cachedDashboardEditMode;
   }
 
   /**
@@ -702,7 +747,6 @@ export class UltraCard extends LitElement {
       const newEntity = newHass.states?.[id];
       if (oldEntity?.state !== newEntity?.state) return true;
       if (oldEntity?.last_changed !== newEntity?.last_changed) return true;
-      if (oldEntity?.last_updated !== newEntity?.last_updated) return true;
     }
     return false;
   }
@@ -715,12 +759,13 @@ export class UltraCard extends LitElement {
     }
 
     if (changedProps.has('config')) {
+      this._configVersion++;
       // Only clear states if this is a substantial config change (not just internal updates)
       const oldConfig = changedProps.get('config') as UltraCardConfig;
       const newConfig = this.config;
 
-      // Clear states only if layout structure actually changed
-      if (!oldConfig || JSON.stringify(oldConfig.layout) !== JSON.stringify(newConfig?.layout)) {
+      // Clear states only if layout structure actually changed (cheap reference check first)
+      if (!oldConfig || oldConfig.layout !== newConfig?.layout) {
         // Clear animation states when layout changes
         this._moduleVisibilityState.clear();
         this._animatingModules.clear();
@@ -731,6 +776,8 @@ export class UltraCard extends LitElement {
         // Clear parsed layout template caches and re-register layout subscriptions
         this._layoutColumnsParsedCache.clear();
         this._layoutModulesParsedCache.clear();
+        // Invalidate cached dashboard edit mode on config change
+        this._cachedDashboardEditMode = null;
         if (this._layoutTemplateService && this.hass) {
           this._layoutTemplateService.unsubscribeTemplatesByPrefix('layout_').then(() => {
             try {
@@ -742,9 +789,6 @@ export class UltraCard extends LitElement {
           }).catch(() => {});
         }
       }
-
-      // Force re-render when config changes
-      this.requestUpdate();
 
       // Reflect card-level styles to host CSS variables so HA wrappers honor them
       const radius = newConfig?.card_border_radius;
@@ -774,7 +818,7 @@ export class UltraCard extends LitElement {
 
       if (shouldUpdate && (hasLogicConditions || hasNonExternalModules)) {
         this._lastHassChangeTime = currentTime;
-        this.requestUpdate();
+        this._scheduleUpdate();
       }
     }
   }
@@ -839,7 +883,7 @@ export class UltraCard extends LitElement {
         }
       } catch (_e) { /* ignore */ }
 
-      this.requestUpdate();
+      this._scheduleUpdate();
     }).catch(() => {});
   }
 
@@ -1082,77 +1126,32 @@ export class UltraCard extends LitElement {
     const cache = this._getConfigCache();
     const { onlyInvisibleModules, onlyPopupModules, allPopupsInvisible } = cache;
 
-    // Hoist per-render environment checks (computed once per render, passed to row/column/module)
-    const isHaPreview = this._detectEditorPreviewContext();
+    // Use cached/cheap environment checks instead of DOM traversal on every render
+    const isHaPreview = this._isEditorPreviewCard;
     const isInCardEditor = isHaPreview || !!document.querySelector('hui-dialog-edit-card');
-    const isDashboardEditMode = this._detectDashboardEditMode();
+    const isDashboardEditMode = this._getCachedDashboardEditMode();
     const breakpoint = responsiveDesignService.getCurrentBreakpoint();
     const renderCtx: RenderContext = { isHaPreview, isDashboardEditMode, breakpoint, hass };
 
-    // If only invisible modules (video_bg, dynamic_weather, living_canvas, etc.) and NOT in card editor AND NOT in dashboard edit mode, hide completely
-    if (onlyInvisibleModules && !isInCardEditor && !isDashboardEditMode) {
-      // Set attribute for CSS to hide the host element
+    // Track invisible state; parent visibility side-effects are handled in updated()
+    const isNowInvisible = onlyInvisibleModules && !isInCardEditor && !isDashboardEditMode;
+    this._lastInvisibleState = isNowInvisible;
+
+    if (isNowInvisible) {
       this.setAttribute('data-invisible', 'true');
-      // Also set inline style to ensure it's hidden (backup for shadow DOM scenarios)
       this.style.display = 'none';
       this.style.height = '0';
       this.style.overflow = 'hidden';
       this.style.margin = '0';
       this.style.padding = '0';
-
-      // Also try to hide parent hui-card element in sections view
-      requestAnimationFrame(() => {
-        try {
-          let parent: HTMLElement | null = this.parentElement;
-          let depth = 0;
-          while (parent && depth < 10) {
-            const tagName = parent.tagName?.toLowerCase();
-            if (tagName === 'hui-card' || tagName === 'hui-section-card') {
-              parent.style.display = 'none';
-              parent.style.height = '0';
-              parent.style.margin = '0';
-              parent.style.padding = '0';
-              break;
-            }
-            parent = parent.parentElement;
-            depth++;
-          }
-        } catch (e) {
-          // Ignore errors from DOM traversal
-        }
-      });
-
       return html``;
     } else {
       this.removeAttribute('data-invisible');
-      // Remove inline styles if we're not invisible
       this.style.removeProperty('display');
       this.style.removeProperty('height');
       this.style.removeProperty('overflow');
       this.style.removeProperty('margin');
       this.style.removeProperty('padding');
-
-      // Restore parent hui-card visibility if previously hidden
-      requestAnimationFrame(() => {
-        try {
-          let parent: HTMLElement | null = this.parentElement;
-          let depth = 0;
-          while (parent && depth < 10) {
-            const tagName = parent.tagName?.toLowerCase();
-            if (tagName === 'hui-card' || tagName === 'hui-section-card') {
-              parent.style.removeProperty('display');
-              parent.style.removeProperty('height');
-              parent.style.removeProperty('margin');
-              parent.style.removeProperty('padding');
-              break;
-            }
-            parent = parent.parentElement;
-            depth++;
-          }
-        } catch (e) {
-          // Ignore errors from DOM traversal
-        }
-      });
     }
 
     // If only popup modules with invisible triggers (logic/page_load) and NOT in card editor, render with display: contents (no visible container)
@@ -1172,15 +1171,6 @@ export class UltraCard extends LitElement {
       `;
     }
 
-    // Register weather modules after render to catch immediate changes
-    // Use requestAnimationFrame to avoid performance issues
-    if (this.config && hass && this._instanceId) {
-      requestAnimationFrame(() => {
-        this._registerDynamicWeatherModules();
-        this._registerLivingCanvasModules();
-      });
-    }
-
     return html`
       <div
         class="card-container"
@@ -1195,31 +1185,35 @@ export class UltraCard extends LitElement {
 
   updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
+
+    // Handle parent element visibility side-effects (moved from render to avoid rAF in render)
+    if (this._lastInvisibleState !== null) {
+      this._syncParentVisibility(this._lastInvisibleState);
+    }
+
     if (changedProperties.has('config')) {
       // Hard reset before re-initializing scaling logic
       this._forceResetScale();
       this._setupResponsiveScaling();
 
-      // Re-register video background modules when config changes
+      // Re-register service modules when config changes
       this._registerVideoBgModules();
-
-      // Re-register dynamic weather modules when config changes
       this._registerDynamicWeatherModules();
       this._registerLivingCanvasModules();
-
-      // Re-register background modules when config changes
       this._registerBackgroundModules();
-
-      // Re-register navigation modules when config changes
       this._registerNavigationModules();
+      this._lastRegisteredConfigVersion = this._configVersion;
     }
 
-    // Also re-register service-based modules when hass changes (for automatic mode updates and entity state changes)
-    if (changedProperties.has('hass')) {
-      this._registerDynamicWeatherModules();
-      this._registerLivingCanvasModules();
-      this._registerBackgroundModules();
-      this._registerNavigationModules();
+    // Only re-register service modules on hass change when config hasn't already triggered it
+    if (changedProperties.has('hass') && !changedProperties.has('config')) {
+      if (this._lastRegisteredConfigVersion !== this._configVersion) {
+        this._registerDynamicWeatherModules();
+        this._registerLivingCanvasModules();
+        this._registerBackgroundModules();
+        this._registerNavigationModules();
+        this._lastRegisteredConfigVersion = this._configVersion;
+      }
     }
 
     // Only check scaling when config or hass changes (not on every render) and feature is enabled
@@ -1230,6 +1224,38 @@ export class UltraCard extends LitElement {
       // Ensure native size before new measurement
       this._forceResetScale();
       this._scheduleScaleCheck();
+    }
+  }
+
+  /**
+   * Sync parent hui-card element visibility for invisible module cards.
+   * Extracted from render() so side-effects run in updated() lifecycle.
+   */
+  private _syncParentVisibility(invisible: boolean): void {
+    try {
+      let parent: HTMLElement | null = this.parentElement;
+      let depth = 0;
+      while (parent && depth < 10) {
+        const tagName = parent.tagName?.toLowerCase();
+        if (tagName === 'hui-card' || tagName === 'hui-section-card') {
+          if (invisible) {
+            parent.style.display = 'none';
+            parent.style.height = '0';
+            parent.style.margin = '0';
+            parent.style.padding = '0';
+          } else {
+            parent.style.removeProperty('display');
+            parent.style.removeProperty('height');
+            parent.style.removeProperty('margin');
+            parent.style.removeProperty('padding');
+          }
+          break;
+        }
+        parent = parent.parentElement;
+        depth++;
+      }
+    } catch {
+      // Ignore errors from DOM traversal
     }
   }
 

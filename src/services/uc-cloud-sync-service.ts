@@ -5,6 +5,7 @@
 
 import { ucCloudAuthService, CloudUser } from './uc-cloud-auth-service';
 import { FavoriteRow, FavoriteColor } from '../types';
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
 
 export interface SyncResult {
   success: boolean;
@@ -278,7 +279,7 @@ class UcCloudSyncService {
         throw new Error('Not authenticated');
       }
 
-      const localRaw = localStorage.getItem('ultra-card-custom-variables');
+      const localRaw = safeGetItem('ultra-card-custom-variables');
       const localVars: unknown[] = localRaw ? JSON.parse(localRaw) : [];
 
       const response = await ucCloudAuthService.authenticatedFetch(
@@ -293,7 +294,7 @@ class UcCloudSyncService {
       if (response.ok) {
         const data = await response.json();
         if (data?.variables) {
-          localStorage.setItem('ultra-card-custom-variables', JSON.stringify(data.variables));
+          safeSetItem('ultra-card-custom-variables', JSON.stringify(data.variables));
         }
         result.success = true;
         result.synced = localVars.length;
@@ -471,7 +472,7 @@ class UcCloudSyncService {
   private _getLocalFavorites(): any[] {
     // Integration with existing uc-favorites-service
     try {
-      const stored = localStorage.getItem('ultra-card-favorites');
+      const stored = safeGetItem('ultra-card-favorites');
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -535,7 +536,7 @@ class UcCloudSyncService {
     });
 
     // Update local storage
-    localStorage.setItem('ultra-card-favorites', JSON.stringify(localFavorites));
+    safeSetItem('ultra-card-favorites', JSON.stringify(localFavorites));
 
     return localFavorites;
   }
@@ -618,7 +619,7 @@ class UcCloudSyncService {
   // Color operations (similar pattern to favorites)
   private _getLocalColors(): FavoriteColor[] {
     try {
-      const stored = localStorage.getItem('ultra-card-favorite-colors');
+      const stored = safeGetItem('ultra-card-favorite-colors');
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -824,7 +825,7 @@ class UcCloudSyncService {
   // Review operations
   private _getLocalReviews(): CloudReview[] {
     try {
-      const stored = localStorage.getItem(REVIEWS_STORAGE_KEY);
+      const stored = safeGetItem(REVIEWS_STORAGE_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -845,7 +846,7 @@ class UcCloudSyncService {
       reviews.push(normalized);
     }
     try {
-      localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(reviews));
+      safeSetItem(REVIEWS_STORAGE_KEY, JSON.stringify(reviews));
     } catch (e) {
       console.error('Failed to save review locally:', e);
     }
@@ -962,7 +963,7 @@ class UcCloudSyncService {
   // Storage management
   private _loadSyncStatus(): void {
     try {
-      const stored = localStorage.getItem(UcCloudSyncService.SYNC_STATUS_KEY);
+      const stored = safeGetItem(UcCloudSyncService.SYNC_STATUS_KEY);
       if (stored) {
         const status = JSON.parse(stored);
         this._syncStatus = {
@@ -982,7 +983,7 @@ class UcCloudSyncService {
 
   private _saveSyncStatus(): void {
     try {
-      localStorage.setItem(
+      safeSetItem(
         UcCloudSyncService.SYNC_STATUS_KEY,
         JSON.stringify({
           ...this._syncStatus,
@@ -999,7 +1000,7 @@ class UcCloudSyncService {
 
   private _loadPendingChanges(): void {
     try {
-      const stored = localStorage.getItem(UcCloudSyncService.PENDING_CHANGES_KEY);
+      const stored = safeGetItem(UcCloudSyncService.PENDING_CHANGES_KEY);
       if (stored) {
         const changes = JSON.parse(stored);
         this._pendingChanges = new Map(Object.entries(changes));
@@ -1013,7 +1014,7 @@ class UcCloudSyncService {
   private _savePendingChanges(): void {
     try {
       const changes = Object.fromEntries(this._pendingChanges);
-      localStorage.setItem(UcCloudSyncService.PENDING_CHANGES_KEY, JSON.stringify(changes));
+      safeSetItem(UcCloudSyncService.PENDING_CHANGES_KEY, JSON.stringify(changes));
     } catch (error) {
       console.error('Failed to save pending changes:', error);
     }
@@ -1022,7 +1023,7 @@ class UcCloudSyncService {
   private _clearPendingChanges(): void {
     this._pendingChanges.clear();
     try {
-      localStorage.removeItem(UcCloudSyncService.PENDING_CHANGES_KEY);
+      safeRemoveItem(UcCloudSyncService.PENDING_CHANGES_KEY);
     } catch (error) {
       console.error('Failed to clear pending changes:', error);
     }

@@ -13,6 +13,7 @@ import {
   hasTemplateError,
   isStringResult,
 } from '../utils/template-parser';
+import { safeGetItem, safeSetItem } from '../utils/safe-storage';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
@@ -3280,7 +3281,7 @@ export class UltraDropdownModule extends BaseUltraModule {
   // localStorage helper methods for selection persistence
   private getStoredSelection(moduleId: string): string | null {
     try {
-      return localStorage.getItem(`ultra_card_dropdown_selection_${moduleId}`);
+      return safeGetItem(`ultra_card_dropdown_selection_${moduleId}`);
     } catch (error) {
       console.error('Error reading from localStorage:', error);
       return null;
@@ -3289,7 +3290,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
   private setStoredSelection(moduleId: string, value: string): void {
     try {
-      localStorage.setItem(`ultra_card_dropdown_selection_${moduleId}`, value);
+      safeSetItem(`ultra_card_dropdown_selection_${moduleId}`, value);
     } catch (error) {
       console.error('Error writing to localStorage:', error);
     }

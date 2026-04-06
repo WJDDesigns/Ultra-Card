@@ -1,3 +1,5 @@
+// Must be the first import: sets __webpack_public_path__ for HA chunk resolution
+import './public-path';
 import './cards/ultra-card';
 import './components/navigation-picker';
 import './components/ultra-color-picker';
@@ -10,13 +12,16 @@ import { ucCloudAuthService } from './services/uc-cloud-auth-service';
 import { getModuleRegistry } from './modules';
 const moduleRegistry = getModuleRegistry();
 
-// Preload module implementations in background so dashboard/editor have handlers when needed
+// Preload module chunks in the background so they're available by first render.
+// Chunks are separate files (not inlined), so this is parallel network I/O, not blocking parse.
 Promise.all(
   moduleRegistry.getAllModuleMetadata().map(m => moduleRegistry.ensureModuleLoaded(m.type))
-).catch(() => {});
+).catch((err) => {
+  console.warn('[UltraCard] Module preload failed:', err);
+});
 
-// Log version and module count once on load with styled banner (Bubble Card style)
-const __ucModuleCount = moduleRegistry.getRegistryStats().totalModules;
+// Log version and available module count once on load
+const __ucModuleCount = moduleRegistry.getAllModuleMetadata().length;
 
 // Check if user is Pro via integration (wait for cards to initialize)
 setTimeout(() => {

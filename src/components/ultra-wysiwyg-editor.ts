@@ -297,7 +297,7 @@ export class UltraWysiwygEditor extends LitElement {
       const isEmpty = currentHtml === '<p></p>' && !this.content;
       if (currentHtml !== this.content && !isEmpty && !this._editor.isFocused) {
         this._isUpdating = true;
-        this._editor.commands.setContent(this.content || '', false);
+        this._editor.commands.setContent(this.content || '', { emitUpdate: false });
         this._isUpdating = false;
       }
     }

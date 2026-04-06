@@ -19,6 +19,8 @@ import {
   PresetWizardConfig,
 } from '../types';
 
+const _UC_DEBUG = !!(window as any).__UC_DEBUG;
+
 /**
  * Service for detecting all entity references within Ultra Card layouts and rows
  * Recursively scans all module types and nested structures
@@ -53,7 +55,7 @@ class UcEntityDetectorService {
   scanLayout(layout: LayoutConfig, wizard?: PresetWizardConfig): EntityReference[] {
     const references: EntityReference[] = [];
 
-    console.log('🔍 Entity Detector: Scanning layout:', layout);
+    _UC_DEBUG && console.log('🔍 Entity Detector: Scanning layout:', layout);
 
     if (!layout || !layout.rows || !Array.isArray(layout.rows)) {
       console.warn('⚠️ Entity Detector: No layout or rows found');
@@ -62,11 +64,11 @@ class UcEntityDetectorService {
 
     layout.rows.forEach((row, rowIndex) => {
       const rowRefs = this.scanRow(row, `rows[${rowIndex}]`);
-      console.log(`🔍 Entity Detector: Row ${rowIndex} found ${rowRefs.length} entity references`);
+      _UC_DEBUG && console.log(`🔍 Entity Detector: Row ${rowIndex} found ${rowRefs.length} entity references`);
       references.push(...rowRefs);
     });
 
-    console.log(`🔍 Entity Detector: Total entity references found: ${references.length}`);
+    _UC_DEBUG && console.log(`🔍 Entity Detector: Total entity references found: ${references.length}`);
 
     if (!wizard?.steps?.length) {
       return references;
@@ -93,7 +95,7 @@ class UcEntityDetectorService {
     row.columns.forEach((column, colIndex) => {
       const colRefs = this._scanColumn(column, `${basePath}.columns[${colIndex}]`);
       if (colRefs.length > 0) {
-        console.log(`🔍 Entity Detector: Column ${colIndex} has ${colRefs.length} entity references`);
+        _UC_DEBUG && console.log(`🔍 Entity Detector: Column ${colIndex} has ${colRefs.length} entity references`);
       }
       references.push(...colRefs);
     });
@@ -130,7 +132,7 @@ class UcEntityDetectorService {
       return references;
     }
     
-    console.log(`🔍 Entity Detector: Scanning ${module.type} module at ${basePath}`);
+    _UC_DEBUG && console.log(`🔍 Entity Detector: Scanning ${module.type} module at ${basePath}`);
 
     switch (module.type) {
       case 'icon':

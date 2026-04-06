@@ -3,6 +3,7 @@ import { VERSION } from '../version';
 import { ucPrivacyService } from './uc-privacy-service';
 import { ucCustomVariablesService } from './uc-custom-variables-service';
 import { scanConfigForVariables } from '../utils/uc-template-processor';
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
 
 /**
  * Service for exporting and importing Ultra Card configurations
@@ -723,8 +724,8 @@ class UcExportImportService {
     // Try localStorage first
     try {
       // Clear any existing clipboard data first to free space
-      localStorage.removeItem(this.CLIPBOARD_KEY);
-      localStorage.setItem(this.CLIPBOARD_KEY, dataString);
+      safeRemoveItem(this.CLIPBOARD_KEY);
+      safeSetItem(this.CLIPBOARD_KEY, dataString);
       this._memoryClipboard = null; // Clear memory fallback
       return;
     } catch (e) {
@@ -756,7 +757,7 @@ class UcExportImportService {
 
     // Try localStorage first
     try {
-      const stored = localStorage.getItem(this.CLIPBOARD_KEY);
+      const stored = safeGetItem(this.CLIPBOARD_KEY);
       if (stored) {
         clipboardData = JSON.parse(stored);
       }
@@ -807,7 +808,7 @@ class UcExportImportService {
 
     // Try localStorage first
     try {
-      const stored = localStorage.getItem(this.CLIPBOARD_KEY);
+      const stored = safeGetItem(this.CLIPBOARD_KEY);
       if (stored) {
         clipboardData = JSON.parse(stored);
       }
@@ -853,7 +854,7 @@ class UcExportImportService {
 
     // Try localStorage first
     try {
-      const stored = localStorage.getItem(this.CLIPBOARD_KEY);
+      const stored = safeGetItem(this.CLIPBOARD_KEY);
       if (stored) {
         clipboardData = JSON.parse(stored);
       }
@@ -893,7 +894,7 @@ class UcExportImportService {
    */
   clearModuleClipboard(): void {
     try {
-      localStorage.removeItem(this.CLIPBOARD_KEY);
+      safeRemoveItem(this.CLIPBOARD_KEY);
     } catch (e) {
       // localStorage not available
     }
@@ -928,8 +929,8 @@ class UcExportImportService {
     const dataString = JSON.stringify(clipboardData);
 
     try {
-      localStorage.removeItem(this.COLUMN_CLIPBOARD_KEY);
-      localStorage.setItem(this.COLUMN_CLIPBOARD_KEY, dataString);
+      safeRemoveItem(this.COLUMN_CLIPBOARD_KEY);
+      safeSetItem(this.COLUMN_CLIPBOARD_KEY, dataString);
       this._memoryColumnClipboard = null;
       return;
     } catch (e) {
@@ -955,7 +956,7 @@ class UcExportImportService {
     let clipboardData: { version: string; timestamp: number; column: CardColumn } | null = null;
 
     try {
-      const stored = localStorage.getItem(this.COLUMN_CLIPBOARD_KEY);
+      const stored = safeGetItem(this.COLUMN_CLIPBOARD_KEY);
       if (stored) {
         clipboardData = JSON.parse(stored);
       }
@@ -1000,7 +1001,7 @@ class UcExportImportService {
     let clipboardData: { version: string; timestamp: number; column: CardColumn } | null = null;
 
     try {
-      const stored = localStorage.getItem(this.COLUMN_CLIPBOARD_KEY);
+      const stored = safeGetItem(this.COLUMN_CLIPBOARD_KEY);
       if (stored) {
         clipboardData = JSON.parse(stored);
       }
@@ -1038,7 +1039,7 @@ class UcExportImportService {
    */
   clearColumnClipboard(): void {
     try {
-      localStorage.removeItem(this.COLUMN_CLIPBOARD_KEY);
+      safeRemoveItem(this.COLUMN_CLIPBOARD_KEY);
     } catch (e) {
       // localStorage not available
     }
@@ -1079,7 +1080,7 @@ class UcExportImportService {
         type,
         timestamp: Date.now(),
       };
-      localStorage.setItem(this.EXPORT_CLIPBOARD_KEY, JSON.stringify(clipboardData));
+      safeSetItem(this.EXPORT_CLIPBOARD_KEY, JSON.stringify(clipboardData));
     } catch (e) {
       // localStorage not available - ignore
     }
@@ -1090,7 +1091,7 @@ class UcExportImportService {
    */
   hasExportInClipboard(): boolean {
     try {
-      const stored = localStorage.getItem(this.EXPORT_CLIPBOARD_KEY);
+      const stored = safeGetItem(this.EXPORT_CLIPBOARD_KEY);
       if (!stored) return false;
 
       const clipboardData = JSON.parse(stored);
@@ -1112,7 +1113,7 @@ class UcExportImportService {
    */
   getExportClipboardType(): ExportData['type'] | null {
     try {
-      const stored = localStorage.getItem(this.EXPORT_CLIPBOARD_KEY);
+      const stored = safeGetItem(this.EXPORT_CLIPBOARD_KEY);
       if (!stored) return null;
 
       const clipboardData = JSON.parse(stored);
@@ -1134,7 +1135,7 @@ class UcExportImportService {
    */
   clearExportClipboard(): void {
     try {
-      localStorage.removeItem(this.EXPORT_CLIPBOARD_KEY);
+      safeRemoveItem(this.EXPORT_CLIPBOARD_KEY);
     } catch (e) {
       // localStorage not available - ignore
     }

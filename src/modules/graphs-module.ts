@@ -2208,7 +2208,16 @@ export class UltraGraphsModule extends BaseUltraModule {
                             font-size: 0.82rem;
                             font-weight: 500;
                           "
-                          @click=${() => updateModule({ chart_layout: 'default' } as any)}
+                          @click=${(e: Event) => {
+                            updateModule({ chart_layout: 'default' } as any);
+                            (e.target as HTMLElement).dispatchEvent(
+                              new CustomEvent('uc-optimize-card-settings', {
+                                bubbles: true,
+                                composed: true,
+                                detail: { card_padding: 16, card_overflow: undefined },
+                              })
+                            );
+                          }}
                         >Default</button>
                         <button
                           type="button"
@@ -2223,7 +2232,16 @@ export class UltraGraphsModule extends BaseUltraModule {
                             font-size: 0.82rem;
                             font-weight: 500;
                           "
-                          @click=${() => updateModule({ chart_layout: 'full' } as any)}
+                          @click=${(e: Event) => {
+                            updateModule({ chart_layout: 'full' } as any);
+                            (e.target as HTMLElement).dispatchEvent(
+                              new CustomEvent('uc-optimize-card-settings', {
+                                bubbles: true,
+                                composed: true,
+                                detail: { card_padding: 0, card_overflow: 'hidden' },
+                              })
+                            );
+                          }}
                         >Full</button>
                       </div>
                     </div>
@@ -2502,6 +2520,10 @@ export class UltraGraphsModule extends BaseUltraModule {
       fallback: 'transparent',
     });
 
+    const isFullLayout = (graphsModule as any).chart_layout === 'full';
+    const defaultMarginV = isFullLayout ? '0px' : '8px';
+    const defaultMargin = isFullLayout ? '0' : '8px 0';
+
     const containerStyles = {
       padding:
         designProperties.padding_top ||
@@ -2523,8 +2545,8 @@ export class UltraGraphsModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
-          : '8px 0',
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || defaultMarginV} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || defaultMarginV} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
+          : defaultMargin,
       ...bgStyles.styles,
       backdropFilter: designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || '',
       border: designProperties.border_style
@@ -2559,6 +2581,11 @@ export class UltraGraphsModule extends BaseUltraModule {
     } as Record<string, string>;
     if ((graphsModule as any).chart_type === 'line') {
       containerStyles.padding = '0';
+    }
+    if ((graphsModule as any).chart_layout === 'full') {
+      containerStyles.margin = '0';
+      containerStyles.padding = '0';
+      containerStyles.borderRadius = '0';
     }
 
     // Check if we have entities configured
@@ -5466,13 +5493,14 @@ export class UltraGraphsModule extends BaseUltraModule {
   }
 
   private getMarginCSS(moduleWithDesign: any): string {
-    // Standard 8px top/bottom margin for proper web design spacing
+    const isFullLayout = moduleWithDesign.chart_layout === 'full';
+    const defaultV = isFullLayout ? '0px' : '8px';
     return moduleWithDesign.margin_top ||
       moduleWithDesign.margin_bottom ||
       moduleWithDesign.margin_left ||
       moduleWithDesign.margin_right
-      ? `${this.addPixelUnit(moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`
-      : '8px 0';
+      ? `${this.addPixelUnit(moduleWithDesign.margin_top) || defaultV} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || defaultV} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`
+      : isFullLayout ? '0' : '8px 0';
   }
 
   private getBackgroundCSS(moduleWithDesign: any): string {

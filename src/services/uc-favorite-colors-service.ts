@@ -1,4 +1,5 @@
 import { FavoriteColor } from '../types';
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
 // NOTE: Cloud sync disabled - import removed as favorites are local-only per user request
 // import { ucCloudSyncService } from './uc-cloud-sync-service';
 
@@ -325,7 +326,7 @@ class UcFavoriteColorsService {
     console.log('LocalStorage Available:', this._isLocalStorageAvailable());
 
     try {
-      const stored = localStorage.getItem(UcFavoriteColorsService.STORAGE_KEY);
+      const stored = safeGetItem(UcFavoriteColorsService.STORAGE_KEY);
       console.log('Raw Storage Data:', stored ? `${stored.length} characters` : 'null');
       console.log('Storage Data Valid:', stored ? 'Valid JSON' : 'No data');
 
@@ -361,7 +362,7 @@ class UcFavoriteColorsService {
         return;
       }
 
-      const stored = localStorage.getItem(UcFavoriteColorsService.STORAGE_KEY);
+      const stored = safeGetItem(UcFavoriteColorsService.STORAGE_KEY);
 
       if (stored) {
         const parsed = JSON.parse(stored);
@@ -391,7 +392,7 @@ class UcFavoriteColorsService {
       }
 
       const dataToSave = JSON.stringify(this._favorites);
-      localStorage.setItem(UcFavoriteColorsService.STORAGE_KEY, dataToSave);
+      safeSetItem(UcFavoriteColorsService.STORAGE_KEY, dataToSave);
     } catch (error) {
       console.error('Failed to save favorite colors to storage:', error);
 
@@ -597,8 +598,8 @@ class UcFavoriteColorsService {
   private _isLocalStorageAvailable(): boolean {
     try {
       const testKey = '__ultra_card_colors_storage_test__';
-      localStorage.setItem(testKey, 'test');
-      localStorage.removeItem(testKey);
+      safeSetItem(testKey, 'test');
+      safeRemoveItem(testKey);
       return true;
     } catch (error) {
       return false;
@@ -629,7 +630,7 @@ class UcFavoriteColorsService {
     // Try to save again
     try {
       const dataToSave = JSON.stringify(this._favorites);
-      localStorage.setItem(UcFavoriteColorsService.STORAGE_KEY, dataToSave);
+      safeSetItem(UcFavoriteColorsService.STORAGE_KEY, dataToSave);
       console.log('Successfully saved favorite colors after cleanup');
       this._notifyListeners();
       this._broadcastChange();

@@ -19,7 +19,7 @@ export interface ModuleMetadata {
   author: string;
   version: string;
   icon: string;
-  category: 'content' | 'layout' | 'media' | 'data' | 'interactive';
+  category: 'content' | 'layout' | 'media' | 'data' | 'interactive' | 'input';
   tags: string[];
 }
 

@@ -2309,7 +2309,6 @@ export class UltraCameraModule extends BaseUltraModule {
         e => {
           e.stopPropagation();
           e.preventDefault();
-          console.log('X button clicked');
           closeModal();
         },
         true
@@ -2318,7 +2317,6 @@ export class UltraCameraModule extends BaseUltraModule {
       modal.addEventListener(
         'click',
         e => {
-          console.log('Modal clicked', e.target === modal);
           if (e.target === modal) {
             e.stopPropagation();
             e.preventDefault();

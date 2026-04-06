@@ -3,6 +3,8 @@ import { EntityReference, EntityMapping } from '../types';
 import { entityMapper } from '../services/uc-entity-mapper';
 import { inferEntityDomainFromReference } from '../utils/uc-preset-wizard-auto';
 
+const _UC_DEBUG = !!(window as any).__UC_DEBUG;
+
 interface MappingState {
   original: string;
   mapped: string;
@@ -30,10 +32,10 @@ export class UcSimpleEntityMapper {
     onApply: (mappings: EntityMapping[]) => void,
     onCancel?: () => void
   ): void {
-    console.log('🎬 Simple Entity Mapper show called');
-    console.log('📋 Entity references:', references);
-    console.log('📋 References length:', references.length);
-    console.log('📋 References details:', JSON.stringify(references, null, 2));
+    _UC_DEBUG && console.log('🎬 Simple Entity Mapper show called');
+    _UC_DEBUG && console.log('📋 Entity references:', references);
+    _UC_DEBUG && console.log('📋 References length:', references.length);
+    _UC_DEBUG && console.log('📋 References details:', JSON.stringify(references, null, 2));
     
     this.hass = hass;
     this.onApplyCallback = onApply;
@@ -47,8 +49,8 @@ export class UcSimpleEntityMapper {
   }
 
   private initializeMappings(references: EntityReference[]): void {
-    console.log('🔧 Initializing mappings...');
-    console.log('🔧 References to process:', references);
+    _UC_DEBUG && console.log('🔧 Initializing mappings...');
+    _UC_DEBUG && console.log('🔧 References to process:', references);
     this.mappings.clear();
     
     if (!references || references.length === 0) {
@@ -57,7 +59,7 @@ export class UcSimpleEntityMapper {
     }
     
     const availableEntities = Object.keys(this.hass.states);
-    console.log('📊 Available entities count:', availableEntities.length);
+    _UC_DEBUG && console.log('📊 Available entities count:', availableEntities.length);
 
     references.forEach((ref, index) => {
       if (!ref || !ref.entityId) {
@@ -98,7 +100,7 @@ export class UcSimpleEntityMapper {
         mappedVal = '';
       }
 
-      console.log(`🔍 Processing entity reference ${index}: ${ref.entityId} at ${ref.locations[0]}`, {
+      _UC_DEBUG && console.log(`🔍 Processing entity reference ${index}: ${ref.entityId} at ${ref.locations[0]}`, {
         domain,
         inferredDomain,
         exists,
@@ -119,7 +121,7 @@ export class UcSimpleEntityMapper {
       });
     });
 
-    console.log('✅ Mappings initialized:', Array.from(this.mappings.entries()));
+    _UC_DEBUG && console.log('✅ Mappings initialized:', Array.from(this.mappings.entries()));
   }
 
   private createDialog(title: string): void {
@@ -168,15 +170,15 @@ export class UcSimpleEntityMapper {
           dialogContainer.style.pointerEvents = 'auto';
         }
 
-        console.log('🎆 Dialog made interactive - removed inert attributes');
+        _UC_DEBUG && console.log('🎆 Dialog made interactive - removed inert attributes');
       }
     }, 100);
     
     // Bind events using direct property assignment
     this.bindEvents();
     
-    console.log('✅ Dialog created and events bound');
-    console.log('📍 Dialog parent:', this.container?.parentElement);
+    _UC_DEBUG && console.log('✅ Dialog created and events bound');
+    _UC_DEBUG && console.log('📍 Dialog parent:', this.container?.parentElement);
   }
 
   private findOverlayHost(): HTMLElement {
@@ -213,9 +215,9 @@ export class UcSimpleEntityMapper {
   private buildDialogHTML(title: string): string {
     const summary = this.getSummary();
     
-    console.log('🔧 Building dialog HTML');
-    console.log('🔧 Mappings size:', this.mappings.size);
-    console.log('🔧 Summary:', summary);
+    _UC_DEBUG && console.log('🔧 Building dialog HTML');
+    _UC_DEBUG && console.log('🔧 Mappings size:', this.mappings.size);
+    _UC_DEBUG && console.log('🔧 Summary:', summary);
     
     let entityRows = '';
     this.mappings.forEach((state, uniqueKey) => {
@@ -559,7 +561,7 @@ export class UcSimpleEntityMapper {
       autoMapBtn.onclick = (e) => {
         e.stopPropagation();
         e.preventDefault();
-        console.log('🚀 Auto-map button clicked!');
+        _UC_DEBUG && console.log('🚀 Auto-map button clicked!');
         this.handleAutoMap();
       };
     }
@@ -568,7 +570,7 @@ export class UcSimpleEntityMapper {
       keepAllBtn.onclick = (e) => {
         e.stopPropagation();
         e.preventDefault();
-        console.log('🔒 Keep all unmapped button clicked!');
+        _UC_DEBUG && console.log('🔒 Keep all unmapped button clicked!');
         this.handleKeepAllUnmapped();
       };
     }
@@ -577,7 +579,7 @@ export class UcSimpleEntityMapper {
       clearAllBtn.onclick = (e) => {
         e.stopPropagation();
         e.preventDefault();
-        console.log('🧹 Clear all button clicked!');
+        _UC_DEBUG && console.log('🧹 Clear all button clicked!');
         this.handleClearAll();
       };
     }
@@ -586,7 +588,7 @@ export class UcSimpleEntityMapper {
       cancelBtn.onclick = (e) => {
         e.stopPropagation();
         e.preventDefault();
-        console.log('❌ Cancel button clicked!');
+        _UC_DEBUG && console.log('❌ Cancel button clicked!');
         this.handleCancel();
       };
     }
@@ -595,18 +597,18 @@ export class UcSimpleEntityMapper {
       applyBtn.onclick = (e) => {
         e.stopPropagation();
         e.preventDefault();
-        console.log('✅ Apply button clicked!');
+        _UC_DEBUG && console.log('✅ Apply button clicked!');
         this.handleApply();
       };
     }
 
     // Bind dropdown events
     const selects = this.container.querySelectorAll('.entity-select') as NodeListOf<HTMLSelectElement>;
-    console.log(`🔧 Binding events to ${selects.length} dropdowns`);
+    _UC_DEBUG && console.log(`🔧 Binding events to ${selects.length} dropdowns`);
     selects.forEach((select, index) => {
       const uniqueKey = select.dataset.uniqueKey;
       const original = select.dataset.original;
-      console.log(`🔧 Binding dropdown ${index}: ${original} (key: ${uniqueKey})`);
+      _UC_DEBUG && console.log(`🔧 Binding dropdown ${index}: ${original} (key: ${uniqueKey})`);
       
       // Try multiple event binding approaches for maximum compatibility
       select.addEventListener('change', (e) => {
@@ -615,7 +617,7 @@ export class UcSimpleEntityMapper {
         const target = e.target as HTMLSelectElement;
         const key = target.dataset.uniqueKey;
         if (key) {
-          console.log('🎉 Dropdown changed via addEventListener:', key, 'to', target.value);
+          _UC_DEBUG && console.log('🎉 Dropdown changed via addEventListener:', key, 'to', target.value);
           this.handleMappingChange(key, target.value);
         }
       });
@@ -626,74 +628,74 @@ export class UcSimpleEntityMapper {
         const target = e.target as HTMLSelectElement;
         const key = target.dataset.uniqueKey;
         if (key) {
-          console.log('🎉 Dropdown changed via onchange:', key, 'to', target.value);
+          _UC_DEBUG && console.log('🎉 Dropdown changed via onchange:', key, 'to', target.value);
           this.handleMappingChange(key, target.value);
         }
       };
       
       // Also add click handler to debug if clicks are being received
       select.onclick = (e) => {
-        console.log('🔍 Dropdown clicked:', original);
+        _UC_DEBUG && console.log('🔍 Dropdown clicked:', original);
       };
     });
 
-    console.log('✅ All events bound using direct property assignment');
+    _UC_DEBUG && console.log('✅ All events bound using direct property assignment');
   }
 
   private handleAutoMap(): void {
-    console.log('🤖 Auto-map button handler called!');
+    _UC_DEBUG && console.log('🤖 Auto-map button handler called!');
     let changes = 0;
     this.mappings.forEach((state, uniqueKey) => {
       if (state.suggestions.length > 0) {
-        console.log(`🔄 Auto-mapping ${uniqueKey} to ${state.suggestions[0]}`);
+        _UC_DEBUG && console.log(`🔄 Auto-mapping ${uniqueKey} to ${state.suggestions[0]}`);
         state.mapped = state.suggestions[0];
         changes++;
       }
     });
     
-    console.log(`✅ Auto-map completed: ${changes} entities mapped`);
+    _UC_DEBUG && console.log(`✅ Auto-map completed: ${changes} entities mapped`);
     this.updateUI();
   }
 
   private handleKeepAllUnmapped(): void {
-    console.log('🔒 Keep all unmapped button clicked!');
+    _UC_DEBUG && console.log('🔒 Keep all unmapped button clicked!');
     let changes = 0;
     this.mappings.forEach(state => {
       // Always set back to original value - this button means "use original entities"
-      console.log(`🔒 Resetting ${state.original} to original value`);
+      _UC_DEBUG && console.log(`🔒 Resetting ${state.original} to original value`);
       state.mapped = state.original;
       changes++;
     });
     
-    console.log(`✅ Keep all unmapped completed: ${changes} entities reset to original`);
+    _UC_DEBUG && console.log(`✅ Keep all unmapped completed: ${changes} entities reset to original`);
     this.updateUI();
   }
 
   private handleClearAll(): void {
     this.mappings.forEach(state => {
-      console.log(`🧹 Clearing mapping for ${state.original}`);
+      _UC_DEBUG && console.log(`🧹 Clearing mapping for ${state.original}`);
       state.mapped = '';
     });
     
-    console.log('✅ Clear all completed');
+    _UC_DEBUG && console.log('✅ Clear all completed');
     this.updateUI();
   }
 
   private handleMappingChange(uniqueKey: string, mapped: string): void {
-    console.log(`🔄 handleMappingChange called: ${uniqueKey} -> ${mapped}`);
+    _UC_DEBUG && console.log(`🔄 handleMappingChange called: ${uniqueKey} -> ${mapped}`);
     const state = this.mappings.get(uniqueKey);
     if (state) {
       state.mapped = mapped;
-      console.log('✅ Updated mapping state:', state);
+      _UC_DEBUG && console.log('✅ Updated mapping state:', state);
       this.updateUI();
     } else {
       console.error('❌ No state found for:', uniqueKey);
-      console.log('📋 Current mappings:', Array.from(this.mappings.keys()));
+      _UC_DEBUG && console.log('📋 Current mappings:', Array.from(this.mappings.keys()));
     }
   }
 
   private handleCancel(): void {
-    console.log('🔄 Calling cancel callback');
+    _UC_DEBUG && console.log('🔄 Calling cancel callback');
     const callback = this.onCancelCallback;
     this.close();
     if (callback) {
@@ -715,11 +717,11 @@ export class UcSimpleEntityMapper {
           mapped: state.mapped,
           domain: state.domain || this.getDomain(state.mapped),
         });
-        console.log(`📝 Adding mapping: ${state.original} → ${state.mapped} (at ${state.location})`);
+        _UC_DEBUG && console.log(`📝 Adding mapping: ${state.original} → ${state.mapped} (at ${state.location})`);
       }
     });
 
-    console.log('📋 Final mappings to apply:', mappings);
+    _UC_DEBUG && console.log('📋 Final mappings to apply:', mappings);
     
     const callback = this.onApplyCallback;
     this.close();
@@ -792,7 +794,7 @@ export class UcSimpleEntityMapper {
   }
 
   public close(): void {
-    console.log('🚪 Closing dialog');
+    _UC_DEBUG && console.log('🚪 Closing dialog');
     if (this.container && this.container.parentNode) {
       this.container.parentNode.removeChild(this.container);
     }

@@ -138,6 +138,13 @@ export interface BaseModule {
     | 'living_canvas'
     | 'text_input'
     | 'datetime_input'
+    | 'number_input'
+    | 'slider_input'
+    | 'select_input'
+    | 'boolean_input'
+    | 'button_input'
+    | 'counter_input'
+    | 'color_input'
     | 'activity_feed'
     | 'virtual_pet';
   name?: string;

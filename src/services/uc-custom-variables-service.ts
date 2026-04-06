@@ -1,5 +1,6 @@
 import { CustomVariable, UltraCardConfig } from '../types';
 import { HomeAssistant } from 'custom-card-helpers';
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
 
 /**
  * Service for managing custom variables across Ultra Card instances
@@ -652,7 +653,7 @@ class UcCustomVariablesService {
       return this._variables.length === 0;
     }
     
-    const stored = localStorage.getItem(UcCustomVariablesService.STORAGE_KEY);
+    const stored = safeGetItem(UcCustomVariablesService.STORAGE_KEY);
     return !stored && this._variables.length === 0;
   }
 
@@ -746,7 +747,7 @@ class UcCustomVariablesService {
     console.log('LocalStorage Available:', this._isLocalStorageAvailable());
 
     try {
-      const stored = localStorage.getItem(UcCustomVariablesService.STORAGE_KEY);
+      const stored = safeGetItem(UcCustomVariablesService.STORAGE_KEY);
       console.log('Raw Storage Data:', stored ? `${stored.length} characters` : 'null');
 
       if (stored) {
@@ -808,7 +809,7 @@ class UcCustomVariablesService {
         return;
       }
 
-      const stored = localStorage.getItem(UcCustomVariablesService.STORAGE_KEY);
+      const stored = safeGetItem(UcCustomVariablesService.STORAGE_KEY);
 
       if (stored) {
         const parsed = JSON.parse(stored);
@@ -839,7 +840,7 @@ class UcCustomVariablesService {
       }
 
       const dataToSave = JSON.stringify(this._variables);
-      localStorage.setItem(UcCustomVariablesService.STORAGE_KEY, dataToSave);
+      safeSetItem(UcCustomVariablesService.STORAGE_KEY, dataToSave);
       return true;
     } catch (error) {
       // Check if it's a quota exceeded error
@@ -868,8 +869,8 @@ class UcCustomVariablesService {
       // Only reload if we can actually save (avoid overwriting memory with stale data)
       try {
         const testKey = '__uc_test__';
-        localStorage.setItem(testKey, '1');
-        localStorage.removeItem(testKey);
+        safeSetItem(testKey, '1');
+        safeRemoveItem(testKey);
         // If we can write, it's safe to reload
         this._loadFromStorage();
         this._notifyListeners();
@@ -938,8 +939,8 @@ class UcCustomVariablesService {
   private _isLocalStorageAvailable(): boolean {
     try {
       const testKey = '__ultra_card_variables_storage_test__';
-      localStorage.setItem(testKey, 'test');
-      localStorage.removeItem(testKey);
+      safeSetItem(testKey, 'test');
+      safeRemoveItem(testKey);
       return true;
     } catch (error) {
       return false;

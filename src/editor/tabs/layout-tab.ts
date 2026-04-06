@@ -225,6 +225,7 @@ export class LayoutTab extends LitElement {
   private _tabSwitchListener?: (e: CustomEvent) => void;
   private _documentClickListener?: (e: Event) => void;
   private _keydownListener?: (e: KeyboardEvent) => void;
+  private _optimizeCardSettingsListener?: (e: Event) => void;
 
   // Debouncing for template updates to prevent animation loops
   private _templateUpdateTimer?: number;
@@ -362,6 +363,14 @@ export class LayoutTab extends LitElement {
       }
     };
     document.addEventListener('keydown', this._keydownListener);
+
+    this._optimizeCardSettingsListener = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) {
+        this._updateConfig(detail);
+      }
+    };
+    this.addEventListener('uc-optimize-card-settings', this._optimizeCardSettingsListener);
 
     // Inject hover effect styles into layout tab's shadow root for popup previews
     UcHoverEffectsService.injectHoverEffectStyles(this.shadowRoot!);
@@ -6266,6 +6275,11 @@ export class LayoutTab extends LitElement {
     if (this._keydownListener) {
       document.removeEventListener('keydown', this._keydownListener);
       this._keydownListener = undefined;
+    }
+    // Remove card settings optimization listener
+    if (this._optimizeCardSettingsListener) {
+      this.removeEventListener('uc-optimize-card-settings', this._optimizeCardSettingsListener);
+      this._optimizeCardSettingsListener = undefined;
     }
     // Remove visibility change listener
     if (this._visibilityChangeListener) {
