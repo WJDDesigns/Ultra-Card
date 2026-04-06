@@ -1,5 +1,3 @@
-// Must be the first import: sets __webpack_public_path__ for HA chunk resolution
-import './public-path';
 import './cards/ultra-card';
 import './components/navigation-picker';
 import './components/ultra-color-picker';

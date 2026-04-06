@@ -6,6 +6,10 @@
 !/dist/version.js
 !/dist/version.d.ts
 
+# Webpack chunk files (panel lazy chunks; not needed in repo)
+uc-*.js
+uc-*.js.LICENSE.txt
+
 # misc
 .DS_Store
 .env.local
