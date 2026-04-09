@@ -145,8 +145,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
               });
             }
 
-            // Add color temp bar if supported
-            if (entityState.attributes.color_temp) {
+            // Add color temp bar if supported (HA 2024+ uses color_temp_kelvin instead of color_temp)
+            if (entityState.attributes.color_temp || entityState.attributes.color_temp_kelvin) {
               bars.push({
                 id: this.generateId('color_temp'),
                 type: 'color_temp',
@@ -573,8 +573,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
       return 'rgb';
     }
 
-    // Check for color temperature support
-    if (entityState.attributes.color_temp) {
+    // Check for color temperature support (HA 2024+ uses color_temp_kelvin instead of color_temp)
+    if (entityState.attributes.color_temp || entityState.attributes.color_temp_kelvin) {
       return 'color_temp';
     }
 
@@ -1094,29 +1094,23 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 </div>
 
                 <div class="bar-content ${isExpanded ? 'expanded' : ''}">
-                  ${this.renderFieldSection(
-                    'Entity',
-                    'Select the entity to control with this bar',
-                    homeAssistant,
-                    { entity: bar.entity },
-                    [this.entityField('entity')],
-                    (e: CustomEvent) => {
+                  ${this.renderEntityPickerWithVariables(
+                    homeAssistant, config, 'entity', bar.entity || '',
+                    (value: string) => {
                       const updatedBars = [...(sliderControl.bars || [])];
                       const barIndex = updatedBars.findIndex(b => b.id === bar.id);
                       if (barIndex !== -1) {
                         updatedBars[barIndex] = {
                           ...updatedBars[barIndex],
-                          entity: e.detail.value.entity,
+                          entity: value,
                         };
-                        // Auto-detect type for new entity
-                        const detectedType = this._detectBarType(
-                          e.detail.value.entity,
-                          homeAssistant
-                        );
+                        const detectedType = this._detectBarType(value, homeAssistant);
                         updatedBars[barIndex].type = detectedType as any;
                       }
                       updateModule({ bars: updatedBars });
-                    }
+                    },
+                    undefined,
+                    'Entity'
                   )}
                   ${this.renderFieldSection(
                     'Bar Type',
@@ -1432,56 +1426,24 @@ export class UltraSliderControlModule extends BaseUltraModule {
                   })()}
                   ${sliderControl.layout_mode === 'split'
                     ? html`
-                        <div class="field-container">
-                          <div class="field-title">Bar Length</div>
-                          <div class="field-description">Percentage of space for bar (0-100%)</div>
-                          <div style="display: flex; gap: 8px; align-items: center;">
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              step="5"
-                              .value="${bar.split_bar_length ??
-                              sliderControl.split_bar_length ??
-                              60}"
-                              @input=${(e: Event) => {
-                                const target = e.target as HTMLInputElement;
-                                const updatedBars = [...(sliderControl.bars || [])];
-                                const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                if (barIndex !== -1) {
-                                  updatedBars[barIndex] = {
-                                    ...updatedBars[barIndex],
-                                    split_bar_length: parseInt(target.value),
-                                  };
-                                }
-                                updateModule({ bars: updatedBars });
-                              }}
-                              style="flex: 1;"
-                            />
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              .value="${bar.split_bar_length ??
-                              sliderControl.split_bar_length ??
-                              60}"
-                              @input=${(e: Event) => {
-                                const target = e.target as HTMLInputElement;
-                                const value = Math.max(0, Math.min(100, parseInt(target.value)));
-                                const updatedBars = [...(sliderControl.bars || [])];
-                                const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                if (barIndex !== -1) {
-                                  updatedBars[barIndex] = {
-                                    ...updatedBars[barIndex],
-                                    split_bar_length: value,
-                                  };
-                                }
-                                updateModule({ bars: updatedBars });
-                              }}
-                              style="width: 70px;"
-                            />
-                          </div>
-                        </div>
+                        ${this.renderSliderField(
+                          'Bar Length',
+                          'Percentage of space for bar (0-100%)',
+                          bar.split_bar_length ?? sliderControl.split_bar_length ?? 60,
+                          60,
+                          0,
+                          100,
+                          5,
+                          (value: number) => {
+                            const updatedBars = [...(sliderControl.bars || [])];
+                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                            if (barIndex !== -1) {
+                              updatedBars[barIndex] = { ...updatedBars[barIndex], split_bar_length: value };
+                            }
+                            updateModule({ bars: updatedBars });
+                          },
+                          '%'
+                        )}
                       `
                     : ''}
 
@@ -1528,59 +1490,24 @@ export class UltraSliderControlModule extends BaseUltraModule {
                       }
                     )}
 
-                    <div class="field-container">
-                      <div class="field-title">
-                        ${sliderControl.orientation === 'vertical'
-                          ? 'Slider Width'
-                          : 'Slider Height'}
-                      </div>
-                      <div class="field-description">
-                        ${sliderControl.orientation === 'vertical'
-                          ? 'Width of vertical bars in pixels'
-                          : 'Height of horizontal bars in pixels'}
-                      </div>
-                      <div style="display: flex; gap: 8px; align-items: center;">
-                        <input
-                          type="range"
-                          min="20"
-                          max="200"
-                          step="5"
-                          .value="${bar.slider_height || sliderControl.slider_height || 40}"
-                          @input=${(e: Event) => {
-                            const target = e.target as HTMLInputElement;
-                            const updatedBars = [...(sliderControl.bars || [])];
-                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                            if (barIndex !== -1) {
-                              updatedBars[barIndex] = {
-                                ...updatedBars[barIndex],
-                                slider_height: parseInt(target.value),
-                              };
-                            }
-                            updateModule({ bars: updatedBars });
-                          }}
-                          style="flex: 1;"
-                        />
-                        <input
-                          type="number"
-                          min="20"
-                          max="200"
-                          .value="${bar.slider_height || sliderControl.slider_height || 40}"
-                          @input=${(e: Event) => {
-                            const target = e.target as HTMLInputElement;
-                            const updatedBars = [...(sliderControl.bars || [])];
-                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                            if (barIndex !== -1) {
-                              updatedBars[barIndex] = {
-                                ...updatedBars[barIndex],
-                                slider_height: parseInt(target.value),
-                              };
-                            }
-                            updateModule({ bars: updatedBars });
-                          }}
-                          style="width: 70px;"
-                        />
-                      </div>
-                    </div>
+                    ${this.renderSliderField(
+                      sliderControl.orientation === 'vertical' ? 'Slider Width' : 'Slider Height',
+                      sliderControl.orientation === 'vertical' ? 'Width of vertical bars in pixels' : 'Height of horizontal bars in pixels',
+                      bar.slider_height || sliderControl.slider_height || 40,
+                      40,
+                      20,
+                      200,
+                      5,
+                      (value: number) => {
+                        const updatedBars = [...(sliderControl.bars || [])];
+                        const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                        if (barIndex !== -1) {
+                          updatedBars[barIndex] = { ...updatedBars[barIndex], slider_height: value };
+                        }
+                        updateModule({ bars: updatedBars });
+                      },
+                      'px'
+                    )}
 
                     ${this.renderFieldSection(
                       'Border Radius',
@@ -1611,86 +1538,43 @@ export class UltraSliderControlModule extends BaseUltraModule {
                     ${(bar.slider_style || sliderControl.slider_style) === 'glass'
                       ? html`
                           <div class="conditional-fields-group">
-                            <div class="field-container">
-                              <div class="field-title">Glass Blur Amount</div>
-                              <div class="field-description">
-                                Backdrop filter blur amount (0-20px)
-                              </div>
-                              <div style="display: flex; gap: 8px; align-items: center;">
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="20"
-                                  step="1"
-                                  .value="${bar.glass_blur_amount ||
-                                  sliderControl.glass_blur_amount ||
-                                  8}"
-                                  @input=${(e: Event) => {
-                                    const target = e.target as HTMLInputElement;
-                                    const updatedBars = [...(sliderControl.bars || [])];
-                                    const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                    if (barIndex !== -1) {
-                                      updatedBars[barIndex] = {
-                                        ...updatedBars[barIndex],
-                                        glass_blur_amount: parseInt(target.value),
-                                      };
-                                    }
-                                    updateModule({ bars: updatedBars });
-                                  }}
-                                  style="flex: 1;"
-                                />
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="20"
-                                  .value="${bar.glass_blur_amount ||
-                                  sliderControl.glass_blur_amount ||
-                                  8}"
-                                  @input=${(e: Event) => {
-                                    const target = e.target as HTMLInputElement;
-                                    const updatedBars = [...(sliderControl.bars || [])];
-                                    const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                    if (barIndex !== -1) {
-                                      updatedBars[barIndex] = {
-                                        ...updatedBars[barIndex],
-                                        glass_blur_amount: parseInt(target.value),
-                                      };
-                                    }
-                                    updateModule({ bars: updatedBars });
-                                  }}
-                                  style="width: 70px;"
-                                />
-                              </div>
-                            </div>
+                            ${this.renderSliderField(
+                              'Glass Blur Amount',
+                              'Backdrop filter blur amount (0-20px)',
+                              bar.glass_blur_amount || sliderControl.glass_blur_amount || 8,
+                              8,
+                              0,
+                              20,
+                              1,
+                              (value: number) => {
+                                const updatedBars = [...(sliderControl.bars || [])];
+                                const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                if (barIndex !== -1) {
+                                  updatedBars[barIndex] = { ...updatedBars[barIndex], glass_blur_amount: value };
+                                }
+                                updateModule({ bars: updatedBars });
+                              },
+                              'px'
+                            )}
                           </div>
                         `
                       : ''}
 
-                    <div
-                      style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px;"
-                    >
-                      <div>
-                        <div class="field-title">Invert Direction</div>
-                        <div class="field-description">
-                          Reverse min/max positions (useful for curtains)
-                        </div>
-                      </div>
-                      <ha-switch
-                        .checked=${bar.invert_direction ?? sliderControl.invert_direction ?? false}
-                        @change=${(e: Event) => {
-                          const target = e.target as any;
-                          const updatedBars = [...(sliderControl.bars || [])];
-                          const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                          if (barIndex !== -1) {
-                            updatedBars[barIndex] = {
-                              ...updatedBars[barIndex],
-                              invert_direction: target.checked,
-                            };
-                          }
-                          updateModule({ bars: updatedBars });
-                        }}
-                      ></ha-switch>
-                    </div>
+                    ${this.renderFieldSection(
+                      'Invert Direction',
+                      'Reverse min/max positions (useful for curtains)',
+                      homeAssistant,
+                      { invert_direction: bar.invert_direction ?? sliderControl.invert_direction ?? false },
+                      [this.booleanField('invert_direction')],
+                      (e: CustomEvent) => {
+                        const updatedBars = [...(sliderControl.bars || [])];
+                        const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                        if (barIndex !== -1) {
+                          updatedBars[barIndex] = { ...updatedBars[barIndex], invert_direction: e.detail.value.invert_direction };
+                        }
+                        updateModule({ bars: updatedBars });
+                      }
+                    )}
                   </div>
 
                   ${bar.type !== 'rgb' && bar.type !== 'color_temp'
@@ -1759,33 +1643,21 @@ export class UltraSliderControlModule extends BaseUltraModule {
                                 </div>
                               `}
 
-                          <div
-                            style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px;"
-                          >
-                            <div>
-                              <div class="field-title">Dynamic Fill Color</div>
-                              <div class="field-description">
-                                Use entity color (RGB lights, etc.)
-                              </div>
-                            </div>
-                            <ha-switch
-                              .checked=${bar.dynamic_fill_color ??
-                              sliderControl.dynamic_fill_color ??
-                              false}
-                              @change=${(e: Event) => {
-                                const target = e.target as any;
-                                const updatedBars = [...(sliderControl.bars || [])];
-                                const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                if (barIndex !== -1) {
-                                  updatedBars[barIndex] = {
-                                    ...updatedBars[barIndex],
-                                    dynamic_fill_color: target.checked,
-                                  };
-                                }
-                                updateModule({ bars: updatedBars });
-                              }}
-                            ></ha-switch>
-                          </div>
+                          ${this.renderFieldSection(
+                            'Dynamic Fill Color',
+                            'Use entity color (RGB lights, etc.)',
+                            homeAssistant,
+                            { dynamic_fill_color: bar.dynamic_fill_color ?? sliderControl.dynamic_fill_color ?? false },
+                            [this.booleanField('dynamic_fill_color')],
+                            (e: CustomEvent) => {
+                              const updatedBars = [...(sliderControl.bars || [])];
+                              const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                              if (barIndex !== -1) {
+                                updatedBars[barIndex] = { ...updatedBars[barIndex], dynamic_fill_color: e.detail.value.dynamic_fill_color };
+                              }
+                              updateModule({ bars: updatedBars });
+                            }
+                          )}
                         </div>
                       `
                     : ''}
@@ -1802,59 +1674,41 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
                     ${layoutMode === 'overlay'
                       ? html`
-                          <div
-                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;"
-                          >
-                            <div>
-                              <div class="field-title">Auto Contrast</div>
-                              <div class="field-description">
-                                Automatically adjust text/icon color based on fill
-                              </div>
-                            </div>
-                            <ha-switch
-                              .checked=${bar.auto_contrast ?? sliderControl.auto_contrast ?? true}
-                              @change=${(e: Event) => {
-                                const target = e.target as any;
-                                const updatedBars = [...(sliderControl.bars || [])];
-                                const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                if (barIndex !== -1) {
-                                  updatedBars[barIndex] = {
-                                    ...updatedBars[barIndex],
-                                    auto_contrast: target.checked,
-                                  };
-                                }
-                                updateModule({ bars: updatedBars });
-                              }}
-                            ></ha-switch>
-                          </div>
+                          ${this.renderFieldSection(
+                            'Auto Contrast',
+                            'Automatically adjust text/icon color based on fill',
+                            homeAssistant,
+                            { auto_contrast: bar.auto_contrast ?? sliderControl.auto_contrast ?? true },
+                            [this.booleanField('auto_contrast')],
+                            (e: CustomEvent) => {
+                              const updatedBars = [...(sliderControl.bars || [])];
+                              const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                              if (barIndex !== -1) {
+                                updatedBars[barIndex] = { ...updatedBars[barIndex], auto_contrast: e.detail.value.auto_contrast };
+                              }
+                              updateModule({ bars: updatedBars });
+                            }
+                          )}
                         `
                       : ''}
 
                     <!-- Icon Settings -->
                     <div style="margin-bottom: 24px;">
-                      <div
-                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
-                      >
-                        <div>
-                          <div class="field-title">Show Icon</div>
-                          <div class="field-description">Display an icon on the slider</div>
-                        </div>
-                        <ha-switch
-                          .checked=${bar.show_icon ?? sliderControl.show_icon ?? true}
-                          @change=${(e: Event) => {
-                            const target = e.target as any;
-                            const updatedBars = [...(sliderControl.bars || [])];
-                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                            if (barIndex !== -1) {
-                              updatedBars[barIndex] = {
-                                ...updatedBars[barIndex],
-                                show_icon: target.checked,
-                              };
-                            }
-                            updateModule({ bars: updatedBars });
-                          }}
-                        ></ha-switch>
-                      </div>
+                      ${this.renderFieldSection(
+                        'Show Icon',
+                        'Display an icon on the slider',
+                        homeAssistant,
+                        { show_icon: bar.show_icon ?? sliderControl.show_icon ?? true },
+                        [this.booleanField('show_icon')],
+                        (e: CustomEvent) => {
+                          const updatedBars = [...(sliderControl.bars || [])];
+                          const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                          if (barIndex !== -1) {
+                            updatedBars[barIndex] = { ...updatedBars[barIndex], show_icon: e.detail.value.show_icon };
+                          }
+                          updateModule({ bars: updatedBars });
+                        }
+                      )}
 
                       ${(bar.show_icon ?? sliderControl.show_icon) !== false
                         ? html`
@@ -1878,103 +1732,55 @@ export class UltraSliderControlModule extends BaseUltraModule {
                                 }
                               )}
 
-                              <div
-                                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
-                              >
-                                <div>
-                                  <div class="field-title">Dynamic Icon</div>
-                                  <div class="field-description">Use entity's default icon</div>
-                                </div>
-                                <ha-switch
-                                  .checked=${bar.dynamic_icon ?? sliderControl.dynamic_icon ?? true}
-                                  @change=${(e: Event) => {
-                                    const target = e.target as any;
-                                    const updatedBars = [...(sliderControl.bars || [])];
-                                    const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                    if (barIndex !== -1) {
-                                      updatedBars[barIndex] = {
-                                        ...updatedBars[barIndex],
-                                        dynamic_icon: target.checked,
-                                      };
-                                    }
-                                    updateModule({ bars: updatedBars });
-                                  }}
-                                ></ha-switch>
-                              </div>
+                              ${this.renderFieldSection(
+                                'Dynamic Icon',
+                                "Use entity's default icon",
+                                homeAssistant,
+                                { dynamic_icon: bar.dynamic_icon ?? sliderControl.dynamic_icon ?? true },
+                                [this.booleanField('dynamic_icon')],
+                                (e: CustomEvent) => {
+                                  const updatedBars = [...(sliderControl.bars || [])];
+                                  const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                  if (barIndex !== -1) {
+                                    updatedBars[barIndex] = { ...updatedBars[barIndex], dynamic_icon: e.detail.value.dynamic_icon };
+                                  }
+                                  updateModule({ bars: updatedBars });
+                                }
+                              )}
+                              ${this.renderFieldSection(
+                                'Icon as Toggle',
+                                'Click icon to toggle entity on/off (icon changes with state)',
+                                homeAssistant,
+                                { icon_as_toggle: bar.icon_as_toggle ?? sliderControl.icon_as_toggle ?? true },
+                                [this.booleanField('icon_as_toggle')],
+                                (e: CustomEvent) => {
+                                  const updatedBars = [...(sliderControl.bars || [])];
+                                  const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                  if (barIndex !== -1) {
+                                    updatedBars[barIndex] = { ...updatedBars[barIndex], icon_as_toggle: e.detail.value.icon_as_toggle };
+                                  }
+                                  updateModule({ bars: updatedBars });
+                                }
+                              )}
 
-                              <div
-                                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
-                              >
-                                <div>
-                                  <div class="field-title">Icon as Toggle</div>
-                                  <div class="field-description">
-                                    Click icon to toggle entity on/off (icon changes with state)
-                                  </div>
-                                </div>
-                                <ha-switch
-                                  .checked=${bar.icon_as_toggle ??
-                                  sliderControl.icon_as_toggle ??
-                                  true}
-                                  @change=${(e: Event) => {
-                                    const target = e.target as any;
-                                    const updatedBars = [...(sliderControl.bars || [])];
-                                    const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                    if (barIndex !== -1) {
-                                      updatedBars[barIndex] = {
-                                        ...updatedBars[barIndex],
-                                        icon_as_toggle: target.checked,
-                                      };
-                                    }
-                                    updateModule({ bars: updatedBars });
-                                  }}
-                                ></ha-switch>
-                              </div>
-
-                              <div class="field-container">
-                                <div class="field-title">Icon Size</div>
-                                <div class="field-description">Icon size in pixels</div>
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                  <input
-                                    type="range"
-                                    min="16"
-                                    max="48"
-                                    step="2"
-                                    .value="${bar.icon_size || sliderControl.icon_size || 24}"
-                                    @input=${(e: Event) => {
-                                      const target = e.target as HTMLInputElement;
-                                      const updatedBars = [...(sliderControl.bars || [])];
-                                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                      if (barIndex !== -1) {
-                                        updatedBars[barIndex] = {
-                                          ...updatedBars[barIndex],
-                                          icon_size: parseInt(target.value),
-                                        };
-                                      }
-                                      updateModule({ bars: updatedBars });
-                                    }}
-                                    style="flex: 1;"
-                                  />
-                                  <input
-                                    type="number"
-                                    min="16"
-                                    max="48"
-                                    .value="${bar.icon_size || sliderControl.icon_size || 24}"
-                                    @input=${(e: Event) => {
-                                      const target = e.target as HTMLInputElement;
-                                      const updatedBars = [...(sliderControl.bars || [])];
-                                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                      if (barIndex !== -1) {
-                                        updatedBars[barIndex] = {
-                                          ...updatedBars[barIndex],
-                                          icon_size: parseInt(target.value),
-                                        };
-                                      }
-                                      updateModule({ bars: updatedBars });
-                                    }}
-                                    style="width: 70px;"
-                                  />
-                                </div>
-                              </div>
+                              ${this.renderSliderField(
+                                'Icon Size',
+                                'Icon size in pixels',
+                                bar.icon_size || sliderControl.icon_size || 24,
+                                24,
+                                16,
+                                48,
+                                2,
+                                (value: number) => {
+                                  const updatedBars = [...(sliderControl.bars || [])];
+                                  const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                  if (barIndex !== -1) {
+                                    updatedBars[barIndex] = { ...updatedBars[barIndex], icon_size: value };
+                                  }
+                                  updateModule({ bars: updatedBars });
+                                },
+                                'px'
+                              )}
 
                               <div class="field-container">
                                 <div class="field-title">Icon Color</div>
@@ -2003,77 +1809,43 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
                     <!-- Name Settings -->
                     <div style="margin-bottom: 24px;">
-                      <div
-                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
-                      >
-                        <div>
-                          <div class="field-title">Show Name</div>
-                          <div class="field-description">Display entity name</div>
-                        </div>
-                        <ha-switch
-                          .checked=${bar.show_name ?? sliderControl.show_name ?? true}
-                          @change=${(e: Event) => {
-                            const target = e.target as any;
-                            const updatedBars = [...(sliderControl.bars || [])];
-                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                            if (barIndex !== -1) {
-                              updatedBars[barIndex] = {
-                                ...updatedBars[barIndex],
-                                show_name: target.checked,
-                              };
-                            }
-                            updateModule({ bars: updatedBars });
-                          }}
-                        ></ha-switch>
-                      </div>
+                      ${this.renderFieldSection(
+                        'Show Name',
+                        'Display entity name',
+                        homeAssistant,
+                        { show_name: bar.show_name ?? sliderControl.show_name ?? true },
+                        [this.booleanField('show_name')],
+                        (e: CustomEvent) => {
+                          const updatedBars = [...(sliderControl.bars || [])];
+                          const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                          if (barIndex !== -1) {
+                            updatedBars[barIndex] = { ...updatedBars[barIndex], show_name: e.detail.value.show_name };
+                          }
+                          updateModule({ bars: updatedBars });
+                        }
+                      )}
 
                       ${(bar.show_name ?? sliderControl.show_name) !== false
                         ? html`
                             <div class="conditional-fields-group">
-                              <div class="field-container">
-                                <div class="field-title">Name Size</div>
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                  <input
-                                    type="range"
-                                    min="10"
-                                    max="24"
-                                    step="1"
-                                    .value="${bar.name_size || sliderControl.name_size || 14}"
-                                    @input=${(e: Event) => {
-                                      const target = e.target as HTMLInputElement;
-                                      const updatedBars = [...(sliderControl.bars || [])];
-                                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                      if (barIndex !== -1) {
-                                        updatedBars[barIndex] = {
-                                          ...updatedBars[barIndex],
-                                          name_size: parseInt(target.value),
-                                        };
-                                      }
-                                      updateModule({ bars: updatedBars });
-                                    }}
-                                    style="flex: 1;"
-                                  />
-                                  <input
-                                    type="number"
-                                    min="10"
-                                    max="24"
-                                    .value="${bar.name_size || sliderControl.name_size || 14}"
-                                    @input=${(e: Event) => {
-                                      const target = e.target as HTMLInputElement;
-                                      const updatedBars = [...(sliderControl.bars || [])];
-                                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                      if (barIndex !== -1) {
-                                        updatedBars[barIndex] = {
-                                          ...updatedBars[barIndex],
-                                          name_size: parseInt(target.value),
-                                        };
-                                      }
-                                      updateModule({ bars: updatedBars });
-                                    }}
-                                    style="width: 70px;"
-                                  />
-                                </div>
-                              </div>
+                              ${this.renderSliderField(
+                                'Name Size',
+                                '',
+                                bar.name_size || sliderControl.name_size || 14,
+                                14,
+                                10,
+                                24,
+                                1,
+                                (value: number) => {
+                                  const updatedBars = [...(sliderControl.bars || [])];
+                                  const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                  if (barIndex !== -1) {
+                                    updatedBars[barIndex] = { ...updatedBars[barIndex], name_size: value };
+                                  }
+                                  updateModule({ bars: updatedBars });
+                                },
+                                'px'
+                              )}
 
                               <div class="field-container">
                                 <div class="field-title">Name Color</div>
@@ -2095,26 +1867,21 @@ export class UltraSliderControlModule extends BaseUltraModule {
                                 ></ultra-color-picker>
                               </div>
 
-                              <div
-                                style="display: flex; align-items: center; justify-content: space-between;"
-                              >
-                                <div class="field-title">Bold</div>
-                                <ha-switch
-                                  .checked=${bar.name_bold ?? sliderControl.name_bold ?? true}
-                                  @change=${(e: Event) => {
-                                    const target = e.target as any;
-                                    const updatedBars = [...(sliderControl.bars || [])];
-                                    const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                    if (barIndex !== -1) {
-                                      updatedBars[barIndex] = {
-                                        ...updatedBars[barIndex],
-                                        name_bold: target.checked,
-                                      };
-                                    }
-                                    updateModule({ bars: updatedBars });
-                                  }}
-                                ></ha-switch>
-                              </div>
+                              ${this.renderFieldSection(
+                                'Bold',
+                                '',
+                                homeAssistant,
+                                { name_bold: bar.name_bold ?? sliderControl.name_bold ?? true },
+                                [this.booleanField('name_bold')],
+                                (e: CustomEvent) => {
+                                  const updatedBars = [...(sliderControl.bars || [])];
+                                  const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                  if (barIndex !== -1) {
+                                    updatedBars[barIndex] = { ...updatedBars[barIndex], name_bold: e.detail.value.name_bold };
+                                  }
+                                  updateModule({ bars: updatedBars });
+                                }
+                              )}
                             </div>
                           `
                         : ''}
@@ -2122,103 +1889,58 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
                     <!-- Value Settings -->
                     <div style="margin-bottom: 24px;">
-                      <div
-                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
-                      >
-                        <div>
-                          <div class="field-title">Show Value</div>
-                          <div class="field-description">Display current numeric value</div>
-                        </div>
-                        <ha-switch
-                          .checked=${bar.show_value ?? sliderControl.show_value ?? true}
-                          @change=${(e: Event) => {
-                            const target = e.target as any;
-                            const updatedBars = [...(sliderControl.bars || [])];
-                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                            if (barIndex !== -1) {
-                              updatedBars[barIndex] = {
-                                ...updatedBars[barIndex],
-                                show_value: target.checked,
-                              };
-                            }
-                            updateModule({ bars: updatedBars });
-                          }}
-                        ></ha-switch>
-                      </div>
-
-                      <div
-                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
-                      >
-                        <div>
-                          <div class="field-title">Show Bar Label</div>
-                          <div class="field-description">
-                            Display bar label (Brightness, RGB Color, etc.)
-                          </div>
-                        </div>
-                        <ha-switch
-                          .checked=${bar.show_bar_label ?? sliderControl.show_bar_label ?? true}
-                          @change=${(e: Event) => {
-                            const target = e.target as any;
-                            const updatedBars = [...(sliderControl.bars || [])];
-                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                            if (barIndex !== -1) {
-                              updatedBars[barIndex] = {
-                                ...updatedBars[barIndex],
-                                show_bar_label: target.checked,
-                              };
-                            }
-                            updateModule({ bars: updatedBars });
-                          }}
-                        ></ha-switch>
-                      </div>
+                      ${this.renderFieldSection(
+                        'Show Value',
+                        'Display current numeric value',
+                        homeAssistant,
+                        { show_value: bar.show_value ?? sliderControl.show_value ?? true },
+                        [this.booleanField('show_value')],
+                        (e: CustomEvent) => {
+                          const updatedBars = [...(sliderControl.bars || [])];
+                          const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                          if (barIndex !== -1) {
+                            updatedBars[barIndex] = { ...updatedBars[barIndex], show_value: e.detail.value.show_value };
+                          }
+                          updateModule({ bars: updatedBars });
+                        }
+                      )}
+                      ${this.renderFieldSection(
+                        'Show Bar Label',
+                        'Display bar label (Brightness, RGB Color, etc.)',
+                        homeAssistant,
+                        { show_bar_label: bar.show_bar_label ?? sliderControl.show_bar_label ?? true },
+                        [this.booleanField('show_bar_label')],
+                        (e: CustomEvent) => {
+                          const updatedBars = [...(sliderControl.bars || [])];
+                          const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                          if (barIndex !== -1) {
+                            updatedBars[barIndex] = { ...updatedBars[barIndex], show_bar_label: e.detail.value.show_bar_label };
+                          }
+                          updateModule({ bars: updatedBars });
+                        }
+                      )}
 
                       ${(bar.show_value ?? sliderControl.show_value) !== false
                         ? html`
                             <div class="conditional-fields-group">
-                              <div class="field-container">
-                                <div class="field-title">Value Size</div>
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                  <input
-                                    type="range"
-                                    min="10"
-                                    max="24"
-                                    step="1"
-                                    .value="${bar.value_size || sliderControl.value_size || 14}"
-                                    @input=${(e: Event) => {
-                                      const target = e.target as HTMLInputElement;
-                                      const updatedBars = [...(sliderControl.bars || [])];
-                                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                      if (barIndex !== -1) {
-                                        updatedBars[barIndex] = {
-                                          ...updatedBars[barIndex],
-                                          value_size: parseInt(target.value),
-                                        };
-                                      }
-                                      updateModule({ bars: updatedBars });
-                                    }}
-                                    style="flex: 1;"
-                                  />
-                                  <input
-                                    type="number"
-                                    min="10"
-                                    max="24"
-                                    .value="${bar.value_size || sliderControl.value_size || 14}"
-                                    @input=${(e: Event) => {
-                                      const target = e.target as HTMLInputElement;
-                                      const updatedBars = [...(sliderControl.bars || [])];
-                                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                                      if (barIndex !== -1) {
-                                        updatedBars[barIndex] = {
-                                          ...updatedBars[barIndex],
-                                          value_size: parseInt(target.value),
-                                        };
-                                      }
-                                      updateModule({ bars: updatedBars });
-                                    }}
-                                    style="width: 70px;"
-                                  />
-                                </div>
-                              </div>
+                              ${this.renderSliderField(
+                                'Value Size',
+                                '',
+                                bar.value_size || sliderControl.value_size || 14,
+                                14,
+                                10,
+                                24,
+                                1,
+                                (value: number) => {
+                                  const updatedBars = [...(sliderControl.bars || [])];
+                                  const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                  if (barIndex !== -1) {
+                                    updatedBars[barIndex] = { ...updatedBars[barIndex], value_size: value };
+                                  }
+                                  updateModule({ bars: updatedBars });
+                                },
+                                'px'
+                              )}
 
                               <div class="field-container">
                                 <div class="field-title">Value Color</div>
@@ -2314,40 +2036,17 @@ export class UltraSliderControlModule extends BaseUltraModule {
             : ''}
         </div>
 
-        <!-- Bar Spacing (kept global) -->
-        <div class="settings-section">
-          <div class="field-container">
-            <div class="field-title">Bar Spacing</div>
-            <div class="field-description">
-              Spacing between multiple bars (negative values allowed for overlap)
-            </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <input
-                type="range"
-                min="-20"
-                max="40"
-                step="2"
-                .value="${sliderControl.bar_spacing || 8}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  updateModule({ bar_spacing: parseInt(target.value) });
-                }}
-                style="flex: 1;"
-              />
-              <input
-                type="number"
-                min="-20"
-                max="40"
-                .value="${sliderControl.bar_spacing || 8}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  updateModule({ bar_spacing: parseInt(target.value) });
-                }}
-                style="width: 70px;"
-              />
-            </div>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          'Bar Spacing',
+          'Spacing between multiple bars (negative values allowed for overlap)',
+          sliderControl.bar_spacing || 8,
+          8,
+          -20,
+          40,
+          2,
+          (value: number) => updateModule({ bar_spacing: value }),
+          'px'
+        )}
       </div>
     `;
   }
@@ -2414,12 +2113,13 @@ export class UltraSliderControlModule extends BaseUltraModule {
     // Render loop fix - removed excessive logging
     const sliderControl = module as SliderControlModule;
     const homeAssistant = hass;
+    const lang = hass?.locale?.language || 'en';
 
     // GRACEFUL RENDERING: Check for incomplete configuration
     if (!sliderControl.bars || sliderControl.bars.length === 0) {
       return this.renderGradientErrorState(
-        'Add Bars',
-        'Configure slider bars in the General tab',
+        localize('editor.slider_control.error_no_bars', lang, 'Add Bars'),
+        localize('editor.slider_control.error_no_bars_desc', lang, 'Configure slider bars in the General tab'),
         'mdi:tune-vertical'
       );
     }
@@ -2430,7 +2130,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
     if (validBars.length === 0 && incompleteBars.length > 0) {
       const barList = incompleteBars.map((b, i) => b.name || `Bar ${i + 1}`).join(', ');
-      return this.renderGradientErrorState('Bars Need Entities', barList, 'mdi:tune-vertical');
+      return this.renderGradientErrorState(localize('editor.slider_control.error_need_entities', lang, 'Bars Need Entities'), barList, 'mdi:tune-vertical');
     }
 
     // Show warning banner if some bars are incomplete
@@ -2488,20 +2188,69 @@ export class UltraSliderControlModule extends BaseUltraModule {
         percentage = currentValue;
         displayValue = `${currentValue}`;
       } else if (bar.type === 'rgb') {
-        // Convert RGB to hue percentage
-        const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
-        const hue = this.rgbToHue(rgbColor[0], rgbColor[1], rgbColor[2]);
-        percentage = Math.max(0, Math.min(100, hue));
-        displayValue = `rgb(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]})`;
+        const colorMode = entityState.attributes.color_mode as string | undefined;
+        const minMireds = entityState.attributes.min_mireds || 154;
+        const maxMireds = entityState.attributes.max_mireds || 500;
+
+        if (colorMode === 'color_temp' || (!entityState.attributes.rgb_color && (entityState.attributes.color_temp || entityState.attributes.color_temp_kelvin))) {
+          // In color_temp mode, derive display hue from the perceptual gradient colour
+          // so the indicator moves toward blue for cool temps and orange for warm temps.
+          const miredVal = entityState.attributes.color_temp
+            || (entityState.attributes.color_temp_kelvin ? Math.round(1000000 / entityState.attributes.color_temp_kelvin) : minMireds);
+          const [r, g, b] = this.colorTempToDisplayRGB(miredVal, minMireds, maxMireds);
+          const hue = this.rgbToHue(r, g, b);
+          percentage = Math.max(0, Math.min(100, hue));
+          displayValue = `rgb(${r}, ${g}, ${b})`;
+        } else {
+          // Color or RGB mode — use actual rgb_color
+          const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
+          const hue = this.rgbToHue(rgbColor[0], rgbColor[1], rgbColor[2]);
+          percentage = Math.max(0, Math.min(100, hue));
+          displayValue = `rgb(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]})`;
+        }
       } else if (bar.type === 'color_temp') {
-        const colorTemp = entityState.attributes.color_temp || 154;
-        const minTemp = 154;
-        const maxTemp = 500;
-        percentage = Math.max(
-          0,
-          Math.min(100, ((maxTemp - colorTemp) / (maxTemp - minTemp)) * 100)
-        );
-        displayValue = `${Math.round(1000000 / colorTemp)}K`;
+        const minMireds = entityState.attributes.min_mireds || 154;
+        const maxMireds = entityState.attributes.max_mireds || 500;
+        const colorMode = entityState.attributes.color_mode as string | undefined;
+
+        // When the light is in a colour (RGB/HS/XY) mode the entity's color_temp attribute
+        // stays at its default minimum (e.g. 6500K) and tells us nothing about the visual
+        // warmth.  Derive an approximate "warmth" from the actual RGB colour instead so
+        // the indicator stays in sync with the brightness and RGB bars.
+        const rgbModes = ['rgb', 'hs', 'xy', 'rgbw', 'rgbww'];
+        if (colorMode && rgbModes.includes(colorMode)) {
+          const rgbColor = entityState.attributes.rgb_color as number[] | undefined;
+          if (Array.isArray(rgbColor) && rgbColor.length === 3) {
+            const [r, , b] = rgbColor;
+            // (R − B) metric: high = warm (orange/red), low = cool (blue)
+            // Normalise to 0–1: 0 = max cool (r=0,b=255), 1 = max warm (r=255,b=0)
+            const warmth = Math.max(0, Math.min(1, (r - b + 255) / 510));
+            // Map warmth onto the Mired range (high warmth → high Mireds = warm)
+            const miredEquiv = minMireds + warmth * (maxMireds - minMireds);
+            percentage = Math.max(
+              0,
+              Math.min(100, ((maxMireds - miredEquiv) / (maxMireds - minMireds)) * 100)
+            );
+            displayValue = `~${Math.round(1000000 / miredEquiv)}K`;
+          } else {
+            // No rgb_color available — fall back to entity color_temp attribute
+            const ct = entityState.attributes.color_temp
+              || (entityState.attributes.color_temp_kelvin ? Math.round(1000000 / entityState.attributes.color_temp_kelvin) : minMireds);
+            percentage = Math.max(0, Math.min(100, ((maxMireds - ct) / (maxMireds - minMireds)) * 100));
+            displayValue = `${Math.round(1000000 / ct)}K`;
+          }
+        } else {
+          // Color_temp mode (or no color_mode) — use the entity's actual color_temp attribute
+          // HA 2024+ may only expose color_temp_kelvin; fall back to converting from Kelvin
+          const colorTempKelvin = entityState.attributes.color_temp_kelvin;
+          const colorTemp = entityState.attributes.color_temp
+            || (colorTempKelvin ? Math.round(1000000 / colorTempKelvin) : minMireds);
+          percentage = Math.max(
+            0,
+            Math.min(100, ((maxMireds - colorTemp) / (maxMireds - minMireds)) * 100)
+          );
+          displayValue = `${Math.round(1000000 / colorTemp)}K`;
+        }
       } else if (bar.type === 'red') {
         const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
         percentage = Math.max(0, Math.min(100, (rgbColor[0] / 255) * 100));
@@ -2537,19 +2286,21 @@ export class UltraSliderControlModule extends BaseUltraModule {
       const useLocalValue =
         this.interactingBars.has(sliderKey) || this.localSliderValues.has(sliderKey);
 
-      // Check if entity state changed significantly - if so, clear cache
+      // After the user releases the slider we keep the local cache so the indicator
+      // doesn't snap back while waiting for HA to confirm the new state.
+      // We clear the cache once HA has confirmed (entity has caught up to the dragged
+      // value, diff < 2%) or when the entity switches off / fully off-state.
       if (useLocalValue && !this.interactingBars.has(sliderKey)) {
-        // If entity is off and we have a cached value, clear it
         const isEntityOff = entityState?.state === 'off' || entityState?.state === 'closed';
         if (isEntityOff) {
-          // Entity is off, should show 0%
           this.localSliderValues.delete(sliderKey);
         } else {
-          // Check if cached value differs significantly from actual state
           const cachedValue = this.localSliderValues.get(sliderKey) ?? percentage;
           const diff = Math.abs(cachedValue - percentage);
-          // If difference is large (more than 5%), entity state likely changed externally
-          if (diff > 5) {
+          // Clear only once HA has confirmed the value (diff is tiny).
+          // Do NOT clear when diff is large — that just means HA hasn't responded yet
+          // and clearing would cause the visible snap-back.
+          if (diff < 2) {
             this.localSliderValues.delete(sliderKey);
           }
         }
@@ -2754,20 +2505,39 @@ export class UltraSliderControlModule extends BaseUltraModule {
       // Handle slider interaction
       let debounceTimer: any;
 
+      /** Immediately moves the indicator DOM element — no Lit re-render needed. */
+      const moveIndicatorNow = (visualPct: number, sourceEl?: Element) => {
+        // document.querySelector cannot pierce shadow DOM — navigate relative to the
+        // event's own element to find the sibling indicator in the same shadow root.
+        const container = sourceEl?.closest('.slider-track-container') as Element | null;
+        if (!container) return;
+        const indicator = container.querySelector('.slider-indicator') as HTMLElement | null;
+        if (!indicator) return;
+        // clamp(4px, X%, calc(100% - 4px)) keeps the 8px indicator fully inside the container
+        if (isVertical) {
+          indicator.style.top = `clamp(4px, ${100 - visualPct}%, calc(100% - 4px))`;
+        } else {
+          indicator.style.left = `clamp(4px, ${visualPct}%, calc(100% - 4px))`;
+        }
+      };
+
       const handleSliderStart = (e: Event) => {
         this.interactingBars.add(sliderKey);
         // Clear any existing local value and set current entity percentage
         this.localSliderValues.delete(sliderKey);
         this.localSliderValues.set(sliderKey, livePercentage);
         this.localSliderValues = new Map(this.localSliderValues);
+        moveIndicatorNow(visualPercentage, e.target as Element);
       };
 
       const handleSliderEnd = (e: Event) => {
         this.interactingBars.delete(sliderKey);
-
-        // Keep local value indefinitely until next interaction
-        // This prevents jumping when entity state doesn't match clicked position
-        // The value will be cleared when user starts next interaction
+        // Do NOT call triggerPreviewUpdate(true) here.
+        // moveIndicatorNow() already placed the indicator at the correct position.
+        // Forcing an immediate re-render here would run the diff check before HA has
+        // confirmed the new state (entity still at old value → diff is large) which
+        // causes the visible snap-back.  The natural re-render from the incoming HA
+        // state update is sufficient and happens after HA confirms (~200–600 ms).
       };
 
       const handleSliderInput = (e: Event) => {
@@ -2780,6 +2550,10 @@ export class UltraSliderControlModule extends BaseUltraModule {
         // Store the local value during interaction (store actual percentage, not visual)
         this.localSliderValues.set(sliderKey, newPercentage);
         this.localSliderValues = new Map(this.localSliderValues);
+
+        // Move the indicator directly in DOM — bypasses Lit/card debounce for instant feedback
+        const indicatorVisualPct = shouldInvert ? 100 - newPercentage : newPercentage;
+        moveIndicatorNow(indicatorVisualPct, e.target as Element);
 
         // Clear previous timer
         if (debounceTimer) {
@@ -2815,10 +2589,12 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
                 serviceData.rgb_color = [rgbColor[0], rgbColor[1], blue];
               } else if (bar.type === 'color_temp') {
-                const minTemp = 154;
-                const maxTemp = 500;
-                const colorTemp = Math.round(maxTemp - (newPercentage / 100) * (maxTemp - minTemp));
-                serviceData.color_temp = colorTemp;
+                const minMireds = entityState.attributes.min_mireds || 154;
+                const maxMireds = entityState.attributes.max_mireds || 500;
+                const colorTempMireds = Math.round(maxMireds - (newPercentage / 100) * (maxMireds - minMireds));
+                // HA 2024+ removed color_temp (Mireds) from light.turn_on — use color_temp_kelvin instead.
+                // color_temp_kelvin has been accepted since HA 2022.9, so this is safe for all modern installs.
+                serviceData.color_temp_kelvin = Math.round(1000000 / colorTempMireds);
                 // Don't send brightness to prevent other sliders from moving
               }
 
@@ -3040,9 +2816,10 @@ export class UltraSliderControlModule extends BaseUltraModule {
                     class="slider-indicator ${isVertical
                       ? 'vertical-indicator'
                       : 'horizontal-indicator'}"
+                    data-slider-key="${sliderKey}"
                     style="${isVertical
-                      ? `top: ${100 - visualPercentage}%;`
-                      : `left: ${visualPercentage}%`};"
+                      ? `top: clamp(4px, ${100 - visualPercentage}%, calc(100% - 4px));`
+                      : `left: clamp(4px, ${visualPercentage}%, calc(100% - 4px));`};"
                   ></div>
                 `
               : ''}
@@ -3486,8 +3263,28 @@ export class UltraSliderControlModule extends BaseUltraModule {
               break;
             }
             case 'color_temp': {
-              const colorTemp = entityState.attributes.color_temp || 154;
-              displayValue = `${Math.round(1000000 / colorTemp)}K`;
+              // When in RGB mode, show approximate warmth derived from the colour
+              const ctColorMode = entityState.attributes.color_mode as string | undefined;
+              const ctRgbModes = ['rgb', 'hs', 'xy', 'rgbw', 'rgbww'];
+              if (ctColorMode && ctRgbModes.includes(ctColorMode)) {
+                const ctRgb = entityState.attributes.rgb_color as number[] | undefined;
+                if (Array.isArray(ctRgb) && ctRgb.length === 3) {
+                  const [ctR, , ctB] = ctRgb;
+                  const ctWarmth = Math.max(0, Math.min(1, (ctR - ctB + 255) / 510));
+                  const ctMinM = entityState.attributes.min_mireds || 154;
+                  const ctMaxM = entityState.attributes.max_mireds || 500;
+                  const ctMiredEquiv = ctMinM + ctWarmth * (ctMaxM - ctMinM);
+                  displayValue = `~${Math.round(1000000 / ctMiredEquiv)}K`;
+                } else {
+                  const ctKA = entityState.attributes.color_temp_kelvin
+                    || (entityState.attributes.color_temp ? Math.round(1000000 / entityState.attributes.color_temp) : 6500);
+                  displayValue = `${Math.round(ctKA)}K`;
+                }
+              } else {
+                const ctKA = entityState.attributes.color_temp_kelvin
+                  || (entityState.attributes.color_temp ? Math.round(1000000 / entityState.attributes.color_temp) : 6500);
+                displayValue = `${Math.round(ctKA)}K`;
+              }
               break;
             }
             case 'red':
@@ -3945,13 +3742,33 @@ export class UltraSliderControlModule extends BaseUltraModule {
               break;
             }
             case 'rgb': {
-              const rgb = entityState.attributes.rgb_color || [255, 255, 255];
-              displayValue = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+              const rgb2 = entityState.attributes.rgb_color || [255, 255, 255];
+              displayValue = `rgb(${rgb2[0]}, ${rgb2[1]}, ${rgb2[2]})`;
               break;
             }
             case 'color_temp': {
-              const colorTemp = entityState.attributes.color_temp || 154;
-              displayValue = `${Math.round(1000000 / colorTemp)}K`;
+              // When in RGB mode, show approximate warmth derived from the colour
+              const ctColorMode2 = entityState.attributes.color_mode as string | undefined;
+              const ctRgbModes2 = ['rgb', 'hs', 'xy', 'rgbw', 'rgbww'];
+              if (ctColorMode2 && ctRgbModes2.includes(ctColorMode2)) {
+                const ctRgb2 = entityState.attributes.rgb_color as number[] | undefined;
+                if (Array.isArray(ctRgb2) && ctRgb2.length === 3) {
+                  const [ctR2, , ctB2] = ctRgb2;
+                  const ctWarmth2 = Math.max(0, Math.min(1, (ctR2 - ctB2 + 255) / 510));
+                  const ctMinM2 = entityState.attributes.min_mireds || 154;
+                  const ctMaxM2 = entityState.attributes.max_mireds || 500;
+                  const ctMiredEquiv2 = ctMinM2 + ctWarmth2 * (ctMaxM2 - ctMinM2);
+                  displayValue = `~${Math.round(1000000 / ctMiredEquiv2)}K`;
+                } else {
+                  const ctKB = entityState.attributes.color_temp_kelvin
+                    || (entityState.attributes.color_temp ? Math.round(1000000 / entityState.attributes.color_temp) : 6500);
+                  displayValue = `${Math.round(ctKB)}K`;
+                }
+              } else {
+                const ctKB = entityState.attributes.color_temp_kelvin
+                  || (entityState.attributes.color_temp ? Math.round(1000000 / entityState.attributes.color_temp) : 6500);
+                displayValue = `${Math.round(ctKB)}K`;
+              }
               break;
             }
             case 'red':
@@ -4166,10 +3983,13 @@ export class UltraSliderControlModule extends BaseUltraModule {
         ? 'overflow: hidden;'
         : '';
 
-    return html`
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    return this.wrapWithAnimation(html`
       <div
-        class="slider-control-container ${baseLayoutClass}"
-        style="padding: 16px; position: relative; ${backgroundStyle} ${isVertical
+        class="slider-control-container ${baseLayoutClass} ${hoverClass}"
+        style="${designStyles}; padding: 16px; position: relative; ${backgroundStyle} ${isVertical
           ? `display: flex; justify-content: center; align-items: center; min-height: ${verticalSliderHeight}px;`
           : ''} ${overflowStyle}"
       >
@@ -4259,7 +4079,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
         ${finalLayout}
       </div>
-    `;
+    `, module, hass);
   }
 
   // Helper methods for color conversion
@@ -4269,33 +4089,90 @@ export class UltraSliderControlModule extends BaseUltraModule {
     }
 
     const attributes = entityState.attributes;
+    const colorMode = attributes.color_mode as string | undefined;
 
-    if (Array.isArray(attributes.rgb_color) && attributes.rgb_color.length === 3) {
-      const [r, g, b] = attributes.rgb_color;
+    // Helper: resolve color_temp to the same perceptual gradient colour used on the bar
+    const resolveColorTemp = (): string | null => {
+      const miredVal = attributes.color_temp
+        || (attributes.color_temp_kelvin ? Math.round(1000000 / attributes.color_temp_kelvin) : 0);
+      if (!miredVal) return null;
+      const minMireds = attributes.min_mireds || 154;
+      const maxMireds = attributes.max_mireds || 500;
+      const [r, g, b] = this.colorTempToDisplayRGB(miredVal, minMireds, maxMireds);
       return `rgb(${r}, ${g}, ${b})`;
+    };
+
+    // Helper: resolve colour from RGB/HS attributes
+    const resolveRgb = (): string | null => {
+      if (Array.isArray(attributes.rgb_color) && attributes.rgb_color.length === 3) {
+        const [r, g, b] = attributes.rgb_color;
+        return `rgb(${r}, ${g}, ${b})`;
+      }
+      if (Array.isArray(attributes.hs_color) && attributes.hs_color.length >= 2) {
+        const [h, s] = attributes.hs_color;
+        const rgb = this.hsvToRgb(
+          ((h ?? 0) % 360) / 360,
+          Math.max(0, Math.min(100, s ?? 100)) / 100,
+          1
+        );
+        return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+      }
+      return null;
+    };
+
+    // Respect color_mode so bars show the colour that matches the current light mode.
+    // Without this, HA's derived rgb_color (near-white at 6500K) would override the
+    // perceptual cool-blue we want to show for colour-temperature mode.
+    if (colorMode === 'color_temp') {
+      return resolveColorTemp() || fallback;
     }
 
-    if (Array.isArray(attributes.hs_color) && attributes.hs_color.length >= 2) {
-      const [h, s] = attributes.hs_color;
-      const rgb = this.hsvToRgb(
-        ((h ?? 0) % 360) / 360,
-        Math.max(0, Math.min(100, s ?? 100)) / 100,
-        1
-      );
-      return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+    if (colorMode && ['rgb', 'hs', 'xy', 'rgbw', 'rgbww'].includes(colorMode)) {
+      return resolveRgb() || resolveColorTemp() || fallback;
     }
 
-    if (typeof attributes.color_temp === 'number' && attributes.color_temp > 0) {
-      const kelvin = Math.max(1000, Math.min(40000, Math.round(1000000 / attributes.color_temp)));
-      const [r, g, b] = this.colorTemperatureToRGB(kelvin);
-      return `rgb(${r}, ${g}, ${b})`;
-    }
+    // No color_mode reported — fall back in order: RGB → color_temp → named color
+    return resolveRgb() || resolveColorTemp() || (typeof attributes.color === 'string' && attributes.color.trim() ? attributes.color : fallback);
+  }
 
-    if (typeof attributes.color === 'string' && attributes.color.trim()) {
-      return attributes.color;
-    }
+  /**
+   * Converts a colour-temperature Mired value to an approximate display RGB by
+   * interpolating through the same gradient stops used on the color_temp bar:
+   * warm orange (min Mired / max warmth) → white → cool blue (max Mired / min warmth).
+   * This gives a perceptually clear warm↔cool visual even though 6500K is
+   * physically near-white on the Planckian locus.
+   */
+  private colorTempToDisplayRGB(
+    miredValue: number,
+    minMireds: number,
+    maxMireds: number
+  ): [number, number, number] {
+    // pct = 0 → warmest (orange), pct = 1 → coolest (blue)
+    const pct = Math.max(0, Math.min(1, (maxMireds - miredValue) / (maxMireds - minMireds)));
 
-    return fallback;
+    // Same colour stops as _getBarGradient's color_temp gradient (0% warm → 100% cool)
+    const stops: [number, number, number][] = [
+      [255, 147,  41],  // 0%   warm orange
+      [255, 180, 112],  // 11%
+      [255, 220, 177],  // 22%
+      [255, 246, 213],  // 33%
+      [255, 255, 255],  // 44%  neutral white
+      [230, 240, 255],  // 56%
+      [208, 232, 255],  // 67%
+      [169, 200, 255],  // 78%
+      [130, 170, 255],  // 100% cool blue
+    ];
+
+    const idx = pct * (stops.length - 1);
+    const lo = Math.floor(idx);
+    const hi = Math.min(stops.length - 1, lo + 1);
+    const t = idx - lo;
+
+    return [
+      Math.round(stops[lo][0] + t * (stops[hi][0] - stops[lo][0])),
+      Math.round(stops[lo][1] + t * (stops[hi][1] - stops[lo][1])),
+      Math.round(stops[lo][2] + t * (stops[hi][2] - stops[lo][2])),
+    ];
   }
 
   private rgbToHue(r: number, g: number, b: number): number {

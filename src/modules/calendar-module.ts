@@ -331,19 +331,12 @@ export class UltraCalendarModule extends BaseUltraModule {
                   <!-- Entity Picker -->
                   <div class="field-row">
                     <div class="field-title">Entity</div>
-                    <ha-form
-                      .hass=${hass}
-                      .data=${{ entity: cal.entity || '' }}
-                      .schema=${[
-                        {
-                          name: 'entity',
-                          selector: { entity: { domain: 'calendar' } },
-                        },
-                      ]}
-                      .computeLabel=${() => ''}
-                      @value-changed=${(e: CustomEvent) =>
-                        this.updateCalendarEntity(index, 'entity', e.detail.value.entity, module, updateModule)}
-                    ></ha-form>
+                    ${this.renderEntityPickerWithVariables(
+                      hass, undefined as any, 'entity', cal.entity || '',
+                      (value: string) => this.updateCalendarEntity(index, 'entity', value, module, updateModule),
+                      ['calendar'],
+                      'Entity'
+                    )}
                   </div>
 
                   <!-- Custom Name -->
@@ -1642,6 +1635,7 @@ export class UltraCalendarModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const calendarModule = module as CalendarModule;
+    const lang = hass?.locale?.language || 'en';
     this._hass = hass;
 
     // Check for valid calendars
@@ -1651,8 +1645,8 @@ export class UltraCalendarModule extends BaseUltraModule {
 
     if (validCalendars.length === 0) {
       return this.renderGradientErrorState(
-        'Configure Calendars',
-        'Select at least one calendar entity in the General tab'
+        localize('editor.calendar.error_no_calendars', lang, 'Configure Calendars'),
+        localize('editor.calendar.error_no_calendars_desc', lang, 'Select at least one calendar entity in the General tab')
       );
     }
 
@@ -1695,11 +1689,14 @@ export class UltraCalendarModule extends BaseUltraModule {
       } : {}),
     };
 
-    return html`
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+    const hoverClass = this.getHoverEffectClass(module);
+
+    return this.wrapWithAnimation(html`
       <style>
         ${this.getPreviewStyles(calendarModule)}
       </style>
-      <div class="uc-calendar-container">
+      <div class="uc-calendar-container ${hoverClass}" style="${designStyles}">
         ${calendarModule.show_title && calendarModule.title
           ? html`
               <div
@@ -1718,7 +1715,7 @@ export class UltraCalendarModule extends BaseUltraModule {
           : ''}
         ${this.renderCalendarView(context)}
       </div>
-    `;
+    `, module, hass);
   }
 
   private renderCalendarView(context: CalendarViewContext): TemplateResult {

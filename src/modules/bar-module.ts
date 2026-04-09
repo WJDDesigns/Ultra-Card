@@ -3,17 +3,16 @@ import { ref, createRef, Ref } from 'lit/directives/ref.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, BarModule, UltraCardConfig } from '../types';
-import { FormUtils } from '../utils/form-utils';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import '../components/ultra-color-picker';
 import '../components/uc-gradient-editor';
 import '../components/ultra-template-editor';
+import '../components/uc-template-cheatsheet';
 import '../components/bar-side-actions';
 import { formatEntityState } from '../utils/number-format';
 import { TemplateService } from '../services/template-service';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { localize } from '../localize/localize';
 import { buildEntityContext } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
@@ -411,60 +410,31 @@ export class UltraBarModule extends BaseUltraModule {
                   localize('editor.bar.attr_config.title', lang, 'Entity Attribute Configuration'),
                   html`
                     ${this.renderSettingsSection(
-                      localize(
-                        'editor.bar.attr_config.title',
-                        lang,
-                        'Entity Attribute Configuration'
-                      ),
-                      localize(
-                        'editor.bar.attr_config.desc',
-                        lang,
-                        'Configure entity attribute settings'
-                      ),
-                      [
+                      localize('editor.bar.attr_config.title', lang, 'Entity Attribute Configuration'),
+                      localize('editor.bar.attr_config.desc', lang, 'Configure entity attribute settings'),
+                      []
+                    )}
+                    <div style="margin-bottom: 16px;">
+                      ${this.renderEntityPickerWithVariables(
+                        hass, config, 'percentage_attribute_entity', barModule.percentage_attribute_entity || '',
+                        (value: string) => updateModule({ percentage_attribute_entity: value }),
+                        undefined,
+                        localize('editor.bar.attr_config.attribute_entity', lang, 'Attribute Entity')
+                      )}
+                    </div>
+                    ${this.renderSettingsSection('', '', [
                         {
-                          title: localize(
-                            'editor.bar.attr_config.attribute_entity',
-                            lang,
-                            'Attribute Entity'
-                          ),
-                          description: localize(
-                            'editor.bar.attr_config.attribute_entity_desc',
-                            lang,
-                            'Select the entity that contains the attribute with the percentage value'
-                          ),
-                          hass,
-                          data: {
-                            percentage_attribute_entity:
-                              barModule.percentage_attribute_entity || '',
-                          },
-                          schema: [this.entityField('percentage_attribute_entity')],
-                          onChange: (e: CustomEvent) =>
-                            updateModule({
-                              percentage_attribute_entity:
-                                e.detail.value.percentage_attribute_entity,
-                            }),
-                        },
-                        {
-                          title: localize(
-                            'editor.bar.attr_config.attribute_name',
-                            lang,
-                            'Attribute Name'
-                          ),
+                          title: localize('editor.bar.attr_config.attribute_name', lang, 'Attribute Name'),
                           description: localize(
                             'editor.bar.attr_config.attribute_name_desc',
                             lang,
                             'Enter the name of the attribute that contains the percentage value (e.g., "battery_level")'
                           ),
                           hass,
-                          data: {
-                            percentage_attribute_name: barModule.percentage_attribute_name || '',
-                          },
+                          data: { percentage_attribute_name: barModule.percentage_attribute_name || '' },
                           schema: [this.textField('percentage_attribute_name')],
                           onChange: (e: CustomEvent) =>
-                            updateModule({
-                              percentage_attribute_name: e.detail.value.percentage_attribute_name,
-                            }),
+                            updateModule({ percentage_attribute_name: e.detail.value.percentage_attribute_name }),
                         },
                       ]
                     )}
@@ -484,61 +454,26 @@ export class UltraBarModule extends BaseUltraModule {
                   ),
                   html`
                     ${this.renderSettingsSection(
-                      localize(
-                        'editor.bar.diff_config.title',
-                        lang,
-                        'Difference Calculation Configuration'
-                      ),
-                      localize(
-                        'editor.bar.diff_config.desc',
-                        lang,
-                        'Configure difference calculation settings'
-                      ),
-                      [
-                        {
-                          title: localize(
-                            'editor.bar.diff_config.current_entity',
-                            lang,
-                            'Current Value Entity'
-                          ),
-                          description: localize(
-                            'editor.bar.diff_config.current_entity_desc',
-                            lang,
-                            'Entity representing the current/used amount (e.g., fuel used, battery consumed)'
-                          ),
-                          hass,
-                          data: {
-                            percentage_current_entity: barModule.percentage_current_entity || '',
-                          },
-                          schema: [this.entityField('percentage_current_entity')],
-                          onChange: (e: CustomEvent) =>
-                            updateModule({
-                              percentage_current_entity: e.detail.value.percentage_current_entity,
-                            }),
-                        },
-                        {
-                          title: localize(
-                            'editor.bar.diff_config.total_entity',
-                            lang,
-                            'Total Value Entity'
-                          ),
-                          description: localize(
-                            'editor.bar.diff_config.total_entity_desc',
-                            lang,
-                            'Entity representing the total/maximum amount (e.g., fuel capacity, battery capacity)'
-                          ),
-                          hass,
-                          data: {
-                            percentage_total_entity: barModule.percentage_total_entity || '',
-                          },
-                          schema: [this.entityField('percentage_total_entity')],
-                          onChange: (e: CustomEvent) =>
-                            updateModule({
-                              percentage_total_entity: e.detail.value.percentage_total_entity,
-                            }),
-                        },
-                      ]
+                      localize('editor.bar.diff_config.title', lang, 'Difference Calculation Configuration'),
+                      localize('editor.bar.diff_config.desc', lang, 'Configure difference calculation settings'),
+                      []
                     )}
+                    <div style="margin-bottom: 16px;">
+                      ${this.renderEntityPickerWithVariables(
+                        hass, config, 'percentage_current_entity', barModule.percentage_current_entity || '',
+                        (value: string) => updateModule({ percentage_current_entity: value }),
+                        undefined,
+                        localize('editor.bar.diff_config.current_entity', lang, 'Current Value Entity')
+                      )}
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                      ${this.renderEntityPickerWithVariables(
+                        hass, config, 'percentage_total_entity', barModule.percentage_total_entity || '',
+                        (value: string) => updateModule({ percentage_total_entity: value }),
+                        undefined,
+                        localize('editor.bar.diff_config.total_entity', lang, 'Total Value Entity')
+                      )}
+                    </div>
                   `
                 )
               : ''
@@ -594,9 +529,10 @@ export class UltraBarModule extends BaseUltraModule {
                             "Enter a Jinja2 template that returns a number between 0-100 for the percentage. Example: {{ (states('sensor.battery_level') | float) * 100 }}"
                           )}
                         </div>
+                        <uc-template-cheatsheet .module=${'bar'}></uc-template-cheatsheet>
+
                         <div
                           @mousedown=${(e: Event) => {
-                            // Only stop propagation for drag operations, not clicks on the editor
                             const target = e.target as HTMLElement;
                             if (
                               !target.closest('ultra-template-editor') &&
@@ -606,7 +542,27 @@ export class UltraBarModule extends BaseUltraModule {
                             }
                           }}
                           @dragstart=${(e: Event) => e.stopPropagation()}
+                          @insert-snippet=${(e: CustomEvent) => {
+                            const editor = (e.currentTarget as HTMLElement).querySelector('ultra-template-editor');
+                            (editor as any)?.insertAtCursor?.(e.detail?.value ?? '');
+                          }}
                         >
+                          <button
+                            style="background: none; border: 1px solid var(--divider-color); border-radius: 4px; padding: 4px 8px; font-size: 11px; color: var(--primary-color); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 8px;"
+                            title="${localize('editor.bar.template_cheatsheet', lang, 'Template Cheatsheet')}"
+                            @click=${(e: Event) => {
+                              (e.currentTarget as HTMLElement).dispatchEvent(
+                                new CustomEvent('uc-open-template-cheatsheet', {
+                                  detail: { module: 'bar' },
+                                  bubbles: true,
+                                  composed: true,
+                                })
+                              );
+                            }}
+                          >
+                            <ha-icon icon="mdi:help-circle-outline" style="--mdc-icon-size: 14px;"></ha-icon>
+                            ${localize('editor.bar.template_cheatsheet', lang, 'Template Cheatsheet')}
+                          </button>
                           <ultra-template-editor
                             .hass=${hass}
                             .value=${barModule.percentage_template || ''}
@@ -628,102 +584,39 @@ export class UltraBarModule extends BaseUltraModule {
           ${
             barModule.percentage_type === 'time_progress'
               ? this.renderConditionalFieldsGroup(
-                  localize(
-                    'editor.bar.time_progress_config.title',
-                    lang,
-                    'Time Progress Configuration'
-                  ),
+                  localize('editor.bar.time_progress_config.title', lang, 'Time Progress Configuration'),
                   html`
                     ${this.renderSettingsSection(
-                      localize(
-                        'editor.bar.time_progress_config.title',
-                        lang,
-                        'Time Progress Configuration'
-                      ),
-                      localize(
-                        'editor.bar.time_progress_config.desc',
-                        lang,
-                        'Configure real-time progress between two timestamp entities. Updates smoothly in the browser without backend load.'
-                      ),
-                      [
+                      localize('editor.bar.time_progress_config.title', lang, 'Time Progress Configuration'),
+                      localize('editor.bar.time_progress_config.desc', lang, 'Configure real-time progress between two timestamp entities. Updates smoothly in the browser without backend load.'),
+                      []
+                    )}
+                    <div style="margin-bottom: 16px;">
+                      ${this.renderEntityPickerWithVariables(
+                        hass, config, 'time_progress_start_entity', (barModule as any).time_progress_start_entity || '',
+                        (value: string) => updateModule({ time_progress_start_entity: value }),
+                        undefined,
+                        localize('editor.bar.time_progress_config.start_entity', lang, 'Start Timestamp Entity')
+                      )}
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                      ${this.renderEntityPickerWithVariables(
+                        hass, config, 'time_progress_end_entity', (barModule as any).time_progress_end_entity || '',
+                        (value: string) => updateModule({ time_progress_end_entity: value }),
+                        undefined,
+                        localize('editor.bar.time_progress_config.end_entity', lang, 'End Timestamp Entity')
+                      )}
+                    </div>
+                    ${this.renderSettingsSection('', '', [
                         {
-                          title: localize(
-                            'editor.bar.time_progress_config.start_entity',
-                            lang,
-                            'Start Timestamp Entity'
-                          ),
-                          description: localize(
-                            'editor.bar.time_progress_config.start_entity_desc',
-                            lang,
-                            'Entity containing the start timestamp (e.g., last_refresh). Supports ISO date strings and Unix timestamps.'
-                          ),
+                          title: localize('editor.bar.time_progress_config.direction', lang, 'Progress Direction'),
+                          description: localize('editor.bar.time_progress_config.direction_desc', lang, 'Forward shows elapsed time from start to now. Backward shows remaining time from now to end.'),
                           hass,
-                          data: {
-                            time_progress_start_entity:
-                              (barModule as any).time_progress_start_entity || '',
-                          },
-                          schema: [this.entityField('time_progress_start_entity')],
-                          onChange: (e: CustomEvent) =>
-                            updateModule({
-                              time_progress_start_entity: e.detail.value.time_progress_start_entity,
-                            }),
-                        },
-                        {
-                          title: localize(
-                            'editor.bar.time_progress_config.end_entity',
-                            lang,
-                            'End Timestamp Entity'
-                          ),
-                          description: localize(
-                            'editor.bar.time_progress_config.end_entity_desc',
-                            lang,
-                            'Entity containing the end timestamp (e.g., next_refresh). Supports ISO date strings and Unix timestamps.'
-                          ),
-                          hass,
-                          data: {
-                            time_progress_end_entity:
-                              (barModule as any).time_progress_end_entity || '',
-                          },
-                          schema: [this.entityField('time_progress_end_entity')],
-                          onChange: (e: CustomEvent) =>
-                            updateModule({
-                              time_progress_end_entity: e.detail.value.time_progress_end_entity,
-                            }),
-                        },
-                        {
-                          title: localize(
-                            'editor.bar.time_progress_config.direction',
-                            lang,
-                            'Progress Direction'
-                          ),
-                          description: localize(
-                            'editor.bar.time_progress_config.direction_desc',
-                            lang,
-                            'Forward shows elapsed time from start to now. Backward shows remaining time from now to end.'
-                          ),
-                          hass,
-                          data: {
-                            time_progress_direction:
-                              (barModule as any).time_progress_direction || 'forward',
-                          },
+                          data: { time_progress_direction: (barModule as any).time_progress_direction || 'forward' },
                           schema: [
                             this.selectField('time_progress_direction', [
-                              {
-                                value: 'forward',
-                                label: localize(
-                                  'editor.bar.time_progress.forward',
-                                  lang,
-                                  'Forward (Elapsed)'
-                                ),
-                              },
-                              {
-                                value: 'backward',
-                                label: localize(
-                                  'editor.bar.time_progress.backward',
-                                  lang,
-                                  'Backward (Remaining)'
-                                ),
-                              },
+                              { value: 'forward', label: localize('editor.bar.time_progress.forward', lang, 'Forward (Elapsed)') },
+                              { value: 'backward', label: localize('editor.bar.time_progress.backward', lang, 'Backward (Remaining)') },
                             ]),
                           ],
                           onChange: (e: CustomEvent) => updateModule(e.detail.value),
@@ -754,95 +647,44 @@ export class UltraBarModule extends BaseUltraModule {
                   html`
                     ${this.renderSettingsSection(
                       localize('editor.bar.range_config.title', lang, 'Range Configuration'),
-                      localize(
-                        'editor.bar.range_config.desc',
-                        lang,
-                        'Configure the start and end values for the range visualization.'
-                      ),
-                      [
+                      localize('editor.bar.range_config.desc', lang, 'Configure the start and end values for the range visualization.'),
+                      []
+                    )}
+                    <div style="margin-bottom: 16px;">
+                      ${this.renderEntityPickerWithVariables(
+                        hass, config, 'range_start_entity', (barModule as any).range_start_entity || '',
+                        (value: string) => updateModule({ range_start_entity: value }),
+                        undefined,
+                        localize('editor.bar.range_config.start_entity', lang, 'Range Start Entity')
+                      )}
+                    </div>
+                    ${this.renderSettingsSection('', '', [
                         {
-                          title: localize(
-                            'editor.bar.range_config.start_entity',
-                            lang,
-                            'Range Start Entity'
-                          ),
-                          description: localize(
-                            'editor.bar.range_config.start_entity_desc',
-                            lang,
-                            'Entity that provides the start value of the range (e.g., coldest battery cell temperature).'
-                          ),
+                          title: localize('editor.bar.range_config.start_attribute', lang, 'Start Attribute (Optional)'),
+                          description: localize('editor.bar.range_config.start_attribute_desc', lang, 'If the value is in an attribute, enter the attribute name here.'),
                           hass,
-                          data: {
-                            range_start_entity: (barModule as any).range_start_entity || '',
-                          },
-                          schema: [this.entityField('range_start_entity')],
-                          onChange: (e: CustomEvent) =>
-                            updateModule({
-                              range_start_entity: e.detail.value.range_start_entity,
-                            }),
-                        },
-                        {
-                          title: localize(
-                            'editor.bar.range_config.start_attribute',
-                            lang,
-                            'Start Attribute (Optional)'
-                          ),
-                          description: localize(
-                            'editor.bar.range_config.start_attribute_desc',
-                            lang,
-                            'If the value is in an attribute, enter the attribute name here.'
-                          ),
-                          hass,
-                          data: {
-                            range_start_attribute: (barModule as any).range_start_attribute || '',
-                          },
+                          data: { range_start_attribute: (barModule as any).range_start_attribute || '' },
                           schema: [this.textField('range_start_attribute')],
-                          onChange: (e: CustomEvent) =>
-                            updateModule({
-                              range_start_attribute: e.detail.value.range_start_attribute,
-                            }),
+                          onChange: (e: CustomEvent) => updateModule({ range_start_attribute: e.detail.value.range_start_attribute }),
                         },
+                      ]
+                    )}
+                    <div style="margin-bottom: 16px;">
+                      ${this.renderEntityPickerWithVariables(
+                        hass, config, 'range_end_entity', (barModule as any).range_end_entity || '',
+                        (value: string) => updateModule({ range_end_entity: value }),
+                        undefined,
+                        localize('editor.bar.range_config.end_entity', lang, 'Range End Entity')
+                      )}
+                    </div>
+                    ${this.renderSettingsSection('', '', [
                         {
-                          title: localize(
-                            'editor.bar.range_config.end_entity',
-                            lang,
-                            'Range End Entity'
-                          ),
-                          description: localize(
-                            'editor.bar.range_config.end_entity_desc',
-                            lang,
-                            'Entity that provides the end value of the range (e.g., hottest battery cell temperature).'
-                          ),
+                          title: localize('editor.bar.range_config.end_attribute', lang, 'End Attribute (Optional)'),
+                          description: localize('editor.bar.range_config.end_attribute_desc', lang, 'If the value is in an attribute, enter the attribute name here.'),
                           hass,
-                          data: {
-                            range_end_entity: (barModule as any).range_end_entity || '',
-                          },
-                          schema: [this.entityField('range_end_entity')],
-                          onChange: (e: CustomEvent) =>
-                            updateModule({
-                              range_end_entity: e.detail.value.range_end_entity,
-                            }),
-                        },
-                        {
-                          title: localize(
-                            'editor.bar.range_config.end_attribute',
-                            lang,
-                            'End Attribute (Optional)'
-                          ),
-                          description: localize(
-                            'editor.bar.range_config.end_attribute_desc',
-                            lang,
-                            'If the value is in an attribute, enter the attribute name here.'
-                          ),
-                          hass,
-                          data: {
-                            range_end_attribute: (barModule as any).range_end_attribute || '',
-                          },
+                          data: { range_end_attribute: (barModule as any).range_end_attribute || '' },
                           schema: [this.textField('range_end_attribute')],
-                          onChange: (e: CustomEvent) =>
-                            updateModule({
-                              range_end_attribute: e.detail.value.range_end_attribute,
-                            }),
+                          onChange: (e: CustomEvent) => updateModule({ range_end_attribute: e.detail.value.range_end_attribute }),
                         },
                       ]
                     )}
@@ -874,28 +716,15 @@ export class UltraBarModule extends BaseUltraModule {
                         )}
                       </div>
 
+                      <div style="margin-bottom: 16px;">
+                        ${this.renderEntityPickerWithVariables(
+                          hass, config, 'range_current_entity', (barModule as any).range_current_entity || '',
+                          (value: string) => updateModule({ range_current_entity: value }),
+                          undefined,
+                          localize('editor.bar.range_config.current_entity', lang, 'Current Value Entity')
+                        )}
+                      </div>
                       ${this.renderSettingsSection('', '', [
-                        {
-                          title: localize(
-                            'editor.bar.range_config.current_entity',
-                            lang,
-                            'Current Value Entity'
-                          ),
-                          description: localize(
-                            'editor.bar.range_config.current_entity_desc',
-                            lang,
-                            'Entity for the current value marker (e.g., average battery temperature).'
-                          ),
-                          hass,
-                          data: {
-                            range_current_entity: (barModule as any).range_current_entity || '',
-                          },
-                          schema: [this.entityField('range_current_entity')],
-                          onChange: (e: CustomEvent) =>
-                            updateModule({
-                              range_current_entity: e.detail.value.range_current_entity,
-                            }),
-                        },
                         {
                           title: localize(
                             'editor.bar.range_config.current_attribute',
@@ -1096,29 +925,14 @@ export class UltraBarModule extends BaseUltraModule {
             !barModule.percentage_type || barModule.percentage_type === 'entity'
               ? html`
                   <div style="margin-top: 24px;">
-                    ${FormUtils.renderField(
-                      localize('editor.bar.entity.title', lang, 'Bar Percentage Entity'),
-                      barModule.entity
-                        ? localize(
-                            'editor.bar.entity.desc_present',
-                            lang,
-                            'The entity that provides the percentage value for the bar.'
-                          )
-                        : localize(
-                            'editor.bar.entity.desc_empty',
-                            lang,
-                            'Select an entity that provides a percentage value (0-100). Battery sensors are ideal for bars.'
-                          ),
+                    ${this.renderEntityPickerWithVariables(
                       hass,
-                      { entity: barModule.entity || '' },
-                      [
-                        FormUtils.createSchemaItem('entity', {
-                          entity: {
-                            filter: [{ domain: 'sensor' }, { domain: 'input_number' }],
-                          },
-                        }),
-                      ],
-                      (e: CustomEvent) => updateModule({ entity: e.detail.value.entity })
+                      config,
+                      'entity',
+                      barModule.entity || '',
+                      (value: string) => updateModule({ entity: value }),
+                      ['sensor', 'input_number'],
+                      localize('editor.bar.entity.title', lang, 'Bar Percentage Entity')
                     )}
                     ${!barModule.entity
                       ? html`
@@ -1144,17 +958,14 @@ export class UltraBarModule extends BaseUltraModule {
 
           <!-- Limit Value Entity -->
           <div style="margin-top: 24px;">
-            ${FormUtils.renderField(
-              localize('editor.bar.limit_entity.title', lang, 'Limit Value Entity (optional)'),
-              localize(
-                'editor.bar.limit_entity.desc',
-                lang,
-                'Optional: Add a vertical indicator line on the bar (e.g. charge limit for EV battery).'
-              ),
+            ${this.renderEntityPickerWithVariables(
               hass,
-              { limit_entity: barModule.limit_entity || '' },
-              [FormUtils.createSchemaItem('limit_entity', { entity: {} })],
-              (e: CustomEvent) => updateModule({ limit_entity: e.detail.value.limit_entity })
+              config,
+              'limit_entity',
+              barModule.limit_entity || '',
+              (value: string) => updateModule({ limit_entity: value }),
+              undefined,
+              localize('editor.bar.limit_entity.title', lang, 'Limit Value Entity (optional)')
             )}
           </div>
         </div>
@@ -1343,162 +1154,34 @@ export class UltraBarModule extends BaseUltraModule {
           </div>
 
           <!-- Bar Height -->
-          <div class="field-container" style="margin-bottom: 24px;">
-            <div class="field-title">${localize('editor.bar.appearance.height', lang, 'Bar Height')}</div>
-            <div class="field-description">${localize('editor.bar.appearance.height_desc', lang, 'Adjust the thickness of the progress bar in pixels.')}</div>
-            <div class="number-range-control">
-              <input
-                type="range"
-                class="range-slider"
-                min="8"
-                max="60"
-                step="2"
-                .value="${(barModule as any).height ?? 20}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseInt(target.value);
-                  updateModule({ height: value });
-                }}
-              />
-              <input
-                type="number"
-                class="range-input"
-                min="8"
-                step="2"
-                .value="${(barModule as any).height ?? 20}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseInt(target.value);
-                  if (!isNaN(value)) {
-                    updateModule({ height: value });
-                  }
-                }}
-                @keydown=${(e: KeyboardEvent) => {
-                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const target = e.target as HTMLInputElement;
-                    const currentValue = parseInt(target.value) || 20;
-                    const increment = e.key === 'ArrowUp' ? 2 : -2;
-                    const newValue = Math.max(8, currentValue + increment);
-                    updateModule({ height: newValue });
-                  }
-                }}
-              />
-              <button
-                class="range-reset-btn"
-                @click=${() => updateModule({ height: 20 })}
-                title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '20px')}"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
-          </div>
+          ${this.renderSliderField(
+            localize('editor.bar.appearance.height', lang, 'Bar Height'),
+            localize('editor.bar.appearance.height_desc', lang, 'Adjust the thickness of the progress bar in pixels.'),
+            (barModule as any).height ?? 20,
+            20, 8, 60, 2,
+            (v: number) => { updateModule({ height: v }); },
+            'px'
+          )}
 
           <!-- Border Radius -->
-          <div class="field-container" style="margin-bottom: 24px;">
-            <div class="field-title">${localize('editor.bar.appearance.border_radius', lang, 'Border Radius')}</div>
-            <div class="field-description">${localize('editor.bar.appearance.border_radius_desc', lang, 'Control the rounded corners of the bar.')}</div>
-            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-              <input
-                type="range"
-                class="gap-slider"
-                min="0"
-                max="50"
-                step="1"
-                .value="${barModule.border_radius ?? 10}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseInt(target.value);
-                  updateModule({ border_radius: value });
-                }}
-              />
-              <input
-                type="number"
-                class="gap-input"
-                min="0"
-                step="1"
-                .value="${barModule.border_radius ?? 10}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseInt(target.value);
-                  if (!isNaN(value)) {
-                    updateModule({ border_radius: value });
-                  }
-                }}
-                @keydown=${(e: KeyboardEvent) => {
-                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const target = e.target as HTMLInputElement;
-                    const currentValue = parseInt(target.value) ?? 10;
-                    const increment = e.key === 'ArrowUp' ? 1 : -1;
-                    const newValue = Math.max(0, Math.min(50, currentValue + increment));
-                    updateModule({ border_radius: newValue });
-                  }
-                }}
-              />
-              <button
-                class="reset-btn"
-                @click=${() => updateModule({ border_radius: 10 })}
-                title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '10')}"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
-          </div>
+          ${this.renderSliderField(
+            localize('editor.bar.appearance.border_radius', lang, 'Border Radius'),
+            localize('editor.bar.appearance.border_radius_desc', lang, 'Control the rounded corners of the bar.'),
+            barModule.border_radius ?? 10,
+            10, 0, 50, 1,
+            (v: number) => { updateModule({ border_radius: v }); },
+            'px'
+          )}
 
           <!-- Bar Width -->
-          <div class="field-container" style="margin-bottom: 24px;">
-            <div class="field-title">${localize('editor.bar.appearance.width', lang, 'Bar Width')}</div>
-            <div class="field-description">
-              ${localize('editor.bar.appearance.width_desc', lang, 'Set the width of the bar as a percentage of the container.')}
-            </div>
-            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-              <input
-                type="range"
-                class="gap-slider"
-                min="10"
-                max="100"
-                step="5"
-                .value="${barModule.bar_width || 100}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseInt(target.value);
-                  updateModule({ bar_width: value });
-                }}
-              />
-              <input
-                type="number"
-                class="gap-input"
-                min="10"
-                step="5"
-                .value="${barModule.bar_width || 100}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseInt(target.value);
-                  if (!isNaN(value)) {
-                    updateModule({ bar_width: value });
-                  }
-                }}
-                @keydown=${(e: KeyboardEvent) => {
-                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const target = e.target as HTMLInputElement;
-                    const currentValue = parseInt(target.value) || 100;
-                    const increment = e.key === 'ArrowUp' ? 5 : -5;
-                    const newValue = Math.max(10, Math.min(100, currentValue + increment));
-                    updateModule({ bar_width: newValue });
-                  }
-                }}
-              />
-              <button
-                class="reset-btn"
-                @click=${() => updateModule({ bar_width: 100 })}
-                title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '100')}"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
-          </div>
+          ${this.renderSliderField(
+            localize('editor.bar.appearance.width', lang, 'Bar Width'),
+            localize('editor.bar.appearance.width_desc', lang, 'Set the width of the bar as a percentage of the container.'),
+            barModule.bar_width || 100,
+            100, 10, 100, 5,
+            (v: number) => { updateModule({ bar_width: v }); },
+            '%'
+          )}
 
           <!-- Bar Alignment with Icons -->
           ${
@@ -1665,72 +1348,14 @@ export class UltraBarModule extends BaseUltraModule {
             barModule.bar_style === 'glass'
               ? html`
                   <div class="field-container" style="margin-bottom: 24px;">
-                    <div class="field-title">
-                      ${localize('editor.bar.appearance.glass_blur', lang, 'Glass Blur Amount')}
-                    </div>
-                    <div class="field-description">
-                      ${localize(
-                        'editor.bar.appearance.glass_blur_desc',
-                        lang,
-                        'Adjust the blur intensity of the glass effect.'
-                      )}
-                    </div>
-                    <div
-                      class="gap-control-container"
-                      style="display: flex; align-items: center; gap: 12px;"
-                    >
-                      <input
-                        type="range"
-                        class="gap-slider"
-                        min="0"
-                        max="20"
-                        step="1"
-                        .value="${barModule.glass_blur_amount || 8}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value);
-                          if (!isNaN(value)) {
-                            updateModule({ glass_blur_amount: value });
-                          }
-                        }}
-                      />
-                      <input
-                        type="number"
-                        class="gap-input"
-                        min="0"
-                        max="20"
-                        step="1"
-                        .value="${barModule.glass_blur_amount || 8}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value);
-                          if (!isNaN(value)) {
-                            updateModule({ glass_blur_amount: value });
-                          }
-                        }}
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            const target = e.target as HTMLInputElement;
-                            const currentValue = parseInt(target.value) || 8;
-                            const increment = e.key === 'ArrowUp' ? 1 : -1;
-                            const newValue = Math.max(0, Math.min(20, currentValue + increment));
-                            updateModule({ glass_blur_amount: newValue });
-                          }
-                        }}
-                      />
-                      <button
-                        class="reset-btn"
-                        @click=${() => updateModule({ glass_blur_amount: 8 })}
-                        title="${localize(
-                          'editor.fields.reset_default_value',
-                          lang,
-                          'Reset to default ({value})'
-                        ).replace('{value}', '8')}"
-                      >
-                        <ha-icon icon="mdi:refresh"></ha-icon>
-                      </button>
-                    </div>
+                    ${this.renderSliderField(
+                      localize('editor.bar.appearance.glass_blur', lang, 'Glass Blur'),
+                      localize('editor.bar.appearance.glass_blur_desc', lang, 'Adjust the blur intensity of the glass effect.'),
+                      barModule.glass_blur_amount || 8,
+                      8, 0, 20, 1,
+                      (v: number) => { updateModule({ glass_blur_amount: v }); },
+                      'px'
+                    )}
                   </div>
                 `
               : ''
@@ -1742,29 +1367,14 @@ export class UltraBarModule extends BaseUltraModule {
           class="settings-section"
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
         >
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;">
-            <div
-              class="section-title"
-              style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px; margin: 0; display: flex; align-items: center; gap: 8px;"
-            >
-              <ha-icon icon="mdi:ruler" style="color: var(--primary-color);"></ha-icon>
-              ${localize('editor.bar.scale.title', lang, 'Scale / Tick Marks')}
-            </div>
-            <ha-switch
-              .checked=${(barModule as any).show_scale || false}
-              @change=${(e: Event) => updateModule({ show_scale: (e.target as HTMLInputElement).checked })}
-            ></ha-switch>
-          </div>
-          <div
-            class="field-description"
-            style="font-size: 13px; font-weight: 400; margin-bottom: 16px;"
-          >
-            ${localize(
-              'editor.bar.scale.desc',
-              lang,
-              'Add tick marks and labels along the bar to show the scale. Useful for visualizing ranges like temperature or time.'
-            )}
-          </div>
+          ${this.renderFieldSection(
+            localize('editor.bar.scale.title', lang, 'Scale / Tick Marks'),
+            localize('editor.bar.scale.desc', lang, 'Add tick marks and labels along the bar to show the scale. Useful for visualizing ranges like temperature or time.'),
+            hass,
+            { show_scale: (barModule as any).show_scale || false },
+            [this.booleanField('show_scale')],
+            (e: CustomEvent) => updateModule({ show_scale: e.detail.value.show_scale })
+          )}
 
           ${
             (barModule as any).show_scale
@@ -1804,34 +1414,15 @@ export class UltraBarModule extends BaseUltraModule {
                   </div>
 
                   <!-- Show Labels Toggle -->
-                  <div
-                    class="field-group"
-                    style="margin-bottom: 16px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
-                  >
-                    <div>
-                      <div
-                        class="field-title"
-                        style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
-                      >
-                        ${localize('editor.bar.scale.show_labels', lang, 'Show Labels')}
-                      </div>
-                      <div
-                        class="field-description"
-                        style="font-size: 13px !important; font-weight: 400 !important;"
-                      >
-                        ${localize(
-                          'editor.bar.scale.show_labels_desc',
-                          lang,
-                          'Display numeric values at each tick mark.'
-                        )}
-                      </div>
-                    </div>
-                    <ha-switch
-                      .checked=${(barModule as any).scale_show_labels !== false}
-                      @change=${(e: Event) =>
-                        updateModule({ scale_show_labels: (e.target as HTMLInputElement).checked })}
-                    ></ha-switch>
-                  </div>
+                  <div class="field-group" style="margin-bottom: 16px;">
+                    ${this.renderFieldSection(
+                      localize('editor.bar.scale.show_labels', lang, 'Show Labels'),
+                      localize('editor.bar.scale.show_labels_desc', lang, 'Display numeric values at each tick mark.'),
+                      hass,
+                      { scale_show_labels: (barModule as any).scale_show_labels !== false },
+                      [this.booleanField('scale_show_labels')],
+                      (e: CustomEvent) => updateModule({ scale_show_labels: e.detail.value.scale_show_labels })
+                    )}
 
                   ${(barModule as any).scale_show_labels !== false
                     ? html`
@@ -1964,37 +1555,14 @@ export class UltraBarModule extends BaseUltraModule {
                   </div>
 
                   <!-- Enable Icon Toggle -->
-                  <div
-                    class="field-group"
-                    style="margin-bottom: 8px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
-                  >
-                    <div>
-                      <div
-                        class="field-title"
-                        style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 4px;"
-                      >
-                        ${localize('editor.bar.minimal.icon_enabled', lang, 'Enable Icon')}
-                      </div>
-                    </div>
-                    <ha-switch
-                      .checked=${barModule.minimal_icon_enabled || false}
-                      @change=${(e: Event) => {
-                        const target = e.target as any;
-                        updateModule({ minimal_icon_enabled: target.checked });
-                      }}
-                    ></ha-switch>
-                  </div>
-
-                  <div
-                    class="field-description"
-                    style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
-                  >
-                    ${localize(
-                      'editor.bar.minimal.icon_enabled_desc',
-                      lang,
-                      'Enable icon display to replace or enhance the dot indicator in minimal bar style.'
-                    )}
-                  </div>
+                  ${this.renderFieldSection(
+                    localize('editor.bar.minimal.icon_enabled', lang, 'Enable Icon'),
+                    localize('editor.bar.minimal.icon_enabled_desc', lang, 'Enable icon display to replace or enhance the dot indicator in minimal bar style.'),
+                    hass,
+                    { minimal_icon_enabled: barModule.minimal_icon_enabled || false },
+                    [this.booleanField('minimal_icon_enabled')],
+                    (e: CustomEvent) => updateModule({ minimal_icon_enabled: e.detail.value.minimal_icon_enabled })
+                  )}
 
                   ${barModule.minimal_icon_enabled
                     ? html`
@@ -2088,141 +1656,38 @@ export class UltraBarModule extends BaseUltraModule {
                         </div>
 
                         <!-- Icon Size Auto Toggle -->
-                        <div
-                          class="field-group"
-                          style="margin-bottom: 8px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
-                        >
-                          <div>
-                            <div
-                              class="field-title"
-                              style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
-                            >
-                              ${localize('editor.bar.minimal.icon_size_auto', lang, 'Auto Size')}
-                            </div>
-                          </div>
-                          <ha-switch
-                            .checked=${barModule.minimal_icon_size_auto !== false}
-                            @change=${(e: Event) => {
-                              const target = e.target as any;
-                              updateModule({ minimal_icon_size_auto: target.checked });
-                            }}
-                          ></ha-switch>
-                        </div>
-
-                        <div
-                          class="field-description"
-                          style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
-                        >
-                          ${localize(
-                            'editor.bar.minimal.icon_size_auto_desc',
-                            lang,
-                            'Automatically scale icon size based on bar height.'
-                          )}
-                        </div>
+                        ${this.renderFieldSection(
+                          localize('editor.bar.minimal.icon_size_auto', lang, 'Auto Size'),
+                          localize('editor.bar.minimal.icon_size_auto_desc', lang, 'Automatically scale icon size based on bar height.'),
+                          hass,
+                          { minimal_icon_size_auto: barModule.minimal_icon_size_auto !== false },
+                          [this.booleanField('minimal_icon_size_auto')],
+                          (e: CustomEvent) => updateModule({ minimal_icon_size_auto: e.detail.value.minimal_icon_size_auto })
+                        )}
 
                         <!-- Manual Icon Size (only if auto is disabled) -->
                         ${barModule.minimal_icon_size_auto === false
                           ? html`
-                              <div class="field-container" style="margin-bottom: 24px;">
-                                <div class="field-title">
-                                  ${localize('editor.bar.minimal.icon_size', lang, 'Icon Size')}
-                                </div>
-                                <div class="field-description">
-                                  ${localize(
-                                    'editor.bar.minimal.icon_size_desc',
-                                    lang,
-                                    'Manually set the icon size in pixels.'
-                                  )}
-                                </div>
-                                <div class="number-range-control">
-                                  <input
-                                    type="range"
-                                    class="range-slider"
-                                    min="8"
-                                    max="48"
-                                    step="1"
-                                    .value="${barModule.minimal_icon_size || 24}"
-                                    @input=${(e: Event) => {
-                                      const target = e.target as HTMLInputElement;
-                                      const value = parseInt(target.value);
-                                      updateModule({ minimal_icon_size: value });
-                                    }}
-                                  />
-                                  <input
-                                    type="number"
-                                    class="range-input"
-                                    min="8"
-                                    step="1"
-                                    .value="${barModule.minimal_icon_size || 24}"
-                                    @input=${(e: Event) => {
-                                      const target = e.target as HTMLInputElement;
-                                      const value = parseInt(target.value);
-                                      if (!isNaN(value)) {
-                                        updateModule({ minimal_icon_size: value });
-                                      }
-                                    }}
-                                    @keydown=${(e: KeyboardEvent) => {
-                                      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                                        e.preventDefault();
-                                        const target = e.target as HTMLInputElement;
-                                        const currentValue = parseInt(target.value) || 16;
-                                        const increment = e.key === 'ArrowUp' ? 1 : -1;
-                                        const newValue = Math.max(
-                                          8,
-                                          Math.min(48, currentValue + increment)
-                                        );
-                                        updateModule({ minimal_icon_size: newValue });
-                                      }
-                                    }}
-                                  />
-                                  <button
-                                    class="range-reset-btn"
-                                    @click=${() => updateModule({ minimal_icon_size: 24 })}
-                                    title="${localize(
-                                      'editor.fields.reset_default_value',
-                                      lang,
-                                      'Reset to default ({value})'
-                                    ).replace('{value}', '24')}"
-                                  >
-                                    <ha-icon icon="mdi:refresh"></ha-icon>
-                                  </button>
-                                </div>
-                              </div>
+                              ${this.renderSliderField(
+                                localize('editor.bar.minimal.icon_size', lang, 'Icon Size'),
+                                localize('editor.bar.minimal.icon_size_desc', lang, 'Manually set the icon size in pixels.'),
+                                barModule.minimal_icon_size || 24,
+                                24, 8, 48, 1,
+                                (v: number) => { updateModule({ minimal_icon_size: v }); },
+                                'px'
+                              )}
                             `
                           : ''}
 
                         <!-- Use Dot Color Toggle -->
-                        <div
-                          class="field-group"
-                          style="margin-bottom: 8px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
-                        >
-                          <div>
-                            <div
-                              class="field-title"
-                              style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
-                            >
-                              ${localize('editor.bar.minimal.use_dot_color', lang, 'Use Dot Color')}
-                            </div>
-                          </div>
-                          <ha-switch
-                            .checked=${barModule.minimal_icon_use_dot_color !== false}
-                            @change=${(e: Event) => {
-                              const target = e.target as any;
-                              updateModule({ minimal_icon_use_dot_color: target.checked });
-                            }}
-                          ></ha-switch>
-                        </div>
-
-                        <div
-                          class="field-description"
-                          style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
-                        >
-                          ${localize(
-                            'editor.bar.minimal.use_dot_color_desc',
-                            lang,
-                            'Use the dot color (including gradient colors) for the icon.'
-                          )}
-                        </div>
+                        ${this.renderFieldSection(
+                          localize('editor.bar.minimal.use_dot_color', lang, 'Use Dot Color'),
+                          localize('editor.bar.minimal.use_dot_color_desc', lang, 'Use the dot color (including gradient colors) for the icon.'),
+                          hass,
+                          { minimal_icon_use_dot_color: barModule.minimal_icon_use_dot_color !== false },
+                          [this.booleanField('minimal_icon_use_dot_color')],
+                          (e: CustomEvent) => updateModule({ minimal_icon_use_dot_color: e.detail.value.minimal_icon_use_dot_color })
+                        )}
 
                         <!-- Custom Icon Color (only if use_dot_color is false) -->
                         ${barModule.minimal_icon_use_dot_color === false
@@ -2271,26 +1736,14 @@ export class UltraBarModule extends BaseUltraModule {
           class="settings-section"
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
         >
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;">
-            <div
-              class="section-title"
-              style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px; margin: 0;"
-            >
-              ${localize('editor.bar.text_display.title', lang, 'Text Display')}
-            </div>
-            <ha-switch
-              .checked=${barModule.show_percentage !== false}
-              @change=${(e: Event) => updateModule({ show_percentage: (e.target as HTMLInputElement).checked })}
-            ></ha-switch>
-          </div>
-          <div
-            class="field-description"
-            style="font-size: 13px; font-weight: 400; margin-bottom: 16px;"
-          >
-            ${localize('editor.bar.text_display.desc', lang, 'Control the visibility and appearance of text values shown directly on the bar. For difference and template modes, you can choose to display raw entity values instead of percentages.')}
-          </div>
-
-          
+          ${this.renderFieldSection(
+            localize('editor.bar.text_display.title', lang, 'Text Display'),
+            localize('editor.bar.text_display.desc', lang, 'Control the visibility and appearance of text values shown directly on the bar. For difference and template modes, you can choose to display raw entity values instead of percentages.'),
+            hass,
+            { show_percentage: barModule.show_percentage !== false },
+            [this.booleanField('show_percentage')],
+            (e: CustomEvent) => updateModule({ show_percentage: e.detail.value.show_percentage })
+          )}
 
           ${
             barModule.show_percentage !== false
@@ -2299,104 +1752,25 @@ export class UltraBarModule extends BaseUltraModule {
                   ${barModule.percentage_type === 'difference' ||
                   barModule.percentage_type === 'template'
                     ? html`
-                        <div
-                          class="field-group"
-                          style="margin-bottom: 16px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
-                        >
-                          <div
-                            class="field-title"
-                            style="font-size: 16px !important; font-weight: 600 !important; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-                          >
-                            ${localize(
-                              'editor.bar.text_display.show_value',
-                              lang,
-                              'Show Value Instead of Percentage'
-                            )}
-                          </div>
-                          <ha-switch
-                            style="justify-self: end;"
-                            .checked=${barModule.show_value || false}
-                            @change=${(e: Event) =>
-                              updateModule({
-                                show_value: (e.target as HTMLInputElement).checked,
-                              })}
-                          ></ha-switch>
-                        </div>
-                        <div
-                          class="field-description"
-                          style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
-                        >
-                          ${localize(
-                            'editor.bar.text_display.show_value_desc',
-                            lang,
-                            'When enabled, shows the actual entity value instead of percentage. Useful for displaying raw sensor values like "45 kWh" instead of "75%".'
-                          )}
-                        </div>
+                        ${this.renderFieldSection(
+                          localize('editor.bar.text_display.show_value', lang, 'Show Value Instead of Percentage'),
+                          localize('editor.bar.text_display.show_value_desc', lang, 'When enabled, shows the actual entity value instead of percentage. Useful for displaying raw sensor values like "45 kWh" instead of "75%".'),
+                          hass,
+                          { show_value: barModule.show_value || false },
+                          [this.booleanField('show_value')],
+                          (e: CustomEvent) => updateModule({ show_value: e.detail.value.show_value })
+                        )}
                       `
                     : ''}
 
-                  <div class="field-container" style="margin-bottom: 24px;">
-                    <div class="field-title">
-                      ${localize('editor.bar.text_display.text_size', lang, 'Text Size')}
-                    </div>
-                    <div class="field-description">
-                      ${localize(
-                        'editor.bar.text_display.text_size_desc',
-                        lang,
-                        'Adjust the size of the text displayed on the bar.'
-                      )}
-                    </div>
-                    <div class="number-range-control">
-                      <input
-                        type="range"
-                        class="range-slider"
-                        min="8"
-                        max="100"
-                        step="1"
-                        .value="${barModule.percentage_text_size || 14}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value);
-                          updateModule({ percentage_text_size: value });
-                        }}
-                      />
-                      <input
-                        type="number"
-                        class="range-input"
-                        min="8"
-                        step="1"
-                        .value="${barModule.percentage_text_size || 14}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value);
-                          if (!isNaN(value)) {
-                            updateModule({ percentage_text_size: value });
-                          }
-                        }}
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            const target = e.target as HTMLInputElement;
-                            const currentValue = parseInt(target.value) || 14;
-                            const increment = e.key === 'ArrowUp' ? 1 : -1;
-                            const newValue = Math.max(8, currentValue + increment);
-                            updateModule({ percentage_text_size: newValue });
-                          }
-                        }}
-                      />
-                      <button
-                        class="range-reset-btn"
-                        @click=${() => updateModule({ percentage_text_size: 14 })}
-                        title="${localize(
-                          'editor.fields.reset_default_value',
-                          lang,
-                          'Reset to default ({value})'
-                        ).replace('{value}', '14')}"
-                      >
-                        <ha-icon icon="mdi:refresh"></ha-icon>
-                      </button>
-                    </div>
-                  </div>
+                  ${this.renderSliderField(
+                    localize('editor.bar.text_display.text_size', lang, 'Text Size'),
+                    localize('editor.bar.text_display.text_size_desc', lang, 'Adjust the size of the text displayed on the bar.'),
+                    barModule.percentage_text_size || 14,
+                    14, 8, 100, 1,
+                    (v: number) => { updateModule({ percentage_text_size: v }); },
+                    'px'
+                  )}
                   <div class="field-group" style="margin-bottom: 16px;">
                     <div class="field-title">
                       ${localize('editor.bar.text_display.text_alignment', lang, 'Text Alignment')}
@@ -2540,42 +1914,36 @@ export class UltraBarModule extends BaseUltraModule {
           class="settings-section"
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
         >
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 0; border-bottom: none;"
-          >
-            <div
-              class="section-title"
-              style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); letter-spacing: 0.5px;"
-            >
-              ${localize('editor.bar.left.title', lang, 'Left Side')}
-            </div>
-            <ha-switch
-              .checked=${barModule.left_enabled || false}
-              @change=${(e: Event) => {
-                const enabled = (e.target as HTMLInputElement).checked;
-                if (enabled) {
-                  updateModule({
-                    left_enabled: true,
-                    left_title: barModule.left_title || 'Fuel',
-                    left_entity: barModule.left_entity || '',
-                    left_template_mode: barModule.left_template_mode || false,
-                    left_title_size: barModule.left_title_size || 14,
-                    left_value_size: barModule.left_value_size || 14,
-                    left_title_color: barModule.left_title_color || 'var(--primary-text-color)',
-                    left_value_color: barModule.left_value_color || 'var(--primary-text-color)',
-                  });
-                } else {
-                  updateModule({
-                    left_enabled: false,
-                    left_title: '',
-                    left_entity: '',
-                    left_template_mode: false,
-                    left_template: '',
-                  });
-                }
-              }}
-            ></ha-switch>
-          </div>
+          ${this.renderFieldSection(
+            localize('editor.bar.left.title', lang, 'Left Side'),
+            '',
+            hass,
+            { left_enabled: barModule.left_enabled || false },
+            [this.booleanField('left_enabled')],
+            (e: CustomEvent) => {
+              const enabled = e.detail.value.left_enabled;
+              if (enabled) {
+                updateModule({
+                  left_enabled: true,
+                  left_title: barModule.left_title || 'Fuel',
+                  left_entity: barModule.left_entity || '',
+                  left_template_mode: barModule.left_template_mode || false,
+                  left_title_size: barModule.left_title_size || 14,
+                  left_value_size: barModule.left_value_size || 14,
+                  left_title_color: barModule.left_title_color || 'var(--primary-text-color)',
+                  left_value_color: barModule.left_value_color || 'var(--primary-text-color)',
+                });
+              } else {
+                updateModule({
+                  left_enabled: false,
+                  left_title: '',
+                  left_entity: '',
+                  left_template_mode: false,
+                  left_template: '',
+                });
+              }
+            }
+          )}
 
           <div
             class="field-description"
@@ -2610,137 +1978,32 @@ export class UltraBarModule extends BaseUltraModule {
                     ></ha-form>
                   </div>
 
-                  <div class="field-container" style="margin-bottom: 24px;">
-                    <div class="field-title">
-                      ${localize('editor.bar.left.title_size', lang, 'Title Size')}
-                    </div>
-                    <div class="number-range-control">
-                      <input
-                        type="range"
-                        class="range-slider"
-                        min="8"
-                        max="32"
-                        step="1"
-                        .value="${barModule.left_title_size || 14}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value);
-                          updateModule({ left_title_size: value });
-                        }}
-                      />
-                      <input
-                        type="number"
-                        class="range-input"
-                        min="8"
-                        step="1"
-                        .value="${barModule.left_title_size || 14}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value);
-                          if (!isNaN(value)) {
-                            updateModule({ left_title_size: value });
-                          }
-                        }}
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            const target = e.target as HTMLInputElement;
-                            const currentValue = parseInt(target.value) || 14;
-                            const increment = e.key === 'ArrowUp' ? 1 : -1;
-                            const newValue = Math.max(8, Math.min(32, currentValue + increment));
-                            updateModule({ left_title_size: newValue });
-                          }
-                        }}
-                      />
-                      <button
-                        class="range-reset-btn"
-                        @click=${() => updateModule({ left_title_size: 14 })}
-                        title="${localize(
-                          'editor.fields.reset_default_value',
-                          lang,
-                          'Reset to default ({value})'
-                        ).replace('{value}', '14')}"
-                      >
-                        <ha-icon icon="mdi:refresh"></ha-icon>
-                      </button>
-                    </div>
-                  </div>
+                  ${this.renderSliderField(
+                    localize('editor.bar.left.title_size', lang, 'Title Size'),
+                    '',
+                    barModule.left_title_size || 14,
+                    14, 8, 32, 1,
+                    (v: number) => { updateModule({ left_title_size: v }); },
+                    'px'
+                  )}
 
-                  <div class="field-container" style="margin-bottom: 24px;">
-                    <div class="field-title">
-                      ${localize('editor.bar.left.value_size', lang, 'Value Size')}
-                    </div>
-                    <div class="number-range-control">
-                      <input
-                        type="range"
-                        class="range-slider"
-                        min="8"
-                        max="32"
-                        step="1"
-                        .value="${barModule.left_value_size || 14}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value);
-                          updateModule({ left_value_size: value });
-                        }}
-                      />
-                      <input
-                        type="number"
-                        class="range-input"
-                        min="8"
-                        step="1"
-                        .value="${barModule.left_value_size || 14}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value);
-                          if (!isNaN(value)) {
-                            updateModule({ left_value_size: value });
-                          }
-                        }}
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            const target = e.target as HTMLInputElement;
-                            const currentValue = parseInt(target.value) || 14;
-                            const increment = e.key === 'ArrowUp' ? 1 : -1;
-                            const newValue = Math.max(8, Math.min(32, currentValue + increment));
-                            updateModule({ left_value_size: newValue });
-                          }
-                        }}
-                      />
-                      <button
-                        class="range-reset-btn"
-                        @click=${() => updateModule({ left_value_size: 14 })}
-                        title="${localize(
-                          'editor.fields.reset_default_value',
-                          lang,
-                          'Reset to default ({value})'
-                        ).replace('{value}', '14')}"
-                      >
-                        <ha-icon icon="mdi:refresh"></ha-icon>
-                      </button>
-                    </div>
-                  </div>
+                  ${this.renderSliderField(
+                    localize('editor.bar.left.value_size', lang, 'Value Size'),
+                    '',
+                    barModule.left_value_size || 14,
+                    14, 8, 32, 1,
+                    (v: number) => { updateModule({ left_value_size: v }); },
+                    'px'
+                  )}
                   <!-- Left Template Mode -->
-                  <div
-                    class="field-group"
-                    style="margin-bottom: 8px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
-                  >
-                    <div
-                      class="field-title"
-                      style="font-size: 16px !important; font-weight: 600 !important; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-                    >
-                      ${localize('editor.bar.left.template_mode', lang, 'Template Mode')}
-                    </div>
-                    <ha-switch
-                      style="justify-self: end;"
-                      .checked=${barModule.left_template_mode || false}
-                      @change=${(e: Event) =>
-                        updateModule({
-                          left_template_mode: (e.target as HTMLInputElement).checked,
-                        })}
-                    ></ha-switch>
-                  </div>
+                  ${this.renderFieldSection(
+                    localize('editor.bar.left.template_mode', lang, 'Template Mode'),
+                    '',
+                    hass,
+                    { left_template_mode: barModule.left_template_mode || false },
+                    [this.booleanField('left_template_mode')],
+                    (e: CustomEvent) => updateModule({ left_template_mode: e.detail.value.left_template_mode })
+                  )}
                   ${barModule.left_template_mode
                     ? html`
                         <div
@@ -2829,42 +2092,36 @@ export class UltraBarModule extends BaseUltraModule {
           class="settings-section"
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
         >
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 0; border-bottom: none;"
-          >
-            <div
-              class="section-title"
-              style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); letter-spacing: 0.5px;"
-            >
-              ${localize('editor.bar.right.title', lang, 'Right Side')}
-            </div>
-            <ha-switch
-              .checked=${barModule.right_enabled || false}
-              @change=${(e: Event) => {
-                const enabled = (e.target as HTMLInputElement).checked;
-                if (enabled) {
-                  updateModule({
-                    right_enabled: true,
-                    right_title: barModule.right_title || 'Range',
-                    right_entity: barModule.right_entity || '',
-                    right_template_mode: barModule.right_template_mode || false,
-                    right_title_size: barModule.right_title_size || 14,
-                    right_value_size: barModule.right_value_size || 14,
-                    right_title_color: barModule.right_title_color || 'var(--primary-text-color)',
-                    right_value_color: barModule.right_value_color || 'var(--primary-text-color)',
-                  });
-                } else {
-                  updateModule({
-                    right_enabled: false,
-                    right_title: '',
-                    right_entity: '',
-                    right_template_mode: false,
-                    right_template: '',
-                  });
-                }
-              }}
-            ></ha-switch>
-          </div>
+          ${this.renderFieldSection(
+            localize('editor.bar.right.title', lang, 'Right Side'),
+            '',
+            hass,
+            { right_enabled: barModule.right_enabled || false },
+            [this.booleanField('right_enabled')],
+            (e: CustomEvent) => {
+              const enabled = e.detail.value.right_enabled;
+              if (enabled) {
+                updateModule({
+                  right_enabled: true,
+                  right_title: barModule.right_title || 'Range',
+                  right_entity: barModule.right_entity || '',
+                  right_template_mode: barModule.right_template_mode || false,
+                  right_title_size: barModule.right_title_size || 14,
+                  right_value_size: barModule.right_value_size || 14,
+                  right_title_color: barModule.right_title_color || 'var(--primary-text-color)',
+                  right_value_color: barModule.right_value_color || 'var(--primary-text-color)',
+                });
+              } else {
+                updateModule({
+                  right_enabled: false,
+                  right_title: '',
+                  right_entity: '',
+                  right_template_mode: false,
+                  right_template: '',
+                });
+              }
+            }
+          )}
 
           <div
             class="field-description"
@@ -2897,136 +2154,31 @@ export class UltraBarModule extends BaseUltraModule {
                     ></ha-form>
                   </div>
 
-                  <div class="field-container" style="margin-bottom: 24px;">
-                    <div class="field-title">
-                      ${localize('editor.bar.right.title_size', lang, 'Title Size')}
-                    </div>
-                    <div class="number-range-control">
-                      <input
-                        type="range"
-                        class="range-slider"
-                        min="8"
-                        max="32"
-                        step="1"
-                        .value="${barModule.right_title_size || 14}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value);
-                          updateModule({ right_title_size: value });
-                        }}
-                      />
-                      <input
-                        type="number"
-                        class="range-input"
-                        min="8"
-                        step="1"
-                        .value="${barModule.right_title_size || 14}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value);
-                          if (!isNaN(value)) {
-                            updateModule({ right_title_size: value });
-                          }
-                        }}
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            const target = e.target as HTMLInputElement;
-                            const currentValue = parseInt(target.value) || 14;
-                            const increment = e.key === 'ArrowUp' ? 1 : -1;
-                            const newValue = Math.max(8, Math.min(32, currentValue + increment));
-                            updateModule({ right_title_size: newValue });
-                          }
-                        }}
-                      />
-                      <button
-                        class="range-reset-btn"
-                        @click=${() => updateModule({ right_title_size: 14 })}
-                        title="${localize(
-                          'editor.fields.reset_default_value',
-                          lang,
-                          'Reset to default ({value})'
-                        ).replace('{value}', '14')}"
-                      >
-                        <ha-icon icon="mdi:refresh"></ha-icon>
-                      </button>
-                    </div>
-                  </div>
+                  ${this.renderSliderField(
+                    localize('editor.bar.right.title_size', lang, 'Title Size'),
+                    '',
+                    barModule.right_title_size || 14,
+                    14, 8, 32, 1,
+                    (v: number) => { updateModule({ right_title_size: v }); },
+                    'px'
+                  )}
 
-                  <div class="field-container" style="margin-bottom: 24px;">
-                    <div class="field-title">
-                      ${localize('editor.bar.right.value_size', lang, 'Value Size')}
-                    </div>
-                    <div class="number-range-control">
-                      <input
-                        type="range"
-                        class="range-slider"
-                        min="8"
-                        max="32"
-                        step="1"
-                        .value="${barModule.right_value_size || 14}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value);
-                          updateModule({ right_value_size: value });
-                        }}
-                      />
-                      <input
-                        type="number"
-                        class="range-input"
-                        min="8"
-                        step="1"
-                        .value="${barModule.right_value_size || 14}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value);
-                          if (!isNaN(value)) {
-                            updateModule({ right_value_size: value });
-                          }
-                        }}
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            const target = e.target as HTMLInputElement;
-                            const currentValue = parseInt(target.value) || 14;
-                            const increment = e.key === 'ArrowUp' ? 1 : -1;
-                            const newValue = Math.max(8, Math.min(32, currentValue + increment));
-                            updateModule({ right_value_size: newValue });
-                          }
-                        }}
-                      />
-                      <button
-                        class="range-reset-btn"
-                        @click=${() => updateModule({ right_value_size: 14 })}
-                        title="${localize(
-                          'editor.fields.reset_default_value',
-                          lang,
-                          'Reset to default ({value})'
-                        ).replace('{value}', '14')}"
-                      >
-                        <ha-icon icon="mdi:refresh"></ha-icon>
-                      </button>
-                    </div>
-                  </div>
-                  <div
-                    class="field-group"
-                    style="margin-bottom: 8px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
-                  >
-                    <div
-                      class="field-title"
-                      style="font-size: 16px !important; font-weight: 600 !important; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-                    >
-                      ${localize('editor.bar.right.template_mode', lang, 'Template Mode')}
-                    </div>
-                    <ha-switch
-                      style="justify-self: end;"
-                      .checked=${barModule.right_template_mode || false}
-                      @change=${(e: Event) =>
-                        updateModule({
-                          right_template_mode: (e.target as HTMLInputElement).checked,
-                        })}
-                    ></ha-switch>
-                  </div>
+                  ${this.renderSliderField(
+                    localize('editor.bar.right.value_size', lang, 'Value Size'),
+                    '',
+                    barModule.right_value_size || 14,
+                    14, 8, 32, 1,
+                    (v: number) => { updateModule({ right_value_size: v }); },
+                    'px'
+                  )}
+                  ${this.renderFieldSection(
+                    localize('editor.bar.right.template_mode', lang, 'Template Mode'),
+                    '',
+                    hass,
+                    { right_template_mode: barModule.right_template_mode || false },
+                    [this.booleanField('right_template_mode')],
+                    (e: CustomEvent) => updateModule({ right_template_mode: e.detail.value.right_template_mode })
+                  )}
                   ${barModule.right_template_mode
                     ? html`
                         <div
@@ -3221,29 +2373,14 @@ export class UltraBarModule extends BaseUltraModule {
           ${
             barModule.bar_style === 'minimal'
               ? html`
-                  <div class="field-group" style="margin-top: 24px;">
-                    <div
-                      style="display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px;"
-                    >
-                      <div class="field-title">
-                        ${localize('editor.bar.minimal.icon_enabled', lang, 'Enable Icon')}
-                      </div>
-                      <ha-switch
-                        .checked=${barModule.minimal_icon_enabled || false}
-                        @change=${(e: Event) =>
-                          updateModule({
-                            minimal_icon_enabled: (e.target as HTMLInputElement).checked,
-                          })}
-                      ></ha-switch>
-                    </div>
-                    <div class="field-description">
-                      ${localize(
-                        'editor.bar.minimal.icon_enabled_desc',
-                        lang,
-                        'Show an icon on the minimal bar indicator'
-                      )}
-                    </div>
-                  </div>
+                  ${this.renderFieldSection(
+                    localize('editor.bar.minimal.icon_enabled', lang, 'Enable Icon'),
+                    localize('editor.bar.minimal.icon_enabled_desc', lang, 'Show an icon on the minimal bar indicator'),
+                    hass,
+                    { minimal_icon_enabled: barModule.minimal_icon_enabled || false },
+                    [this.booleanField('minimal_icon_enabled')],
+                    (e: CustomEvent) => updateModule({ minimal_icon_enabled: e.detail.value.minimal_icon_enabled })
+                  )}
 
                   ${barModule.minimal_icon_enabled
                     ? html`
@@ -3310,109 +2447,37 @@ export class UltraBarModule extends BaseUltraModule {
                         </div>
 
                         <!-- Icon Size Controls -->
-                        <div class="field-group" style="margin-top: 16px;">
-                          <div
-                            style="display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px;"
-                          >
-                            <div class="field-title">
-                              ${localize(
-                                'editor.bar.minimal.icon_size_auto',
-                                lang,
-                                'Auto-Scale Icon'
-                              )}
-                            </div>
-                            <ha-switch
-                              .checked=${barModule.minimal_icon_size_auto !== false}
-                              @change=${(e: Event) =>
-                                updateModule({
-                                  minimal_icon_size_auto: (e.target as HTMLInputElement).checked,
-                                })}
-                            ></ha-switch>
-                          </div>
-                          <div class="field-description">
-                            ${localize(
-                              'editor.bar.minimal.icon_size_auto_desc',
-                              lang,
-                              'Automatically scale icon with bar height'
-                            )}
-                          </div>
-                        </div>
+                        ${this.renderFieldSection(
+                          localize('editor.bar.minimal.icon_size_auto', lang, 'Auto-Scale Icon'),
+                          localize('editor.bar.minimal.icon_size_auto_desc', lang, 'Automatically scale icon with bar height'),
+                          hass,
+                          { minimal_icon_size_auto: barModule.minimal_icon_size_auto !== false },
+                          [this.booleanField('minimal_icon_size_auto')],
+                          (e: CustomEvent) => updateModule({ minimal_icon_size_auto: e.detail.value.minimal_icon_size_auto })
+                        )}
 
                         ${barModule.minimal_icon_size_auto === false
                           ? html`
-                              <div class="field-container" style="margin-top: 16px;">
-                                <div class="field-title">
-                                  ${localize('editor.bar.minimal.icon_size', lang, 'Icon Size')}
-                                </div>
-                                <div class="field-description">
-                                  ${localize(
-                                    'editor.bar.minimal.icon_size_desc',
-                                    lang,
-                                    'Custom icon size in pixels'
-                                  )}
-                                </div>
-                                <div class="number-range-control">
-                                  <input
-                                    type="range"
-                                    class="range-slider"
-                                    min="8"
-                                    max="48"
-                                    step="2"
-                                    .value="${barModule.minimal_icon_size || 24}"
-                                    @input=${(e: Event) =>
-                                      updateModule({
-                                        minimal_icon_size: parseInt(
-                                          (e.target as HTMLInputElement).value
-                                        ),
-                                      })}
-                                  />
-                                  <input
-                                    type="number"
-                                    class="range-input"
-                                    min="8"
-                                    step="2"
-                                    .value="${barModule.minimal_icon_size || 24}"
-                                    @input=${(e: Event) => {
-                                      const value = parseInt((e.target as HTMLInputElement).value);
-                                      if (!isNaN(value)) updateModule({ minimal_icon_size: value });
-                                    }}
-                                  />
-                                  <button
-                                    class="range-reset-btn"
-                                    @click=${() => updateModule({ minimal_icon_size: 24 })}
-                                  >
-                                    <ha-icon icon="mdi:refresh"></ha-icon>
-                                  </button>
-                                </div>
-                              </div>
+                              ${this.renderSliderField(
+                                localize('editor.bar.minimal.icon_size', lang, 'Icon Size'),
+                                localize('editor.bar.minimal.icon_size_desc', lang, 'Custom icon size in pixels'),
+                                barModule.minimal_icon_size || 24,
+                                24, 8, 48, 2,
+                                (v: number) => { updateModule({ minimal_icon_size: v }); },
+                                'px'
+                              )}
                             `
                           : ''}
 
                         <!-- Icon Color Controls -->
-                        <div class="field-group" style="margin-top: 16px;">
-                          <div
-                            style="display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px;"
-                          >
-                            <div class="field-title">
-                              ${localize('editor.bar.minimal.use_dot_color', lang, 'Use Dot Color')}
-                            </div>
-                            <ha-switch
-                              .checked=${barModule.minimal_icon_use_dot_color !== false}
-                              @change=${(e: Event) =>
-                                updateModule({
-                                  minimal_icon_use_dot_color: (e.target as HTMLInputElement)
-                                    .checked,
-                                })}
-                            ></ha-switch>
-                          </div>
-                          <div class="field-description">
-                            ${localize(
-                              'editor.bar.minimal.use_dot_color_desc',
-                              lang,
-                              'Use the dot color for the icon (matches gradient)'
-                            )}
-                          </div>
-                        </div>
+                        ${this.renderFieldSection(
+                          localize('editor.bar.minimal.use_dot_color', lang, 'Use Dot Color'),
+                          localize('editor.bar.minimal.use_dot_color_desc', lang, 'Use the dot color for the icon (matches gradient)'),
+                          hass,
+                          { minimal_icon_use_dot_color: barModule.minimal_icon_use_dot_color !== false },
+                          [this.booleanField('minimal_icon_use_dot_color')],
+                          (e: CustomEvent) => updateModule({ minimal_icon_use_dot_color: e.detail.value.minimal_icon_use_dot_color })
+                        )}
 
                         ${barModule.minimal_icon_use_dot_color === false
                           ? html`
@@ -3555,36 +2620,22 @@ export class UltraBarModule extends BaseUltraModule {
 
         <!-- Gradient Mode -->
         <div class="settings-section" style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 16px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
-            <div
-              class="section-title"
-              style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px; margin: 0;"
-            >
-              ${localize('editor.bar.gradient.title', lang, 'Gradient Mode')}
-            </div>
-            <ha-switch
-              .checked=${barModule.use_gradient || false}
-              @change=${(e: Event) => {
-                const useGradient = (e.target as HTMLInputElement).checked;
-                const updates: Partial<BarModule> = { use_gradient: useGradient };
-                if (
-                  useGradient &&
-                  (!barModule.gradient_stops || barModule.gradient_stops.length === 0)
-                ) {
-                  updates.gradient_stops = createDefaultGradientStops();
-                  updates.gradient_display_mode = barModule.gradient_display_mode || 'full';
-                }
-                updateModule(updates);
-              }}
-            ></ha-switch>
-          </div>
-
-          <div
-            class="field-description"
-            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px;"
-          >
-            ${localize('editor.bar.gradient.desc', lang, 'Apply a color gradient to the bar fill. When enabled, choose how the gradient is displayed and customize the color stops below.')}
-          </div>
+          ${this.renderFieldSection(
+            localize('editor.bar.gradient.title', lang, 'Gradient Mode'),
+            localize('editor.bar.gradient.desc', lang, 'Apply a color gradient to the bar fill. When enabled, choose how the gradient is displayed and customize the color stops below.'),
+            hass,
+            { use_gradient: barModule.use_gradient || false },
+            [this.booleanField('use_gradient')],
+            (e: CustomEvent) => {
+              const useGradient = e.detail.value.use_gradient;
+              const updates: Partial<BarModule> = { use_gradient: useGradient };
+              if (useGradient && (!barModule.gradient_stops || barModule.gradient_stops.length === 0)) {
+                updates.gradient_stops = createDefaultGradientStops();
+                updates.gradient_display_mode = barModule.gradient_display_mode || 'full';
+              }
+              updateModule(updates);
+            }
+          )}
 
           ${
             barModule.use_gradient
@@ -3638,75 +2689,40 @@ export class UltraBarModule extends BaseUltraModule {
 
         <!-- Bar Animation -->
         <div class="settings-section" style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 16px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
-            <div
-              class="section-title"
-              style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px; margin: 0;"
-            >
-              ${localize('editor.bar.animation.title', lang, 'Bar Animation')}
-            </div>
-            <ha-switch
-              .checked=${(barModule as any).bar_animation_enabled || false}
-              @change=${(e: Event) =>
-                updateModule({ bar_animation_enabled: (e.target as HTMLInputElement).checked })}
-            ></ha-switch>
-          </div>
-          <div
-            class="field-description"
-            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px;"
-          >
-            ${localize('editor.bar.animation.desc', lang, "Animate the bar fill using presets like charging stripes, pulse, shimmer, and more. You can trigger animations based on an entity's state or attribute, and optionally override the animation when another condition is met.")}
-          </div>
+          ${this.renderFieldSection(
+            localize('editor.bar.animation.title', lang, 'Bar Animation'),
+            localize('editor.bar.animation.desc', lang, "Animate the bar fill using presets like charging stripes, pulse, shimmer, and more. You can trigger animations based on an entity's state or attribute, and optionally override the animation when another condition is met."),
+            hass,
+            { bar_animation_enabled: (barModule as any).bar_animation_enabled || false },
+            [this.booleanField('bar_animation_enabled')],
+            (e: CustomEvent) => updateModule({ bar_animation_enabled: e.detail.value.bar_animation_enabled })
+          )}
           ${
             (barModule as any).bar_animation_enabled
               ? html`
                   ${this.renderSettingsSection(
                     localize('editor.bar.animation.trigger.title', lang, 'Animation Trigger'),
-                    localize(
-                      'editor.bar.animation.trigger.desc',
-                      lang,
-                      'Select an entity to watch and define the value + animation to apply when it matches.'
-                    ),
-                    [
-                      {
-                        title: localize('editor.common.entity', lang, 'Entity'),
-                        description: localize(
-                          'editor.bar.animation.trigger.entity_desc',
-                          lang,
-                          'Entity to evaluate for animation trigger'
-                        ),
-                        hass,
-                        data: {
-                          bar_animation_entity: (barModule as any).bar_animation_entity || '',
-                        },
-                        schema: [this.entityField('bar_animation_entity')],
-                        onChange: (e: CustomEvent) =>
-                          updateModule({
-                            bar_animation_entity: e.detail.value.bar_animation_entity,
-                          }),
-                      },
+                    localize('editor.bar.animation.trigger.desc', lang, 'Select an entity to watch and define the value + animation to apply when it matches.'),
+                    []
+                  )}
+                  <div style="margin-bottom: 16px;">
+                    ${this.renderEntityPickerWithVariables(
+                      hass, config, 'bar_animation_entity', (barModule as any).bar_animation_entity || '',
+                      (value: string) => updateModule({ bar_animation_entity: value }),
+                      undefined,
+                      localize('editor.common.entity', lang, 'Entity')
+                    )}
+                  </div>
+                  ${this.renderSettingsSection('', '', [
                       {
                         title: localize('editor.bar.animation.trigger.type', lang, 'Trigger Type'),
-                        description: localize(
-                          'editor.bar.animation.trigger.type_desc',
-                          lang,
-                          'Choose whether to compare the entity state or an attribute'
-                        ),
+                        description: localize('editor.bar.animation.trigger.type_desc', lang, 'Choose whether to compare the entity state or an attribute'),
                         hass,
-                        data: {
-                          bar_animation_trigger_type:
-                            (barModule as any).bar_animation_trigger_type || 'state',
-                        },
+                        data: { bar_animation_trigger_type: (barModule as any).bar_animation_trigger_type || 'state' },
                         schema: [
                           this.selectField('bar_animation_trigger_type', [
-                            {
-                              value: 'state',
-                              label: localize('editor.common.state', lang, 'State'),
-                            },
-                            {
-                              value: 'attribute',
-                              label: localize('editor.common.attribute', lang, 'Attribute'),
-                            },
+                            { value: 'state', label: localize('editor.common.state', lang, 'State') },
+                            { value: 'attribute', label: localize('editor.common.attribute', lang, 'Attribute') },
                           ]),
                         ],
                         onChange: (e: CustomEvent) => updateModule(e.detail.value),
@@ -3714,51 +2730,24 @@ export class UltraBarModule extends BaseUltraModule {
                       ...(((barModule as any).bar_animation_trigger_type || 'state') === 'attribute'
                         ? [
                             {
-                              title: localize(
-                                'editor.common.attribute_name',
-                                lang,
-                                'Attribute Name'
-                              ),
-                              description: localize(
-                                'editor.bar.animation.trigger.attribute_name_desc',
-                                lang,
-                                'Name of the attribute to compare (e.g., charging_status)'
-                              ),
+                              title: localize('editor.common.attribute_name', lang, 'Attribute Name'),
+                              description: localize('editor.bar.animation.trigger.attribute_name_desc', lang, 'Name of the attribute to compare (e.g., charging_status)'),
                               hass,
-                              data: {
-                                bar_animation_attribute:
-                                  (barModule as any).bar_animation_attribute || '',
-                              },
+                              data: { bar_animation_attribute: (barModule as any).bar_animation_attribute || '' },
                               schema: [this.textField('bar_animation_attribute')],
-                              onChange: (e: CustomEvent) =>
-                                updateModule({
-                                  bar_animation_attribute: e.detail.value.bar_animation_attribute,
-                                }),
+                              onChange: (e: CustomEvent) => updateModule({ bar_animation_attribute: e.detail.value.bar_animation_attribute }),
                             },
                           ]
                         : []),
                       ...(((barModule as any).bar_animation_entity || '').trim()
                         ? [
                             {
-                              title: localize(
-                                'editor.bar.animation.trigger.match_value',
-                                lang,
-                                'Match Value'
-                              ),
-                              description: localize(
-                                'editor.bar.animation.trigger.match_value_desc',
-                                lang,
-                                'Text to compare against the state or attribute (comparison is string-based).'
-                              ),
+                              title: localize('editor.bar.animation.trigger.match_value', lang, 'Match Value'),
+                              description: localize('editor.bar.animation.trigger.match_value_desc', lang, 'Text to compare against the state or attribute (comparison is string-based).'),
                               hass,
-                              data: {
-                                bar_animation_value: (barModule as any).bar_animation_value || '',
-                              },
+                              data: { bar_animation_value: (barModule as any).bar_animation_value || '' },
                               schema: [this.textField('bar_animation_value')],
-                              onChange: (e: CustomEvent) =>
-                                updateModule({
-                                  bar_animation_value: e.detail.value.bar_animation_value,
-                                }),
+                              onChange: (e: CustomEvent) => updateModule({ bar_animation_value: e.detail.value.bar_animation_value }),
                             },
                           ]
                         : []),
@@ -3880,82 +2869,42 @@ export class UltraBarModule extends BaseUltraModule {
                     ]
                   )}
                   ${this.renderSettingsSection(
-                    localize(
-                      'editor.bar.animation.override.title',
-                      lang,
-                      'Action Animation Override'
-                    ),
-                    localize(
-                      'editor.bar.animation.override.desc',
-                      lang,
-                      'Select an Action Entity and state to define when this animation should override the regular animation'
-                    ),
-                    [
-                      {
-                        title: localize('editor.common.entity', lang, 'Entity'),
-                        description: localize(
-                          'editor.bar.animation.override.entity_desc',
-                          lang,
-                          'Entity to evaluate for the override trigger'
-                        ),
-                        hass,
-                        data: {
-                          bar_animation_override_entity:
-                            (barModule as any).bar_animation_override_entity || '',
-                        },
-                        schema: [this.entityField('bar_animation_override_entity')],
-                        onChange: (e: CustomEvent) =>
-                          updateModule({
-                            bar_animation_override_entity:
-                              e.detail.value.bar_animation_override_entity,
-                          }),
-                      },
+                    localize('editor.bar.animation.override.title', lang, 'Action Animation Override'),
+                    localize('editor.bar.animation.override.desc', lang, 'Select an Action Entity and state to define when this animation should override the regular animation'),
+                    []
+                  )}
+                  <div style="margin-bottom: 16px;">
+                    ${this.renderEntityPickerWithVariables(
+                      hass, config, 'bar_animation_override_entity', (barModule as any).bar_animation_override_entity || '',
+                      (value: string) => updateModule({ bar_animation_override_entity: value }),
+                      undefined,
+                      localize('editor.common.entity', lang, 'Entity')
+                    )}
+                  </div>
+                  ${this.renderSettingsSection('', '', [
                       {
                         title: localize('editor.bar.animation.trigger.type', lang, 'Trigger Type'),
-                        description: localize(
-                          'editor.bar.animation.override.type_desc',
-                          lang,
-                          'Compare the entity state or one of its attributes'
-                        ),
+                        description: localize('editor.bar.animation.override.type_desc', lang, 'Compare the entity state or one of its attributes'),
                         hass,
-                        data: {
-                          bar_animation_override_trigger_type:
-                            (barModule as any).bar_animation_override_trigger_type || 'state',
-                        },
+                        data: { bar_animation_override_trigger_type: (barModule as any).bar_animation_override_trigger_type || 'state' },
                         schema: [
                           this.selectField('bar_animation_override_trigger_type', [
-                            {
-                              value: 'state',
-                              label: localize('editor.common.state', lang, 'State'),
-                            },
-                            {
-                              value: 'attribute',
-                              label: localize('editor.common.attribute', lang, 'Attribute'),
-                            },
+                            { value: 'state', label: localize('editor.common.state', lang, 'State') },
+                            { value: 'attribute', label: localize('editor.common.attribute', lang, 'Attribute') },
                           ]),
                         ],
                         onChange: (e: CustomEvent) => {
                           const next = e.detail.value.bar_animation_override_trigger_type;
-                          const prev =
-                            (barModule as any).bar_animation_override_trigger_type || 'state';
+                          const prev = (barModule as any).bar_animation_override_trigger_type || 'state';
                           if (next === prev) return;
                           updateModule(e.detail.value);
                         },
                       },
-                      ...(((barModule as any).bar_animation_override_trigger_type || 'state') ===
-                      'attribute'
+                      ...(((barModule as any).bar_animation_override_trigger_type || 'state') === 'attribute'
                         ? [
                             {
-                              title: localize(
-                                'editor.common.attribute_name',
-                                lang,
-                                'Attribute Name'
-                              ),
-                              description: localize(
-                                'editor.bar.animation.override.attribute_name_desc',
-                                lang,
-                                'Name of the attribute to compare'
-                              ),
+                              title: localize('editor.common.attribute_name', lang, 'Attribute Name'),
+                              description: localize('editor.bar.animation.override.attribute_name_desc', lang, 'Name of the attribute to compare'),
                               hass,
                               data: {
                                 bar_animation_override_attribute:
@@ -3971,95 +2920,31 @@ export class UltraBarModule extends BaseUltraModule {
                           ]
                         : []),
                       {
-                        title: localize(
-                          'editor.bar.animation.override.match_value',
-                          lang,
-                          'Override Match Value'
-                        ),
-                        description: localize(
-                          'editor.bar.animation.override.match_value_desc',
-                          lang,
-                          'String comparison against state or attribute'
-                        ),
+                        title: localize('editor.bar.animation.override.match_value', lang, 'Override Match Value'),
+                        description: localize('editor.bar.animation.override.match_value_desc', lang, 'String comparison against state or attribute'),
                         hass,
-                        data: {
-                          bar_animation_override_value:
-                            (barModule as any).bar_animation_override_value || '',
-                        },
+                        data: { bar_animation_override_value: (barModule as any).bar_animation_override_value || '' },
                         schema: [this.textField('bar_animation_override_value')],
                         onChange: (e: CustomEvent) =>
                           updateModule({
-                            bar_animation_override_value:
-                              e.detail.value.bar_animation_override_value,
+                            bar_animation_override_value: e.detail.value.bar_animation_override_value,
                           }),
                       },
                       {
-                        title: localize(
-                          'editor.bar.animation.override.type',
-                          lang,
-                          'Override Animation Type'
-                        ),
-                        description: localize(
-                          'editor.bar.animation.override.type_desc',
-                          lang,
-                          'Animation to use when override condition matches.'
-                        ),
+                        title: localize('editor.bar.animation.override.type', lang, 'Override Animation Type'),
+                        description: localize('editor.bar.animation.override.type_desc', lang, 'Animation to use when override condition matches.'),
                         hass,
-                        data: {
-                          bar_animation_override_type:
-                            (barModule as any).bar_animation_override_type || 'none',
-                        },
+                        data: { bar_animation_override_type: (barModule as any).bar_animation_override_type || 'none' },
                         schema: [
                           this.selectField('bar_animation_override_type', [
                             { value: 'none', label: localize('editor.common.none', lang, 'None') },
-                            {
-                              value: 'charging',
-                              label: localize(
-                                'editor.bar.animation.types.charging',
-                                lang,
-                                'Charging (Diagonal Lines)'
-                              ),
-                            },
-                            {
-                              value: 'pulse',
-                              label: localize('editor.bar.animation.types.pulse', lang, 'Pulse'),
-                            },
-                            {
-                              value: 'blinking',
-                              label: localize(
-                                'editor.bar.animation.types.blinking',
-                                lang,
-                                'Blinking'
-                              ),
-                            },
-                            {
-                              value: 'bouncing',
-                              label: localize(
-                                'editor.bar.animation.types.bouncing',
-                                lang,
-                                'Bouncing'
-                              ),
-                            },
-                            {
-                              value: 'glow',
-                              label: localize('editor.bar.animation.types.glow', lang, 'Glow'),
-                            },
-                            {
-                              value: 'rainbow',
-                              label: localize(
-                                'editor.bar.animation.types.rainbow',
-                                lang,
-                                'Rainbow'
-                              ),
-                            },
-                            {
-                              value: 'bubbles',
-                              label: localize(
-                                'editor.bar.animation.types.bubbles',
-                                lang,
-                                'Bubbles'
-                              ),
-                            },
+                            { value: 'charging', label: localize('editor.bar.animation.types.charging', lang, 'Charging (Diagonal Lines)') },
+                            { value: 'pulse', label: localize('editor.bar.animation.types.pulse', lang, 'Pulse') },
+                            { value: 'blinking', label: localize('editor.bar.animation.types.blinking', lang, 'Blinking') },
+                            { value: 'bouncing', label: localize('editor.bar.animation.types.bouncing', lang, 'Bouncing') },
+                            { value: 'glow', label: localize('editor.bar.animation.types.glow', lang, 'Glow') },
+                            { value: 'rainbow', label: localize('editor.bar.animation.types.rainbow', lang, 'Rainbow') },
+                            { value: 'bubbles', label: localize('editor.bar.animation.types.bubbles', lang, 'Bubbles') },
                             {
                               value: 'fill',
                               label: localize('editor.bar.animation.types.fill', lang, 'Fill'),
@@ -4141,6 +3026,7 @@ export class UltraBarModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const barModule = module as BarModule;
+    const lang = hass?.locale?.language || 'en';
 
     // Clean up time progress interval if mode has changed
     const pctType = (barModule as any).percentage_type || 'entity';
@@ -4156,8 +3042,8 @@ export class UltraBarModule extends BaseUltraModule {
     const needsEntity = pctType !== 'time_progress' && pctType !== 'range';
     if (needsEntity && (!barModule.entity || barModule.entity.trim() === '')) {
       return this.renderGradientErrorState(
-        'Select Entity',
-        'Choose an entity in the General tab',
+        localize('editor.bar.error_no_entity', lang, 'Select Entity'),
+        localize('editor.bar.error_no_entity_desc', lang, 'Choose an entity in the General tab'),
         'mdi:chart-box-outline'
       );
     }
@@ -4168,8 +3054,8 @@ export class UltraBarModule extends BaseUltraModule {
       const rangeEndEntity = (barModule as any).range_end_entity;
       if (!rangeStartEntity || !rangeEndEntity) {
         return this.renderGradientErrorState(
-          'Configure Range',
-          'Set range start and end entities in the General tab',
+          localize('editor.bar.error_no_range', lang, 'Configure Range'),
+          localize('editor.bar.error_no_range_desc', lang, 'Set range start and end entities in the General tab'),
           'mdi:arrow-expand-horizontal'
         );
       }
@@ -4204,7 +3090,7 @@ export class UltraBarModule extends BaseUltraModule {
               if (typeof window !== 'undefined') {
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                     window._ultraCardUpdateTimer = null;
                   }, 50);
                 }
@@ -4267,7 +3153,7 @@ export class UltraBarModule extends BaseUltraModule {
                 if (typeof window !== 'undefined') {
                   if (!window._ultraCardUpdateTimer) {
                     window._ultraCardUpdateTimer = setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                      this.triggerPreviewUpdate();
                       window._ultraCardUpdateTimer = null;
                     }, 50);
                   }
@@ -4307,7 +3193,7 @@ export class UltraBarModule extends BaseUltraModule {
                 if (typeof window !== 'undefined') {
                   if (!window._ultraCardUpdateTimer) {
                     window._ultraCardUpdateTimer = setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                      this.triggerPreviewUpdate();
                       window._ultraCardUpdateTimer = null;
                     }, 50);
                   }
@@ -4413,7 +3299,7 @@ export class UltraBarModule extends BaseUltraModule {
             this._timeProgressInterval = setInterval(() => {
               // Trigger a re-render by dispatching an event
               if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                this.triggerPreviewUpdate();
               }
             }, updateInterval);
 
@@ -4444,7 +3330,7 @@ export class UltraBarModule extends BaseUltraModule {
                   // Use global debounced update
                   if (!window._ultraCardUpdateTimer) {
                     window._ultraCardUpdateTimer = setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                      this.triggerPreviewUpdate();
                       window._ultraCardUpdateTimer = null;
                     }, 50);
                   }
@@ -4563,7 +3449,7 @@ export class UltraBarModule extends BaseUltraModule {
                 // Use global debounced update
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                     window._ultraCardUpdateTimer = null;
                   }, 50);
                 }
@@ -4607,7 +3493,7 @@ export class UltraBarModule extends BaseUltraModule {
                 // Use global debounced update
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                     window._ultraCardUpdateTimer = null;
                   }, 50);
                 }
@@ -5658,18 +4544,17 @@ export class UltraBarModule extends BaseUltraModule {
       config
     );
 
-    // Get hover effect configuration from module design
-    const hoverEffect = (barModule as any).design?.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    // Get hover effect using canonical base method
+    const hoverEffectClass = this.getHoverEffectClass(module);
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         ${this.getStyles()}
       </style>
       <div
         class="bar-module-preview"
         data-layout-grow="${shouldGrow ? 'true' : 'false'}"
-        style=${this.styleObjectToCss(containerStyles)}
+        style="${this.buildStyleString(containerStyles)}"
         ${ref((el?: Element) => {
           if (!el) return;
 
@@ -5830,6 +4715,13 @@ export class UltraBarModule extends BaseUltraModule {
 
                     // Scale dot size with reasonable limits (minimum 8px, maximum 24px)
                     const dotSize = Math.max(8, Math.min(24, lineHeight * 3 + 6));
+                    const halfDotPx = dotSize / 2;
+
+                    // Keep the dot centre (which is at `left` after translate(-50%,-50%))
+                    // within the bar bounds so the circle never bleeds outside the container
+                    // and gets clipped by the card's overflow:hidden.
+                    // CSS clamp() keeps left ∈ [halfDotPx, calc(100% - halfDotPx)].
+                    const clampedDotPosition = `clamp(${halfDotPx}px, ${dotPosition}%, calc(100% - ${halfDotPx}px))`;
 
                     return html`
                       ${needsSeparateTrack
@@ -5912,7 +4804,7 @@ export class UltraBarModule extends BaseUltraModule {
                               style="
                                 position: absolute;
                                 top: 50%;
-                                left: ${dotPosition}%;
+                                left: ${clampedDotPosition};
                                 width: ${iconSize}px;
                                 height: ${iconSize}px;
                                 transform: translate(-50%, -50%);
@@ -5948,7 +4840,7 @@ export class UltraBarModule extends BaseUltraModule {
                               style="
                                 position: absolute;
                                 top: 50%;
-                                left: ${dotPosition}%;
+                                left: ${clampedDotPosition};
                                 width: ${dotSize}px;
                                 height: ${dotSize}px;
                                 background: ${dotColor};
@@ -5988,7 +4880,7 @@ export class UltraBarModule extends BaseUltraModule {
                               style="
                                 position: absolute;
                                 top: 50%;
-                                left: ${dotPosition}%;
+                                left: ${clampedDotPosition};
                                 width: ${dotSize}px;
                                 height: ${dotSize}px;
                                 background: ${dotColor};
@@ -6680,7 +5572,7 @@ export class UltraBarModule extends BaseUltraModule {
         }
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   // Simple string hash function for stable template keys
@@ -7251,139 +6143,6 @@ export class UltraBarModule extends BaseUltraModule {
       }
 
       /* Gap control styles - Standardized Slider Pattern */
-      .gap-control-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .gap-slider {
-        flex: 1;
-        height: 6px;
-        background: var(--divider-color);
-        border-radius: 3px;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .gap-slider::-webkit-slider-thumb {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider:hover {
-        background: var(--primary-color);
-        opacity: 0.7;
-      }
-
-      .gap-slider:hover::-webkit-slider-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-slider:hover::-moz-range-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-input {
-        width: 72px !important;
-        max-width: 72px !important;
-        min-width: 72px !important;
-        padding: 4px 6px !important;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-      }
-
-      .gap-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-      }
-
-      /* Range input styling for number-range-control */
-      .number-range-control {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-
-      .range-slider {
-        flex: 1;
-      }
-
-      .range-input {
-        width: 72px !important;
-        max-width: 72px !important;
-        min-width: 72px !important;
-        padding: 4px 6px !important;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-      }
-
-      .range-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-      }
-
-      .reset-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-
-      .reset-btn:hover {
-        background: var(--primary-color);
-        color: var(--text-primary-color);
-        border-color: var(--primary-color);
-      }
-
-      .reset-btn ha-icon {
-        font-size: 16px;
-      }
 
       /* Conditional Fields Grouping - Reusable Pattern */
       .conditional-fields-group {

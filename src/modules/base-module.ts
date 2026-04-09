@@ -28,6 +28,15 @@ export interface UltraModule {
   // Module identification
   metadata: ModuleMetadata;
 
+  /**
+   * Set to true if this module's renderPreview() already applies design styles
+   * (buildDesignStyles) and animation wrappers to its outermost container.
+   *
+   * When true, the centralized UcModulePreviewService will skip the outer design
+   * wrapper so that styles are not applied twice.  Default: false (service handles it).
+   */
+  handlesOwnDesignStyles?: boolean;
+
   // Create a default instance of this module
   createDefault(id?: string, hass?: HomeAssistant): CardModule;
 
@@ -92,6 +101,14 @@ export interface UltraModule {
 
 // Base abstract class that provides common functionality
 export abstract class BaseUltraModule implements UltraModule {
+  /**
+   * All existing modules handle design-tab styles in their own renderPreview()
+   * containerStyles, so the centralized _wrapWithDesignStyles in
+   * uc-module-preview-service should NOT add a second wrapper.
+   * Override to false only for new minimal modules that want automatic wrapping.
+   */
+  handlesOwnDesignStyles = true;
+
   abstract metadata: ModuleMetadata;
 
   abstract createDefault(id?: string, hass?: HomeAssistant): CardModule;
@@ -529,6 +546,7 @@ export abstract class BaseUltraModule implements UltraModule {
   protected renderConditionalFieldsGroup(header: string, content: TemplateResult): TemplateResult {
     return html`
       <div class="conditional-fields-group">
+        ${header ? html`<div class="conditional-fields-header">${header}</div>` : ''}
         <div class="conditional-fields-content">${content}</div>
       </div>
     `;
@@ -1030,7 +1048,7 @@ export abstract class BaseUltraModule implements UltraModule {
    * @param styles - Object with camelCase or kebab-case property names
    * @returns CSS string suitable for style attribute
    */
-  protected buildStyleString(styles: Record<string, string | number | undefined>): string {
+  public buildStyleString(styles: Record<string, string | number | undefined>): string {
     return Object.entries(styles)
       .filter(([, value]) => value !== undefined && value !== null && value !== '')
       .map(([key, value]) => {
@@ -1171,7 +1189,7 @@ export abstract class BaseUltraModule implements UltraModule {
    * @param hass - Home Assistant instance (needed for entity-based images)
    * @returns Style object ready to be converted to CSS string via buildStyleString()
    */
-  protected buildDesignStyles(
+  public buildDesignStyles(
     module: CardModule,
     hass?: HomeAssistant
   ): Record<string, string | undefined> {
@@ -1474,7 +1492,7 @@ export abstract class BaseUltraModule implements UltraModule {
    * @param module - The module configuration
    * @returns CSS class string for hover effect, or empty string if none
    */
-  protected getHoverEffectClass(module: CardModule): string {
+  public getHoverEffectClass(module: CardModule): string {
     const mod = module as any;
     const hoverEffect = mod.hover_effect || mod.design?.hover_effect;
 

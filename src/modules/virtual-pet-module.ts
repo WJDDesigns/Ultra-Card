@@ -1,6 +1,7 @@
 import { TemplateResult, html, nothing, svg } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
+import { localize } from '../localize/localize';
 import {
   CardModule,
   VirtualPetModule,
@@ -883,7 +884,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
             hass,
             { pet_name: pet.pet_name || 'Buddy' },
             [UcFormUtils.text('pet_name')],
-            (e: CustomEvent) => updateModule({ pet_name: e.detail.value.pet_name } as any)
+            (e: CustomEvent) => { updateModule({ pet_name: e.detail.value.pet_name } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); }
           )}
           <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Species</div>
           <div class="species-grid">
@@ -906,7 +907,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
               s => html`
                 <div
                   class="species-btn ${pet.species === s.id ? 'active' : ''}"
-                  @click=${() => updateModule({ species: s.id } as any)}
+                  @click=${() => { updateModule({ species: s.id } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); }}
                 >
                   <ha-icon icon="${s.icon}"></ha-icon>
                   <span>${s.label}</span>
@@ -938,6 +939,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
               bindings.push(newBinding);
               updateModule({ entity_bindings: bindings } as any);
               this._expandedBindings.add(newBinding.id);
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
             }}
           >
             <ha-icon icon="mdi:plus"></ha-icon>
@@ -955,7 +957,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
               hass,
               data: { show_name: pet.show_name },
               schema: [this.booleanField('show_name')],
-              onChange: (e: CustomEvent) => updateModule({ show_name: e.detail.value.show_name } as any),
+              onChange: (e: CustomEvent) => { updateModule({ show_name: e.detail.value.show_name } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); },
             },
             {
               title: 'Show Mood',
@@ -963,7 +965,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
               hass,
               data: { show_mood: pet.show_mood },
               schema: [this.booleanField('show_mood')],
-              onChange: (e: CustomEvent) => updateModule({ show_mood: e.detail.value.show_mood } as any),
+              onChange: (e: CustomEvent) => { updateModule({ show_mood: e.detail.value.show_mood } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); },
             },
             {
               title: 'Show Stats',
@@ -971,7 +973,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
               hass,
               data: { show_stats: pet.show_stats },
               schema: [this.booleanField('show_stats')],
-              onChange: (e: CustomEvent) => updateModule({ show_stats: e.detail.value.show_stats } as any),
+              onChange: (e: CustomEvent) => { updateModule({ show_stats: e.detail.value.show_stats } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); },
             },
             {
               title: 'Show Speech Bubble',
@@ -979,7 +981,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
               hass,
               data: { show_speech_bubble: pet.show_speech_bubble },
               schema: [this.booleanField('show_speech_bubble')],
-              onChange: (e: CustomEvent) => updateModule({ show_speech_bubble: e.detail.value.show_speech_bubble } as any),
+              onChange: (e: CustomEvent) => { updateModule({ show_speech_bubble: e.detail.value.show_speech_bubble } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); },
             },
             {
               title: 'Enable Animations',
@@ -987,7 +989,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
               hass,
               data: { enable_animations: pet.enable_animations },
               schema: [this.booleanField('enable_animations')],
-              onChange: (e: CustomEvent) => updateModule({ enable_animations: e.detail.value.enable_animations } as any),
+              onChange: (e: CustomEvent) => { updateModule({ enable_animations: e.detail.value.enable_animations } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); },
             },
             {
               title: 'LCD Filter',
@@ -995,7 +997,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
               hass,
               data: { lcd_filter: pet.lcd_filter },
               schema: [this.booleanField('lcd_filter')],
-              onChange: (e: CustomEvent) => updateModule({ lcd_filter: e.detail.value.lcd_filter } as any),
+              onChange: (e: CustomEvent) => { updateModule({ lcd_filter: e.detail.value.lcd_filter } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); },
             },
           ])}
           ${this.renderSliderField(
@@ -1006,7 +1008,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
             80,
             300,
             4,
-            (value: number) => updateModule({ pet_size: value } as any),
+            (value: number) => { updateModule({ pet_size: value } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); },
             'px'
           )}
         </div>
@@ -1023,7 +1025,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
               .value=${pet.pet_primary_color || ''}
               .defaultValue=${this._speciesDefaults(pet.species).primary}
               .hass=${hass}
-              @value-changed=${(e: CustomEvent) => updateModule({ pet_primary_color: e.detail.value } as any)}
+              @value-changed=${(e: CustomEvent) => { updateModule({ pet_primary_color: e.detail.value } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); }}
             ></ultra-color-picker>
           </div>
           <div style="margin-bottom: 16px;">
@@ -1032,7 +1034,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
               .value=${pet.pet_secondary_color || ''}
               .defaultValue=${this._speciesDefaults(pet.species).secondary}
               .hass=${hass}
-              @value-changed=${(e: CustomEvent) => updateModule({ pet_secondary_color: e.detail.value } as any)}
+              @value-changed=${(e: CustomEvent) => { updateModule({ pet_secondary_color: e.detail.value } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); }}
             ></ultra-color-picker>
           </div>
           <div style="margin-bottom: 16px;">
@@ -1041,7 +1043,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
               .value=${pet.accent_color || ''}
               .defaultValue=${'var(--primary-color)'}
               .hass=${hass}
-              @value-changed=${(e: CustomEvent) => updateModule({ accent_color: e.detail.value } as any)}
+              @value-changed=${(e: CustomEvent) => { updateModule({ accent_color: e.detail.value } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); }}
             ></ultra-color-picker>
           </div>
         </div>
@@ -1098,6 +1100,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
             bindings.splice(index, 1);
             this._expandedBindings.delete(binding.id);
             updateModule({ entity_bindings: bindings } as any);
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
           }}
         ></ha-icon>
       </div>
@@ -1288,11 +1291,12 @@ export class UltraVirtualPetModule extends BaseUltraModule {
     config?: UltraCardConfig
   ): TemplateResult {
     const pet = module as VirtualPetModule;
+    const lang = hass?.locale?.language || 'en';
 
     if (!hass || !hass.states) {
       return this.renderGradientErrorState(
-        'Waiting for Home Assistant',
-        'Connecting to entity states...',
+        localize('editor.virtual_pet.error_waiting_ha', lang, 'Waiting for Home Assistant'),
+        localize('editor.virtual_pet.error_waiting_ha_desc', lang, 'Connecting to entity states...'),
         'mdi:loading'
       );
     }

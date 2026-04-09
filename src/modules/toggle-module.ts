@@ -138,6 +138,7 @@ export class UltraToggleModule extends BaseUltraModule {
 
     return html`
       ${this.injectUcFormStyles()}
+      <style>${BaseUltraModule.getSliderStyles()}</style>
       <style>
         .settings-section {
           background: var(--secondary-background-color);
@@ -425,57 +426,16 @@ export class UltraToggleModule extends BaseUltraModule {
           )}
 
           <div class="field-container" style="margin-bottom: 16px;">
-            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-              ${localize('editor.toggle.spacing', lang, 'Spacing')}
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;"
-            >
-              ${localize('editor.toggle.spacing_desc', lang, 'Gap between toggle points in pixels')}
-            </div>
-            <div
-              class="gap-control-container"
-              style="display: flex; align-items: center; gap: 12px;"
-            >
-              <input
-                type="range"
-                class="gap-slider"
-                min="0"
-                max="100"
-                step="1"
-                .value="${String(toggleModule.spacing || 8)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = Number(target.value);
-                  updateModule({ spacing: value });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-              />
-              <input
-                type="number"
-                class="gap-input"
-                .value="${String(toggleModule.spacing || 8)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = Number(target.value);
-                  if (!isNaN(value)) {
-                    updateModule({ spacing: value });
-                    setTimeout(() => this.triggerPreviewUpdate(), 50);
-                  }
-                }}
-              />
-              <button
-                class="reset-btn"
-                @click=${() => {
-                  updateModule({ spacing: 8 });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-                title="Reset to default (8)"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
+            ${this.renderSliderField(
+              localize('editor.toggle.spacing', lang, 'Spacing'),
+              localize('editor.toggle.spacing_desc', lang, 'Gap between toggle points in pixels'),
+              toggleModule.spacing || 8,
+              8, 0, 100, 1,
+              (v: number) => {
+                updateModule({ spacing: v });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            )}
           </div>
         </div>
 
@@ -1437,7 +1397,7 @@ export class UltraToggleModule extends BaseUltraModule {
       this._expandedTogglePoints.add(pointId);
     }
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('ultra-card-module-update'));
+      this.triggerPreviewUpdate();
     }
   }
 
@@ -1452,7 +1412,7 @@ export class UltraToggleModule extends BaseUltraModule {
   private handleDragEnd(): void {
     this._draggedItem = null;
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('ultra-card-module-update'));
+      this.triggerPreviewUpdate();
     }
   }
 
@@ -1535,22 +1495,27 @@ export class UltraToggleModule extends BaseUltraModule {
     }
 
     // Render based on visual style
-    switch (toggleModule.visual_style) {
-      case 'ios_toggle':
-        return this.renderIOSToggle(toggleModule, hass, activePointId);
-      case 'segmented':
-        return this.renderSegmented(toggleModule, hass, activePointId);
-      case 'button_group':
-        return this.renderButtonGroup(toggleModule, hass, activePointId);
-      case 'slider_track':
-        return this.renderSliderTrack(toggleModule, hass, activePointId);
-      case 'timeline':
-        return this.renderTimeline(toggleModule, hass, activePointId);
-      case 'minimal':
-        return this.renderMinimal(toggleModule, hass, activePointId);
-      default:
-        return this.renderSegmented(toggleModule, hass, activePointId);
-    }
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+    const innerContent = (() => {
+      switch (toggleModule.visual_style) {
+        case 'ios_toggle':
+          return this.renderIOSToggle(toggleModule, hass, activePointId);
+        case 'segmented':
+          return this.renderSegmented(toggleModule, hass, activePointId);
+        case 'button_group':
+          return this.renderButtonGroup(toggleModule, hass, activePointId);
+        case 'slider_track':
+          return this.renderSliderTrack(toggleModule, hass, activePointId);
+        case 'timeline':
+          return this.renderTimeline(toggleModule, hass, activePointId);
+        case 'minimal':
+          return this.renderMinimal(toggleModule, hass, activePointId);
+        default:
+          return this.renderSegmented(toggleModule, hass, activePointId);
+      }
+    })();
+    return this.wrapWithAnimation(html`<div class="${hoverClass}" style="${designStyles}">${innerContent}</div>`, module, hass);
   }
 
   /**
@@ -1578,7 +1543,7 @@ export class UltraToggleModule extends BaseUltraModule {
               if (typeof window !== 'undefined') {
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                     window._ultraCardUpdateTimer = null;
                   }, 50);
                 }
@@ -2504,5 +2469,9 @@ export class UltraToggleModule extends BaseUltraModule {
         </div>
       </div>
     `;
+  }
+
+  getStyles(): string {
+    return `${BaseUltraModule.getSliderStyles()}`;
   }
 }

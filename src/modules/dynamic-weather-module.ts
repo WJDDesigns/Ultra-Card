@@ -170,13 +170,11 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
                   ${this.renderConditionalFieldsGroup(
                     'Automatic Mode',
                     html`
-                      ${this.renderFieldSection(
-                        'Weather Entity',
-                        'Select the weather entity to monitor for automatic effects',
-                        hass,
-                        { weather_entity: weatherModule.weather_entity || '' },
-                        [this.entityField('weather_entity')],
-                        (e: CustomEvent) => updateModule(e.detail.value)
+                      ${this.renderEntityPickerWithVariables(
+                        hass, config, 'weather_entity', weatherModule.weather_entity || '',
+                        (value: string) => { updateModule({ weather_entity: value }); this.triggerPreviewUpdate(); },
+                        undefined,
+                        'Weather Entity'
                       )}
 
                       <!-- Current Effect Preview -->
@@ -278,54 +276,14 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
           )}
 
           <!-- Opacity Slider -->
-          <div style="margin-top: 24px; margin-bottom: 12px;">
-            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-              Opacity
-            </div>
-            <div class="field-description" style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;">
-              Control the transparency of weather effects (0-100%)
-            </div>
-            <div class="number-range-control" style="display: flex; gap: 8px; align-items: center;">
-              <input
-                type="range"
-                class="range-slider"
-                min="0"
-                max="100"
-                step="1"
-                .value="${weatherModule.opacity ?? 50}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseInt(target.value);
-                  updateModule({ opacity: value });
-                }}
-                style="flex: 0 0 65%; height: 6px; background: var(--divider-color); border-radius: 3px; cursor: pointer;"
-              />
-              <input
-                type="number"
-                class="range-input"
-                min="0"
-                max="100"
-                step="1"
-                .value="${weatherModule.opacity ?? 50}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseInt(target.value);
-                  if (!isNaN(value)) {
-                    updateModule({ opacity: value });
-                  }
-                }}
-                style="flex: 0 0 20%; padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--secondary-background-color); color: var(--primary-text-color); font-size: 13px; text-align: center;"
-              />
-              <button
-                class="range-reset-btn"
-                @click=${() => updateModule({ opacity: 50 })}
-                title="Reset to default (50)"
-                style="width: 32px; height: 32px; padding: 0; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--secondary-background-color); color: var(--primary-text-color); cursor: pointer; display: flex; align-items: center; justify-content: center;"
-              >
-                <ha-icon icon="mdi:refresh" style="font-size: 14px;"></ha-icon>
-              </button>
-            </div>
-          </div>
+          ${this.renderSliderField(
+            'Opacity',
+            'Control the transparency of weather effects (0–100%)',
+            weatherModule.opacity ?? 50,
+            50, 0, 100, 1,
+            (v: number) => { updateModule({ opacity: v }); },
+            '%'
+          )}
         </div>
 
         <!-- Mobile & Accessibility Settings -->
@@ -437,7 +395,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
 
     // In editor/preview contexts, show informational placeholder
     if (showPlaceholder) {
-      return html`
+      return this.wrapWithAnimation(html`
         <div
           style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 8px; border: 2px dashed var(--divider-color);"
         >
@@ -459,7 +417,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
             Effects are rendered view-wide. Check your dashboard to see them in action.
           </div>
         </div>
-      `;
+      `, module, hass);
     }
 
     // Hide completely on dashboard (no visible element at all)
@@ -486,6 +444,12 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
     }
 
     return { valid: errors.length === 0, errors };
+  }
+
+  getStyles(): string {
+    return `
+      ${BaseUltraModule.getSliderStyles()}
+    `;
   }
 }
 

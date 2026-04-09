@@ -69,6 +69,8 @@ export class UltraFanModule extends BaseUltraModule {
    */
   private _fanSpeedOverride = new Map<string, number>();
 
+  handlesOwnDesignStyles = true;
+
   metadata: ModuleMetadata = {
     type: 'fan',
     title: 'Fan Control',
@@ -148,18 +150,20 @@ export class UltraFanModule extends BaseUltraModule {
         ${this.renderSettingsSection(
           localize('editor.fan.entity_section', lang, 'Entity'),
           localize('editor.fan.entity_desc', lang, 'Select the fan to control.'),
-          [
-            {
-              title: localize('editor.fan.entity', lang, 'Fan entity'),
-              description: localize('editor.fan.entity_field_desc', lang, 'Home Assistant fan entity'),
-              hass,
-              data: { entity: fan.entity || '' },
-              schema: [{ name: 'entity', selector: { entity: { domain: 'fan' } } }],
-              onChange: (e: CustomEvent) => {
-                updateModule({ entity: e.detail.value?.entity ?? '' });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              },
+          []
+        )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', fan.entity || '',
+            (value: string) => {
+              updateModule({ entity: value });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
             },
+            ['fan'],
+            localize('editor.fan.entity', lang, 'Fan entity')
+          )}
+        </div>
+        ${this.renderSettingsSection('', '', [
             {
               title: localize('editor.fan.icon_override', lang, 'Icon override'),
               description: localize(
@@ -747,6 +751,7 @@ export class UltraFanModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
       /* ── Base ───────────────────────────────────── */
       .uc-fan-wrapper { box-sizing: border-box; }
       .uc-fan { box-sizing: border-box; color: var(--primary-text-color); }

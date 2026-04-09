@@ -66,6 +66,8 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
   private _expandedCoreSections = new Set<string>();
   private _expandedDeviceIds = new Set<string>();
 
+  handlesOwnDesignStyles = true;
+
   metadata: ModuleMetadata = {
     type: 'energy_display',
     title: 'Energy Display',
@@ -124,6 +126,66 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
+
+      .core-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: var(--card-background-color);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        border: 1px solid var(--divider-color);
+      }
+      .core-section-header:hover { background: var(--primary-color); opacity: 0.9; }
+      .core-section-header ha-icon.expand-icon { transition: transform 0.2s ease; }
+      .core-section-header ha-icon.expand-icon.expanded { transform: rotate(180deg); }
+
+      .entity-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        background: var(--card-background-color);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        cursor: move;
+        border: 1px solid var(--divider-color);
+        transition: all 0.2s ease;
+      }
+      .entity-row.dragging { opacity: 0.5; transform: scale(0.95); }
+      .entity-row .drag-handle { cursor: grab; color: var(--secondary-text-color); flex-shrink: 0; }
+      .entity-row .expand-icon { cursor: pointer; flex-shrink: 0; }
+      .entity-row .expand-icon.expanded { transform: rotate(180deg); }
+      .entity-row .delete-icon { cursor: pointer; color: var(--error-color); flex-shrink: 0; }
+
+      .entity-settings {
+        padding: 16px;
+        background: rgba(var(--rgb-primary-color), 0.05);
+        border-left: 3px solid var(--primary-color);
+        border-radius: 0 8px 8px 0;
+        margin-bottom: 8px;
+      }
+
+      .add-entity-btn {
+        width: 100%;
+        padding: 12px;
+        background: var(--primary-color);
+        color: var(--text-primary-color);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
       .energy-display-preview-wrapper {
         display: block;
       }
@@ -343,13 +405,13 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
   private _toggleCoreSection(type: string): void {
     if (this._expandedCoreSections.has(type)) this._expandedCoreSections.delete(type);
     else this._expandedCoreSections.add(type);
-    window.dispatchEvent(new CustomEvent('ultra-card-module-update'));
+    this.triggerPreviewUpdate();
   }
 
   private _toggleDeviceExpand(id: string): void {
     if (this._expandedDeviceIds.has(id)) this._expandedDeviceIds.delete(id);
     else this._expandedDeviceIds.add(id);
-    window.dispatchEvent(new CustomEvent('ultra-card-module-update'));
+    this.triggerPreviewUpdate();
   }
 
   private _onDeviceDragStart(e: DragEvent, node: EnergyNode): void {
@@ -359,7 +421,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
 
   private _onDeviceDragEnd(): void {
     this._draggedDevice = null;
-    window.dispatchEvent(new CustomEvent('ultra-card-module-update'));
+    this.triggerPreviewUpdate();
   }
 
   private _onDeviceDrop(
@@ -389,98 +451,35 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     const style = edModule.display_style || 'circle_flow';
 
     return html`
-      <style>
-        ${this.injectUcFormStyles()} ${BaseUltraModule.getSliderStyles()}
-        .settings-section {
-          background: var(--secondary-background-color);
-          border-radius: 8px;
-          padding: 16px;
-          margin-bottom: 16px;
-        }
-        .section-title {
-          font-size: 18px;
-          font-weight: 700;
-          text-transform: uppercase;
-          color: var(--primary-color);
-          margin-bottom: 16px;
-        }
-        .style-picker {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
-        }
-        .style-option {
-          padding: 12px;
-          border: 2px solid var(--divider-color);
-          border-radius: 8px;
-          cursor: pointer;
-          text-align: center;
-          transition: all 0.2s ease;
-        }
-        .style-option:hover { border-color: var(--primary-color); opacity: 0.9; }
-        .style-option.selected { border-color: var(--primary-color); background: rgba(var(--rgb-primary-color), 0.08); }
-        .style-option ha-icon { --mdi-icon-size: 28px; color: var(--primary-color); }
-        .core-section-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 10px 12px;
-          background: var(--card-background-color);
-          border-radius: 8px;
-          margin-bottom: 8px;
-          cursor: pointer;
-          border: 1px solid var(--divider-color);
-        }
-        .core-section-header:hover { background: var(--primary-color); opacity: 0.9; }
-        .core-section-header ha-icon.expand-icon { transition: transform 0.2s ease; }
-        .core-section-header ha-icon.expand-icon.expanded { transform: rotate(180deg); }
-        .entity-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 12px;
-          background: var(--card-background-color);
-          border-radius: 8px;
-          margin-bottom: 8px;
-          cursor: move;
-          border: 1px solid var(--divider-color);
-          transition: all 0.2s ease;
-        }
-        .entity-row.dragging { opacity: 0.5; transform: scale(0.95); }
-        .entity-row .drag-handle { cursor: grab; color: var(--secondary-text-color); flex-shrink: 0; }
-        .entity-row .expand-icon { cursor: pointer; flex-shrink: 0; }
-        .entity-row .expand-icon.expanded { transform: rotate(180deg); }
-        .entity-row .delete-icon { cursor: pointer; color: var(--error-color); flex-shrink: 0; }
-        .entity-settings { padding: 16px; background: rgba(var(--rgb-primary-color), 0.05); border-left: 3px solid var(--primary-color); border-radius: 0 8px 8px 0; margin-bottom: 8px; }
-        .add-entity-btn {
-          width: 100%; padding: 12px; background: var(--primary-color); color: var(--text-primary-color); border: none; border-radius: 8px;
-          cursor: pointer; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-      </style>
+      ${this.injectUcFormStyles()}
 
       <!-- Section 1: Display Style -->
-      <div class="settings-section">
-        <div class="section-title">Display Style</div>
-        <div class="style-picker">
-          ${(['circle_flow', 'box_flow', 'sankey'] as const).map(
-            s => html`
-              <div
-                class="style-option ${style === s ? 'selected' : ''}"
-                @click=${() => updateModule({ display_style: s })}
-              >
-                <ha-icon icon=${s === 'circle_flow' ? 'mdi:circle-double' : s === 'box_flow' ? 'mdi:view-grid' : 'mdi:chart-sankey'}></ha-icon>
-                <div style="font-size: 13px; margin-top: 6px;">${s === 'circle_flow' ? 'Circle Flow' : s === 'box_flow' ? 'Box Flow' : 'Sankey'}</div>
-              </div>
-            `
-          )}
-        </div>
-      </div>
+      ${this.renderSettingsSection(
+        localize('editor.energy_display.style_title', lang, 'Display Style'),
+        localize('editor.energy_display.style_desc', lang, 'Choose the visual layout for the energy flow display.'),
+        [
+          {
+            title: localize('editor.energy_display.style', lang, 'Layout Style'),
+            description: '',
+            hass,
+            data: { display_style: style },
+            schema: [
+              this.selectField('display_style', [
+                { value: 'circle_flow', label: localize('editor.energy_display.style_circle', lang, 'Circle Flow') },
+                { value: 'box_flow', label: localize('editor.energy_display.style_box', lang, 'Box Flow') },
+                { value: 'sankey', label: localize('editor.energy_display.style_sankey', lang, 'Sankey') },
+              ]),
+            ],
+            onChange: (e: CustomEvent) => updateModule({ display_style: e.detail.value.display_style }),
+          },
+        ]
+      )}
 
       <!-- Section 2: Core Energy Nodes -->
-      <div class="settings-section">
-        <div class="section-title">Core Energy Nodes</div>
+      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;">
+        <div class="section-title">${localize('editor.energy_display.core_nodes_title', lang, 'Core Energy Nodes')}</div>
         <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;">
-          Configure Solar, Grid, Battery, and Home. Use power sensor entities (W).
+          ${localize('editor.energy_display.core_nodes_desc', lang, 'Configure Solar, Grid, Battery, and Home. Use power sensor entities (W).')}
         </div>
         ${coreNodes.map(node => {
           const isExpanded = this._expandedCoreSections.has(node.node_type);
@@ -505,17 +504,42 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
                         : node.node_type === 'grid'
                           ? this.renderEntityPickerWithVariables(hass, config, 'secondary_entity', node.secondary_entity || '', (v) => this._updateCoreNode(edModule, node.node_type, { secondary_entity: v || undefined }, updateModule), ['sensor'], 'Grid export sensor (optional)')
                           : ''}
-                      ${this.renderTextInput('Label', node.label || '', (v) => this._updateCoreNode(edModule, node.node_type, { label: v }, updateModule))}
+                      ${this.renderFieldSection(
+                        localize('editor.energy_display.node_label', lang, 'Label'),
+                        '',
+                        hass,
+                        { label: node.label || '' },
+                        [this.textField('label')],
+                        (e: CustomEvent) => this._updateCoreNode(edModule, node.node_type, { label: e.detail.value.label }, updateModule)
+                      )}
+                      ${this.renderFieldSection(
+                        localize('editor.energy_display.node_icon', lang, 'Icon'),
+                        '',
+                        hass,
+                        { icon: node.icon || '' },
+                        [this.iconField('icon')],
+                        (e: CustomEvent) => this._updateCoreNode(edModule, node.node_type, { icon: e.detail.value.icon }, updateModule)
+                      )}
                       <div class="form-field" style="margin-top: 12px;">
-                        <label class="form-label">Icon</label>
-                        <ha-form .hass=${hass} .data=${{ icon: node.icon || '' }} .schema=${[{ name: 'icon', selector: { icon: {} } }]} @value-changed=${(e: CustomEvent) => this._updateCoreNode(edModule, node.node_type, { icon: e.detail.value.icon }, updateModule)}></ha-form>
-                      </div>
-                      <div class="form-field" style="margin-top: 12px;">
-                        <label class="form-label">Color</label>
+                        <label class="form-label">${localize('editor.energy_display.node_color', lang, 'Color')}</label>
                         <ultra-color-picker .label="" .value="${node.color || ''}" .defaultValue="${DEFAULT_NODE_COLORS[node.node_type]}" .hass=${hass} @value-changed=${(e: CustomEvent) => this._updateCoreNode(edModule, node.node_type, { color: e.detail.value }, updateModule)}></ultra-color-picker>
                       </div>
-                      ${this.renderCheckbox('Show directional arrow', node.show_arrow !== false, (v) => this._updateCoreNode(edModule, node.node_type, { show_arrow: v }, updateModule))}
-                      ${this.renderCheckbox('Enabled', node.enabled !== false, (v) => this._updateCoreNode(edModule, node.node_type, { enabled: v }, updateModule))}
+                      ${this.renderFieldSection(
+                        localize('editor.energy_display.show_arrow', lang, 'Show directional arrow'),
+                        '',
+                        hass,
+                        { show_arrow: node.show_arrow !== false },
+                        [this.booleanField('show_arrow')],
+                        (e: CustomEvent) => this._updateCoreNode(edModule, node.node_type, { show_arrow: e.detail.value.show_arrow }, updateModule)
+                      )}
+                      ${this.renderFieldSection(
+                        localize('editor.energy_display.node_enabled', lang, 'Enabled'),
+                        '',
+                        hass,
+                        { enabled: node.enabled !== false },
+                        [this.booleanField('enabled')],
+                        (e: CustomEvent) => this._updateCoreNode(edModule, node.node_type, { enabled: e.detail.value.enabled }, updateModule)
+                      )}
                     </div>
                   `
                 : ''}
@@ -525,62 +549,112 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
       </div>
 
       <!-- Section 3: Custom Device Nodes -->
-      <div class="settings-section">
-        <div class="section-title">Custom Device Nodes</div>
+      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;">
+        <div class="section-title">${localize('editor.energy_display.devices_title', lang, 'Custom Device Nodes')}</div>
         <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;">
-          Add devices to show individual power consumption. Drag to reorder.
+          ${localize('editor.energy_display.devices_desc', lang, 'Add devices to show individual power consumption. Drag to reorder.')}
         </div>
         <div class="entity-rows-container">
-          ${deviceNodes.map((dev, idx) => this._renderDeviceRow(dev, idx, edModule, hass, config, updateModule))}
+          ${deviceNodes.map((dev, idx) => this._renderDeviceRow(dev, idx, edModule, hass, config, updateModule, lang))}
         </div>
         <button class="add-entity-btn" @click=${() => this._addDevice(edModule, updateModule)}>
           <ha-icon icon="mdi:plus"></ha-icon>
-          Add Device
+          ${localize('editor.energy_display.add_device', lang, 'Add Device')}
         </button>
       </div>
 
       <!-- Section 4: Flow and Animation -->
-      <div class="settings-section">
-        <div class="section-title">Flow and Animation</div>
-        ${this.renderSelect('Animation speed', edModule.animation_speed || 'normal', [
-          { value: 'none', label: 'None' },
-          { value: 'slow', label: 'Slow' },
-          { value: 'normal', label: 'Normal' },
-          { value: 'fast', label: 'Fast' },
-        ], (v: string) => updateModule({ animation_speed: v as EnergyDisplayModule['animation_speed'] }))}
-        ${this.renderSliderField('Flow line width', 'Line thickness (px)', edModule.flow_line_width ?? 2, 2, 1, 6, 1, (v) => updateModule({ flow_line_width: v }), 'px')}
-        ${this.renderCheckbox('Show values', edModule.show_values !== false, (v) => updateModule({ show_values: v }))}
-        ${this.renderSelect('Unit display', edModule.unit_display || 'auto', [
-          { value: 'auto', label: 'Auto (W / kW)' },
-          { value: 'W', label: 'W' },
-          { value: 'kW', label: 'kW' },
-        ], (v: string) => updateModule({ unit_display: v as EnergyDisplayModule['unit_display'] }))}
-        ${this.renderCheckbox('Show labels', edModule.show_labels !== false, (v) => updateModule({ show_labels: v }))}
-        ${this.renderCheckbox('Show icons', edModule.show_icons !== false, (v) => updateModule({ show_icons: v }))}
-        ${this.renderCheckbox('Show self-sufficiency gauge', edModule.show_self_sufficiency !== false, (v) => updateModule({ show_self_sufficiency: v }))}
-        ${edModule.show_self_sufficiency !== false
-          ? this.renderEntityPickerWithVariables(hass, config, 'self_sufficiency_entity', edModule.self_sufficiency_entity || '', (v) => updateModule({ self_sufficiency_entity: v || undefined }), ['sensor'], 'Self-sufficiency entity (optional override)')
-          : ''}
-      </div>
+      ${this.renderSettingsSection(
+        localize('editor.energy_display.flow_title', lang, 'Flow and Animation'),
+        '',
+        [
+          {
+            title: localize('editor.energy_display.animation_speed', lang, 'Animation speed'),
+            description: '',
+            hass,
+            data: { animation_speed: edModule.animation_speed || 'normal' },
+            schema: [this.selectField('animation_speed', [
+              { value: 'none', label: localize('editor.energy_display.speed_none', lang, 'None') },
+              { value: 'slow', label: localize('editor.energy_display.speed_slow', lang, 'Slow') },
+              { value: 'normal', label: localize('editor.energy_display.speed_normal', lang, 'Normal') },
+              { value: 'fast', label: localize('editor.energy_display.speed_fast', lang, 'Fast') },
+            ])],
+            onChange: (e: CustomEvent) => updateModule({ animation_speed: e.detail.value.animation_speed as EnergyDisplayModule['animation_speed'] }),
+          },
+          {
+            title: localize('editor.energy_display.show_values', lang, 'Show values'),
+            description: '',
+            hass,
+            data: { show_values: edModule.show_values !== false },
+            schema: [this.booleanField('show_values')],
+            onChange: (e: CustomEvent) => updateModule({ show_values: e.detail.value.show_values }),
+          },
+          {
+            title: localize('editor.energy_display.unit_display', lang, 'Unit display'),
+            description: '',
+            hass,
+            data: { unit_display: edModule.unit_display || 'auto' },
+            schema: [this.selectField('unit_display', [
+              { value: 'auto', label: 'Auto (W / kW)' },
+              { value: 'W', label: 'W' },
+              { value: 'kW', label: 'kW' },
+            ])],
+            onChange: (e: CustomEvent) => updateModule({ unit_display: e.detail.value.unit_display as EnergyDisplayModule['unit_display'] }),
+          },
+          {
+            title: localize('editor.energy_display.show_labels', lang, 'Show labels'),
+            description: '',
+            hass,
+            data: { show_labels: edModule.show_labels !== false },
+            schema: [this.booleanField('show_labels')],
+            onChange: (e: CustomEvent) => updateModule({ show_labels: e.detail.value.show_labels }),
+          },
+          {
+            title: localize('editor.energy_display.show_icons', lang, 'Show icons'),
+            description: '',
+            hass,
+            data: { show_icons: edModule.show_icons !== false },
+            schema: [this.booleanField('show_icons')],
+            onChange: (e: CustomEvent) => updateModule({ show_icons: e.detail.value.show_icons }),
+          },
+          {
+            title: localize('editor.energy_display.show_self_sufficiency', lang, 'Show self-sufficiency gauge'),
+            description: '',
+            hass,
+            data: { show_self_sufficiency: edModule.show_self_sufficiency !== false },
+            schema: [this.booleanField('show_self_sufficiency')],
+            onChange: (e: CustomEvent) => updateModule({ show_self_sufficiency: e.detail.value.show_self_sufficiency }),
+          },
+        ]
+      )}
+      ${this.renderSliderField(
+        localize('editor.energy_display.flow_line_width', lang, 'Flow line width'),
+        localize('editor.energy_display.flow_line_width_desc', lang, 'Line thickness (px)'),
+        edModule.flow_line_width ?? 2, 2, 1, 6, 1,
+        (v) => updateModule({ flow_line_width: v }), 'px'
+      )}
+      ${edModule.show_self_sufficiency !== false
+        ? this.renderEntityPickerWithVariables(hass, config, 'self_sufficiency_entity', edModule.self_sufficiency_entity || '', (v) => updateModule({ self_sufficiency_entity: v || undefined }), ['sensor'], 'Self-sufficiency entity (optional override)')
+        : ''}
 
       <!-- Section 5: Style-specific options -->
-      <div class="settings-section">
-        <div class="section-title">Style Options</div>
+      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;">
+        <div class="section-title">${localize('editor.energy_display.style_options_title', lang, 'Style Options')}</div>
         ${style === 'circle_flow'
           ? html`
-              ${this.renderSliderField('Circle size', 'Node circle diameter (px)', edModule.circle_size ?? 48, 48, 24, 96, 4, (v) => updateModule({ circle_size: v }), 'px')}
-              ${this.renderSliderField('Node spacing', 'Spacing between nodes (px)', edModule.node_spacing ?? 24, 24, 8, 64, 4, (v) => updateModule({ node_spacing: v }), 'px')}
+              ${this.renderSliderField(localize('editor.energy_display.circle_size', lang, 'Circle size'), localize('editor.energy_display.circle_size_desc', lang, 'Node circle diameter (px)'), edModule.circle_size ?? 48, 48, 24, 96, 4, (v) => updateModule({ circle_size: v }), 'px')}
+              ${this.renderSliderField(localize('editor.energy_display.node_spacing', lang, 'Node spacing'), localize('editor.energy_display.node_spacing_desc', lang, 'Spacing between nodes (px)'), edModule.node_spacing ?? 24, 24, 8, 64, 4, (v) => updateModule({ node_spacing: v }), 'px')}
             `
           : style === 'box_flow'
             ? html`
-                ${this.renderSliderField('Box border width', 'px', edModule.box_border_width ?? 2, 2, 1, 8, 1, (v) => updateModule({ box_border_width: v }), 'px')}
-                ${this.renderSliderField('Box corner radius', 'px', edModule.box_border_radius ?? 12, 12, 0, 32, 2, (v) => updateModule({ box_border_radius: v }), 'px')}
-                ${this.renderSliderField('Gauge size', 'Central gauge diameter (px)', edModule.gauge_size ?? 80, 80, 40, 160, 8, (v) => updateModule({ gauge_size: v }), 'px')}
+                ${this.renderSliderField(localize('editor.energy_display.box_border_width', lang, 'Box border width'), 'px', edModule.box_border_width ?? 2, 2, 1, 8, 1, (v) => updateModule({ box_border_width: v }), 'px')}
+                ${this.renderSliderField(localize('editor.energy_display.box_corner_radius', lang, 'Box corner radius'), 'px', edModule.box_border_radius ?? 12, 12, 0, 32, 2, (v) => updateModule({ box_border_radius: v }), 'px')}
+                ${this.renderSliderField(localize('editor.energy_display.gauge_size', lang, 'Gauge size'), localize('editor.energy_display.gauge_size_desc', lang, 'Central gauge diameter (px)'), edModule.gauge_size ?? 80, 80, 40, 160, 8, (v) => updateModule({ gauge_size: v }), 'px')}
               `
             : html`
-                ${this.renderSliderField('Sankey width', 'Diagram width (px)', edModule.sankey_width ?? 400, 400, 200, 800, 50, (v) => updateModule({ sankey_width: v }), 'px')}
-                ${this.renderSliderField('Curve factor', 'Path curvature', edModule.sankey_curve_factor ?? 0.5, 0.5, 0.1, 1, 0.1, (v) => updateModule({ sankey_curve_factor: v }))}
-                ${this.renderSliderField('Column spacing', 'px', edModule.sankey_column_spacing ?? 16, 16, 8, 48, 4, (v) => updateModule({ sankey_column_spacing: v }), 'px')}
+                ${this.renderSliderField(localize('editor.energy_display.sankey_width', lang, 'Sankey width'), localize('editor.energy_display.sankey_width_desc', lang, 'Diagram width (px)'), edModule.sankey_width ?? 400, 400, 200, 800, 50, (v) => updateModule({ sankey_width: v }), 'px')}
+                ${this.renderSliderField(localize('editor.energy_display.curve_factor', lang, 'Curve factor'), localize('editor.energy_display.curve_factor_desc', lang, 'Path curvature'), edModule.sankey_curve_factor ?? 0.5, 0.5, 0.1, 1, 0.1, (v) => updateModule({ sankey_curve_factor: v }))}
+                ${this.renderSliderField(localize('editor.energy_display.column_spacing', lang, 'Column spacing'), 'px', edModule.sankey_column_spacing ?? 16, 16, 8, 48, 4, (v) => updateModule({ sankey_column_spacing: v }), 'px')}
               `}
       </div>
     `;
@@ -592,7 +666,8 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     ed: EnergyDisplayModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
-    updateModule: (u: Partial<EnergyDisplayModule>) => void
+    updateModule: (u: Partial<EnergyDisplayModule>) => void,
+    lang: string = 'en'
   ): TemplateResult {
     const isExpanded = this._expandedDeviceIds.has(dev.id);
     return html`
@@ -619,13 +694,24 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
         ? html`
             <div class="entity-settings">
               ${this.renderEntityPickerWithVariables(hass, config, 'entity', dev.entity || '', (v) => this._updateDeviceAtIndex(ed, deviceIndex, { entity: v }, updateModule), ['sensor'], 'Power entity')}
-              ${this.renderTextInput('Label', dev.label || '', (v) => this._updateDeviceAtIndex(ed, deviceIndex, { label: v }, updateModule))}
+              ${this.renderFieldSection(
+                localize('editor.energy_display.node_label', lang, 'Label'),
+                '',
+                hass,
+                { label: dev.label || '' },
+                [this.textField('label')],
+                (e: CustomEvent) => this._updateDeviceAtIndex(ed, deviceIndex, { label: e.detail.value.label }, updateModule)
+              )}
+              ${this.renderFieldSection(
+                localize('editor.energy_display.node_icon', lang, 'Icon'),
+                '',
+                hass,
+                { icon: dev.icon || '' },
+                [this.iconField('icon')],
+                (e: CustomEvent) => this._updateDeviceAtIndex(ed, deviceIndex, { icon: e.detail.value.icon }, updateModule)
+              )}
               <div class="form-field" style="margin-top: 12px;">
-                <label class="form-label">Icon</label>
-                <ha-form .hass=${hass} .data=${{ icon: dev.icon || '' }} .schema=${[{ name: 'icon', selector: { icon: {} } }]} @value-changed=${(e: CustomEvent) => this._updateDeviceAtIndex(ed, deviceIndex, { icon: e.detail.value.icon }, updateModule)}></ha-form>
-              </div>
-              <div class="form-field" style="margin-top: 12px;">
-                <label class="form-label">Color</label>
+                <label class="form-label">${localize('editor.energy_display.node_color', lang, 'Color')}</label>
                 <ultra-color-picker .label="" .value="${dev.color || ''}" .defaultValue="${DEFAULT_NODE_COLORS.device}" .hass=${hass} @value-changed=${(e: CustomEvent) => this._updateDeviceAtIndex(ed, deviceIndex, { color: e.detail.value }, updateModule)}></ultra-color-picker>
               </div>
             </div>
@@ -748,6 +834,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     hass: HomeAssistant,
     config?: UltraCardConfig
   ): TemplateResult {
+    const lang = hass?.locale?.language || 'en';
     const designStyles = this.buildDesignStyles(module, hass);
     const styleStr = this.buildStyleString(designStyles);
     const core = this._getCoreNodes(module);
@@ -820,8 +907,8 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
       return html`
         <div class="energy-display-module" style="${styleStr} padding: 16px; min-height: 200px;">
           ${this.renderGradientErrorState(
-            'Configure energy nodes',
-            'Add entities for Solar, Grid, Battery and Home in the General tab.',
+            localize('editor.energy_display.error_no_nodes', lang, 'Configure energy nodes'),
+            localize('editor.energy_display.error_no_nodes_desc', lang, 'Add entities for Solar, Grid, Battery and Home in the General tab.'),
             'mdi:lightning-bolt'
           )}
         </div>

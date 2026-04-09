@@ -25,6 +25,8 @@ import '../components/ultra-color-picker';
  * - Fully customizable styling
  */
 export class UltraPeopleModule extends BaseUltraModule {
+  handlesOwnDesignStyles = true;
+
   metadata: ModuleMetadata = {
     type: 'people',
     title: 'People',
@@ -167,12 +169,9 @@ export class UltraPeopleModule extends BaseUltraModule {
 
     return html`
       ${this.injectUcFormStyles()}
-      <style>
-        ${this._getEditorStyles()}
-      </style>
       <div class="module-general-settings">
         <!-- Person Entity Selection -->
-        ${this._renderPersonEntitySection(peopleModule, hass, updateModule, lang)}
+        ${this._renderPersonEntitySection(peopleModule, hass, config, updateModule, lang)}
 
         <!-- Layout Style Selection -->
         ${this._renderLayoutStyleSection(peopleModule, hass, updateModule, lang)}
@@ -182,12 +181,12 @@ export class UltraPeopleModule extends BaseUltraModule {
 
         <!-- Banner Settings (show only for banner layout) -->
         ${peopleModule.layout_style === 'banner'
-          ? this._renderBannerSettingsSection(peopleModule, hass, updateModule, lang)
+          ? this._renderBannerSettingsSection(peopleModule, hass, config, updateModule, lang)
           : ''}
 
         <!-- Music Settings (show only for music_overlay layout) -->
         ${peopleModule.layout_style === 'music_overlay'
-          ? this._renderMusicSettingsSection(peopleModule, hass, updateModule, lang)
+          ? this._renderMusicSettingsSection(peopleModule, hass, config, updateModule, lang)
           : ''}
 
         <!-- Name Settings -->
@@ -198,7 +197,7 @@ export class UltraPeopleModule extends BaseUltraModule {
 
         <!-- Associated Entities (show for layouts that use them) -->
         ${['banner', 'music_overlay', 'horizontal_detailed'].includes(peopleModule.layout_style)
-          ? this._renderAssociatedEntitiesSection(peopleModule, hass, updateModule, lang)
+          ? this._renderAssociatedEntitiesSection(peopleModule, hass, config, updateModule, lang)
           : ''}
 
         <!-- Layout & Spacing -->
@@ -214,40 +213,28 @@ export class UltraPeopleModule extends BaseUltraModule {
   private _renderPersonEntitySection(
     module: PeopleModule,
     hass: HomeAssistant,
+    config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void,
     lang: string
   ): TemplateResult {
     return html`
-      <div class="settings-section">
-        <div class="section-title">
-          ${localize('editor.modules.people.person_entity', lang, 'Person Entity')}
-        </div>
-        <div class="section-description">
-          ${localize(
-            'editor.modules.people.person_entity_desc',
-            lang,
-            'Select the person entity to display'
-          )}
-        </div>
-        <ha-form
-          .hass=${hass}
-          .data=${{ entity: module.person_entity || '' }}
-          .schema=${[
-            {
-              name: 'entity',
-              label: localize('editor.modules.people.person', lang, 'Person'),
-              selector: { entity: { domain: 'person' } },
-            },
-          ]}
-          .computeLabel=${(schema: any) => schema.label || schema.name}
-          @value-changed=${(e: CustomEvent) => {
-            const entity = e.detail.value.entity;
-            if (entity !== module.person_entity) {
-              updateModule({ person_entity: entity });
+      ${this.renderSettingsSection(
+        localize('editor.modules.people.person_entity', lang, 'Person Entity'),
+        localize('editor.modules.people.person_entity_desc', lang, 'Select the person entity to display'),
+        []
+      )}
+      <div style="margin-bottom: 24px;">
+        ${this.renderEntityPickerWithVariables(
+          hass, config, 'entity', module.person_entity || '',
+          (value: string) => {
+            if (value !== module.person_entity) {
+              updateModule({ person_entity: value });
               this.triggerPreviewUpdate();
             }
-          }}
-        ></ha-form>
+          },
+          ['person'],
+          localize('editor.modules.people.person', lang, 'Person')
+        )}
       </div>
     `;
   }
@@ -268,11 +255,17 @@ export class UltraPeopleModule extends BaseUltraModule {
     ];
 
     return html`
-      <div class="settings-section">
-        <div class="section-title">
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+        >
           ${localize('editor.modules.people.layout_style', lang, 'Layout Style')}
         </div>
-        <div class="section-description">
+        <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;">
           ${localize(
             'editor.modules.people.layout_style_desc',
             lang,
@@ -337,198 +330,72 @@ export class UltraPeopleModule extends BaseUltraModule {
     }
 
     return html`
-      <div class="settings-section">
-        <div class="section-title">
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+        >
           ${localize('editor.modules.people.avatar_settings', lang, 'Avatar Settings')}
         </div>
 
         <!-- Element Visibility Toggles -->
-        <div class="field-container">
-          <ha-form
-            .hass=${hass}
-            .data=${{
-              show_avatar: module.show_avatar !== false,
-              ...(layoutUsesBadges
-                ? {
-                    show_location_badge: module.show_location_badge !== false,
-                    show_battery_badge: module.show_battery_badge !== false,
-                  }
-                : {}),
-            }}
-            .schema=${visibilitySchema}
-            .computeLabel=${(schema: any) => schema.label}
-            .computeDescription=${(schema: any) => schema.description}
-            @value-changed=${(e: CustomEvent) => {
-              updateModule(e.detail.value);
-              this.triggerPreviewUpdate();
-            }}
-          ></ha-form>
-        </div>
+        ${this.renderFieldSection(
+          localize('editor.modules.people.visibility', lang, 'Visibility'),
+          '',
+          hass,
+          {
+            show_avatar: module.show_avatar !== false,
+            ...(layoutUsesBadges
+              ? {
+                  show_location_badge: module.show_location_badge !== false,
+                  show_battery_badge: module.show_battery_badge !== false,
+                }
+              : {}),
+          },
+          visibilitySchema,
+          (e: CustomEvent) => {
+            updateModule(e.detail.value);
+            this.triggerPreviewUpdate();
+          }
+        )}
 
         <!-- Avatar Size -->
-        <div class="field-container">
-          <div class="field-title">
-            ${localize('editor.modules.people.avatar_size', lang, 'Avatar Size')}
-          </div>
-          <div class="number-range-control">
-            <input
-              type="range"
-              class="range-slider"
-              min="40"
-              max="200"
-              step="4"
-              .value="${avatarSettings.size}"
-              @input=${(e: Event) => {
-                const size = Number((e.target as HTMLInputElement).value);
-                updateModule({
-                  avatar_settings: { ...avatarSettings, size },
-                });
-                this.triggerPreviewUpdate();
-              }}
-            />
-            <input
-              type="number"
-              class="range-input"
-              min="40"
-              max="200"
-              step="4"
-              .value="${avatarSettings.size}"
-              @input=${(e: Event) => {
-                const size = Number((e.target as HTMLInputElement).value);
-                if (!isNaN(size)) {
-                  updateModule({
-                    avatar_settings: { ...avatarSettings, size },
-                  });
-                  this.triggerPreviewUpdate();
-                }
-              }}
-              @keydown=${(e: KeyboardEvent) => {
-                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                  e.preventDefault();
-                  const currentValue = avatarSettings.size || 80;
-                  const increment = e.key === 'ArrowUp' ? 4 : -4;
-                  const newValue = Math.max(40, Math.min(200, currentValue + increment));
-                  updateModule({
-                    avatar_settings: { ...avatarSettings, size: newValue },
-                  });
-                  this.triggerPreviewUpdate();
-                }
-              }}
-            />
-            <button
-              class="range-reset-btn"
-              @click=${() => {
-                updateModule({
-                  avatar_settings: { ...avatarSettings, size: 80 },
-                });
-                this.triggerPreviewUpdate();
-              }}
-              title="Reset to default (80px)"
-            >
-              <ha-icon icon="mdi:refresh"></ha-icon>
-            </button>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          localize('editor.modules.people.avatar_size', lang, 'Avatar Size'),
+          '',
+          avatarSettings.size ?? 80,
+          80,
+          40, 200, 4,
+          (v: number) => { updateModule({ avatar_settings: { ...avatarSettings, size: v } }); this.triggerPreviewUpdate(); },
+          'px'
+        )}
 
         <!-- Border Width -->
-        <div class="field-container">
-          <div class="field-title">
-            ${localize('editor.modules.people.border_width', lang, 'Border Width')}
-          </div>
-          <div class="number-range-control">
-            <input
-              type="range"
-              class="range-slider"
-              min="0"
-              max="10"
-              step="1"
-              .value="${avatarSettings.border_width}"
-              @input=${(e: Event) => {
-                const border_width = Number((e.target as HTMLInputElement).value);
-                updateModule({
-                  avatar_settings: { ...avatarSettings, border_width },
-                });
-                this.triggerPreviewUpdate();
-              }}
-            />
-            <input
-              type="number"
-              class="range-input"
-              min="0"
-              max="20"
-              step="1"
-              .value="${avatarSettings.border_width}"
-              @input=${(e: Event) => {
-                const border_width = Number((e.target as HTMLInputElement).value);
-                if (!isNaN(border_width)) {
-                  updateModule({
-                    avatar_settings: { ...avatarSettings, border_width },
-                  });
-                  this.triggerPreviewUpdate();
-                }
-              }}
-              @keydown=${(e: KeyboardEvent) => {
-                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                  e.preventDefault();
-                  const currentValue = avatarSettings.border_width || 3;
-                  const increment = e.key === 'ArrowUp' ? 1 : -1;
-                  const newValue = Math.max(0, Math.min(20, currentValue + increment));
-                  updateModule({
-                    avatar_settings: { ...avatarSettings, border_width: newValue },
-                  });
-                  this.triggerPreviewUpdate();
-                }
-              }}
-            />
-            <button
-              class="range-reset-btn"
-              @click=${() => {
-                updateModule({
-                  avatar_settings: { ...avatarSettings, border_width: 3 },
-                });
-                this.triggerPreviewUpdate();
-              }}
-              title="Reset to default (3px)"
-            >
-              <ha-icon icon="mdi:refresh"></ha-icon>
-            </button>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          localize('editor.modules.people.border_width', lang, 'Border Width'),
+          '',
+          avatarSettings.border_width ?? 3,
+          3,
+          0, 10, 1,
+          (v: number) => { updateModule({ avatar_settings: { ...avatarSettings, border_width: v } }); this.triggerPreviewUpdate(); },
+          'px'
+        )}
 
         <!-- Use State Color -->
-        <div class="field-container">
-          <ha-form
-            .hass=${hass}
-            .data=${{ use_state_color: avatarSettings.use_state_color !== false }}
-            .schema=${[
-              {
-                name: 'use_state_color',
-                label: localize(
-                  'editor.modules.people.use_state_color',
-                  lang,
-                  'Use State-Based Border Color'
-                ),
-                description: localize(
-                  'editor.modules.people.use_state_color_desc',
-                  lang,
-                  'Change border color based on home/away status'
-                ),
-                selector: { boolean: {} },
-              },
-            ]}
-            .computeLabel=${(schema: any) => schema.label}
-            .computeDescription=${(schema: any) => schema.description}
-            @value-changed=${(e: CustomEvent) => {
-              updateModule({
-                avatar_settings: {
-                  ...avatarSettings,
-                  use_state_color: e.detail.value.use_state_color,
-                },
-              });
-              this.triggerPreviewUpdate();
-            }}
-          ></ha-form>
-        </div>
+        ${this.renderFieldSection(
+          localize('editor.modules.people.use_state_color', lang, 'Use State-Based Border Color'),
+          localize('editor.modules.people.use_state_color_desc', lang, 'Change border color based on home/away status'),
+          hass,
+          { use_state_color: avatarSettings.use_state_color !== false },
+          [{ name: 'use_state_color', selector: { boolean: {} } }],
+          (e: CustomEvent) => {
+            updateModule({ avatar_settings: { ...avatarSettings, use_state_color: e.detail.value.use_state_color } });
+            this.triggerPreviewUpdate();
+          }
+        )}
 
         ${avatarSettings.use_state_color
           ? html`
@@ -596,39 +463,17 @@ export class UltraPeopleModule extends BaseUltraModule {
             `}
 
         <!-- Status Badge -->
-        <div class="field-container">
-          <ha-form
-            .hass=${hass}
-            .data=${{ show_status_badge: avatarSettings.show_status_badge !== false }}
-            .schema=${[
-              {
-                name: 'show_status_badge',
-                label: localize(
-                  'editor.modules.people.show_status_badge',
-                  lang,
-                  'Show Status Badge'
-                ),
-                description: localize(
-                  'editor.modules.people.show_status_badge_desc',
-                  lang,
-                  'Show home/away indicator on avatar'
-                ),
-                selector: { boolean: {} },
-              },
-            ]}
-            .computeLabel=${(schema: any) => schema.label}
-            .computeDescription=${(schema: any) => schema.description}
-            @value-changed=${(e: CustomEvent) => {
-              updateModule({
-                avatar_settings: {
-                  ...avatarSettings,
-                  show_status_badge: e.detail.value.show_status_badge,
-                },
-              });
-              this.triggerPreviewUpdate();
-            }}
-          ></ha-form>
-        </div>
+        ${this.renderFieldSection(
+          localize('editor.modules.people.show_status_badge', lang, 'Show Status Badge'),
+          localize('editor.modules.people.show_status_badge_desc', lang, 'Show home/away indicator on avatar'),
+          hass,
+          { show_status_badge: avatarSettings.show_status_badge !== false },
+          [{ name: 'show_status_badge', selector: { boolean: {} } }],
+          (e: CustomEvent) => {
+            updateModule({ avatar_settings: { ...avatarSettings, show_status_badge: e.detail.value.show_status_badge } });
+            this.triggerPreviewUpdate();
+          }
+        )}
 
         ${avatarSettings.show_status_badge
           ? html`
@@ -668,14 +513,21 @@ export class UltraPeopleModule extends BaseUltraModule {
   private _renderBannerSettingsSection(
     module: PeopleModule,
     hass: HomeAssistant,
+    config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void,
     lang: string
   ): TemplateResult {
     const bannerSettings = module.banner_settings || this.createDefault().banner_settings!;
 
     return html`
-      <div class="settings-section">
-        <div class="section-title">
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+        >
           ${localize('editor.modules.people.banner_settings', lang, 'Banner Settings')}
         </div>
 
@@ -794,164 +646,40 @@ export class UltraPeopleModule extends BaseUltraModule {
         ${bannerSettings.background_type === 'entity'
           ? html`
               <div class="field-container">
-                <ha-form
-                  .hass=${hass}
-                  .data=${{ entity: bannerSettings.background_entity || '' }}
-                  .schema=${[
-                    {
-                      name: 'entity',
-                      label: localize(
-                        'editor.modules.people.background_entity',
-                        lang,
-                        'Entity with Picture'
-                      ),
-                      selector: { entity: {} },
-                    },
-                  ]}
-                  .computeLabel=${(schema: any) => schema.label}
-                  @value-changed=${(e: CustomEvent) => {
-                    updateModule({
-                      banner_settings: {
-                        ...bannerSettings,
-                        background_entity: e.detail.value.entity,
-                      },
-                    });
+                ${this.renderEntityPickerWithVariables(
+                  hass, config, 'entity', bannerSettings.background_entity || '',
+                  (value: string) => {
+                    updateModule({ banner_settings: { ...bannerSettings, background_entity: value } });
                     this.triggerPreviewUpdate();
-                  }}
-                ></ha-form>
+                  },
+                  undefined,
+                  localize('editor.modules.people.background_entity', lang, 'Entity with Picture')
+                )}
               </div>
             `
           : ''}
 
         <!-- Banner Height -->
-        <div class="field-container">
-          <div class="field-title">
-            ${localize('editor.modules.people.banner_height', lang, 'Banner Height')}
-          </div>
-          <div class="number-range-control">
-            <input
-              type="range"
-              class="range-slider"
-              min="60"
-              max="300"
-              step="10"
-              .value="${bannerSettings.banner_height || 120}"
-              @input=${(e: Event) => {
-                const banner_height = Number((e.target as HTMLInputElement).value);
-                updateModule({
-                  banner_settings: { ...bannerSettings, banner_height },
-                });
-                this.triggerPreviewUpdate();
-              }}
-            />
-            <input
-              type="number"
-              class="range-input"
-              min="60"
-              max="400"
-              step="10"
-              .value="${bannerSettings.banner_height || 120}"
-              @input=${(e: Event) => {
-                const banner_height = Number((e.target as HTMLInputElement).value);
-                if (!isNaN(banner_height)) {
-                  updateModule({
-                    banner_settings: { ...bannerSettings, banner_height },
-                  });
-                  this.triggerPreviewUpdate();
-                }
-              }}
-              @keydown=${(e: KeyboardEvent) => {
-                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                  e.preventDefault();
-                  const currentValue = bannerSettings.banner_height || 120;
-                  const increment = e.key === 'ArrowUp' ? 10 : -10;
-                  const newValue = Math.max(60, Math.min(400, currentValue + increment));
-                  updateModule({
-                    banner_settings: { ...bannerSettings, banner_height: newValue },
-                  });
-                  this.triggerPreviewUpdate();
-                }
-              }}
-            />
-            <button
-              class="range-reset-btn"
-              @click=${() => {
-                updateModule({
-                  banner_settings: { ...bannerSettings, banner_height: 120 },
-                });
-                this.triggerPreviewUpdate();
-              }}
-              title="Reset to default (120px)"
-            >
-              <ha-icon icon="mdi:refresh"></ha-icon>
-            </button>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          localize('editor.modules.people.banner_height', lang, 'Banner Height'),
+          '',
+          bannerSettings.banner_height ?? 120,
+          120,
+          60, 300, 10,
+          (v: number) => { updateModule({ banner_settings: { ...bannerSettings, banner_height: v } }); this.triggerPreviewUpdate(); },
+          'px'
+        )}
 
         <!-- Blur Amount -->
-        <div class="field-container">
-          <div class="field-title">
-            ${localize('editor.modules.people.blur_amount', lang, 'Blur Amount')}
-          </div>
-          <div class="number-range-control">
-            <input
-              type="range"
-              class="range-slider"
-              min="0"
-              max="20"
-              step="1"
-              .value="${bannerSettings.background_blur || 0}"
-              @input=${(e: Event) => {
-                const background_blur = Number((e.target as HTMLInputElement).value);
-                updateModule({
-                  banner_settings: { ...bannerSettings, background_blur },
-                });
-                this.triggerPreviewUpdate();
-              }}
-            />
-            <input
-              type="number"
-              class="range-input"
-              min="0"
-              max="30"
-              step="1"
-              .value="${bannerSettings.background_blur || 0}"
-              @input=${(e: Event) => {
-                const background_blur = Number((e.target as HTMLInputElement).value);
-                if (!isNaN(background_blur)) {
-                  updateModule({
-                    banner_settings: { ...bannerSettings, background_blur },
-                  });
-                  this.triggerPreviewUpdate();
-                }
-              }}
-              @keydown=${(e: KeyboardEvent) => {
-                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                  e.preventDefault();
-                  const currentValue = bannerSettings.background_blur || 0;
-                  const increment = e.key === 'ArrowUp' ? 1 : -1;
-                  const newValue = Math.max(0, Math.min(30, currentValue + increment));
-                  updateModule({
-                    banner_settings: { ...bannerSettings, background_blur: newValue },
-                  });
-                  this.triggerPreviewUpdate();
-                }
-              }}
-            />
-            <button
-              class="range-reset-btn"
-              @click=${() => {
-                updateModule({
-                  banner_settings: { ...bannerSettings, background_blur: 0 },
-                });
-                this.triggerPreviewUpdate();
-              }}
-              title="Reset to default (0px)"
-            >
-              <ha-icon icon="mdi:refresh"></ha-icon>
-            </button>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          localize('editor.modules.people.blur_amount', lang, 'Blur Amount'),
+          '',
+          bannerSettings.background_blur ?? 0,
+          0,
+          0, 20, 1,
+          (v: number) => { updateModule({ banner_settings: { ...bannerSettings, background_blur: v } }); this.triggerPreviewUpdate(); },
+          'px'
+        )}
 
         <!-- Banner Border Radius -->
         <div class="field-container">
@@ -1000,73 +728,27 @@ export class UltraPeopleModule extends BaseUltraModule {
           ${bannerSettings.corners_linked !== false
             ? html`
                 <!-- All corners linked - single slider -->
-                <div class="number-range-control">
-                  <input
-                    type="range"
-                    class="range-slider"
-                    min="0"
-                    max="48"
-                    step="1"
-                    value="${bannerSettings.border_radius || 0}"
-                    @input=${(e: Event) => {
-                      const radius = Number((e.target as HTMLInputElement).value);
-                      updateModule({
-                        banner_settings: {
-                          ...bannerSettings,
-                          border_radius: radius,
-                          border_radius_top_left: radius,
-                          border_radius_top_right: radius,
-                          border_radius_bottom_left: radius,
-                          border_radius_bottom_right: radius,
-                        },
-                      });
-                      this.triggerPreviewUpdate();
-                    }}
-                  />
-                  <input
-                    type="number"
-                    class="range-input"
-                    min="0"
-                    max="48"
-                    step="1"
-                    value="${bannerSettings.border_radius || 0}"
-                    @input=${(e: Event) => {
-                      const radius = Number((e.target as HTMLInputElement).value);
-                      if (!isNaN(radius)) {
-                        updateModule({
-                          banner_settings: {
-                            ...bannerSettings,
-                            border_radius: radius,
-                            border_radius_top_left: radius,
-                            border_radius_top_right: radius,
-                            border_radius_bottom_left: radius,
-                            border_radius_bottom_right: radius,
-                          },
-                        });
-                        this.triggerPreviewUpdate();
-                      }
-                    }}
-                  />
-                  <button
-                    class="range-reset-btn"
-                    @click=${() => {
-                      updateModule({
-                        banner_settings: {
-                          ...bannerSettings,
-                          border_radius: 0,
-                          border_radius_top_left: 0,
-                          border_radius_top_right: 0,
-                          border_radius_bottom_left: 0,
-                          border_radius_bottom_right: 0,
-                        },
-                      });
-                      this.triggerPreviewUpdate();
-                    }}
-                    title="Reset to 0"
-                  >
-                    <ha-icon icon="mdi:refresh"></ha-icon>
-                  </button>
-                </div>
+                ${this.renderSliderField(
+                  localize('editor.modules.people.border_radius', lang, 'Border Radius'),
+                  '',
+                  bannerSettings.border_radius ?? 0,
+                  0,
+                  0, 48, 1,
+                  (v: number) => {
+                    updateModule({
+                      banner_settings: {
+                        ...bannerSettings,
+                        border_radius: v,
+                        border_radius_top_left: v,
+                        border_radius_top_right: v,
+                        border_radius_bottom_left: v,
+                        border_radius_bottom_right: v,
+                      },
+                    });
+                    this.triggerPreviewUpdate();
+                  },
+                  'px'
+                )}
               `
             : html`
                 <!-- Individual corner controls -->
@@ -1175,15 +857,22 @@ export class UltraPeopleModule extends BaseUltraModule {
   private _renderMusicSettingsSection(
     module: PeopleModule,
     hass: HomeAssistant,
+    config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void,
     lang: string
   ): TemplateResult {
     return html`
-      <div class="settings-section">
-        <div class="section-title">
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+        >
           ${localize('editor.modules.people.music_settings', lang, 'Music Settings')}
         </div>
-        <div class="section-description">
+        <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;">
           ${localize(
             'editor.modules.people.music_settings_desc',
             lang,
@@ -1192,135 +881,58 @@ export class UltraPeopleModule extends BaseUltraModule {
         </div>
 
         <!-- Music Toggles -->
-        <ha-form
-          .hass=${hass}
-          .data=${{
+        ${this.renderFieldSection(
+          localize('editor.modules.people.music_display', lang, 'Display Options'),
+          '',
+          hass,
+          {
             music_show_progress: module.music_show_progress !== false,
             music_show_album_art: module.music_show_album_art !== false,
             music_blur_background: module.music_blur_background !== false,
-          }}
-          .schema=${[
+          },
+          [
             { name: 'music_show_progress', label: 'Show Progress Bar', selector: { boolean: {} } },
             { name: 'music_show_album_art', label: 'Show Album Art', selector: { boolean: {} } },
             { name: 'music_blur_background', label: 'Blur Background', selector: { boolean: {} } },
-          ]}
-          .computeLabel=${(schema: any) => schema.label}
-          @value-changed=${(e: CustomEvent) => {
+          ],
+          (e: CustomEvent) => {
             updateModule(e.detail.value);
             this.triggerPreviewUpdate();
-          }}
-        ></ha-form>
+          }
+        )}
 
         <!-- Album Art Blur Amount -->
-        <div class="field-container">
-          <div class="field-title">Album Art Blur</div>
-          <div class="number-range-control">
-            <input
-              type="range"
-              class="range-slider"
-              min="0"
-              max="20"
-              step="1"
-              value="${module.music_album_blur ?? 5}"
-              @input=${(e: Event) => {
-                const value = Number((e.target as HTMLInputElement).value);
-                updateModule({ music_album_blur: value });
-                this.triggerPreviewUpdate();
-              }}
-            />
-            <input
-              type="number"
-              class="range-input"
-              min="0"
-              max="20"
-              step="1"
-              value="${module.music_album_blur ?? 5}"
-              @input=${(e: Event) => {
-                const value = Number((e.target as HTMLInputElement).value);
-                if (!isNaN(value)) {
-                  updateModule({ music_album_blur: value });
-                  this.triggerPreviewUpdate();
-                }
-              }}
-            />
-            <button
-              class="range-reset-btn"
-              @click=${() => {
-                updateModule({ music_album_blur: 5 });
-                this.triggerPreviewUpdate();
-              }}
-              title="Reset to default (5px)"
-            >
-              <ha-icon icon="mdi:refresh"></ha-icon>
-            </button>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          'Album Art Blur',
+          '',
+          module.music_album_blur ?? 5,
+          5,
+          0, 20, 1,
+          (v: number) => { updateModule({ music_album_blur: v }); this.triggerPreviewUpdate(); },
+          'px'
+        )}
 
         <!-- Album Art Opacity -->
-        <div class="field-container">
-          <div class="field-title">Album Art Opacity</div>
-          <div class="number-range-control">
-            <input
-              type="range"
-              class="range-slider"
-              min="0"
-              max="100"
-              step="5"
-              value="${module.music_album_opacity ?? 75}"
-              @input=${(e: Event) => {
-                const value = Number((e.target as HTMLInputElement).value);
-                updateModule({ music_album_opacity: value });
-                this.triggerPreviewUpdate();
-              }}
-            />
-            <input
-              type="number"
-              class="range-input"
-              min="0"
-              max="100"
-              step="5"
-              value="${module.music_album_opacity ?? 75}"
-              @input=${(e: Event) => {
-                const value = Number((e.target as HTMLInputElement).value);
-                if (!isNaN(value)) {
-                  updateModule({ music_album_opacity: value });
-                  this.triggerPreviewUpdate();
-                }
-              }}
-            />
-            <button
-              class="range-reset-btn"
-              @click=${() => {
-                updateModule({ music_album_opacity: 75 });
-                this.triggerPreviewUpdate();
-              }}
-              title="Reset to default (75%)"
-            >
-              <ha-icon icon="mdi:refresh"></ha-icon>
-            </button>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          'Album Art Opacity',
+          '',
+          module.music_album_opacity ?? 75,
+          75,
+          0, 100, 5,
+          (v: number) => { updateModule({ music_album_opacity: v }); this.triggerPreviewUpdate(); },
+          '%'
+        )}
 
         <!-- Media Player Entity -->
-        <div class="field-container">
-          <div class="field-title">Media Player Entity</div>
-          <ha-form
-            .hass=${hass}
-            .data=${{ entity: module.media_player_entity || '' }}
-            .schema=${[
-              {
-                name: 'entity',
-                label: 'Media Player',
-                selector: { entity: { domain: 'media_player' } },
-              },
-            ]}
-            .computeLabel=${(schema: any) => schema.label}
-            @value-changed=${(e: CustomEvent) => {
-              updateModule({ media_player_entity: e.detail.value.entity });
-              this.triggerPreviewUpdate();
-            }}
-          ></ha-form>
-        </div>
+        ${this.renderEntityPickerWithVariables(
+          hass, config, 'entity', module.media_player_entity || '',
+          (value: string) => {
+            updateModule({ media_player_entity: value });
+            this.triggerPreviewUpdate();
+          },
+          ['media_player'],
+          'Media Player Entity'
+        )}
       </div>
     `;
   }
@@ -1334,128 +946,55 @@ export class UltraPeopleModule extends BaseUltraModule {
     const nameSettings = module.name_settings || this.createDefault().name_settings;
 
     return html`
-      <div class="settings-section">
-        <div class="section-title">
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+        >
           ${localize('editor.modules.people.name_settings', lang, 'Name Settings')}
         </div>
 
         <!-- Show Name -->
-        <div class="field-container">
-          <ha-form
-            .hass=${hass}
-            .data=${{ show_name: nameSettings.show !== false }}
-            .schema=${[
-              {
-                name: 'show_name',
-                label: localize('editor.modules.people.show_name', lang, 'Show Name'),
-                selector: { boolean: {} },
-              },
-            ]}
-            .computeLabel=${(schema: any) => schema.label}
-            @value-changed=${(e: CustomEvent) => {
-              updateModule({
-                name_settings: { ...nameSettings, show: e.detail.value.show_name },
-              });
-              this.triggerPreviewUpdate();
-            }}
-          ></ha-form>
-        </div>
+        ${this.renderFieldSection(
+          localize('editor.modules.people.show_name', lang, 'Show Name'),
+          '',
+          hass,
+          { show_name: nameSettings.show !== false },
+          [{ name: 'show_name', selector: { boolean: {} } }],
+          (e: CustomEvent) => {
+            updateModule({ name_settings: { ...nameSettings, show: e.detail.value.show_name } });
+            this.triggerPreviewUpdate();
+          }
+        )}
 
         ${nameSettings.show
           ? html`
               <!-- Custom Name -->
-              <div class="field-container">
-                <ha-form
-                  .hass=${hass}
-                  .data=${{ custom_name: nameSettings.custom_name || '' }}
-                  .schema=${[
-                    {
-                      name: 'custom_name',
-                      label: localize(
-                        'editor.modules.people.custom_name',
-                        lang,
-                        'Custom Name (leave empty to use friendly name)'
-                      ),
-                      selector: { text: {} },
-                    },
-                  ]}
-                  .computeLabel=${(schema: any) => schema.label}
-                  @value-changed=${(e: CustomEvent) => {
-                    updateModule({
-                      name_settings: {
-                        ...nameSettings,
-                        custom_name: e.detail.value.custom_name,
-                      },
-                    });
-                    this.triggerPreviewUpdate();
-                  }}
-                ></ha-form>
-              </div>
+              ${this.renderFieldSection(
+                localize('editor.modules.people.custom_name', lang, 'Custom Name'),
+                localize('editor.modules.people.custom_name_desc', lang, 'Leave empty to use friendly name'),
+                hass,
+                { custom_name: nameSettings.custom_name || '' },
+                [{ name: 'custom_name', selector: { text: {} } }],
+                (e: CustomEvent) => {
+                  updateModule({ name_settings: { ...nameSettings, custom_name: e.detail.value.custom_name } });
+                  this.triggerPreviewUpdate();
+                }
+              )}
 
               <!-- Font Size -->
-              <div class="field-container">
-                <div class="field-title">
-                  ${localize('editor.modules.people.name_font_size', lang, 'Font Size')}
-                </div>
-                <div class="number-range-control">
-                  <input
-                    type="range"
-                    class="range-slider"
-                    min="12"
-                    max="36"
-                    step="1"
-                    .value="${nameSettings.font_size}"
-                    @input=${(e: Event) => {
-                      const font_size = Number((e.target as HTMLInputElement).value);
-                      updateModule({
-                        name_settings: { ...nameSettings, font_size },
-                      });
-                      this.triggerPreviewUpdate();
-                    }}
-                  />
-                  <input
-                    type="number"
-                    class="range-input"
-                    min="12"
-                    max="48"
-                    step="1"
-                    .value="${nameSettings.font_size}"
-                    @input=${(e: Event) => {
-                      const font_size = Number((e.target as HTMLInputElement).value);
-                      if (!isNaN(font_size)) {
-                        updateModule({
-                          name_settings: { ...nameSettings, font_size },
-                        });
-                        this.triggerPreviewUpdate();
-                      }
-                    }}
-                    @keydown=${(e: KeyboardEvent) => {
-                      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        const currentValue = nameSettings.font_size || 18;
-                        const increment = e.key === 'ArrowUp' ? 1 : -1;
-                        const newValue = Math.max(12, Math.min(48, currentValue + increment));
-                        updateModule({
-                          name_settings: { ...nameSettings, font_size: newValue },
-                        });
-                        this.triggerPreviewUpdate();
-                      }
-                    }}
-                  />
-                  <button
-                    class="range-reset-btn"
-                    @click=${() => {
-                      updateModule({
-                        name_settings: { ...nameSettings, font_size: 18 },
-                      });
-                      this.triggerPreviewUpdate();
-                    }}
-                    title="Reset to default (18px)"
-                  >
-                    <ha-icon icon="mdi:refresh"></ha-icon>
-                  </button>
-                </div>
-              </div>
+              ${this.renderSliderField(
+                localize('editor.modules.people.name_font_size', lang, 'Font Size'),
+                '',
+                nameSettings.font_size ?? 18,
+                18,
+                12, 36, 1,
+                (v: number) => { updateModule({ name_settings: { ...nameSettings, font_size: v } }); this.triggerPreviewUpdate(); },
+                'px'
+              )}
 
               <!-- Name Color -->
               <div class="field-container">
@@ -1467,9 +1006,7 @@ export class UltraPeopleModule extends BaseUltraModule {
                   .defaultValue=${'var(--primary-text-color)'}
                   .hass=${hass}
                   @value-changed=${(e: CustomEvent) => {
-                    updateModule({
-                      name_settings: { ...nameSettings, color: e.detail.value },
-                    });
+                    updateModule({ name_settings: { ...nameSettings, color: e.detail.value } });
                     this.triggerPreviewUpdate();
                   }}
                 ></ultra-color-picker>
@@ -1495,12 +1032,18 @@ export class UltraPeopleModule extends BaseUltraModule {
     const dataItems = this._getDataItemsForLayout(module);
 
     return html`
-      <div class="settings-section data-items-section">
-        <div class="section-title">
+      <div
+        class="settings-section data-items-section"
+        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+        >
           ${localize('editor.modules.people.data_items', lang, 'Data Items')}
           <span class="layout-badge">${module.layout_style}</span>
         </div>
-        <div class="section-description">
+        <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;">
           ${localize(
             'editor.modules.people.data_items_desc',
             lang,
@@ -1633,7 +1176,7 @@ export class UltraPeopleModule extends BaseUltraModule {
   ): TemplateResult {
     return html`
       <!-- Type-specific settings (Entity first) -->
-      ${this._renderTypeSpecificConfig(item, index, module, hass, updateModule, lang)}
+      ${this._renderTypeSpecificConfig(item, index, module, hass, undefined as any, updateModule, lang)}
 
       <!-- Icon and Label settings -->
       <ha-form
@@ -1712,88 +1255,26 @@ export class UltraPeopleModule extends BaseUltraModule {
         </div>
 
         <!-- Icon Size -->
-        <div class="slider-row">
-          <span class="slider-label">Icon Size</span>
-          <div class="number-range-control">
-            <input
-              type="range"
-              class="range-slider"
-              min="12"
-              max="48"
-              step="1"
-              value="${item.icon_size || 18}"
-              @input=${(e: Event) => {
-                const value = parseInt((e.target as HTMLInputElement).value, 10);
-                this._updateDataItem(module, index, { icon_size: value }, updateModule);
-              }}
-            />
-            <input
-              type="number"
-              class="range-input"
-              min="12"
-              max="48"
-              step="1"
-              value="${item.icon_size || 18}"
-              @input=${(e: Event) => {
-                const value = parseInt((e.target as HTMLInputElement).value, 10);
-                if (!isNaN(value)) {
-                  this._updateDataItem(module, index, { icon_size: value }, updateModule);
-                }
-              }}
-            />
-            <button
-              class="range-reset-btn"
-              @click=${() => {
-                this._updateDataItem(module, index, { icon_size: 18 }, updateModule);
-              }}
-              title="Reset to default"
-            >
-              <ha-icon icon="mdi:refresh"></ha-icon>
-            </button>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          'Icon Size',
+          '',
+          item.icon_size ?? 18,
+          18,
+          12, 48, 1,
+          (v: number) => { this._updateDataItem(module, index, { icon_size: v }, updateModule); },
+          'px'
+        )}
 
         <!-- Font Size -->
-        <div class="slider-row">
-          <span class="slider-label">Font Size</span>
-          <div class="number-range-control">
-            <input
-              type="range"
-              class="range-slider"
-              min="10"
-              max="32"
-              step="1"
-              value="${item.font_size || 14}"
-              @input=${(e: Event) => {
-                const value = parseInt((e.target as HTMLInputElement).value, 10);
-                this._updateDataItem(module, index, { font_size: value }, updateModule);
-              }}
-            />
-            <input
-              type="number"
-              class="range-input"
-              min="10"
-              max="32"
-              step="1"
-              value="${item.font_size || 14}"
-              @input=${(e: Event) => {
-                const value = parseInt((e.target as HTMLInputElement).value, 10);
-                if (!isNaN(value)) {
-                  this._updateDataItem(module, index, { font_size: value }, updateModule);
-                }
-              }}
-            />
-            <button
-              class="range-reset-btn"
-              @click=${() => {
-                this._updateDataItem(module, index, { font_size: 14 }, updateModule);
-              }}
-              title="Reset to default"
-            >
-              <ha-icon icon="mdi:refresh"></ha-icon>
-            </button>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          'Font Size',
+          '',
+          item.font_size ?? 14,
+          14,
+          10, 32, 1,
+          (v: number) => { this._updateDataItem(module, index, { font_size: v }, updateModule); },
+          'px'
+        )}
       </div>
     `;
   }
@@ -1803,6 +1284,7 @@ export class UltraPeopleModule extends BaseUltraModule {
     index: number,
     module: PeopleModule,
     hass: HomeAssistant,
+    config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void,
     lang: string
   ): TemplateResult {
@@ -1812,52 +1294,30 @@ export class UltraPeopleModule extends BaseUltraModule {
       case 'toggle':
         return html`
           <div class="config-row">
-            <ha-form
-              .hass=${hass}
-              .data=${{ entity: item.entity || '' }}
-              .schema=${[
-                {
-                  name: 'entity',
-                  label: 'Entity',
-                  selector: { entity: {} },
-                },
-              ]}
-              .computeLabel=${(schema: any) => schema.label}
-              @value-changed=${(e: CustomEvent) => {
-                this._updateDataItem(
-                  module,
-                  index,
-                  { entity: e.detail.value.entity },
-                  updateModule
-                );
-              }}
-            ></ha-form>
+            ${this.renderEntityPickerWithVariables(
+              hass, config, 'entity', item.entity || '',
+              (value: string) => this._updateDataItem(module, index, { entity: value }, updateModule),
+              undefined,
+              'Entity'
+            )}
           </div>
         `;
 
       case 'attribute':
         return html`
           <div class="config-row">
-            <ha-form
-              .hass=${hass}
-              .data=${{ entity: item.entity || '', attribute: item.attribute || '' }}
-              .schema=${[
-                {
-                  name: 'entity',
-                  label: 'Entity',
-                  selector: { entity: {} },
-                },
-                {
-                  name: 'attribute',
-                  label: 'Attribute Name',
-                  selector: { text: {} },
-                },
-              ]}
-              .computeLabel=${(schema: any) => schema.label}
-              @value-changed=${(e: CustomEvent) => {
-                this._updateDataItem(module, index, e.detail.value, updateModule);
-              }}
-            ></ha-form>
+            ${this.renderEntityPickerWithVariables(
+              hass, config, 'entity', item.entity || '',
+              (value: string) => this._updateDataItem(module, index, { entity: value }, updateModule),
+              undefined,
+              'Entity'
+            )}
+            ${this.renderFieldSection(
+              'Attribute Name', '',
+              hass, { attribute: item.attribute || '' },
+              [{ name: 'attribute', selector: { text: {} } }],
+              (e: CustomEvent) => this._updateDataItem(module, index, e.detail.value, updateModule)
+            )}
           </div>
         `;
 
@@ -2020,15 +1480,22 @@ export class UltraPeopleModule extends BaseUltraModule {
   private _renderAssociatedEntitiesSection(
     module: PeopleModule,
     hass: HomeAssistant,
+    config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void,
     lang: string
   ): TemplateResult {
     return html`
-      <div class="settings-section">
-        <div class="section-title">
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+        >
           ${localize('editor.modules.people.associated_entities', lang, 'Associated Entities')}
         </div>
-        <div class="section-description">
+        <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;">
           ${localize(
             'editor.modules.people.associated_entities_desc',
             lang,
@@ -2037,33 +1504,18 @@ export class UltraPeopleModule extends BaseUltraModule {
         </div>
 
         <div class="field-container">
-          <ha-form
-            .hass=${hass}
-            .data=${{
-              battery_entity: module.battery_entity || '',
-              media_player_entity: module.media_player_entity || '',
-            }}
-            .schema=${[
-              {
-                name: 'battery_entity',
-                label: localize('editor.modules.people.battery_entity', lang, 'Battery Entity'),
-                description: 'Sensor or device tracker with battery attribute',
-                selector: { entity: { domain: ['sensor', 'device_tracker'] } },
-              },
-              {
-                name: 'media_player_entity',
-                label: localize('editor.modules.people.media_player', lang, 'Media Player'),
-                description: 'Media player for music display',
-                selector: { entity: { domain: 'media_player' } },
-              },
-            ]}
-            .computeLabel=${(schema: any) => schema.label}
-            .computeDescription=${(schema: any) => schema.description}
-            @value-changed=${(e: CustomEvent) => {
-              updateModule(e.detail.value);
-              this.triggerPreviewUpdate();
-            }}
-          ></ha-form>
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'battery_entity', module.battery_entity || '',
+            (value: string) => { updateModule({ battery_entity: value }); this.triggerPreviewUpdate(); },
+            ['sensor', 'device_tracker'],
+            localize('editor.modules.people.battery_entity', lang, 'Battery Entity')
+          )}
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'media_player_entity', module.media_player_entity || '',
+            (value: string) => { updateModule({ media_player_entity: value }); this.triggerPreviewUpdate(); },
+            ['media_player'],
+            localize('editor.modules.people.media_player', lang, 'Media Player')
+          )}
         </div>
       </div>
     `;
@@ -2076,183 +1528,51 @@ export class UltraPeopleModule extends BaseUltraModule {
     lang: string
   ): TemplateResult {
     return html`
-      <div class="settings-section">
-        <div class="section-title">
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+        >
           ${localize('editor.modules.people.layout_spacing', lang, 'Layout & Spacing')}
         </div>
 
         <!-- Gap -->
-        <div class="field-container">
-          <div class="field-title">${localize('editor.modules.people.gap', lang, 'Gap')}</div>
-          <div class="number-range-control">
-            <input
-              type="range"
-              class="range-slider"
-              min="0"
-              max="48"
-              step="2"
-              .value="${module.gap || 12}"
-              @input=${(e: Event) => {
-                updateModule({ gap: Number((e.target as HTMLInputElement).value) });
-                this.triggerPreviewUpdate();
-              }}
-            />
-            <input
-              type="number"
-              class="range-input"
-              min="0"
-              max="48"
-              step="2"
-              .value="${module.gap || 12}"
-              @input=${(e: Event) => {
-                const gap = Number((e.target as HTMLInputElement).value);
-                if (!isNaN(gap)) {
-                  updateModule({ gap });
-                  this.triggerPreviewUpdate();
-                }
-              }}
-              @keydown=${(e: KeyboardEvent) => {
-                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                  e.preventDefault();
-                  const currentValue = module.gap || 12;
-                  const increment = e.key === 'ArrowUp' ? 2 : -2;
-                  const newValue = Math.max(0, Math.min(48, currentValue + increment));
-                  updateModule({ gap: newValue });
-                  this.triggerPreviewUpdate();
-                }
-              }}
-            />
-            <button
-              class="range-reset-btn"
-              @click=${() => {
-                updateModule({ gap: 12 });
-                this.triggerPreviewUpdate();
-              }}
-              title="Reset to default (12px)"
-            >
-              <ha-icon icon="mdi:refresh"></ha-icon>
-            </button>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          localize('editor.modules.people.gap', lang, 'Gap'),
+          '',
+          module.gap ?? 12,
+          12,
+          0, 48, 2,
+          (v: number) => { updateModule({ gap: v }); this.triggerPreviewUpdate(); },
+          'px'
+        )}
 
         ${module.layout_style !== 'horizontal_detailed' && module.layout_style !== 'music_overlay'
           ? html`
               <!-- Data Items Gap -->
-              <div class="field-container">
-                <div class="field-title">
-                  ${localize('editor.modules.people.data_items_gap', lang, 'Data Items Gap')}
-                </div>
-                <div class="number-range-control">
-                  <input
-                    type="range"
-                    class="range-slider"
-                    min="0"
-                    max="32"
-                    step="2"
-                    .value="${module.data_items_gap || 8}"
-                    @input=${(e: Event) => {
-                      updateModule({
-                        data_items_gap: Number((e.target as HTMLInputElement).value),
-                      });
-                      this.triggerPreviewUpdate();
-                    }}
-                  />
-                  <input
-                    type="number"
-                    class="range-input"
-                    min="0"
-                    max="32"
-                    step="2"
-                    .value="${module.data_items_gap || 8}"
-                    @input=${(e: Event) => {
-                      const data_items_gap = Number((e.target as HTMLInputElement).value);
-                      if (!isNaN(data_items_gap)) {
-                        updateModule({ data_items_gap });
-                        this.triggerPreviewUpdate();
-                      }
-                    }}
-                    @keydown=${(e: KeyboardEvent) => {
-                      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        const currentValue = module.data_items_gap || 8;
-                        const increment = e.key === 'ArrowUp' ? 2 : -2;
-                        const newValue = Math.max(0, Math.min(32, currentValue + increment));
-                        updateModule({ data_items_gap: newValue });
-                        this.triggerPreviewUpdate();
-                      }
-                    }}
-                  />
-                  <button
-                    class="range-reset-btn"
-                    @click=${() => {
-                      updateModule({ data_items_gap: 8 });
-                      this.triggerPreviewUpdate();
-                    }}
-                    title="Reset to default (8px)"
-                  >
-                    <ha-icon icon="mdi:refresh"></ha-icon>
-                  </button>
-                </div>
-              </div>
+              ${this.renderSliderField(
+                localize('editor.modules.people.data_items_gap', lang, 'Data Items Gap'),
+                '',
+                module.data_items_gap ?? 8,
+                8,
+                0, 32, 2,
+                (v: number) => { updateModule({ data_items_gap: v }); this.triggerPreviewUpdate(); },
+                'px'
+              )}
 
               <!-- Data Area Height -->
-              <div class="field-container">
-                <div class="field-title">
-                  ${localize('editor.modules.people.data_area_height', lang, 'Data Area Height')}
-                </div>
-                <div class="field-description">Set to 0 for auto height</div>
-                <div class="number-range-control">
-                  <input
-                    type="range"
-                    class="range-slider"
-                    min="0"
-                    max="200"
-                    step="4"
-                    .value="${module.data_area_height || 0}"
-                    @input=${(e: Event) => {
-                      updateModule({
-                        data_area_height: Number((e.target as HTMLInputElement).value),
-                      });
-                      this.triggerPreviewUpdate();
-                    }}
-                  />
-                  <input
-                    type="number"
-                    class="range-input"
-                    min="0"
-                    max="300"
-                    step="4"
-                    .value="${module.data_area_height || 0}"
-                    @input=${(e: Event) => {
-                      const data_area_height = Number((e.target as HTMLInputElement).value);
-                      if (!isNaN(data_area_height)) {
-                        updateModule({ data_area_height });
-                        this.triggerPreviewUpdate();
-                      }
-                    }}
-                    @keydown=${(e: KeyboardEvent) => {
-                      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        const currentValue = module.data_area_height || 0;
-                        const increment = e.key === 'ArrowUp' ? 4 : -4;
-                        const newValue = Math.max(0, Math.min(300, currentValue + increment));
-                        updateModule({ data_area_height: newValue });
-                        this.triggerPreviewUpdate();
-                      }
-                    }}
-                  />
-                  <button
-                    class="range-reset-btn"
-                    @click=${() => {
-                      updateModule({ data_area_height: 0 });
-                      this.triggerPreviewUpdate();
-                    }}
-                    title="Reset to auto (0px)"
-                  >
-                    <ha-icon icon="mdi:refresh"></ha-icon>
-                  </button>
-                </div>
-              </div>
+              ${this.renderSliderField(
+                localize('editor.modules.people.data_area_height', lang, 'Data Area Height'),
+                'Set to 0 for auto height',
+                module.data_area_height ?? 0,
+                0,
+                0, 200, 4,
+                (v: number) => { updateModule({ data_area_height: v }); this.triggerPreviewUpdate(); },
+                'px'
+              )}
 
               <!-- Data Items Direction -->
               <div class="field-container">
@@ -2331,18 +1651,19 @@ export class UltraPeopleModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const peopleModule = module as PeopleModule;
+    const lang = hass?.locale?.language || 'en';
 
     // Check if entity is configured
     if (!peopleModule.person_entity) {
       return this.renderGradientErrorState(
-        'Select Person Entity',
-        'Choose a person entity in the General tab'
+        localize('editor.people.error_no_entity', lang, 'Select Person Entity'),
+        localize('editor.people.error_no_entity_desc', lang, 'Choose a person entity in the General tab')
       );
     }
 
     const personState = hass.states[peopleModule.person_entity];
     if (!personState) {
-      return this.renderGradientErrorState('Entity Not Found', peopleModule.person_entity);
+      return this.renderGradientErrorState(localize('editor.people.error_not_found', lang, 'Entity Not Found'), peopleModule.person_entity);
     }
 
     // Create gesture handlers
@@ -3295,187 +2616,8 @@ export class UltraPeopleModule extends BaseUltraModule {
   // ============================================
 
   getStyles(): string {
-    return this._getPreviewStyles();
-  }
-
-  private _getEditorStyles(): string {
     return `
-      .module-general-settings {
-        padding: 0;
-      }
-
-      .settings-section {
-        background: var(--card-background-color, var(--ha-card-background));
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 16px;
-        border: 1px solid var(--divider-color);
-      }
-
-      .section-title {
-        font-size: 14px;
-        font-weight: 600;
-        text-transform: uppercase;
-        color: var(--primary-color);
-        margin-bottom: 8px;
-        letter-spacing: 0.5px;
-      }
-
-      .section-description {
-        font-size: 12px;
-        color: var(--secondary-text-color);
-        margin-bottom: 16px;
-      }
-
-      .field-container {
-        margin-bottom: 16px;
-      }
-
-      .field-title {
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--primary-text-color);
-        margin-bottom: 8px;
-      }
-
-      /* Number Range Control - Standard slider pattern */
-      .number-range-control {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-
-      .range-slider {
-        flex: 1;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-        height: 6px;
-        border-radius: 3px;
-        background: var(--divider-color, #424242);
-        outline: none;
-        cursor: pointer;
-      }
-
-      .range-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: var(--primary-color, #03a9f4);
-        cursor: pointer;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .range-slider::-moz-range-thumb {
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: var(--primary-color, #03a9f4);
-        cursor: pointer;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .range-slider::-moz-range-track {
-        height: 6px;
-        border-radius: 3px;
-        background: var(--divider-color, #424242);
-        cursor: pointer;
-      }
-
-      .range-input {
-        width: 72px !important;
-        max-width: 72px !important;
-        min-width: 72px !important;
-        padding: 4px 6px !important;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-        -moz-appearance: textfield;
-      }
-
-      .range-input::-webkit-outer-spin-button,
-      .range-input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-      }
-
-      .range-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-      }
-
-      .range-reset-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-
-      .range-reset-btn:hover {
-        background: var(--primary-color);
-        color: var(--text-primary-color, white);
-        border-color: var(--primary-color);
-      }
-
-      .range-reset-btn ha-icon {
-        --mdc-icon-size: 18px;
-      }
-
-      .color-row {
-        display: flex;
-        gap: 16px;
-      }
-
-      .color-field {
-        flex: 1;
-      }
-
-      .position-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-      }
-
-      .position-option {
-        padding: 8px;
-        text-align: center;
-        border: 1px solid var(--divider-color);
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 12px;
-        text-transform: capitalize;
-        transition: all 0.2s ease;
-      }
-
-      .position-option:hover {
-        border-color: var(--primary-color);
-      }
-
-      .position-option.selected {
-        background: var(--primary-color);
-        color: white;
-        border-color: var(--primary-color);
-      }
+      ${BaseUltraModule.getSliderStyles()}
 
       .layout-style-grid {
         display: grid;
@@ -3548,7 +2690,89 @@ export class UltraPeopleModule extends BaseUltraModule {
         --mdc-icon-size: 16px;
       }
 
-      /* Data Items Builder Styles */
+      .position-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+
+      .position-option {
+        padding: 8px;
+        text-align: center;
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        text-transform: capitalize;
+        transition: all 0.2s ease;
+      }
+
+      .position-option:hover {
+        border-color: var(--primary-color);
+      }
+
+      .position-option.selected {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+      }
+
+      .color-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .color-field {
+        flex: 1;
+      }
+
+      .color-label {
+        font-size: 13px;
+        color: var(--primary-text-color);
+      }
+
+      .slider-row {
+        margin-bottom: 12px;
+      }
+
+      .slider-label {
+        display: block;
+        font-size: 13px;
+        color: var(--primary-text-color);
+        margin-bottom: 8px;
+      }
+
+      .layout-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        background: rgba(var(--rgb-primary-color), 0.15);
+        color: var(--primary-color);
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-left: 8px;
+        vertical-align: middle;
+      }
+
+      .section-subtitle {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--primary-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+      }
+
+      .styling-section {
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid var(--divider-color);
+      }
+
+      /* Data Items Builder */
       .data-items-section {
         background: var(--secondary-background-color);
       }
@@ -3560,7 +2784,6 @@ export class UltraPeopleModule extends BaseUltraModule {
         margin-bottom: 12px;
       }
 
-      /* Data item expansion panels */
       ha-expansion-panel.data-item-panel {
         --ha-card-border-radius: 8px;
         --expansion-panel-summary-padding: 0;
@@ -3675,59 +2898,6 @@ export class UltraPeopleModule extends BaseUltraModule {
         padding-top: 8px;
       }
 
-      /* Styling section for data items */
-      .styling-section {
-        margin-top: 16px;
-        padding-top: 12px;
-        border-top: 1px solid var(--divider-color);
-      }
-
-      .section-subtitle {
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--primary-color);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 12px;
-      }
-
-      .layout-badge {
-        display: inline-block;
-        padding: 2px 8px;
-        background: rgba(var(--rgb-primary-color), 0.15);
-        color: var(--primary-color);
-        border-radius: 12px;
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        margin-left: 8px;
-        vertical-align: middle;
-      }
-
-      .color-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 12px;
-      }
-
-      .color-label {
-        font-size: 13px;
-        color: var(--primary-text-color);
-      }
-
-      .slider-row {
-        margin-bottom: 12px;
-      }
-
-      .slider-label {
-        display: block;
-        font-size: 13px;
-        color: var(--primary-text-color);
-        margin-bottom: 8px;
-      }
-
-      /* Corner radius controls */
       .field-title-row {
         display: flex;
         align-items: center;
@@ -3780,21 +2950,10 @@ export class UltraPeopleModule extends BaseUltraModule {
         gap: 8px;
       }
 
-      .corner-control.top-left {
-        justify-content: flex-start;
-      }
-
-      .corner-control.top-right {
-        justify-content: flex-end;
-      }
-
-      .corner-control.bottom-left {
-        justify-content: flex-start;
-      }
-
-      .corner-control.bottom-right {
-        justify-content: flex-end;
-      }
+      .corner-control.top-left { justify-content: flex-start; }
+      .corner-control.top-right { justify-content: flex-end; }
+      .corner-control.bottom-left { justify-content: flex-start; }
+      .corner-control.bottom-right { justify-content: flex-end; }
 
       .corner-label {
         font-size: 11px;
@@ -3836,14 +2995,13 @@ export class UltraPeopleModule extends BaseUltraModule {
         transition: all 0.2s ease;
       }
 
-      .add-item-select:hover {
+      .add-item-select:hover,
+      .add-item-select:focus {
         border-color: var(--primary-color);
+        outline: none;
       }
 
-      .add-item-select:focus {
-        outline: none;
-        border-color: var(--primary-color);
-      }
+      ${this._getPreviewStyles()}
     `;
   }
 

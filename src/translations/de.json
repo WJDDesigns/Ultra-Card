@@ -77,7 +77,9 @@
       "save": "Save",
       "delete": "Delete",
       "edit": "Edit",
-      "reset": "Reset"
+      "reset": "Reset",
+      "error_configure_entity": "Configure Entity",
+      "error_entity_not_found": "Entity Not Found"
     },
     "horizontal": {
       "layout": {
@@ -214,7 +216,14 @@
       "entity_replace_pick_two": "Pick two different entities.",
       "entity_replace_none": "No references to \"{id}\" in this layout.",
       "entity_replace_invalid": "Replace failed: layout became invalid.",
-      "entity_replace_done": "Replaced {n} occurrence(s) in layout ({from} → {to})."
+      "entity_replace_done": "Replaced {n} occurrence(s) in layout ({from} → {to}).",
+      "keyboard_shortcuts": "Keyboard Shortcuts",
+      "keyboard_exit_fullscreen": "Exit Full Screen",
+      "getting_started": "Getting Started",
+      "getting_started_preset": "Start from a Preset",
+      "getting_started_module": "Add Your First Module",
+      "getting_started_hub": "Explore the Hub",
+      "getting_started_dismiss": "Don't show again"
     },
     "layout_logic": {
       "display_title": "Dieses Element anzeigen",
@@ -336,7 +345,8 @@
       "active_state": "Aktiver Zustand",
       "active_state_desc": "Zustandswert gilt als \"aktiv\" (leer lassen, um den tatsächlichen Entitätszustand zu verwenden)",
       "icon_section": {
-        "title": "Symbol-Konfiguration"
+        "title": "Symbol-Konfiguration",
+        "show_icon": "Show Icon"
       },
       "inactive_icon": "Inaktives Symbol",
       "inactive_icon_desc": "Symbol, das bei Inaktivität angezeigt wird",
@@ -359,7 +369,8 @@
       "inactive_icon_background_color": "Inaktive Symbolhintergrundfarbe",
       "active_icon_background_color": "Aktive Symbolhintergrundfarbe",
       "name_section": {
-        "title": "Name-Konfiguration"
+        "title": "Name-Konfiguration",
+        "show_name": "Show Name"
       },
       "inactive_name": "Inaktiver Name",
       "inactive_name_desc": "Benutzerdefinierter Name bei Inaktivität",
@@ -378,7 +389,8 @@
       "inactive_name_color": "Inaktive Namefarbe",
       "active_name_color": "Aktive Namefarbe",
       "state_section": {
-        "title": "Zustand-Konfiguration"
+        "title": "Zustand-Konfiguration",
+        "show_state": "Show State"
       },
       "inactive_state_color": "Inaktive Zustandsfarbe",
       "active_state_color": "Aktive Zustandsfarbe",
@@ -423,7 +435,16 @@
       "animation_rotate_right": "Rechts drehen",
       "animation_fade": "Ausblenden",
       "animation_scale": "Skalieren",
-      "animation_tada": "Tada"
+      "animation_tada": "Tada",
+      "use_state_color_inactive": "Use State Color",
+      "use_state_color_inactive_desc": "Use the entity state color (RGB attributes) for inactive icon color",
+      "hover_effect": "Hover Effect",
+      "hover_effect_desc": "Enable hover animation on mouse over",
+      "ignore_entity_state": "Ignore Entity State Config",
+      "ignore_entity_state_desc": "When enabled, entity state settings above will be ignored and template will control active/inactive state for animations",
+      "error_no_icons": "Add Icons",
+      "error_no_icons_desc": "Configure icons in the General tab",
+      "error_icons_need_entities": "Icons Need Entities"
     },
     "text": {
       "content_section": {
@@ -464,7 +485,11 @@
       "rich_text_content_section": {
         "title": "Rich Text Content",
         "desc": "Use the toolbar to format your text with bold, italic, colors, links and more."
-      }
+      },
+      "error_no_content": "Enter Text Content",
+      "error_no_content_desc": "Add text in the General tab",
+      "error_no_template": "Configure Template",
+      "error_no_template_desc": "Enter template code in the General tab"
     },
     "markdown": {
       "content": {
@@ -480,7 +505,9 @@
       "enable_tables": "Tabellen aktivieren",
       "enable_tables_desc": "Unterstützung für Markdown-Tabellensyntax",
       "code_highlighting": "Code-Hervorhebung",
-      "code_highlighting_desc": "Syntaxhervorhebung für Codeblöcke"
+      "code_highlighting_desc": "Syntaxhervorhebung für Codeblöcke",
+      "error_no_content": "Add Markdown Content",
+      "error_no_content_desc": "Enter markdown content in the General tab"
     },
     "bar": {
       "bar_settings": {
@@ -702,7 +729,11 @@
           "match_value_desc": "Textvergleich mit Zustand oder Attribut",
           "type": "Override-Animationstyp"
         }
-      }
+      },
+      "error_no_entity": "Select Entity",
+      "error_no_entity_desc": "Choose an entity in the General tab",
+      "error_no_range": "Configure Range",
+      "error_no_range_desc": "Set range start and end entities in the General tab"
     },
     "image": {
       "settings": "Bildeinstellungen",
@@ -796,7 +827,12 @@
         "translate_y_desc": "Verschieben Sie das Bild beim Hover vertikal."
       },
       "alt": "Bild",
-      "no_source": "Keine Bildquelle konfiguriert"
+      "no_source": "Keine Bildquelle konfiguriert",
+      "error_no_source": "Configure Image Source",
+      "error_url_desc": "Enter an image URL in the General tab",
+      "error_upload_desc": "Upload an image in the General tab",
+      "error_entity_desc": "Select an image entity in the General tab",
+      "error_attribute_desc": "Select an entity and attribute in the General tab"
     },
     "graphs": {
       "chart_type": {
@@ -854,7 +890,13 @@
         "smooth_lines": "Linien glätten",
         "show_tooltips": "Tooltips anzeigen",
         "add_slice_gap": "Segmentabstand hinzufügen",
-        "show_grid_values": "Show Grid Values"
+        "show_grid_values": "Show Grid Values",
+        "title_font_size": "Title Font Size",
+        "value_font_size": "Value Font Size",
+        "bar_display_limit": "Max Bars to Display",
+        "bar_display_limit_desc": "0 = Unlimited",
+        "show_time_intervals": "Show Time Intervals",
+        "chart_layout": "Chart Layout"
       },
       "agg": {
         "mean": "Durchschnitt",
@@ -961,7 +1003,10 @@
       "forecast_info": {
         "title": "Forecast Display",
         "desc": "Forecasts display all available data from your weather service. The forecast type (hourly/daily) determines the time range shown."
-      }
+      },
+      "error_no_chart_type": "Select Chart Type",
+      "error_no_chart_type_desc": "Choose a chart type in the General tab",
+      "error_no_entities": "Configure Entities"
     },
     "info": {
       "entity_section": {
@@ -1022,7 +1067,10 @@
       "examples_title": "Häufige Beispiele:",
       "example_basic": "Grundwert",
       "example_units": "Mit Einheiten",
-      "example_round": "Auf 1 Dezimalstelle runden"
+      "example_round": "Auf 1 Dezimalstelle runden",
+      "error_no_entities": "Configure Entities",
+      "error_no_entities_desc": "Add info entities in the General tab",
+      "error_entities_need_config": "Entities Need Configuration"
     },
     "button": {
       "basic": {
@@ -1203,7 +1251,11 @@
         "example1_desc": "Kamera anzeigen, wenn das Wetter sonnig ist",
         "example2_desc": "Zwischen Kameras basierend auf einem Input-Bool wechseln",
         "example3_desc": "Input Select verwenden, um die Kamera-Entität zu wählen"
-      }
+      },
+      "error_no_entity": "Select Camera Entity",
+      "error_no_entity_desc": "Choose a camera entity in the General tab",
+      "error_no_template": "Configure Template",
+      "error_no_template_desc": "Enter template code in the General tab"
     },
     "separator": {
       "config": {
@@ -1396,7 +1448,10 @@
       "icon_section": "Icon",
       "icon_size": "Icon Size",
       "icon_size_placeholder": "24px (default), 2rem, 32px",
-      "reset_icon_size": "Reset icon size to default"
+      "reset_icon_size": "Reset icon size to default",
+      "responsive_overrides": "Responsive Overrides",
+      "responsive_hint": "Enable to set different styles for laptop, tablet, and mobile devices.",
+      "clear_device_overrides": "Clear {device} overrides"
     },
     "modules": {
       "text": "Text",
@@ -1622,7 +1677,11 @@
       "keep_selection_state": {
         "title": "Keep Selection State",
         "desc": "Remember and display the last selected option (recommended for scene selectors)"
-      }
+      },
+      "error_no_entity": "Configure Source Entity",
+      "error_no_entity_desc": "Select a source entity in the General tab",
+      "error_no_options": "Add Options",
+      "error_no_options_desc": "Configure dropdown options in the General tab or enable Unified Template"
     },
     "favorite_colors": {
       "title": "Favorite Colors",
@@ -2633,7 +2692,9 @@
       "node_type_home": "Home",
       "node_type_car": "EV Car",
       "node_type_device": "Device",
-      "node_type_custom": "Custom"
+      "node_type_custom": "Custom",
+      "error_no_nodes": "Configure energy nodes",
+      "error_no_nodes_desc": "Add entities for Solar, Grid, Battery and Home in the General tab."
     },
     "living_canvas": {
       "title": "Living Canvas",
@@ -2837,7 +2898,8 @@
       "multiline": "Multiline",
       "multiline_desc": "Allow multiple lines of text (textarea)",
       "rows": "Rows",
-      "rows_desc": "Number of visible text rows"
+      "rows_desc": "Number of visible text rows",
+      "error_configure_entity_desc": "Select an input_text entity in the General tab"
     },
     "datetime_input": {
       "entity": {
@@ -2871,7 +2933,8 @@
       "font_size": "Font Size",
       "font_size_desc": "Font size of the date/time inputs in pixels",
       "text_color": "Text Color",
-      "focus_color": "Focus/Accent Color"
+      "focus_color": "Focus/Accent Color",
+      "error_configure_entity_desc": "Select an input_datetime entity in the General tab"
     },
     "number_input": {
       "entity": {
@@ -2908,7 +2971,8 @@
       "font_size": "Font Size",
       "font_size_desc": "Font size of the input text in pixels",
       "text_color": "Text Color",
-      "focus_color": "Focus/Accent Color"
+      "focus_color": "Focus/Accent Color",
+      "error_configure_entity_desc": "Select an input_number entity in the General tab"
     },
     "slider_input": {
       "entity": {
@@ -2942,7 +3006,8 @@
       "font_size_desc": "Font size of labels and value",
       "slider_color": "Slider Color",
       "track_color": "Track Color",
-      "text_color": "Text Color"
+      "text_color": "Text Color",
+      "error_configure_entity_desc": "Select an input_number entity in the General tab"
     },
     "select_input": {
       "entity": {
@@ -2972,7 +3037,8 @@
       "font_size": "Font Size",
       "font_size_desc": "Font size in pixels",
       "active_color": "Active/Selected Color",
-      "text_color": "Text Color"
+      "text_color": "Text Color",
+      "error_configure_entity_desc": "Select an input_select entity in the General tab"
     },
     "boolean_input": {
       "entity": {
@@ -3009,7 +3075,8 @@
       "font_size_desc": "Font size in pixels",
       "on_color": "On Color",
       "off_color": "Off Color",
-      "text_color": "Text Color"
+      "text_color": "Text Color",
+      "error_configure_entity_desc": "Select an input_boolean entity in the General tab"
     },
     "button_input": {
       "entity": {
@@ -3039,7 +3106,8 @@
       "font_size": "Font Size",
       "font_size_desc": "Font size in pixels",
       "button_color": "Button Color",
-      "text_color": "Text Color"
+      "text_color": "Text Color",
+      "error_configure_entity_desc": "Select an input_button entity in the General tab"
     },
     "counter_input": {
       "entity": {
@@ -3071,7 +3139,8 @@
       "font_size": "Value Font Size",
       "font_size_desc": "Font size of the counter value",
       "button_color": "Button Color",
-      "text_color": "Text Color"
+      "text_color": "Text Color",
+      "error_configure_entity_desc": "Select a counter entity in the General tab"
     },
     "color_input": {
       "mode": {
@@ -3108,7 +3177,163 @@
       "preview_size_desc": "Size of the color preview swatch",
       "font_size": "Font Size",
       "font_size_desc": "Font size in pixels",
-      "text_color": "Text Color"
+      "text_color": "Text Color",
+      "error_configure_entity_desc": "Select an entity in the General tab"
+    },
+    "gauge": {
+      "error_no_entity": "Select Entity",
+      "error_no_entity_desc": "Choose an entity in the General tab",
+      "section_basic": "BASIC CONFIGURATION",
+      "section_value": "VALUE CONFIGURATION",
+      "section_style": "GAUGE STYLE",
+      "section_pointer": "POINTER CONFIGURATION",
+      "section_pointer_desc": "Enable and customize the gauge pointer/needle that indicates the current value.",
+      "section_color": "COLOR CONFIGURATION",
+      "section_display": "DISPLAY CONFIGURATION",
+      "section_ticks": "TICK MARKS",
+      "section_animation": "ANIMATION",
+      "entity": "Entity"
+    },
+    "activity_feed": {
+      "error_waiting_ha": "Waiting for Home Assistant",
+      "error_waiting_ha_desc": "Connecting to entity states...",
+      "error_no_activity": "No Activity",
+      "error_no_activity_desc": "Configure entities or domains in the General tab",
+      "preview": {
+        "title_fallback": "Activity Feed"
+      }
+    },
+    "media_player": {
+      "section_entity": "Entity Configuration",
+      "section_entity_desc": "Select the media player entity to control",
+      "entity": "Media Player Entity",
+      "section_layout": "Layout",
+      "section_layout_desc": "Choose the display layout",
+      "section_display": "Display Options",
+      "section_display_desc": "Choose what elements to show",
+      "section_behavior": "Behavior",
+      "section_behavior_desc": "Control interactive behaviors",
+      "section_visual": "Visual",
+      "section_visual_desc": "Customize the appearance",
+      "error_no_entity": "Configure Entity",
+      "error_no_entity_desc": "Select a media player entity in the General tab"
+    },
+    "slider_control": {
+      "error_no_bars": "Add Bars",
+      "error_no_bars_desc": "Configure slider bars in the General tab",
+      "error_need_entities": "Bars Need Entities"
+    },
+    "vacuum": {
+      "section_entity": "Entity Configuration",
+      "section_entity_desc": "Select the vacuum entity to control",
+      "entity": "Vacuum Entity",
+      "section_animations": "Animations",
+      "section_animations_desc": "Control vacuum animations"
+    },
+    "navigation": {
+      "section_desktop": "DESKTOP MODE",
+      "section_desktop_desc": "Configure navbar appearance and behavior on desktop devices.",
+      "section_mobile": "MOBILE MODE",
+      "section_mobile_desc": "Configure navbar appearance and behavior on mobile devices.",
+      "section_haptics": "HAPTIC FEEDBACK",
+      "section_haptics_desc": "Configure haptic feedback for interactions."
+    },
+    "climate": {
+      "error_no_entity": "No Climate Entity",
+      "error_no_entity_desc": "Select a climate entity in the General tab",
+      "error_not_found": "Entity Not Found"
+    },
+    "people": {
+      "error_no_entity": "Select Person Entity",
+      "error_no_entity_desc": "Choose a person entity in the General tab",
+      "error_not_found": "Entity Not Found"
+    },
+    "virtual_pet": {
+      "error_waiting_ha": "Waiting for Home Assistant",
+      "error_waiting_ha_desc": "Connecting to entity states..."
+    },
+    "calendar": {
+      "error_no_calendars": "Configure Calendars",
+      "error_no_calendars_desc": "Select at least one calendar entity in the General tab"
+    },
+    "dynamic_list": {
+      "error_waiting_ha": "Waiting for Home Assistant",
+      "error_waiting_ha_desc": "This module requires a live connection",
+      "error_no_todo": "No Todo List",
+      "error_no_todo_desc": "Add a to-do list (e.g. Local Todo) or choose one in the General tab. Use \"Default (first available)\" when you have at least one todo entity.",
+      "error_no_todo_entity_desc": "Choose a to-do list entity in the General tab.",
+      "error_add_template": "Add a Template",
+      "error_add_template_todo_desc": "Enter a Jinja2 template in the General tab to map your todo items to modules.",
+      "error_invalid_template": "Invalid Template Output",
+      "error_invalid_template_desc": "Template must output a JSON array via {{ ns.mods | tojson }}.",
+      "error_configure_action": "Configure an Action",
+      "error_configure_action_desc": "Set the Domain and Service in the General tab.",
+      "error_add_template_action_desc": "Enter a Jinja2 template in the General tab to map the service response to modules.",
+      "error_invalid_template_action_desc": "Template must output a JSON array via {{ ns.mods | tojson }}.",
+      "error_add_jinja_template": "Add a Jinja2 Template",
+      "error_add_jinja_template_desc": "Enter a template in the General tab to generate modules dynamically",
+      "error_invalid_template_jinja_desc": "Template must output a JSON array. End your template with {{ ns.mods | tojson }}."
+    },
+    "light": {
+      "section_presets": "Light Presets",
+      "section_presets_desc": "Configure light presets with specific colors, brightness, and effects. Each preset can control different entities.",
+      "add_preset": "+ Add New Preset",
+      "section_layout": "Layout Configuration",
+      "section_wrapping": "Button Wrapping",
+      "section_wrapping_desc": "Control whether buttons wrap to the next line",
+      "section_import_export": "Import/Export",
+      "section_import_export_desc": "Save and share your preset configurations",
+      "section_advanced": "Advanced Options",
+      "section_advanced_desc": "Fine-tune module behavior"
+    },
+    "accordion": {
+      "preview": {
+        "title_fallback": "Accordion Title"
+      }
+    },
+    "animated_forecast": {
+      "preview": {
+        "no_data": "No forecast data available"
+      },
+      "icon_style_fill": "Filled",
+      "icon_style_line": "Outlined"
+    },
+    "animated_weather": {
+      "entity_section": "Weather Entity",
+      "entity": "Weather Entity",
+      "layout_section": "Layout Settings",
+      "layout_spread": "Layout Spread",
+      "layout_spread_desc": "0% Compact ↔ 100% Full-Width",
+      "left_column_gap": "Left Column Gap",
+      "left_column_gap_desc": "0–32px",
+      "right_column_gap": "Right Column Gap",
+      "right_column_gap_desc": "0–32px",
+      "icon_section": "Center Column (Weather Icon)",
+      "icon_size": "Icon Size",
+      "icon_size_desc": "0–300px",
+      "icon_style": "Icon Style",
+      "icon_style_filled": "Filled",
+      "icon_style_outlined": "Outlined",
+      "column_items_section": "Column Items",
+      "column_items_desc": "Drag items to reorder within or between columns — a blue line shows exactly where the item will land. Click the eye to toggle visibility, the chevron to edit size & color.",
+      "left_column": "Left Column",
+      "right_column": "Right Column",
+      "item_size": "Size",
+      "item_color": "Color"
     }
+  },
+  "hub": {
+    "tabs": {
+      "dashboard": "Dashboard",
+      "account": "Account",
+      "pro": "Pro",
+      "favorites": "Favorites",
+      "presets": "Presets",
+      "colors": "Colors",
+      "variables": "Variables",
+      "templates": "Templates",
+      "about": "About"
+    },
+    "loading": "Loading…"
   }
 }

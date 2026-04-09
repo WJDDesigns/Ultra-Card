@@ -1,5 +1,45 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta1
+
+The first beta of 3.3.0 brings a friendlier editor, smarter entity handling, a new toast notification layer, and a wave of accessibility and consistency improvements across nearly every module.
+
+---
+
+### 🚀 New Features
+
+- **Getting Started Banner** — First-time users see a welcome banner in the editor with quick-action buttons: Start from a Preset, Add Your First Module, and Explore the Hub. Dismisses permanently via "Don't show again."
+- **Keyboard Shortcuts Dialog** — A new keyboard icon in the editor toolbar opens a panel listing all available shortcuts (Esc to exit fullscreen, Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z redo, and more).
+- **Toast Notification Service** — A new lightweight `uc-toast-service` provides non-blocking status toasts throughout the editor. Undo, redo, copy, export, import, backup and snapshot actions now confirm success or failure with a brief message instead of a silent operation.
+- **Confirm Service** — A new `uc-confirm-service` provides a styled, accessible confirmation dialog with full ARIA support, keyboard (Escape) dismissal, and support for destructive-action styling and custom button labels. Replaces inline browser `confirm()` calls.
+- **Card-Level Entity Remap** — Entity Find & Replace is now available as a toolbar button that runs the full Preset Wizard flow across the entire card in one step. The previous per-row "Remap Entities" option has been replaced with this card-wide workflow.
+- **Column Gap Control** — Columns now support an explicit `gap` property via the Design tab, letting you set precise spacing between child modules within a column.
+
+### 🔧 Improvements
+
+- **Attribute change detection** — `shouldUpdate()` now compares state objects by reference (`oldEntity !== newEntity`) instead of only checking `state` and `last_changed`. This means brightness changes, color shifts, and any other attribute-only updates now trigger a card re-render correctly without needing a state change.
+- **Undo / Redo feedback** — Undo and redo now show a brief toast so you always know an action was applied.
+- **Reduced motion accessibility** — A `prefers-reduced-motion` media query is now applied globally so all card animations and transitions respect the OS accessibility setting.
+- **Layout template error logging** — Layout template subscription failures now include the error message in the console warning instead of silently swallowing it.
+- **Config validation error logging** — Config validation failures now log the error message rather than failing silently.
+- **Cover module** — Entity picker updated to use `renderEntityPickerWithVariables`, enabling HA variable references. Slider styles are now injected from the base module for visual consistency.
+- **Accordion module** — Title entity and open-logic condition pickers now use `renderEntityPickerWithVariables`. The card renderer uses `buildDesignStyles` and `wrapWithAnimation` for full Design-tab and animation support.
+- **Background module** — Editor panels migrated to standard `renderSettingsSection` / `renderFieldSection` base helpers, reducing custom HTML and ensuring visual consistency with the rest of the editor.
+- **Badge of Honor module** — Badge size slider and related fields migrated to `renderSliderField` base helper, replacing duplicate inline HTML.
+- **Graphs module** — Title font size, value font size, and bar display limit controls migrated to unified base slider helpers. Chart layout and time-intervals toggle fields cleaned up.
+- **Error state indicators** — Modules that are missing required configuration (entity not set, no content, no icons, no range, etc.) now show a clear, actionable in-editor message guiding you to the correct tab instead of a blank preview.
+- **Clipboard export reliability** — Export now verifies the clipboard write succeeded on Android and mobile WebViews. Falls back to `execCommand` with the textarea positioned in the visible viewport to ensure it works on all platforms.
+- **Editor image upload** — Upload failures now surface a toast error message immediately.
+- **Animated Clock, Weather, Forecast module editors** — Migrated to use standard base form helpers for a consistent look.
+
+### 🐛 Bug Fixes
+
+- **Camera entity switching** — Fixed a regression where switching the camera entity in live/stream mode could silently fail. The camera module now uses the stored element reference to update `stateObj` directly on `ha-camera-stream`, with a rerender fallback if the element has not yet mounted.
+- **Bar module dot clipping** — In minimal bar style, the dot indicator no longer bleeds outside the bar container. The dot's `left` position is now clamped with `CSS clamp()` so it stays fully within bounds at both extremes.
+- **Action confirmation dialog focus** — The confirmation overlay now correctly focuses the primary (confirm) button on open, falling back to the secondary (cancel) button, ensuring keyboard users can act immediately.
+
+---
+
 ## Version 3.2.1
 
 Maybe 3.2.0 was not as stable as I thought it would be — this patch release fixes a regression where **Text** modules created before the WYSIWYG update could display **“Sample Text”** after upgrading from 3.1.x, instead of your saved content. The default `rich_text_content` now stays empty until you edit in the WYSIWYG editor, so legacy `text` values are preserved correctly when the config is merged with defaults.

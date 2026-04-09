@@ -5,7 +5,6 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, ColorInputModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import '../components/ultra-color-picker';
 
 export class UltraColorInputModule extends BaseUltraModule {
@@ -80,12 +79,16 @@ export class UltraColorInputModule extends BaseUltraModule {
         ${this.renderSettingsSection(
           localize('editor.color_input.entity.title', lang, 'Entity Configuration'),
           localize('editor.color_input.entity.desc', lang, isLightMode ? 'Select a light entity to control.' : 'Select an input_text entity to store the hex color.'),
-          [{ title: localize('editor.color_input.entity_field', lang, 'Entity'),
-             description: localize('editor.color_input.entity_field_desc', lang, isLightMode ? 'Select a light entity.' : 'Select an input_text entity.'),
-             hass, data: { entity: colorMod.entity || '' },
-             schema: [this.entityField('entity', domainFilter)],
-             onChange: (e: CustomEvent) => updateModule(e.detail.value) }]
+          []
         )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', colorMod.entity || '',
+            (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+            domainFilter,
+            localize('editor.color_input.entity_field', lang, 'Entity')
+          )}
+        </div>
 
         <div class="settings-section">
           <div class="section-title">${localize('editor.color_input.display.title', lang, 'Display')}</div>
@@ -140,13 +143,14 @@ export class UltraColorInputModule extends BaseUltraModule {
 
   renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const colorMod = module as ColorInputModule;
+    const lang = hass?.locale?.language || 'en';
 
     if (!colorMod.entity?.trim()) {
-      return this.renderGradientErrorState('Configure Entity', 'Select an entity in the General tab', 'mdi:palette');
+      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.color_input.error_configure_entity_desc', lang, 'Select an entity in the General tab'), 'mdi:palette');
     }
     const entityState = hass?.states?.[colorMod.entity];
     if (!entityState) {
-      return this.renderGradientErrorState('Entity Not Found', `Entity "${colorMod.entity}" is not available`, 'mdi:alert-circle-outline');
+      return this.renderGradientErrorState(localize('editor.common.error_entity_not_found', lang, 'Entity Not Found'), `Entity "${colorMod.entity}" is not available`, 'mdi:alert-circle-outline');
     }
 
     const isLightMode = colorMod.color_mode === 'light_rgb';
@@ -168,7 +172,8 @@ export class UltraColorInputModule extends BaseUltraModule {
     const showPreview = colorMod.show_preview !== false;
     const previewSize = colorMod.preview_size ?? 40;
     const containerStyles = this._buildContainerStyles(designProperties);
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(designProperties.hover_effect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
     const mid = colorMod.id;
 
     const setColor = (hex: string) => {
@@ -198,7 +203,7 @@ export class UltraColorInputModule extends BaseUltraModule {
       if (/^#[0-9a-fA-F]{6}$/.test(val)) setColor(val);
     };
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         .clr-row-${mid} { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
         .clr-swatch-${mid} {
@@ -218,7 +223,7 @@ export class UltraColorInputModule extends BaseUltraModule {
         .clr-hex-input-${mid}:focus { border-color:var(--primary-color); box-shadow:0 0 0 1px var(--primary-color); }
         .clr-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
       </style>
-      <div class="${hoverEffectClass}" style=${this._css(containerStyles)}>
+      <div class="${hoverEffectClass}" style="${designStyles}">
         ${showLabel ? html`<div class="clr-label">${colorMod.label}</div>` : ''}
         <div class="clr-row-${mid}">
           <div class="clr-swatch-${mid}">
@@ -228,7 +233,7 @@ export class UltraColorInputModule extends BaseUltraModule {
             placeholder="#000000" @change=${handleHexInput} />` : ''}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   private _buildContainerStyles(dp: any): Record<string, string> {

@@ -46,12 +46,11 @@ export function renderAnimatedForecastModuleEditor(
             'Primary weather.* entity with forecast data'
           )}
         </div>
-        ${context.renderUcForm(
-          hass,
-          { weather_entity: forecastModule.weather_entity || '' },
-          [context.entityField('weather_entity', ['weather'])],
-          (e: CustomEvent) => updateModule(e.detail.value),
-          false
+        ${context.renderEntityPickerWithVariables(
+          hass, config, 'weather_entity', forecastModule.weather_entity || '',
+          (value: string) => { updateModule({ weather_entity: value }); context.triggerPreviewUpdate(); },
+          ['weather'],
+          localize('editor.animated_forecast.weather_entity', lang, 'Weather Entity')
         )}
 
         <!-- Forecast Entity (Optional) -->
@@ -72,12 +71,11 @@ export function renderAnimatedForecastModuleEditor(
             'Separate forecast entity if available'
           )}
         </div>
-        ${context.renderUcForm(
-          hass,
-          { forecast_entity: forecastModule.forecast_entity || '' },
-          [context.entityField('forecast_entity')],
-          (e: CustomEvent) => updateModule(e.detail.value),
-          false
+        ${context.renderEntityPickerWithVariables(
+          hass, config, 'forecast_entity', forecastModule.forecast_entity || '',
+          (value: string) => { updateModule({ forecast_entity: value }); context.triggerPreviewUpdate(); },
+          undefined,
+          localize('editor.animated_forecast.forecast_entity', lang, 'Forecast Entity')
         )}
       </div>
 
@@ -204,8 +202,8 @@ export function renderAnimatedForecastModuleEditor(
           { icon_style: forecastModule.icon_style || 'fill' },
           [
             context.selectField('icon_style', [
-              { value: 'fill', label: 'Filled' },
-              { value: 'line', label: 'Outlined' },
+              { value: 'fill', label: localize('editor.animated_forecast.icon_style_fill', lang, 'Filled') },
+              { value: 'line', label: localize('editor.animated_forecast.icon_style_line', lang, 'Outlined') },
             ]),
           ],
           (e: CustomEvent) => {

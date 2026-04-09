@@ -1,5 +1,5 @@
 import { TemplateResult, html, css } from 'lit';
-import { HomeAssistant, fireEvent } from 'custom-card-helpers';
+import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import {
   CardModule,
@@ -1321,128 +1321,32 @@ export class UltraGridModule extends BaseUltraModule {
             (e: CustomEvent) => updateModule({ grid_display_mode: e.detail.value.grid_display_mode })
           )}
 
-          <div class="field-container">
-            <div class="field-title">Columns (${gridModule.columns || 4})</div>
-            <div class="field-description">Number of columns in the grid (1-12).</div>
-            <div class="number-range-control">
-              <input
-                type="range"
-                class="range-slider"
-                min="1"
-                max="12"
-                step="1"
-                .value="${String(gridModule.columns || 4)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  updateModule({ columns: parseInt(target.value, 10) });
-                }}
-              />
-              <input
-                type="number"
-                class="range-input"
-                min="1"
-                max="12"
-                step="1"
-                .value="${String(gridModule.columns || 4)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseInt(target.value, 10);
-                  if (!isNaN(value) && value >= 1 && value <= 12) {
-                    updateModule({ columns: value });
-                  }
-                }}
-              />
-              <button
-                class="range-reset-btn"
-                @click=${() => updateModule({ columns: 4 })}
-                title="Reset to default (4)"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
-          </div>
+          ${this.renderSliderField(
+            'Columns',
+            'Number of columns in the grid (1–12).',
+            gridModule.columns || 4,
+            4, 1, 12, 1,
+            (v: number) => { updateModule({ columns: v }); },
+            ''
+          )}
 
-          <div class="field-container">
-            <div class="field-title">Mobile columns (${gridModule.columns_mobile ?? gridModule.columns ?? 4})</div>
-            <div class="field-description">Columns on narrow screens (≤600px). Empty = same as Columns.</div>
-            <div class="number-range-control">
-              <input
-                type="range"
-                class="range-slider"
-                min="1"
-                max="12"
-                step="1"
-                .value="${String(gridModule.columns_mobile ?? gridModule.columns ?? 4)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  updateModule({ columns_mobile: parseInt(target.value, 10) });
-                }}
-              />
-              <input
-                type="number"
-                class="range-input"
-                min="1"
-                max="12"
-                step="1"
-                .value="${String(gridModule.columns_mobile ?? gridModule.columns ?? 4)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseInt(target.value, 10);
-                  if (!isNaN(value) && value >= 1 && value <= 12) {
-                    updateModule({ columns_mobile: value });
-                  }
-                }}
-              />
-              <button
-                class="range-reset-btn"
-                @click=${() => updateModule({ columns_mobile: undefined })}
-                title="Use same as Columns"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
-          </div>
+          ${this.renderSliderField(
+            'Mobile Columns',
+            'Columns on narrow screens (≤600px).',
+            gridModule.columns_mobile ?? gridModule.columns ?? 4,
+            gridModule.columns ?? 4, 1, 12, 1,
+            (v: number) => { updateModule({ columns_mobile: v }); },
+            ''
+          )}
 
-          <div class="field-container">
-            <div class="field-title">Gap (${gridModule.gap || 12}px)</div>
-            <div class="field-description">Space between grid items in pixels.</div>
-            <div class="number-range-control">
-              <input
-                type="range"
-                class="range-slider"
-                min="0"
-                max="32"
-                step="2"
-                .value="${String(gridModule.gap || 12)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  updateModule({ gap: parseInt(target.value, 10) });
-                }}
-              />
-              <input
-                type="number"
-                class="range-input"
-                min="0"
-                max="32"
-                step="2"
-                .value="${String(gridModule.gap || 12)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseInt(target.value, 10);
-                  if (!isNaN(value)) {
-                    updateModule({ gap: value });
-                  }
-                }}
-              />
-              <button
-                class="range-reset-btn"
-                @click=${() => updateModule({ gap: 12 })}
-                title="Reset to default (12)"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
-          </div>
+          ${this.renderSliderField(
+            'Gap',
+            'Space between grid items in pixels.',
+            gridModule.gap || 12,
+            12, 0, 32, 2,
+            (v: number) => { updateModule({ gap: v }); },
+            'px'
+          )}
         </div>
 
         <!-- Sorting Section -->
@@ -1472,45 +1376,14 @@ export class UltraGridModule extends BaseUltraModule {
             },
           ])}
 
-          <div class="field-container">
-            <div class="field-title">Max Items (${gridModule.max_items || 0} = All)</div>
-            <div class="field-description">Maximum number of items to display.</div>
-            <div class="number-range-control">
-              <input
-                type="range"
-                class="range-slider"
-                min="0"
-                max="100"
-                step="1"
-                .value="${String(gridModule.max_items || 0)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  updateModule({ max_items: parseInt(target.value, 10) });
-                }}
-              />
-              <input
-                type="number"
-                class="range-input"
-                min="0"
-                step="1"
-                .value="${String(gridModule.max_items || 0)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseInt(target.value, 10);
-                  if (!isNaN(value)) {
-                    updateModule({ max_items: value });
-                  }
-                }}
-              />
-              <button
-                class="range-reset-btn"
-                @click=${() => updateModule({ max_items: 0 })}
-                title="Reset to default (0 = All)"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
-          </div>
+          ${this.renderSliderField(
+            'Max Items',
+            'Maximum number of items to display (0 = All).',
+            gridModule.max_items || 0,
+            0, 0, 100, 1,
+            (v: number) => { updateModule({ max_items: v }); },
+            ''
+          )}
         </div>
 
         <!-- Pagination Section -->
@@ -1542,45 +1415,14 @@ export class UltraGridModule extends BaseUltraModule {
                       updateModule({ pagination_style: e.detail.value.pagination_style })
                   )}
 
-                  <div class="field-container">
-                    <div class="field-title">Items Per Page (${gridModule.items_per_page || 12})</div>
-                    <div class="field-description">Number of items per page.</div>
-                    <div class="number-range-control">
-                      <input
-                        type="range"
-                        class="range-slider"
-                        min="4"
-                        max="48"
-                        step="4"
-                        .value="${String(gridModule.items_per_page || 12)}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          updateModule({ items_per_page: parseInt(target.value, 10) });
-                        }}
-                      />
-                      <input
-                        type="number"
-                        class="range-input"
-                        min="1"
-                        step="1"
-                        .value="${String(gridModule.items_per_page || 12)}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value, 10);
-                          if (!isNaN(value) && value > 0) {
-                            updateModule({ items_per_page: value });
-                          }
-                        }}
-                      />
-                      <button
-                        class="range-reset-btn"
-                        @click=${() => updateModule({ items_per_page: 12 })}
-                        title="Reset to default (12)"
-                      >
-                        <ha-icon icon="mdi:refresh"></ha-icon>
-                      </button>
-                    </div>
-                  </div>
+                  ${this.renderSliderField(
+                    'Items Per Page',
+                    'Number of items per page.',
+                    gridModule.items_per_page || 12,
+                    12, 4, 48, 4,
+                    (v: number) => { updateModule({ items_per_page: v }); },
+                    ''
+                  )}
                 </div>
               `
             : ''}
@@ -1615,85 +1457,23 @@ export class UltraGridModule extends BaseUltraModule {
                       updateModule({ load_animation: e.detail.value.load_animation })
                   )}
 
-                  <div class="field-container">
-                    <div class="field-title">Animation Duration (${gridModule.grid_animation_duration || 600}ms)</div>
-                    <div class="field-description">How long each animation takes.</div>
-                    <div class="number-range-control">
-                      <input
-                        type="range"
-                        class="range-slider"
-                        min="200"
-                        max="2000"
-                        step="100"
-                        .value="${String(gridModule.grid_animation_duration || 600)}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          updateModule({ grid_animation_duration: parseInt(target.value, 10) });
-                        }}
-                      />
-                      <input
-                        type="number"
-                        class="range-input"
-                        min="100"
-                        step="50"
-                        .value="${String(gridModule.grid_animation_duration || 600)}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value, 10);
-                          if (!isNaN(value)) {
-                            updateModule({ grid_animation_duration: value });
-                          }
-                        }}
-                      />
-                      <button
-                        class="range-reset-btn"
-                        @click=${() => updateModule({ grid_animation_duration: 600 })}
-                        title="Reset to default (600)"
-                      >
-                        <ha-icon icon="mdi:refresh"></ha-icon>
-                      </button>
-                    </div>
-                  </div>
+                  ${this.renderSliderField(
+                    'Animation Duration',
+                    'How long each animation takes.',
+                    gridModule.grid_animation_duration || 600,
+                    600, 200, 2000, 100,
+                    (v: number) => { updateModule({ grid_animation_duration: v }); },
+                    'ms'
+                  )}
 
-                  <div class="field-container">
-                    <div class="field-title">Stagger Delay (${gridModule.animation_stagger || 100}ms)</div>
-                    <div class="field-description">Delay between each item's animation.</div>
-                    <div class="number-range-control">
-                      <input
-                        type="range"
-                        class="range-slider"
-                        min="0"
-                        max="300"
-                        step="10"
-                        .value="${String(gridModule.animation_stagger || 100)}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          updateModule({ animation_stagger: parseInt(target.value, 10) });
-                        }}
-                      />
-                      <input
-                        type="number"
-                        class="range-input"
-                        min="0"
-                        step="10"
-                        .value="${String(gridModule.animation_stagger || 100)}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = parseInt(target.value, 10);
-                          if (!isNaN(value)) {
-                            updateModule({ animation_stagger: value });
-                          }
-                        }}
-                      />
-                      <button
-                        class="range-reset-btn"
-                        @click=${() => updateModule({ animation_stagger: 100 })}
-                        title="Reset to default (100)"
-                      >
-                        <ha-icon icon="mdi:refresh"></ha-icon>
-                      </button>
-                    </div>
-                  </div>
+                  ${this.renderSliderField(
+                    'Stagger Delay',
+                    'Delay between each item\'s animation.',
+                    gridModule.animation_stagger || 100,
+                    100, 0, 300, 10,
+                    (v: number) => { updateModule({ animation_stagger: v }); },
+                    'ms'
+                  )}
                 </div>
               `
             : ''}
@@ -1726,46 +1506,14 @@ export class UltraGridModule extends BaseUltraModule {
             <div class="settings-section">
               <div class="section-title">ICON STYLING</div>
 
-              <div class="field-container">
-                <div class="field-title">Icon Size (${gridModule.global_icon_size || 32}px)</div>
-                <div class="field-description">Size of icons in pixels.</div>
-                <div class="number-range-control">
-                  <input
-                    type="range"
-                    class="range-slider"
-                    min="16"
-                    max="72"
-                    step="2"
-                    .value="${String(gridModule.global_icon_size || 32)}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      updateModule({ global_icon_size: parseInt(target.value, 10) });
-                    }}
-                  />
-                  <input
-                    type="number"
-                    class="range-input"
-                    min="12"
-                    max="100"
-                    step="1"
-                    .value="${String(gridModule.global_icon_size || 32)}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = parseInt(target.value, 10);
-                      if (!isNaN(value)) {
-                        updateModule({ global_icon_size: value });
-                      }
-                    }}
-                  />
-                  <button
-                    class="range-reset-btn"
-                    @click=${() => updateModule({ global_icon_size: styleConfig.defaultIconSize })}
-                    title="Reset to default"
-                  >
-                    <ha-icon icon="mdi:refresh"></ha-icon>
-                  </button>
-                </div>
-              </div>
+              ${this.renderSliderField(
+                'Icon Size',
+                'Size of icons in pixels.',
+                gridModule.global_icon_size || 32,
+                styleConfig.defaultIconSize, 16, 72, 2,
+                (v: number) => { updateModule({ global_icon_size: v }); },
+                'px'
+              )}
 
               <div class="color-field">
                 <div class="field-title">Icon Color (Default)</div>
@@ -1824,46 +1572,14 @@ export class UltraGridModule extends BaseUltraModule {
             <div class="settings-section">
               <div class="section-title">TEXT STYLING</div>
 
-              <div class="field-container">
-                <div class="field-title">Font Size (${gridModule.global_font_size || 12}px)</div>
-                <div class="field-description">Base font size for text.</div>
-                <div class="number-range-control">
-                  <input
-                    type="range"
-                    class="range-slider"
-                    min="10"
-                    max="24"
-                    step="1"
-                    .value="${String(gridModule.global_font_size || 12)}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      updateModule({ global_font_size: parseInt(target.value, 10) });
-                    }}
-                  />
-                  <input
-                    type="number"
-                    class="range-input"
-                    min="8"
-                    max="36"
-                    step="1"
-                    .value="${String(gridModule.global_font_size || 12)}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = parseInt(target.value, 10);
-                      if (!isNaN(value)) {
-                        updateModule({ global_font_size: value });
-                      }
-                    }}
-                  />
-                  <button
-                    class="range-reset-btn"
-                    @click=${() => updateModule({ global_font_size: styleConfig.defaultFontSize })}
-                    title="Reset to default"
-                  >
-                    <ha-icon icon="mdi:refresh"></ha-icon>
-                  </button>
-                </div>
-              </div>
+              ${this.renderSliderField(
+                'Font Size',
+                'Base font size for text.',
+                gridModule.global_font_size || 12,
+                styleConfig.defaultFontSize, 10, 24, 1,
+                (v: number) => { updateModule({ global_font_size: v }); },
+                'px'
+              )}
 
               ${styleConfig.showName
                 ? html`
@@ -1936,46 +1652,14 @@ export class UltraGridModule extends BaseUltraModule {
             updateModule({ global_padding: e.detail.value.global_padding })
         )}
 
-        <div class="field-container">
-          <div class="field-title">Border Width (${gridModule.global_border_width || 0}px)</div>
-          <div class="field-description">Border thickness in pixels.</div>
-          <div class="number-range-control">
-            <input
-              type="range"
-              class="range-slider"
-              min="0"
-              max="4"
-              step="1"
-              .value="${String(gridModule.global_border_width || 0)}"
-              @input=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                updateModule({ global_border_width: parseInt(target.value, 10) });
-              }}
-            />
-            <input
-              type="number"
-              class="range-input"
-              min="0"
-              max="10"
-              step="1"
-              .value="${String(gridModule.global_border_width || 0)}"
-              @input=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                const value = parseInt(target.value, 10);
-                if (!isNaN(value)) {
-                  updateModule({ global_border_width: value });
-                }
-              }}
-            />
-            <button
-              class="range-reset-btn"
-              @click=${() => updateModule({ global_border_width: 0 })}
-              title="Reset to default (0)"
-            >
-              <ha-icon icon="mdi:refresh"></ha-icon>
-            </button>
-          </div>
-        </div>
+        ${this.renderSliderField(
+          'Border Width',
+          'Border thickness in pixels.',
+          gridModule.global_border_width || 0,
+          0, 0, 4, 1,
+          (v: number) => { updateModule({ global_border_width: v }); },
+          'px'
+        )}
 
         ${(gridModule.global_border_width || 0) > 0
           ? html`
@@ -2028,46 +1712,14 @@ export class UltraGridModule extends BaseUltraModule {
 
                 ${gridModule.hover_effect === 'scale'
                   ? html`
-                      <div class="field-container">
-                        <div class="field-title">Scale Amount (${gridModule.hover_scale || 1.05}x)</div>
-                        <div class="field-description">How much to scale on hover.</div>
-                        <div class="number-range-control">
-                          <input
-                            type="range"
-                            class="range-slider"
-                            min="1"
-                            max="1.2"
-                            step="0.01"
-                            .value="${String(gridModule.hover_scale || 1.05)}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              updateModule({ hover_scale: parseFloat(target.value) });
-                            }}
-                          />
-                          <input
-                            type="number"
-                            class="range-input"
-                            min="1"
-                            max="1.5"
-                            step="0.01"
-                            .value="${String(gridModule.hover_scale || 1.05)}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              const value = parseFloat(target.value);
-                              if (!isNaN(value)) {
-                                updateModule({ hover_scale: value });
-                              }
-                            }}
-                          />
-                          <button
-                            class="range-reset-btn"
-                            @click=${() => updateModule({ hover_scale: 1.05 })}
-                            title="Reset to default (1.05)"
-                          >
-                            <ha-icon icon="mdi:refresh"></ha-icon>
-                          </button>
-                        </div>
-                      </div>
+                      ${this.renderSliderField(
+                        'Scale Amount',
+                        'How much to scale on hover.',
+                        gridModule.hover_scale || 1.05,
+                        1.05, 1, 1.2, 0.01,
+                        (v: number) => { updateModule({ hover_scale: v }); },
+                        'x'
+                      )}
                     `
                   : ''}
 
@@ -2990,46 +2642,14 @@ export class UltraGridModule extends BaseUltraModule {
             ></ultra-color-picker>
           </div>
 
-          <div class="field-container">
-            <div class="field-title">Blur Amount (${gridModule.glass_blur_amount || 10}px)</div>
-            <div class="field-description">Intensity of the blur effect.</div>
-            <div class="number-range-control">
-              <input
-                type="range"
-                class="range-slider"
-                min="0"
-                max="30"
-                step="1"
-                .value="${String(gridModule.glass_blur_amount || 10)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  updateModule({ glass_blur_amount: parseInt(target.value, 10) });
-                }}
-              />
-              <input
-                type="number"
-                class="range-input"
-                min="0"
-                max="50"
-                step="1"
-                .value="${String(gridModule.glass_blur_amount || 10)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseInt(target.value, 10);
-                  if (!isNaN(value)) {
-                    updateModule({ glass_blur_amount: value });
-                  }
-                }}
-              />
-              <button
-                class="range-reset-btn"
-                @click=${() => updateModule({ glass_blur_amount: 10 })}
-                title="Reset to default (10)"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
-          </div>
+          ${this.renderSliderField(
+            'Blur Amount',
+            'Intensity of the blur effect.',
+            gridModule.glass_blur_amount || 10,
+            10, 0, 30, 1,
+            (v: number) => { updateModule({ glass_blur_amount: v }); },
+            'px'
+          )}
         ` : ''}
 
         <!-- Gradient Style (style_17) -->
@@ -3242,15 +2862,18 @@ export class UltraGridModule extends BaseUltraModule {
       animationKey = this._animationStartTimes.get(gridModule.id)!;
     }
 
-    return html`
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    return this.wrapWithAnimation(html`
       <style>
         ${this.getStyles()}
       </style>
       <div 
-        class="uc-grid-container uc-grid-mode-${gridModule.grid_display_mode || 'grid'}" 
+        class="uc-grid-container uc-grid-mode-${gridModule.grid_display_mode || 'grid'} ${hoverClass}" 
         data-mode="${gridModule.grid_display_mode || 'grid'}"
         data-animation-key="${animationKey}"
-        style="${gridStyles}"
+        style="${gridStyles}; ${designStyles}"
       >
         ${displayEntities.length > 0
           ? displayEntities.map((entity, index) =>
@@ -3266,7 +2889,7 @@ export class UltraGridModule extends BaseUltraModule {
       ${gridModule.enable_pagination && totalPages > 1
         ? this.renderPaginationControls(currentPage, totalPages, gridModule)
         : ''}
-    `;
+    `, module, hass);
   }
 
   // Build grid container CSS
@@ -3763,61 +3386,7 @@ export class UltraGridModule extends BaseUltraModule {
         opacity: 0.8;
         line-height: 1.4;
       }
-      .number-range-control {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .range-slider {
-        flex: 0 0 65%;
-        height: 6px;
-        background: var(--divider-color);
-        border-radius: 3px;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        cursor: pointer;
-      }
-      .range-slider::-webkit-slider-thumb {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 18px;
-        height: 18px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-      .range-input {
-        flex: 0 0 20%;
-        padding: 6px 8px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: center;
-      }
-      .range-reset-btn {
-        width: 32px;
-        height: 32px;
-        padding: 0;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-      .range-reset-btn:hover {
-        background: var(--primary-color);
-        color: var(--text-primary-color);
-        border-color: var(--primary-color);
-      }
+      ${BaseUltraModule.getSliderStyles()}
       .conditional-group {
         margin-top: 16px;
         border-left: 4px solid var(--primary-color);

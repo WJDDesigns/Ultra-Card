@@ -1032,47 +1032,14 @@ export class UltraMapModule extends BaseUltraModule {
                 </div>
 
                 <div>
-                  <div
-                    class="field-title"
-                    style="font-size: 14px; font-weight: 500; margin-bottom: 4px;"
-                  >
-                    ${localize('editor.map.marker.icon_size', lang, 'Icon Size')}
-                  </div>
-                  <div class="number-range-control">
-                    <input
-                      type="range"
-                      class="range-slider"
-                      min="8"
-                      max="64"
-                      step="1"
-                      .value="${marker.icon_size || 20}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = parseInt(target.value);
-                        updateMarker({ icon_size: value });
-                      }}
-                    />
-                    <input
-                      type="number"
-                      class="range-input"
-                      min="8"
-                      max="64"
-                      step="1"
-                      .value="${marker.icon_size || 20}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = parseInt(target.value);
-                        if (!isNaN(value)) {
-                          updateMarker({ icon_size: value });
-                        }
-                      }}
-                    />
-                  </div>
-                  <div
-                    style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px; opacity: 0.7;"
-                  >
-                    ${localize('editor.map.marker.icon_size_range', lang, 'Range: 8 to 64 pixels')}
-                  </div>
+                  ${this.renderSliderField(
+                    localize('editor.map.marker.icon_size', lang, 'Icon Size'),
+                    localize('editor.map.marker.icon_size_range', lang, 'Range: 8 to 64 pixels'),
+                    marker.icon_size || 20,
+                    20, 8, 64, 1,
+                    (v: number) => { updateMarker({ icon_size: v }); },
+                    'px'
+                  )}
                 </div>
               </div>
             `
@@ -1111,51 +1078,14 @@ export class UltraMapModule extends BaseUltraModule {
                 </ha-textfield>
 
                 <div>
-                  <div
-                    class="field-title"
-                    style="font-size: 14px; font-weight: 500; margin-bottom: 4px;"
-                  >
-                    ${localize('editor.map.marker.image_size', lang, 'Image Size')}
-                  </div>
-                  <div class="number-range-control">
-                    <input
-                      type="range"
-                      class="range-slider"
-                      min="8"
-                      max="128"
-                      step="1"
-                      .value="${marker.icon_size || 32}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = parseInt(target.value);
-                        updateMarker({ icon_size: value });
-                      }}
-                    />
-                    <input
-                      type="number"
-                      class="range-input"
-                      min="8"
-                      max="128"
-                      step="1"
-                      .value="${marker.icon_size || 32}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = parseInt(target.value);
-                        if (!isNaN(value)) {
-                          updateMarker({ icon_size: value });
-                        }
-                      }}
-                    />
-                  </div>
-                  <div
-                    style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px; opacity: 0.7;"
-                  >
-                    ${localize(
-                      'editor.map.marker.image_size_range',
-                      lang,
-                      'Range: 8 to 128 pixels'
-                    )}
-                  </div>
+                  ${this.renderSliderField(
+                    localize('editor.map.marker.image_size', lang, 'Image Size'),
+                    localize('editor.map.marker.image_size_range', lang, 'Range: 8 to 128 pixels'),
+                    marker.icon_size || 32,
+                    32, 8, 128, 1,
+                    (v: number) => { updateMarker({ icon_size: v }); },
+                    'px'
+                  )}
                 </div>
               </div>
             `
@@ -1191,51 +1121,14 @@ export class UltraMapModule extends BaseUltraModule {
                 )}
 
                 <div style="margin-top: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 14px; font-weight: 500; margin-bottom: 4px;"
-                  >
-                    ${localize('editor.map.marker.image_size', lang, 'Image Size')}
-                  </div>
-                  <div class="number-range-control">
-                    <input
-                      type="range"
-                      class="range-slider"
-                      min="8"
-                      max="128"
-                      step="1"
-                      .value="${marker.icon_size || 32}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = parseInt(target.value);
-                        updateMarker({ icon_size: value });
-                      }}
-                    />
-                    <input
-                      type="number"
-                      class="range-input"
-                      min="8"
-                      max="128"
-                      step="1"
-                      .value="${marker.icon_size || 32}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = parseInt(target.value);
-                        if (!isNaN(value)) {
-                          updateMarker({ icon_size: value });
-                        }
-                      }}
-                    />
-                  </div>
-                  <div
-                    style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px; opacity: 0.7;"
-                  >
-                    ${localize(
-                      'editor.map.marker.image_size_range',
-                      lang,
-                      'Range: 8 to 128 pixels'
-                    )}
-                  </div>
+                  ${this.renderSliderField(
+                    localize('editor.map.marker.image_size', lang, 'Image Size'),
+                    localize('editor.map.marker.image_size_range', lang, 'Range: 8 to 128 pixels'),
+                    marker.icon_size || 32,
+                    32, 8, 128, 1,
+                    (v: number) => { updateMarker({ icon_size: v }); },
+                    'px'
+                  )}
                 </div>
               </div>
             `
@@ -1512,6 +1405,9 @@ export class UltraMapModule extends BaseUltraModule {
     const contextSuffix = previewContext ? `-${previewContext}` : '';
     const mapId = `map-${mapModule.id}${contextSuffix}`;
 
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
     // Track entity states for automatic updates
     if (!previewContext || previewContext === 'dashboard') {
       // Only auto-update in the actual dashboard view
@@ -1585,7 +1481,7 @@ export class UltraMapModule extends BaseUltraModule {
       });
     };
 
-    return html`
+    return this.wrapWithAnimation(html`
       <link
         rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -1660,48 +1556,8 @@ export class UltraMapModule extends BaseUltraModule {
           z-index: 1 !important;
         }
 
-        /* Range control styles from Bar module */
-        .number-range-control {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-        }
-
-        .range-slider {
-          flex: 1;
-        }
-
-        .range-input {
-          width: 72px !important;
-          max-width: 72px !important;
-          min-width: 72px !important;
-          padding: 4px 6px !important;
-          border: 1px solid var(--divider-color);
-          border-radius: 4px;
-          background: var(--secondary-background-color);
-          color: var(--primary-text-color);
-          font-size: 13px;
-          text-align: center;
-          transition: all 0.2s ease;
-          flex-shrink: 0;
-          box-sizing: border-box;
-        }
-
-        .range-input:focus {
-          outline: none;
-          border-color: var(--primary-color);
-          box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-        }
-
-        .range-input::-webkit-outer-spin-button,
-        .range-input::-webkit-inner-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
-        }
-
-        .range-input[type='number'] {
-          -moz-appearance: textfield;
-        }
+      /* Slider styles */
+        /* (loaded via getStyles()) */
         .custom-marker-image {
           width: 100%;
           height: 100%;
@@ -1710,8 +1566,8 @@ export class UltraMapModule extends BaseUltraModule {
         }
       </style>
       <div
-        class="map-container"
-        style="${containerStyle} box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: box-shadow 0.2s ease;"
+        class="map-container ${hoverClass}"
+        style="${containerStyle} ${designStyles} box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: box-shadow 0.2s ease;"
         @mouseenter=${(e: Event) => {
           const target = e.currentTarget as HTMLElement;
           target.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
@@ -1723,7 +1579,7 @@ export class UltraMapModule extends BaseUltraModule {
       >
         <div ${ref(mapContainerRef)} id="${mapId}" style="${mapStyle}"></div>
       </div>
-    `;
+    `, module, hass);
   }
 
   private initializeLeafletMap(
@@ -2706,5 +2562,9 @@ export class UltraMapModule extends BaseUltraModule {
       valid: errors.length === 0,
       errors,
     };
+  }
+
+  getStyles(): string {
+    return BaseUltraModule.getSliderStyles();
   }
 }

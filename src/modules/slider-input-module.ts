@@ -5,7 +5,6 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, SliderInputModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import '../components/ultra-color-picker';
 
 export class UltraSliderInputModule extends BaseUltraModule {
@@ -60,17 +59,16 @@ export class UltraSliderInputModule extends BaseUltraModule {
         ${this.renderSettingsSection(
           localize('editor.slider_input.entity.title', lang, 'Entity Configuration'),
           localize('editor.slider_input.entity.desc', lang, 'Link to a Home Assistant input_number helper entity.'),
-          [
-            {
-              title: localize('editor.slider_input.entity_field', lang, 'Entity'),
-              description: localize('editor.slider_input.entity_field_desc', lang, 'Select an input_number entity to bind this slider to.'),
-              hass,
-              data: { entity: sliderMod.entity || '' },
-              schema: [this.entityField('entity', ['input_number', 'number'])],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
-            },
-          ]
+          []
         )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', sliderMod.entity || '',
+            (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+            ['input_number', 'number'],
+            localize('editor.slider_input.entity_field', lang, 'Entity')
+          )}
+        </div>
 
         <div class="settings-section">
           <div class="section-title">${localize('editor.slider_input.display.title', lang, 'Display')}</div>
@@ -192,14 +190,15 @@ export class UltraSliderInputModule extends BaseUltraModule {
     config?: UltraCardConfig, previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const sliderMod = module as SliderInputModule;
+    const lang = hass?.locale?.language || 'en';
 
     if (!sliderMod.entity?.trim()) {
-      return this.renderGradientErrorState('Configure Entity', 'Select an input_number entity in the General tab', 'mdi:tune-variant');
+      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.slider_input.error_configure_entity_desc', lang, 'Select an input_number entity in the General tab'), 'mdi:tune-variant');
     }
 
     const entityState = hass?.states?.[sliderMod.entity];
     if (!entityState) {
-      return this.renderGradientErrorState('Entity Not Found', `Entity "${sliderMod.entity}" is not available`, 'mdi:alert-circle-outline');
+      return this.renderGradientErrorState(localize('editor.common.error_entity_not_found', lang, 'Entity Not Found'), `Entity "${sliderMod.entity}" is not available`, 'mdi:alert-circle-outline');
     }
 
     const currentValue = this._localValue !== null ? this._localValue : parseFloat(entityState.state) || 0;
@@ -222,7 +221,8 @@ export class UltraSliderInputModule extends BaseUltraModule {
     const pct = max > min ? ((currentValue - min) / (max - min)) * 100 : 0;
 
     const containerStyles = this.buildContainerStyles(designProperties);
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(designProperties.hover_effect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
     const handleSliderInput = (e: Event) => {
       const input = e.target as HTMLInputElement;
@@ -246,7 +246,7 @@ export class UltraSliderInputModule extends BaseUltraModule {
     const displayValue = Number.isInteger(step) ? currentValue.toFixed(0) : currentValue.toFixed(1);
     const mid = sliderMod.id;
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         .si-container-${mid} { width: 100%; }
         .si-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
@@ -282,7 +282,7 @@ export class UltraSliderInputModule extends BaseUltraModule {
         .si-minmax { display: flex; justify-content: space-between; margin-top: 4px;
           font-size: ${Math.max(10, fontSize - 2)}px; color: var(--secondary-text-color); opacity: .7; }
       </style>
-      <div class="si-container-${mid} ${hoverEffectClass}" style=${this.styleObjectToCss(containerStyles)}>
+      <div class="si-container-${mid} ${hoverEffectClass}" style="${designStyles}">
         ${showLabel || showValue ? html`
           <div class="si-header">
             ${showLabel ? html`<span class="si-label">${sliderMod.label}</span>` : html`<span></span>`}
@@ -301,7 +301,7 @@ export class UltraSliderInputModule extends BaseUltraModule {
           </div>
         ` : ''}
       </div>
-    `;
+    `, module, hass);
   }
 
   private async callEntityService(entity: string, value: number, hass: HomeAssistant): Promise<void> {

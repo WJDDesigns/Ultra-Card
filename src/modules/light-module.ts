@@ -460,6 +460,31 @@ export class UltraLightModule extends BaseUltraModule {
     };
   }
 
+  /**
+   * Returns the most restrictive Mired range across all entities in a preset so the
+   * color-picker slider only allows values every entity in the preset can actually handle.
+   */
+  private getPresetColorTempRange(
+    preset: LightPreset,
+    hass: HomeAssistant
+  ): { min: number; max: number } {
+    const entities = preset.entities || [];
+    if (entities.length === 0) return { min: 153, max: 500 };
+
+    let min = 153;
+    let max = 500;
+    for (const entityId of entities) {
+      const entity = hass.states[entityId];
+      if (!entity) continue;
+      // Higher minimum = more restrictive (cooler limit moves down)
+      min = Math.max(min, entity.attributes.min_mireds || 153);
+      // Lower maximum = more restrictive (warmer limit moves up)
+      max = Math.min(max, entity.attributes.max_mireds || 500);
+    }
+    // Guard against degenerate ranges
+    return min < max ? { min, max } : { min: 153, max: 500 };
+  }
+
   private async callLightService(
     action: string,
     entityId: string,
@@ -501,11 +526,10 @@ export class UltraLightModule extends BaseUltraModule {
             class="section-title"
             style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
-            Light Presets
+            ${localize('editor.light.section_presets', lang, 'Light Presets')}
           </div>
           <div class="field-description" style="margin-bottom: 16px;">
-            Configure light presets with specific colors, brightness, and effects. Each preset can
-            control different entities.
+            ${localize('editor.light.section_presets_desc', lang, 'Configure light presets with specific colors, brightness, and effects. Each preset can control different entities.')}
           </div>
 
           ${(lightModule.presets || []).map((preset, index) =>
@@ -517,7 +541,7 @@ export class UltraLightModule extends BaseUltraModule {
             @click=${() => this.addPreset(lightModule, updateModule)}
             style="width: 100%; padding: 12px; border: 2px dashed var(--primary-color); background: transparent; color: var(--primary-color); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; margin-top: 16px;"
           >
-            + Add New Preset
+            ${localize('editor.light.add_preset', lang, '+ Add New Preset')}
           </button>
         </div>
 
@@ -530,7 +554,7 @@ export class UltraLightModule extends BaseUltraModule {
             class="section-title"
             style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
-            Layout Configuration
+            ${localize('editor.light.section_layout', lang, 'Layout Configuration')}
           </div>
           <div class="field-description" style="margin-bottom: 16px;">
             Configure how preset buttons are arranged and displayed
@@ -582,8 +606,8 @@ export class UltraLightModule extends BaseUltraModule {
 
         <!-- Allow Wrapping Toggle -->
         ${this.renderSettingsSection(
-          'Button Wrapping',
-          'Control whether buttons wrap to the next line',
+          localize('editor.light.section_wrapping', lang, 'Button Wrapping'),
+          localize('editor.light.section_wrapping_desc', lang, 'Control whether buttons wrap to the next line'),
           [
             {
               title: 'Allow Button Wrapping',
@@ -608,58 +632,17 @@ export class UltraLightModule extends BaseUltraModule {
             Gap Configuration
           </div>
 
-          <div class="field-container" style="margin-bottom: 16px;">
-            <div class="field-title">Gap Between Buttons</div>
-            <div class="field-description">Set the spacing between preset buttons (in rem units)</div>
-            <div class="gap-control-container">
-              <input
-                type="range"
-                class="gap-slider"
-                min="0"
-                max="5"
-                step="0.1"
-                .value="${lightModule.button_gap || 0.8}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseFloat(target.value);
-                  updateModule({ button_gap: value });
-                }}
-              />
-              <input
-                type="number"
-                class="gap-input"
-                min="0"
-                max="5"
-                step="0.1"
-                .value="${lightModule.button_gap || 0.8}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseFloat(target.value);
-                  if (!isNaN(value)) {
-                    updateModule({ button_gap: value });
-                  }
-                }}
-                @keydown=${(e: KeyboardEvent) => {
-                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const target = e.target as HTMLInputElement;
-                    const currentValue = parseFloat(target.value) || 0.8;
-                    const increment = e.key === 'ArrowUp' ? 0.1 : -0.1;
-                    const newValue = Math.max(0, Math.min(5, currentValue + increment));
-                    const roundedValue = Math.round(newValue * 10) / 10;
-                    updateModule({ button_gap: roundedValue });
-                  }
-                }}
-              />
-              <button
-                class="reset-btn"
-                @click=${() => updateModule({ button_gap: 0.8 })}
-                title="Reset to default (0.8)"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
-          </div>
+          ${this.renderSliderField(
+            'Gap Between Buttons',
+            'Set the spacing between preset buttons (in rem units)',
+            lightModule.button_gap || 0.8,
+            0.8,
+            0,
+            5,
+            0.1,
+            (value: number) => updateModule({ button_gap: value }),
+            'rem'
+          )}
         </div>
         ${
           lightModule.layout === 'grid'
@@ -772,11 +755,12 @@ export class UltraLightModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const lightModule = module as LightModule;
+    const lang = hass?.locale?.language || 'en';
 
     return html`
       <div class="other-tab">
         <!-- Import/Export Presets -->
-        ${this.renderSettingsSection('Import/Export', 'Save and share your preset configurations', [
+        ${this.renderSettingsSection(localize('editor.light.section_import_export', lang, 'Import/Export'), localize('editor.light.section_import_export_desc', lang, 'Save and share your preset configurations'), [
           {
             title: 'Export Presets',
             description: 'Export all presets as JSON for backup or sharing',
@@ -818,7 +802,7 @@ export class UltraLightModule extends BaseUltraModule {
         ])}
 
         <!-- Advanced Options -->
-        ${this.renderSettingsSection('Advanced Options', 'Fine-tune module behavior', [
+        ${this.renderSettingsSection(localize('editor.light.section_advanced', lang, 'Advanced Options'), localize('editor.light.section_advanced_desc', lang, 'Fine-tune module behavior'), [
           {
             title: 'Confirm Actions',
             description: 'Show confirmation dialog before applying presets',
@@ -1134,8 +1118,8 @@ export class UltraLightModule extends BaseUltraModule {
                     .mode=${this.getPresetLightMode(preset) === 'effect'
                       ? 'effect'
                       : this.getPresetColorMode(preset)}
-                    .min_mireds=${153}
-                    .max_mireds=${500}
+                    .min_mireds=${this.getPresetColorTempRange(preset, hass).min}
+                    .max_mireds=${this.getPresetColorTempRange(preset, hass).max}
                     .rgbww_mode=${this.hasRgbwwSupport(preset.entities || [], hass)}
                     .enable_color=${preset.enable_color ?? true}
                     .enable_color_temp=${preset.enable_color_temp ?? true}
@@ -1241,25 +1225,14 @@ export class UltraLightModule extends BaseUltraModule {
               : ''
           }
 
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px;"
-          >
-            <div>
-              <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
-                Show Label
-              </div>
-              <div style="font-size: 12px; color: var(--secondary-text-color);">
-                Display preset name on this button
-              </div>
-            </div>
-            <ha-switch
-              .checked=${preset.show_label ?? true}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updatePreset({ show_label: target.checked });
-              }}
-            ></ha-switch>
-          </div>
+          ${this.renderFieldSection(
+            'Show Label',
+            'Display preset name on this button',
+            hass,
+            { show_label: preset.show_label ?? true },
+            [this.booleanField('show_label')],
+            (e: CustomEvent) => updatePreset({ show_label: e.detail.value.show_label })
+          )}
         </div>
       </div>
 
@@ -1276,36 +1249,17 @@ export class UltraLightModule extends BaseUltraModule {
 
                 <!-- Brightness Control -->
                 <div class="brightness-control" style="margin-bottom: 20px;">
-                  <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                    <ha-icon icon="mdi:brightness-6" style="color: var(--primary-color);"></ha-icon>
-                    <span style="font-weight: 500; color: var(--primary-text-color);"
-                      >Brightness</span
-                    >
-                    <span
-                      style="margin-left: auto; font-size: 14px; color: var(--secondary-text-color);"
-                    >
-                      ${preset.brightness ? Math.round((preset.brightness / 255) * 100) : 100}%
-                    </span>
-                  </div>
-                  <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-size: 12px; color: var(--secondary-text-color);">0%</span>
-                    <input
-                      type="range"
-                      min="1"
-                      max="100"
-                      step="1"
-                      .value=${preset.brightness
-                        ? Math.round((preset.brightness / 255) * 100)
-                        : 100}
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const brightness = Math.round((parseInt(target.value) / 100) * 255);
-                        updatePreset({ brightness });
-                      }}
-                      class="brightness-slider"
-                    />
-                    <span style="font-size: 12px; color: var(--secondary-text-color);">100%</span>
-                  </div>
+                  ${this.renderSliderField(
+                    'Brightness',
+                    '',
+                    preset.brightness ? Math.round((preset.brightness / 255) * 100) : 100,
+                    100,
+                    1,
+                    100,
+                    1,
+                    (value: number) => updatePreset({ brightness: Math.round((value / 100) * 255) }),
+                    '%'
+                  )}
                 </div>
 
                 <!-- Visual Customization -->
@@ -1343,96 +1297,58 @@ export class UltraLightModule extends BaseUltraModule {
             </div>
 
             <!-- Smart Contrast Mode (Top Priority) -->
-            <div
-              style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
-            >
-              <div>
-                <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
-                  Smart Contrast Mode
-                </div>
-                <div style="font-size: 12px; color: var(--secondary-text-color);">
-                  Auto-contrast text & icon (white/black) based on button background
-                </div>
-              </div>
-              <ha-switch
-                .checked=${preset.smart_color ?? true}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updatePreset({ smart_color: target.checked });
-                }}
-              ></ha-switch>
-            </div>
+            ${this.renderFieldSection(
+              'Smart Contrast Mode',
+              'Auto-contrast text & icon (white/black) based on button background',
+              hass,
+              { smart_color: preset.smart_color ?? true },
+              [this.booleanField('smart_color')],
+              (e: CustomEvent) => updatePreset({ smart_color: e.detail.value.smart_color })
+            )}
 
             <!-- Use Light Color for Icon (disabled if smart contrast is on) -->
-            <div
-              style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; ${
-                preset.smart_color ? 'opacity: 0.5;' : ''
-              }"
-            >
-              <div>
-                <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
-                  Use Light Color for Icon
-                </div>
-                <div style="font-size: 12px; color: var(--secondary-text-color);">
-                  Icon color matches the preset's light color
-                </div>
-              </div>
-              <ha-switch
-                .checked=${preset.use_light_color_for_icon || false}
-                .disabled=${preset.smart_color ?? true}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updatePreset({ use_light_color_for_icon: target.checked });
-                }}
-              ></ha-switch>
+            <div style="${preset.smart_color ? 'opacity: 0.5; pointer-events: none;' : ''}">
+              ${this.renderFieldSection(
+                'Use Light Color for Icon',
+                'Icon color matches the preset\'s light color',
+                hass,
+                { use_light_color_for_icon: preset.use_light_color_for_icon || false },
+                [this.booleanField('use_light_color_for_icon')],
+                (e: CustomEvent) => {
+                  if (preset.smart_color) return;
+                  updatePreset({ use_light_color_for_icon: e.detail.value.use_light_color_for_icon });
+                }
+              )}
             </div>
 
             <!-- Use Light Color for Button (disabled if smart contrast is on) -->
-            <div
-              style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; ${
-                preset.smart_color ? 'opacity: 0.5;' : ''
-              }"
-            >
-              <div>
-                <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
-                  Use Light Color for Button
-                </div>
-                <div style="font-size: 12px; color: var(--secondary-text-color);">
-                  Button background matches the preset's light color
-                </div>
-              </div>
-              <ha-switch
-                .checked=${preset.use_light_color_for_button || false}
-                .disabled=${preset.smart_color ?? true}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updatePreset({ use_light_color_for_button: target.checked });
-                }}
-              ></ha-switch>
+            <div style="${preset.smart_color ? 'opacity: 0.5; pointer-events: none;' : ''}">
+              ${this.renderFieldSection(
+                'Use Light Color for Button',
+                'Button background matches the preset\'s light color',
+                hass,
+                { use_light_color_for_button: preset.use_light_color_for_button || false },
+                [this.booleanField('use_light_color_for_button')],
+                (e: CustomEvent) => {
+                  if (preset.smart_color) return;
+                  updatePreset({ use_light_color_for_button: e.detail.value.use_light_color_for_button });
+                }
+              )}
             </div>
 
             <!-- Use Icon Color for Text (disabled if smart contrast is on) -->
-            <div
-              style="display: flex; align-items: center; justify-content: space-between; ${
-                preset.smart_color ? 'opacity: 0.5;' : ''
-              }"
-            >
-              <div>
-                <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
-                  Use Icon Color for Text
-                </div>
-                <div style="font-size: 12px; color: var(--secondary-text-color);">
-                  Text color matches the icon color
-                </div>
-              </div>
-              <ha-switch
-                .checked=${preset.use_icon_color_for_text || false}
-                .disabled=${preset.smart_color ?? true}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updatePreset({ use_icon_color_for_text: target.checked });
-                }}
-              ></ha-switch>
+            <div style="${preset.smart_color ? 'opacity: 0.5; pointer-events: none;' : ''}">
+              ${this.renderFieldSection(
+                'Use Icon Color for Text',
+                'Text color matches the icon color',
+                hass,
+                { use_icon_color_for_text: preset.use_icon_color_for_text || false },
+                [this.booleanField('use_icon_color_for_text')],
+                (e: CustomEvent) => {
+                  if (preset.smart_color) return;
+                  updatePreset({ use_icon_color_for_text: e.detail.value.use_icon_color_for_text });
+                }
+              )}
             </div>
           </div>
 
@@ -2047,8 +1963,9 @@ export class UltraLightModule extends BaseUltraModule {
 
         // Second call: Set color temperature
         const tempServiceData: any = { ...serviceData };
-        if (enableColorTemp) {
-          tempServiceData.color_temp = preset.color_temp;
+        if (enableColorTemp && preset.color_temp) {
+          // HA 2024+ removed color_temp (Mireds) from light.turn_on; use color_temp_kelvin instead
+          tempServiceData.color_temp_kelvin = Math.round(1000000 / preset.color_temp);
         }
         // Ensure NO color descriptors in the second call
         delete tempServiceData.rgb_color;
@@ -2160,7 +2077,8 @@ export class UltraLightModule extends BaseUltraModule {
         }
       } else if (preset.color_temp !== undefined && !hasColorRgb && enableColorTemp) {
         // Color temperature mode only (when no color is set and enabled)
-        serviceData.color_temp = preset.color_temp;
+        // HA 2024+ removed color_temp (Mireds) from light.turn_on; use color_temp_kelvin instead
+        serviceData.color_temp_kelvin = Math.round(1000000 / preset.color_temp);
       } else if (isWLED && preset.rgb_color !== undefined && enableColor) {
         // For WLED devices, prioritize RGB color mode and clear effects
         serviceData.rgb_color = preset.rgb_color;
@@ -2327,8 +2245,11 @@ export class UltraLightModule extends BaseUltraModule {
           `
         : '';
 
-    return html`
-      <div class="light-module-container" style=${this.styleObjectToCss(containerStyles)}>
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    return this.wrapWithAnimation(html`
+      <div class="light-module-container ${hoverClass}" style="${designStyles}">
         ${warningBanner}
         <div class="presets-container ${layout}" style="${containerLayoutStyles}">
           ${validPresets.map(preset =>
@@ -2336,7 +2257,7 @@ export class UltraLightModule extends BaseUltraModule {
           )}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   // Helper methods for design properties (consistent with other modules)
@@ -2635,9 +2556,10 @@ export class UltraLightModule extends BaseUltraModule {
       return `rgb(${rgb.join(',')})`;
     }
 
-    // Check for color temperature
-    if (entity.attributes.color_temp) {
-      const kelvin = ColorUtils.miredToKelvin(entity.attributes.color_temp);
+    // Check for color temperature (HA 2024+ may only expose color_temp_kelvin)
+    if (entity.attributes.color_temp || entity.attributes.color_temp_kelvin) {
+      const kelvin = entity.attributes.color_temp_kelvin
+        || ColorUtils.miredToKelvin(entity.attributes.color_temp);
       if (kelvin < 3000) {
         return '#ffb366'; // Warm white
       } else if (kelvin > 5000) {

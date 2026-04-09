@@ -359,21 +359,14 @@ export class UltraSportsScoreModule extends BaseUltraModule {
                 ${this.renderConditionalFieldsGroup(
                   localize('editor.sports.ha_sensor_config', lang, 'Home Assistant Sensor'),
                   html`
-                    ${this.renderFieldSection(
-                      localize('editor.sports.sensor_entity', lang, 'Sensor Entity'),
-                      localize('editor.sports.sensor_entity_desc', lang, 'Select a Team Tracker or other sports sensor'),
-                      hass,
-                      { sensor_entity: module.sensor_entity || '' },
-                      [
-                        {
-                          name: 'sensor_entity',
-                          selector: { entity: { domain: 'sensor' } },
-                        },
-                      ],
-                      (e: CustomEvent) => {
-                        updateModule({ sensor_entity: e.detail.value.sensor_entity });
+                    ${this.renderEntityPickerWithVariables(
+                      hass, undefined as any, 'sensor_entity', module.sensor_entity || '',
+                      (value: string) => {
+                        updateModule({ sensor_entity: value });
                         setTimeout(() => this.triggerPreviewUpdate(), 50);
-                      }
+                      },
+                      ['sensor'],
+                      localize('editor.sports.sensor_entity', lang, 'Sensor Entity')
                     )}
 
                     ${module.sensor_entity && hass.states[module.sensor_entity]
@@ -792,56 +785,60 @@ export class UltraSportsScoreModule extends BaseUltraModule {
           </div>
           
           <!-- Logo Size - Always available -->
-          ${this._renderSizeSlider(
-            module,
-            updateModule,
-            'logo_size',
+          ${this.renderSliderField(
             localize('editor.sports.logo_size', lang, 'Logo Size'),
             localize('editor.sports.logo_size_desc', lang, 'Size of team logos in pixels'),
+            (() => { const v = module.logo_size; return typeof v === 'string' ? parseInt(v) || (style === 'mini' ? 32 : style === 'compact' ? 20 : style === 'detailed' ? 56 : 48) : typeof v === 'number' ? v : (style === 'mini' ? 32 : style === 'compact' ? 20 : style === 'detailed' ? 56 : 48); })(),
+            style === 'mini' ? 32 : style === 'compact' ? 20 : style === 'detailed' ? 56 : 48,
             16,
             96,
-            style === 'mini' ? 32 : style === 'compact' ? 20 : style === 'detailed' ? 56 : 48
+            1,
+            (value: number) => { updateModule({ logo_size: `${value}px` } as Partial<SportsScoreModule>); this.triggerPreviewUpdate(); },
+            'px'
           )}
 
           <!-- Score Font Size - Conditional -->
           ${hasScore
-            ? this._renderSizeSlider(
-                module,
-                updateModule,
-                'score_font_size',
+            ? this.renderSliderField(
                 localize('editor.sports.score_font_size', lang, 'Score Font Size'),
                 localize('editor.sports.score_font_size_desc', lang, 'Size of score text in pixels'),
+                (() => { const v = module.score_font_size; const def = style === 'mini' ? 16 : style === 'compact' ? 14 : style === 'detailed' ? 36 : 32; return typeof v === 'string' ? parseInt(v) || def : typeof v === 'number' ? v : def; })(),
+                style === 'mini' ? 16 : style === 'compact' ? 14 : style === 'detailed' ? 36 : 32,
                 12,
                 64,
-                style === 'mini' ? 16 : style === 'compact' ? 14 : style === 'detailed' ? 36 : 32
+                1,
+                (value: number) => { updateModule({ score_font_size: `${value}px` } as Partial<SportsScoreModule>); this.triggerPreviewUpdate(); },
+                'px'
               )
             : ''}
 
           <!-- Team Name Font Size - Conditional -->
           ${hasName
-            ? this._renderSizeSlider(
-                module,
-                updateModule,
-                'team_name_font_size',
+            ? this.renderSliderField(
                 localize('editor.sports.team_name_font_size', lang, 'Team Name Font Size'),
                 localize('editor.sports.team_name_font_size_desc', lang, 'Size of team name text in pixels'),
+                (() => { const v = module.team_name_font_size; const def = style === 'detailed' ? 15 : style === 'compact' ? 14 : 16; return typeof v === 'string' ? parseInt(v) || def : typeof v === 'number' ? v : def; })(),
+                style === 'detailed' ? 15 : style === 'compact' ? 14 : 16,
                 10,
                 32,
-                style === 'detailed' ? 15 : style === 'compact' ? 14 : 16
+                1,
+                (value: number) => { updateModule({ team_name_font_size: `${value}px` } as Partial<SportsScoreModule>); this.triggerPreviewUpdate(); },
+                'px'
               )
             : ''}
 
           <!-- Detail Font Size - Conditional -->
           ${hasDetail
-            ? this._renderSizeSlider(
-                module,
-                updateModule,
-                'detail_font_size',
+            ? this.renderSliderField(
                 localize('editor.sports.detail_font_size', lang, 'Detail Font Size'),
                 localize('editor.sports.detail_font_size_desc', lang, 'Size of detail text (records, venue, etc.) in pixels'),
+                (() => { const v = module.detail_font_size; return typeof v === 'string' ? parseInt(v) || 12 : typeof v === 'number' ? v : 12; })(),
+                12,
                 8,
                 20,
-                12
+                1,
+                (value: number) => { updateModule({ detail_font_size: `${value}px` } as Partial<SportsScoreModule>); this.triggerPreviewUpdate(); },
+                'px'
               )
             : ''}
         </div>
@@ -872,64 +869,30 @@ export class UltraSportsScoreModule extends BaseUltraModule {
                 ${module.show_logo_background !== false
                   ? html`
                       <div style="margin-top: 16px;">
-                        ${this._renderSizeSlider(
-                          module,
-                          updateModule,
-                          'logo_background_size',
+                        ${this.renderSliderField(
                           localize('editor.sports.logo_background_size', lang, 'Background Logo Size'),
                           localize('editor.sports.logo_background_size_desc', lang, 'Size of the watermark logos in the background'),
+                          (() => { const v = module.logo_background_size; return typeof v === 'string' ? parseInt(v) || 80 : typeof v === 'number' ? v : 80; })(),
+                          80,
                           40,
                           150,
-                          80
+                          1,
+                          (value: number) => { updateModule({ logo_background_size: `${value}px` } as Partial<SportsScoreModule>); this.triggerPreviewUpdate(); },
+                          'px'
                         )}
                       </div>
                       <div style="margin-top: 16px;">
-                        <div class="field-container">
-                          <div class="field-title">${localize('editor.sports.logo_background_opacity', lang, 'Background Logo Opacity')}</div>
-                          <div class="field-description">${localize('editor.sports.logo_background_opacity_desc', lang, 'Transparency of the watermark logos (1-20%)')}</div>
-                          <div class="gap-control-container">
-                            <input
-                              type="range"
-                              class="gap-slider"
-                              min="1"
-                              max="20"
-                              step="1"
-                              .value="${String(module.logo_background_opacity || 8)}"
-                              @input=${(e: Event) => {
-                                const target = e.target as HTMLInputElement;
-                                updateModule({ logo_background_opacity: parseInt(target.value, 10) });
-                                this.triggerPreviewUpdate();
-                              }}
-                            />
-                            <input
-                              type="number"
-                              class="gap-input"
-                              min="1"
-                              max="20"
-                              step="1"
-                              .value="${String(module.logo_background_opacity || 8)}"
-                              @input=${(e: Event) => {
-                                const target = e.target as HTMLInputElement;
-                                const numValue = parseInt(target.value, 10);
-                                if (!isNaN(numValue) && numValue >= 1 && numValue <= 20) {
-                                  updateModule({ logo_background_opacity: numValue });
-                                  this.triggerPreviewUpdate();
-                                }
-                              }}
-                            />
-                            <span style="font-size: 12px; color: var(--secondary-text-color); min-width: 20px;">%</span>
-                            <button
-                              class="reset-btn"
-                              @click=${() => {
-                                updateModule({ logo_background_opacity: 8 });
-                                this.triggerPreviewUpdate();
-                              }}
-                              title="Reset to default (8%)"
-                            >
-                              <ha-icon icon="mdi:refresh"></ha-icon>
-                            </button>
-                          </div>
-                        </div>
+                        ${this.renderSliderField(
+                          localize('editor.sports.logo_background_opacity', lang, 'Background Logo Opacity'),
+                          localize('editor.sports.logo_background_opacity_desc', lang, 'Transparency of the watermark logos (1-20%)'),
+                          module.logo_background_opacity || 8,
+                          8,
+                          1,
+                          20,
+                          1,
+                          (value: number) => { updateModule({ logo_background_opacity: value }); this.triggerPreviewUpdate(); },
+                          '%'
+                        )}
                       </div>
                     `
                   : ''}
@@ -1067,91 +1030,6 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     `;
   }
 
-  /**
-   * Render a size slider control with input field and reset button
-   */
-  private _renderSizeSlider(
-    module: SportsScoreModule,
-    updateModule: (updates: Partial<SportsScoreModule>) => void,
-    property: keyof SportsScoreModule,
-    label: string,
-    description: string,
-    min: number,
-    max: number,
-    defaultValue: number,
-    unit: string = 'px'
-  ): TemplateResult {
-    // Parse current value - strip 'px' suffix if present
-    const rawValue = module[property] as string | number | undefined;
-    const currentValue = typeof rawValue === 'string' 
-      ? parseInt(rawValue.replace(unit, ''), 10) || defaultValue
-      : typeof rawValue === 'number' 
-        ? rawValue 
-        : defaultValue;
-
-    return html`
-      <div class="field-container" style="margin-bottom: 16px;">
-        <div class="field-title">${label}</div>
-        <div class="field-description">${description}</div>
-        <div class="gap-control-container">
-          <input
-            type="range"
-            class="gap-slider"
-            min="${min}"
-            max="${max}"
-            step="1"
-            .value="${String(currentValue)}"
-            @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              const newValue = `${target.value}${unit}`;
-              updateModule({ [property]: newValue } as Partial<SportsScoreModule>);
-              this.triggerPreviewUpdate();
-            }}
-          />
-          <input
-            type="number"
-            class="gap-input"
-            min="${min}"
-            max="${max}"
-            step="1"
-            .value="${String(currentValue)}"
-            @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              const numValue = parseInt(target.value, 10);
-              if (!isNaN(numValue) && numValue >= min && numValue <= max) {
-                const newValue = `${numValue}${unit}`;
-                updateModule({ [property]: newValue } as Partial<SportsScoreModule>);
-                this.triggerPreviewUpdate();
-              }
-            }}
-            @keydown=${(e: KeyboardEvent) => {
-              if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                e.preventDefault();
-                const target = e.target as HTMLInputElement;
-                const current = parseInt(target.value, 10) || defaultValue;
-                const increment = e.key === 'ArrowUp' ? 1 : -1;
-                const newNum = Math.max(min, Math.min(max, current + increment));
-                const newValue = `${newNum}${unit}`;
-                updateModule({ [property]: newValue } as Partial<SportsScoreModule>);
-                this.triggerPreviewUpdate();
-              }
-            }}
-          />
-          <button
-            class="reset-btn"
-            @click=${() => {
-              const newValue = `${defaultValue}${unit}`;
-              updateModule({ [property]: newValue } as Partial<SportsScoreModule>);
-              this.triggerPreviewUpdate();
-            }}
-            title="Reset to default (${defaultValue}${unit})"
-          >
-            <ha-icon icon="mdi:refresh"></ha-icon>
-          </button>
-        </div>
-      </div>
-    `;
-  }
 
   // ============================================
   // PREVIEW RENDERING
@@ -1324,10 +1202,13 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         break;
     }
 
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
     // Wrap content with design container
     const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
     
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         /* Background filter support - use pseudo-element to avoid blurring content */
         .sports-module-container.has-background-filter {
@@ -1352,10 +1233,10 @@ export class UltraSportsScoreModule extends BaseUltraModule {
           pointer-events: none;
         }
       </style>
-      <div class="sports-module-container ${filterClass}" style="${this.styleObjectToCss(containerStyles)}">
+      <div class="sports-module-container ${filterClass} ${hoverClass}" style="${designStyles}">
         ${styleContent}
       </div>
-    `;
+    `, module, hass);
   }
 
   /**

@@ -31,6 +31,7 @@ import { logicService } from '../../services/logic-service';
 import { getImageUrl, uploadImage } from '../../utils/image-upload';
 import { localize } from '../../localize/localize';
 import { Z_INDEX } from '../../utils/uc-z-index';
+import { ucToastService } from '../../services/uc-toast-service';
 import { ucPresetsService } from '../../services/uc-presets-service';
 import { directoriesProPresetsAPI } from '../../services/directories-pro-presets-api';
 import { ucFavoritesService } from '../../services/uc-favorites-service';
@@ -199,7 +200,9 @@ export class LayoutTab extends LitElement {
   @state() private _showLoginDialogForSubmit = false;
   @state() private _showSubmitPresetDialog = false;
   @state() private _submitPresetDialogPayload: SubmitPresetDialogPayload | null = null;
-  @state() private _isCloudAuthenticated = false; // reactive mirror of auth state for toolbar button
+  @state() private _isCloudAuthenticated = false;
+  @state() private _showKeyboardShortcuts = false;
+  @state() private _showGettingStarted = !localStorage.getItem('ultra-card-editor-seen');
 
   // Inline rating & details for builder preset gallery
   @state() private _builderRatingPreset: {
@@ -397,6 +400,10 @@ export class LayoutTab extends LitElement {
     if (isSafari) {
       this.classList.add('is-safari');
     }
+  }
+
+  private _isMac(): boolean {
+    return /mac/i.test(navigator.platform);
   }
 
   /** Determine if current device/viewport should be treated as mobile */
@@ -828,11 +835,6 @@ export class LayoutTab extends LitElement {
           icon: 'mdi:clipboard-text',
           label: localize('editor.layout.paste_clipboard', lang, 'Paste from Clipboard'),
           action: () => this._pasteRowFromClipboard(rowIndex),
-        },
-        {
-          icon: 'mdi:resistor-nodes',
-          label: localize('editor.layout.remap_entities', lang, 'Remap Entities'),
-          action: () => this._remapRowEntities(rowIndex),
         },
         {
           icon: 'mdi:delete',
@@ -6876,19 +6878,18 @@ export class LayoutTab extends LitElement {
 
     const layout = this._ensureLayout();
     const currentState = {
-      rows: JSON.parse(JSON.stringify(layout.rows)), // Deep copy
+      rows: JSON.parse(JSON.stringify(layout.rows)),
     };
 
-    // Save current state to redo stack
     this._redoStack.push(currentState);
-
-    // Get previous state from undo stack
     const previousState = this._undoStack.pop()!;
 
-    // Apply previous state
     this._isUndoRedoAction = true;
     this._updateConfig({ layout: previousState });
     this._isUndoRedoAction = false;
+
+    const lang = this.hass?.locale?.language || 'en';
+    ucToastService.info(localize('editor.layout.undo', lang, 'Undo'), 1500);
   }
 
   private _redo(): void {
@@ -6896,19 +6897,18 @@ export class LayoutTab extends LitElement {
 
     const layout = this._ensureLayout();
     const currentState = {
-      rows: JSON.parse(JSON.stringify(layout.rows)), // Deep copy
+      rows: JSON.parse(JSON.stringify(layout.rows)),
     };
 
-    // Save current state to undo stack
     this._undoStack.push(currentState);
-
-    // Get next state from redo stack
     const nextState = this._redoStack.pop()!;
 
-    // Apply next state
     this._isUndoRedoAction = true;
     this._updateConfig({ layout: nextState });
     this._isUndoRedoAction = false;
+
+    const lang = this.hass?.locale?.language || 'en';
+    ucToastService.info(localize('editor.layout.redo', lang, 'Redo'), 1500);
   }
 
   private _addRow(): void {
@@ -8254,6 +8254,81 @@ export class LayoutTab extends LitElement {
     }
   }
 
+  private _remapCardEntities(): void {
+    try {
+      if (this._entityMappingOpen) return;
+
+      const currentLayout = this._ensureLayout();
+      const entityReferences = entityDetector.scanLayout(currentLayout);
+
+      if (entityReferences.length === 0) {
+        this._showToast('No entities found in this card', 'info');
+        return;
+      }
+
+      const wizard = buildAutoPresetWizard(this.hass, entityReferences);
+      if (!wizard?.steps?.length) {
+        this._showToast('No entities to remap', 'info');
+        return;
+      }
+
+      const fakePreset: PresetDefinition = {
+        id: '__remap_card__',
+        name: 'Remap Card Entities',
+        description: 'Remap all entities in this card',
+        category: 'custom',
+        icon: 'mdi:resistor-nodes',
+        author: '',
+        version: '1.0',
+        tags: [],
+        layout: currentLayout,
+        wizard,
+      };
+
+      this._entityMappingOpen = true;
+      presetWizardDialog.show(
+        this.hass,
+        fakePreset,
+        (result: PresetWizardApplyResult) => {
+          this._entityMappingOpen = false;
+          this._applyCardRemapResult(result);
+        },
+        () => {
+          this._entityMappingOpen = false;
+        }
+      );
+    } catch (error) {
+      this._showToast(
+        `Error remapping entities: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'error'
+      );
+    }
+  }
+
+  private _applyCardRemapResult(result: PresetWizardApplyResult): void {
+    try {
+      let layout = this._ensureLayout();
+
+      if (result.mappings.length > 0) {
+        layout = entityMapper.applyMappingToLayout(layout, result.mappings);
+      }
+      if (result.skippedEntityIds?.length) {
+        layout = this._removeModulesWithEntities(layout, result.skippedEntityIds);
+      }
+
+      this._updateLayout(layout);
+      this._showToast(
+        `Entities remapped! ${result.mappings.length} mapping(s) applied.`,
+        'success'
+      );
+    } catch (error) {
+      this._showToast(
+        `Error applying remapping: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'error'
+      );
+    }
+  }
+
   private _addFavorite(favorite: FavoriteRow): void {
     const currentLayout = this._ensureLayout();
 
@@ -8440,6 +8515,8 @@ export class LayoutTab extends LitElement {
     } catch (error) {
       if (error instanceof Error && error.message === 'Export cancelled by user') {
         this._showToast('Export cancelled - privacy protection', 'info');
+      } else if (error instanceof Error && error.message.startsWith('CLIPBOARD_UNAVAILABLE:')) {
+        this._showShortcodeDialog(error.message.slice('CLIPBOARD_UNAVAILABLE:'.length));
       } else {
         this._showToast('Failed to export favorite to clipboard', 'error');
       }
@@ -9190,13 +9267,39 @@ export class LayoutTab extends LitElement {
 
   private async _copyShortcodeFromDialog(): Promise<void> {
     if (!this._shortcodeDialogText) return;
+
+    // Try modern Clipboard API first.
     try {
       await navigator.clipboard.writeText(this._shortcodeDialogText);
       this._showToast('Copied to clipboard', 'success');
       this._closeShortcodeDialog();
-    } catch (_) {
-      this._showToast('Copy failed — select and copy the text manually', 'error');
+      return;
+    } catch {
+      // Clipboard API unavailable or denied — try selecting and copying the textarea.
     }
+
+    // execCommand fallback: select all text in the visible dialog textarea so the
+    // user's OS clipboard receives it via the document.execCommand('copy') path.
+    const textarea = this.shadowRoot?.querySelector(
+      '.shortcode-dialog-textarea'
+    ) as HTMLTextAreaElement | null;
+    if (textarea) {
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+      try {
+        const ok = document.execCommand('copy');
+        if (ok) {
+          this._showToast('Copied to clipboard', 'success');
+          this._closeShortcodeDialog();
+          return;
+        }
+      } catch {
+        // execCommand also failed — fall through to manual-copy hint.
+      }
+    }
+
+    this._showToast('Copy failed — tap the text above, select all and copy manually', 'error');
   }
 
   /**
@@ -9362,40 +9465,7 @@ export class LayoutTab extends LitElement {
   }
 
   private _showToast(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
-    // Create a simple toast notification
-    const toast = document.createElement('div');
-    toast.className = `ultra-toast ultra-toast-${type}`;
-    toast.textContent = message;
-    toast.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 12px 24px;
-      background: var(--${type === 'success' ? 'success' : type === 'error' ? 'error' : 'primary'}-color);
-      color: white;
-      border-radius: 8px;
-      z-index: ${Z_INDEX.TOAST_NOTIFICATION};
-      font-size: 14px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      opacity: 0;
-      transform: translateX(100%);
-      transition: all 0.3s ease;
-    `;
-
-    document.body.appendChild(toast);
-
-    // Animate in
-    requestAnimationFrame(() => {
-      toast.style.opacity = '1';
-      toast.style.transform = 'translateX(0)';
-    });
-
-    // Remove after 3 seconds
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateX(100%)';
-      setTimeout(() => document.body.removeChild(toast), 300);
-    }, 3000);
+    ucToastService.show(message, type);
   }
 
   private _countExternalCardModules(): number {
@@ -23368,7 +23438,7 @@ export class LayoutTab extends LitElement {
           </div>
 
           <!-- Child module preview -->
-          <div class="module-preview">
+          <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
             <div
               class="preview-header"
               @click=${(e: Event) => {
@@ -23383,7 +23453,31 @@ export class LayoutTab extends LitElement {
               style="cursor: pointer;"
               title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
             >
-              <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <ha-icon
+                  class="preview-pin-icon ${this._isPreviewPinned ? 'pinned' : ''}"
+                  icon="${this._isPreviewPinned ? 'mdi:pin' : 'mdi:pin-outline'}"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._togglePreviewPin();
+                  }}
+                  @touchend=${(e: Event) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._togglePreviewPin();
+                  }}
+                  title="${this._isPreviewPinned
+                    ? localize(
+                        'editor.layout.unpin_preview',
+                        lang,
+                        'Unpin preview (scroll with content)'
+                      )
+                    : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')}"
+                ></ha-icon>
+                <span style="flex: 1;">
+                  ${localize('editor.layout.live_preview', lang, 'Live Preview')}
+                </span>
+              </div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <uc-breakpoint-preview
                   .selectedBreakpoint=${this._previewBreakpoint}
@@ -26858,7 +26952,8 @@ export class LayoutTab extends LitElement {
                   this._undo();
                 }}
                 ?disabled=${!this._canUndo()}
-                title="${localize('editor.layout.undo_tooltip', lang, 'Undo last change (Ctrl+Z)')}"
+                title="${localize('editor.layout.undo_tooltip', lang, 'Undo last change (Ctrl+Z)').replace('Ctrl', this._isMac() ? '⌘' : 'Ctrl')}"
+                aria-label="${localize('editor.layout.undo', lang, 'Undo')}"
               >
                 <ha-icon icon="mdi:undo"></ha-icon>
               </button>
@@ -26869,11 +26964,8 @@ export class LayoutTab extends LitElement {
                   this._redo();
                 }}
                 ?disabled=${!this._canRedo()}
-                title="${localize(
-                  'editor.layout.redo_tooltip',
-                  lang,
-                  'Redo last undone change (Ctrl+Y)'
-                )}"
+                title="${localize('editor.layout.redo_tooltip', lang, 'Redo last undone change (Ctrl+Y)').replace('Ctrl', this._isMac() ? '⌘' : 'Ctrl')}"
+                aria-label="${localize('editor.layout.redo', lang, 'Redo')}"
               >
                 <ha-icon icon="mdi:redo"></ha-icon>
               </button>
@@ -26887,11 +26979,8 @@ export class LayoutTab extends LitElement {
                   this._collapseAllRows(e);
                 }}
                 ?disabled=${(this.config?.layout?.rows?.length ?? 0) === 0}
-                title="${localize(
-                  'editor.layout.collapse_all_rows_tooltip',
-                  lang,
-                  'Collapse all rows'
-                )}"
+                title="${localize('editor.layout.collapse_all_rows_tooltip', lang, 'Collapse all rows')}"
+                aria-label="${localize('editor.layout.collapse_all_rows_tooltip', lang, 'Collapse all rows')}"
               >
                 <ha-icon icon="mdi:unfold-less-horizontal"></ha-icon>
               </button>
@@ -26902,11 +26991,8 @@ export class LayoutTab extends LitElement {
                   this._expandAllRows(e);
                 }}
                 ?disabled=${this._collapsedRows.size === 0}
-                title="${localize(
-                  'editor.layout.expand_all_rows_tooltip',
-                  lang,
-                  'Expand all rows'
-                )}"
+                title="${localize('editor.layout.expand_all_rows_tooltip', lang, 'Expand all rows')}"
+                aria-label="${localize('editor.layout.expand_all_rows_tooltip', lang, 'Expand all rows')}"
               >
                 <ha-icon icon="mdi:unfold-more-horizontal"></ha-icon>
               </button>
@@ -26916,13 +27002,22 @@ export class LayoutTab extends LitElement {
                   e.stopPropagation();
                   this._showEntityReplaceDialog = true;
                 }}
-                title="${localize(
-                  'editor.layout.entity_replace_tooltip',
-                  lang,
-                  'Find and replace entity IDs in this layout'
-                )}"
+                title="${localize('editor.layout.entity_replace_tooltip', lang, 'Find and replace entity IDs in this layout')}"
+                aria-label="${localize('editor.layout.entity_replace_tooltip', lang, 'Find and replace entity IDs in this layout')}"
               >
                 <ha-icon icon="mdi:find-replace"></ha-icon>
+              </button>
+              <button
+                class="tb-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._remapCardEntities();
+                }}
+                ?disabled=${(this.config?.layout?.rows?.length ?? 0) === 0}
+                title="${localize('editor.layout.remap_entities_tooltip', lang, 'Remap all entities in this card')}"
+                aria-label="${localize('editor.layout.remap_entities_tooltip', lang, 'Remap all entities in this card')}"
+              >
+                <ha-icon icon="mdi:resistor-nodes"></ha-icon>
               </button>
             </div>
             <!-- Transfer group -->
@@ -26933,11 +27028,8 @@ export class LayoutTab extends LitElement {
                   e.stopPropagation();
                   this._exportCard();
                 }}
-                title="${localize(
-                  'editor.layout.export_card_tooltip',
-                  lang,
-                  'Export entire card configuration to clipboard'
-                )}"
+                title="${localize('editor.layout.export_card_tooltip', lang, 'Export entire card configuration to clipboard')}"
+                aria-label="${localize('editor.layout.export_card_tooltip', lang, 'Export entire card configuration to clipboard')}"
               >
                 <ha-icon icon="mdi:export"></ha-icon>
               </button>
@@ -26948,11 +27040,8 @@ export class LayoutTab extends LitElement {
                   this._importCard();
                 }}
                 @mouseenter=${() => this._checkCardClipboard()}
-                title="${localize(
-                  'editor.layout.import_card_tooltip',
-                  lang,
-                  'Import card configuration from clipboard'
-                )}"
+                title="${localize('editor.layout.import_card_tooltip', lang, 'Import card configuration from clipboard')}"
+                aria-label="${localize('editor.layout.import_card_tooltip', lang, 'Import card configuration from clipboard')}"
               >
                 <ha-icon icon="mdi:import"></ha-icon>
               </button>
@@ -26965,14 +27054,26 @@ export class LayoutTab extends LitElement {
                         this._openSharePresetDialog();
                       }}
                       title="Share your current layout on ultracard.io"
+                      aria-label="Share your current layout on ultracard.io"
                     >
                       <ha-icon icon="mdi:share-variant"></ha-icon>
                     </button>
                   `
                 : ''}
             </div>
-            <!-- Fullscreen -->
+            <!-- Help & Fullscreen -->
             <div class="toolbar-group toolbar-group-end">
+              <button
+                class="tb-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._showKeyboardShortcuts = true;
+                }}
+                title="${localize('editor.layout.keyboard_shortcuts', lang, 'Keyboard Shortcuts')}"
+                aria-label="${localize('editor.layout.keyboard_shortcuts', lang, 'Keyboard Shortcuts')}"
+              >
+                <ha-icon icon="mdi:keyboard"></ha-icon>
+              </button>
               <button
                 class="tb-btn"
                 @click=${(e: Event) => {
@@ -26982,6 +27083,9 @@ export class LayoutTab extends LitElement {
                   );
                 }}
                 title="${this.isFullScreen
+                  ? localize('editor.tooltips.return_dashboard', lang, 'Return to Dashboard')
+                  : localize('editor.tooltips.enter_fullscreen', lang, 'Enter Full Screen')}"
+                aria-label="${this.isFullScreen
                   ? localize('editor.tooltips.return_dashboard', lang, 'Return to Dashboard')
                   : localize('editor.tooltips.enter_fullscreen', lang, 'Enter Full Screen')}"
               >
@@ -26994,6 +27098,8 @@ export class LayoutTab extends LitElement {
         </div>
 
         ${this._renderBreadcrumbs()}
+
+        ${this._showGettingStarted ? this._renderGettingStartedBanner() : ''}
 
         <div class="tree-view-container">
           <div id="tree-drop-indicator" class="tree-drop-indicator" aria-hidden="true"></div>
@@ -27128,18 +27234,6 @@ export class LayoutTab extends LitElement {
                         title="Import from clipboard"
                       >
                         <ha-icon icon="mdi:clipboard-text"></ha-icon>
-                      </button>
-                      <button
-                        class="row-remap-entities-btn"
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          this._remapRowEntities(rowIndex);
-                        }}
-                        @mousedown=${(e: Event) => e.stopPropagation()}
-                        @dragstart=${(e: Event) => e.preventDefault()}
-                        title="Remap Entities"
-                      >
-                        <ha-icon icon="mdi:resistor-nodes"></ha-icon>
                       </button>
                     </div>
                     <div class="row-actions-right">
@@ -27593,6 +27687,7 @@ export class LayoutTab extends LitElement {
         ${this._renderImagePopup()} ${this._renderFavoriteDialog()} ${this._renderImportDialog()}
         ${this._renderEntityReplaceDialog()}
         ${this._renderVariableMappingDialog()} ${this._renderShortcodeDialog()}
+        ${this._showKeyboardShortcuts ? this._renderKeyboardShortcutsDialog() : ''}
         <!-- Share Preset dialogs — always in DOM so they work regardless of active tab or popup state -->
         ${this._showLoginDialogForSubmit
           ? html`
@@ -28509,12 +28604,13 @@ export class LayoutTab extends LitElement {
     if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
       // Show error message to user
       const lang = this.hass?.locale?.language || 'en';
-      alert(
+      this._showToast(
         localize(
           'editor.layout.select_column_first',
           lang,
           'Please select a column first by clicking "Add Module" on the column where you want to add this card.'
-        )
+        ),
+        'error'
       );
       return;
     }
@@ -28645,6 +28741,112 @@ export class LayoutTab extends LitElement {
         @close=${() => (this._showImportDialog = false)}
         @import=${this._handleImport}
       ></uc-import-dialog>
+    `;
+  }
+
+  private _renderGettingStartedBanner(): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    return html`
+      <div style="
+        margin: 8px 4px 4px 12px;
+        padding: 14px 16px;
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.2);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      ">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 14px; font-weight: 600; color: var(--primary-text-color);">
+            ${localize('editor.layout.getting_started', lang, 'Getting Started')}
+          </span>
+          <button
+            style="background: none; border: none; padding: 4px; cursor: pointer; color: var(--secondary-text-color); border-radius: 4px;"
+            @click=${() => {
+              this._showGettingStarted = false;
+              try { localStorage.setItem('ultra-card-editor-seen', '1'); } catch { /* ignore */ }
+            }}
+            aria-label="Close"
+            title="${localize('editor.layout.getting_started_dismiss', lang, "Don't show again")}"
+          >
+            <ha-icon icon="mdi:close" style="--mdc-icon-size: 16px;"></ha-icon>
+          </button>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <button
+            style="
+              display: inline-flex; align-items: center; gap: 6px;
+              padding: 6px 14px; font-size: 12px; font-weight: 500;
+              background: var(--primary-color); color: var(--text-primary-color, white);
+              border: none; border-radius: 6px; cursor: pointer;
+            "
+            @click=${() => {
+              this._showGettingStarted = false;
+              try { localStorage.setItem('ultra-card-editor-seen', '1'); } catch { /* ignore */ }
+              this._activeModuleSelectorTab = 'presets';
+              this._showModuleSelector = true;
+            }}
+          >
+            <ha-icon icon="mdi:palette-swatch-variant" style="--mdc-icon-size: 16px;"></ha-icon>
+            ${localize('editor.layout.getting_started_preset', lang, 'Start from a Preset')}
+          </button>
+          <button
+            style="
+              display: inline-flex; align-items: center; gap: 6px;
+              padding: 6px 14px; font-size: 12px; font-weight: 500;
+              background: var(--secondary-background-color); color: var(--primary-text-color);
+              border: 1px solid var(--divider-color); border-radius: 6px; cursor: pointer;
+            "
+            @click=${() => {
+              this._showGettingStarted = false;
+              try { localStorage.setItem('ultra-card-editor-seen', '1'); } catch { /* ignore */ }
+              this._addRow();
+            }}
+          >
+            <ha-icon icon="mdi:plus-circle-outline" style="--mdc-icon-size: 16px;"></ha-icon>
+            ${localize('editor.layout.getting_started_module', lang, 'Add Your First Module')}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderKeyboardShortcutsDialog(): TemplateResult {
+    const mod = this._isMac() ? '⌘' : 'Ctrl';
+    const lang = this.hass?.locale?.language || 'en';
+    const shortcuts = [
+      { keys: `${mod}+Z`, action: localize('editor.layout.undo', lang, 'Undo') },
+      { keys: `${mod}+Shift+Z`, action: localize('editor.layout.redo', lang, 'Redo') },
+      { keys: `${mod}+Y`, action: localize('editor.layout.redo', lang, 'Redo') },
+      { keys: 'Esc', action: localize('editor.layout.keyboard_exit_fullscreen', lang, 'Exit Full Screen') },
+    ];
+    return html`
+      <div
+        class="shortcode-dialog-overlay"
+        @click=${(e: Event) => { if (e.target === e.currentTarget) this._showKeyboardShortcuts = false; }}
+      >
+        <div class="shortcode-dialog" @click=${(e: Event) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="${localize('editor.layout.keyboard_shortcuts', lang, 'Keyboard Shortcuts')}">
+          <div class="shortcode-dialog-header">
+            <span class="shortcode-dialog-title">${localize('editor.layout.keyboard_shortcuts', lang, 'Keyboard Shortcuts')}</span>
+            <button
+              class="shortcode-dialog-close"
+              @click=${() => (this._showKeyboardShortcuts = false)}
+              aria-label="Close"
+            >×</button>
+          </div>
+          <div style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+            ${shortcuts.map(
+              s => html`
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+                  <span style="font-size: 13px; color: var(--primary-text-color);">${s.action}</span>
+                  <kbd style="font-family: ui-monospace, monospace; font-size: 12px; padding: 3px 8px; background: var(--secondary-background-color); border: 1px solid var(--divider-color); border-radius: 4px; color: var(--primary-text-color); white-space: nowrap;">${s.keys}</kbd>
+                </div>
+              `
+            )}
+          </div>
+        </div>
+      </div>
     `;
   }
 
@@ -37433,7 +37635,7 @@ export class LayoutTab extends LitElement {
         background_image_type: 'upload' as const,
       });
     } catch (error) {
-      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this._showToast(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
     }
   }
   private _truncatePath(path: string): string {

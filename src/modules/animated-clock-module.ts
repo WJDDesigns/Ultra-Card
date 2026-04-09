@@ -264,6 +264,10 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       (clockModule.hold_action && clockModule.hold_action.action !== 'nothing') ||
       (clockModule.double_tap_action && clockModule.double_tap_action.action !== 'nothing');
 
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+    const hoverClass = this.getHoverEffectClass(module);
+    const clockLayoutStyles = `display: flex; justify-content: center; align-items: center; flex-direction: column; box-sizing: border-box; cursor: ${hasActions ? 'pointer' : 'default'};`;
+
     // Container styles for design system integration - properly handle global design properties
     const containerStyles = {
       padding:
@@ -337,12 +341,13 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       cursor: hasActions ? 'pointer' : 'default',
     };
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         ${this.getStyles()}
       </style>
       <div
-        style=${this.objectToStyleString(containerStyles)}
+        class="${hoverClass}"
+        style="${designStyles}; ${clockLayoutStyles}"
         @pointerdown=${handlers.onPointerDown}
         @pointerup=${handlers.onPointerUp}
         @pointerleave=${handlers.onPointerLeave}
@@ -359,7 +364,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
           ${clockContent}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   // ========== CLOCK STYLE RENDERERS ==========

@@ -1377,14 +1377,17 @@ export class UltraExternalCardModule extends BaseUltraModule {
       )}`;
     }
 
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
     // Return the wrapper container with mount callback (unlocked card)
     // Wrap the card content container inside the design container
     // Use guard() to only re-render when module ID or card type changes
     // This prevents the 60+ re-renders triggered by the editor from destroying the container
-    return html`${guard(
+    return this.wrapWithAnimation(html`${guard(
       [module.id, module.card_type],
       () => html`
-        <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
+        <div class="external-card-module-container ${hoverClass}" style="${designStyles}; ${this.styleObjectToCss(containerStyles)}">
           ${cache(html`
             <div
               ${ref(mountContainer)}
@@ -1404,7 +1407,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
           `)}
         </div>
       `
-    )}`;
+    )}`, module, hass);
   }
 
   private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {

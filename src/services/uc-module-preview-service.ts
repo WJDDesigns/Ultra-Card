@@ -2,6 +2,7 @@ import { html, TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { CardModule, UltraCardConfig, DeviceBreakpoint } from '../types';
 import { getModuleRegistry } from '../modules/module-registry';
+import { BaseUltraModule } from '../modules/base-module';
 import { logicService } from './logic-service';
 import { UcHoverEffectsService } from './uc-hover-effects-service';
 import { localize } from '../localize/localize';
@@ -266,6 +267,10 @@ class UcModulePreviewService {
    * The original config keeps $varname for editor display.
    * The resolved config is used for rendering.
    * 
+   * If the module handler does NOT set handlesOwnDesignStyles = true, this method
+   * automatically wraps the module content with design-tab styles (background, padding,
+   * margin, border, shadow, etc.) so that the Design tab affects every module uniformly.
+   * 
    * @private
    */
   private _getModuleContent(
@@ -295,7 +300,40 @@ class UcModulePreviewService {
       previewContext === 'live'
         ? this._applyPreviewBreakpointDesign(resolvedModule)
         : resolvedModule;
-    return moduleHandler.renderPreview(moduleToRender, hass, config, previewContext);
+    const content = moduleHandler.renderPreview(moduleToRender, hass, config, previewContext);
+
+    // Step 2: Apply design-tab styles as an outer wrapper when the module doesn't self-handle
+    if (!moduleHandler.handlesOwnDesignStyles && moduleHandler instanceof BaseUltraModule) {
+      return this._wrapWithDesignStyles(content, moduleToRender, hass, moduleHandler);
+    }
+
+    return content;
+  }
+
+  /**
+   * Wrap module content with design-tab styles (background, padding, margin, border, shadow…).
+   * Only called for modules that do NOT set handlesOwnDesignStyles = true.
+   * @private
+   */
+  private _wrapWithDesignStyles(
+    content: TemplateResult,
+    module: CardModule,
+    hass: HomeAssistant,
+    handler: BaseUltraModule
+  ): TemplateResult {
+    const styles = handler.buildDesignStyles(module, hass);
+    const styleStr = handler.buildStyleString(styles);
+    const hoverClass = handler.getHoverEffectClass(module);
+
+    if (!styleStr && !hoverClass) {
+      return content;
+    }
+
+    return html`
+      <div class="uc-module-design-wrapper ${hoverClass}" style="${styleStr}">
+        ${content}
+      </div>
+    `;
   }
 
   /**

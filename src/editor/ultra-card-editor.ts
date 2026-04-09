@@ -36,6 +36,7 @@ import '../components/uc-snapshot-settings-dialog';
 import '../components/uc-manual-backup-dialog';
 import { getModuleRegistry } from '../modules';
 import { localize } from '../localize/localize';
+import { ucToastService } from '../services/uc-toast-service';
 
 type EditorTab = 'layout' | 'settings';
 
@@ -1710,7 +1711,7 @@ export class UltraCardEditor extends LitElement {
       });
     } catch (error) {
       console.error('Failed to upload card background image:', error);
-      alert(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      ucToastService.error(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       // Reset the input so the same file can be selected again if needed
       input.value = '';
@@ -2179,8 +2180,7 @@ export class UltraCardEditor extends LitElement {
 
       /* Hide labels containing underscores only for non-action forms */
       ha-form:not([data-action-form]) label[data-label*='_'],
-      ha-form:not([data-action-form]) .label-text:contains('_'),
-      :not([data-action-form]) label:contains('_') {
+      ha-form:not([data-action-form]) .label-text[data-label*='_'] {
         display: none !important;
       }
 
@@ -5839,10 +5839,10 @@ export class UltraCardEditor extends LitElement {
       if (variablesToExport.length > 0) {
         successMsg += ` (including ${variablesToExport.length} variable(s))`;
       }
-      alert(successMsg);
+      ucToastService.success(successMsg);
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Failed to export card configuration');
+      ucToastService.error('Failed to export card configuration');
     }
   }
 
@@ -5926,7 +5926,7 @@ export class UltraCardEditor extends LitElement {
               if (summary.skipped.length > 0) {
                 message += ` (${summary.skipped.length} skipped - already exist)`;
               }
-              alert(message);
+              ucToastService.success(message);
             }
           }
 
@@ -5943,14 +5943,14 @@ export class UltraCardEditor extends LitElement {
             this._pendingImportConfig = cleanConfig;
             this._showVariableMappingDialog = true;
           } else {
-            alert(
+            ucToastService.success(
               localize('editor.ultra_card_pro.import_success', lang, 'Card configuration imported!')
             );
           }
         }
       } catch (error) {
         console.error('Import failed:', error);
-        alert(
+        ucToastService.error(
           'Failed to import card configuration: ' +
             (error instanceof Error ? error.message : 'Unknown error')
         );
@@ -5989,7 +5989,7 @@ export class UltraCardEditor extends LitElement {
     this._showVariableMappingDialog = false;
     this._missingVariables = [];
     this._pendingImportConfig = null;
-    alert(
+    ucToastService.success(
       localize(
         'editor.ultra_card_pro.import_success',
         lang,
@@ -6003,14 +6003,14 @@ export class UltraCardEditor extends LitElement {
     this._showVariableMappingDialog = false;
     this._missingVariables = [];
     this._pendingImportConfig = null;
-    alert(localize('editor.ultra_card_pro.import_success', lang, 'Card configuration imported!'));
+    ucToastService.success(localize('editor.ultra_card_pro.import_success', lang, 'Card configuration imported!'));
   }
 
   private _handleSnapshotImport(snapshotData: any) {
     const cards = snapshotData.cards || [];
 
     if (cards.length === 0) {
-      alert('No cards found in snapshot file');
+      ucToastService.error('No cards found in snapshot file');
       return;
     }
 
@@ -6050,7 +6050,7 @@ export class UltraCardEditor extends LitElement {
 
     const selectedNum = parseInt(selection);
     if (isNaN(selectedNum) || selectedNum < 1 || selectedNum > cardOptions.length) {
-      alert('Invalid selection');
+      ucToastService.error('Invalid selection');
       return;
     }
 
@@ -6058,7 +6058,7 @@ export class UltraCardEditor extends LitElement {
     const config = selectedCard.config;
 
     if (!config || config.type !== 'custom:ultra-card') {
-      alert('Invalid card configuration in snapshot');
+      ucToastService.error('Invalid card configuration in snapshot');
       return;
     }
 
@@ -6068,7 +6068,7 @@ export class UltraCardEditor extends LitElement {
       )
     ) {
       this._updateConfig(config);
-      alert(`✅ Card imported successfully from snapshot!`);
+      ucToastService.success('Card imported successfully from snapshot!');
     }
   }
 
@@ -6099,10 +6099,10 @@ export class UltraCardEditor extends LitElement {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      alert('Dashboard configuration exported successfully!');
+      ucToastService.success('Dashboard configuration exported successfully!');
     } catch (error) {
       console.error('Dashboard export failed:', error);
-      alert('Failed to export dashboard configuration');
+      ucToastService.error('Failed to export dashboard configuration');
     }
   }
 
@@ -6127,13 +6127,13 @@ export class UltraCardEditor extends LitElement {
           confirm('Import this dashboard configuration? This will replace your current dashboard.')
         ) {
           // This would need to be implemented with proper Home Assistant API calls
-          alert(
-            'Dashboard import functionality requires Home Assistant API integration.\nPlease use the Home Assistant UI to import dashboard configurations.'
+          ucToastService.info(
+            'Dashboard import requires Home Assistant API integration. Please use the Home Assistant UI to import dashboard configurations.'
           );
         }
       } catch (error) {
         console.error('Dashboard import failed:', error);
-        alert(
+        ucToastService.error(
           'Failed to import dashboard configuration: ' +
             (error instanceof Error ? error.message : 'Unknown error')
         );
@@ -6172,20 +6172,19 @@ export class UltraCardEditor extends LitElement {
       });
     }
 
-    alert(
+    ucToastService.success(
       localize('editor.ultra_card_pro.backup_created', lang, 'Backup created successfully!') +
-        `\n\n"${name}"`
+        ` "${name}"`
     );
   }
 
   private _handleBackupRestored(e: CustomEvent) {
     const { config } = e.detail;
     this._updateConfig(config);
-    alert('Backup restored successfully!');
+    ucToastService.success('Backup restored successfully!');
   }
 
   private _handleSnapshotCreated(e: CustomEvent) {
-    // Refresh user subscription to update snapshot count
     if (this._cloudUser) {
       ucCloudBackupService.getSubscription().then(subscription => {
         if (this._cloudUser) {
@@ -6194,7 +6193,7 @@ export class UltraCardEditor extends LitElement {
         }
       });
     }
-    alert('Snapshot created successfully!');
+    ucToastService.success('Snapshot created successfully!');
   }
 
   private _handleSnapshotRestored(e: CustomEvent) {
@@ -6204,7 +6203,7 @@ export class UltraCardEditor extends LitElement {
   private _handleCardBackupRestored(e: CustomEvent) {
     const { config } = e.detail;
     this._updateConfig(config);
-    alert('Card backup restored successfully!');
+    ucToastService.success('Card backup restored successfully!');
   }
 
   private async _handleSnapshotSettingsSaved() {
@@ -6253,7 +6252,7 @@ export class UltraCardEditor extends LitElement {
     } catch (error) {
       console.error('❌ Manual snapshot failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to create manual snapshot: ${errorMessage}`);
+      ucToastService.error(`Failed to create manual snapshot: ${errorMessage}`);
     } finally {
       this._isCreatingManualSnapshot = false;
     }
@@ -6274,14 +6273,7 @@ export class UltraCardEditor extends LitElement {
       // Surface failure back in the banner without a blocking alert
       this._showSyncNotification = false;
       this._newerBackupAvailable = null;
-      // Fire a non-blocking toast-style event so the card can optionally surface it
-      this.dispatchEvent(
-        new CustomEvent('ultra-card-cloud-sync-error', {
-          detail: { message: error instanceof Error ? error.message : 'Failed to load backup' },
-          bubbles: true,
-          composed: true,
-        })
-      );
+      ucToastService.error(error instanceof Error ? error.message : 'Failed to load backup');
     } finally {
       this._isLoadingNewerBackup = false;
     }

@@ -4,6 +4,7 @@ import { ucPrivacyService } from './uc-privacy-service';
 import { ucCustomVariablesService } from './uc-custom-variables-service';
 import { scanConfigForVariables } from '../utils/uc-template-processor';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
+import pako from 'pako';
 
 /**
  * Service for exporting and importing Ultra Card configurations
@@ -287,17 +288,29 @@ class UcExportImportService {
 
       const encodedData = match[1].trim();
 
-      // Validate base64 encoding
+      // Validate encoding
       if (!encodedData || encodedData.length === 0) {
         throw new Error('Empty shortcode data');
       }
 
       let jsonData: string;
       try {
-        // Use proper Unicode-aware decoding to preserve empty character glyphs
-        jsonData = this._decodeFromBase64(encodedData);
+        if (encodedData.startsWith('C:')) {
+          // New compressed format: base64(pako.deflate(JSON))
+          const base64 = encodedData.slice(2);
+          const binary = atob(base64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          const inflated = pako.inflate(bytes);
+          jsonData = new TextDecoder('utf-8').decode(inflated);
+        } else {
+          // Legacy format: base64(UTF-8(JSON))
+          jsonData = this._decodeFromBase64(encodedData);
+        }
       } catch (decodeError) {
-        throw new Error('Invalid base64 encoding in shortcode');
+        throw new Error('Invalid encoding in shortcode');
       }
 
       // Clean JSON data and validate
@@ -495,37 +508,154 @@ class UcExportImportService {
   }
 
   /**
-   * Generate Ultra Card shortcode format
+   * Strip well-known default values from a deep-cloned export payload before
+   * serialization.  Removing these fields (which appear on every module, row,
+   * and column) shrinks the JSON significantly before compression, improving
+   * the deflate ratio and reducing the final shortcode length.
+   *
+   * The config validation service and each module's createDefault() restore
+   * any missing fields at import time, so no restore step is required here.
    */
-  private _generateShortcode(exportData: ExportData): string {
-    const jsonString = JSON.stringify(exportData);
-    // Properly handle Unicode characters (including empty character glyphs)
-    // by encoding to UTF-8 before base64 encoding
-    const encodedData = this._encodeToBase64(jsonString);
-    return `[ultra_card]${encodedData}[/ultra_card]`;
+  private _stripDefaults(obj: unknown): unknown {
+    if (Array.isArray(obj)) {
+      return obj.map(item => this._stripDefaults(item));
+    }
+    if (obj !== null && typeof obj === 'object') {
+      const record = obj as Record<string, unknown>;
+      const result: Record<string, unknown> = {};
+      for (const key of Object.keys(record)) {
+        const value = record[key];
+
+        // --- per-field default checks ---
+        if (key === 'display_mode' && value === 'always') continue;
+        if (key === 'display_conditions' && Array.isArray(value) && value.length === 0) continue;
+        if (key === 'hidden_on_devices' && Array.isArray(value) && value.length === 0) continue;
+        if (key === 'design' && value !== null && typeof value === 'object' && Object.keys(value as object).length === 0) continue;
+        if (key === 'confirm_action' && value === false) continue;
+        if (key === 'name' && (value === '' || value === undefined || value === null)) continue;
+        if (
+          (key === 'tap_action' || key === 'hold_action' || key === 'double_tap_action') &&
+          value !== null &&
+          typeof value === 'object'
+        ) {
+          const action = value as Record<string, unknown>;
+          const actionKeys = Object.keys(action);
+          if (actionKeys.length === 1 && action['action'] === 'nothing') continue;
+        }
+        // --- recurse ---
+        result[key] = this._stripDefaults(value);
+      }
+      return result;
+    }
+    return obj;
   }
 
   /**
-   * Copy text to clipboard
-   * @throws Error with message starting 'CLIPBOARD_UNAVAILABLE:' and the text as payload when both clipboard API and execCommand fail (e.g. Android WebView)
+   * Generate Ultra Card shortcode format (v2: deflate-compressed + base64).
+   *
+   * Encoding pipeline:
+   *   stripDefaults → JSON.stringify → pako.deflate → base64 → prefix "C:" →
+   *   wrap in [ultra_card]…[/ultra_card]
+   *
+   * The "C:" prefix lets the decoder distinguish new (compressed) payloads
+   * from legacy (plain base64-JSON) payloads, ensuring full backwards
+   * compatibility when old shortcodes are imported.
+   */
+  private _generateShortcode(exportData: ExportData): string {
+    try {
+      const stripped = this._stripDefaults(exportData) as ExportData;
+      const jsonString = JSON.stringify(stripped);
+      const compressed = pako.deflate(jsonString);
+      // Build base64 without String.fromCharCode.apply to avoid stack-overflow
+      // on large payloads.
+      let binary = '';
+      for (let i = 0; i < compressed.length; i++) {
+        binary += String.fromCharCode(compressed[i]);
+      }
+      const base64 = btoa(binary);
+      return `[ultra_card]C:${base64}[/ultra_card]`;
+    } catch (error) {
+      // Fallback to legacy uncompressed encoding so shortcode generation
+      // never fails silently.
+      console.warn('Shortcode compression failed, falling back to legacy encoding:', error);
+      const jsonString = JSON.stringify(exportData);
+      const encodedData = this._encodeToBase64(jsonString);
+      return `[ultra_card]${encodedData}[/ultra_card]`;
+    }
+  }
+
+  /**
+   * Copy text to clipboard.
+   *
+   * Strategy:
+   *  1. Try navigator.clipboard.writeText (modern API).
+   *  2. Verify the write by reading back with clipboard.readText.
+   *     - If readText succeeds and the content matches → done.
+   *     - If readText is denied (NotAllowedError / SecurityError) → assume writeText
+   *       worked (we can't verify, but this is the common case on desktop browsers
+   *       that don't grant clipboard-read permission without explicit user prompt).
+   *     - If readText returns a different value → writeText silently failed
+   *       (common on Android WebView where the Promise resolves but clipboard stays
+   *       unchanged) → fall through to execCommand.
+   *  3. execCommand('copy') fallback — textarea is kept inside the viewport so that
+   *     mobile WebViews don't reject the selection silently.
+   *  4. If both fail, throw CLIPBOARD_UNAVAILABLE so the caller can show the shortcode
+   *     dialog as a last resort.
+   *
+   * @throws Error with message starting 'CLIPBOARD_UNAVAILABLE:' and the text as
+   *         payload when every method fails (e.g. Android companion app WebView).
    */
   private async _copyToClipboard(text: string): Promise<void> {
-    try {
-      await (navigator as unknown as Navigator).clipboard.writeText(text);
-      return;
-    } catch (_) {
-      // Clipboard API unavailable or denied — try legacy execCommand
+    const clipboardApi = (navigator as unknown as Navigator).clipboard;
+
+    if (clipboardApi?.writeText) {
+      try {
+        await clipboardApi.writeText(text);
+
+        // Verify the write succeeded.  On Android WebView the Promise can resolve
+        // without actually writing anything to the clipboard.
+        if (clipboardApi.readText) {
+          try {
+            const readBack = await clipboardApi.readText();
+            if (readBack === text) {
+              return; // Confirmed success
+            }
+            // readText returned something different — writeText silently failed;
+            // fall through to the execCommand path.
+          } catch (readErr: unknown) {
+            // clipboard-read permission denied (NotAllowedError / SecurityError).
+            // We cannot verify, but on standard desktop browsers writeText works
+            // even without read permission, so conservatively treat as success.
+            const name = (readErr instanceof Error) ? readErr.name : '';
+            if (name === 'NotAllowedError' || name === 'SecurityError') {
+              return;
+            }
+            // Any other readText error — assume writeText also unreliable; fall through.
+          }
+        } else {
+          // No readText support — assume writeText succeeded (standard desktop behaviour).
+          return;
+        }
+      } catch {
+        // writeText threw (permission denied or API unavailable) — fall through.
+      }
     }
+
+    // Legacy execCommand fallback.
+    // The textarea must be in the visible viewport area; off-screen elements are
+    // ignored by execCommand('copy') on some mobile WebViews.
     const textArea = document.createElement('textarea');
     textArea.value = text;
-    textArea.style.cssText = 'position:fixed;left:-999999px;top:-999999px;';
+    textArea.style.cssText =
+      'position:fixed;top:0;left:0;width:1px;height:1px;padding:0;border:none;' +
+      'outline:none;box-shadow:none;background:transparent;opacity:0.001;';
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
     const ok = document.execCommand('copy');
     document.body.removeChild(textArea);
     if (!ok) {
-      // Both methods failed (e.g. Android WebView) — signal caller to show fallback UI
+      // Both methods failed — signal caller to show the shortcode dialog fallback.
       throw new Error('CLIPBOARD_UNAVAILABLE:' + text);
     }
   }

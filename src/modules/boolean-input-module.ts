@@ -5,7 +5,6 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, BooleanInputModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import '../components/ultra-color-picker';
 
 export class UltraBooleanInputModule extends BaseUltraModule {
@@ -63,12 +62,16 @@ export class UltraBooleanInputModule extends BaseUltraModule {
         ${this.renderSettingsSection(
           localize('editor.boolean_input.entity.title', lang, 'Entity Configuration'),
           localize('editor.boolean_input.entity.desc', lang, 'Link to a Home Assistant input_boolean or switch entity.'),
-          [{ title: localize('editor.boolean_input.entity_field', lang, 'Entity'),
-             description: localize('editor.boolean_input.entity_field_desc', lang, 'Select an input_boolean or switch entity.'),
-             hass, data: { entity: boolMod.entity || '' },
-             schema: [this.entityField('entity', ['input_boolean', 'switch'])],
-             onChange: (e: CustomEvent) => updateModule(e.detail.value) }]
+          []
         )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', boolMod.entity || '',
+            (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+            ['input_boolean', 'switch'],
+            localize('editor.boolean_input.entity_field', lang, 'Entity')
+          )}
+        </div>
 
         <div class="settings-section">
           <div class="section-title">${localize('editor.boolean_input.appearance.title', lang, 'Appearance')}</div>
@@ -155,13 +158,14 @@ export class UltraBooleanInputModule extends BaseUltraModule {
 
   renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const boolMod = module as BooleanInputModule;
+    const lang = hass?.locale?.language || 'en';
 
     if (!boolMod.entity?.trim()) {
-      return this.renderGradientErrorState('Configure Entity', 'Select an input_boolean entity in the General tab', 'mdi:toggle-switch-outline');
+      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.boolean_input.error_configure_entity_desc', lang, 'Select an input_boolean entity in the General tab'), 'mdi:toggle-switch-outline');
     }
     const entityState = hass?.states?.[boolMod.entity];
     if (!entityState) {
-      return this.renderGradientErrorState('Entity Not Found', `Entity "${boolMod.entity}" is not available`, 'mdi:alert-circle-outline');
+      return this.renderGradientErrorState(localize('editor.common.error_entity_not_found', lang, 'Entity Not Found'), `Entity "${boolMod.entity}" is not available`, 'mdi:alert-circle-outline');
     }
 
     const isOn = entityState.state === 'on';
@@ -176,7 +180,8 @@ export class UltraBooleanInputModule extends BaseUltraModule {
     const onText = boolMod.on_text || 'On';
     const offText = boolMod.off_text || 'Off';
     const containerStyles = this._buildContainerStyles(designProperties);
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(designProperties.hover_effect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
     const mid = boolMod.id;
 
     const toggle = () => {
@@ -188,7 +193,7 @@ export class UltraBooleanInputModule extends BaseUltraModule {
     const currentColor = isOn ? onColor : offColor;
 
     if (style === 'checkbox') {
-      return html`
+      return this.wrapWithAnimation(html`
         <style>
           .bool-cb-row-${mid} { display:flex; align-items:center; gap:12px; cursor:pointer; }
           .bool-cb-box-${mid} { width:22px; height:22px; border-radius:4px; border:2px solid ${currentColor};
@@ -199,7 +204,7 @@ export class UltraBooleanInputModule extends BaseUltraModule {
           .bool-state-text { font-size:${Math.max(11, fontSize - 2)}px; color:var(--secondary-text-color); margin-left:auto; }
           .bool-top-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
         </style>
-        <div class="${hoverEffectClass}" style=${this._css(containerStyles)}>
+        <div class="${hoverEffectClass}" style="${designStyles}">
           ${showLabel ? html`<div class="bool-top-label">${boolMod.label}</div>` : ''}
           <div class="bool-cb-row-${mid}" @click=${toggle}>
             <div class="bool-cb-box-${mid}"><ha-icon icon="mdi:check"></ha-icon></div>
@@ -207,11 +212,11 @@ export class UltraBooleanInputModule extends BaseUltraModule {
             ${showStateText ? html`<span class="bool-state-text">${isOn ? onText : offText}</span>` : ''}
           </div>
         </div>
-      `;
+      `, module, hass);
     }
 
     if (style === 'pill') {
-      return html`
+      return this.wrapWithAnimation(html`
         <style>
           .bool-pill-row-${mid} { display:flex; align-items:center; gap:12px; }
           .bool-pill-${mid} { display:flex; border-radius:20px; overflow:hidden; border:1px solid var(--divider-color); }
@@ -222,7 +227,7 @@ export class UltraBooleanInputModule extends BaseUltraModule {
           .bool-pill-label { font-size:${fontSize}px; color:${textColor}; flex:1; }
           .bool-top-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
         </style>
-        <div class="${hoverEffectClass}" style=${this._css(containerStyles)}>
+        <div class="${hoverEffectClass}" style="${designStyles}">
           ${showLabel ? html`<div class="bool-top-label">${boolMod.label}</div>` : ''}
           <div class="bool-pill-row-${mid}">
             <div class="bool-pill-${mid}">
@@ -231,11 +236,11 @@ export class UltraBooleanInputModule extends BaseUltraModule {
             </div>
           </div>
         </div>
-      `;
+      `, module, hass);
     }
 
     // Default: switch
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         .bool-sw-row-${mid} { display:flex; align-items:center; gap:12px; cursor:pointer; }
         .bool-sw-track-${mid} { width:48px; height:26px; border-radius:13px; position:relative;
@@ -247,7 +252,7 @@ export class UltraBooleanInputModule extends BaseUltraModule {
         .bool-state-text { font-size:${Math.max(11, fontSize - 2)}px; color:var(--secondary-text-color); }
         .bool-top-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
       </style>
-      <div class="${hoverEffectClass}" style=${this._css(containerStyles)}>
+      <div class="${hoverEffectClass}" style="${designStyles}">
         ${showLabel ? html`<div class="bool-top-label">${boolMod.label}</div>` : ''}
         <div class="bool-sw-row-${mid}" @click=${toggle}>
           <div class="bool-sw-track-${mid}"><div class="bool-sw-thumb-${mid}"></div></div>
@@ -255,7 +260,7 @@ export class UltraBooleanInputModule extends BaseUltraModule {
           ${showStateText ? html`<span class="bool-state-text">${isOn ? onText : offText}</span>` : ''}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   private _buildContainerStyles(dp: any): Record<string, string> {

@@ -2,11 +2,13 @@ import { html, svg, TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, GaugeModule, UltraCardConfig } from '../types';
+import { localize } from '../localize/localize';
 import { UltraLinkComponent } from '../components/ultra-link';
-import { FormUtils } from '../utils/form-utils';
+
 import '../components/ultra-color-picker';
 import '../components/uc-gradient-editor';
 import '../components/ultra-template-editor';
+import '../components/uc-template-cheatsheet';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { GlobalDesignTab } from '../tabs/global-design-tab';
@@ -177,156 +179,9 @@ export class UltraGaugeModule extends BaseUltraModule {
 
     return html`
       ${this.injectUcFormStyles()}
-      <style>
-        .settings-section {
-          background: var(--secondary-background-color);
-          border-radius: 8px;
-          padding: 16px;
-          margin-bottom: 32px;
-        }
-        .settings-section label {
-          width: auto;
-        }
-        .section-title {
-          font-size: 18px;
-          font-weight: 700;
-          text-transform: uppercase;
-          color: var(--primary-color);
-          margin-bottom: 16px;
-          padding-bottom: 0;
-          border-bottom: none;
-          letter-spacing: 0.5px;
-        }
-        .field-title {
-          font-size: 16px;
-          font-weight: 600;
-          color: var(--primary-text-color);
-          margin-bottom: 4px;
-        }
-        .field-description {
-          font-size: 13px;
-          color: var(--secondary-text-color);
-          margin-bottom: 12px;
-          opacity: 0.8;
-          line-height: 1.4;
-        }
-        .conditional-fields-group {
-          margin-top: 16px;
-          border-left: 4px solid var(--primary-color);
-          background: rgba(var(--rgb-primary-color), 0.08);
-          border-radius: 0 8px 8px 0;
-          padding: 16px;
-          overflow: hidden;
-          transition: all 0.2s ease;
-          animation: slideInFromLeft 0.3s ease-out;
-        }
-        @keyframes slideInFromLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        .gradient-stops-container {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-top: 12px;
-        }
-        .gradient-stop {
-          display: grid;
-          grid-template-columns: 1fr auto auto;
-          gap: 8px;
-          align-items: center;
-          padding: 12px;
-          background: var(--card-background-color);
-          border-radius: 8px;
-          border: 1px solid var(--divider-color);
-        }
-        .add-stop-btn,
-        .remove-stop-btn {
-          padding: 8px 16px;
-          border-radius: 4px;
-          border: 1px solid var(--divider-color);
-          background: var(--secondary-background-color);
-          color: var(--primary-text-color);
-          cursor: pointer;
-          transition: all 0.2s;
-          font-size: 14px;
-          font-weight: 500;
-        }
-        .add-stop-btn:hover {
-          background: var(--primary-color);
-          color: white;
-          border-color: var(--primary-color);
-        }
-        .remove-stop-btn {
-          padding: 6px 12px;
-          background: rgba(var(--rgb-accent-color), 0.1);
-          border-color: var(--accent-color);
-        }
-        .remove-stop-btn:hover {
-          background: var(--accent-color);
-          color: white;
-        }
-        .segments-container {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-top: 12px;
-        }
-        .segment-item {
-          padding: 12px;
-          background: var(--card-background-color);
-          border-radius: 8px;
-          border: 1px solid var(--divider-color);
-        }
-        .segment-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-          margin-bottom: 8px;
-        }
-        .template-section {
-          background: var(--card-background-color);
-          border-radius: 8px;
-          padding: 16px;
-          border: 1px solid var(--divider-color);
-          margin-bottom: 32px;
-        }
-        .template-content {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .template-help {
-          font-size: 12px;
-          color: var(--secondary-text-color);
-          margin-top: 12px;
-          padding: 12px;
-          background: rgba(var(--rgb-primary-color), 0.05);
-          border-radius: 4px;
-        }
-        .template-help p {
-          margin: 8px 0;
-        }
-        .template-help ul {
-          margin: 8px 0 8px 20px;
-        }
-        .template-help code {
-          background: var(--code-editor-background-color, #1e1e1e);
-          padding: 2px 6px;
-          border-radius: 3px;
-          font-family: monospace;
-          font-size: 11px;
-        }
-      </style>
 
-      ${this.renderBasicConfiguration(gaugeModule, hass, updateModule)}
-      ${this.renderValueConfiguration(gaugeModule, hass, updateModule)}
+      ${this.renderBasicConfiguration(gaugeModule, hass, config, updateModule)}
+      ${this.renderValueConfiguration(gaugeModule, hass, config, updateModule)}
       ${this.renderStyleConfiguration(gaugeModule, hass, updateModule)}
       ${this.renderPointerConfiguration(gaugeModule, hass, updateModule)}
       ${this.renderColorConfiguration(gaugeModule, hass, updateModule)}
@@ -339,34 +194,29 @@ export class UltraGaugeModule extends BaseUltraModule {
   private renderBasicConfiguration(
     gaugeModule: GaugeModule,
     hass: HomeAssistant,
+    config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     return html`
       <div class="settings-section">
-        <div class="section-title">BASIC CONFIGURATION</div>
+        <div class="section-title">${localize('editor.gauge.section_basic', hass?.locale?.language || 'en', 'BASIC CONFIGURATION')}</div>
 
         <div style="margin-bottom: 24px;">
-          ${FormUtils.renderField(
-            'Entity',
-            'Select the sensor entity to display on the gauge.',
-            hass,
-            { entity: gaugeModule.entity || '' },
-            [
-              FormUtils.createSchemaItem('entity', {
-                entity: { domain: ['sensor', 'input_number'] },
-              }),
-            ],
-            (e: CustomEvent) => updateModule({ entity: e.detail.value.entity })
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', gaugeModule.entity || '',
+            (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+            ['sensor', 'input_number'],
+            localize('editor.gauge.entity', hass?.locale?.language || 'en', 'Entity')
           )}
         </div>
 
         <div style="margin-bottom: 24px;">
-          ${FormUtils.renderField(
+          ${this.renderFieldSection(
             'Name',
             'Optional display name for the gauge. Leave empty to use entity friendly name.',
             hass,
             { name: gaugeModule.name || '' },
-            [FormUtils.createSchemaItem('name', { text: {} })],
+            [this.textField('name')],
             (e: CustomEvent) => updateModule({ name: e.detail.value.name })
           )}
         </div>
@@ -374,10 +224,10 @@ export class UltraGaugeModule extends BaseUltraModule {
         <div class="field-container" style="margin-bottom: 24px;">
           <div class="field-title">Minimum Value</div>
           <div class="field-description">The minimum value for the gauge scale.</div>
-          ${FormUtils.renderCleanForm(
+          ${this.renderUcForm(
             hass,
             { min_value: gaugeModule.min_value ?? 0 },
-            [FormUtils.createSchemaItem('min_value', { number: { mode: 'box', step: 1 } })],
+            [{ name: 'min_value', selector: { number: { mode: 'box', step: 1 } } }],
             (e: CustomEvent) => {
               const value = e.detail.value.min_value;
               updateModule({ min_value: value === '' ? undefined : Number(value) });
@@ -388,10 +238,10 @@ export class UltraGaugeModule extends BaseUltraModule {
         <div class="field-container" style="margin-bottom: 24px;">
           <div class="field-title">Maximum Value</div>
           <div class="field-description">The maximum value for the gauge scale.</div>
-          ${FormUtils.renderCleanForm(
+          ${this.renderUcForm(
             hass,
             { max_value: gaugeModule.max_value ?? 100 },
-            [FormUtils.createSchemaItem('max_value', { number: { mode: 'box', step: 1 } })],
+            [{ name: 'max_value', selector: { number: { mode: 'box', step: 1 } } }],
             (e: CustomEvent) => {
               const value = e.detail.value.max_value;
               updateModule({ max_value: value === '' ? undefined : Number(value) });
@@ -405,6 +255,7 @@ export class UltraGaugeModule extends BaseUltraModule {
   private renderValueConfiguration(
     gaugeModule: GaugeModule,
     hass: HomeAssistant,
+    config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const valueType = gaugeModule.value_type || 'entity';
@@ -430,7 +281,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
     return html`
       <div class="settings-section">
-        <div class="section-title">VALUE CONFIGURATION</div>
+        <div class="section-title">${localize('editor.gauge.section_value', hass?.locale?.language || 'en', 'VALUE CONFIGURATION')}</div>
 
         <!-- Value Source -->
         <div class="field-group" style="margin-bottom: 24px; ${unifiedTemplateEnabled ? 'opacity: 0.5; pointer-events: none;' : ''}">
@@ -466,21 +317,18 @@ export class UltraGaugeModule extends BaseUltraModule {
         ${valueType === 'attribute' && !unifiedTemplateEnabled
           ? html`
               <div class="conditional-fields-group">
-                ${FormUtils.renderField(
-                  'Attribute Entity',
-                  'Entity containing the attribute.',
-                  hass,
-                  { value_attribute_entity: gaugeModule.value_attribute_entity || '' },
-                  [FormUtils.createSchemaItem('value_attribute_entity', { entity: {} })],
-                  (e: CustomEvent) =>
-                    updateModule({ value_attribute_entity: e.detail.value.value_attribute_entity })
+                ${this.renderEntityPickerWithVariables(
+                  hass, config, 'value_attribute_entity', gaugeModule.value_attribute_entity || '',
+                  (value: string) => updateModule({ value_attribute_entity: value }),
+                  undefined,
+                  'Attribute Entity'
                 )}
-                ${FormUtils.renderField(
+                ${this.renderFieldSection(
                   'Attribute Name',
                   'Name of the attribute to use.',
                   hass,
                   { value_attribute_name: gaugeModule.value_attribute_name || '' },
-                  [FormUtils.createSchemaItem('value_attribute_name', { text: {} })],
+                  [this.textField('value_attribute_name')],
                   (e: CustomEvent) =>
                     updateModule({ value_attribute_name: e.detail.value.value_attribute_name })
                 )}
@@ -490,45 +338,59 @@ export class UltraGaugeModule extends BaseUltraModule {
 
         <!-- Template Mode Section -->
         <div class="template-section" style="margin-bottom: 24px; margin-top: 24px;">
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;"
-          >
-            <div class="field-title" style="margin: 0;">Template Mode</div>
-            <ha-switch
-              .checked=${unifiedTemplateEnabled}
-              @change=${(e: Event) => {
-                const checked = (e.target as HTMLInputElement).checked;
-                const updates: Partial<GaugeModule> = { unified_template_mode: checked };
-                
-                // Migrate existing value_template to unified_template if enabling Template Mode
-                if (checked && gaugeModule.value_template && !gaugeModule.unified_template) {
-                  updates.unified_template = gaugeModule.value_template;
-                  // Clear legacy template mode
-                  updates.value_type = 'entity';
-                  updates.value_template = '';
-                }
-                
-                updateModule(updates);
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              }}
-            ></ha-switch>
-          </div>
-          <div class="field-description" style="margin-bottom: 16px;">
-            Use Jinja2 templates for dynamic value and color control.
-          </div>
+          ${this.renderFieldSection(
+            'Template Mode',
+            'Use Jinja2 templates for dynamic value and color control.',
+            hass,
+            { unified_template_mode: unifiedTemplateEnabled },
+            [this.booleanField('unified_template_mode')],
+            (e: CustomEvent) => {
+              const checked = e.detail.value.unified_template_mode;
+              const updates: Partial<GaugeModule> = { unified_template_mode: checked };
+              if (checked && gaugeModule.value_template && !gaugeModule.unified_template) {
+                updates.unified_template = gaugeModule.value_template;
+                updates.value_type = 'entity';
+                updates.value_template = '';
+              }
+              updateModule(updates);
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
+          )}
 
           ${unifiedTemplateEnabled
             ? html`
+                <uc-template-cheatsheet .module=${'gauge'}></uc-template-cheatsheet>
+                <div style="margin-bottom: 8px;">
+                  <button
+                    style="background: none; border: 1px solid var(--divider-color); border-radius: 4px; padding: 4px 8px; font-size: 11px; color: var(--primary-color); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
+                    title="Template Cheatsheet"
+                    @click=${(e: Event) => {
+                      (e.currentTarget as HTMLElement).dispatchEvent(
+                        new CustomEvent('uc-open-template-cheatsheet', {
+                          detail: { module: 'gauge' },
+                          bubbles: true,
+                          composed: true,
+                        })
+                      );
+                    }}
+                  >
+                    <ha-icon icon="mdi:help-circle-outline" style="--mdc-icon-size: 14px;"></ha-icon>
+                    Template Cheatsheet
+                  </button>
+                </div>
                 <div 
                   class="template-content"
                   @mousedown=${(e: Event) => {
-                    // Only stop propagation for drag operations, not clicks on the editor
                     const target = e.target as HTMLElement;
                     if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
                       e.stopPropagation();
                     }
                   }}
                   @dragstart=${(e: Event) => e.stopPropagation()}
+                  @insert-snippet=${(e: CustomEvent) => {
+                    const editor = (e.currentTarget as HTMLElement).querySelector('ultra-template-editor');
+                    (editor as any)?.insertAtCursor?.(e.detail?.value ?? '');
+                  }}
                 >
                   <ultra-template-editor
                     .hass=${hass}
@@ -587,7 +449,7 @@ export class UltraGaugeModule extends BaseUltraModule {
   ): TemplateResult {
     return html`
       <div class="settings-section">
-        <div class="section-title">GAUGE STYLE</div>
+        <div class="section-title">${localize('editor.gauge.section_style', hass?.locale?.language || 'en', 'GAUGE STYLE')}</div>
 
         <div class="field-group" style="margin-bottom: 24px;">
           <div class="field-title">Gauge Style</div>
@@ -640,23 +502,17 @@ export class UltraGaugeModule extends BaseUltraModule {
 
     return html`
       <div class="conditional-fields-group" style="margin-top: 16px;">
-        <div
-          style="display: flex; align-items: center; justify-content: space-between; gap: 12px;"
-        >
-          <div>
-            <div class="field-title" style="margin: 0;">Flip Horizontal</div>
-            <div class="field-description" style="margin: 4px 0 0 0;">
-              Mirror the gauge so it fills from right to left.
-            </div>
-          </div>
-          <ha-switch
-            .checked=${gaugeModule.flip_horizontal || false}
-            @change=${(e: Event) => {
-              updateModule({ flip_horizontal: (e.target as HTMLInputElement).checked });
-              setTimeout(() => this.triggerPreviewUpdate(), 50);
-            }}
-          ></ha-switch>
-        </div>
+        ${this.renderFieldSection(
+          'Flip Horizontal',
+          'Mirror the gauge so it fills from right to left.',
+          hass,
+          { flip_horizontal: gaugeModule.flip_horizontal || false },
+          [this.booleanField('flip_horizontal')],
+          (e: CustomEvent) => {
+            updateModule({ flip_horizontal: e.detail.value.flip_horizontal });
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }
+        )}
       </div>
     `;
   }
@@ -675,13 +531,11 @@ export class UltraGaugeModule extends BaseUltraModule {
       <div class="field-container" style="margin-bottom: 24px;">
         <div class="field-title">Gauge Size</div>
         <div class="field-description">Diameter/size of the gauge in pixels (100-400).</div>
-        ${FormUtils.renderCleanForm(
+        ${this.renderUcForm(
           hass,
           { gauge_size: gaugeModule.gauge_size ?? 200 },
           [
-            FormUtils.createSchemaItem('gauge_size', {
-              number: { mode: 'box', min: 100, max: 400, step: 10 },
-            }),
+{ name: 'gauge_size', selector: { number: { mode: 'box', min: 100, max: 400, step: 10 } } },
           ],
           (e: CustomEvent) => {
             const value = e.detail.value.gauge_size;
@@ -693,13 +547,11 @@ export class UltraGaugeModule extends BaseUltraModule {
       <div class="field-container" style="margin-bottom: 24px;">
         <div class="field-title">Gauge Thickness</div>
         <div class="field-description">Thickness of the gauge track (1-50).</div>
-        ${FormUtils.renderCleanForm(
+        ${this.renderUcForm(
           hass,
           { gauge_thickness: gaugeModule.gauge_thickness ?? 15 },
           [
-            FormUtils.createSchemaItem('gauge_thickness', {
-              number: { mode: 'box', min: 1, max: 50, step: 1 },
-            }),
+{ name: 'gauge_thickness', selector: { number: { mode: 'box', min: 1, max: 50, step: 1 } } },
           ],
           (e: CustomEvent) => {
             const value = e.detail.value.gauge_thickness;
@@ -724,13 +576,11 @@ export class UltraGaugeModule extends BaseUltraModule {
       <div class="field-container" style="margin-bottom: 24px;">
         <div class="field-title">Pointer Length</div>
         <div class="field-description">Length as percentage of gauge radius (1-100).</div>
-        ${FormUtils.renderCleanForm(
+        ${this.renderUcForm(
           hass,
           { pointer_length: gaugeModule.pointer_length ?? 80 },
           [
-            FormUtils.createSchemaItem('pointer_length', {
-              number: { mode: 'box', min: 1, max: 100, step: 1 },
-            }),
+{ name: 'pointer_length', selector: { number: { mode: 'box', min: 1, max: 100, step: 1 } } },
           ],
           (e: CustomEvent) => {
             const value = e.detail.value.pointer_length;
@@ -742,13 +592,11 @@ export class UltraGaugeModule extends BaseUltraModule {
       <div class="field-container" style="margin-bottom: 24px;">
         <div class="field-title">Pointer Width</div>
         <div class="field-description">Width of the pointer in pixels (1-20).</div>
-        ${FormUtils.renderCleanForm(
+        ${this.renderUcForm(
           hass,
           { pointer_width: gaugeModule.pointer_width ?? 4 },
           [
-            FormUtils.createSchemaItem('pointer_width', {
-              number: { mode: 'box', min: 1, max: 20, step: 1 },
-            }),
+{ name: 'pointer_width', selector: { number: { mode: 'box', min: 1, max: 20, step: 1 } } },
           ],
           (e: CustomEvent) => {
             const value = e.detail.value.pointer_width;
@@ -768,19 +616,14 @@ export class UltraGaugeModule extends BaseUltraModule {
 
     return html`
       <div class="settings-section">
-        <div
-          style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;"
-        >
-          <div class="section-title" style="margin: 0;">POINTER CONFIGURATION</div>
-          <ha-switch
-            .checked=${pointerEnabled}
-            @change=${(e: Event) =>
-              updateModule({ pointer_enabled: (e.target as HTMLInputElement).checked })}
-          ></ha-switch>
-        </div>
-        <div class="field-description" style="margin-bottom: 16px;">
-          Enable and customize the gauge pointer/needle that indicates the current value.
-        </div>
+        ${this.renderFieldSection(
+          localize('editor.gauge.section_pointer', hass?.locale?.language || 'en', 'POINTER CONFIGURATION'),
+          localize('editor.gauge.section_pointer_desc', hass?.locale?.language || 'en', 'Enable and customize the gauge pointer/needle that indicates the current value.'),
+          hass,
+          { pointer_enabled: pointerEnabled },
+          [this.booleanField('pointer_enabled')],
+          (e: CustomEvent) => updateModule({ pointer_enabled: e.detail.value.pointer_enabled })
+        )}
         ${pointerEnabled
           ? html`
               <div class="conditional-fields-group">
@@ -818,12 +661,12 @@ export class UltraGaugeModule extends BaseUltraModule {
                       <div class="field-container" style="margin-bottom: 24px;">
                         <div class="field-title">Pointer Icon</div>
                         <div class="field-description">Select an icon to display as the pointer.</div>
-                        ${FormUtils.renderField(
+                        ${this.renderFieldSection(
                           '',
                           '',
                           hass,
                           { pointer_icon: gaugeModule.pointer_icon || 'mdi:gauge' },
-                          [FormUtils.createSchemaItem('pointer_icon', { icon: {} })],
+                          [this.iconField('pointer_icon')],
                           (e: CustomEvent) =>
                             updateModule({ pointer_icon: e.detail.value.pointer_icon })
                         )}
@@ -845,13 +688,11 @@ export class UltraGaugeModule extends BaseUltraModule {
                       <div class="field-container" style="margin-bottom: 24px;">
                         <div class="field-title">Icon Size</div>
                         <div class="field-description">Size of the icon in pixels (8-48).</div>
-                        ${FormUtils.renderCleanForm(
+                        ${this.renderUcForm(
                           hass,
                           { pointer_icon_size: gaugeModule.pointer_icon_size ?? 24 },
                           [
-                            FormUtils.createSchemaItem('pointer_icon_size', {
-                              number: { mode: 'box', min: 8, max: 48, step: 1 },
-                            }),
+{ name: 'pointer_icon_size', selector: { number: { mode: 'box', min: 8, max: 48, step: 1 } } },
                           ],
                           (e: CustomEvent) => {
                             const value = e.detail.value.pointer_icon_size;
@@ -893,7 +734,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
     return html`
       <div class="settings-section">
-        <div class="section-title">COLOR CONFIGURATION</div>
+        <div class="section-title">${localize('editor.gauge.section_color', hass?.locale?.language || 'en', 'COLOR CONFIGURATION')}</div>
 
         ${unifiedTemplateEnabled
           ? html`
@@ -1184,19 +1025,17 @@ export class UltraGaugeModule extends BaseUltraModule {
 
     return html`
       <div class="settings-section">
-        <div class="section-title">DISPLAY CONFIGURATION</div>
+        <div class="section-title">${localize('editor.gauge.section_display', hass?.locale?.language || 'en', 'DISPLAY CONFIGURATION')}</div>
 
         <!-- Value Display -->
-        <div
-          style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;"
-        >
-          <div class="field-title" style="margin: 0;">Show Value</div>
-          <ha-switch
-            .checked=${showValue}
-            @change=${(e: Event) =>
-              updateModule({ show_value: (e.target as HTMLInputElement).checked })}
-          ></ha-switch>
-        </div>
+        ${this.renderFieldSection(
+          'Show Value',
+          '',
+          hass,
+          { show_value: showValue },
+          [this.booleanField('show_value')],
+          (e: CustomEvent) => updateModule({ show_value: e.detail.value.show_value })
+        )}
 
         ${showValue
           ? html`
@@ -1228,13 +1067,11 @@ export class UltraGaugeModule extends BaseUltraModule {
 
                 <div class="field-container" style="margin-bottom: 16px;">
                   <div class="field-title">Value Font Size</div>
-                  ${FormUtils.renderCleanForm(
+                  ${this.renderUcForm(
                     hass,
                     { value_font_size: gaugeModule.value_font_size ?? 24 },
                     [
-                      FormUtils.createSchemaItem('value_font_size', {
-                        number: { mode: 'box', min: 8, max: 48, step: 1 },
-                      }),
+{ name: 'value_font_size', selector: { number: { mode: 'box', min: 8, max: 48, step: 1 } } },
                     ],
                     (e: CustomEvent) => {
                       const value = e.detail.value.value_font_size;
@@ -1327,12 +1164,12 @@ export class UltraGaugeModule extends BaseUltraModule {
                   </div>
                 </div>
 
-                ${FormUtils.renderField(
+                ${this.renderFieldSection(
                   'Value Format',
                   'Optional format string (e.g., "%.1f°C", "%.0f%%").',
                   hass,
                   { value_format: gaugeModule.value_format || '' },
-                  [FormUtils.createSchemaItem('value_format', { text: {} })],
+                  [this.textField('value_format')],
                   (e: CustomEvent) => updateModule({ value_format: e.detail.value.value_format })
                 )}
 
@@ -1341,13 +1178,11 @@ export class UltraGaugeModule extends BaseUltraModule {
                   <div class="field-description">
                     Horizontal offset for value positioning (supports negative values).
                   </div>
-                  ${FormUtils.renderCleanForm(
+                  ${this.renderUcForm(
                     hass,
                     { value_x_offset: gaugeModule.value_x_offset ?? 0 },
                     [
-                      FormUtils.createSchemaItem('value_x_offset', {
-                        number: { mode: 'box', min: -500, max: 500, step: 1 },
-                      }),
+{ name: 'value_x_offset', selector: { number: { mode: 'box', min: -500, max: 500, step: 1 } } },
                     ],
                     (e: CustomEvent) => {
                       const value = e.detail.value.value_x_offset;
@@ -1361,13 +1196,11 @@ export class UltraGaugeModule extends BaseUltraModule {
                   <div class="field-description">
                     Vertical offset for value positioning (supports negative values).
                   </div>
-                  ${FormUtils.renderCleanForm(
+                  ${this.renderUcForm(
                     hass,
                     { value_y_offset: gaugeModule.value_y_offset ?? 0 },
                     [
-                      FormUtils.createSchemaItem('value_y_offset', {
-                        number: { mode: 'box', min: -500, max: 500, step: 1 },
-                      }),
+{ name: 'value_y_offset', selector: { number: { mode: 'box', min: -500, max: 500, step: 1 } } },
                     ],
                     (e: CustomEvent) => {
                       const value = e.detail.value.value_y_offset;
@@ -1380,16 +1213,14 @@ export class UltraGaugeModule extends BaseUltraModule {
           : ''}
 
         <!-- Name Display -->
-        <div
-          style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;"
-        >
-          <div class="field-title" style="margin: 0;">Show Name</div>
-          <ha-switch
-            .checked=${showName}
-            @change=${(e: Event) =>
-              updateModule({ show_name: (e.target as HTMLInputElement).checked })}
-          ></ha-switch>
-        </div>
+        ${this.renderFieldSection(
+          'Show Name',
+          '',
+          hass,
+          { show_name: showName },
+          [this.booleanField('show_name')],
+          (e: CustomEvent) => updateModule({ show_name: e.detail.value.show_name })
+        )}
 
         ${showName
           ? html`
@@ -1420,13 +1251,11 @@ export class UltraGaugeModule extends BaseUltraModule {
 
                 <div class="field-container" style="margin-bottom: 16px;">
                   <div class="field-title">Name Font Size</div>
-                  ${FormUtils.renderCleanForm(
+                  ${this.renderUcForm(
                     hass,
                     { name_font_size: gaugeModule.name_font_size ?? 16 },
                     [
-                      FormUtils.createSchemaItem('name_font_size', {
-                        number: { mode: 'box', min: 8, max: 32, step: 1 },
-                      }),
+{ name: 'name_font_size', selector: { number: { mode: 'box', min: 8, max: 32, step: 1 } } },
                     ],
                     (e: CustomEvent) => {
                       const value = e.detail.value.name_font_size;
@@ -1522,13 +1351,11 @@ export class UltraGaugeModule extends BaseUltraModule {
                   <div class="field-description">
                     Horizontal offset for name positioning (supports negative values).
                   </div>
-                  ${FormUtils.renderCleanForm(
+                  ${this.renderUcForm(
                     hass,
                     { name_x_offset: gaugeModule.name_x_offset ?? 0 },
                     [
-                      FormUtils.createSchemaItem('name_x_offset', {
-                        number: { mode: 'box', min: -500, max: 500, step: 1 },
-                      }),
+{ name: 'name_x_offset', selector: { number: { mode: 'box', min: -500, max: 500, step: 1 } } },
                     ],
                     (e: CustomEvent) => {
                       const value = e.detail.value.name_x_offset;
@@ -1542,13 +1369,11 @@ export class UltraGaugeModule extends BaseUltraModule {
                   <div class="field-description">
                     Vertical offset for name positioning (supports negative values).
                   </div>
-                  ${FormUtils.renderCleanForm(
+                  ${this.renderUcForm(
                     hass,
                     { name_y_offset: gaugeModule.name_y_offset ?? 0 },
                     [
-                      FormUtils.createSchemaItem('name_y_offset', {
-                        number: { mode: 'box', min: -500, max: 500, step: 1 },
-                      }),
+{ name: 'name_y_offset', selector: { number: { mode: 'box', min: -500, max: 500, step: 1 } } },
                     ],
                     (e: CustomEvent) => {
                       const value = e.detail.value.name_y_offset;
@@ -1568,10 +1393,10 @@ export class UltraGaugeModule extends BaseUltraModule {
                 <div class="field-description">
                   Display minimum and maximum values on the gauge.
                 </div>
-                ${FormUtils.renderCleanForm(
+                ${this.renderUcForm(
                   hass,
                   { show_min_max: showMinMax },
-                  [FormUtils.createSchemaItem('show_min_max', { boolean: {} })],
+                  [this.booleanField('show_min_max')],
                   (e: CustomEvent) => updateModule({ show_min_max: e.detail.value.show_min_max })
                 )}
               </div>
@@ -1590,13 +1415,11 @@ export class UltraGaugeModule extends BaseUltraModule {
               <div class="conditional-fields-group">
                 <div class="field-container" style="margin-bottom: 16px;">
                   <div class="field-title">Min/Max Font Size</div>
-                  ${FormUtils.renderCleanForm(
+                  ${this.renderUcForm(
                     hass,
                     { min_max_font_size: gaugeModule.min_max_font_size ?? 12 },
                     [
-                      FormUtils.createSchemaItem('min_max_font_size', {
-                        number: { mode: 'box', min: 8, max: 20, step: 1 },
-                      }),
+{ name: 'min_max_font_size', selector: { number: { mode: 'box', min: 8, max: 20, step: 1 } } },
                     ],
                     (e: CustomEvent) =>
                       updateModule({ min_max_font_size: e.detail.value.min_max_font_size })
@@ -1631,18 +1454,16 @@ export class UltraGaugeModule extends BaseUltraModule {
 
     return html`
       <div class="settings-section">
-        <div class="section-title">TICK MARKS</div>
+        <div class="section-title">${localize('editor.gauge.section_ticks', hass?.locale?.language || 'en', 'TICK MARKS')}</div>
 
-        <div
-          style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;"
-        >
-          <div class="field-title" style="margin: 0;">Show Tick Marks</div>
-          <ha-switch
-            .checked=${showTicks}
-            @change=${(e: Event) =>
-              updateModule({ show_ticks: (e.target as HTMLInputElement).checked })}
-          ></ha-switch>
-        </div>
+        ${this.renderFieldSection(
+          'Show Tick Marks',
+          '',
+          hass,
+          { show_ticks: showTicks },
+          [this.booleanField('show_ticks')],
+          (e: CustomEvent) => updateModule({ show_ticks: e.detail.value.show_ticks })
+        )}
 
         ${showTicks
           ? html`
@@ -1650,13 +1471,11 @@ export class UltraGaugeModule extends BaseUltraModule {
                 <div class="field-container" style="margin-bottom: 16px;">
                   <div class="field-title">Tick Count</div>
                   <div class="field-description">Number of major tick marks.</div>
-                  ${FormUtils.renderCleanForm(
+                  ${this.renderUcForm(
                     hass,
                     { tick_count: gaugeModule.tick_count ?? 10 },
                     [
-                      FormUtils.createSchemaItem('tick_count', {
-                        number: { mode: 'box', min: 2, max: 50, step: 1 },
-                      }),
+{ name: 'tick_count', selector: { number: { mode: 'box', min: 2, max: 50, step: 1 } } },
                     ],
                     (e: CustomEvent) => {
                       const value = e.detail.value.tick_count;
@@ -1679,10 +1498,10 @@ export class UltraGaugeModule extends BaseUltraModule {
 
                 <div class="field-container" style="margin-bottom: 16px;">
                   <div class="field-title">Show Tick Labels</div>
-                  ${FormUtils.renderCleanForm(
+                  ${this.renderUcForm(
                     hass,
                     { show_tick_labels: showTickLabels },
-                    [FormUtils.createSchemaItem('show_tick_labels', { boolean: {} })],
+                    [this.booleanField('show_tick_labels')],
                     (e: CustomEvent) =>
                       updateModule({ show_tick_labels: e.detail.value.show_tick_labels })
                   )}
@@ -1692,13 +1511,11 @@ export class UltraGaugeModule extends BaseUltraModule {
                   ? html`
                       <div class="field-container">
                         <div class="field-title">Tick Label Font Size</div>
-                        ${FormUtils.renderCleanForm(
+                        ${this.renderUcForm(
                           hass,
                           { tick_label_font_size: gaugeModule.tick_label_font_size ?? 10 },
                           [
-                            FormUtils.createSchemaItem('tick_label_font_size', {
-                              number: { mode: 'box', min: 6, max: 16, step: 1 },
-                            }),
+{ name: 'tick_label_font_size', selector: { number: { mode: 'box', min: 6, max: 16, step: 1 } } },
                           ],
                           (e: CustomEvent) => {
                             const value = e.detail.value.tick_label_font_size;
@@ -1726,21 +1543,16 @@ export class UltraGaugeModule extends BaseUltraModule {
 
     return html`
       <div class="settings-section">
-        <div class="section-title">ANIMATION</div>
+        <div class="section-title">${localize('editor.gauge.section_animation', hass?.locale?.language || 'en', 'ANIMATION')}</div>
 
-        <div
-          style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;"
-        >
-          <div class="field-title" style="margin: 0;">Enable Animation</div>
-          <ha-switch
-            .checked=${animationEnabled}
-            @change=${(e: Event) =>
-              updateModule({ gauge_animation_enabled: (e.target as HTMLInputElement).checked })}
-          ></ha-switch>
-        </div>
-        <div class="field-description" style="margin-bottom: 16px;">
-          Animate gauge changes smoothly.
-        </div>
+        ${this.renderFieldSection(
+          'Enable Animation',
+          'Animate gauge changes smoothly.',
+          hass,
+          { gauge_animation_enabled: animationEnabled },
+          [this.booleanField('gauge_animation_enabled')],
+          (e: CustomEvent) => updateModule({ gauge_animation_enabled: e.detail.value.gauge_animation_enabled })
+        )}
 
         ${animationEnabled
           ? html`
@@ -1750,12 +1562,12 @@ export class UltraGaugeModule extends BaseUltraModule {
                   <div class="field-description">
                     Duration in milliseconds (e.g., "1000ms", "1s").
                   </div>
-                  ${FormUtils.renderField(
+                  ${this.renderFieldSection(
                     '',
                     '',
                     hass,
                     { gauge_animation_duration: gaugeModule.gauge_animation_duration || '1000ms' },
-                    [FormUtils.createSchemaItem('gauge_animation_duration', { text: {} })],
+                    [this.textField('gauge_animation_duration')],
                     (e: CustomEvent) => {
                       const value = e.detail.value.gauge_animation_duration;
                       updateModule({ gauge_animation_duration: value === '' ? undefined : value });
@@ -1826,6 +1638,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const gaugeModule = module as GaugeModule;
+    const lang = hass?.locale?.language || 'en';
 
     // Update template service if hass changed
     if (this._templateService && hass) {
@@ -1840,8 +1653,8 @@ export class UltraGaugeModule extends BaseUltraModule {
       (!gaugeModule.entity || gaugeModule.entity.trim() === '')
     ) {
       return this.renderGradientErrorState(
-        'Select Entity',
-        'Choose an entity in the General tab',
+        localize('editor.gauge.error_no_entity', lang, 'Select Entity'),
+        localize('editor.gauge.error_no_entity_desc', lang, 'Choose an entity in the General tab'),
         'mdi:gauge-empty'
       );
     }
@@ -1931,10 +1744,13 @@ export class UltraGaugeModule extends BaseUltraModule {
       config
     );
 
-    return html`
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    return this.wrapWithAnimation(html`
       <div
-        class="uc-gauge-container"
-        style="${containerStyleStr}; touch-action: manipulation; cursor: pointer;"
+        class="uc-gauge-container ${hoverClass}"
+        style="${designStyles}; ${containerStyleStr}; touch-action: manipulation; cursor: pointer;"
         @pointerdown=${gestureHandlers.onPointerDown}
         @pointerup=${gestureHandlers.onPointerUp}
         @pointerleave=${gestureHandlers.onPointerLeave}
@@ -1992,7 +1808,7 @@ export class UltraGaugeModule extends BaseUltraModule {
             `
           : ''}
       </div>
-    `;
+    `, module, hass);
   }
 
   private calculateGaugeValue(gaugeModule: GaugeModule, hass: HomeAssistant): number {
@@ -2017,7 +1833,7 @@ export class UltraGaugeModule extends BaseUltraModule {
               if (typeof window !== 'undefined') {
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                     window._ultraCardUpdateTimer = null;
                   }, 50);
                 }
@@ -2089,7 +1905,7 @@ export class UltraGaugeModule extends BaseUltraModule {
               if (typeof window !== 'undefined') {
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                     window._ultraCardUpdateTimer = null;
                   }, 50);
                 }
@@ -5049,6 +4865,108 @@ export class UltraGaugeModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      .gradient-stops-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .gradient-stop {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 8px;
+        align-items: center;
+        padding: 12px;
+        background: var(--card-background-color);
+        border-radius: 8px;
+        border: 1px solid var(--divider-color);
+      }
+
+      .add-stop-btn,
+      .remove-stop-btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        border: 1px solid var(--divider-color);
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .add-stop-btn:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+      }
+
+      .remove-stop-btn {
+        padding: 6px 12px;
+        background: rgba(var(--rgb-accent-color), 0.1);
+        border-color: var(--accent-color);
+      }
+
+      .remove-stop-btn:hover {
+        background: var(--accent-color);
+        color: white;
+      }
+
+      .segments-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .segment-item {
+        padding: 12px;
+        background: var(--card-background-color);
+        border-radius: 8px;
+        border: 1px solid var(--divider-color);
+      }
+
+      .segment-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .template-section {
+        background: var(--card-background-color);
+        border-radius: 8px;
+        padding: 16px;
+        border: 1px solid var(--divider-color);
+        margin-bottom: 32px;
+      }
+
+      .template-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .template-help {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        margin-top: 12px;
+        padding: 12px;
+        background: rgba(var(--rgb-primary-color), 0.05);
+        border-radius: 4px;
+      }
+
+      .template-help p { margin: 8px 0; }
+      .template-help ul { margin: 8px 0 8px 20px; }
+      .template-help code {
+        background: var(--code-editor-background-color, #1e1e1e);
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 11px;
+      }
+
       .uc-gauge-container {
         position: relative;
         width: 100%;

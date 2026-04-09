@@ -5,7 +5,6 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, ButtonInputModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import '../components/ultra-color-picker';
 
 export class UltraButtonInputModule extends BaseUltraModule {
@@ -61,12 +60,16 @@ export class UltraButtonInputModule extends BaseUltraModule {
         ${this.renderSettingsSection(
           localize('editor.button_input.entity.title', lang, 'Entity Configuration'),
           localize('editor.button_input.entity.desc', lang, 'Link to a Home Assistant input_button helper entity.'),
-          [{ title: localize('editor.button_input.entity_field', lang, 'Entity'),
-             description: localize('editor.button_input.entity_field_desc', lang, 'Select an input_button entity to trigger on press.'),
-             hass, data: { entity: btnMod.entity || '' },
-             schema: [this.entityField('entity', ['input_button'])],
-             onChange: (e: CustomEvent) => updateModule(e.detail.value) }]
+          []
         )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', btnMod.entity || '',
+            (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+            ['input_button'],
+            localize('editor.button_input.entity_field', lang, 'Entity')
+          )}
+        </div>
 
         <div class="settings-section">
           <div class="section-title">${localize('editor.button_input.appearance.title', lang, 'Appearance')}</div>
@@ -131,13 +134,14 @@ export class UltraButtonInputModule extends BaseUltraModule {
 
   renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const btnMod = module as ButtonInputModule;
+    const lang = hass?.locale?.language || 'en';
 
     if (!btnMod.entity?.trim()) {
-      return this.renderGradientErrorState('Configure Entity', 'Select an input_button entity in the General tab', 'mdi:gesture-tap-button');
+      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.button_input.error_configure_entity_desc', lang, 'Select an input_button entity in the General tab'), 'mdi:gesture-tap-button');
     }
     const entityState = hass?.states?.[btnMod.entity];
     if (!entityState) {
-      return this.renderGradientErrorState('Entity Not Found', `Entity "${btnMod.entity}" is not available`, 'mdi:alert-circle-outline');
+      return this.renderGradientErrorState(localize('editor.common.error_entity_not_found', lang, 'Entity Not Found'), `Entity "${btnMod.entity}" is not available`, 'mdi:alert-circle-outline');
     }
 
     const designProperties = (btnMod as any).design || {};
@@ -148,7 +152,8 @@ export class UltraButtonInputModule extends BaseUltraModule {
     const label = btnMod.button_label || entityState.attributes?.friendly_name || 'Press';
     const icon = btnMod.button_icon || '';
     const containerStyles = this._buildContainerStyles(designProperties);
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(designProperties.hover_effect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
     const mid = btnMod.id;
 
     const handlePress = () => {
@@ -165,7 +170,7 @@ export class UltraButtonInputModule extends BaseUltraModule {
       bg = buttonColor; border = 'none'; color = textColor;
     }
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         .btn-input-${mid} {
           display:inline-flex; align-items:center; justify-content:center; gap:8px;
@@ -182,7 +187,7 @@ export class UltraButtonInputModule extends BaseUltraModule {
         }
         @keyframes btn-ripple-${mid} { to { transform:scale(4); opacity:0; } }
       </style>
-      <div class="${hoverEffectClass}" style=${this._css(containerStyles)}>
+      <div class="${hoverEffectClass}" style="${designStyles}">
         <button class="btn-input-${mid}" @click=${(e: Event) => {
           handlePress();
           const btn = e.currentTarget as HTMLElement;
@@ -200,7 +205,7 @@ export class UltraButtonInputModule extends BaseUltraModule {
           <span>${label}</span>
         </button>
       </div>
-    `;
+    `, module, hass);
   }
 
   private _buildContainerStyles(dp: any): Record<string, string> {

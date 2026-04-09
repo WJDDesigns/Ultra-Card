@@ -13,7 +13,6 @@ interface HassEntity {
   last_updated: string;
   context: { id: string; parent_id?: string; user_id?: string };
 }
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import '../components/ultra-color-picker';
 
 /**
@@ -1693,20 +1692,15 @@ export class UltraVacuumModule extends BaseUltraModule {
     const currentEntity = getEntityForSection();
 
     // Common toggle for show_icon
-    const renderToggle = (key: string, label: string, defaultValue: boolean = true) => html`
-      <div class="vacuum-setting-row">
-        <div>
-          <div class="vacuum-setting-label">${label}</div>
-        </div>
-        <ha-switch
-          .checked=${settings[key as keyof typeof settings] ?? defaultValue}
-          @change=${(e: Event) => {
-            const target = e.target as any;
-            updateSettings(section.id, { [key]: target.checked });
-          }}
-        ></ha-switch>
-      </div>
-    `;
+    const renderToggle = (key: string, label: string, defaultValue: boolean = true) =>
+      this.renderFieldSection(
+        label,
+        '',
+        hass,
+        { [key]: settings[key as keyof typeof settings] ?? defaultValue },
+        [this.booleanField(key)],
+        (e: CustomEvent) => updateSettings(section.id, { [key]: e.detail.value[key] })
+      );
 
     // Entity override picker (if section supports it)
     const renderEntityOverride = () => {
@@ -1718,12 +1712,11 @@ export class UltraVacuumModule extends BaseUltraModule {
           <div class="vacuum-setting-desc" style="margin-bottom: 8px;">
             Override the auto-detected entity (current: ${currentEntity || 'none'})
           </div>
-          ${this.renderUcForm(
-            hass,
-            { entity_override: settings.entity_override || '' },
-            [{ name: 'entity_override', selector: { entity: {} } }],
-            (e: CustomEvent) => updateSettings(section.id, { entity_override: e.detail.value.entity_override }),
-            false
+          ${this.renderEntityPickerWithVariables(
+            hass, undefined as any, 'entity_override', settings.entity_override || '',
+            (value: string) => updateSettings(section.id, { entity_override: value }),
+            undefined,
+            'Entity Override'
           )}
         </div>
       `;
@@ -1913,37 +1906,25 @@ export class UltraVacuumModule extends BaseUltraModule {
           
           <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--divider-color);">
             <div class="vacuum-setting-label" style="margin-bottom: 8px;">Entity Overrides</div>
-            ${this.renderFieldSection(
-              'Filter Entity',
-              `Auto-detected: ${vacuumModule.filter_entity || 'none'}`,
-              hass,
-              { filter_entity_override: settings.filter_entity_override || '' },
-              [{ name: 'filter_entity_override', selector: { entity: { domain: 'sensor' } } }],
-              (e: CustomEvent) => updateSettings(section.id, { filter_entity_override: e.detail.value.filter_entity_override })
+            ${this.renderEntityPickerWithVariables(
+              hass, undefined as any, 'filter_entity_override', settings.filter_entity_override || '',
+              (value: string) => updateSettings(section.id, { filter_entity_override: value }),
+              ['sensor'], 'Filter Entity'
             )}
-            ${this.renderFieldSection(
-              'Main Brush Entity',
-              `Auto-detected: ${vacuumModule.main_brush_entity || 'none'}`,
-              hass,
-              { main_brush_entity_override: settings.main_brush_entity_override || '' },
-              [{ name: 'main_brush_entity_override', selector: { entity: { domain: 'sensor' } } }],
-              (e: CustomEvent) => updateSettings(section.id, { main_brush_entity_override: e.detail.value.main_brush_entity_override })
+            ${this.renderEntityPickerWithVariables(
+              hass, undefined as any, 'main_brush_entity_override', settings.main_brush_entity_override || '',
+              (value: string) => updateSettings(section.id, { main_brush_entity_override: value }),
+              ['sensor'], 'Main Brush Entity'
             )}
-            ${this.renderFieldSection(
-              'Side Brush Entity',
-              `Auto-detected: ${vacuumModule.side_brush_entity || 'none'}`,
-              hass,
-              { side_brush_entity_override: settings.side_brush_entity_override || '' },
-              [{ name: 'side_brush_entity_override', selector: { entity: { domain: 'sensor' } } }],
-              (e: CustomEvent) => updateSettings(section.id, { side_brush_entity_override: e.detail.value.side_brush_entity_override })
+            ${this.renderEntityPickerWithVariables(
+              hass, undefined as any, 'side_brush_entity_override', settings.side_brush_entity_override || '',
+              (value: string) => updateSettings(section.id, { side_brush_entity_override: value }),
+              ['sensor'], 'Side Brush Entity'
             )}
-            ${this.renderFieldSection(
-              'Sensor Entity',
-              `Auto-detected: ${vacuumModule.sensor_entity || 'none'}`,
-              hass,
-              { sensor_entity_override: settings.sensor_entity_override || '' },
-              [{ name: 'sensor_entity_override', selector: { entity: { domain: 'sensor' } } }],
-              (e: CustomEvent) => updateSettings(section.id, { sensor_entity_override: e.detail.value.sensor_entity_override })
+            ${this.renderEntityPickerWithVariables(
+              hass, undefined as any, 'sensor_entity_override', settings.sensor_entity_override || '',
+              (value: string) => updateSettings(section.id, { sensor_entity_override: value }),
+              ['sensor'], 'Sensor Entity'
             )}
           </div>
           
@@ -3016,6 +2997,7 @@ export class UltraVacuumModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const vacuumModule = module as VacuumModule;
+    const lang = hass?.locale?.language || 'en';
 
     return html`
       <style>
@@ -3023,32 +3005,25 @@ export class UltraVacuumModule extends BaseUltraModule {
       </style>
 
       <!-- Entity Configuration -->
-      ${this.renderSettingsSection('Entity Configuration', 'Select the vacuum entity to control', [
-        {
-          title: 'Vacuum Entity',
-          description: 'Select a vacuum entity - related sensors will be auto-detected',
-          hass,
-          data: { entity: vacuumModule.entity || '' },
-          schema: [
-            {
-              name: 'entity',
-              selector: { entity: { domain: 'vacuum' } },
-            },
-          ],
-          onChange: (e: CustomEvent) => {
-            const newEntity = e.detail.value.entity;
-            // Auto-detect integration when entity changes
-            const entityState = hass.states[newEntity];
+      ${this.renderSettingsSection(
+        localize('editor.vacuum.section_entity', lang, 'Entity Configuration'),
+        localize('editor.vacuum.section_entity_desc', lang, 'Select the vacuum entity to control'),
+        []
+      )}
+      <div style="margin-bottom: 24px;">
+        ${this.renderEntityPickerWithVariables(
+          hass, config, 'entity', vacuumModule.entity || '',
+          (value: string) => {
+            const entityState = hass.states[value];
             const detectedIntegration = entityState ? this.detectIntegration(entityState) : 'generic';
-            // Auto-populate related entities based on vacuum entity name
-            const autoPopulated = this.autoPopulateEntities(newEntity, hass);
-            updateModule({ 
-              entity: newEntity, 
-              detected_integration: detectedIntegration,
-              ...autoPopulated
-            });
+            const autoPopulated = this.autoPopulateEntities(value, hass);
+            updateModule({ entity: value, detected_integration: detectedIntegration, ...autoPopulated });
           },
-        },
+          ['vacuum'],
+          localize('editor.vacuum.entity', lang, 'Vacuum Entity')
+        )}
+      </div>
+      ${this.renderSettingsSection('', '', [
         {
           title: 'Display Name',
           description: 'Custom name to display (leave empty to use entity name)',
@@ -3063,7 +3038,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       ${this.renderCardLayoutSection(vacuumModule, hass, updateModule)}
 
       <!-- Animations Toggle -->
-      ${this.renderSettingsSection('Animations', 'Control vacuum animations', [
+      ${this.renderSettingsSection(localize('editor.vacuum.section_animations', lang, 'Animations'), localize('editor.vacuum.section_animations_desc', lang, 'Control vacuum animations'), [
         {
           title: 'Enable Animations',
           description: 'Turn on/off vacuum animations (spinning brushes, dock LED, etc.)',
@@ -3101,7 +3076,8 @@ export class UltraVacuumModule extends BaseUltraModule {
     
     // Hover effects
     const hoverEffect = (vacuumModule as any)?.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
     
     // Map configuration - get display mode from map section settings
     const sections = vacuumModule.display_sections || this.getDefaultSections();
@@ -3117,13 +3093,14 @@ export class UltraVacuumModule extends BaseUltraModule {
     // Layout-specific rendering
     const layoutMode = vacuumModule.layout_mode || 'standard';
     
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         ${this.getStyles()}
       </style>
       
       <div 
         class="vacuum-module-container ${hoverEffectClass} layout-${layoutMode} ${mapDisplayMode === 'swipe' ? 'swipe-mode' : ''}"
+        style="${designStyles}"
         @touchstart=${(e: TouchEvent) => this.handleTouchStart(e)}
         @touchmove=${(e: TouchEvent) => this.handleTouchMove(e, !!hasMap && mapDisplayMode === 'swipe')}
         @touchend=${(e: TouchEvent) => this.handleTouchEnd(e, !!hasMap && mapDisplayMode === 'swipe')}
@@ -3137,7 +3114,7 @@ export class UltraVacuumModule extends BaseUltraModule {
               : this.renderStandardLayout(vacuumModule, entity, hass, displayName, state, batteryLevel, isCharging, statusColor, animationClass, vacuumSize, fanSpeed, fanSpeedOptions)
         }
       </div>
-    `;
+    `, module, hass);
   }
 
   private renderNoEntity(module: VacuumModule): TemplateResult {

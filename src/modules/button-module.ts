@@ -7,7 +7,6 @@ import { LinkAction, linkService } from '../services/link-service';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import '../components/ultra-color-picker';
 import { getImageUrl } from '../utils/image-upload';
 
@@ -226,90 +225,18 @@ export class UltraButtonModule extends BaseUltraModule {
                 </div>
 
                 <div class="field-container" style="margin-bottom: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 8px;"
-                  >
-                    ${localize('editor.button.icon_size', lang, 'Icon Size')}
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
-                  >
-                    ${localize(
-                      'editor.button.icon_size_desc',
-                      lang,
-                      'Size of the icon in pixels'
-                    )}
-                  </div>
-                  <div
-                    class="gap-control-container"
-                    style="display: flex; align-items: center; gap: 12px;"
-                  >
-                    <input
-                      type="range"
-                      class="gap-slider"
-                      min="12"
-                      max="64"
-                      step="1"
-                      .value="${String(
-                        typeof buttonModule.icon_size === 'number'
-                          ? buttonModule.icon_size
-                          : parseInt(String(buttonModule.icon_size || '24').replace('px', '')) || 24
-                      )}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = Number(target.value);
-                        updateModule({ icon_size: `${value}px` });
-                        setTimeout(() => this.triggerPreviewUpdate(), 50);
-                      }}
-                    />
-                    <input
-                      type="number"
-                      class="gap-input"
-                      min="12"
-                      max="64"
-                      step="1"
-                      .value="${String(
-                        typeof buttonModule.icon_size === 'number'
-                          ? buttonModule.icon_size
-                          : parseInt(String(buttonModule.icon_size || '24').replace('px', '')) || 24
-                      )}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = Number(target.value);
-                        if (!isNaN(value)) {
-                          updateModule({ icon_size: `${value}px` });
-                          setTimeout(() => this.triggerPreviewUpdate(), 50);
-                        }
-                      }}
-                      @keydown=${(e: KeyboardEvent) => {
-                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                          e.preventDefault();
-                          const target = e.target as HTMLInputElement;
-                          const currentValue = Number(target.value) || 24;
-                          const increment = e.key === 'ArrowUp' ? 1 : -1;
-                          const newValue = Math.max(12, Math.min(64, currentValue + increment));
-                          updateModule({ icon_size: `${newValue}px` });
-                          setTimeout(() => this.triggerPreviewUpdate(), 50);
-                        }
-                      }}
-                    />
-                    <button
-                      class="reset-btn"
-                      @click=${() => {
-                        updateModule({ icon_size: '24px' });
-                        setTimeout(() => this.triggerPreviewUpdate(), 50);
-                      }}
-                      title="${localize(
-                        'editor.fields.reset_default_value',
-                        lang,
-                        'Reset to default ({value})'
-                      ).replace('{value}', '24')}"
-                    >
-                      <ha-icon icon="mdi:refresh"></ha-icon>
-                    </button>
-                  </div>
+                  ${this.renderSliderField(
+                    localize('editor.button.icon_size', lang, 'Icon Size'),
+                    localize('editor.button.icon_size_desc', lang, 'Size of the icon in pixels'),
+                    typeof buttonModule.icon_size === 'number'
+                      ? buttonModule.icon_size
+                      : parseInt(String(buttonModule.icon_size || '24').replace('px', '')) || 24,
+                    24, 12, 64, 1,
+                    (v: number) => {
+                      updateModule({ icon_size: `${v}px` });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }
+                  )}
                 </div>
               `
             : ''}
@@ -347,20 +274,14 @@ export class UltraButtonModule extends BaseUltraModule {
             ? html`
                 <!-- Entity Picker -->
                 <div class="field-group" style="margin-bottom: 16px;">
-                  ${this.renderFieldSection(
-                    localize('editor.button.background_color_entity', lang, 'Entity'),
-                    localize(
-                      'editor.button.background_color_entity_desc',
-                      lang,
-                      'Entity to watch for color changes'
-                    ),
-                    hass,
-                    { background_color_entity: buttonModule.background_color_entity || '' },
-                    [this.entityField('background_color_entity')],
-                    (e: CustomEvent) => {
-                      updateModule(e.detail.value);
+                  ${this.renderEntityPickerWithVariables(
+                    hass, config, 'background_color_entity', buttonModule.background_color_entity || '',
+                    (value: string) => {
+                      updateModule({ background_color_entity: value });
                       setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }
+                    },
+                    undefined,
+                    localize('editor.button.background_color_entity', lang, 'Entity')
                   )}
                 </div>
 
@@ -458,6 +379,7 @@ export class UltraButtonModule extends BaseUltraModule {
   private renderLinkActionForm(
     action: LinkAction,
     hass: HomeAssistant,
+    config: UltraCardConfig,
     onUpdate: (action: LinkAction) => void
   ): TemplateResult {
     const actionTypes = linkService.getActionTypeOptions();
@@ -485,7 +407,7 @@ export class UltraButtonModule extends BaseUltraModule {
           )}
         </div>
 
-        ${this.renderActionTypeSpecificFields(action, hass, onUpdate)}
+        ${this.renderActionTypeSpecificFields(action, hass, config, onUpdate)}
       </div>
     `;
   }
@@ -493,19 +415,18 @@ export class UltraButtonModule extends BaseUltraModule {
   private renderActionTypeSpecificFields(
     action: LinkAction,
     hass: HomeAssistant,
+    config: UltraCardConfig,
     onUpdate: (action: LinkAction) => void
   ): TemplateResult {
     switch (action.action_type) {
       case 'toggle':
       case 'show_more_info':
       case 'trigger':
-        return this.renderFieldSection(
-          'Entity',
-          'Select the entity to interact with',
-          hass,
-          { entity: action.entity || '' },
-          [this.entityField('entity')],
-          (e: CustomEvent) => onUpdate({ ...action, entity: e.detail.value.entity })
+        return this.renderEntityPickerWithVariables(
+          hass, config, 'entity', action.entity || '',
+          (value: string) => onUpdate({ ...action, entity: value }),
+          undefined,
+          'Entity'
         );
 
       case 'navigate':
@@ -957,19 +878,20 @@ export class UltraButtonModule extends BaseUltraModule {
     );
 
     const hoverEffect = (buttonModule as any).design?.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
     // Calculate icon size
     const iconSize = this.addPixelUnit(buttonModule.icon_size) || '24px';
 
-    return html`
-      <div class="button-module-container" style="${this.styleObjectToCss(containerStyles)}">
-        <div class="button-module-preview" style="${this.styleObjectToCss(alignmentStyles)}">
+    return this.wrapWithAnimation(html`
+      <div class="button-module-container" style="${designStyles}; ${this.buildStyleString(containerStyles)}">
+        <div class="button-module-preview" style="${this.buildStyleString(alignmentStyles)}">
           <button
             class="ultra-button ${styleClass} ${moduleAlignment === 'justify'
               ? 'justify'
               : ''} ${hoverEffectClass}"
-            style="${this.styleObjectToCss(mergedButtonStyle)}"
+            style="${this.buildStyleString(mergedButtonStyle)}"
             aria-label="${(buttonModule.label || 'Button').trim() || 'Button'}"
             @pointerdown=${handlers.onPointerDown}
             @pointerup=${handlers.onPointerUp}
@@ -991,7 +913,7 @@ export class UltraButtonModule extends BaseUltraModule {
           </button>
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   private styleObjectToCss(styles: Record<string, string | number>): string {
@@ -1306,107 +1228,7 @@ export class UltraButtonModule extends BaseUltraModule {
         flex: 1;
       }
 
-      /* Gap control styles for sliders */
-      .gap-control-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .gap-slider {
-        flex: 1;
-        height: 6px;
-        background: var(--divider-color);
-        border-radius: 3px;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .gap-slider::-webkit-slider-thumb {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider:hover {
-        background: var(--primary-color);
-        opacity: 0.7;
-      }
-
-      .gap-slider:hover::-webkit-slider-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-slider:hover::-moz-range-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-input {
-        width: 48px !important;
-        max-width: 48px !important;
-        min-width: 48px !important;
-        padding: 4px 6px !important;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-      }
-
-      .gap-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-      }
-
-      .reset-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-
-      .reset-btn:hover {
-        background: var(--primary-color);
-        color: var(--text-primary-color);
-        border-color: var(--primary-color);
-      }
-
-      .reset-btn ha-icon {
-        font-size: 16px;
-      }
+      ${BaseUltraModule.getSliderStyles()}
     `;
   }
 }

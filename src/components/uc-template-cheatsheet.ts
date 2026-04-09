@@ -91,6 +91,53 @@ const EXAMPLE_TEMPLATES: Record<string, { label: string; code: string }[]> = {
 }`,
     },
   ],
+  text: [
+    {
+      label: 'Dynamic text with unit',
+      code: '{{ friendly_name }}: {{ state }} {{ unit }}',
+    },
+    {
+      label: 'Styled text via JSON',
+      code: `{
+  "content": "{{ friendly_name }}: {{ state }}{{ unit }}",
+  "color": "{% if state_number > 30 %}#FF4444{% else %}var(--primary-text-color){% endif %}"
+}`,
+    },
+  ],
+  bar: [
+    {
+      label: 'Battery percentage with color',
+      code: `{% set level = state | float %}
+{
+  "value": {{ level }},
+  "label": "{{ friendly_name }} — {{ level | round(0) }}%"
+}`,
+    },
+  ],
+  gauge: [
+    {
+      label: 'Temperature gauge with color',
+      code: `{% set temp = state | float %}
+{
+  "value": {{ temp }},
+  "gauge_color": "{% if temp > 25 %}#FF4444{% elif temp > 20 %}#FF8800{% else %}#00CC00{% endif %}"
+}`,
+    },
+  ],
+  camera: [
+    {
+      label: 'Switch camera by weather',
+      code: "{{ 'camera.outdoor' if is_state('weather.home', 'sunny') else 'camera.indoor' }}",
+    },
+    {
+      label: 'Camera with overlay',
+      code: `{
+  "entity": "camera.front_door",
+  "overlay_text": "{{ now().strftime('%H:%M') }}",
+  "overlay_color": "white"
+}`,
+    },
+  ],
 };
 
 @customElement('uc-template-cheatsheet')
@@ -117,6 +164,15 @@ export class UcTemplateCheatsheet extends LitElement {
     super.disconnectedCallback();
   }
 
+  protected updated(changed: Map<string, unknown>): void {
+    if (changed.has('open') && this.open) {
+      requestAnimationFrame(() => {
+        const closeBtn = this.shadowRoot?.querySelector<HTMLElement>('.close-btn');
+        closeBtn?.focus();
+      });
+    }
+  }
+
   protected render(): TemplateResult {
     if (!this.open) return html``;
 
@@ -127,7 +183,7 @@ export class UcTemplateCheatsheet extends LitElement {
 
     return html`
       <div class="dialog-overlay" @click=${this._handleOverlayClick}>
-        <div class="dialog-content" @click=${(e: Event) => e.stopPropagation()}>
+        <div class="dialog-content" role="dialog" aria-modal="true" aria-label="Template Cheatsheet" @click=${(e: Event) => e.stopPropagation()}>
           <div class="dialog-header">
             <h3>Template Cheatsheet</h3>
             <button class="close-btn" @click=${this._close} aria-label="Close">
@@ -169,11 +225,19 @@ export class UcTemplateCheatsheet extends LitElement {
                               <div class="entry-actions">
                                 <button
                                   class="action-btn"
-                                  @click=${() => this._copyOrInsert(v.snippet, v.key)}
+                                  @click=${() => this._copyOnly(v.snippet, v.key)}
                                   title="Copy to clipboard"
                                 >
                                   <span class="action-btn-icon"><ha-icon icon="mdi:content-copy"></ha-icon></span>
                                   <span class="action-btn-text">${this._copiedKey === v.key ? 'Copied!' : 'Copy'}</span>
+                                </button>
+                                <button
+                                  class="action-btn insert-btn"
+                                  @click=${() => this._insertSnippet(v.snippet)}
+                                  title="Insert into active field"
+                                >
+                                  <span class="action-btn-icon"><ha-icon icon="mdi:arrow-expand-down"></ha-icon></span>
+                                  <span class="action-btn-text">Insert</span>
                                 </button>
                               </div>
                             </div>
@@ -186,7 +250,7 @@ export class UcTemplateCheatsheet extends LitElement {
                 `
               : html`
                   <p class="section-desc">
-                    Return these properties in a JSON object from your template (Info/Icon modules).
+                    Return these properties in a JSON object from your template.
                   </p>
                   <div class="entries">
                     ${filteredProperties.map(
@@ -201,11 +265,19 @@ export class UcTemplateCheatsheet extends LitElement {
                               <div class="entry-actions">
                                 <button
                                   class="action-btn"
-                                  @click=${() => this._copyOrInsert(p.snippet, p.key)}
+                                  @click=${() => this._copyOnly(p.snippet, p.key)}
                                   title="Copy to clipboard"
                                 >
                                   <span class="action-btn-icon"><ha-icon icon="mdi:content-copy"></ha-icon></span>
                                   <span class="action-btn-text">${this._copiedKey === p.key ? 'Copied!' : 'Copy'}</span>
+                                </button>
+                                <button
+                                  class="action-btn insert-btn"
+                                  @click=${() => this._insertSnippet(p.snippet)}
+                                  title="Insert into active field"
+                                >
+                                  <span class="action-btn-icon"><ha-icon icon="mdi:arrow-expand-down"></ha-icon></span>
+                                  <span class="action-btn-text">Insert</span>
                                 </button>
                               </div>
                             </div>
@@ -228,13 +300,22 @@ export class UcTemplateCheatsheet extends LitElement {
                             <div class="example-label">${ex.label}</div>
                             <div class="example-code">
                               <pre><code>${ex.code}</code></pre>
-                              <button
-                                class="copy-full-btn"
-                                @click=${() => this._copyOrInsert(ex.code, `example-${ex.label}`)}
-                              >
-                                <span class="action-btn-icon"><ha-icon icon="mdi:content-copy"></ha-icon></span>
-                                <span>Copy</span>
-                              </button>
+                              <div class="example-code-actions">
+                                <button
+                                  class="copy-full-btn"
+                                  @click=${() => this._copyOnly(ex.code, `example-${ex.label}`)}
+                                >
+                                  <span class="action-btn-icon"><ha-icon icon="mdi:content-copy"></ha-icon></span>
+                                  <span>${this._copiedKey === `example-${ex.label}` ? 'Copied!' : 'Copy'}</span>
+                                </button>
+                                <button
+                                  class="copy-full-btn insert-full-btn"
+                                  @click=${() => this._insertSnippet(ex.code)}
+                                >
+                                  <span class="action-btn-icon"><ha-icon icon="mdi:arrow-expand-down"></ha-icon></span>
+                                  <span>Insert</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
                         `
@@ -260,25 +341,27 @@ export class UcTemplateCheatsheet extends LitElement {
     this.dispatchEvent(new CustomEvent('close'));
   }
 
-  private async _copyOrInsert(text: string, key: string): Promise<void> {
+  private async _copyOnly(text: string, key: string): Promise<void> {
     try {
-      // Type assertion for clipboard API
       const nav = navigator as any;
       if (nav.clipboard && nav.clipboard.writeText) {
         await nav.clipboard.writeText(text);
       }
       this._copiedKey = key;
       setTimeout(() => (this._copiedKey = null), 1500);
-      this.dispatchEvent(
-        new CustomEvent('insert-snippet', {
-          detail: { value: text },
-          bubbles: true,
-          composed: true,
-        })
-      );
     } catch (err) {
       console.warn('[UltraCard] Failed to copy:', err);
     }
+  }
+
+  private _insertSnippet(text: string): void {
+    this.dispatchEvent(
+      new CustomEvent('insert-snippet', {
+        detail: { value: text },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   static styles = css`
@@ -478,6 +561,8 @@ export class UcTemplateCheatsheet extends LitElement {
 
     .entry-actions {
       flex-shrink: 0;
+      display: flex;
+      gap: 4px;
     }
 
     .action-btn {
@@ -494,6 +579,17 @@ export class UcTemplateCheatsheet extends LitElement {
       transition: opacity 0.15s ease;
       box-sizing: border-box;
       overflow: hidden;
+    }
+
+    .action-btn.insert-btn {
+      background: transparent;
+      color: var(--primary-color);
+      border: 1px solid var(--primary-color);
+    }
+
+    .action-btn.insert-btn:hover {
+      background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12);
+      opacity: 1;
     }
 
     .action-btn:hover {
@@ -560,7 +656,7 @@ export class UcTemplateCheatsheet extends LitElement {
     .example-code pre {
       margin: 0;
       padding: 10px 12px 10px 10px;
-      padding-right: 56px;
+      padding-right: 110px;
       background: var(--code-editor-background-color, #1a1a1a);
       border-radius: 6px;
       overflow-x: auto;
@@ -570,10 +666,15 @@ export class UcTemplateCheatsheet extends LitElement {
       line-height: 1.45;
     }
 
-    .copy-full-btn {
+    .example-code-actions {
       position: absolute;
       top: 6px;
       right: 6px;
+      display: flex;
+      gap: 4px;
+    }
+
+    .copy-full-btn {
       display: inline-flex;
       align-items: center;
       gap: 4px;
@@ -588,6 +689,17 @@ export class UcTemplateCheatsheet extends LitElement {
     }
 
     .copy-full-btn:hover {
+      background: var(--primary-color);
+      color: var(--text-primary-color, white);
+      border-color: var(--primary-color);
+    }
+
+    .insert-full-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .insert-full-btn:hover {
       background: var(--primary-color);
       color: var(--text-primary-color, white);
       border-color: var(--primary-color);

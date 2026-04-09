@@ -13,6 +13,8 @@ import {
 } from '../services/uc-cloud-backup-service';
 import { UserSubscription } from '../services/uc-cloud-auth-service';
 import { UltraCardConfig } from '../types';
+import { ucToastService } from '../services/uc-toast-service';
+import { ucConfirmService } from '../services/uc-confirm-service';
 
 @customElement('uc-backup-history-modal')
 export class UcBackupHistoryModal extends LitElement {
@@ -76,7 +78,12 @@ export class UcBackupHistoryModal extends LitElement {
   }
 
   private async _handleRestore(backup: BackupListItem) {
-    if (!confirm(`Restore this backup? This will replace your current configuration.`)) {
+    const confirmed = await ucConfirmService.confirm(
+      'Restore Backup',
+      'This will replace your current card configuration.',
+      {}
+    );
+    if (!confirmed) {
       return;
     }
 
@@ -95,7 +102,7 @@ export class UcBackupHistoryModal extends LitElement {
       this._close();
     } catch (error) {
       console.error('Failed to restore backup:', error);
-      alert(
+      ucToastService.error(
         `Failed to restore backup: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
@@ -116,26 +123,31 @@ export class UcBackupHistoryModal extends LitElement {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to download backup:', error);
-      alert(`Failed to download: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      ucToastService.error(`Failed to download: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   private async _handleDelete(backup: BackupListItem) {
     if (backup.type !== 'snapshot') {
-      alert('Only snapshots can be deleted. Auto-backups are automatically pruned after 30 days.');
+      ucToastService.warning('Only snapshots can be deleted. Auto-backups are automatically pruned after 30 days.');
       return;
     }
 
-    if (!confirm(`Delete snapshot "${backup.snapshot_name}"? This cannot be undone.`)) {
+    const confirmed = await ucConfirmService.confirm(
+      'Delete Snapshot',
+      `Delete snapshot "${backup.snapshot_name}"? This cannot be undone.`,
+      { destructive: true }
+    );
+    if (!confirmed) {
       return;
     }
 
     try {
       await ucCloudBackupService.deleteSnapshot(backup.id);
-      this._loadBackups(); // Reload list
+      this._loadBackups();
     } catch (error) {
       console.error('Failed to delete snapshot:', error);
-      alert(`Failed to delete: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      ucToastService.error(`Failed to delete: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

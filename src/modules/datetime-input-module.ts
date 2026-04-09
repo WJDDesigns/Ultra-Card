@@ -5,7 +5,6 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, DatetimeInputModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import '../components/ultra-color-picker';
 
 export class UltraDatetimeInputModule extends BaseUltraModule {
@@ -106,23 +105,16 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
             lang,
             'Link to a Home Assistant input_datetime helper entity.'
           ),
-          [
-            {
-              title: localize('editor.datetime_input.entity_field', lang, 'Entity'),
-              description: localize(
-                'editor.datetime_input.entity_field_desc',
-                lang,
-                'Select an input_datetime entity to bind this picker to.'
-              ),
-              hass,
-              data: { entity: dtModule.entity || '' },
-              schema: [this.entityField('entity', ['input_datetime'])],
-              onChange: (e: CustomEvent) => {
-                updateModule(e.detail.value);
-              },
-            },
-          ]
+          []
         )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', dtModule.entity || '',
+            (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+            ['input_datetime'],
+            localize('editor.datetime_input.entity_field', lang, 'Entity')
+          )}
+        </div>
 
         <!-- Display Configuration -->
         <div class="settings-section">
@@ -265,11 +257,12 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const dtModule = module as DatetimeInputModule;
+    const lang = hass?.locale?.language || 'en';
 
     if (!dtModule.entity || !dtModule.entity.trim()) {
       return this.renderGradientErrorState(
-        'Configure Entity',
-        'Select an input_datetime entity in the General tab',
+        localize('editor.common.error_configure_entity', lang, 'Configure Entity'),
+        localize('editor.datetime_input.error_configure_entity_desc', lang, 'Select an input_datetime entity in the General tab'),
         'mdi:calendar-clock'
       );
     }
@@ -277,7 +270,7 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
     const entityState = hass?.states?.[dtModule.entity];
     if (!entityState) {
       return this.renderGradientErrorState(
-        'Entity Not Found',
+        localize('editor.common.error_entity_not_found', lang, 'Entity Not Found'),
         `Entity "${dtModule.entity}" is not available`,
         'mdi:alert-circle-outline'
       );
@@ -336,7 +329,8 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
     } as Record<string, string>;
 
     const hoverEffect = designProperties.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
     const handleDateChange = (e: Event) => {
       const input = e.target as HTMLInputElement;
@@ -362,7 +356,7 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
 
     const moduleId = dtModule.id;
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         .datetime-input-wrapper-${moduleId} {
           display: flex;
@@ -443,7 +437,7 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
       </style>
       <div
         class="datetime-input-module-container ${hoverEffectClass}"
-        style=${this.styleObjectToCss(containerStyles)}
+        style="${designStyles}"
       >
         ${showLabel
           ? html`<div class="datetime-input-label">${label}</div>`
@@ -489,7 +483,7 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
             : ''}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   private getDateValue(entityState: any): string {

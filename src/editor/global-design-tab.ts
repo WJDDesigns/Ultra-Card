@@ -8,6 +8,7 @@ import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { DeviceBreakpoint, DEVICE_BREAKPOINTS, ResponsiveDesignProperties } from '../types';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
+import { ucToastService } from '../services/uc-toast-service';
 
 // Web-safe fonts that don't require loading
 const WEB_SAFE_FONTS = [
@@ -1383,7 +1384,7 @@ export class GlobalDesignTab extends LitElement {
       }
     } catch (error) {
       console.error('Background image upload failed:', error);
-      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      ucToastService.error(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -1724,7 +1725,7 @@ export class GlobalDesignTab extends LitElement {
           <div class="responsive-header">
             <div class="responsive-title">
               <ha-icon icon="mdi:responsive"></ha-icon>
-              <span>Responsive Overrides</span>
+              <span>${localize('editor.design.responsive_overrides', lang, 'Responsive Overrides')}</span>
               ${hasAnyDeviceOverrides
                 ? html`<span class="has-overrides-badge" title="Has device-specific overrides"
                     >●</span
@@ -1761,7 +1762,7 @@ export class GlobalDesignTab extends LitElement {
                           title="Clear all overrides for ${this._selectedDevice}"
                         >
                           <ha-icon icon="mdi:delete-outline"></ha-icon>
-                          Clear ${this._selectedDevice} overrides
+                          ${localize('editor.design.clear_device_overrides', lang, 'Clear {device} overrides').replace('{device}', this._selectedDevice)}
                         </button>
                       `
                     : ''}
@@ -1769,7 +1770,7 @@ export class GlobalDesignTab extends LitElement {
               `
             : html`
                 <div class="responsive-disabled-info">
-                  Enable to set different styles for laptop, tablet, and mobile devices.
+                  ${localize('editor.design.responsive_hint', lang, 'Enable to set different styles for laptop, tablet, and mobile devices.')}
                 </div>
               `}
         </div>
@@ -1788,7 +1789,7 @@ export class GlobalDesignTab extends LitElement {
             </div>
 
             <div class="property-group">
-              <label>${localize('editor.design.alignment', lang, 'Alignment:')}:</label>
+              <label>${localize('editor.design.alignment', lang, 'Alignment')}:</label>
               <div class="button-group">
                 ${[
                   { value: 'inherit', icon: 'mdi:circle-off-outline' },
@@ -4557,14 +4558,14 @@ export class GlobalDesignTab extends LitElement {
         background: var(--primary-color);
         border-radius: 50%;
         display: inline-block;
-        animation: pulse 2s ease-in-out infinite;
+        animation: pulse-edit-indicator 2s ease-in-out infinite;
       }
 
       .accordion-header.expanded .edit-indicator {
-        background: white;
+        background: var(--text-primary-color, white);
       }
 
-      @keyframes pulse {
+      @keyframes pulse-edit-indicator {
         0%,
         100% {
           opacity: 1;

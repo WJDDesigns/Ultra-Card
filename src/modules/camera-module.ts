@@ -2,6 +2,7 @@ import { html, TemplateResult } from 'lit';
 import { cache } from 'lit/directives/cache.js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { HomeAssistant } from 'custom-card-helpers';
+import { ucToastService } from '../services/uc-toast-service';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, CameraModule, UltraCardConfig } from '../types';
 import { FormUtils } from '../utils/form-utils';
@@ -9,13 +10,13 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 
 import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { TemplateService } from '../services/template-service';
 import { buildEntityContext } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import '../components/ultra-template-editor';
+import '../components/uc-template-cheatsheet';
 
 const CAMERA_PLAYER_SELECTORS = new Set([
   'ha-web-rtc-player',
@@ -144,41 +145,33 @@ export class UltraCameraModule extends BaseUltraModule {
             lang,
             'Configure the camera entity and display settings.'
           ),
-          [
-            {
-              title: localize('editor.camera.entity', lang, 'Camera Entity'),
-              description: localize(
-                'editor.camera.entity_desc',
-                lang,
-                'Select the camera entity to display. This should be a camera or mjpeg entity from Home Assistant.'
-              ),
-              hass,
-              data: cameraModule,
-              schema: [this.entityField('entity', ['camera'])],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
-            },
-          ]
+          []
         )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', cameraModule.entity || '',
+            (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+            ['camera'],
+            localize('editor.camera.entity', lang, 'Camera Entity')
+          )}
+        </div>
 
         <!-- Camera Name Settings with toggle in header -->
-        <div class="settings-section">
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 0; border-bottom: none;"
-          >
-            <div
-              class="section-title"
-              style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); letter-spacing: 0.5px;"
-            >
-              ${localize('editor.camera.show_name', lang, 'Show Camera Name')}
-            </div>
-            <ha-switch
-              .checked=${cameraModule.show_name !== false}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ show_name: target.checked });
-              }}
-            ></ha-switch>
-          </div>
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          ${this.renderFieldSection(
+            localize('editor.camera.show_name', lang, 'Show Camera Name'),
+            '',
+            hass,
+            { show_name: cameraModule.show_name !== false },
+            [this.booleanField('show_name')],
+            (e: CustomEvent) => {
+              updateModule({ show_name: e.detail.value.show_name });
+              this.triggerPreviewUpdate();
+            }
+          )}
 
           ${cameraModule.show_name !== false
             ? html`
@@ -292,24 +285,21 @@ export class UltraCameraModule extends BaseUltraModule {
         </div>
 
         <!-- Tap to Open Fullscreen Settings -->
-        <div class="settings-section">
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 0; border-bottom: none;"
-          >
-            <div
-              class="section-title"
-              style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); letter-spacing: 0.5px;"
-            >
-              ${localize('editor.camera.tap_opens_fullscreen', lang, 'Tap Camera Opens Fullscreen')}
-            </div>
-            <ha-switch
-              .checked=${cameraModule.tap_opens_fullscreen === true}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ tap_opens_fullscreen: target.checked });
-              }}
-            ></ha-switch>
-          </div>
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          ${this.renderFieldSection(
+            localize('editor.camera.tap_opens_fullscreen', lang, 'Tap Camera Opens Fullscreen'),
+            '',
+            hass,
+            { tap_opens_fullscreen: cameraModule.tap_opens_fullscreen === true },
+            [this.booleanField('tap_opens_fullscreen')],
+            (e: CustomEvent) => {
+              updateModule({ tap_opens_fullscreen: e.detail.value.tap_opens_fullscreen });
+              this.triggerPreviewUpdate();
+            }
+          )}
 
           <div
             class="field-description"
@@ -461,105 +451,6 @@ export class UltraCameraModule extends BaseUltraModule {
             </div>
 
             <style>
-              .number-range-control {
-                display: flex;
-                gap: 8px;
-                align-items: center;
-              }
-
-              .range-slider {
-                flex: 0 0 65%;
-                height: 6px;
-                background: var(--divider-color);
-                border-radius: 3px;
-                outline: none;
-                appearance: none;
-                -webkit-appearance: none;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                min-width: 0;
-              }
-
-              .range-slider::-webkit-slider-thumb {
-                appearance: none;
-                -webkit-appearance: none;
-                width: 18px;
-                height: 18px;
-                background: var(--primary-color);
-                border-radius: 50%;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-              }
-
-              .range-slider::-moz-range-thumb {
-                width: 18px;
-                height: 18px;
-                background: var(--primary-color);
-                border-radius: 50%;
-                cursor: pointer;
-                border: none;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-              }
-
-              .range-slider:hover {
-                background: var(--primary-color);
-                opacity: 0.7;
-              }
-
-              .range-slider:hover::-webkit-slider-thumb {
-                transform: scale(1.1);
-              }
-
-              .range-slider:hover::-moz-range-thumb {
-                transform: scale(1.1);
-              }
-
-              .range-input {
-                flex: 0 0 20%;
-                padding: 6px 8px !important;
-                border: 1px solid var(--divider-color);
-                border-radius: 4px;
-                background: var(--secondary-background-color);
-                color: var(--primary-text-color);
-                font-size: 13px;
-                text-align: center;
-                transition: all 0.2s ease;
-                box-sizing: border-box;
-              }
-
-              .range-input:focus {
-                outline: none;
-                border-color: var(--primary-color);
-                box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-              }
-
-              .range-reset-btn {
-                width: 32px;
-                height: 32px;
-                padding: 0;
-                border: 1px solid var(--divider-color);
-                border-radius: 4px;
-                background: var(--secondary-background-color);
-                color: var(--primary-text-color);
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s ease;
-                flex-shrink: 0;
-              }
-
-              .range-reset-btn:hover {
-                background: var(--primary-color);
-                color: var(--text-primary-color);
-                border-color: var(--primary-color);
-              }
-
-              .range-reset-btn ha-icon {
-                font-size: 14px;
-              }
-
               .aspect-ratio-link-btn {
                 width: 40px;
                 height: 40px;
@@ -615,71 +506,14 @@ export class UltraCameraModule extends BaseUltraModule {
 
             <div class="dimensions-container">
               <div class="dimension-group">
-                <div class="field-title">
-                  ${localize('editor.camera.width', lang, 'Width (px)')}
-                </div>
-                <div class="field-description">
-                  ${localize(
-                    'editor.camera.width_desc',
-                    lang,
-                    'Set the width of the camera display. Range: 100-1000px'
-                  )}
-                </div>
-                <div
-                  class="gap-control-container"
-                  style="display: flex; align-items: center; gap: 12px;"
-                >
-                  <input
-                    type="range"
-                    class="gap-slider"
-                    min="100"
-                    max="1000"
-                    step="1"
-                    .value="${cameraModule.width || 320}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const newWidth = parseInt(target.value);
-                      this._handleDimensionChange(cameraModule, 'width', newWidth, updateModule);
-                    }}
-                  />
-                  <input
-                    type="number"
-                    class="gap-input"
-                    min="100"
-                    max="1000"
-                    step="1"
-                    .value="${cameraModule.width || 320}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const newWidth = parseInt(target.value);
-                      if (!isNaN(newWidth)) {
-                        this._handleDimensionChange(cameraModule, 'width', newWidth, updateModule);
-                      }
-                    }}
-                    @keydown=${(e: KeyboardEvent) => {
-                      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        const target = e.target as HTMLInputElement;
-                        const currentValue = parseInt(target.value) || 320;
-                        const increment = e.key === 'ArrowUp' ? 1 : -1;
-                        const newValue = Math.max(100, Math.min(1000, currentValue + increment));
-                        this._handleDimensionChange(cameraModule, 'width', newValue, updateModule);
-                      }
-                    }}
-                  />
-                  <button
-                    class="reset-btn"
-                    @click=${() =>
-                      this._handleDimensionChange(cameraModule, 'width', 320, updateModule)}
-                    title=${localize(
-                      'editor.fields.reset_default_value',
-                      lang,
-                      'Reset to default ({value})'
-                    ).replace('{value}', '320')}
-                  >
-                    <ha-icon icon="mdi:refresh"></ha-icon>
-                  </button>
-                </div>
+                ${this.renderSliderField(
+                  localize('editor.camera.width', lang, 'Width'),
+                  localize('editor.camera.width_desc', lang, 'Set the width of the camera display. Range: 100–1000px'),
+                  cameraModule.width || 320,
+                  320, 100, 1000, 1,
+                  (v: number) => this._handleDimensionChange(cameraModule, 'width', v, updateModule),
+                  'px'
+                )}
               </div>
 
               <!-- Link/Unlink Button -->
@@ -714,76 +548,14 @@ export class UltraCameraModule extends BaseUltraModule {
               </div>
 
               <div class="dimension-group">
-                <div class="field-title">
-                  ${localize('editor.camera.height', lang, 'Height (px)')}
-                </div>
-                <div class="field-description">
-                  ${localize(
-                    'editor.camera.height_desc',
-                    lang,
-                    'Set the height of the camera display. Range: 100-1000px'
-                  )}
-                </div>
-                <div
-                  class="gap-control-container"
-                  style="display: flex; align-items: center; gap: 12px;"
-                >
-                  <input
-                    type="range"
-                    class="gap-slider"
-                    min="100"
-                    max="1000"
-                    step="1"
-                    .value="${cameraModule.height || 180}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const newHeight = parseInt(target.value);
-                      this._handleDimensionChange(cameraModule, 'height', newHeight, updateModule);
-                    }}
-                  />
-                  <input
-                    type="number"
-                    class="gap-input"
-                    min="100"
-                    max="1000"
-                    step="1"
-                    .value="${cameraModule.height || 180}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const newHeight = parseInt(target.value);
-                      if (!isNaN(newHeight)) {
-                        this._handleDimensionChange(
-                          cameraModule,
-                          'height',
-                          newHeight,
-                          updateModule
-                        );
-                      }
-                    }}
-                    @keydown=${(e: KeyboardEvent) => {
-                      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        const target = e.target as HTMLInputElement;
-                        const currentValue = parseInt(target.value) || 180;
-                        const increment = e.key === 'ArrowUp' ? 1 : -1;
-                        const newValue = Math.max(100, Math.min(1000, currentValue + increment));
-                        this._handleDimensionChange(cameraModule, 'height', newValue, updateModule);
-                      }
-                    }}
-                  />
-                  <button
-                    class="reset-btn"
-                    @click=${() =>
-                      this._handleDimensionChange(cameraModule, 'height', 180, updateModule)}
-                    title=${localize(
-                      'editor.fields.reset_default_value',
-                      lang,
-                      'Reset to default ({value})'
-                    ).replace('{value}', '180')}
-                  >
-                    <ha-icon icon="mdi:refresh"></ha-icon>
-                  </button>
-                </div>
+                ${this.renderSliderField(
+                  localize('editor.camera.height', lang, 'Height'),
+                  localize('editor.camera.height_desc', lang, 'Set the height of the camera display. Range: 100–1000px'),
+                  cameraModule.height || 180,
+                  180, 100, 1000, 1,
+                  (v: number) => this._handleDimensionChange(cameraModule, 'height', v, updateModule),
+                  'px'
+                )}
               </div>
             </div>
 
@@ -847,67 +619,14 @@ export class UltraCameraModule extends BaseUltraModule {
 
           <!-- Rotation Field -->
           <div class="dimension-group" style="margin-top: 16px;">
-            <div class="field-title">
-              ${localize('editor.camera.rotation', lang, 'Rotation (°)')}
-            </div>
-            <div class="field-description">
-              ${localize(
-                'editor.camera.rotation_desc',
-                lang,
-                'Rotate the camera image clockwise (0-360 degrees).'
-              )}
-            </div>
-            <div class="number-range-control">
-              <input
-                type="range"
-                class="range-slider"
-                min="0"
-                max="360"
-                step="1"
-                .value="${cameraModule.rotation || 0}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const newRotation = parseInt(target.value);
-                  updateModule({ rotation: newRotation });
-                }}
-              />
-              <input
-                type="number"
-                class="range-input"
-                min="0"
-                max="360"
-                step="1"
-                .value="${cameraModule.rotation || 0}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const newRotation = parseInt(target.value);
-                  if (!isNaN(newRotation)) {
-                    updateModule({ rotation: newRotation });
-                  }
-                }}
-                @keydown=${(e: KeyboardEvent) => {
-                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const target = e.target as HTMLInputElement;
-                    const currentValue = parseInt(target.value) || 0;
-                    const increment = e.key === 'ArrowUp' ? 1 : -1;
-                    const newValue = Math.max(0, Math.min(360, currentValue + increment));
-                    updateModule({ rotation: newValue });
-                  }
-                }}
-              />
-              <button
-                class="range-reset-btn"
-                @click=${() => updateModule({ rotation: 0 })}
-                title=${localize(
-                  'editor.fields.reset_default_value',
-                  lang,
-                  'Reset to default ({value})'
-                ).replace('{value}', '0')}
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
+            ${this.renderSliderField(
+              localize('editor.camera.rotation', lang, 'Rotation'),
+              localize('editor.camera.rotation_desc', lang, 'Rotate the camera image clockwise (0–360 degrees).'),
+              cameraModule.rotation || 0,
+              0, 0, 360, 1,
+              (v: number) => { updateModule({ rotation: v }); },
+              '°'
+            )}
           </div>
         </div>
 
@@ -935,224 +654,44 @@ export class UltraCameraModule extends BaseUltraModule {
 
           <div style="display: flex; flex-direction: column; gap: 20px;">
             <!-- Left Crop -->
-            <div class="field-container">
-              <div class="field-title">
-                ${localize('editor.camera.crop.left_title', lang, 'Left Crop (%)')}
-              </div>
-              <div class="field-description">
-                ${localize(
-                  'editor.camera.crop.left_desc',
-                  lang,
-                  'Crop from the left edge. Higher values show less of the left side.'
-                )}
-              </div>
-              <div class="number-range-control">
-                <input
-                  type="range"
-                  class="range-slider"
-                  min="0"
-                  max="50"
-                  step="1"
-                  .value="${cameraModule.crop_left || 0}"
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = parseInt(target.value);
-                    updateModule({ crop_left: value });
-                  }}
-                />
-                <input
-                  type="number"
-                  class="range-input"
-                  min="0"
-                  max="50"
-                  step="1"
-                  .value="${cameraModule.crop_left || 0}"
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = parseInt(target.value);
-                    if (!isNaN(value)) {
-                      updateModule({ crop_left: value });
-                    }
-                  }}
-                />
-                <button
-                  class="range-reset-btn"
-                  @click=${() => updateModule({ crop_left: 0 })}
-                  title=${localize(
-                    'editor.fields.reset_default_value',
-                    lang,
-                    'Reset to default ({value})'
-                  ).replace('{value}', '0')}
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
+            ${this.renderSliderField(
+              localize('editor.camera.crop.left_title', lang, 'Left Crop'),
+              localize('editor.camera.crop.left_desc', lang, 'Crop from the left edge. Higher values show less of the left side.'),
+              cameraModule.crop_left || 0,
+              0, 0, 50, 1,
+              (v: number) => { updateModule({ crop_left: v }); },
+              '%'
+            )}
 
             <!-- Right Crop -->
-            <div class="field-container">
-              <div class="field-title">
-                ${localize('editor.camera.crop.right_title', lang, 'Right Crop (%)')}
-              </div>
-              <div class="field-description">
-                ${localize(
-                  'editor.camera.crop.right_desc',
-                  lang,
-                  'Crop from the right edge. Higher values show less of the right side.'
-                )}
-              </div>
-              <div class="number-range-control">
-                <input
-                  type="range"
-                  class="range-slider"
-                  min="0"
-                  max="50"
-                  step="1"
-                  .value="${cameraModule.crop_right || 0}"
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = parseInt(target.value);
-                    updateModule({ crop_right: value });
-                  }}
-                />
-                <input
-                  type="number"
-                  class="range-input"
-                  min="0"
-                  max="50"
-                  step="1"
-                  .value="${cameraModule.crop_right || 0}"
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = parseInt(target.value);
-                    if (!isNaN(value)) {
-                      updateModule({ crop_right: value });
-                    }
-                  }}
-                />
-                <button
-                  class="range-reset-btn"
-                  @click=${() => updateModule({ crop_right: 0 })}
-                  title=${localize(
-                    'editor.fields.reset_default_value',
-                    lang,
-                    'Reset to default ({value})'
-                  ).replace('{value}', '0')}
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
+            ${this.renderSliderField(
+              localize('editor.camera.crop.right_title', lang, 'Right Crop'),
+              localize('editor.camera.crop.right_desc', lang, 'Crop from the right edge. Higher values show less of the right side.'),
+              cameraModule.crop_right || 0,
+              0, 0, 50, 1,
+              (v: number) => { updateModule({ crop_right: v }); },
+              '%'
+            )}
 
             <!-- Top Crop -->
-            <div class="field-container">
-              <div class="field-title">
-                ${localize('editor.camera.crop.top_title', lang, 'Top Crop (%)')}
-              </div>
-              <div class="field-description">
-                ${localize(
-                  'editor.camera.crop.top_desc',
-                  lang,
-                  'Crop from the top edge. Higher values show less of the top area.'
-                )}
-              </div>
-              <div class="number-range-control">
-                <input
-                  type="range"
-                  class="range-slider"
-                  min="0"
-                  max="50"
-                  step="1"
-                  .value="${cameraModule.crop_top || 0}"
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = parseInt(target.value);
-                    updateModule({ crop_top: value });
-                  }}
-                />
-                <input
-                  type="number"
-                  class="range-input"
-                  min="0"
-                  max="50"
-                  step="1"
-                  .value="${cameraModule.crop_top || 0}"
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = parseInt(target.value);
-                    if (!isNaN(value)) {
-                      updateModule({ crop_top: value });
-                    }
-                  }}
-                />
-                <button
-                  class="range-reset-btn"
-                  @click=${() => updateModule({ crop_top: 0 })}
-                  title=${localize(
-                    'editor.fields.reset_default_value',
-                    lang,
-                    'Reset to default ({value})'
-                  ).replace('{value}', '0')}
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
+            ${this.renderSliderField(
+              localize('editor.camera.crop.top_title', lang, 'Top Crop'),
+              localize('editor.camera.crop.top_desc', lang, 'Crop from the top edge. Higher values show less of the top area.'),
+              cameraModule.crop_top || 0,
+              0, 0, 50, 1,
+              (v: number) => { updateModule({ crop_top: v }); },
+              '%'
+            )}
 
             <!-- Bottom Crop -->
-            <div class="field-container">
-              <div class="field-title">
-                ${localize('editor.camera.crop.bottom_title', lang, 'Bottom Crop (%)')}
-              </div>
-              <div class="field-description">
-                ${localize(
-                  'editor.camera.crop.bottom_desc',
-                  lang,
-                  'Crop from the bottom edge. Higher values show less of the bottom area.'
-                )}
-              </div>
-              <div class="number-range-control">
-                <input
-                  type="range"
-                  class="range-slider"
-                  min="0"
-                  max="50"
-                  step="1"
-                  .value="${cameraModule.crop_bottom || 0}"
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = parseInt(target.value);
-                    updateModule({ crop_bottom: value });
-                  }}
-                />
-                <input
-                  type="number"
-                  class="range-input"
-                  min="0"
-                  max="50"
-                  step="1"
-                  .value="${cameraModule.crop_bottom || 0}"
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = parseInt(target.value);
-                    if (!isNaN(value)) {
-                      updateModule({ crop_bottom: value });
-                    }
-                  }}
-                />
-                <button
-                  class="range-reset-btn"
-                  @click=${() => updateModule({ crop_bottom: 0 })}
-                  title=${localize(
-                    'editor.fields.reset_default_value',
-                    lang,
-                    'Reset to default ({value})'
-                  ).replace('{value}', '0')}
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
-            </div>
+            ${this.renderSliderField(
+              localize('editor.camera.crop.bottom_title', lang, 'Bottom Crop'),
+              localize('editor.camera.crop.bottom_desc', lang, 'Crop from the bottom edge. Higher values show less of the bottom area.'),
+              cameraModule.crop_bottom || 0,
+              0, 0, 50, 1,
+              (v: number) => { updateModule({ crop_bottom: v }); },
+              '%'
+            )}
           </div>
 
           <!-- Crop Status -->
@@ -1289,9 +828,29 @@ export class UltraCameraModule extends BaseUltraModule {
                       'Template to dynamically set the camera entity using Jinja2 syntax'
                     )}
                   </div>
+                  <uc-template-cheatsheet .module=${'camera'}></uc-template-cheatsheet>
+
+                  <div style="margin-bottom: 8px;">
+                    <button
+                      style="background: none; border: 1px solid var(--divider-color); border-radius: 4px; padding: 4px 8px; font-size: 11px; color: var(--primary-color); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
+                      title="${localize('editor.camera.template_cheatsheet', lang, 'Template Cheatsheet')}"
+                      @click=${(e: Event) => {
+                        (e.currentTarget as HTMLElement).dispatchEvent(
+                          new CustomEvent('uc-open-template-cheatsheet', {
+                            detail: { module: 'camera' },
+                            bubbles: true,
+                            composed: true,
+                          })
+                        );
+                      }}
+                    >
+                      <ha-icon icon="mdi:help-circle-outline" style="--mdc-icon-size: 14px;"></ha-icon>
+                      ${localize('editor.camera.template_cheatsheet', lang, 'Template Cheatsheet')}
+                    </button>
+                  </div>
+
                   <div
                     @mousedown=${(e: Event) => {
-                      // Only stop propagation for drag operations, not clicks on the editor
                       const target = e.target as HTMLElement;
                       if (
                         !target.closest('ultra-template-editor') &&
@@ -1301,6 +860,10 @@ export class UltraCameraModule extends BaseUltraModule {
                       }
                     }}
                     @dragstart=${(e: Event) => e.stopPropagation()}
+                    @insert-snippet=${(e: CustomEvent) => {
+                      const editor = (e.currentTarget as HTMLElement).querySelector('ultra-template-editor');
+                      (editor as any)?.insertAtCursor?.(e.detail?.value ?? '');
+                    }}
                   >
                     <ultra-template-editor
                       .hass=${hass}
@@ -1413,8 +976,8 @@ export class UltraCameraModule extends BaseUltraModule {
       (!cameraModule.entity || cameraModule.entity.trim() === '')
     ) {
       return this.renderGradientErrorState(
-        'Select Camera Entity',
-        'Choose a camera entity in the General tab',
+        localize('editor.camera.error_no_entity', lang, 'Select Camera Entity'),
+        localize('editor.camera.error_no_entity_desc', lang, 'Choose a camera entity in the General tab'),
         'mdi:camera-outline'
       );
     }
@@ -1424,8 +987,8 @@ export class UltraCameraModule extends BaseUltraModule {
       (!cameraModule.template || cameraModule.template.trim() === '')
     ) {
       return this.renderGradientErrorState(
-        'Configure Template',
-        'Enter template code in the General tab',
+        localize('editor.camera.error_no_template', lang, 'Configure Template'),
+        localize('editor.camera.error_no_template_desc', lang, 'Enter template code in the General tab'),
         'mdi:camera-outline'
       );
     }
@@ -1718,11 +1281,11 @@ export class UltraCameraModule extends BaseUltraModule {
       <div
         class="camera-module-container"
         data-uc-camera-id="${cameraModule.id}"
-        style=${this.styleObjectToCss(containerStyles)}
+        style="${this.buildStyleString(containerStyles)}"
       >
         <div
           class="camera-image-container"
-          style=${this.styleObjectToCss(containerImageStyles)}
+          style="${this.buildStyleString(containerImageStyles)}"
           @click=${handleUserInteraction}
           @touchstart=${handleUserInteraction}
         >
@@ -1730,7 +1293,7 @@ export class UltraCameraModule extends BaseUltraModule {
             ? html`
                 <div
                   class="camera-unavailable"
-                  style=${this.styleObjectToCss({
+                  style="${this.buildStyleString({
                     ...imageStyles,
                     display: 'flex',
                     alignItems: 'center',
@@ -1742,7 +1305,7 @@ export class UltraCameraModule extends BaseUltraModule {
                     left: 'auto',
                     top: 'auto',
                     fontFamily: designProperties.font_family || this.getTextFont(moduleWithDesign),
-                  })}
+                  })}"
                 >
                   <ha-icon
                     icon="mdi:camera-plus"
@@ -1770,7 +1333,7 @@ export class UltraCameraModule extends BaseUltraModule {
                   ? html`
                       <div
                         class="camera-name-overlay"
-                        style=${this.styleObjectToCss(namePositionStyles)}
+                        style="${this.buildStyleString(namePositionStyles)}"
                       >
                         ${cameraName}
                       </div>
@@ -1778,73 +1341,104 @@ export class UltraCameraModule extends BaseUltraModule {
                   : ''}
               `
             : !isUnavailable
-              ? cache(html`
-                  <!-- Use HA's native camera image component - same as picture-glance card -->
-                  <!-- Cache directive prevents WebRTC re-initialization during template editing -->
-                  <hui-image
-                    ${ref(this._huiImageRef)}
-                    data-camera-key=${this._cameraStableKeys.get(cameraModule.id) || cameraEntity}
-                    .hass=${hass}
-                    .cameraImage=${cameraEntity}
-                    .cameraView=${this._lastAppliedLive ? 'live' : 'auto'}
-                    .muted=${!audioActive}
-                    style=${this.styleObjectToCss(imageStyles)}
-                    class="camera-image"
-                    @error=${() => {}}
-                    @load=${(e: Event) => {
-                      // Reposition overlays to video area after image loads
-                      const imageElement = e.target as HTMLElement;
-                      const container = imageElement.closest(
-                        '.camera-image-container'
-                      ) as HTMLElement;
-                      if (container) {
-                        const nameOverlay = container.querySelector(
-                          '.camera-name-overlay'
-                        ) as HTMLElement;
-                        const fullscreenIcon = container.querySelector(
-                          '.camera-fullscreen-icon'
-                        ) as HTMLElement;
-
-                        // Use setTimeout to ensure DOM is updated
-                        setTimeout(() => {
-                          this.repositionPreviewOverlays(
-                            imageElement,
-                            nameOverlay,
-                            fullscreenIcon,
-                            container
-                          );
-                        }, 100);
-                      }
-
-                      // Ensure audio is properly enabled/disabled on the video element (only in live mode)
-                      if (isLiveMode) {
-                        this._ensureAudioState(e.target as any, cameraModule, audioActive);
-                      }
-
-                      // Setup snapshot refresh timer for snapshot mode
-                      if ((cameraModule.view_mode || 'auto') === 'snapshot') {
-                        this._setupSnapshotRefresh(cameraModule, cameraEntity || '', hass);
-                      } else {
-                        // Clear any existing timer when not in snapshot mode
-                        this._clearSnapshotRefresh(cameraModule.id);
-                      }
-                    }}
-                  ></hui-image>
-                  ${cameraModule.show_name !== false
+              ? cache(
+                  isLiveMode && entity
                     ? html`
-                        <div
-                          class="camera-name-overlay"
-                          style=${this.styleObjectToCss(namePositionStyles)}
-                        >
-                          ${cameraName}
-                        </div>
+                        <!-- Live mode: use ha-camera-stream directly so muted/controls reach ha-web-rtc-player -->
+                        <ha-camera-stream
+                          ${ref(this._huiImageRef)}
+                          data-camera-key=${this._cameraStableKeys.get(cameraModule.id) || cameraEntity}
+                          .hass=${hass}
+                          .stateObj=${entity as any}
+                          .muted=${!audioActive}
+                          .controls=${cameraModule.show_controls === true}
+                          style="${this.buildStyleString(imageStyles)}"
+                          class="camera-image"
+                          @load=${(e: Event) => {
+                            const imageElement = e.target as HTMLElement;
+                            const container = imageElement.closest('.camera-image-container') as HTMLElement;
+                            if (container) {
+                              const nameOverlay = container.querySelector('.camera-name-overlay') as HTMLElement;
+                              const fullscreenIcon = container.querySelector('.camera-fullscreen-icon') as HTMLElement;
+                              setTimeout(() => {
+                                this.repositionPreviewOverlays(imageElement, nameOverlay, fullscreenIcon, container);
+                              }, 100);
+                            }
+                            this._ensureAudioState(e.target as any, cameraModule, audioActive);
+                          }}
+                        ></ha-camera-stream>
+                        ${cameraModule.show_name !== false
+                          ? html`
+                              <div
+                                class="camera-name-overlay"
+                                style="${this.buildStyleString(namePositionStyles)}"
+                              >
+                                ${cameraName}
+                              </div>
+                            `
+                          : ''}
                       `
-                    : ''}
-                `)
+                    : html`
+                        <!-- Auto/snapshot mode: use hui-image for snapshot + tap-to-live behaviour -->
+                        <hui-image
+                          ${ref(this._huiImageRef)}
+                          data-camera-key=${this._cameraStableKeys.get(cameraModule.id) || cameraEntity}
+                          .hass=${hass}
+                          .cameraImage=${cameraEntity}
+                          .cameraView=${'auto'}
+                          style="${this.buildStyleString(imageStyles)}"
+                          class="camera-image"
+                          @error=${() => {}}
+                          @load=${(e: Event) => {
+                            // Reposition overlays to video area after image loads
+                            const imageElement = e.target as HTMLElement;
+                            const container = imageElement.closest(
+                              '.camera-image-container'
+                            ) as HTMLElement;
+                            if (container) {
+                              const nameOverlay = container.querySelector(
+                                '.camera-name-overlay'
+                              ) as HTMLElement;
+                              const fullscreenIcon = container.querySelector(
+                                '.camera-fullscreen-icon'
+                              ) as HTMLElement;
+
+                              // Use setTimeout to ensure DOM is updated
+                              setTimeout(() => {
+                                this.repositionPreviewOverlays(
+                                  imageElement,
+                                  nameOverlay,
+                                  fullscreenIcon,
+                                  container
+                                );
+                              }, 100);
+                            }
+
+                            // Setup snapshot refresh timer for snapshot mode
+                            if ((cameraModule.view_mode || 'auto') === 'snapshot') {
+                              this._setupSnapshotRefresh(cameraModule, cameraEntity || '', hass);
+                            } else {
+                              // Clear any existing timer when not in snapshot mode
+                              this._clearSnapshotRefresh(cameraModule.id);
+                            }
+                          }}
+                        ></hui-image>
+                        ${cameraModule.show_name !== false
+                          ? html`
+                              <div
+                                class="camera-name-overlay"
+                                style="${this.buildStyleString(namePositionStyles)}"
+                              >
+                                ${cameraName}
+                              </div>
+                            `
+                          : ''}
+                      `
+                )
               : html`
                   <div
                     class="camera-unavailable"
-                    style=${this.styleObjectToCss({
+                    style="${this.buildStyleString({
                       ...imageStyles,
                       display: 'flex',
                       alignItems: 'center',
@@ -1857,7 +1451,7 @@ export class UltraCameraModule extends BaseUltraModule {
                       top: 'auto',
                       fontFamily:
                         designProperties.font_family || this.getTextFont(moduleWithDesign),
-                    })}
+                    })}"
                   >
                     ${cameraModule.fallback_image
                       ? html`
@@ -1899,7 +1493,7 @@ export class UltraCameraModule extends BaseUltraModule {
                     ? html`
                         <div
                           class="camera-name-overlay"
-                          style=${this.styleObjectToCss(namePositionStyles)}
+                          style="${this.buildStyleString(namePositionStyles)}"
                         >
                           ${cameraName}
                         </div>
@@ -1912,11 +1506,13 @@ export class UltraCameraModule extends BaseUltraModule {
 
     // Get hover effect configuration from module design
     const hoverEffect = (cameraModule as any).design?.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
-    return this.hasActiveLink(cameraModule)
+    const cameraWrapper = this.hasActiveLink(cameraModule)
       ? html`<div
           class="camera-module-clickable ${hoverEffectClass}"
+          style="${designStyles}"
           @click=${(e: Event) => this.handleClick(e, cameraModule, hass)}
           @dblclick=${(e: Event) => this.handleDoubleClick(e, cameraModule, hass)}
           @mousedown=${(e: Event) => this.handleMouseDown(e, cameraModule, hass)}
@@ -1927,9 +1523,9 @@ export class UltraCameraModule extends BaseUltraModule {
         >
           ${cameraContent}
         </div>`
-      : hoverEffectClass
-        ? html`<div class="camera-module-container ${hoverEffectClass}">${cameraContent}</div>`
-        : cameraContent;
+      : html`<div class="camera-module-container ${hoverEffectClass}" style="${designStyles}">${cameraContent}</div>`;
+
+    return this.wrapWithAnimation(cameraWrapper, module, hass);
   }
 
   // Explicit Logic tab renderer (some editors call this directly)
@@ -2177,7 +1773,7 @@ export class UltraCameraModule extends BaseUltraModule {
     }
 
     if (!cameraEntity) {
-      alert('No camera entity available');
+      ucToastService.error('No camera entity available');
       return;
     }
 
@@ -2359,27 +1955,26 @@ export class UltraCameraModule extends BaseUltraModule {
         const fullscreenAudioActive = module.audio_enabled === true;
 
         if (hass) {
-          // Create hui-image element
-          const huiImage = document.createElement('hui-image');
-          // Add stable identifier to prevent WebRTC re-initialization
-          huiImage.setAttribute('data-camera-fullscreen', cameraEntity || '');
-          (huiImage as any).hass = hass;
-          (huiImage as any).cameraImage = cameraEntity;
-          // Fullscreen always upgrades to live for best quality
-          (huiImage as any).cameraView = 'live';
-          (huiImage as any).muted = !fullscreenAudioActive;
+          // Fullscreen always uses ha-camera-stream directly for live/WebRTC with correct muted wiring
+          const stateObj = hass.states?.[cameraEntity || ''];
+          const streamEl = document.createElement('ha-camera-stream') as any;
+          streamEl.setAttribute('data-camera-fullscreen', cameraEntity || '');
+          streamEl.hass = hass;
+          streamEl.stateObj = stateObj;
+          streamEl.muted = !fullscreenAudioActive;
+          streamEl.controls = false;
 
           // Ensure audio state is applied after element is added to DOM
-          huiImage.addEventListener('load', () => {
-            (this as any)._ensureAudioState(huiImage, module, fullscreenAudioActive);
+          streamEl.addEventListener('load', () => {
+            (this as any)._ensureAudioState(streamEl, module, fullscreenAudioActive);
           });
 
           // Also try after a delay to catch video element creation
           setTimeout(() => {
-            (this as any)._ensureAudioState(huiImage, module, fullscreenAudioActive);
+            (this as any)._ensureAudioState(streamEl, module, fullscreenAudioActive);
           }, 200);
 
-          huiImage.style.cssText = `
+          streamEl.style.cssText = `
             width: 100vw !important;
             height: 100vh !important;
             display: block !important;
@@ -2390,10 +1985,10 @@ export class UltraCameraModule extends BaseUltraModule {
           `;
 
           cameraContainer.innerHTML = '';
-          cameraContainer.appendChild(huiImage);
+          cameraContainer.appendChild(streamEl);
 
           // Add pinch-to-zoom functionality
-          this.addPinchZoomToCamera(huiImage, cameraContainer);
+          this.addPinchZoomToCamera(streamEl, cameraContainer);
         } else {
           // Fallback to img if no hass
           const fallbackImg = document.createElement('img');
@@ -3781,7 +3376,7 @@ export class UltraCameraModule extends BaseUltraModule {
     cameraModule: CameraModule,
     forcedState?: boolean
   ): void {
-    if (!huiImage || cameraModule.live_view === false) return;
+    if (!huiImage || (cameraModule.view_mode || 'auto') !== 'live') return;
 
     const audioEnabled =
       forcedState !== undefined ? forcedState : this._isAudioActive(cameraModule);
@@ -3944,15 +3539,24 @@ export class UltraCameraModule extends BaseUltraModule {
   }
 
   private refreshCamera(entity: string, hass: HomeAssistant): void {
-    // Try to refresh the hui-image component
-    const huiImageElements = document.querySelectorAll(`hui-image[class*="camera-image"]`);
-    huiImageElements.forEach((element: any) => {
-      if (element.cameraImage === entity && element.hass === hass) {
-        // Force a refresh by updating the hass object reference
-        element.hass = { ...hass };
-        element.requestUpdate();
-      }
-    });
+    // Use the stored ref first (works inside shadow DOM)
+    const refNode = this._huiImageRef?.value as any;
+    if (refNode && refNode.cameraImage === entity) {
+      refNode.hass = { ...hass };
+      refNode.requestUpdate?.();
+      return;
+    }
+    // Fallback: walk the host's own shadow root (stays within the card's DOM boundary)
+    const host = (this as any).renderRoot || (this as any).shadowRoot;
+    if (host) {
+      const huiImageElements = Array.from(host.querySelectorAll('hui-image')) as any[];
+      huiImageElements.forEach((element: any) => {
+        if (element.cameraImage === entity) {
+          element.hass = { ...hass };
+          element.requestUpdate?.();
+        }
+      });
+    }
   }
 
   private _setupSnapshotRefresh(
@@ -4254,22 +3858,6 @@ export class UltraCameraModule extends BaseUltraModule {
         }
       }
     }
-  }
-
-  protected renderConditionalFieldsGroup(title: string, content: TemplateResult): TemplateResult {
-    return html`
-      <div
-        class="conditional-fields-group"
-        style="margin-top: 16px; padding: 16px; border-left: 4px solid var(--primary-color); background: rgba(var(--rgb-primary-color), 0.08); border-radius: 0 8px 8px 0;"
-      >
-        <div
-          style="font-weight: 600; color: var(--primary-color); margin-bottom: 12px; font-size: 14px;"
-        >
-          ${title}
-        </div>
-        ${content}
-      </div>
-    `;
   }
 
   // Global design text styling methods
@@ -4698,106 +4286,7 @@ export class UltraCameraModule extends BaseUltraModule {
       }
 
       /* Gap control styles - Standardized Slider Pattern */
-      .gap-control-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .gap-slider {
-        flex: 1;
-        height: 6px;
-        background: var(--divider-color);
-        border-radius: 3px;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .gap-slider::-webkit-slider-thumb {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider:hover {
-        background: var(--primary-color);
-        opacity: 0.7;
-      }
-
-      .gap-slider:hover::-webkit-slider-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-slider:hover::-moz-range-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-input {
-        width: 48px !important;
-        max-width: 48px !important;
-        min-width: 48px !important;
-        padding: 4px 6px !important;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-      }
-
-      .gap-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-      }
-
-      .reset-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-
-      .reset-btn:hover {
-        background: var(--primary-color);
-        color: var(--text-primary-color);
-        border-color: var(--primary-color);
-      }
-
-      .reset-btn ha-icon {
-        font-size: 16px;
-      }
+      ${BaseUltraModule.getSliderStyles()}
     `;
   }
 }
@@ -4860,39 +4349,55 @@ export class UltraCameraModule extends BaseUltraModule {
       `.camera-module-container[data-uc-camera-id="${cameraModule.id}"] .camera-image-container`
     );
     if (container) {
-      // Ensure only one hui-image child exists
-      const images = Array.from(container.querySelectorAll('hui-image')) as any[];
-      for (let i = 1; i < images.length; i++) {
-        images[i].remove();
-      }
+      // Determine whether live mode is active (which uses ha-camera-stream directly)
+      const isLiveMode = pending.live;
 
-      // Mutate existing hui-image imperatively when available
-      const node = this._huiImageRef?.value || images[0];
-      if (node) {
-        // During editor churn and entity switch, briefly set 'auto' then to desired live in next microtask
-        if ((this as any)._isEditorOpen() && this._lastAppliedEntity !== pending.entity) {
-          node.cameraView = 'auto';
+      if (isLiveMode) {
+        // Live mode: the ref is a ha-camera-stream; update stateObj to switch entity
+        const node = this._huiImageRef?.value as any;
+        if (node && node.tagName?.toLowerCase() === 'ha-camera-stream') {
+          const stateObj = hass?.states?.[pending.entity];
+          if (stateObj) {
+            node.stateObj = stateObj;
+            const audioEnabled = this._isAudioActive(cameraModule);
+            node.muted = !audioEnabled;
+            (this as any)._ensureAudioState(node, cameraModule, audioEnabled);
+          }
+          this._lastAppliedEntity = pending.entity;
+          this._lastAppliedLive = pending.live;
+          this._lastRenderedEntity = pending.entity;
+        } else {
+          // Node not yet a ha-camera-stream (e.g. still mounting); trigger rerender
+          this._lastAppliedEntity = pending.entity;
+          this._lastAppliedLive = pending.live;
+          this.requestUpdate();
         }
-        node.cameraImage = pending.entity;
-        // Update muted property based on audio_enabled setting
-        const audioEnabled = this._isAudioActive(cameraModule);
-        node.muted = !audioEnabled;
-        queueMicrotask(() => {
-          node.cameraView = pending.live ? 'live' : 'auto';
-          // Ensure muted property is set correctly after cameraView update
-          node.muted = !audioEnabled;
-          // Also ensure audio state on video element
-          (this as any)._ensureAudioState(node, cameraModule, audioEnabled);
-        });
-
-        this._lastAppliedEntity = pending.entity;
-        this._lastAppliedLive = pending.live;
-        this._lastRenderedEntity = pending.entity;
       } else {
-        // Fallback: request a rerender which will bind ref
-        this._lastAppliedEntity = pending.entity;
-        this._lastAppliedLive = pending.live;
-        this.requestUpdate();
+        // Auto/snapshot mode: the ref is a hui-image; update cameraImage/cameraView
+        const images = Array.from(container.querySelectorAll('hui-image')) as any[];
+        for (let i = 1; i < images.length; i++) {
+          images[i].remove();
+        }
+
+        const node = this._huiImageRef?.value || images[0];
+        if (node) {
+          node.cameraImage = pending.entity;
+          const audioEnabled = this._isAudioActive(cameraModule);
+          node.muted = !audioEnabled;
+          queueMicrotask(() => {
+            node.cameraView = 'auto';
+            node.muted = !audioEnabled;
+          });
+
+          this._lastAppliedEntity = pending.entity;
+          this._lastAppliedLive = pending.live;
+          this._lastRenderedEntity = pending.entity;
+        } else {
+          // Fallback: request a rerender which will bind ref
+          this._lastAppliedEntity = pending.entity;
+          this._lastAppliedLive = pending.live;
+          this.requestUpdate();
+        }
       }
     }
   }, 200);

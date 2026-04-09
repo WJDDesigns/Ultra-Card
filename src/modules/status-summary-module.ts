@@ -1547,7 +1547,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
     }
     // Trigger a re-render by dispatching a custom event
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('ultra-card-module-update'));
+      this.triggerPreviewUpdate();
     }
   }
 
@@ -1563,7 +1563,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
     this._draggedItem = null;
     // Trigger a re-render by dispatching a custom event
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('ultra-card-module-update'));
+      this.triggerPreviewUpdate();
     }
   }
 
@@ -1877,7 +1877,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
       // Trigger a small delay to ensure the UI updates
       setTimeout(() => {
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('ultra-card-module-update'));
+          this.triggerPreviewUpdate();
         }
       }, 50);
     }
@@ -1900,7 +1900,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
     // Trigger a small delay to ensure the UI updates
     setTimeout(() => {
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('ultra-card-module-update'));
+        this.triggerPreviewUpdate();
       }
     }, 50);
   }
@@ -1926,7 +1926,10 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
 
     this._ensureStatusSummaryColorSubscriptions(summaryModule, hass, config);
 
-    return html`
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    return this.wrapWithAnimation(html`
       <style>
         .status-summary-container {
           width: 100%;
@@ -2040,7 +2043,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
         }
       </style>
 
-      <div class="status-summary-container">
+      <div class="status-summary-container ${hoverClass}" style="${designStyles}">
         ${summaryModule.show_title
           ? html`<div class="summary-title">${summaryModule.title || 'Status Summary'}</div>`
           : ''}
@@ -2115,7 +2118,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
           })}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   private getEntitiesToDisplay(

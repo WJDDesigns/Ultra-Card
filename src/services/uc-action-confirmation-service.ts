@@ -130,13 +130,10 @@ export class UcActionConfirmationService {
     document.addEventListener('keydown', handleKeydown);
 
     requestAnimationFrame(() => {
-      const primaryAction = overlay.querySelector('.uc-confirmation-btn.primary') as HTMLElement | null;
-      const secondaryAction = overlay.querySelector('.uc-confirmation-btn.secondary') as HTMLElement | null;
-      const primaryRect = primaryAction?.getBoundingClientRect();
-      const secondaryRect = secondaryAction?.getBoundingClientRect();
-      const primaryStyle = primaryAction ? window.getComputedStyle(primaryAction) : null;
-      const secondaryStyle = secondaryAction ? window.getComputedStyle(secondaryAction) : null;
-
+      const focusTarget =
+        (overlay.querySelector('.uc-confirmation-btn.primary') as HTMLElement | null) ??
+        (overlay.querySelector('.uc-confirmation-btn.secondary') as HTMLElement | null);
+      focusTarget?.focus();
     });
 
     // Scoped styles for custom modal

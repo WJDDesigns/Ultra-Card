@@ -23,6 +23,8 @@ const COVER_SUPPORT_SET_TILT_POSITION = 128;
  * Advanced: tilt, multiple entities, layout options.
  */
 export class UltraCoverModule extends BaseUltraModule {
+  handlesOwnDesignStyles = true;
+
   metadata: ModuleMetadata = {
     type: 'cover',
     title: 'Cover Control',
@@ -108,20 +110,19 @@ export class UltraCoverModule extends BaseUltraModule {
         ${this.renderSettingsSection(
           localize('editor.cover.entity_section', lang, 'Entity'),
           localize('editor.cover.entity_desc', lang, 'Select the cover to control (blinds, garage, shutters).'),
-          [
-            {
-              title: localize('editor.cover.entity', lang, 'Cover entity'),
-              description: localize('editor.cover.entity_desc', lang, 'Select the cover to control.'),
-              hass,
-              data: { entity: coverModule.entity || '' },
-              schema: [{ name: 'entity', selector: { entity: { domain: 'cover' } } }],
-              onChange: (e: CustomEvent) => {
-                updateModule({ entity: e.detail.value?.entity ?? '' });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              },
-            },
-          ]
+          []
         )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', coverModule.entity || '',
+            (value: string) => {
+              updateModule({ entity: value });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            },
+            ['cover'],
+            localize('editor.cover.entity', lang, 'Cover entity')
+          )}
+        </div>
 
         <!-- Display -->
         ${this.renderSettingsSection(
@@ -522,6 +523,7 @@ export class UltraCoverModule extends BaseUltraModule {
 
   getStyles?(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
       .uc-cover-wrapper { box-sizing: border-box; }
       .uc-cover-align-left { text-align: left; }
       .uc-cover-align-center { text-align: center; }

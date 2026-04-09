@@ -745,8 +745,9 @@ export class UltraCard extends LitElement {
     for (const id of entityIds) {
       const oldEntity = oldHass?.states?.[id];
       const newEntity = newHass.states?.[id];
-      if (oldEntity?.state !== newEntity?.state) return true;
-      if (oldEntity?.last_changed !== newEntity?.last_changed) return true;
+      // HA creates a new state object on every update (state OR attribute change),
+      // so a reference check catches brightness/color/any attribute updates too.
+      if (oldEntity !== newEntity) return true;
     }
     return false;
   }
@@ -786,7 +787,9 @@ export class UltraCard extends LitElement {
             } catch (e) {
               console.warn('[UltraCard] Layout template re-registration failed:', e);
             }
-          }).catch(() => {});
+          }).catch((err) => {
+            console.warn('[UltraCard] Layout template subscription failed:', err?.message || err);
+          });
         }
       }
 
@@ -884,7 +887,9 @@ export class UltraCard extends LitElement {
       } catch (_e) { /* ignore */ }
 
       this._scheduleUpdate();
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('[UltraCard] Config validation failed:', err?.message || err);
+    });
   }
 
   /**
@@ -2949,8 +2954,12 @@ export class UltraCard extends LitElement {
     const baseStyles: Record<string, string> = {
       display: 'flex',
       flexDirection: useHorizontalLayout ? 'row' : 'column',
-      // No gap - row controls spacing between columns, modules within column have no forced spacing
     };
+
+    // Gap between child modules — explicit user override via the column's Design tab → Gap field.
+    if (design.gap) {
+      baseStyles.gap = design.gap;
+    }
 
     // Apply column alignment only if explicitly set
     if (column.horizontal_alignment) {
@@ -3597,7 +3606,7 @@ export class UltraCard extends LitElement {
       .card-column {
         display: flex;
         flex-direction: column;
-        /* Gap is now controlled via inline styles from column.gap property */
+        /* gap is applied via inline styles from design.gap when configured */
         box-sizing: border-box;
         min-width: 0; /* critical: prevent overflow from long content */
         width: 100%;
@@ -4614,6 +4623,16 @@ export class UltraCard extends LitElement {
 
         .pro-module-text span {
           display: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
         }
       }
     `;

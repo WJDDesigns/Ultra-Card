@@ -6,7 +6,6 @@ import { CardModule, SpinboxModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { TemplateService } from '../services/template-service';
 import { buildEntityContext } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
@@ -178,21 +177,16 @@ export class UltraSpinboxModule extends BaseUltraModule {
             lang,
             'Optional: Link to a Home Assistant entity for synced values (e.g., input_number, climate temperature).'
           ),
-          [
-            {
-              title: localize('editor.spinbox.entity_field', lang, 'Entity'),
-              description: localize(
-                'editor.spinbox.entity_field_desc',
-                lang,
-                'Select an entity to sync the spinbox value (optional). Supports input_number, number, climate entities.'
-              ),
-              hass,
-              data: { entity: spinboxModule.entity || '' },
-              schema: [this.entityField('entity')],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
-            },
-          ]
+          []
         )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', spinboxModule.entity || '',
+            (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+            undefined,
+            localize('editor.spinbox.entity_field', lang, 'Entity')
+          )}
+        </div>
 
         <!-- Value Configuration -->
         <div class="settings-section">
@@ -276,35 +270,14 @@ export class UltraSpinboxModule extends BaseUltraModule {
             )}
           </div>
 
-          <div class="field-group" style="margin-bottom: 16px;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <div style="flex: 1;">
-                <div
-                  class="field-title"
-                  style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-                >
-                  ${localize('editor.spinbox.show_value', lang, 'Show Value')}
-                </div>
-                <div
-                  class="field-description"
-                  style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 0;"
-                >
-                  ${localize(
-                    'editor.spinbox.show_value_desc',
-                    lang,
-                    'Display the current numeric value'
-                  )}
-                </div>
-              </div>
-              <ha-switch
-                .checked=${spinboxModule.show_value ?? true}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updateModule({ show_value: target.checked });
-                }}
-              ></ha-switch>
-            </div>
-          </div>
+          ${this.renderFieldSection(
+            localize('editor.spinbox.show_value', lang, 'Show Value'),
+            localize('editor.spinbox.show_value_desc', lang, 'Display the current numeric value'),
+            hass,
+            { show_value: spinboxModule.show_value ?? true },
+            [this.booleanField('show_value')],
+            (e: CustomEvent) => updateModule({ show_value: e.detail.value.show_value })
+          )}
 
           ${spinboxModule.show_value
             ? html`
@@ -331,35 +304,14 @@ export class UltraSpinboxModule extends BaseUltraModule {
               `
             : ''}
 
-          <div class="field-group" style="margin-bottom: 16px;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <div style="flex: 1;">
-                <div
-                  class="field-title"
-                  style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-                >
-                  ${localize('editor.spinbox.show_unit', lang, 'Show Unit')}
-                </div>
-                <div
-                  class="field-description"
-                  style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 0;"
-                >
-                  ${localize(
-                    'editor.spinbox.show_unit_desc',
-                    lang,
-                    'Display a unit label (e.g., °C, %)'
-                  )}
-                </div>
-              </div>
-              <ha-switch
-                .checked=${spinboxModule.show_unit ?? false}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updateModule({ show_unit: target.checked });
-                }}
-              ></ha-switch>
-            </div>
-          </div>
+          ${this.renderFieldSection(
+            localize('editor.spinbox.show_unit', lang, 'Show Unit'),
+            localize('editor.spinbox.show_unit_desc', lang, 'Display a unit label (e.g., °C, %)'),
+            hass,
+            { show_unit: spinboxModule.show_unit ?? false },
+            [this.booleanField('show_unit')],
+            (e: CustomEvent) => updateModule({ show_unit: e.detail.value.show_unit })
+          )}
 
           ${spinboxModule.show_unit
             ? html`
@@ -575,35 +527,14 @@ export class UltraSpinboxModule extends BaseUltraModule {
             ${localize('editor.spinbox.template.title', lang, 'Template Mode')}
           </div>
 
-          <div class="field-group" style="margin-bottom: 16px;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <div style="flex: 1;">
-                <div
-                  class="field-title"
-                  style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-                >
-                  ${localize('editor.spinbox.template_mode', lang, 'Enable Template Mode')}
-                </div>
-                <div
-                  class="field-description"
-                  style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 0;"
-                >
-                  ${localize(
-                    'editor.spinbox.template_mode_desc',
-                    lang,
-                    'Use Jinja2 templates to dynamically compute the displayed value'
-                  )}
-                </div>
-              </div>
-              <ha-switch
-                .checked=${spinboxModule.template_mode || false}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updateModule({ template_mode: target.checked });
-                }}
-              ></ha-switch>
-            </div>
-          </div>
+          ${this.renderFieldSection(
+            localize('editor.spinbox.template_mode', lang, 'Enable Template Mode'),
+            localize('editor.spinbox.template_mode_desc', lang, 'Use Jinja2 templates to dynamically compute the displayed value'),
+            hass,
+            { template_mode: spinboxModule.template_mode || false },
+            [this.booleanField('template_mode')],
+            (e: CustomEvent) => updateModule({ template_mode: e.detail.value.template_mode })
+          )}
 
           ${spinboxModule.template_mode
             ? html`
@@ -1034,7 +965,8 @@ export class UltraSpinboxModule extends BaseUltraModule {
 
     // Get hover effect
     const hoverEffect = (spinboxModule as any).design?.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
     // Layout rendering
     const isVertical = spinboxModule.layout === 'vertical';
@@ -1178,7 +1110,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
       }
     };
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         .spinbox-button {
           flex-shrink: 0;
@@ -1239,7 +1171,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
           }
         }
       </style>
-      <div class="spinbox-module-container" style=${this.styleObjectToCss(containerStyles)}>
+      <div class="spinbox-module-container ${hoverEffectClass}" style="${designStyles}">
         <div
           class="spinbox-container"
           style="display: flex; align-items: center; justify-content: center;"
@@ -1247,7 +1179,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
           ${renderLayout()}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   private async callEntityService(

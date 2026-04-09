@@ -8,6 +8,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { panelStyles } from './panel-styles';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
+import { localize } from '../localize/localize';
 import type { HubProTab } from './tabs/hub-pro-tab';
 
 const SENSOR_ENTITY = 'sensor.ultra_card_pro_cloud_authentication_status';
@@ -29,20 +30,20 @@ const TAB_LOADERS: Record<HubTab, () => Promise<unknown>> = {
 
 interface TabDef {
   key: HubTab;
-  label: string;
+  labelKey: string;
   icon: string;
 }
 
 const TABS: TabDef[] = [
-  { key: 'dashboard', label: 'Dashboard', icon: 'mdi:view-dashboard' },
-  { key: 'account', label: 'Account', icon: 'mdi:account-circle' },
-  { key: 'pro', label: 'Pro', icon: 'mdi:star' },
-  { key: 'favorites', label: 'Favorites', icon: 'mdi:heart' },
-  { key: 'presets', label: 'Presets', icon: 'mdi:palette' },
-  { key: 'colors', label: 'Colors', icon: 'mdi:eyedropper-variant' },
-  { key: 'variables', label: 'Variables', icon: 'mdi:variable' },
-  { key: 'templates', label: 'Templates', icon: 'mdi:code-tags' },
-  { key: 'about', label: 'About', icon: 'mdi:information-outline' },
+  { key: 'dashboard', labelKey: 'hub.tabs.dashboard', icon: 'mdi:view-dashboard' },
+  { key: 'account', labelKey: 'hub.tabs.account', icon: 'mdi:account-circle' },
+  { key: 'pro', labelKey: 'hub.tabs.pro', icon: 'mdi:star' },
+  { key: 'favorites', labelKey: 'hub.tabs.favorites', icon: 'mdi:heart' },
+  { key: 'presets', labelKey: 'hub.tabs.presets', icon: 'mdi:palette' },
+  { key: 'colors', labelKey: 'hub.tabs.colors', icon: 'mdi:eyedropper-variant' },
+  { key: 'variables', labelKey: 'hub.tabs.variables', icon: 'mdi:variable' },
+  { key: 'templates', labelKey: 'hub.tabs.templates', icon: 'mdi:code-tags' },
+  { key: 'about', labelKey: 'hub.tabs.about', icon: 'mdi:information-outline' },
 ];
 
 @customElement('ultra-card-panel')
@@ -336,13 +337,14 @@ export class UltraCardPanel extends LitElement {
 
   private _renderTabContent(): unknown {
     const tab = this._activeTab;
+    const lang = this.hass?.locale?.language ?? 'en';
     this._ensureTabLoaded(tab);
 
     if (!this._loadedTabs.has(tab)) {
       return html`
         <div class="tab-loading" aria-busy="true">
           <ha-icon icon="mdi:loading"></ha-icon>
-          <span>Loading…</span>
+          <span>${localize('hub.loading', lang, 'Loading…')}</span>
         </div>
       `;
     }
@@ -377,6 +379,7 @@ export class UltraCardPanel extends LitElement {
 
   render() {
     const visibleTabs = TABS;
+    const lang = this.hass?.locale?.language ?? 'en';
 
     return html`
       <div class="hub-container">
@@ -400,18 +403,25 @@ export class UltraCardPanel extends LitElement {
             tab => html`
               <button
                 role="tab"
+                id="hub-tab-${tab.key}"
                 aria-selected=${this._activeTab === tab.key ? 'true' : 'false'}
+                aria-controls="hub-tabpanel-${tab.key}"
                 class=${this._activeTab === tab.key ? 'active' : ''}
                 @click=${() => (this._activeTab = tab.key)}
               >
                 <ha-icon icon=${tab.icon}></ha-icon>
-                ${tab.label}
+                ${localize(tab.labelKey, lang, tab.key)}
               </button>
             `
           )}
         </nav>
 
-        <div class="hub-content">
+        <div
+          class="hub-content"
+          role="tabpanel"
+          id="hub-tabpanel-${this._activeTab}"
+          aria-labelledby="hub-tab-${this._activeTab}"
+        >
           ${this._renderTabContent()}
         </div>
       </div>

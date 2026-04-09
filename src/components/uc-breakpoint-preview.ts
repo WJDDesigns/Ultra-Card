@@ -33,6 +33,7 @@ export class UcBreakpointPreview extends LitElement {
     :host {
       display: inline-flex;
       align-items: center;
+      gap: 6px;
     }
 
     .breakpoint-selector {
@@ -60,7 +61,7 @@ export class UcBreakpointPreview extends LitElement {
 
     .breakpoint-btn:hover {
       background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.15);
-      color: var(--primary-text-color, #fff);
+      color: var(--primary-text-color, #333);
     }
 
     .breakpoint-btn.active {
@@ -72,6 +73,14 @@ export class UcBreakpointPreview extends LitElement {
       --mdc-icon-size: 18px;
       width: 18px;
       height: 18px;
+    }
+
+    .width-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--secondary-text-color);
+      white-space: nowrap;
+      line-height: 1;
     }
   `;
 
@@ -100,6 +109,11 @@ export class UcBreakpointPreview extends LitElement {
     return `${config.label} (full width)`;
   }
 
+  private _getWidthLabel(): string {
+    const width = PREVIEW_WIDTHS[this.selectedBreakpoint];
+    return width ? `\u2248\u00a0${width}px` : 'Full';
+  }
+
   render(): TemplateResult {
     const devices: Array<{ key: DeviceBreakpoint; icon: string }> = [
       { key: 'desktop', icon: DEVICE_BREAKPOINTS.desktop.icon },
@@ -116,12 +130,15 @@ export class UcBreakpointPreview extends LitElement {
               class="breakpoint-btn ${this.selectedBreakpoint === key ? 'active' : ''}"
               @click=${() => this._selectBreakpoint(key)}
               title="${this._getBreakpointTooltip(key)}"
+              aria-label="${this._getBreakpointTooltip(key)}"
+              aria-pressed="${this.selectedBreakpoint === key ? 'true' : 'false'}"
             >
               <ha-icon .icon=${icon}></ha-icon>
             </button>
           `
         )}
       </div>
+      <span class="width-label">${this._getWidthLabel()}</span>
     `;
   }
 }

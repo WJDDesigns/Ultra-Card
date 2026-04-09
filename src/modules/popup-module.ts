@@ -11,6 +11,7 @@ import { Z_INDEX } from '../utils/uc-z-index';
 import { getImageUrl } from '../utils/image-upload';
 import { registerPopupTrigger, unregisterPopupTrigger } from '../services/popup-trigger-registry';
 import '../components/ultra-color-picker';
+import { ucToastService } from '../services/uc-toast-service';
 
 // Global store to persist popup state across module re-instantiation/reloads
 // This survives HA preview/dash re-renders because it's kept on window
@@ -716,16 +717,14 @@ export class UltraPopupModule extends BaseUltraModule {
                           ${popupModule.trigger_button_use_entity_color
                             ? html`
                                 <div style="margin-top: 16px;">
-                                  ${this.renderFieldSection(
-                                    localize('editor.button.background_color_entity', lang, 'Entity'),
-                                    localize('editor.button.background_color_entity_desc', lang, 'Entity to watch for color changes'),
-                                    hass,
-                                    { trigger_button_color_entity: popupModule.trigger_button_color_entity || '' },
-                                    [this.entityField('trigger_button_color_entity')],
-                                    (e: CustomEvent) => {
-                                      updateModule(e.detail.value);
+                                  ${this.renderEntityPickerWithVariables(
+                                    hass, config, 'trigger_button_color_entity', popupModule.trigger_button_color_entity || '',
+                                    (value: string) => {
+                                      updateModule({ trigger_button_color_entity: value });
                                       setTimeout(() => this.triggerPreviewUpdate(), 50);
-                                    }
+                                    },
+                                    undefined,
+                                    localize('editor.button.background_color_entity', lang, 'Entity')
                                   )}
                                 </div>
                                 <div style="margin-top: 16px;">
@@ -886,7 +885,7 @@ export class UltraPopupModule extends BaseUltraModule {
                                               }, 50);
                                             } catch (error) {
                                               console.error('Image upload failed:', error);
-                                              alert(
+                                              ucToastService.error(
                                                 `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`
                                               );
                                             }
@@ -914,29 +913,14 @@ export class UltraPopupModule extends BaseUltraModule {
                             : ''}
                           ${popupModule.trigger_image_type === 'entity'
                             ? html`
-                                ${this.renderFieldSection(
-                                  localize(
-                                    'editor.design.bg_image_entity',
-                                    lang,
-                                    'Image Entity'
-                                  ),
-                                  localize(
-                                    'editor.design.bg_image_entity_desc',
-                                    lang,
-                                    'Select an entity that has an image attribute.'
-                                  ),
-                                  hass,
-                                  {
-                                    trigger_image_entity:
-                                      popupModule.trigger_image_entity || '',
+                                ${this.renderEntityPickerWithVariables(
+                                  hass, config, 'trigger_image_entity', popupModule.trigger_image_entity || '',
+                                  (value: string) => {
+                                    updateModule({ trigger_image_entity: value });
+                                    setTimeout(() => { this.triggerPreviewUpdate(); }, 50);
                                   },
-                                  [this.entityField('trigger_image_entity')],
-                                  (e: CustomEvent) => {
-                                    updateModule(e.detail.value);
-                                    setTimeout(() => {
-                                      this.triggerPreviewUpdate();
-                                    }, 50);
-                                  }
+                                  undefined,
+                                  localize('editor.design.bg_image_entity', lang, 'Image Entity')
                                 )}
                               `
                             : ''}
@@ -1248,22 +1232,14 @@ export class UltraPopupModule extends BaseUltraModule {
                           )}
                         `
                       : html`
-                          ${this.renderFieldSection(
-                            localize('editor.popup.title.entity', lang, 'Title Entity'),
-                            localize(
-                              'editor.popup.title.entity_desc',
-                              lang,
-                              'Select an entity whose state will be used as the title.'
-                            ),
-                            hass,
-                            { title_entity: popupModule.title_entity || '' },
-                            [this.entityField('title_entity')],
-                            (e: CustomEvent) => {
-                              updateModule(e.detail.value);
-                              setTimeout(() => {
-                                this.triggerPreviewUpdate();
-                              }, 50);
-                            }
+                          ${this.renderEntityPickerWithVariables(
+                            hass, config, 'title_entity', popupModule.title_entity || '',
+                            (value: string) => {
+                              updateModule({ title_entity: value });
+                              setTimeout(() => { this.triggerPreviewUpdate(); }, 50);
+                            },
+                            undefined,
+                            localize('editor.popup.title.entity', lang, 'Title Entity')
                           )}
                           ${this.renderSettingsSection('', '', [
                             {
@@ -2463,13 +2439,11 @@ export class UltraPopupModule extends BaseUltraModule {
                 ${(() => {
                   if ((cond.type || 'entity_state') === 'entity_state') {
                     return html`
-                      ${this.renderFieldSection(
-                        localize('editor.popup.trigger_logic.entity', lang, 'Entity'),
-                        '',
-                        hass,
-                        { entity: cond.entity || '' },
-                        [this.entityField('entity')],
-                        (e: CustomEvent) => onChange(e.detail.value)
+                      ${this.renderEntityPickerWithVariables(
+                        hass, undefined as any, 'entity', cond.entity || '',
+                        (value: string) => onChange({ entity: value }),
+                        undefined,
+                        localize('editor.popup.trigger_logic.entity', lang, 'Entity')
                       )}
                       ${this.renderFieldSection(
                         localize('editor.popup.trigger_logic.operator', lang, 'Operator'),
@@ -2505,13 +2479,11 @@ export class UltraPopupModule extends BaseUltraModule {
 
                   if (cond.type === 'entity_attribute') {
                     return html`
-                      ${this.renderFieldSection(
-                        localize('editor.popup.trigger_logic.entity', lang, 'Entity'),
-                        '',
-                        hass,
-                        { entity: cond.entity || '' },
-                        [this.entityField('entity')],
-                        (e: CustomEvent) => onChange(e.detail.value)
+                      ${this.renderEntityPickerWithVariables(
+                        hass, undefined as any, 'entity', cond.entity || '',
+                        (value: string) => onChange({ entity: value }),
+                        undefined,
+                        localize('editor.popup.trigger_logic.entity', lang, 'Entity')
                       )}
                       ${this.renderFieldSection(
                         localize('editor.popup.trigger_logic.attribute', lang, 'Attribute'),
@@ -3760,9 +3732,12 @@ export class UltraPopupModule extends BaseUltraModule {
       return html`<div style="display: contents;"></div>`;
     }
 
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
     // Has visible trigger - render normally
     // The popup content is rendered via portal to document.body
-    return html`${renderTrigger()}`;
+    return this.wrapWithAnimation(html`<div class="${hoverClass}" style="${designStyles}">${renderTrigger()}</div>`, module, hass);
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {

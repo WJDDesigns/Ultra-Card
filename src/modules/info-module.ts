@@ -8,7 +8,6 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { EntityIconService } from '../services/entity-icon-service';
 import { TemplateService } from '../services/template-service';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { localize } from '../localize/localize';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { getPopupForModule } from '../services/popup-trigger-registry';
@@ -170,96 +169,30 @@ export class UltraInfoModule extends BaseUltraModule {
           
           <!-- Text Size Control -->
           <div class="field-container" style="margin-bottom: 16px;">
-            <div class="field-title">Text Size (${infoModule.text_size || 16}px)</div>
-            <div class="field-description">Default size for all text elements (name, value)</div>
-            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-              <input
-                type="range"
-                class="gap-slider"
-                min="10"
-                max="48"
-                step="1"
-                .value="${String(infoModule.text_size || 16)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  updateModule({ text_size: Number(target.value) });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-              />
-              <input
-                type="number"
-                class="gap-input"
-                min="10"
-                max="100"
-                step="1"
-                .value="${String(infoModule.text_size || 16)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = Number(target.value);
-                  if (!isNaN(value)) {
-                    updateModule({ text_size: value });
-                    setTimeout(() => this.triggerPreviewUpdate(), 50);
-                  }
-                }}
-              />
-              <button
-                class="reset-btn"
-                @click=${() => {
-                  updateModule({ text_size: undefined });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-                title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '16')}"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
+            ${this.renderSliderField(
+              `Text Size (${infoModule.text_size || 16}px)`,
+              'Default size for all text elements (name, value)',
+              infoModule.text_size || 16,
+              16, 10, 48, 1,
+              (v: number) => {
+                updateModule({ text_size: v });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            )}
           </div>
 
           <!-- Icon Size Control -->
           <div class="field-container" style="margin-bottom: 16px;">
-            <div class="field-title">Icon Size (${infoModule.icon_size || 24}px)</div>
-            <div class="field-description">Default size for all icons</div>
-            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-              <input
-                type="range"
-                class="gap-slider"
-                min="12"
-                max="64"
-                step="1"
-                .value="${String(infoModule.icon_size || 24)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  updateModule({ icon_size: Number(target.value) });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-              />
-              <input
-                type="number"
-                class="gap-input"
-                min="12"
-                max="100"
-                step="1"
-                .value="${String(infoModule.icon_size || 24)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = Number(target.value);
-                  if (!isNaN(value)) {
-                    updateModule({ icon_size: value });
-                    setTimeout(() => this.triggerPreviewUpdate(), 50);
-                  }
-                }}
-              />
-              <button
-                class="reset-btn"
-                @click=${() => {
-                  updateModule({ icon_size: undefined });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-                title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '24')}"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
+            ${this.renderSliderField(
+              `Icon Size (${infoModule.icon_size || 24}px)`,
+              'Default size for all icons',
+              infoModule.icon_size || 24,
+              24, 12, 64, 1,
+              (v: number) => {
+                updateModule({ icon_size: v });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            )}
           </div>
         </div>
 
@@ -276,31 +209,17 @@ export class UltraInfoModule extends BaseUltraModule {
           </div>
 
           <div style="margin-bottom: 16px;">
-            <ha-form
-              .hass=${hass}
-              .data=${{ entity: entity.entity || '' }}
-              .schema=${[
-                {
-                  name: 'entity',
-                  label: localize('editor.info.entity', lang, 'Entity'),
-                  description: localize(
-                    'editor.info.entity_desc',
-                    lang,
-                    'Select the entity to display'
-                  ),
-                  selector: { entity: {} },
-                },
-              ]}
-              .computeLabel=${(schema: any) => schema.label || schema.name}
-              .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) => {
-                const next = e.detail.value.entity;
+            ${this.renderEntityPickerWithVariables(
+              hass, config, 'entity', entity.entity || '',
+              (value: string) => {
                 const prev = infoModule.info_entities?.[0]?.entity || '';
-                if (next === prev) return;
-                this._handleEntityChange(infoModule, 0, next, hass, updateModule);
+                if (value === prev) return;
+                this._handleEntityChange(infoModule, 0, value, hass, updateModule);
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
-              }}
-            ></ha-form>
+              },
+              undefined,
+              localize('editor.info.entity', lang, 'Entity')
+            )}
           </div>
         </div>
 
@@ -713,92 +632,16 @@ export class UltraInfoModule extends BaseUltraModule {
           </div>
 
           <div class="field-container" style="margin-bottom: 24px;">
-            <div
-              class="field-title"
-              style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 8px;"
-            >
-              ${localize('editor.info.name_value_gap', lang, 'Name & Value Gap')}
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
-            >
-              ${localize(
-                'editor.info.name_value_gap_desc',
-                lang,
-                'Space between the name and value in pixels'
-              )}
-            </div>
-            <div
-              class="gap-control-container"
-              style="display: flex; align-items: center; gap: 12px;"
-            >
-              <input
-                type="range"
-                class="gap-slider"
-                min="0"
-                max="32"
-                step="1"
-                .value="${entity.name_value_gap !== undefined ? entity.name_value_gap : 2}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = Number(target.value);
-                  this._updateEntity(infoModule, 0, { name_value_gap: value }, updateModule);
-                  setTimeout(() => this.triggerPreviewUpdate(), 200);
-                }}
-              />
-              <input
-                type="number"
-                class="gap-input"
-                min="0"
-                max="32"
-                step="1"
-                .value="${entity.name_value_gap !== undefined ? entity.name_value_gap : 2}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = Number(target.value);
-                  if (!isNaN(value)) {
-                    this._updateEntity(
-                      infoModule,
-                      0,
-                      { name_value_gap: value },
-                      updateModule
-                    );
-                    setTimeout(() => this.triggerPreviewUpdate(), 200);
-                  }
-                }}
-                @keydown=${(e: KeyboardEvent) => {
-                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const target = e.target as HTMLInputElement;
-                    const currentValue = Number(target.value) || 2;
-                    const increment = e.key === 'ArrowUp' ? 1 : -1;
-                    const newValue = Math.max(0, Math.min(32, currentValue + increment));
-                    this._updateEntity(
-                      infoModule,
-                      0,
-                      { name_value_gap: newValue },
-                      updateModule
-                    );
-                    setTimeout(() => this.triggerPreviewUpdate(), 200);
-                  }
-                }}
-              />
-              <button
-                class="reset-btn"
-                @click=${() => {
-                  this._updateEntity(infoModule, 0, { name_value_gap: 2 }, updateModule);
-                  setTimeout(() => this.triggerPreviewUpdate(), 200);
-                }}
-                title="${localize(
-                  'editor.fields.reset_default_value',
-                  lang,
-                  'Reset to default ({value})'
-                ).replace('{value}', '2')}"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
+            ${this.renderSliderField(
+              localize('editor.info.name_value_gap', lang, 'Name & Value Gap'),
+              localize('editor.info.name_value_gap_desc', lang, 'Space between the name and value in pixels'),
+              entity.name_value_gap !== undefined ? entity.name_value_gap : 2,
+              2, 0, 32, 1,
+              (v: number) => {
+                this._updateEntity(infoModule, 0, { name_value_gap: v }, updateModule);
+                setTimeout(() => this.triggerPreviewUpdate(), 200);
+              }
+            )}
           </div>
         </div>
 
@@ -1006,308 +849,62 @@ export class UltraInfoModule extends BaseUltraModule {
             ${entity.show_icon !== false
               ? html`
                   <div class="field-container" style="margin-bottom: 24px;">
-                    <div class="field-title">
-                      ${localize('editor.info.icon_size', lang, 'Icon Size')}
-                    </div>
-                    <div class="field-description">
-                      ${localize('editor.info.icon_size_desc', lang, 'Size of the icon in pixels')}
-                    </div>
-                    <div
-                      class="gap-control-container"
-                      style="display: flex; align-items: center; gap: 12px;"
-                    >
-                      <input
-                        type="range"
-                        class="gap-slider"
-                        min="12"
-                        max="48"
-                        step="1"
-                        .value="${Number(entity.icon_size) || 26}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = Number(target.value);
-                          this._updateEntity(infoModule, 0, { icon_size: value }, updateModule);
-                          setTimeout(() => this.triggerPreviewUpdate(), 50);
-                        }}
-                      />
-                      <input
-                        type="number"
-                        class="gap-input"
-                        min="12"
-                        max="48"
-                        step="1"
-                        .value="${Number(entity.icon_size) || 26}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = Number(target.value);
-                          if (!isNaN(value)) {
-                            this._updateEntity(infoModule, 0, { icon_size: value }, updateModule);
-                            setTimeout(() => this.triggerPreviewUpdate(), 50);
-                          }
-                        }}
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            const target = e.target as HTMLInputElement;
-                            const currentValue = Number(target.value) || 26;
-                            const increment = e.key === 'ArrowUp' ? 1 : -1;
-                            const newValue = Math.max(12, Math.min(48, currentValue + increment));
-                            this._updateEntity(
-                              infoModule,
-                              0,
-                              { icon_size: newValue },
-                              updateModule
-                            );
-                            setTimeout(() => this.triggerPreviewUpdate(), 50);
-                          }
-                        }}
-                      />
-                      <button
-                        class="reset-btn"
-                        @click=${() => {
-                          this._updateEntity(infoModule, 0, { icon_size: 26 }, updateModule);
-                          setTimeout(() => this.triggerPreviewUpdate(), 50);
-                        }}
-                        title="${localize(
-                          'editor.fields.reset_default_value',
-                          lang,
-                          'Reset to default ({value})'
-                        ).replace('{value}', '26')}"
-                      >
-                        <ha-icon icon="mdi:refresh"></ha-icon>
-                      </button>
-                    </div>
+                    ${this.renderSliderField(
+                      localize('editor.info.icon_size', lang, 'Icon Size'),
+                      localize('editor.info.icon_size_desc', lang, 'Size of the icon in pixels'),
+                      Number(entity.icon_size) || 26,
+                      26, 12, 48, 1,
+                      (v: number) => {
+                        this._updateEntity(infoModule, 0, { icon_size: v }, updateModule);
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }
+                    )}
                   </div>
                 `
               : ''}
             ${entity.show_name !== false
               ? html`
                   <div class="field-container" style="margin-bottom: 24px;">
-                    <div class="field-title">
-                      ${localize('editor.info.name_size', lang, 'Name Size')}
-                    </div>
-                    <div class="field-description">
-                      ${localize(
-                        'editor.info.name_size_desc',
-                        lang,
-                        'Size of the entity name text in pixels'
-                      )}
-                    </div>
-                    <div
-                      class="gap-control-container"
-                      style="display: flex; align-items: center; gap: 12px;"
-                    >
-                      <input
-                        type="range"
-                        class="gap-slider"
-                        min="8"
-                        max="32"
-                        step="1"
-                        .value="${entity.name_size || 12}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = Number(target.value);
-                          this._updateEntity(infoModule, 0, { name_size: value }, updateModule);
-                          setTimeout(() => this.triggerPreviewUpdate(), 50);
-                        }}
-                      />
-                      <input
-                        type="number"
-                        class="gap-input"
-                        min="8"
-                        max="32"
-                        step="1"
-                        .value="${entity.name_size || 12}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = Number(target.value);
-                          if (!isNaN(value)) {
-                            this._updateEntity(infoModule, 0, { name_size: value }, updateModule);
-                            setTimeout(() => this.triggerPreviewUpdate(), 50);
-                          }
-                        }}
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            const target = e.target as HTMLInputElement;
-                            const currentValue = Number(target.value) || 12;
-                            const increment = e.key === 'ArrowUp' ? 1 : -1;
-                            const newValue = Math.max(8, Math.min(32, currentValue + increment));
-                            this._updateEntity(
-                              infoModule,
-                              0,
-                              { name_size: newValue },
-                              updateModule
-                            );
-                            setTimeout(() => this.triggerPreviewUpdate(), 50);
-                          }
-                        }}
-                      />
-                      <button
-                        class="reset-btn"
-                        @click=${() => {
-                          this._updateEntity(infoModule, 0, { name_size: 12 }, updateModule);
-                          setTimeout(() => this.triggerPreviewUpdate(), 50);
-                        }}
-                        title="${localize(
-                          'editor.fields.reset_default_value',
-                          lang,
-                          'Reset to default ({value})'
-                        ).replace('{value}', '12')}"
-                      >
-                        <ha-icon icon="mdi:refresh"></ha-icon>
-                      </button>
-                    </div>
+                    ${this.renderSliderField(
+                      localize('editor.info.name_size', lang, 'Name Size'),
+                      localize('editor.info.name_size_desc', lang, 'Size of the entity name text in pixels'),
+                      entity.name_size || 12,
+                      12, 8, 32, 1,
+                      (v: number) => {
+                        this._updateEntity(infoModule, 0, { name_size: v }, updateModule);
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }
+                    )}
                   </div>
                 `
               : ''}
 
             <div class="field-container" style="margin-bottom: 24px;">
-              <div class="field-title">
-                ${localize('editor.info.value_size', lang, 'Value Size')}
-              </div>
-              <div class="field-description">
-                ${localize(
-                  'editor.info.value_size_desc',
-                  lang,
-                  'Size of the entity value text in pixels'
-                )}
-              </div>
-              <div
-                class="gap-control-container"
-                style="display: flex; align-items: center; gap: 12px;"
-              >
-                <input
-                  type="range"
-                  class="gap-slider"
-                  min="8"
-                  max="32"
-                  step="1"
-                  .value="${entity.text_size || 14}"
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = Number(target.value);
-                    this._updateEntity(infoModule, 0, { text_size: value }, updateModule);
-                    setTimeout(() => this.triggerPreviewUpdate(), 50);
-                  }}
-                />
-                <input
-                  type="number"
-                  class="gap-input"
-                  min="8"
-                  max="32"
-                  step="1"
-                  .value="${entity.text_size || 14}"
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = Number(target.value);
-                    if (!isNaN(value)) {
-                      this._updateEntity(infoModule, 0, { text_size: value }, updateModule);
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }
-                  }}
-                  @keydown=${(e: KeyboardEvent) => {
-                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                      e.preventDefault();
-                      const target = e.target as HTMLInputElement;
-                      const currentValue = Number(target.value) || 14;
-                      const increment = e.key === 'ArrowUp' ? 1 : -1;
-                      const newValue = Math.max(8, Math.min(32, currentValue + increment));
-                      this._updateEntity(infoModule, 0, { text_size: newValue }, updateModule);
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }
-                  }}
-                />
-                <button
-                  class="reset-btn"
-                  @click=${() => {
-                    this._updateEntity(infoModule, 0, { text_size: 14 }, updateModule);
-                    setTimeout(() => this.triggerPreviewUpdate(), 50);
-                  }}
-                  title="${localize(
-                    'editor.fields.reset_default_value',
-                    lang,
-                    'Reset to default ({value})'
-                  ).replace('{value}', '14')}"
-                >
-                  <ha-icon icon="mdi:refresh"></ha-icon>
-                </button>
-              </div>
+              ${this.renderSliderField(
+                localize('editor.info.value_size', lang, 'Value Size'),
+                localize('editor.info.value_size_desc', lang, 'Size of the entity value text in pixels'),
+                entity.text_size || 14,
+                14, 8, 32, 1,
+                (v: number) => {
+                  this._updateEntity(infoModule, 0, { text_size: v }, updateModule);
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }
+              )}
             </div>
 
             ${entity.show_icon !== false
               ? html`
                   <div class="field-container" style="margin-bottom: 24px;">
-                    <div class="field-title">
-                      ${localize('editor.info.icon_gap', lang, 'Icon Gap')}
-                    </div>
-                    <div class="field-description">
-                      ${localize(
-                        'editor.info.icon_gap_desc',
-                        lang,
-                        'Space between the icon and content in pixels'
-                      )}
-                    </div>
-                    <div
-                      class="gap-control-container"
-                      style="display: flex; align-items: center; gap: 12px;"
-                    >
-                      <input
-                        type="range"
-                        class="gap-slider"
-                        min="0"
-                        max="32"
-                        step="1"
-                        .value="${entity.icon_gap || 8}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = Number(target.value);
-                          this._updateEntity(infoModule, 0, { icon_gap: value }, updateModule);
-                          setTimeout(() => this.triggerPreviewUpdate(), 50);
-                        }}
-                      />
-                      <input
-                        type="number"
-                        class="gap-input"
-                        min="0"
-                        max="32"
-                        step="1"
-                        .value="${entity.icon_gap || 8}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const value = Number(target.value);
-                          if (!isNaN(value)) {
-                            this._updateEntity(infoModule, 0, { icon_gap: value }, updateModule);
-                            setTimeout(() => this.triggerPreviewUpdate(), 50);
-                          }
-                        }}
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            const target = e.target as HTMLInputElement;
-                            const currentValue = Number(target.value) || 8;
-                            const increment = e.key === 'ArrowUp' ? 1 : -1;
-                            const newValue = Math.max(0, Math.min(32, currentValue + increment));
-                            this._updateEntity(infoModule, 0, { icon_gap: newValue }, updateModule);
-                            setTimeout(() => this.triggerPreviewUpdate(), 50);
-                          }
-                        }}
-                      />
-                      <button
-                        class="reset-btn"
-                        @click=${() => {
-                          this._updateEntity(infoModule, 0, { icon_gap: 8 }, updateModule);
-                          setTimeout(() => this.triggerPreviewUpdate(), 50);
-                        }}
-                        title="${localize(
-                          'editor.fields.reset_default_value',
-                          lang,
-                          'Reset to default ({value})'
-                        ).replace('{value}', '8')}"
-                      >
-                        <ha-icon icon="mdi:refresh"></ha-icon>
-                      </button>
-                    </div>
+                    ${this.renderSliderField(
+                      localize('editor.info.icon_gap', lang, 'Icon Gap'),
+                      localize('editor.info.icon_gap_desc', lang, 'Space between the icon and content in pixels'),
+                      entity.icon_gap || 8,
+                      8, 0, 32, 1,
+                      (v: number) => {
+                        this._updateEntity(infoModule, 0, { icon_gap: v }, updateModule);
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }
+                    )}
                   </div>
                 `
               : ''}
@@ -1765,6 +1362,7 @@ export class UltraInfoModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const infoModule = module as InfoModule;
+    const lang = hass?.locale?.language || 'en';
 
     // Apply design properties with priority - design properties override module properties
     const moduleWithDesign = infoModule as any;
@@ -2027,11 +1625,12 @@ export class UltraInfoModule extends BaseUltraModule {
     });
     Object.assign(containerStyles, containerBackgroundStyles);
 
-    // If no entities configured at all, show gradient error state
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
     if (!infoModule.info_entities || infoModule.info_entities.length === 0) {
       return this.renderGradientErrorState(
-        'Configure Entities',
-        'Add info entities in the General tab',
+        localize('editor.info.error_no_entities', lang, 'Configure Entities'),
+        localize('editor.info.error_no_entities_desc', lang, 'Add info entities in the General tab'),
         'mdi:information-outline'
       );
     }
@@ -2040,7 +1639,7 @@ export class UltraInfoModule extends BaseUltraModule {
     if (validEntities.length === 0 && incompleteEntities.length > 0) {
       const entityList = incompleteEntities.map((e, i) => `Entity ${i + 1}`).join(', ');
       return this.renderGradientErrorState(
-        'Entities Need Configuration',
+        localize('editor.info.error_entities_need_config', lang, 'Entities Need Configuration'),
         entityList,
         'mdi:information-outline'
       );
@@ -2062,11 +1661,11 @@ export class UltraInfoModule extends BaseUltraModule {
           )
         : '';
 
-    return html`
+    return this.wrapWithAnimation(html`
       ${warningBanner}
       <div
-        class="info-module-container"
-        style="${this.styleObjectToCss(containerStyles)}; align-self: ${gridAlignment === 'left'
+        class="info-module-container ${hoverEffectClass}"
+        style="${designStyles}; ${this.styleObjectToCss(containerStyles)}; align-self: ${gridAlignment === 'left'
           ? 'flex-start'
           : gridAlignment === 'right'
             ? 'flex-end'
@@ -2152,7 +1751,7 @@ export class UltraInfoModule extends BaseUltraModule {
                               // Use global debounced update
                               if (!window._ultraCardUpdateTimer) {
                                 window._ultraCardUpdateTimer = setTimeout(() => {
-                                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                                  this.triggerPreviewUpdate();
                                   window._ultraCardUpdateTimer = null;
                                 }, 50);
                               }
@@ -2244,7 +1843,7 @@ export class UltraInfoModule extends BaseUltraModule {
                       if (typeof window !== 'undefined') {
                         if (!window._ultraCardUpdateTimer) {
                           window._ultraCardUpdateTimer = setTimeout(() => {
-                            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                            this.triggerPreviewUpdate();
                             window._ultraCardUpdateTimer = null;
                           }, 50);
                         }
@@ -2313,7 +1912,7 @@ export class UltraInfoModule extends BaseUltraModule {
                       if (typeof window !== 'undefined') {
                         if (!window._ultraCardUpdateTimer) {
                           window._ultraCardUpdateTimer = setTimeout(() => {
-                            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                            this.triggerPreviewUpdate();
                             window._ultraCardUpdateTimer = null;
                           }, 50);
                         }
@@ -2596,7 +2195,7 @@ export class UltraInfoModule extends BaseUltraModule {
 
               // Get hover effect configuration from module design
               const hoverEffect = (infoModule as any).design?.hover_effect;
-              const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+              const hoverEffectClass = this.getHoverEffectClass(module);
 
               // Determine content based on layout mode
               // When horizontal+distribution+icon: [icon+name] <-> [value]
@@ -2679,7 +2278,7 @@ export class UltraInfoModule extends BaseUltraModule {
           </div>
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {
@@ -2905,106 +2504,7 @@ export class UltraInfoModule extends BaseUltraModule {
       }
 
       /* Gap control styles */
-      .gap-control-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .gap-slider {
-        flex: 1;
-        height: 6px;
-        background: var(--divider-color);
-        border-radius: 3px;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .gap-slider::-webkit-slider-thumb {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider:hover {
-        background: var(--primary-color);
-        opacity: 0.7;
-      }
-
-      .gap-slider:hover::-webkit-slider-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-slider:hover::-moz-range-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-input {
-        width: 48px !important;
-        max-width: 48px !important;
-        min-width: 48px !important;
-        padding: 4px 6px !important;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-      }
-
-      .gap-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-      }
-
-      .reset-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-
-      .reset-btn:hover {
-        background: var(--primary-color);
-        color: var(--text-primary-color);
-        border-color: var(--primary-color);
-      }
-
-      .reset-btn ha-icon {
-        font-size: 16px;
-      }
+      ${BaseUltraModule.getSliderStyles()}
 
       /* Legacy hover effects removed - now handled by new hover effects system */
 
@@ -3673,7 +3173,7 @@ export class UltraInfoModule extends BaseUltraModule {
           // Use global debounced update
           if (!window._ultraCardUpdateTimer) {
             window._ultraCardUpdateTimer = setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              this.triggerPreviewUpdate();
               window._ultraCardUpdateTimer = null;
             }, 50);
           }

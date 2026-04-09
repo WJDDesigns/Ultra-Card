@@ -4939,6 +4939,9 @@ export interface SharedDesignProperties {
   box_shadow_blur?: string;
   box_shadow_spread?: string;
   box_shadow_color?: string;
+  // Layout properties
+  // gap: space between child items (e.g. between modules in a column, or items in a row)
+  gap?: string;
   // Other properties
   overflow?: 'visible' | 'hidden' | 'scroll' | 'auto';
   clip_path?: string;

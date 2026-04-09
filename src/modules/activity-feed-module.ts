@@ -8,6 +8,7 @@ import {
   UltraCardConfig,
 } from '../types';
 import { UcFormUtils } from '../utils/uc-form-utils';
+import { localize } from '../localize/localize';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import '../components/ultra-color-picker';
@@ -795,7 +796,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
             } else {
               this._expandedEntities.add(entity.id);
             }
-            window.dispatchEvent(new CustomEvent('ultra-card-module-update'));
+            this.triggerPreviewUpdate();
           }}
         ></ha-icon>
         <ha-icon
@@ -864,11 +865,14 @@ export class UltraActivityFeedModule extends BaseUltraModule {
     config?: UltraCardConfig
   ): TemplateResult {
     const feedModule = module as ActivityFeedModule;
+    const lang = hass?.locale?.language || 'en';
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+    const hoverClass = this.getHoverEffectClass(module);
 
     if (!hass || !hass.states) {
       return this.renderGradientErrorState(
-        'Waiting for Home Assistant',
-        'Connecting to entity states...',
+        localize('editor.activity_feed.error_waiting_ha', lang, 'Waiting for Home Assistant'),
+        localize('editor.activity_feed.error_waiting_ha_desc', lang, 'Connecting to entity states...'),
         'mdi:loading'
       );
     }
@@ -877,8 +881,8 @@ export class UltraActivityFeedModule extends BaseUltraModule {
 
     if (events.length === 0) {
       return this.renderGradientErrorState(
-        'No Activity',
-        'Configure entities or domains in the General tab',
+        localize('editor.activity_feed.error_no_activity', lang, 'No Activity'),
+        localize('editor.activity_feed.error_no_activity_desc', lang, 'Configure entities or domains in the General tab'),
         'mdi:timeline-text'
       );
     }
@@ -896,13 +900,15 @@ export class UltraActivityFeedModule extends BaseUltraModule {
       <style>
         ${this._getPreviewStyles(feedModule)}
       </style>
-      <div class="af-container">
-        ${feedModule.show_title
-          ? html`<div class="af-title" style="color: ${textColor};">
-              ${feedModule.title || 'Activity Feed'}
-            </div>`
-          : nothing}
-        ${content}
+      <div class="af-container ${hoverClass}" style="${designStyles}">
+        ${this.wrapWithAnimation(html`
+          ${feedModule.show_title
+            ? html`<div class="af-title" style="color: ${textColor};">
+                ${feedModule.title || localize('editor.activity_feed.preview.title_fallback', lang, 'Activity Feed')}
+              </div>`
+            : nothing}
+          ${content}
+        `, module, hass)}
       </div>
     `;
   }

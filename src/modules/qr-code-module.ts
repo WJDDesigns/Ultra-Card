@@ -10,6 +10,7 @@ import { localize } from '../localize/localize';
 import { TemplateService } from '../services/template-service';
 import { uploadImage, getImageUrl } from '../utils/image-upload';
 import '../components/ultra-color-picker';
+import { ucToastService } from '../services/uc-toast-service';
 
 /** Event dispatched when QR data URL is ready so the card can re-render */
 export const UC_QR_DATA_READY_EVENT = 'uc-qr-data-ready';
@@ -245,441 +246,353 @@ export class UltraQrCodeModule extends BaseUltraModule {
     }
 
     return html`
-      <style>
-        ${this.injectUcFormStyles()} ${BaseUltraModule.getSliderStyles()}
-
-        /* Spacing between text and fields in QR code editor */
-        .settings-section .form-field {
-          margin-bottom: 16px;
-        }
-        .settings-section .form-label {
-          display: block;
-          margin-bottom: 8px;
-        }
-        .settings-section .form-description {
-          margin-top: 8px;
-          margin-bottom: 0;
-          font-size: 13px;
-          color: var(--secondary-text-color);
-          line-height: 1.4;
-        }
-        .settings-section .field-container .field-title {
-          margin-bottom: 6px;
-        }
-        .settings-section .field-container .field-description {
-          margin-bottom: 10px;
-        }
-      </style>
+      ${this.injectUcFormStyles()}
 
       <!-- Content source -->
-      <div
-        class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
-      >
-        <div
-          class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
-        >
-          ${localize('editor.qr_code.content_title', lang, 'CONTENT')}
-        </div>
-        ${this.renderSelect(
-          localize('editor.qr_code.content_mode', lang, 'Source'),
-          qrModule.content_mode || 'static',
-          [
-            { value: 'static', label: localize('editor.qr_code.static', lang, 'Static URL / Text') },
-            { value: 'template', label: localize('editor.qr_code.template', lang, 'HA Template') },
-            { value: 'entity', label: localize('editor.qr_code.entity', lang, 'Entity State') },
-          ],
-          (v: string) => updateModule({ content_mode: v as 'static' | 'template' | 'entity' }),
-          localize('editor.qr_code.content_mode_desc', lang, 'Where to get the text to encode')
-        )}
-        ${qrModule.content_mode === 'static'
-          ? this.renderTextInput(
-              localize('editor.qr_code.static_content', lang, 'URL or text'),
-              qrModule.content_static || '',
-              (v: string) => updateModule({ content_static: v }),
-              'https://www.home-assistant.io',
-              localize('editor.qr_code.static_desc', lang, 'Text or URL to encode in the QR code')
-            )
-          : ''}
-        ${qrModule.content_mode === 'template'
-          ? this.renderTextArea(
-              localize('editor.qr_code.template_content', lang, 'Template'),
-              qrModule.content_template || '',
-              (v: string) => updateModule({ content_template: v }),
-              '{{ states("sensor.example") }}',
-              localize('editor.qr_code.template_desc', lang, 'Jinja2 template that outputs the string to encode')
-            )
-          : ''}
-        ${qrModule.content_mode === 'entity'
-          ? html`
-              ${this.renderEntityPicker(
-                localize('editor.qr_code.entity_picker', lang, 'Entity'),
-                qrModule.content_entity || '',
-                (v: string) => updateModule({ content_entity: v }),
-                hass,
-                undefined,
-                localize('editor.qr_code.entity_desc', lang, 'Entity whose state (or attribute) will be encoded')
-              )}
-              ${this.renderTextInput(
-                localize('editor.qr_code.attribute', lang, 'Attribute (optional)'),
-                qrModule.content_attribute || '',
-                (v: string) => updateModule({ content_attribute: v || undefined }),
-                '',
-                localize('editor.qr_code.attribute_desc', lang, 'Leave empty to use state; or e.g. friendly_name')
-              )}
-            `
-          : ''}
-      </div>
+      ${this.renderSettingsSection(
+        localize('editor.qr_code.content_title', lang, 'Content'),
+        localize('editor.qr_code.content_title_desc', lang, 'Configure the text or URL to encode.'),
+        [
+          {
+            title: localize('editor.qr_code.content_mode', lang, 'Source'),
+            description: localize('editor.qr_code.content_mode_desc', lang, 'Where to get the text to encode'),
+            hass,
+            data: { content_mode: qrModule.content_mode || 'static' },
+            schema: [this.selectField('content_mode', [
+              { value: 'static', label: localize('editor.qr_code.static', lang, 'Static URL / Text') },
+              { value: 'template', label: localize('editor.qr_code.template', lang, 'HA Template') },
+              { value: 'entity', label: localize('editor.qr_code.entity', lang, 'Entity State') },
+            ])],
+            onChange: (e: CustomEvent) => { updateModule({ content_mode: e.detail.value.content_mode as 'static' | 'template' | 'entity' }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+          },
+        ]
+      )}
+      ${qrModule.content_mode === 'static'
+        ? this.renderFieldSection(
+            localize('editor.qr_code.static_content', lang, 'URL or text'),
+            localize('editor.qr_code.static_desc', lang, 'Text or URL to encode in the QR code'),
+            hass,
+            { content_static: qrModule.content_static || '' },
+            [this.textField('content_static')],
+            (e: CustomEvent) => { updateModule({ content_static: e.detail.value.content_static }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
+          )
+        : ''}
+      ${qrModule.content_mode === 'template'
+        ? this.renderFieldSection(
+            localize('editor.qr_code.template_content', lang, 'Template'),
+            localize('editor.qr_code.template_desc', lang, 'Jinja2 template that outputs the string to encode'),
+            hass,
+            { content_template: qrModule.content_template || '' },
+            [this.textField('content_template', true)],
+            (e: CustomEvent) => { updateModule({ content_template: e.detail.value.content_template }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
+          )
+        : ''}
+      ${qrModule.content_mode === 'entity'
+        ? html`
+            ${this.renderEntityPickerWithVariables(
+              hass, config, 'content_entity', qrModule.content_entity || '',
+              (value: string) => { updateModule({ content_entity: value }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+              undefined,
+              localize('editor.qr_code.entity_picker', lang, 'Entity')
+            )}
+            ${this.renderFieldSection(
+              localize('editor.qr_code.attribute', lang, 'Attribute (optional)'),
+              localize('editor.qr_code.attribute_desc', lang, 'Leave empty to use state; or e.g. friendly_name'),
+              hass,
+              { content_attribute: qrModule.content_attribute || '' },
+              [this.textField('content_attribute')],
+              (e: CustomEvent) => { updateModule({ content_attribute: e.detail.value.content_attribute || undefined }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
+            )}
+          `
+        : ''}
 
       <!-- Display -->
-      <div
-        class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
-      >
-        <div
-          class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
-        >
-          ${localize('editor.qr_code.display_title', lang, 'DISPLAY')}
-        </div>
-        ${this.renderSliderField(
-          localize('editor.qr_code.size', lang, 'Size'),
-          localize('editor.qr_code.size_desc', lang, 'Width and height in pixels'),
-          qrModule.size ?? 200,
-          200,
-          64,
-          512,
-          8,
-          (v: number) => updateModule({ size: v }),
-          'px'
-        )}
-        ${this.renderSelect(
-          localize('editor.qr_code.alignment', lang, 'Alignment'),
-          qrModule.alignment || 'center',
-          [
-            { value: 'left', label: localize('editor.qr_code.align_left', lang, 'Left') },
-            { value: 'center', label: localize('editor.qr_code.align_center', lang, 'Center') },
-            { value: 'right', label: localize('editor.qr_code.align_right', lang, 'Right') },
-          ],
-          (v: string) => updateModule({ alignment: v as 'left' | 'center' | 'right' })
-        )}
-        ${this.renderCheckbox(
-          localize('editor.qr_code.show_label', lang, 'Show label'),
-          qrModule.show_label ?? false,
-          (v: boolean) => updateModule({ show_label: v })
-        )}
-        ${qrModule.show_label
-          ? html`
-              ${this.renderTextInput(
-                localize('editor.qr_code.label_text', lang, 'Label text'),
-                qrModule.label_text || '',
-                (v: string) => updateModule({ label_text: v })
-              )}
-              ${this.renderCheckbox(
-                localize('editor.qr_code.label_below', lang, 'Label below QR'),
-                qrModule.label_below !== false,
-                (v: boolean) => updateModule({ label_below: v })
-              )}
-            `
-          : ''}
-      </div>
+      ${this.renderSettingsSection(
+        localize('editor.qr_code.display_title', lang, 'Display'),
+        '',
+        [
+          {
+            title: localize('editor.qr_code.alignment', lang, 'Alignment'),
+            description: '',
+            hass,
+            data: { alignment: qrModule.alignment || 'center' },
+            schema: [this.selectField('alignment', [
+              { value: 'left', label: localize('editor.qr_code.align_left', lang, 'Left') },
+              { value: 'center', label: localize('editor.qr_code.align_center', lang, 'Center') },
+              { value: 'right', label: localize('editor.qr_code.align_right', lang, 'Right') },
+            ])],
+            onChange: (e: CustomEvent) => { updateModule({ alignment: e.detail.value.alignment as 'left' | 'center' | 'right' }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+          },
+          {
+            title: localize('editor.qr_code.show_label', lang, 'Show label'),
+            description: '',
+            hass,
+            data: { show_label: qrModule.show_label ?? false },
+            schema: [this.booleanField('show_label')],
+            onChange: (e: CustomEvent) => { updateModule({ show_label: e.detail.value.show_label }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+          },
+        ]
+      )}
+      ${this.renderSliderField(
+        localize('editor.qr_code.size', lang, 'Size'),
+        localize('editor.qr_code.size_desc', lang, 'Width and height in pixels'),
+        qrModule.size ?? 200, 200, 64, 512, 8,
+        (v: number) => { updateModule({ size: v }); setTimeout(() => this.triggerPreviewUpdate(), 50); }, 'px'
+      )}
+      ${qrModule.show_label
+        ? html`
+            ${this.renderFieldSection(
+              localize('editor.qr_code.label_text', lang, 'Label text'),
+              '',
+              hass,
+              { label_text: qrModule.label_text || '' },
+              [this.textField('label_text')],
+              (e: CustomEvent) => { updateModule({ label_text: e.detail.value.label_text }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
+            )}
+            ${this.renderFieldSection(
+              localize('editor.qr_code.label_below', lang, 'Label below QR'),
+              '',
+              hass,
+              { label_below: qrModule.label_below !== false },
+              [this.booleanField('label_below')],
+              (e: CustomEvent) => { updateModule({ label_below: e.detail.value.label_below }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
+            )}
+          `
+        : ''}
 
       <!-- Style -->
-      <div
-        class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
-      >
-        <div
-          class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
-        >
-          ${localize('editor.qr_code.style_title', lang, 'STYLE')}
-        </div>
-        ${this.renderSelect(
-          localize('editor.qr_code.dot_style', lang, 'Dot pattern'),
-          qrModule.dot_style || 'square',
-          [
-            { value: 'square', label: localize('editor.qr_code.dot_square', lang, 'Square') },
-            { value: 'dots', label: localize('editor.qr_code.dot_dots', lang, 'Dots') },
-            { value: 'rounded', label: localize('editor.qr_code.dot_rounded', lang, 'Rounded') },
-            { value: 'extra-rounded', label: localize('editor.qr_code.dot_extra_rounded', lang, 'Extra Rounded') },
-            { value: 'classy', label: localize('editor.qr_code.dot_classy', lang, 'Classy') },
-            { value: 'classy-rounded', label: localize('editor.qr_code.dot_classy_rounded', lang, 'Classy Rounded') },
-          ],
-          (v: string) => updateModule({ dot_style: v as QrCodeModule['dot_style'] }),
-          localize('editor.qr_code.dot_style_desc', lang, 'Shape of each individual data module')
-        )}
-        ${this.renderSelect(
-          localize('editor.qr_code.corner_square_style', lang, 'Corner squares'),
-          qrModule.corner_square_style || 'square',
-          [
-            { value: 'square', label: localize('editor.qr_code.cs_square', lang, 'Square') },
-            { value: 'dot', label: localize('editor.qr_code.cs_dot', lang, 'Dot') },
-            { value: 'extra-rounded', label: localize('editor.qr_code.cs_extra_rounded', lang, 'Extra Rounded') },
-          ],
-          (v: string) => updateModule({ corner_square_style: v as QrCodeModule['corner_square_style'] }),
-          localize('editor.qr_code.corner_square_desc', lang, 'Shape of the three large corner finder squares')
-        )}
-        ${this.renderSelect(
-          localize('editor.qr_code.corner_dot_style', lang, 'Corner dots'),
-          qrModule.corner_dot_style || 'square',
-          [
-            { value: 'square', label: localize('editor.qr_code.cd_square', lang, 'Square') },
-            { value: 'dot', label: localize('editor.qr_code.cd_dot', lang, 'Dot') },
-          ],
-          (v: string) => updateModule({ corner_dot_style: v as QrCodeModule['corner_dot_style'] }),
-          localize('editor.qr_code.corner_dot_desc', lang, 'Shape of the small inner dots inside each corner square')
-        )}
-      </div>
+      ${this.renderSettingsSection(
+        localize('editor.qr_code.style_title', lang, 'Style'),
+        '',
+        [
+          {
+            title: localize('editor.qr_code.dot_style', lang, 'Dot pattern'),
+            description: localize('editor.qr_code.dot_style_desc', lang, 'Shape of each individual data module'),
+            hass,
+            data: { dot_style: qrModule.dot_style || 'square' },
+            schema: [this.selectField('dot_style', [
+              { value: 'square', label: localize('editor.qr_code.dot_square', lang, 'Square') },
+              { value: 'dots', label: localize('editor.qr_code.dot_dots', lang, 'Dots') },
+              { value: 'rounded', label: localize('editor.qr_code.dot_rounded', lang, 'Rounded') },
+              { value: 'extra-rounded', label: localize('editor.qr_code.dot_extra_rounded', lang, 'Extra Rounded') },
+              { value: 'classy', label: localize('editor.qr_code.dot_classy', lang, 'Classy') },
+              { value: 'classy-rounded', label: localize('editor.qr_code.dot_classy_rounded', lang, 'Classy Rounded') },
+            ])],
+            onChange: (e: CustomEvent) => { updateModule({ dot_style: e.detail.value.dot_style as QrCodeModule['dot_style'] }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+          },
+          {
+            title: localize('editor.qr_code.corner_square_style', lang, 'Corner squares'),
+            description: localize('editor.qr_code.corner_square_desc', lang, 'Shape of the three large corner finder squares'),
+            hass,
+            data: { corner_square_style: qrModule.corner_square_style || 'square' },
+            schema: [this.selectField('corner_square_style', [
+              { value: 'square', label: localize('editor.qr_code.cs_square', lang, 'Square') },
+              { value: 'dot', label: localize('editor.qr_code.cs_dot', lang, 'Dot') },
+              { value: 'extra-rounded', label: localize('editor.qr_code.cs_extra_rounded', lang, 'Extra Rounded') },
+            ])],
+            onChange: (e: CustomEvent) => { updateModule({ corner_square_style: e.detail.value.corner_square_style as QrCodeModule['corner_square_style'] }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+          },
+          {
+            title: localize('editor.qr_code.corner_dot_style', lang, 'Corner dots'),
+            description: localize('editor.qr_code.corner_dot_desc', lang, 'Shape of the small inner dots inside each corner square'),
+            hass,
+            data: { corner_dot_style: qrModule.corner_dot_style || 'square' },
+            schema: [this.selectField('corner_dot_style', [
+              { value: 'square', label: localize('editor.qr_code.cd_square', lang, 'Square') },
+              { value: 'dot', label: localize('editor.qr_code.cd_dot', lang, 'Dot') },
+            ])],
+            onChange: (e: CustomEvent) => { updateModule({ corner_dot_style: e.detail.value.corner_dot_style as QrCodeModule['corner_dot_style'] }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+          },
+        ]
+      )}
 
       <!-- Logo -->
-      <div
-        class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
-      >
-        <div
-          class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
-        >
-          ${localize('editor.qr_code.logo_title', lang, 'LOGO / ICON')}
-        </div>
-        ${this.renderCheckbox(
-          localize('editor.qr_code.logo_enabled', lang, 'Show logo in center'),
-          qrModule.logo_enabled ?? false,
-          (v: boolean) => updateModule({ logo_enabled: v })
-        )}
-        ${qrModule.logo_enabled
-          ? html`
-              <!-- Logo source type selector -->
-              ${this.renderSelect(
-                localize('editor.qr_code.logo_image_type', lang, 'Logo source'),
-                qrModule.logo_image_type || 'url',
-                [
-                  { value: 'url',       label: localize('editor.qr_code.logo_source_url',       lang, 'Image URL') },
-                  { value: 'upload',    label: localize('editor.qr_code.logo_source_upload',    lang, 'Upload Image') },
-                  { value: 'entity',    label: localize('editor.qr_code.logo_source_entity',    lang, 'Entity Image') },
-                  { value: 'attribute', label: localize('editor.qr_code.logo_source_attribute', lang, 'Entity Attribute') },
-                ],
-                (v: string) => {
-                  const next = v as QrCodeModule['logo_image_type'];
-                  updateModule({ logo_image_type: next });
-                },
-                localize('editor.qr_code.logo_image_type_desc', lang, 'Where to load the logo image from')
-              )}
+      ${this.renderSettingsSection(
+        localize('editor.qr_code.logo_title', lang, 'Logo / Icon'),
+        '',
+        [
+          {
+            title: localize('editor.qr_code.logo_enabled', lang, 'Show logo in center'),
+            description: '',
+            hass,
+            data: { logo_enabled: qrModule.logo_enabled ?? false },
+            schema: [this.booleanField('logo_enabled')],
+            onChange: (e: CustomEvent) => { updateModule({ logo_enabled: e.detail.value.logo_enabled }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+          },
+        ]
+      )}
+      ${qrModule.logo_enabled
+        ? html`
+            ${this.renderFieldSection(
+              localize('editor.qr_code.logo_image_type', lang, 'Logo source'),
+              localize('editor.qr_code.logo_image_type_desc', lang, 'Where to load the logo image from'),
+              hass,
+              { logo_image_type: qrModule.logo_image_type || 'url' },
+              [this.selectField('logo_image_type', [
+                { value: 'url',       label: localize('editor.qr_code.logo_source_url',       lang, 'Image URL') },
+                { value: 'upload',    label: localize('editor.qr_code.logo_source_upload',    lang, 'Upload Image') },
+                { value: 'entity',    label: localize('editor.qr_code.logo_source_entity',    lang, 'Entity Image') },
+                { value: 'attribute', label: localize('editor.qr_code.logo_source_attribute', lang, 'Entity Attribute') },
+              ])],
+              (e: CustomEvent) => { updateModule({ logo_image_type: e.detail.value.logo_image_type as QrCodeModule['logo_image_type'] }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
+            )}
 
-              <!-- URL source -->
-              ${(qrModule.logo_image_type || 'url') === 'url'
-                ? html`
-                    ${this.renderTextInput(
-                      localize('editor.qr_code.logo_url', lang, 'Logo image URL'),
-                      qrModule.logo_url || '',
-                      (v: string) => {
-                        if (v !== qrModule.logo_url) {
-                          logoDataUrlCache.delete(qrModule.logo_url || '');
-                          logoDataUrlCache.delete(v);
-                          // Also clear any resolved-URL cache entries
-                          for (const k of [...qrDataUrlCache.keys()]) {
-                            if (k.includes('logo:')) qrDataUrlCache.delete(k);
-                          }
-                        }
-                        updateModule({ logo_url: v });
-                      },
-                      'https://example.com/logo.png',
-                      localize('editor.qr_code.logo_url_desc', lang, 'Direct URL to a PNG, JPG, or SVG image. Use /local/ paths for best results.')
-                    )}
-                    ${qrModule.logo_url && logoDataUrlCache.get(qrModule.logo_url) === ''
-                      ? html`
-                          <div
-                            style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-bottom:12px;background:rgba(var(--warning-color-int,255,152,0),0.12);border:1px solid var(--warning-color,#ff9800);border-radius:8px;font-size:13px;"
-                          >
-                            <ha-icon icon="mdi:alert-outline" style="--mdi-icon-size:18px;color:var(--warning-color,#ff9800);flex-shrink:0;margin-top:1px;"></ha-icon>
-                            <div>
-                              <strong>${localize('editor.qr_code.cors_title', lang, 'Image blocked by CORS')}</strong><br/>
-                              <span style="color:var(--secondary-text-color);">
-                                ${localize('editor.qr_code.cors_hint', lang, 'The server rejected cross-origin requests. Copy the image to /config/www/ and use /local/your-image.png instead.')}
-                              </span>
-                            </div>
-                          </div>
-                        `
-                      : ''}
-                  `
-                : ''}
-
-              <!-- Upload source -->
-              ${(qrModule.logo_image_type || 'url') === 'upload'
-                ? html`
-                    <div class="form-field" style="margin-bottom: 16px;">
-                      <label class="form-label" style="font-size: 14px; font-weight: 500; margin-bottom: 4px; display: block;">
-                        ${localize('editor.qr_code.logo_upload_label', lang, 'Upload logo image')}
-                      </label>
-                      <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px;">
-                        ${localize('editor.qr_code.logo_upload_desc', lang, 'Click to upload a PNG, JPG, or SVG from your device.')}
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
-                        @change=${(e: Event) => this._handleLogoFileUpload(e, updateModule, hass)}
-                      />
-                      ${qrModule.logo_url
-                        ? html`
-                            <div style="margin-top: 8px; font-size: 12px; color: var(--secondary-text-color);">
-                              <ha-icon icon="mdi:check-circle" style="--mdi-icon-size:14px; color: var(--success-color, #4caf50);"></ha-icon>
-                              ${localize('editor.qr_code.logo_uploaded', lang, 'Uploaded')}: <code>${qrModule.logo_url}</code>
-                            </div>
-                          `
-                        : ''}
-                    </div>
-                  `
-                : ''}
-
-              <!-- Entity source -->
-              ${(qrModule.logo_image_type || 'url') === 'entity'
-                ? html`
-                    ${this.renderEntityPicker(
-                      localize('editor.qr_code.logo_entity', lang, 'Entity'),
-                      qrModule.logo_image_entity || '',
-                      (v: string) => {
-                        if (v !== qrModule.logo_image_entity) {
-                          logoDataUrlCache.delete(qrModule.logo_url || '');
-                        }
-                        updateModule({ logo_image_entity: v });
-                      },
-                      hass,
-                      undefined,
-                      localize('editor.qr_code.logo_entity_desc', lang, 'Entity with entity_picture or an image URL as its state (e.g. person, image).')
-                    )}
-                  `
-                : ''}
-
-              <!-- Attribute source -->
-              ${(qrModule.logo_image_type || 'url') === 'attribute'
-                ? html`
-                    ${this.renderEntityPicker(
-                      localize('editor.qr_code.logo_entity', lang, 'Entity'),
-                      qrModule.logo_image_entity || '',
-                      (v: string) => {
-                        if (v !== qrModule.logo_image_entity) {
-                          logoDataUrlCache.delete(qrModule.logo_url || '');
-                        }
-                        updateModule({ logo_image_entity: v });
-                      },
-                      hass,
-                      undefined,
-                      localize('editor.qr_code.logo_entity_attr_desc', lang, 'Entity that has an image URL in one of its attributes.')
-                    )}
-                    ${this.renderTextInput(
-                      localize('editor.qr_code.logo_attribute', lang, 'Attribute name'),
-                      qrModule.logo_image_attribute || '',
-                      (v: string) => {
+            ${(qrModule.logo_image_type || 'url') === 'url'
+              ? html`
+                  ${this.renderFieldSection(
+                    localize('editor.qr_code.logo_url', lang, 'Logo image URL'),
+                    localize('editor.qr_code.logo_url_desc', lang, 'Direct URL to a PNG, JPG, or SVG image. Use /local/ paths for best results.'),
+                    hass,
+                    { logo_url: qrModule.logo_url || '' },
+                    [this.textField('logo_url')],
+                    (e: CustomEvent) => {
+                      const v = e.detail.value.logo_url;
+                      if (v !== qrModule.logo_url) {
                         logoDataUrlCache.delete(qrModule.logo_url || '');
-                        updateModule({ logo_image_attribute: v || undefined });
-                      },
-                      'entity_picture',
-                      localize('editor.qr_code.logo_attribute_desc', lang, 'Attribute path containing the image URL (dot notation supported).')
-                    )}
-                  `
-                : ''}
+                        logoDataUrlCache.delete(v);
+                        for (const k of [...qrDataUrlCache.keys()]) {
+                          if (k.includes('logo:')) qrDataUrlCache.delete(k);
+                        }
+                      }
+                      updateModule({ logo_url: v });
+                    }
+                  )}
+                  ${qrModule.logo_url && logoDataUrlCache.get(qrModule.logo_url) === ''
+                    ? html`
+                        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-bottom:12px;background:rgba(var(--warning-color-int,255,152,0),0.12);border:1px solid var(--warning-color,#ff9800);border-radius:8px;font-size:13px;">
+                          <ha-icon icon="mdi:alert-outline" style="--mdi-icon-size:18px;color:var(--warning-color,#ff9800);flex-shrink:0;margin-top:1px;"></ha-icon>
+                          <div>
+                            <strong>${localize('editor.qr_code.cors_title', lang, 'Image blocked by CORS')}</strong><br/>
+                            <span style="color:var(--secondary-text-color);">${localize('editor.qr_code.cors_hint', lang, 'Copy the image to /config/www/ and use /local/your-image.png instead.')}</span>
+                          </div>
+                        </div>
+                      `
+                    : ''}
+                `
+              : ''}
 
-              ${this.renderSliderField(
-                localize('editor.qr_code.logo_size', lang, 'Logo size'),
-                localize('editor.qr_code.logo_size_desc', lang, 'Logo as a fraction of the QR code area (10–30%). Requires error correction H for best results.'),
-                Math.round((qrModule.logo_size ?? 0.25) * 100),
-                25,
-                10,
-                30,
-                5,
-                (v: number) => updateModule({ logo_size: v / 100 }),
-                '%'
-              )}
-              ${this.renderSliderField(
-                localize('editor.qr_code.logo_margin', lang, 'Logo margin'),
-                localize('editor.qr_code.logo_margin_desc', lang, 'Padding around the logo in pixels (keep low — large values shrink the visible logo)'),
-                qrModule.logo_margin ?? 2,
-                2,
-                0,
-                8,
-                1,
-                (v: number) => updateModule({ logo_margin: v }),
-                'px'
-              )}
-              ${(qrModule.error_correction || 'M') !== 'H'
-                ? html`
-                    <div
-                      style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-bottom:12px;background:rgba(var(--info-color-int,33,150,243),0.1);border:1px solid var(--info-color,#2196f3);border-radius:8px;font-size:13px;"
-                    >
-                      <ha-icon icon="mdi:information-outline" style="--mdi-icon-size:18px;color:var(--info-color,#2196f3);flex-shrink:0;margin-top:1px;"></ha-icon>
-                      <div>
-                        <strong>${localize('editor.qr_code.logo_ec_tip_title', lang, 'Tip: use H error correction')}</strong><br/>
-                        <span style="color:var(--secondary-text-color);">
-                          ${localize('editor.qr_code.logo_ec_tip', lang, 'Set error correction to H (30%) in the Advanced section for the best logo clarity. Lower levels shrink the logo to protect readability.')}
-                        </span>
-                      </div>
+            ${(qrModule.logo_image_type || 'url') === 'upload'
+              ? html`
+                  <div class="field-title">${localize('editor.qr_code.logo_upload_label', lang, 'Upload logo image')}</div>
+                  <div class="field-description">${localize('editor.qr_code.logo_upload_desc', lang, 'Click to upload a PNG, JPG, or SVG from your device.')}</div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); margin-bottom: 16px;"
+                    @change=${(e: Event) => this._handleLogoFileUpload(e, updateModule, hass)}
+                  />
+                  ${qrModule.logo_url ? html`<div style="font-size:12px;color:var(--secondary-text-color);"><ha-icon icon="mdi:check-circle" style="--mdi-icon-size:14px;color:var(--success-color,#4caf50);"></ha-icon> ${localize('editor.qr_code.logo_uploaded', lang, 'Uploaded')}: <code>${qrModule.logo_url}</code></div>` : ''}
+                `
+              : ''}
+
+            ${(qrModule.logo_image_type || 'url') === 'entity'
+              ? this.renderEntityPickerWithVariables(
+                  hass, config, 'logo_image_entity', qrModule.logo_image_entity || '',
+                  (value: string) => {
+                    if (value !== qrModule.logo_image_entity) logoDataUrlCache.delete(qrModule.logo_url || '');
+                    updateModule({ logo_image_entity: value });
+                  },
+                  undefined,
+                  localize('editor.qr_code.logo_entity', lang, 'Entity')
+                )
+              : ''}
+
+            ${(qrModule.logo_image_type || 'url') === 'attribute'
+              ? html`
+                  ${this.renderEntityPickerWithVariables(
+                    hass, config, 'logo_image_entity', qrModule.logo_image_entity || '',
+                    (value: string) => {
+                      if (value !== qrModule.logo_image_entity) logoDataUrlCache.delete(qrModule.logo_url || '');
+                      updateModule({ logo_image_entity: value });
+                    },
+                    undefined,
+                    localize('editor.qr_code.logo_entity', lang, 'Entity')
+                  )}
+                  ${this.renderFieldSection(
+                    localize('editor.qr_code.logo_attribute', lang, 'Attribute name'),
+                    localize('editor.qr_code.logo_attribute_desc', lang, 'Attribute path containing the image URL (dot notation supported).'),
+                    hass,
+                    { logo_image_attribute: qrModule.logo_image_attribute || '' },
+                    [this.textField('logo_image_attribute')],
+                    (e: CustomEvent) => {
+                      logoDataUrlCache.delete(qrModule.logo_url || '');
+                      updateModule({ logo_image_attribute: e.detail.value.logo_image_attribute || undefined });
+                    }
+                  )}
+                `
+              : ''}
+
+            ${this.renderSliderField(
+              localize('editor.qr_code.logo_size', lang, 'Logo size'),
+              localize('editor.qr_code.logo_size_desc', lang, 'Logo as a fraction of the QR code area (10–30%).'),
+              Math.round((qrModule.logo_size ?? 0.25) * 100), 25, 10, 30, 5,
+              (v: number) => { updateModule({ logo_size: v / 100 }); setTimeout(() => this.triggerPreviewUpdate(), 50); }, '%'
+            )}
+            ${this.renderSliderField(
+              localize('editor.qr_code.logo_margin', lang, 'Logo margin'),
+              localize('editor.qr_code.logo_margin_desc', lang, 'Padding around the logo in pixels.'),
+              qrModule.logo_margin ?? 2, 2, 0, 8, 1,
+              (v: number) => { updateModule({ logo_margin: v }); setTimeout(() => this.triggerPreviewUpdate(), 50); }, 'px'
+            )}
+            ${(qrModule.error_correction || 'M') !== 'H'
+              ? html`
+                  <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-bottom:12px;background:rgba(var(--info-color-int,33,150,243),0.1);border:1px solid var(--info-color,#2196f3);border-radius:8px;font-size:13px;">
+                    <ha-icon icon="mdi:information-outline" style="--mdi-icon-size:18px;color:var(--info-color,#2196f3);flex-shrink:0;margin-top:1px;"></ha-icon>
+                    <div>
+                      <strong>${localize('editor.qr_code.logo_ec_tip_title', lang, 'Tip: use H error correction')}</strong><br/>
+                      <span style="color:var(--secondary-text-color);">${localize('editor.qr_code.logo_ec_tip', lang, 'Set error correction to H (30%) in the Advanced section for the best logo clarity.')}</span>
                     </div>
-                  `
-                : ''}
-              ${this.renderCheckbox(
-                localize('editor.qr_code.logo_hide_bg_dots', lang, 'Hide dots behind logo'),
-                qrModule.logo_hide_bg_dots !== false,
-                (v: boolean) => updateModule({ logo_hide_bg_dots: v })
-              )}
-            `
-          : ''}
-      </div>
+                  </div>
+                `
+              : ''}
+            ${this.renderFieldSection(
+              localize('editor.qr_code.logo_hide_bg_dots', lang, 'Hide dots behind logo'),
+              '',
+              hass,
+              { logo_hide_bg_dots: qrModule.logo_hide_bg_dots !== false },
+              [this.booleanField('logo_hide_bg_dots')],
+              (e: CustomEvent) => { updateModule({ logo_hide_bg_dots: e.detail.value.logo_hide_bg_dots }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
+            )}
+          `
+        : ''}
 
       <!-- Advanced -->
-      <div
-        class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
-      >
-        <div
-          class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px;"
-        >
-          ${localize('editor.qr_code.advanced_title', lang, 'ADVANCED')}
-        </div>
-        <div class="form-field" style="margin-bottom: 16px;">
-          <label class="form-label">${localize('editor.qr_code.fg_color', lang, 'Foreground color')}</label>
-          <ultra-color-picker
-            .label="${''}"
-            .value="${qrModule.fg_color || '#000000'}"
-            .defaultValue="${'#000000'}"
-            .hass="${hass}"
-            @value-changed="${(e: CustomEvent) => updateModule({ fg_color: e.detail.value })}"
-          ></ultra-color-picker>
-        </div>
-        <div class="form-field" style="margin-bottom: 16px;">
-          <label class="form-label">${localize('editor.qr_code.bg_color', lang, 'Background color')}</label>
-          <ultra-color-picker
-            .label="${''}"
-            .value="${qrModule.bg_color || '#ffffff'}"
-            .defaultValue="${'#ffffff'}"
-            .hass="${hass}"
-            @value-changed="${(e: CustomEvent) => updateModule({ bg_color: e.detail.value })}"
-          ></ultra-color-picker>
-        </div>
-        ${this.renderSelect(
+      <div class="settings-section" style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;">
+        <div class="section-title">${localize('editor.qr_code.advanced_title', lang, 'Advanced')}</div>
+        <div class="field-title" style="margin-top: 8px;">${localize('editor.qr_code.fg_color', lang, 'Foreground color')}</div>
+        <ultra-color-picker
+          .label="${''}"
+          .value="${qrModule.fg_color || '#000000'}"
+          .defaultValue="${'#000000'}"
+          .hass="${hass}"
+          @value-changed="${(e: CustomEvent) => { updateModule({ fg_color: e.detail.value }); setTimeout(() => this.triggerPreviewUpdate(), 50); }}"
+        ></ultra-color-picker>
+        <div class="field-title" style="margin-top: 16px;">${localize('editor.qr_code.bg_color', lang, 'Background color')}</div>
+        <ultra-color-picker
+          .label="${''}"
+          .value="${qrModule.bg_color || '#ffffff'}"
+          .defaultValue="${'#ffffff'}"
+          .hass="${hass}"
+          @value-changed="${(e: CustomEvent) => { updateModule({ bg_color: e.detail.value }); setTimeout(() => this.triggerPreviewUpdate(), 50); }}"
+        ></ultra-color-picker>
+        ${this.renderFieldSection(
           localize('editor.qr_code.error_correction', lang, 'Error correction'),
-          qrModule.error_correction || 'M',
-          [
+          localize('editor.qr_code.error_correction_desc', lang, 'Higher = more damage tolerance, larger code'),
+          hass,
+          { error_correction: qrModule.error_correction || 'M' },
+          [this.selectField('error_correction', [
             { value: 'L', label: 'L (7%)' },
             { value: 'M', label: 'M (15%)' },
             { value: 'Q', label: 'Q (25%)' },
             { value: 'H', label: 'H (30%)' },
-          ],
-          (v: string) => updateModule({ error_correction: v as 'L' | 'M' | 'Q' | 'H' }),
-          localize('editor.qr_code.error_correction_desc', lang, 'Higher = more damage tolerance, larger code')
+          ])],
+          (e: CustomEvent) => { updateModule({ error_correction: e.detail.value.error_correction as 'L' | 'M' | 'Q' | 'H' }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
         )}
         ${this.renderSliderField(
           localize('editor.qr_code.quiet_zone', lang, 'Quiet zone (margin)'),
           localize('editor.qr_code.quiet_zone_desc', lang, 'Modules around the QR code (0–10)'),
-          qrModule.qr_margin ?? 1,
-          1,
-          0,
-          10,
-          1,
-          (v: number) => updateModule({ qr_margin: v })
+          qrModule.qr_margin ?? 1, 1, 0, 10, 1,
+          (v: number) => { updateModule({ qr_margin: v }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
         )}
       </div>
     `;
@@ -947,20 +860,23 @@ export class UltraQrCodeModule extends BaseUltraModule {
         `
       : '';
 
-    return html`
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    return this.wrapWithAnimation(html`
       <div
-        class="qr-code-module-preview"
+        class="qr-code-module-preview ${hoverClass}"
         @pointerdown="${handlers.onPointerDown}"
         @pointerup="${handlers.onPointerUp}"
         @pointerleave="${handlers.onPointerLeave}"
         @pointercancel="${handlers.onPointerCancel}"
-        style="cursor: ${qrModule.tap_action?.action !== 'nothing' ? 'pointer' : 'default'};"
+        style="${designStyles}; cursor: ${qrModule.tap_action?.action !== 'nothing' ? 'pointer' : 'default'};"
       >
         ${labelBelow ? imgEl : labelEl}
         ${labelBelow ? labelEl : imgEl}
         ${corsWarningEl}
       </div>
-    `;
+    `, module, hass);
   }
 
   private async _handleLogoFileUpload(
@@ -983,7 +899,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
       updateModule({ logo_url: imagePath, logo_image_type: 'upload' });
     } catch (error) {
       console.error('Error uploading logo file:', error);
-      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      ucToastService.error(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -1010,6 +926,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
       .qr-code-module-preview img {
         display: block;
       }

@@ -225,22 +225,14 @@ export class UltraAccordionModule extends BaseUltraModule {
                     'Entity Title Configuration'
                   ),
                   html`
-                    ${this.renderFieldSection(
-                      localize('editor.accordion.title.entity', lang, 'Title Entity'),
-                      localize(
-                        'editor.accordion.title.entity_desc',
-                        lang,
-                        'Select an entity whose state will be used as the title.'
-                      ),
-                      hass,
-                      { title_entity: accordionModule.title_entity || '' },
-                      [this.entityField('title_entity')],
-                      (e: CustomEvent) => {
-                        updateModule(e.detail.value);
-                        setTimeout(() => {
-                          this.triggerPreviewUpdate();
-                        }, 50);
-                      }
+                    ${this.renderEntityPickerWithVariables(
+                      hass, config, 'title_entity', accordionModule.title_entity || '',
+                      (value: string) => {
+                        updateModule({ title_entity: value });
+                        setTimeout(() => { this.triggerPreviewUpdate(); }, 50);
+                      },
+                      undefined,
+                      localize('editor.accordion.title.entity', lang, 'Title Entity')
                     )}
 
                     <!-- Show Entity Name Toggle -->
@@ -1140,13 +1132,11 @@ export class UltraAccordionModule extends BaseUltraModule {
                 ${(() => {
                   if ((cond.type || 'entity_state') === 'entity_state') {
                     return html`
-                      ${this.renderFieldSection(
-                        localize('editor.accordion.open_logic.entity', lang, 'Entity'),
-                        '',
-                        hass,
-                        { entity: cond.entity || '' },
-                        [this.entityField('entity')],
-                        (e: CustomEvent) => onChange(e.detail.value)
+                      ${this.renderEntityPickerWithVariables(
+                        hass, undefined as any, 'entity', cond.entity || '',
+                        (value: string) => onChange({ entity: value }),
+                        undefined,
+                        localize('editor.accordion.open_logic.entity', lang, 'Entity')
                       )}
                       ${this.renderFieldSection(
                         localize('editor.accordion.open_logic.operator', lang, 'Operator'),
@@ -1182,13 +1172,11 @@ export class UltraAccordionModule extends BaseUltraModule {
 
                   if (cond.type === 'entity_attribute') {
                     return html`
-                      ${this.renderFieldSection(
-                        localize('editor.accordion.open_logic.entity', lang, 'Entity'),
-                        '',
-                        hass,
-                        { entity: cond.entity || '' },
-                        [this.entityField('entity')],
-                        (e: CustomEvent) => onChange(e.detail.value)
+                      ${this.renderEntityPickerWithVariables(
+                        hass, undefined as any, 'entity', cond.entity || '',
+                        (value: string) => onChange({ entity: value }),
+                        undefined,
+                        localize('editor.accordion.open_logic.entity', lang, 'Entity')
                       )}
                       ${this.renderFieldSection(
                         localize('editor.accordion.open_logic.attribute', lang, 'Attribute'),
@@ -1297,6 +1285,8 @@ export class UltraAccordionModule extends BaseUltraModule {
     const moduleWithDesign = accordionModule as any;
     const d = moduleWithDesign.design || {};
     const lang = hass?.locale?.language || 'en';
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+    const hoverClass = this.getHoverEffectClass(module);
 
     // Evaluate open/close logic
     const openMode = accordionModule.open_mode || 'manual';
@@ -1345,7 +1335,7 @@ export class UltraAccordionModule extends BaseUltraModule {
         titleText = entityStateValue;
       }
     } else {
-      titleText = accordionModule.title_text || 'Accordion Title';
+      titleText = accordionModule.title_text || localize('editor.accordion.preview.title_fallback', lang, 'Accordion Title');
     }
 
     // Get the control icon (chevron)
@@ -1471,20 +1461,20 @@ export class UltraAccordionModule extends BaseUltraModule {
     // Generate unique ID for scoped hover styles
     const accordionId = `accordion-${accordionModule.id.replace(/[^a-zA-Z0-9]/g, '')}`;
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         .${accordionId} .ultra-accordion-header:hover {
           background: ${headerHoverColor} !important;
         }
       </style>
       <div
-        class="ultra-accordion-container ${accordionId}"
-        style=${this.styleObjectToCss(containerStyles)}
+        class="ultra-accordion-container ${hoverClass} ${accordionId}"
+        style="${this.buildStyleString(containerStyles)}; ${designStyles}"
       >
         <!-- Accordion Header -->
         <div
           class="ultra-accordion-header"
-          style=${this.styleObjectToCss(headerStyles)}
+          style="${this.buildStyleString(headerStyles)}"
           role="button"
           tabindex="0"
           aria-expanded="${isOpen}"
@@ -1498,19 +1488,19 @@ export class UltraAccordionModule extends BaseUltraModule {
           }}
         >
           <!-- Title -->
-          <span class="ultra-accordion-title" style=${this.styleObjectToCss(titleStyles)}
+          <span class="ultra-accordion-title" style="${this.buildStyleString(titleStyles)}"
             >${titleText}</span
           >
 
           <!-- Control Icon (Chevron) -->
           <ha-icon
             icon="${iconToDisplay}"
-            style=${this.styleObjectToCss(chevronStyles) + `; --mdc-icon-size: ${iconSize}px;`}
+            style="${this.buildStyleString(chevronStyles)}; --mdc-icon-size: ${iconSize}px;"
           ></ha-icon>
         </div>
 
         <!-- Accordion Content -->
-        <div class="ultra-accordion-content" style=${this.styleObjectToCss(contentStyles)}>
+        <div class="ultra-accordion-content" style="${this.buildStyleString(contentStyles)}">
           ${isOpen && hasChildren
             ? accordionModule.modules.map(childModule => {
                 const childModuleHandler = registry.getModule(childModule.type);
@@ -1570,18 +1560,7 @@ export class UltraAccordionModule extends BaseUltraModule {
               : ''}
         </div>
       </div>
-    `;
-  }
-
-  // Helper method to convert style object to CSS string
-  private styleObjectToCss(styles: Record<string, string | number>): string {
-    return Object.entries(styles)
-      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
-      .join('; ');
-  }
-
-  private camelToKebab(str: string): string {
-    return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+    `, module, hass);
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {

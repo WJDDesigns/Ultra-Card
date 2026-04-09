@@ -5,7 +5,6 @@ import { CardModule, GraphsModule, GraphEntityConfig, UltraCardConfig } from '..
 import { TemplateService } from '../services/template-service';
 import { buildEntityContext, buildMultiEntityContext } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
@@ -278,7 +277,7 @@ export class UltraGraphsModule extends BaseUltraModule {
 
     return html`
       <div class="uc-graphs-general-tab">
-        ${FormUtils.injectCleanFormStyles()}
+        ${this.injectUcFormStyles()}
         <style>
           .uc-graphs-general-tab {
             padding: 8px;
@@ -451,39 +450,26 @@ export class UltraGraphsModule extends BaseUltraModule {
 
         <!-- Chart Type Section -->
         <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
-        >
-          <div
-            class="section-title"
-            style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"
-          >
-            <ha-icon icon="mdi:chart-line" style="color: var(--primary-color);"></ha-icon>
-            ${localize('editor.graphs.chart_type.title', lang, 'Chart Type')}
-          </div>
-
-          ${this.renderFieldSection(
-            localize('editor.graphs.chart_type.type', lang, 'Type'),
-            localize(
-              'editor.graphs.chart_type.desc',
-              lang,
-              'Select the visualization style for your data.'
-            ),
-            hass,
-            { chart_type: graphsModule.chart_type },
-            [this.selectField('chart_type', this.getChartTypeOptions(lang))],
-            (e: CustomEvent) => {
-              const next = e.detail.value.chart_type;
-              const prev = graphsModule.chart_type;
-              if (next === prev) return;
-              updateModule({ chart_type: next });
-              // Trigger re-render to update dropdown UI
-              setTimeout(() => {
-                this.triggerPreviewUpdate();
-              }, 50);
-            }
+          ${this.renderSettingsSection(
+            localize('editor.graphs.chart_type.title', lang, 'Chart Type'),
+            '',
+            [
+              {
+                title: localize('editor.graphs.chart_type.type', lang, 'Type'),
+                description: localize('editor.graphs.chart_type.desc', lang, 'Select the visualization style for your data.'),
+                hass,
+                data: { chart_type: graphsModule.chart_type },
+                schema: [this.selectField('chart_type', this.getChartTypeOptions(lang))],
+                onChange: (e: CustomEvent) => {
+                  const next = e.detail.value.chart_type;
+                  const prev = graphsModule.chart_type;
+                  if (next === prev) return;
+                  updateModule({ chart_type: next });
+                  setTimeout(() => { this.triggerPreviewUpdate(); }, 50);
+                }
+              }
+            ]
           )}
-        </div>
 
         <!-- Data Sources Section -->
         <div
@@ -890,42 +876,17 @@ export class UltraGraphsModule extends BaseUltraModule {
                               <div
                                 style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;"
                               >
-                                <div>
-                                  <label
-                                    style="display: block; font-size: 13px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
-                                  >
-                                    ${localize(
-                                      'editor.graphs.line.line_width',
-                                      lang,
-                                      'Line Width'
-                                    )}:
-                                    ${entity.line_width || 2}px
-                                  </label>
-                                  <input
-                                    type="range"
-                                    min="1"
-                                    max="8"
-                                    step="1"
-                                    .value=${entity.line_width || 2}
-                                    @input=${(e: Event) => {
-                                      const target = e.target as HTMLInputElement;
-                                      this._updateEntity(
-                                        graphsModule,
-                                        index,
-                                        { line_width: parseInt(target.value) },
-                                        updateModule
-                                      );
-                                    }}
-                                    style="
-                                      width: 100%;
-                                      height: 4px;
-                                      background: var(--divider-color);
-                                      border-radius: 2px;
-                                      outline: none;
-                                      -webkit-appearance: none;
-                                    "
-                                  />
-                                </div>
+                              ${this.renderSliderField(
+                                localize('editor.graphs.line.line_width', lang, 'Line Width'),
+                                '',
+                                entity.line_width || 2,
+                                2,
+                                1,
+                                8,
+                                1,
+                                (value: number) => this._updateEntity(graphsModule, index, { line_width: value }, updateModule),
+                                'px'
+                              )}
 
                                 ${this.renderFieldSection(
                                   localize('editor.graphs.line.line_style', lang, 'Line Style'),
@@ -1188,154 +1149,32 @@ export class UltraGraphsModule extends BaseUltraModule {
 
             <!-- Title Font Size -->
             ${(graphsModule as any).show_title !== false
-              ? html`<div>
-                  <label
-                    style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
-                  >
-                    ${localize('editor.graphs.display.title_font_size', lang, 'Title Font Size')}
-                  </label>
-                  <div
-                    style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; box-sizing: border-box; width: 100%;"
-                  >
-                    <input
-                      type="range"
-                      min="8"
-                      max="32"
-                      step="1"
-                      .value=${(graphsModule as any).title_font_size ?? 12}
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const val = parseInt(target.value);
-                        updateModule({ title_font_size: val } as any);
-                      }}
-                      style="
-                        width: 100%;
-                        height: 4px;
-                        background: var(--divider-color);
-                        border-radius: 2px;
-                        outline: none;
-                        -webkit-appearance: none;
-                      "
-                    />
-                    <span
-                      style="font-size: 13px; color: var(--secondary-text-color); min-width: 56px; text-align: right;"
-                      >${(graphsModule as any).title_font_size ?? 12}px</span
-                    >
-                    <button
-                      @click=${() => updateModule({ title_font_size: 12 } as any)}
-                      title="${localize(
-                        'editor.fields.reset_default_value',
-                        lang,
-                        'Reset to default ({value})'
-                      ).replace('{value}', '12px')}"
-                      style="
-                        width: 32px;
-                        height: 32px;
-                        padding: 0;
-                        border: 1px solid var(--divider-color);
-                        border-radius: 4px;
-                        background: var(--secondary-background-color);
-                        color: var(--primary-text-color);
-                        cursor: pointer;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        transition: all 0.2s ease;
-                        flex-shrink: 0;
-                      "
-                      @mouseenter=${(e: Event) => {
-                        const btn = e.target as HTMLButtonElement;
-                        btn.style.background = 'var(--primary-color)';
-                        btn.style.color = 'var(--text-primary-color)';
-                        btn.style.borderColor = 'var(--primary-color)';
-                      }}
-                      @mouseleave=${(e: Event) => {
-                        const btn = e.target as HTMLButtonElement;
-                        btn.style.background = 'var(--secondary-background-color)';
-                        btn.style.color = 'var(--primary-text-color)';
-                        btn.style.borderColor = 'var(--divider-color)';
-                      }}
-                    >
-                      <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
-                    </button>
-                  </div>
-                </div>`
+              ? this.renderSliderField(
+                  localize('editor.graphs.display.title_font_size', lang, 'Title Font Size'),
+                  '',
+                  (graphsModule as any).title_font_size ?? 12,
+                  12,
+                  8,
+                  32,
+                  1,
+                  (value: number) => updateModule({ title_font_size: value } as any),
+                  'px'
+                )
               : ''}
 
             <!-- Value Font Size -->
             ${(graphsModule as any).show_entity_value !== false
-              ? html`<div>
-                  <label
-                    style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
-                  >
-                    ${localize('editor.graphs.display.value_font_size', lang, 'Value Font Size')}
-                  </label>
-                  <div
-                    style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; box-sizing: border-box; width: 100%;"
-                  >
-                    <input
-                      type="range"
-                      min="10"
-                      max="48"
-                      step="1"
-                      .value=${(graphsModule as any).value_font_size ?? 16}
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const val = parseInt(target.value);
-                        updateModule({ value_font_size: val } as any);
-                      }}
-                      style="
-                        width: 100%;
-                        height: 4px;
-                        background: var(--divider-color);
-                        border-radius: 2px;
-                        outline: none;
-                        -webkit-appearance: none;
-                      "
-                    />
-                    <span
-                      style="font-size: 13px; color: var(--secondary-text-color); min-width: 56px; text-align: right;"
-                      >${(graphsModule as any).value_font_size ?? 16}px</span
-                    >
-                    <button
-                      @click=${() => updateModule({ value_font_size: 16 } as any)}
-                      title="${localize(
-                        'editor.fields.reset_default_value',
-                        lang,
-                        'Reset to default ({value})'
-                      ).replace('{value}', '16px')}"
-                      style="
-                        width: 32px;
-                        height: 32px;
-                        padding: 0;
-                        border: 1px solid var(--divider-color);
-                        border-radius: 4px;
-                        background: var(--secondary-background-color);
-                        color: var(--primary-text-color);
-                        cursor: pointer;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        transition: all 0.2s ease;
-                        flex-shrink: 0;
-                      "
-                      @mouseenter=${(e: Event) => {
-                        const btn = e.target as HTMLButtonElement;
-                        btn.style.background = 'var(--primary-color)';
-                        btn.style.color = 'var(--text-primary-color)';
-                        btn.style.borderColor = 'var(--primary-color)';
-                      }}
-                      @mouseleave=${(e: Event) => {
-                        const btn = e.target as HTMLButtonElement;
-                        btn.style.background = 'var(--secondary-background-color)';
-                        btn.style.color = 'var(--primary-text-color)';
-                        btn.style.borderColor = 'var(--divider-color)';
-                      }}
-                    >
-                      <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
-                    </button>
-                  </div>
-                </div>`
+              ? this.renderSliderField(
+                  localize('editor.graphs.display.value_font_size', lang, 'Value Font Size'),
+                  '',
+                  (graphsModule as any).value_font_size ?? 16,
+                  16,
+                  10,
+                  48,
+                  1,
+                  (value: number) => updateModule({ value_font_size: value } as any),
+                  'px'
+                )
               : ''}
 
             <!-- Time Period (History Mode Only) -->
@@ -1725,155 +1564,30 @@ export class UltraGraphsModule extends BaseUltraModule {
               : ''}
 
             <!-- Chart Height -->
-            <div>
-              <label
-                style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
-              >
-                ${localize('editor.graphs.display.chart_height', lang, 'Chart Height')}
-              </label>
-              <div
-                style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; box-sizing: border-box; width: 100%;"
-              >
-                <input
-                  type="range"
-                  min="80"
-                  max="400"
-                  step="5"
-                  .value=${graphsModule.chart_height ?? 345}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const val = parseInt(target.value);
-                    updateModule({ chart_height: val });
-                  }}
-                  style="
-                    width: 100%;
-                    height: 4px;
-                    background: var(--divider-color);
-                    border-radius: 2px;
-                    outline: none;
-                    -webkit-appearance: none;
-                  "
-                />
-                <span
-                  style="font-size: 13px; color: var(--secondary-text-color); min-width: 56px; text-align: right;"
-                  >${graphsModule.chart_height ?? 345}px</span
-                >
-                <button
-                  @click=${() => updateModule({ chart_height: 345 })}
-                  title="${localize(
-                    'editor.fields.reset_default_value',
-                    lang,
-                    'Reset to default ({value})'
-                  ).replace('{value}', '345px')}"
-                  style="
-                    width: 32px;
-                    height: 32px;
-                    padding: 0;
-                    border: 1px solid var(--divider-color);
-                    border-radius: 4px;
-                    background: var(--secondary-background-color);
-                    color: var(--primary-text-color);
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transition: all 0.2s ease;
-                    flex-shrink: 0;
-                  "
-                  @mouseenter=${(e: Event) => {
-                    const btn = e.target as HTMLButtonElement;
-                    btn.style.background = 'var(--primary-color)';
-                    btn.style.color = 'var(--text-primary-color)';
-                    btn.style.borderColor = 'var(--primary-color)';
-                  }}
-                  @mouseleave=${(e: Event) => {
-                    const btn = e.target as HTMLButtonElement;
-                    btn.style.background = 'var(--secondary-background-color)';
-                    btn.style.color = 'var(--primary-text-color)';
-                    btn.style.borderColor = 'var(--divider-color)';
-                  }}
-                >
-                  <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
-                </button>
-              </div>
-            </div>
+            ${this.renderSliderField(
+              localize('editor.graphs.display.chart_height', lang, 'Chart Height'),
+              '',
+              graphsModule.chart_height ?? 345,
+              345,
+              80,
+              400,
+              5,
+              (value: number) => updateModule({ chart_height: value }),
+              'px'
+            )}
 
             <!-- Chart Width (%) -->
-            <div>
-              <label
-                style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
-              >
-                ${localize('editor.graphs.display.chart_width', lang, 'Chart Width (%)')}
-              </label>
-              <div
-                style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; box-sizing: border-box; width: 100%;"
-              >
-                <input
-                  type="range"
-                  min="10"
-                  max="100"
-                  step="1"
-                  .value=${(graphsModule as any).chart_width_percent ?? 100}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const val = Math.max(10, Math.min(100, parseInt(target.value)));
-                    updateModule({ chart_width_percent: val } as any);
-                  }}
-                  style="
-                    width: 100%;
-                    height: 4px;
-                    background: var(--divider-color);
-                    border-radius: 2px;
-                    outline: none;
-                    -webkit-appearance: none;
-                  "
-                />
-                <span
-                  style="font-size: 13px; color: var(--secondary-text-color); min-width: 56px; text-align: right;"
-                  >${(graphsModule as any).chart_width_percent ?? 100}%</span
-                >
-                <button
-                  @click=${() => updateModule({ chart_width_percent: 100 } as any)}
-                  title="Reset to default (100%)"
-                  style="
-                    width: 32px;
-                    height: 32px;
-                    padding: 0;
-                    border: 1px solid var(--divider-color);
-                    border-radius: 4px;
-                    background: var(--secondary-background-color);
-                    color: var(--primary-text-color);
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transition: all 0.2s ease;
-                    flex-shrink: 0;
-                  "
-                  @mouseenter=${(e: Event) => {
-                    const btn = e.target as HTMLButtonElement;
-                    btn.style.background = 'var(--primary-color)';
-                    btn.style.color = 'var(--text-primary-color)';
-                    btn.style.borderColor = 'var(--primary-color)';
-                  }}
-                  @mouseleave=${(e: Event) => {
-                    const btn = e.target as HTMLButtonElement;
-                    btn.style.background = 'var(--secondary-background-color)';
-                    btn.style.color = 'var(--primary-text-color)';
-                    btn.style.borderColor = 'var(--divider-color)';
-                  }}
-                >
-                  <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
-                </button>
-              </div>
-              <div style="font-size: 12px; color: var(--secondary-text-color); margin-top: 4px;">
-                ${localize(
-                  'editor.graphs.display.chart_width_desc',
-                  lang,
-                  'Percentage of the available module width. Alignment controls placement.'
-                )}
-              </div>
-            </div>
+            ${this.renderSliderField(
+              localize('editor.graphs.display.chart_width', lang, 'Chart Width (%)'),
+              localize('editor.graphs.display.chart_width_desc', lang, 'Percentage of the available module width. Alignment controls placement.'),
+              (graphsModule as any).chart_width_percent ?? 100,
+              100,
+              10,
+              100,
+              1,
+              (value: number) => updateModule({ chart_width_percent: value } as any),
+              '%'
+            )}
             ${this.renderFieldSection(
               localize('editor.graphs.display.info_position', lang, 'Info Position'),
               localize(
@@ -2023,95 +1737,17 @@ export class UltraGraphsModule extends BaseUltraModule {
 
             <!-- Bar Display Limit (Only for Bar Charts) -->
             ${graphsModule.chart_type === 'bar'
-              ? html`
-                  <div>
-                    <label
-                      style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
-                    >
-                      ${localize(
-                        'editor.graphs.display.bar_display_limit',
-                        lang,
-                        'Max Bars to Display'
-                      )}
-                    </label>
-                    <div
-                      style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;"
-                    >
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        .value=${graphsModule.bar_display_limit ?? 0}
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          const val = Math.max(0, Math.min(100, parseInt(target.value)));
-                          updateModule({ bar_display_limit: val });
-                        }}
-                        style="
-                          width: 100%;
-                          height: 4px;
-                          background: var(--divider-color);
-                          border-radius: 2px;
-                          outline: none;
-                          -webkit-appearance: none;
-                        "
-                      />
-                      <span
-                        style="font-size: 13px; color: var(--secondary-text-color); min-width: 80px; text-align: right;"
-                        >${(graphsModule.bar_display_limit ?? 0) === 0
-                          ? 'Unlimited'
-                          : `${graphsModule.bar_display_limit ?? 0} bars`}</span
-                      >
-                      <button
-                        @click=${() => updateModule({ bar_display_limit: 0 })}
-                        title="${localize(
-                          'editor.fields.reset_default_value',
-                          lang,
-                          'Reset to default (Unlimited)'
-                        )}"
-                        style="
-                          width: 32px;
-                          height: 32px;
-                          padding: 0;
-                          border: 1px solid var(--divider-color);
-                          border-radius: 4px;
-                          background: var(--secondary-background-color);
-                          color: var(--primary-text-color);
-                          cursor: pointer;
-                          display: flex;
-                          align-items: center;
-                          justify-content: center;
-                          transition: all 0.2s ease;
-                          flex-shrink: 0;
-                        "
-                        @mouseenter=${(e: Event) => {
-                          const btn = e.target as HTMLButtonElement;
-                          btn.style.background = 'var(--primary-color)';
-                          btn.style.color = 'var(--text-primary-color)';
-                          btn.style.borderColor = 'var(--primary-color)';
-                        }}
-                        @mouseleave=${(e: Event) => {
-                          const btn = e.target as HTMLButtonElement;
-                          btn.style.background = 'var(--secondary-background-color)';
-                          btn.style.color = 'var(--primary-text-color)';
-                          btn.style.borderColor = 'var(--divider-color)';
-                        }}
-                      >
-                        <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
-                      </button>
-                    </div>
-                    <div
-                      style="font-size: 12px; color: var(--secondary-text-color); margin-top: 4px;"
-                    >
-                      ${localize(
-                        'editor.graphs.display.bar_display_limit_desc',
-                        lang,
-                        'Set to 0 or higher value to limit the number of bars shown. Useful when time period contains many data points. Set to 0 for unlimited.'
-                      )}
-                    </div>
-                  </div>
-                `
+              ? this.renderSliderField(
+                  localize('editor.graphs.display.bar_display_limit', lang, 'Max Bars to Display'),
+                  localize('editor.graphs.display.bar_display_limit_desc', lang, '0 = Unlimited'),
+                  graphsModule.bar_display_limit ?? 0,
+                  0,
+                  0,
+                  100,
+                  1,
+                  (value: number) => updateModule({ bar_display_limit: value }),
+                  ''
+                )
               : ''}
 
             <!-- Chart Options -->
@@ -2346,6 +1982,7 @@ export class UltraGraphsModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const graphsModule = module as GraphsModule;
+    const lang = hass?.locale?.language || 'en';
     const moduleWithDesign = graphsModule as any;
     const designProperties = (graphsModule as any).design || {};
 
@@ -2599,8 +2236,8 @@ export class UltraGraphsModule extends BaseUltraModule {
     // GRACEFUL RENDERING: Check for incomplete configuration
     if (!graphsModule.chart_type) {
       return this.renderGradientErrorState(
-        'Select Chart Type',
-        'Choose a chart type in the General tab',
+        localize('editor.graphs.error_no_chart_type', lang, 'Select Chart Type'),
+        localize('editor.graphs.error_no_chart_type_desc', lang, 'Choose a chart type in the General tab'),
         'mdi:chart-line'
       );
     }
@@ -2610,7 +2247,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         graphsModule.data_source === 'forecast'
           ? 'Configure forecast attributes in the General tab'
           : 'Add entities to display chart';
-      return this.renderGradientErrorState('Configure Entities', subtitle, 'mdi:chart-line');
+      return this.renderGradientErrorState(localize('editor.graphs.error_no_entities', lang, 'Configure Entities'), subtitle, 'mdi:chart-line');
     }
 
     // Primary entity for header details
@@ -2919,13 +2556,14 @@ export class UltraGraphsModule extends BaseUltraModule {
 
     // Get hover effect configuration from module design
     const hoverEffect = (graphsModule as any).design?.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
     // Wrap in clickable div if has active links
-    return this.hasActiveLink(graphsModule)
+    return this.wrapWithAnimation(this.hasActiveLink(graphsModule)
       ? html`<div
           class="graphs-module-clickable ${hoverEffectClass}"
-          style="cursor: pointer; transition: all 0.2s ease; border-radius: 4px;"
+          style="${designStyles}; cursor: pointer; transition: all 0.2s ease; border-radius: 4px;"
           @click=${(e: Event) => this.handleClick(e, graphsModule, hass)}
           @dblclick=${(e: Event) => this.handleDoubleClick(e, graphsModule, hass)}
           @mousedown=${(e: Event) => this.handleMouseDown(e, graphsModule, hass)}
@@ -2936,9 +2574,8 @@ export class UltraGraphsModule extends BaseUltraModule {
         >
           ${content}
         </div>`
-      : hoverEffectClass
-        ? html`<div class="graphs-module-container ${hoverEffectClass}">${content}</div>`
-        : content;
+      : html`<div class="graphs-module-container ${hoverEffectClass}" style="${designStyles}">${content}</div>`,
+    module, hass);
   }
 
   private _prepareSimpleChartData(
@@ -5237,87 +4874,17 @@ export class UltraGraphsModule extends BaseUltraModule {
     title: string,
     description: string
   ): TemplateResult {
-    return html`
-      <div class="field-container" style="margin-bottom: 16px;">
-        <div
-          class="field-title"
-          style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-        >
-          ${title}
-        </div>
-        <div
-          class="field-description"
-          style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;"
-        >
-          ${description}
-        </div>
-        <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-          <input
-            type="range"
-            class="gap-slider"
-            min="${min}"
-            max="${max}"
-            step="1"
-            .value="${value}"
-            @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              const newValue = parseInt(target.value);
-              if (index >= 0) {
-                this._updateEntity(graphsModule, index, { [property]: newValue }, updateModule);
-              } else {
-                updateModule({ [property]: newValue });
-              }
-            }}
-          />
-          <input
-            type="number"
-            class="gap-input"
-            min="${min}"
-            max="${max}"
-            step="1"
-            .value="${value}"
-            @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              const newValue = parseInt(target.value);
-              if (!isNaN(newValue)) {
-                if (index >= 0) {
-                  this._updateEntity(graphsModule, index, { [property]: newValue }, updateModule);
-                } else {
-                  updateModule({ [property]: newValue });
-                }
-              }
-            }}
-            @keydown=${(e: KeyboardEvent) => {
-              if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                e.preventDefault();
-                const target = e.target as HTMLInputElement;
-                const currentValue = parseInt(target.value) || defaultValue;
-                const increment = e.key === 'ArrowUp' ? 1 : -1;
-                const newValue = Math.max(min, Math.min(max, currentValue + increment));
-                if (index >= 0) {
-                  this._updateEntity(graphsModule, index, { [property]: newValue }, updateModule);
-                } else {
-                  updateModule({ [property]: newValue });
-                }
-              }
-            }}
-          />
-          <button
-            class="reset-btn"
-            @click=${() => {
-              if (index >= 0) {
-                this._updateEntity(graphsModule, index, { [property]: defaultValue }, updateModule);
-              } else {
-                updateModule({ [property]: defaultValue });
-              }
-            }}
-            title="Reset to default (${defaultValue})"
-          >
-            <ha-icon icon="mdi:refresh"></ha-icon>
-          </button>
-        </div>
-      </div>
-    `;
+    return this.renderSliderField(
+      title, description, value, defaultValue, min, max, 1,
+      (v: number) => {
+        if (index >= 0) {
+          this._updateEntity(graphsModule, index, { [property]: v }, updateModule);
+        } else {
+          updateModule({ [property]: v });
+        }
+      },
+      'px'
+    );
   }
 
   // Link handling methods
@@ -5992,106 +5559,7 @@ export class UltraGraphsModule extends BaseUltraModule {
       }
 
       /* Gap control styles - Standardized Slider Pattern */
-      .gap-control-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .gap-slider {
-        flex: 1;
-        height: 6px;
-        background: var(--divider-color);
-        border-radius: 3px;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .gap-slider::-webkit-slider-thumb {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider:hover {
-        background: var(--primary-color);
-        opacity: 0.7;
-      }
-
-      .gap-slider:hover::-webkit-slider-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-slider:hover::-moz-range-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-input {
-        width: 48px !important;
-        max-width: 48px !important;
-        min-width: 48px !important;
-        padding: 4px 6px !important;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-      }
-
-      .gap-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-      }
-
-      .reset-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-
-      .reset-btn:hover {
-        background: var(--primary-color);
-        color: var(--text-primary-color);
-        border-color: var(--primary-color);
-      }
-
-      .reset-btn ha-icon {
-        font-size: 16px;
-      }
+      ${BaseUltraModule.getSliderStyles()}
 
       /* Settings section width containment */
       .settings-section {

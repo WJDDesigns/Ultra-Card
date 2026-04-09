@@ -298,24 +298,14 @@ export class UltraSliderModule extends BaseUltraModule {
 
           ${(sliderModule.slides_per_view || 1) > 1
             ? html`
-                <div
-                  class="field-row"
-                  style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--secondary-background-color); border-radius: 8px; margin-bottom: 12px;"
-                >
-                  <div style="flex: 1;">
-                    <div style="font-weight: 600; margin-bottom: 4px;">Center Slider</div>
-                    <div style="font-size: 12px; color: var(--secondary-text-color); line-height: 1.4;">
-                      Center active slide in the viewport (only available when Slides Per View > 1)
-                    </div>
-                  </div>
-                  <ha-switch
-                    .checked=${sliderModule.centered_slides ?? true}
-                    @change=${(e: Event) => {
-                      const target = e.target as any;
-                      updateModule({ centered_slides: target.checked });
-                    }}
-                  ></ha-switch>
-                </div>
+                ${this.renderFieldSection(
+                  'Center Slider',
+                  'Center active slide in the viewport (only available when Slides Per View > 1)',
+                  hass,
+                  { centered_slides: sliderModule.centered_slides ?? true },
+                  [this.booleanField('centered_slides')],
+                  (e: CustomEvent) => updateModule({ centered_slides: e.detail.value.centered_slides })
+                )}
               `
             : ''}
 
@@ -367,24 +357,14 @@ export class UltraSliderModule extends BaseUltraModule {
             ></ha-textfield>
           </div>
 
-          <div
-            class="field-row"
-            style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--secondary-background-color); border-radius: 8px; margin-bottom: 12px;"
-          >
-            <div style="flex: 1;">
-              <div style="font-weight: 600; margin-bottom: 4px;">Auto Height</div>
-              <div style="font-size: 12px; color: var(--secondary-text-color); line-height: 1.4;">
-                Automatically adjust slider height to fit content on each page
-              </div>
-            </div>
-            <ha-switch
-              .checked=${sliderModule.auto_height ?? true}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ auto_height: target.checked });
-              }}
-            ></ha-switch>
-          </div>
+          ${this.renderFieldSection(
+            'Auto Height',
+            'Automatically adjust slider height to fit content on each page',
+            hass,
+            { auto_height: sliderModule.auto_height ?? true },
+            [this.booleanField('auto_height')],
+            (e: CustomEvent) => updateModule({ auto_height: e.detail.value.auto_height })
+          )}
 
           ${!(sliderModule.auto_height ?? true)
             ? this.renderSliderField(
@@ -448,14 +428,15 @@ export class UltraSliderModule extends BaseUltraModule {
         >
           <div class="inline-toggle">
             <div class="section-title">PAGINATION</div>
-            <ha-switch
-              .checked=${sliderModule.show_pagination ?? true}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ show_pagination: target.checked });
-              }}
-            ></ha-switch>
           </div>
+          ${this.renderFieldSection(
+            'Enable Pagination',
+            '',
+            hass,
+            { show_pagination: sliderModule.show_pagination ?? true },
+            [this.booleanField('show_pagination')],
+            (e: CustomEvent) => updateModule({ show_pagination: e.detail.value.show_pagination })
+          )}
 
           ${sliderModule.show_pagination
             ? html`
@@ -481,29 +462,14 @@ export class UltraSliderModule extends BaseUltraModule {
                 )}
                 ${(sliderModule.auto_height ?? true)
                   ? html`
-                      <div
-                        class="field-row"
-                        style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--secondary-background-color); border-radius: 8px; margin-bottom: 12px;"
-                      >
-                        <div style="flex: 1;">
-                          <div style="font-weight: 600; margin-bottom: 4px;">
-                            Pagination Overlay
-                          </div>
-                          <div
-                            style="font-size: 12px; color: var(--secondary-text-color); line-height: 1.4;"
-                          >
-                            When enabled, pagination overlays content. When disabled, pagination
-                            gets its own space.
-                          </div>
-                        </div>
-                        <ha-switch
-                          .checked=${sliderModule.pagination_overlay ?? false}
-                          @change=${(e: Event) => {
-                            const target = e.target as any;
-                            updateModule({ pagination_overlay: target.checked });
-                          }}
-                        ></ha-switch>
-                      </div>
+                      ${this.renderFieldSection(
+                        'Pagination Overlay',
+                        'When enabled, pagination overlays content. When disabled, pagination gets its own space.',
+                        hass,
+                        { pagination_overlay: sliderModule.pagination_overlay ?? false },
+                        [this.booleanField('pagination_overlay')],
+                        (e: CustomEvent) => updateModule({ pagination_overlay: e.detail.value.pagination_overlay })
+                      )}
                     `
                   : ''}
                 ${this.renderFieldSection(
@@ -587,34 +553,26 @@ export class UltraSliderModule extends BaseUltraModule {
         >
           <div class="inline-toggle">
             <div class="section-title">NAVIGATION ARROWS</div>
-            <ha-switch
-              .checked=${sliderModule.show_arrows ?? true}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ show_arrows: target.checked });
-              }}
-            ></ha-switch>
           </div>
+          ${this.renderFieldSection(
+            'Show Arrows',
+            '',
+            hass,
+            { show_arrows: sliderModule.show_arrows ?? true },
+            [this.booleanField('show_arrows')],
+            (e: CustomEvent) => updateModule({ show_arrows: e.detail.value.show_arrows })
+          )}
 
           ${sliderModule.show_arrows
             ? html`
-                <div
-                  style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; padding: 12px; background: var(--secondary-background-color); border-radius: 8px;"
-                >
-                  <div style="flex: 1;">
-                    <div style="font-weight: 600; margin-bottom: 4px;">Arrows Always Visible</div>
-                    <div style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8;">
-                      Keep arrows visible (otherwise show on hover)
-                    </div>
-                  </div>
-                  <ha-switch
-                    .checked=${sliderModule.arrows_always_visible || false}
-                    @change=${(e: Event) => {
-                      const target = e.target as any;
-                      updateModule({ arrows_always_visible: target.checked });
-                    }}
-                  ></ha-switch>
-                </div>
+                ${this.renderFieldSection(
+                  'Arrows Always Visible',
+                  'Keep arrows visible (otherwise show on hover)',
+                  hass,
+                  { arrows_always_visible: sliderModule.arrows_always_visible || false },
+                  [this.booleanField('arrows_always_visible')],
+                  (e: CustomEvent) => updateModule({ arrows_always_visible: e.detail.value.arrows_always_visible })
+                )}
                 ${this.renderSliderField(
                   'Arrow Position Offset',
                   'Offset arrows position: positive = more inside, negative = more outside (in pixels)',
@@ -770,14 +728,15 @@ export class UltraSliderModule extends BaseUltraModule {
         >
           <div class="inline-toggle">
             <div class="section-title">AUTO-PLAY</div>
-            <ha-switch
-              .checked=${sliderModule.auto_play || false}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ auto_play: target.checked });
-              }}
-            ></ha-switch>
           </div>
+          ${this.renderFieldSection(
+            'Enable Auto-play',
+            '',
+            hass,
+            { auto_play: sliderModule.auto_play || false },
+            [this.booleanField('auto_play')],
+            (e: CustomEvent) => updateModule({ auto_play: e.detail.value.auto_play })
+          )}
 
           ${sliderModule.auto_play
             ? html`
@@ -792,42 +751,24 @@ export class UltraSliderModule extends BaseUltraModule {
                   (value: number) => updateModule({ auto_play_delay: value }),
                   'ms'
                 )}
-                <div
-                  style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;"
-                >
-                  <div style="flex: 1;">
-                    <div style="font-weight: 600; margin-bottom: 4px;">Pause on Hover</div>
-                    <div style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8;">
-                      Pause auto-play when hovering over slider
-                    </div>
-                  </div>
-                  <ha-switch
-                    .checked=${sliderModule.pause_on_hover ?? true}
-                    @change=${(e: Event) => {
-                      const target = e.target as any;
-                      updateModule({ pause_on_hover: target.checked });
-                    }}
-                  ></ha-switch>
-                </div>
+                ${this.renderFieldSection(
+                  'Pause on Hover',
+                  'Pause auto-play when hovering over slider',
+                  hass,
+                  { pause_on_hover: sliderModule.pause_on_hover ?? true },
+                  [this.booleanField('pause_on_hover')],
+                  (e: CustomEvent) => updateModule({ pause_on_hover: e.detail.value.pause_on_hover })
+                )}
               `
             : ''}
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;"
-          >
-            <div style="flex: 1;">
-              <div style="font-weight: 600; margin-bottom: 4px;">Loop</div>
-              <div style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8;">
-                Return to first slide after the last
-              </div>
-            </div>
-            <ha-switch
-              .checked=${sliderModule.loop ?? true}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ loop: target.checked });
-              }}
-            ></ha-switch>
-          </div>
+          ${this.renderFieldSection(
+            'Loop',
+            'Return to first slide after the last',
+            hass,
+            { loop: sliderModule.loop ?? true },
+            [this.booleanField('loop')],
+            (e: CustomEvent) => updateModule({ loop: e.detail.value.loop })
+          )}
         </div>
 
         <!-- INTERACTION -->
@@ -842,57 +783,30 @@ export class UltraSliderModule extends BaseUltraModule {
             INTERACTION
           </div>
 
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;"
-          >
-            <div style="flex: 1;">
-              <div style="font-weight: 600; margin-bottom: 4px;">Allow Swipe</div>
-              <div style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8;">
-                Enable touch/swipe gestures
-              </div>
-            </div>
-            <ha-switch
-              .checked=${sliderModule.allow_swipe ?? true}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ allow_swipe: target.checked });
-              }}
-            ></ha-switch>
-          </div>
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;"
-          >
-            <div style="flex: 1;">
-              <div style="font-weight: 600; margin-bottom: 4px;">Allow Keyboard</div>
-              <div style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8;">
-                Navigate with arrow keys
-              </div>
-            </div>
-            <ha-switch
-              .checked=${sliderModule.allow_keyboard ?? true}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ allow_keyboard: target.checked });
-              }}
-            ></ha-switch>
-          </div>
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;"
-          >
-            <div style="flex: 1;">
-              <div style="font-weight: 600; margin-bottom: 4px;">Allow Mousewheel</div>
-              <div style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8;">
-                Navigate with mouse wheel
-              </div>
-            </div>
-            <ha-switch
-              .checked=${sliderModule.allow_mousewheel || false}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ allow_mousewheel: target.checked });
-              }}
-            ></ha-switch>
-          </div>
+          ${this.renderFieldSection(
+            'Allow Swipe',
+            'Enable touch/swipe gestures',
+            hass,
+            { allow_swipe: sliderModule.allow_swipe ?? true },
+            [this.booleanField('allow_swipe')],
+            (e: CustomEvent) => updateModule({ allow_swipe: e.detail.value.allow_swipe })
+          )}
+          ${this.renderFieldSection(
+            'Allow Keyboard',
+            'Navigate with arrow keys',
+            hass,
+            { allow_keyboard: sliderModule.allow_keyboard ?? true },
+            [this.booleanField('allow_keyboard')],
+            (e: CustomEvent) => updateModule({ allow_keyboard: e.detail.value.allow_keyboard })
+          )}
+          ${this.renderFieldSection(
+            'Allow Mousewheel',
+            'Navigate with mouse wheel',
+            hass,
+            { allow_mousewheel: sliderModule.allow_mousewheel || false },
+            [this.booleanField('allow_mousewheel')],
+            (e: CustomEvent) => updateModule({ allow_mousewheel: e.detail.value.allow_mousewheel })
+          )}
         </div>
 
       </div>
@@ -1931,7 +1845,10 @@ export class UltraSliderModule extends BaseUltraModule {
         ? `${designProperties.border_width || moduleWithDesign.border_width || '1px'} ${designProperties.border_style || moduleWithDesign.border_style} ${designProperties.border_color || moduleWithDesign.border_color || 'var(--divider-color)'}`
         : 'none';
 
-    return html`
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    return this.wrapWithAnimation(html`
       <style>
         .ultra-slider-container {
           position: relative;
@@ -2703,7 +2620,7 @@ export class UltraSliderModule extends BaseUltraModule {
           : ''}
       </style>
 
-      <div class="ultra-slider-container uc-module-container" data-slider-id="${sliderId}">
+      <div class="ultra-slider-container uc-module-container ${hoverClass}" style="${designStyles}" data-slider-id="${sliderId}">
         ${paginationOutside && paginationPosition === 'top' ? getPaginationRowTemplate() : ''}
         <div
           class="swiper ${uniqueClass}"
@@ -2919,7 +2836,7 @@ export class UltraSliderModule extends BaseUltraModule {
         </div>
         ${paginationOutside && paginationPosition !== 'top' ? getPaginationRowTemplate() : ''}
       </div>
-    `;
+    `, module, hass);
   }
 
   // Map Ultra Card slider configuration to Swiper options

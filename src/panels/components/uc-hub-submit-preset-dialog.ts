@@ -652,6 +652,8 @@ export class UcHubSubmitPresetDialog extends LitElement {
   private _handleFileInput(e: Event) {
     const input = e.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
+    // Guard against double-firing (both 'change' and 'input' can fire on file inputs).
+    if (files.length === 0) return;
     const filtered = files.filter(f => f.size <= MAX_PHOTO_BYTES);
     const oversized = files.filter(f => f.size > MAX_PHOTO_BYTES);
     if (oversized.length) {
@@ -949,6 +951,7 @@ export class UcHubSubmitPresetDialog extends LitElement {
             accept="image/*"
             multiple
             @change=${this._handleFileInput}
+            @input=${this._handleFileInput}
             ?disabled=${this._submitting || this._photos.length >= MAX_PHOTOS}
           />
         </label>

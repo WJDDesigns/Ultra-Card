@@ -204,70 +204,13 @@ export class UltraSeparatorModule extends BaseUltraModule {
 
                 <!-- Thickness -->
                 <div class="field-container" style="margin-bottom: 24px;">
-                  <div class="field-title">
-                    ${localize('editor.separator.thickness', lang, 'Thickness (px)')}
-                  </div>
-                  <div class="field-description">
-                    ${localize(
-                      'editor.separator.thickness_desc',
-                      lang,
-                      'Thickness of the separator line.'
-                    )}
-                  </div>
-                  <div
-                    class="gap-control-container"
-                    style="display: flex; align-items: center; gap: 12px;"
-                  >
-                    <input
-                      type="range"
-                      class="gap-slider"
-                      min="1"
-                      max="20"
-                      step="1"
-                      .value="${separatorModule.thickness || 1}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = parseFloat(target.value);
-                        updateModule({ thickness: value });
-                      }}
-                    />
-                    <input
-                      type="number"
-                      class="gap-input"
-                      min="1"
-                      max="20"
-                      step="1"
-                      .value="${separatorModule.thickness || 1}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = parseFloat(target.value);
-                        if (!isNaN(value)) {
-                          updateModule({ thickness: value });
-                        }
-                      }}
-                      @keydown=${(e: KeyboardEvent) => {
-                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                          e.preventDefault();
-                          const target = e.target as HTMLInputElement;
-                          const currentValue = parseFloat(target.value) || 1;
-                          const increment = e.key === 'ArrowUp' ? 1 : -1;
-                          const newValue = Math.max(1, Math.min(20, currentValue + increment));
-                          updateModule({ thickness: newValue });
-                        }
-                      }}
-                    />
-                    <button
-                      class="reset-btn"
-                      @click=${() => updateModule({ thickness: 1 })}
-                      title=${localize(
-                        'editor.fields.reset_default_value',
-                        lang,
-                        'Reset to default ({value})'
-                      ).replace('{value}', '1')}
-                    >
-                      <ha-icon icon="mdi:refresh"></ha-icon>
-                    </button>
-                  </div>
+                  ${this.renderSliderField(
+                    localize('editor.separator.thickness', lang, 'Thickness (px)'),
+                    localize('editor.separator.thickness_desc', lang, 'Thickness of the separator line.'),
+                    separatorModule.thickness || 1,
+                    1, 1, 20, 1,
+                    (v: number) => { updateModule({ thickness: v }); }
+                  )}
                 </div>
 
                 <!-- Width/Height based on orientation -->
@@ -449,33 +392,14 @@ export class UltraSeparatorModule extends BaseUltraModule {
                 class="settings-section"
                 style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
               >
-                <div
-                  style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 0; border-bottom: none;"
-                >
-                  <div
-                    class="section-title"
-                    style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); letter-spacing: 0.5px; margin-bottom: 0;"
-                  >
-                    ${localize('editor.separator.show_title', lang, 'Show Title')}
-                  </div>
-                  <ha-switch
-                    .checked=${separatorModule.show_title || false}
-                    @change=${(e: Event) => {
-                      const target = e.target as any;
-                      updateModule({ show_title: target.checked });
-                    }}
-                  ></ha-switch>
-                </div>
-                <div
-                  class="field-description"
-                  style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-                >
-                  ${localize(
-                    'editor.separator.show_title_desc',
-                    lang,
-                    'Add text in the middle of the separator line (e.g., ------ Text ------)'
-                  )}
-                </div>
+                ${this.renderFieldSection(
+                  localize('editor.separator.show_title', lang, 'Show Title'),
+                  localize('editor.separator.show_title_desc', lang, 'Add text in the middle of the separator line (e.g., ------ Text ------)'),
+                  hass,
+                  { show_title: separatorModule.show_title || false },
+                  [this.booleanField('show_title')],
+                  (e: CustomEvent) => updateModule({ show_title: e.detail.value.show_title })
+                )}
 
                 ${separatorModule.show_title
                   ? html`
@@ -514,73 +438,13 @@ export class UltraSeparatorModule extends BaseUltraModule {
 
                       <!-- Font Size -->
                       <div class="field-container" style="margin-bottom: 24px;">
-                        <div class="field-title">
-                          ${localize('editor.separator.font_size', lang, 'Font Size')}
-                        </div>
-                        <div class="field-description">
-                          ${localize(
-                            'editor.separator.font_size_desc',
-                            lang,
-                            'Size of the text in pixels.'
-                          )}
-                        </div>
-                        <div
-                          class="gap-control-container"
-                          style="display: flex; align-items: center; gap: 12px;"
-                        >
-                          <input
-                            type="range"
-                            class="gap-slider"
-                            min="8"
-                            max="48"
-                            step="1"
-                            .value="${separatorModule.title_size || 14}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              const value = parseFloat(target.value);
-                              updateModule({ title_size: value });
-                            }}
-                          />
-                          <input
-                            type="number"
-                            class="gap-input"
-                            min="8"
-                            max="48"
-                            step="1"
-                            .value="${separatorModule.title_size || 14}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              const value = parseFloat(target.value);
-                              if (!isNaN(value)) {
-                                updateModule({ title_size: value });
-                              }
-                            }}
-                            @keydown=${(e: KeyboardEvent) => {
-                              if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                                e.preventDefault();
-                                const target = e.target as HTMLInputElement;
-                                const currentValue = parseFloat(target.value) || 14;
-                                const increment = e.key === 'ArrowUp' ? 1 : -1;
-                                const newValue = Math.max(
-                                  8,
-                                  Math.min(48, currentValue + increment)
-                                );
-                                updateModule({ title_size: newValue });
-                              }
-                            }}
-                          />
-                          <button
-                            class="reset-btn"
-                            @click=${() => updateModule({ title_size: 14 })}
-                            title=${localize(
-                              'editor.fields.reset_default_value',
-                              lang,
-                              'Reset to default ({value})'
-                            ).replace('{value}', '14')}
-                          >
-                            <ha-icon icon="mdi:refresh"></ha-icon>
-                          </button>
-                        </div>
+                        ${this.renderSliderField(
+                          localize('editor.separator.font_size', lang, 'Font Size'),
+                          localize('editor.separator.font_size_desc', lang, 'Size of the text in pixels.'),
+                          separatorModule.title_size || 14,
+                          14, 8, 48, 1,
+                          (v: number) => { updateModule({ title_size: v }); }
+                        )}
                       </div>
 
                       <!-- Text Color -->
@@ -742,58 +606,13 @@ export class UltraSeparatorModule extends BaseUltraModule {
                   ${localize('editor.separator.spacer.title', lang, 'Spacer Height')}
                 </div>
                 <div class="field-container" style="margin-bottom: 24px;">
-                  <div class="field-title">
-                    ${localize('editor.separator.height', lang, 'Height (px)')}
-                  </div>
-                  <div class="field-description">
-                    ${localize(
-                      'editor.separator.height_desc',
-                      lang,
-                      'Controls the visual gap for Blank Space.'
-                    )}
-                  </div>
-                  <div
-                    class="gap-control-container"
-                    style="display: flex; align-items: center; gap: 12px;"
-                  >
-                    <input
-                      type="range"
-                      class="gap-slider"
-                      min="1"
-                      max="300"
-                      step="1"
-                      .value="${separatorModule.thickness || 1}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = parseInt(target.value);
-                        updateModule({ thickness: value });
-                      }}
-                    />
-                    <input
-                      type="number"
-                      class="gap-input"
-                      min="1"
-                      max="300"
-                      step="1"
-                      .value="${separatorModule.thickness || 1}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = parseInt(target.value);
-                        if (!isNaN(value)) updateModule({ thickness: value });
-                      }}
-                    />
-                    <button
-                      class="reset-btn"
-                      @click=${() => updateModule({ thickness: 1 })}
-                      title=${localize(
-                        'editor.fields.reset_default_value',
-                        lang,
-                        'Reset to default ({value})'
-                      ).replace('{value}', '1')}
-                    >
-                      <ha-icon icon="mdi:refresh"></ha-icon>
-                    </button>
-                  </div>
+                  ${this.renderSliderField(
+                    localize('editor.separator.height', lang, 'Height (px)'),
+                    localize('editor.separator.height_desc', lang, 'Controls the visual gap for Blank Space.'),
+                    separatorModule.thickness || 1,
+                    1, 1, 300, 1,
+                    (v: number) => { updateModule({ thickness: v }); }
+                  )}
                 </div>
               </div>
             `}
@@ -1046,11 +865,14 @@ export class UltraSeparatorModule extends BaseUltraModule {
       }
     };
 
-    return html`
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    return this.wrapWithAnimation(html`
       <div
-        class="separator-module-container"
+        class="separator-module-container ${hoverClass}"
         data-layout-grow="${shouldGrow ? 'true' : 'false'}"
-        style="${this.styleObjectToCss(containerStyles)}; cursor: ${(separatorModule.tap_action &&
+        style="${designStyles}; ${this.styleObjectToCss(containerStyles)}; cursor: ${(separatorModule.tap_action &&
           separatorModule.tap_action.action !== 'nothing') ||
         (separatorModule.hold_action && separatorModule.hold_action.action !== 'nothing') ||
         (separatorModule.double_tap_action &&
@@ -1099,7 +921,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
             : html` <div class="separator-line" style="${separatorStyles}"></div> `}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   // Explicit Logic tab renderer (some editors call this directly)
@@ -1330,106 +1152,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
         margin-bottom: 16px;
       }
 
-      /* Gap control styles */
-      .gap-control-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .gap-slider {
-        flex: 1;
-        height: 6px;
-        background: var(--divider-color, #cccccc);
-        border-radius: 3px;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .gap-slider::-webkit-slider-thumb {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider:hover {
-        background: var(--primary-color);
-        opacity: 0.7;
-      }
-
-      .gap-slider:hover::-webkit-slider-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-slider:hover::-moz-range-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-input {
-        min-width: 80px;
-        max-width: 120px;
-        padding: 4px 8px !important;
-        border: 1px solid var(--divider-color, #cccccc);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: left;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-      }
-
-      .gap-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-      }
-
-      .reset-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border: 1px solid var(--divider-color, #cccccc);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-
-      .reset-btn:hover {
-        background: var(--primary-color);
-        color: var(--text-primary-color);
-        border-color: var(--primary-color);
-      }
-
-      .reset-btn ha-icon {
-        font-size: 16px;
-      }
+      ${BaseUltraModule.getSliderStyles()}
     `;
   }
 

@@ -392,6 +392,10 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       (weatherModule.hold_action && weatherModule.hold_action.action !== 'nothing') ||
       (weatherModule.double_tap_action && weatherModule.double_tap_action.action !== 'nothing');
 
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+    const hoverClass = this.getHoverEffectClass(module);
+    const weatherLayoutStyles = `box-sizing: border-box; cursor: ${hasActions ? 'pointer' : 'default'};`;
+
     // Apply text color override from global design - if set, override all text colors
     const globalTextColor = designProperties.color;
     const locationColor = globalTextColor || weatherModule.location_color || 'var(--primary-text-color)';
@@ -458,12 +462,13 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
     const calculatedGap = Math.round((spreadPercentage / 100) * 12);
     const justifyContent = useCompactLayout ? 'center' : 'normal';
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         ${this.getStyles()}
       </style>
       <div
-        style=${this.objectToStyleString(containerStyles)}
+        class="${hoverClass}"
+        style="${designStyles}; ${weatherLayoutStyles}"
         @pointerdown=${handlePointerDown}
         @pointerup=${handlePointerUp}
       >
@@ -552,7 +557,7 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
             : ''}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   /**

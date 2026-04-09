@@ -444,6 +444,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
                   // Update module config (triggers re-render, but guard protects editor)
                   updateModule({ card_config: pendingConfig });
                   pendingConfig = null;
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
                 }
                 
                 configUpdateTimer = undefined;
@@ -559,6 +560,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
                     console.log('[UC Native Card] Got stub config from card:', stubConfig);
                     // Save stub config and let setupEditorProperties apply it
                     updateModule({ card_config: stubConfig });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
                   }
                 }).catch((e) => {
                   console.log('[UC Native Card] Failed to get stub config:', e);
@@ -830,9 +832,12 @@ export class UltraNativeCardModule extends BaseUltraModule {
       }
     };
 
-    return html`
-      <div class="native-card-preview" ${ref(setupCard)}></div>
-    `;
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    return this.wrapWithAnimation(html`
+      <div class="native-card-preview ${hoverClass}" style="${designStyles}" ${ref(setupCard)}></div>
+    `, module, hass);
   }
 
   renderYamlTab(
@@ -846,6 +851,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
       try {
         const newConfig = yaml.load(e.detail.value) as any;
         updateModule({ card_config: newConfig });
+        setTimeout(() => this.triggerPreviewUpdate(), 50);
       } catch (error) {
         console.error('[UC Native Card] Invalid YAML:', error);
       }

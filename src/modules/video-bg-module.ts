@@ -138,7 +138,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
                 hass,
                 { enabled: videoBgModule.enabled },
                 [this.booleanField('enabled')],
-                (e: CustomEvent) => updateModule(e.detail.value),
+                (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); },
                 false
               )}
             </div>
@@ -156,7 +156,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
                 hass,
                 { editor_only: videoBgModule.editor_only },
                 [this.booleanField('editor_only')],
-                (e: CustomEvent) => updateModule(e.detail.value),
+                (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); },
                 false
               )}
             </div>
@@ -174,7 +174,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
                 hass,
                 { enable_on_mobile: videoBgModule.enable_on_mobile },
                 [this.booleanField('enable_on_mobile')],
-                (e: CustomEvent) => updateModule(e.detail.value),
+                (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); },
                 false
               )}
             </div>
@@ -209,7 +209,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
                 { value: 'local', label: 'Local File' },
               ]),
             ],
-            (e: CustomEvent) => updateModule(e.detail.value)
+            (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); }
           )}
           <div style="margin-bottom: 16px;">
             <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
@@ -244,6 +244,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
                 const cursorEnd = input.selectionEnd;
 
                 updateModule({ default_video_url: value });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
 
                 requestAnimationFrame(() => {
                   if (input && typeof cursorPosition === 'number') {
@@ -279,7 +280,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
                 hass,
                 { default_loop: videoBgModule.default_loop },
                 [this.booleanField('default_loop')],
-                (e: CustomEvent) => updateModule(e.detail.value),
+                (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); },
                 false
               )}
             </div>
@@ -296,7 +297,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
                 0,
                 3600,
                 1,
-                (value: number) => updateModule({ default_start_time: value }),
+                (value: number) => { updateModule({ default_start_time: value }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
                 's'
               )
             : ''}
@@ -322,7 +323,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
             0,
             100,
             1,
-            (value: number) => updateModule({ opacity: value }),
+            (value: number) => { updateModule({ opacity: value }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
             '%'
           )}
           ${this.renderSliderField(
@@ -333,7 +334,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
             0,
             30,
             1,
-            (value: number) => updateModule({ blur: `${value}px` }),
+            (value: number) => { updateModule({ blur: `${value}px` }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
             'px'
           )}
           ${this.renderSliderField(
@@ -344,7 +345,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
             0,
             200,
             5,
-            (value: number) => updateModule({ brightness: `${value}%` }),
+            (value: number) => { updateModule({ brightness: `${value}%` }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
             '%'
           )}
           ${this.renderSliderField(
@@ -355,7 +356,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
             50,
             200,
             5,
-            (value: number) => updateModule({ scale: value / 100 }),
+            (value: number) => { updateModule({ scale: value / 100 }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
             '%'
           )}
         </div>
@@ -381,7 +382,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
                 hass,
                 { pause_when_hidden: videoBgModule.pause_when_hidden },
                 [this.booleanField('pause_when_hidden')],
-                (e: CustomEvent) => updateModule(e.detail.value),
+                (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); },
                 false
               )}
             </div>
@@ -399,7 +400,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
                 hass,
                 { respect_reduced_motion: videoBgModule.respect_reduced_motion },
                 [this.booleanField('respect_reduced_motion')],
-                (e: CustomEvent) => updateModule(e.detail.value),
+                (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); },
                 false
               )}
             </div>
@@ -544,6 +545,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
                     enabled: e.detail.value.enabled,
                   },
                 });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
               },
               false
             )}
@@ -571,8 +573,8 @@ export class UltraVideoBgModule extends BaseUltraModule {
                           opacity: value,
                         },
                       });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
                     },
-                    '%'
                   )}
                   ${this.renderSliderField(
                     'Blur Amount',
@@ -589,8 +591,8 @@ export class UltraVideoBgModule extends BaseUltraModule {
                           blur_px: value,
                         },
                       });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
                     },
-                    'px'
                   )}
 
                   <div style="margin-top: 16px;">
@@ -617,6 +619,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
                             color: e.detail.value,
                           },
                         });
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
                       }}
                     ></ultra-color-picker>
                   </div>
@@ -700,7 +703,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
     // In live preview, show actual video
     if (previewContext === 'live') {
       if (!videoBgModule.enabled || !videoBgModule.default_video_url) {
-        return html`
+        return this.wrapWithAnimation(html`
           <div
             style="padding: 24px; text-align: center; background: rgba(var(--rgb-primary-color), 0.1); border: 2px dashed var(--primary-color); border-radius: 8px;"
           >
@@ -715,7 +718,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
               ${videoBgModule.enabled ? 'No video URL configured' : 'Disabled'}
             </div>
           </div>
-        `;
+        `, module, hass);
       }
 
       return this.renderVideoPreview(videoBgModule);
@@ -726,7 +729,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
     const isInEditor = previewContext === 'ha-preview' || previewContext === 'dashboard';
 
     if (isInEditor) {
-      return html`
+      return this.wrapWithAnimation(html`
         <div
           style="
             padding: 24px;
@@ -763,7 +766,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
               : 'Disabled - click to enable'}
           </div>
         </div>
-      `;
+      `, module, hass);
     }
 
     // Only return empty for actual dashboard viewing (when not in edit mode)

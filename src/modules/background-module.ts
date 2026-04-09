@@ -5,7 +5,7 @@ import { CardModule, BackgroundModule, UltraCardConfig } from '../types';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { uploadImage } from '../utils/image-upload';
-import { FormUtils } from '../utils/form-utils';
+import { ucToastService } from '../services/uc-toast-service';
 
 export class UltraBackgroundModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -53,353 +53,175 @@ export class UltraBackgroundModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
 
     return html`
-      ${FormUtils.injectCleanFormStyles()}
+      ${this.injectUcFormStyles()}
       <div class="module-general-settings">
-        <!-- Module Info Banner -->
-        <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
-        >
-          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-            <ha-icon
-              icon="mdi:image-outline"
-              style="color: var(--primary-color); --mdi-icon-size: 32px;"
-            ></ha-icon>
-            <div>
-              <div style="font-size: 18px; font-weight: 700;">View Background</div>
-              <div style="font-size: 12px; color: var(--secondary-text-color);">
-                Apply custom background images to your dashboard view
-              </div>
-            </div>
-          </div>
 
-          <div
-            style="padding: 12px; background: rgba(var(--rgb-info-color), 0.1); border-radius: 6px; border-left: 4px solid var(--info-color);"
-          >
-            <div style="font-size: 13px; line-height: 1.5;">
-              <strong>Note:</strong> This module controls the background for the current view only.
-              Add additional background modules per view if you need different artwork. Only the
-              topmost enabled module with passing logic conditions will be applied.
-            </div>
-          </div>
-        </div>
+        <!-- Module Info Banner -->
+        ${this.renderSettingsSection(
+          localize('editor.background.info_title', lang, 'View Background'),
+          localize(
+            'editor.background.info_desc',
+            lang,
+            'Apply custom background images to your dashboard view. Only the topmost enabled module with passing logic conditions will be applied.'
+          ),
+          []
+        )}
 
         <!-- Background Source -->
-        <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
-        >
-          <div
-            class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
-          >
-            BACKGROUND SOURCE
-          </div>
+        ${this.renderSettingsSection(
+          localize('editor.background.source_title', lang, 'Background Source'),
+          localize('editor.background.source_desc', lang, 'Choose how you want to specify the background image.'),
+          [
+            {
+              title: localize('editor.background.type', lang, 'Background Type'),
+              description: localize('editor.background.type_desc', lang, 'Select the source type for your background image.'),
+              hass,
+              data: { background_type: backgroundModule.background_type || 'none' },
+              schema: [
+                this.selectField('background_type', [
+                  { value: 'none', label: localize('editor.background.type_none', lang, 'None') },
+                  { value: 'upload', label: localize('editor.background.type_upload', lang, 'Upload Image') },
+                  { value: 'entity', label: localize('editor.background.type_entity', lang, 'Entity Image') },
+                  { value: 'url', label: localize('editor.background.type_url', lang, 'Image URL') },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => {
+                const next = e.detail.value.background_type;
+                const prev = backgroundModule.background_type || 'none';
+                if (next === prev) return;
+                updateModule({ background_type: next });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
+            },
+          ]
+        )}
 
-          <!-- Background Type -->
-          ${this.renderFieldSection(
-            'Background Type',
-            'Choose how you want to specify the background image.',
-            hass,
-            { background_type: backgroundModule.background_type || 'none' },
-            [
-              this.selectField('background_type', [
-                { value: 'none', label: 'None' },
-                { value: 'upload', label: 'Upload Image' },
-                { value: 'entity', label: 'Entity Image' },
-                { value: 'url', label: 'Image URL' },
-              ]),
-            ],
-            (e: CustomEvent) => {
-              const next = e.detail.value.background_type;
-              const prev = backgroundModule.background_type || 'none';
-              if (next === prev) return;
-              updateModule({ background_type: next });
-              setTimeout(() => {
-                this.triggerPreviewUpdate();
-              }, 50);
-            }
-          )}
+        <!-- URL Image Source -->
+        ${backgroundModule.background_type === 'url'
+          ? this.renderConditionalFieldsGroup(
+              localize('editor.background.url_config', lang, 'Image URL Configuration'),
+              html`
+                ${this.renderFieldSection(
+                  localize('editor.background.image_url', lang, 'Image URL'),
+                  localize('editor.background.image_url_desc', lang, 'Enter the direct URL to the background image.'),
+                  hass,
+                  { background_image: backgroundModule.background_image || '' },
+                  [this.textField('background_image')],
+                  (e: CustomEvent) => updateModule({ background_image: e.detail.value.background_image })
+                )}
+              `
+            )
+          : ''}
 
-          <!-- URL Image Source -->
-          ${backgroundModule.background_type === 'url'
-            ? this.renderConditionalFieldsGroup(
-                'Image URL Configuration',
-                html`
-                  ${FormUtils.renderField(
-                    'Image URL',
-                    'Enter the direct URL to the background image.',
-                    hass,
-                    { background_image: backgroundModule.background_image || '' },
-                    [FormUtils.createSchemaItem('background_image', { text: {} })],
-                    (e: CustomEvent) =>
-                      updateModule({ background_image: e.detail.value.background_image })
-                  )}
-                `
-              )
-            : ''}
+        <!-- Upload Image Source -->
+        ${backgroundModule.background_type === 'upload'
+          ? this.renderConditionalFieldsGroup(
+              localize('editor.background.upload_config', lang, 'Upload Image Configuration'),
+              html`
+                <div class="field-title">${localize('editor.background.upload', lang, 'Upload Image')}</div>
+                <div class="field-description">${localize('editor.background.upload_desc', lang, 'Click to upload a background image file from your device.')}</div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
+                  @change=${(e: Event) => this.handleFileUpload(e, updateModule, hass)}
+                />
+                ${backgroundModule.background_image
+                  ? html`<div style="margin-top: 8px; font-size: 12px; color: var(--success-color);">✓ ${localize('editor.background.uploaded', lang, 'Image uploaded')}</div>`
+                  : ''}
+              `
+            )
+          : ''}
 
-          <!-- Upload Image Source -->
-          ${backgroundModule.background_type === 'upload'
-            ? this.renderConditionalFieldsGroup(
-                'Upload Image Configuration',
-                html`
-                  <div
-                    class="field-title"
-                    style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-                  >
-                    Upload Image
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px; font-weight: 400; margin-bottom: 12px;"
-                  >
-                    Click to upload a background image file from your device.
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
-                    @change=${(e: Event) => this.handleFileUpload(e, updateModule, hass)}
-                  />
-                  ${backgroundModule.background_image
-                    ? html`
-                        <div style="margin-top: 8px; font-size: 12px; color: var(--success-color);">
-                          ✓ Image uploaded
-                        </div>
-                      `
-                    : ''}
-                `
-              )
-            : ''}
-
-          <!-- Entity Image Source -->
-          ${backgroundModule.background_type === 'entity'
-            ? this.renderConditionalFieldsGroup(
-                'Entity Image Configuration',
-                html`
-                  ${FormUtils.renderField(
-                    'Entity',
-                    'Select an entity that has an image (e.g., person, camera entities).',
-                    hass,
-                    { background_image_entity: backgroundModule.background_image_entity || '' },
-                    [FormUtils.createSchemaItem('background_image_entity', { entity: {} })],
-                    (e: CustomEvent) => {
-                      const next = e.detail.value.background_image_entity;
-                      const prev = backgroundModule.background_image_entity || '';
-                      if (next === prev) return;
-                      updateModule({ background_image_entity: next });
-                    }
-                  )}
-                `
-              )
-            : ''}
-        </div>
+        <!-- Entity Image Source -->
+        ${backgroundModule.background_type === 'entity'
+          ? this.renderConditionalFieldsGroup(
+              localize('editor.background.entity_config', lang, 'Entity Image Configuration'),
+              html`
+                ${this.renderEntityPickerWithVariables(
+                  hass, config, 'background_image_entity', backgroundModule.background_image_entity || '',
+                  (value: string) => {
+                    const prev = backgroundModule.background_image_entity || '';
+                    if (value === prev) return;
+                    updateModule({ background_image_entity: value });
+                  },
+                  undefined,
+                  localize('editor.background.entity', lang, 'Entity')
+                )}
+              `
+            )
+          : ''}
 
         <!-- Background Settings -->
         ${backgroundModule.background_type !== 'none'
-          ? html`
-              <div
-                class="settings-section"
-                style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
-              >
-                <div
-                  class="section-title"
-                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
-                >
-                  BACKGROUND SETTINGS
-                </div>
-
-                <!-- Background Size -->
-                ${this.renderFieldSection(
-                  'Background Size',
-                  'Control how the background image is sized within the view.',
+          ? this.renderSettingsSection(
+              localize('editor.background.settings_title', lang, 'Background Settings'),
+              localize('editor.background.settings_desc', lang, 'Control how the background image is displayed.'),
+              [
+                {
+                  title: localize('editor.background.size', lang, 'Background Size'),
+                  description: localize('editor.background.size_desc', lang, 'Control how the background image is sized within the view.'),
                   hass,
-                  { background_size: backgroundModule.background_size || 'cover' },
-                  [
+                  data: { background_size: backgroundModule.background_size || 'cover' },
+                  schema: [
                     this.selectField('background_size', [
-                      { value: 'cover', label: 'Cover (Fill entire area)' },
-                      { value: 'contain', label: 'Contain (Fit within area)' },
-                      { value: 'fill', label: 'Fill (Stretch to fit)' },
-                      { value: 'auto', label: 'Auto (Original size)' },
+                      { value: 'cover', label: localize('editor.background.size_cover', lang, 'Cover (Fill entire area)') },
+                      { value: 'contain', label: localize('editor.background.size_contain', lang, 'Contain (Fit within area)') },
+                      { value: 'fill', label: localize('editor.background.size_fill', lang, 'Fill (Stretch to fit)') },
+                      { value: 'auto', label: localize('editor.background.size_auto', lang, 'Auto (Original size)') },
                     ]),
                   ],
-                  (e: CustomEvent) => {
+                  onChange: (e: CustomEvent) => {
                     const next = e.detail.value.background_size;
                     const prev = backgroundModule.background_size || 'cover';
                     if (next === prev) return;
                     updateModule({ background_size: next });
-                  }
-                )}
-
-                <!-- Background Position -->
-                ${FormUtils.renderField(
-                  'Background Position',
-                  'Set the position of the background image (e.g., center, top left, bottom right).',
+                  },
+                },
+                {
+                  title: localize('editor.background.position', lang, 'Background Position'),
+                  description: localize('editor.background.position_desc', lang, 'Set the position (e.g., center, top left, bottom right).'),
                   hass,
-                  { background_position: backgroundModule.background_position || 'center' },
-                  [FormUtils.createSchemaItem('background_position', { text: {} })],
-                  (e: CustomEvent) =>
-                    updateModule({ background_position: e.detail.value.background_position })
-                )}
-
-                <!-- Background Repeat -->
-                ${this.renderFieldSection(
-                  'Background Repeat',
-                  'Control how the background image repeats.',
+                  data: { background_position: backgroundModule.background_position || 'center' },
+                  schema: [this.textField('background_position')],
+                  onChange: (e: CustomEvent) =>
+                    updateModule({ background_position: e.detail.value.background_position }),
+                },
+                {
+                  title: localize('editor.background.repeat', lang, 'Background Repeat'),
+                  description: localize('editor.background.repeat_desc', lang, 'Control how the background image repeats.'),
                   hass,
-                  { background_repeat: backgroundModule.background_repeat || 'no-repeat' },
-                  [
+                  data: { background_repeat: backgroundModule.background_repeat || 'no-repeat' },
+                  schema: [
                     this.selectField('background_repeat', [
-                      { value: 'no-repeat', label: 'No Repeat' },
-                      { value: 'repeat', label: 'Repeat' },
-                      { value: 'repeat-x', label: 'Repeat Horizontally' },
-                      { value: 'repeat-y', label: 'Repeat Vertically' },
+                      { value: 'no-repeat', label: localize('editor.background.repeat_none', lang, 'No Repeat') },
+                      { value: 'repeat', label: localize('editor.background.repeat_both', lang, 'Repeat') },
+                      { value: 'repeat-x', label: localize('editor.background.repeat_x', lang, 'Repeat Horizontally') },
+                      { value: 'repeat-y', label: localize('editor.background.repeat_y', lang, 'Repeat Vertically') },
                     ]),
                   ],
-                  (e: CustomEvent) => {
+                  onChange: (e: CustomEvent) => {
                     const next = e.detail.value.background_repeat;
                     const prev = backgroundModule.background_repeat || 'no-repeat';
                     if (next === prev) return;
                     updateModule({ background_repeat: next });
-                  }
-                )}
+                  },
+                },
+              ]
+            )
+          : ''}
 
-                <!-- Opacity Slider -->
-                <div class="field-container" style="margin-bottom: 24px;">
-                  <div class="field-title">Opacity</div>
-                  <div class="field-description">
-                    Control the opacity of the background image (0-100%).
-                  </div>
-                  <style>
-                    .number-range-control {
-                      display: flex;
-                      gap: 8px;
-                      align-items: center;
-                    }
-                    .range-slider {
-                      flex: 0 0 65%;
-                      height: 6px;
-                      background: var(--divider-color);
-                      border-radius: 3px;
-                      outline: none;
-                      appearance: none;
-                      -webkit-appearance: none;
-                      cursor: pointer;
-                      transition: all 0.2s ease;
-                      min-width: 0;
-                    }
-                    .range-slider::-webkit-slider-thumb {
-                      appearance: none;
-                      -webkit-appearance: none;
-                      width: 18px;
-                      height: 18px;
-                      background: var(--primary-color);
-                      border-radius: 50%;
-                      cursor: pointer;
-                      transition: all 0.2s ease;
-                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-                    }
-                    .range-slider::-moz-range-thumb {
-                      width: 18px;
-                      height: 18px;
-                      background: var(--primary-color);
-                      border-radius: 50%;
-                      cursor: pointer;
-                      border: none;
-                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-                    }
-                    .range-slider:hover {
-                      background: var(--primary-color);
-                      opacity: 0.7;
-                    }
-                    .range-slider:hover::-webkit-slider-thumb {
-                      transform: scale(1.1);
-                    }
-                    .range-slider:hover::-moz-range-thumb {
-                      transform: scale(1.1);
-                    }
-                    .range-input {
-                      flex: 0 0 20%;
-                      padding: 6px 8px !important;
-                      border: 1px solid var(--divider-color);
-                      border-radius: 4px;
-                      background: var(--secondary-background-color);
-                      color: var(--primary-text-color);
-                      font-size: 13px;
-                      text-align: center;
-                      transition: all 0.2s ease;
-                      box-sizing: border-box;
-                    }
-                    .range-input:focus {
-                      outline: none;
-                      border-color: var(--primary-color);
-                      box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-                    }
-                    .range-reset-btn {
-                      width: 32px;
-                      height: 32px;
-                      padding: 0;
-                      border: 1px solid var(--divider-color);
-                      border-radius: 4px;
-                      background: var(--secondary-background-color);
-                      color: var(--primary-text-color);
-                      cursor: pointer;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      transition: all 0.2s ease;
-                      flex-shrink: 0;
-                    }
-                    .range-reset-btn:hover {
-                      background: var(--primary-color);
-                      color: var(--text-primary-color);
-                      border-color: var(--primary-color);
-                    }
-                    .range-reset-btn ha-icon {
-                      font-size: 14px;
-                    }
-                  </style>
-                  <div class="number-range-control">
-                    <input
-                      type="range"
-                      class="range-slider"
-                      min="0"
-                      max="100"
-                      step="1"
-                      .value="${backgroundModule.opacity !== undefined ? backgroundModule.opacity.toString() : '100'}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = parseInt(target.value);
-                        updateModule({ opacity: value });
-                      }}
-                    />
-                    <input
-                      type="number"
-                      class="range-input"
-                      min="0"
-                      max="100"
-                      step="1"
-                      .value="${backgroundModule.opacity !== undefined ? backgroundModule.opacity.toString() : '100'}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = parseInt(target.value);
-                        if (!isNaN(value)) {
-                          updateModule({ opacity: Math.max(0, Math.min(100, value)) });
-                        }
-                      }}
-                    />
-                    <button
-                      class="range-reset-btn"
-                      @click=${() => updateModule({ opacity: 100 })}
-                      title="Reset to default (100)"
-                    >
-                      <ha-icon icon="mdi:refresh"></ha-icon>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            `
+        <!-- Opacity Slider -->
+        ${backgroundModule.background_type !== 'none'
+          ? this.renderSliderField(
+              localize('editor.background.opacity', lang, 'Opacity'),
+              localize('editor.background.opacity_desc', lang, 'Control the opacity of the background image (0–100%).'),
+              backgroundModule.opacity !== undefined ? backgroundModule.opacity : 100,
+              100,
+              0, 100, 1,
+              (v: number) => updateModule({ opacity: v }),
+              '%'
+            )
           : ''}
 
       </div>
@@ -425,8 +247,8 @@ export class UltraBackgroundModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const backgroundModule = module as BackgroundModule;
-
-    // Check if we're in edit mode
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+    const hoverClass = this.getHoverEffectClass(module);
     const isDashboardEditMode = (() => {
       if (previewContext === 'live' || previewContext === 'ha-preview') {
         return false;
@@ -457,9 +279,10 @@ export class UltraBackgroundModule extends BaseUltraModule {
             } • Per View`
           : 'No Background';
 
-      return html`
+      return this.wrapWithAnimation(html`
         <div
-          style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 8px; border: 2px dashed var(--divider-color);"
+          class="${hoverClass}"
+          style="${designStyles}; padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 8px; border: 2px dashed var(--divider-color);"
         >
           <ha-icon
             icon="mdi:image-outline"
@@ -475,7 +298,7 @@ export class UltraBackgroundModule extends BaseUltraModule {
             Background is applied to the current view. Check your dashboard to see it in action.
           </div>
         </div>
-      `;
+      `, module, hass);
     }
 
     // Hide completely on dashboard (no visible element at all)
@@ -527,7 +350,7 @@ export class UltraBackgroundModule extends BaseUltraModule {
       updateModule({ background_image: imagePath });
     } catch (error) {
       console.error('Failed to upload background image:', error);
-      alert('Failed to upload image. Please try again.');
+      ucToastService.error('Failed to upload image. Please try again.');
     }
   }
 
@@ -535,7 +358,7 @@ export class UltraBackgroundModule extends BaseUltraModule {
    * Get styles (none needed for this module)
    */
   getStyles(): string {
-    return '';
+    return BaseUltraModule.getSliderStyles();
   }
 }
 

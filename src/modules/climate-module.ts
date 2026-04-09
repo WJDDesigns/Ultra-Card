@@ -4,7 +4,6 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, ClimateModule, UltraCardConfig } from '../types';
 import { UltraLinkComponent } from '../components/ultra-link';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import '../components/ultra-color-picker';
 
 /**
@@ -100,21 +99,15 @@ export class UltraClimateModule extends BaseUltraModule {
       </style>
 
       <!-- Entity Configuration -->
-      ${this.renderSettingsSection('Entity Configuration', 'Select the climate entity to control', [
-        {
-          title: 'Climate Entity',
-          description: 'Select a climate entity (thermostat, HVAC system)',
-          hass,
-          data: { entity: climateModule.entity || '' },
-          schema: [
-            {
-              name: 'entity',
-              selector: { entity: { domain: 'climate' } },
-            },
-          ],
-          onChange: (e: CustomEvent) => updateModule({ entity: e.detail.value.entity }),
-        },
-      ])}
+      ${this.renderSettingsSection('Entity Configuration', 'Select the climate entity to control', [])}
+      <div style="margin-bottom: 24px;">
+        ${this.renderEntityPickerWithVariables(
+          hass, config, 'entity', climateModule.entity || '',
+          (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+          ['climate'],
+          'Climate Entity'
+        )}
+      </div>
 
       <!-- Dial & Temperature -->
       ${this.renderSettingsSection(
@@ -503,19 +496,20 @@ export class UltraClimateModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const climateModule = module as ClimateModule;
+    const lang = hass?.locale?.language || 'en';
 
     // Validate entity
     if (!climateModule.entity) {
       return this.renderGradientErrorState(
-        'No Climate Entity',
-        'Select a climate entity in the General tab'
+        localize('editor.climate.error_no_entity', lang, 'No Climate Entity'),
+        localize('editor.climate.error_no_entity_desc', lang, 'Select a climate entity in the General tab')
       );
     }
 
     const entity = hass.states[climateModule.entity];
     if (!entity) {
       return this.renderGradientErrorState(
-        'Entity Not Found',
+        localize('editor.climate.error_not_found', lang, 'Entity Not Found'),
         `Climate entity "${climateModule.entity}" not found`
       );
     }
@@ -851,15 +845,17 @@ export class UltraClimateModule extends BaseUltraModule {
 
     // Get hover effect
     const hoverEffect = (climateModule as any).design?.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         ${this.getStyles()}
       </style>
 
       <div
         class="climate-module-container ${hoverEffectClass}"
+        style="${designStyles}"
         @click=${(e: Event) => {
           const target = e.target as HTMLElement;
           if (
@@ -1333,7 +1329,7 @@ export class UltraClimateModule extends BaseUltraModule {
           </div>
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {

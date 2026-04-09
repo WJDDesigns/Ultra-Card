@@ -537,41 +537,17 @@ export class UltraTabsModule extends BaseUltraModule {
         </div>
 
         <!-- Switch Behavior Section -->
-        <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
-        >
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="flex: 1;">
-              <div
-                class="field-title"
-                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-              >
-                ${localize('editor.tabs_module.behavior.switch_on_hover', lang, 'Switch on Hover')}
-              </div>
-              <div
-                class="field-description"
-                style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
-              >
-                ${localize(
-                  'editor.tabs.behavior.switch_on_hover_desc',
-                  lang,
-                  'Switch tabs when hovering over them instead of clicking.'
-                )}
-              </div>
-            </div>
-            <div style="margin-left: 16px;">
-              <ha-switch
-                .checked=${tabsModule.switch_on_hover || false}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updateModule({ switch_on_hover: target.checked });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-              ></ha-switch>
-            </div>
-          </div>
-        </div>
+        ${this.renderFieldSection(
+          localize('editor.tabs_module.behavior.switch_on_hover', lang, 'Switch on Hover'),
+          localize('editor.tabs.behavior.switch_on_hover_desc', lang, 'Switch tabs when hovering over them instead of clicking.'),
+          hass,
+          { switch_on_hover: tabsModule.switch_on_hover || false },
+          [this.booleanField('switch_on_hover')],
+          (e: CustomEvent) => {
+            updateModule({ switch_on_hover: e.detail.value.switch_on_hover });
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }
+        )}
 
         <!-- Responsive Options Section -->
         <div
@@ -595,76 +571,30 @@ export class UltraTabsModule extends BaseUltraModule {
           </div>
 
           <!-- Wrap Tabs Toggle -->
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;"
-          >
-            <div style="flex: 1;">
-              <div
-                class="field-title"
-                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-              >
-                ${localize('editor.tabs_module.responsive.wrap_tabs', lang, 'Wrap Tabs')}
-              </div>
-              <div
-                class="field-description"
-                style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
-              >
-                ${localize(
-                  'editor.tabs_module.responsive.wrap_tabs_desc',
-                  lang,
-                  'Allow tabs to wrap to multiple lines instead of overflowing.'
-                )}
-              </div>
-            </div>
-            <div style="margin-left: 16px;">
-              <ha-switch
-                .checked=${tabsModule.wrap_tabs || false}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updateModule({ wrap_tabs: target.checked });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-              ></ha-switch>
-            </div>
-          </div>
+          ${this.renderFieldSection(
+            localize('editor.tabs_module.responsive.wrap_tabs', lang, 'Wrap Tabs'),
+            localize('editor.tabs_module.responsive.wrap_tabs_desc', lang, 'Allow tabs to wrap to multiple lines instead of overflowing.'),
+            hass,
+            { wrap_tabs: tabsModule.wrap_tabs || false },
+            [this.booleanField('wrap_tabs')],
+            (e: CustomEvent) => {
+              updateModule({ wrap_tabs: e.detail.value.wrap_tabs });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
+          )}
 
           <!-- Mobile Icons Only Toggle -->
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;"
-          >
-            <div style="flex: 1;">
-              <div
-                class="field-title"
-                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-              >
-                ${localize(
-                  'editor.tabs_module.responsive.mobile_icons_only',
-                  lang,
-                  'Icons Only on Mobile'
-                )}
-              </div>
-              <div
-                class="field-description"
-                style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
-              >
-                ${localize(
-                  'editor.tabs_module.responsive.mobile_icons_only_desc',
-                  lang,
-                  'Only show icons (hide text) on screens narrower than the breakpoint. Requires icons on tabs.'
-                )}
-              </div>
-            </div>
-            <div style="margin-left: 16px;">
-              <ha-switch
-                .checked=${tabsModule.mobile_icons_only || false}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updateModule({ mobile_icons_only: target.checked });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-              ></ha-switch>
-            </div>
-          </div>
+          ${this.renderFieldSection(
+            localize('editor.tabs_module.responsive.mobile_icons_only', lang, 'Icons Only on Mobile'),
+            localize('editor.tabs_module.responsive.mobile_icons_only_desc', lang, 'Only show icons (hide text) on screens narrower than the breakpoint. Requires icons on tabs.'),
+            hass,
+            { mobile_icons_only: tabsModule.mobile_icons_only || false },
+            [this.booleanField('mobile_icons_only')],
+            (e: CustomEvent) => {
+              updateModule({ mobile_icons_only: e.detail.value.mobile_icons_only });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
+          )}
 
           <!-- Mobile Breakpoint (conditional on mobile_icons_only) -->
           ${tabsModule.mobile_icons_only
@@ -1539,7 +1469,10 @@ export class UltraTabsModule extends BaseUltraModule {
       `
       : '';
 
-    return html`
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    return this.wrapWithAnimation(html`
       <style>
         .ultra-tabs-container {
           display: flex;
@@ -1580,7 +1513,7 @@ export class UltraTabsModule extends BaseUltraModule {
         ${mobileIconsOnlyCSS}
       </style>
 
-      <div class="ultra-tabs-container ${uniqueContainerClass}" style="${containerStyles}">
+      <div class="ultra-tabs-container ${uniqueContainerClass} ${hoverClass}" style="${designStyles}; ${containerStyles}">
         <!-- Tabs Header -->
         <div
           class="ultra-tabs-header"
@@ -1598,7 +1531,7 @@ export class UltraTabsModule extends BaseUltraModule {
             : ''}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   private _renderTabButton(

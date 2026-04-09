@@ -5,7 +5,6 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, NumberInputModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import '../components/ultra-color-picker';
 
 export class UltraNumberInputModule extends BaseUltraModule {
@@ -67,17 +66,16 @@ export class UltraNumberInputModule extends BaseUltraModule {
         ${this.renderSettingsSection(
           localize('editor.number_input.entity.title', lang, 'Entity Configuration'),
           localize('editor.number_input.entity.desc', lang, 'Link to a Home Assistant input_number helper entity.'),
-          [
-            {
-              title: localize('editor.number_input.entity_field', lang, 'Entity'),
-              description: localize('editor.number_input.entity_field_desc', lang, 'Select an input_number entity to bind this field to.'),
-              hass,
-              data: { entity: numModule.entity || '' },
-              schema: [this.entityField('entity', ['input_number', 'number'])],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
-            },
-          ]
+          []
         )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', numModule.entity || '',
+            (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+            ['input_number', 'number'],
+            localize('editor.number_input.entity_field', lang, 'Entity')
+          )}
+        </div>
 
         <div class="settings-section">
           <div class="section-title">
@@ -193,14 +191,15 @@ export class UltraNumberInputModule extends BaseUltraModule {
     config?: UltraCardConfig, previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const numModule = module as NumberInputModule;
+    const lang = hass?.locale?.language || 'en';
 
     if (!numModule.entity?.trim()) {
-      return this.renderGradientErrorState('Configure Entity', 'Select an input_number entity in the General tab', 'mdi:numeric');
+      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.number_input.error_configure_entity_desc', lang, 'Select an input_number entity in the General tab'), 'mdi:numeric');
     }
 
     const entityState = hass?.states?.[numModule.entity];
     if (!entityState) {
-      return this.renderGradientErrorState('Entity Not Found', `Entity "${numModule.entity}" is not available`, 'mdi:alert-circle-outline');
+      return this.renderGradientErrorState(localize('editor.common.error_entity_not_found', lang, 'Entity Not Found'), `Entity "${numModule.entity}" is not available`, 'mdi:alert-circle-outline');
     }
 
     const rawValue = this._localValue !== null ? this._localValue : parseFloat(entityState.state) || 0;
@@ -219,7 +218,8 @@ export class UltraNumberInputModule extends BaseUltraModule {
     const showLabel = numModule.show_label !== false && !!numModule.label;
 
     const containerStyles = this.buildContainerStyles(designProperties);
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(designProperties.hover_effect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
     const setVal = (v: number) => {
       const clamped = Math.min(max, Math.max(min, parseFloat(v.toFixed(10))));
@@ -251,7 +251,7 @@ export class UltraNumberInputModule extends BaseUltraModule {
 
     const mid = numModule.id;
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         .num-wrap-${mid} {
           display: flex; align-items: center; background: ${bgCss};
@@ -285,7 +285,7 @@ export class UltraNumberInputModule extends BaseUltraModule {
         .num-label { font-size: 12px; font-weight: 500; color: var(--secondary-text-color);
           margin-bottom: 6px; padding-left: 2px; }
       </style>
-      <div class="number-input-container ${hoverEffectClass}" style=${this.styleObjectToCss(containerStyles)}>
+      <div class="number-input-container ${hoverEffectClass}" style="${designStyles}">
         ${showLabel ? html`<div class="num-label">${numModule.label}</div>` : ''}
         <div class="num-wrap-${mid}">
           ${showStepper ? html`
@@ -302,7 +302,7 @@ export class UltraNumberInputModule extends BaseUltraModule {
             </button>` : ''}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   private async callEntityService(entity: string, value: number, hass: HomeAssistant): Promise<void> {

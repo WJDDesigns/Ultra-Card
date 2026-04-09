@@ -5,7 +5,6 @@ import { CardModule, MarkdownModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { getImageUrl } from '../utils/image-upload';
 import { localize } from '../localize/localize';
 import { TemplateService } from '../services/template-service';
@@ -182,39 +181,20 @@ All standard markdown features are automatically enabled!`,
 
         <!-- HTML Support Section -->
         <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
-        >
-          <div
-            class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
-          >
-            ${localize('editor.markdown.html.title', lang, 'HTML Support')}
-          </div>
-
-          <div class="field-group">
-            <ha-form
-              .hass=${hass}
-              .data=${{ enable_html: markdownModule.enable_html || false }}
-              .schema=${[
-                {
-                  name: 'enable_html',
-                  label: localize('editor.markdown.enable_html', lang, 'Enable HTML'),
-                  description: localize(
-                    'editor.markdown.enable_html_desc',
-                    lang,
-                    'Allow raw HTML tags in markdown content (all standard markdown features are always enabled)'
-                  ),
-                  selector: { boolean: {} },
-                },
-              ]}
-              .computeLabel=${(schema: any) => schema.label || schema.name}
-              .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) =>
-                updateModule({ enable_html: e.detail.value.enable_html })}
-            ></ha-form>
-          </div>
-        </div>
+          ${this.renderSettingsSection(
+            localize('editor.markdown.html.title', lang, 'HTML Support'),
+            '',
+            [
+              {
+                title: localize('editor.markdown.enable_html', lang, 'Enable HTML'),
+                description: localize('editor.markdown.enable_html_desc', lang, 'Allow raw HTML tags in markdown content (all standard markdown features are always enabled)'),
+                hass,
+                data: { enable_html: markdownModule.enable_html || false },
+                schema: [this.booleanField('enable_html')],
+                onChange: (e: CustomEvent) => { updateModule({ enable_html: e.detail.value.enable_html }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+              }
+            ]
+          )}
 
         <!-- Template Configuration -->
         <div
@@ -400,12 +380,13 @@ All standard markdown features are automatically enabled!`,
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const markdownModule = module as MarkdownModule;
+    const lang = hass?.locale?.language || 'en';
 
     // GRACEFUL RENDERING: Check for incomplete configuration
     if (!markdownModule.markdown_content || markdownModule.markdown_content.trim() === '') {
       return this.renderGradientErrorState(
-        'Add Markdown Content',
-        'Enter markdown content in the General tab',
+        localize('editor.markdown.error_no_content', lang, 'Add Markdown Content'),
+        localize('editor.markdown.error_no_content_desc', lang, 'Enter markdown content in the General tab'),
         'mdi:language-markdown-outline'
       );
     }
@@ -529,7 +510,7 @@ All standard markdown features are automatically enabled!`,
               if (typeof window !== 'undefined') {
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                     window._ultraCardUpdateTimer = null;
                   }, 50);
                 }
@@ -744,7 +725,7 @@ All standard markdown features are automatically enabled!`,
                 // Use global debounced update
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                     window._ultraCardUpdateTimer = null;
                   }, 50);
                 }
@@ -809,7 +790,7 @@ All standard markdown features are automatically enabled!`,
               if (typeof window !== 'undefined') {
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                     window._ultraCardUpdateTimer = null;
                   }, 50);
                 }
@@ -893,12 +874,13 @@ All standard markdown features are automatically enabled!`,
 
     // Get hover effect configuration from module design
     const hoverEffect = (moduleWithDesign as any).design?.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
-    return html`
+    return this.wrapWithAnimation(html`
       <div
         class="markdown-module-container ${hoverEffectClass}"
-        style="${this.styleObjectToCss(containerStyles)}; cursor: ${(markdownModule.tap_action &&
+        style="${designStyles}; cursor: ${(markdownModule.tap_action &&
           markdownModule.tap_action.action !== 'nothing') ||
         (markdownModule.hold_action && markdownModule.hold_action.action !== 'nothing') ||
         (markdownModule.double_tap_action && markdownModule.double_tap_action.action !== 'nothing')
@@ -912,7 +894,7 @@ All standard markdown features are automatically enabled!`,
           ${element}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   // Explicit Logic tab renderer (some editors call this directly)

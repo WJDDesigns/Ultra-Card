@@ -8,7 +8,6 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { TemplateService } from '../services/template-service';
 // Removed ActionsTabService in favor of GlobalActionsTab
 import { EntityIconService } from '../services/entity-icon-service';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { UltraLinkComponent } from '../components/ultra-link';
 import { getImageUrl } from '../utils/image-upload';
 import { localize } from '../localize/localize';
@@ -370,132 +369,30 @@ export class UltraIconModule extends BaseUltraModule {
 
           <!-- Text Size Control -->
           <div class="field-container" style="margin-bottom: 16px;">
-            <div class="field-title">Text Size (${iconModule.text_size || 16}px)</div>
-            <div class="field-description">Default size for all text elements (name, state)</div>
-            <div
-              class="gap-control-container"
-              style="display: flex; align-items: center; gap: 12px;"
-            >
-              <input
-                type="range"
-                class="gap-slider"
-                min="10"
-                max="48"
-                step="1"
-                .value="${String(iconModule.text_size || 16)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  updateModule({ text_size: Number(target.value) });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-              />
-              <input
-                type="number"
-                class="gap-input"
-                min="10"
-                max="100"
-                step="1"
-                .value="${String(iconModule.text_size || 16)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = Number(target.value);
-                  if (!isNaN(value)) {
-                    updateModule({ text_size: value });
-                    setTimeout(() => this.triggerPreviewUpdate(), 50);
-                  }
-                }}
-                @keydown=${(e: KeyboardEvent) => {
-                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const target = e.target as HTMLInputElement;
-                    const currentValue = Number(target.value) || 16;
-                    const increment = e.key === 'ArrowUp' ? 1 : -1;
-                    const newValue = Math.max(10, Math.min(100, currentValue + increment));
-                    updateModule({ text_size: newValue });
-                    setTimeout(() => this.triggerPreviewUpdate(), 50);
-                  }
-                }}
-              />
-              <button
-                class="reset-btn"
-                @click=${() => {
-                  updateModule({ text_size: undefined });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-                title="${localize(
-                  'editor.fields.reset_default_value',
-                  lang,
-                  'Reset to default ({value})'
-                ).replace('{value}', '16')}"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
+            ${this.renderSliderField(
+              `Text Size (${iconModule.text_size || 16}px)`,
+              'Default size for all text elements (name, state)',
+              iconModule.text_size || 16,
+              16, 10, 48, 1,
+              (v: number) => {
+                updateModule({ text_size: v });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            )}
           </div>
 
           <!-- Icon Size Control -->
           <div class="field-container" style="margin-bottom: 16px;">
-            <div class="field-title">Icon Size (${iconModule.icon_size || 24}px)</div>
-            <div class="field-description">Default size for all icons</div>
-            <div
-              class="gap-control-container"
-              style="display: flex; align-items: center; gap: 12px;"
-            >
-              <input
-                type="range"
-                class="gap-slider"
-                min="12"
-                max="64"
-                step="1"
-                .value="${String(iconModule.icon_size || 24)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  updateModule({ icon_size: Number(target.value) });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-              />
-              <input
-                type="number"
-                class="gap-input"
-                min="12"
-                max="100"
-                step="1"
-                .value="${String(iconModule.icon_size || 24)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = Number(target.value);
-                  if (!isNaN(value)) {
-                    updateModule({ icon_size: value });
-                    setTimeout(() => this.triggerPreviewUpdate(), 50);
-                  }
-                }}
-                @keydown=${(e: KeyboardEvent) => {
-                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const target = e.target as HTMLInputElement;
-                    const currentValue = Number(target.value) || 24;
-                    const increment = e.key === 'ArrowUp' ? 1 : -1;
-                    const newValue = Math.max(12, Math.min(100, currentValue + increment));
-                    updateModule({ icon_size: newValue });
-                    setTimeout(() => this.triggerPreviewUpdate(), 50);
-                  }
-                }}
-              />
-              <button
-                class="reset-btn"
-                @click=${() => {
-                  updateModule({ icon_size: undefined });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-                title="${localize(
-                  'editor.fields.reset_default_value',
-                  lang,
-                  'Reset to default ({value})'
-                ).replace('{value}', '24')}"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
+            ${this.renderSliderField(
+              `Icon Size (${iconModule.icon_size || 24}px)`,
+              'Default size for all icons',
+              iconModule.icon_size || 24,
+              24, 12, 64, 1,
+              (v: number) => {
+                updateModule({ icon_size: v });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            )}
           </div>
         </div>
 
@@ -542,7 +439,7 @@ export class UltraIconModule extends BaseUltraModule {
                     "
                     @click=${() => {
                       this._updateIcon(iconModule, index, { icon_mode: 'entity' }, updateModule);
-                      setTimeout(() => this._triggerPreviewUpdate(), 50);
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
                     }}
                   >
                     <ha-icon icon="mdi:link-variant" style="--mdc-icon-size: 20px;"></ha-icon>
@@ -572,7 +469,7 @@ export class UltraIconModule extends BaseUltraModule {
                     "
                     @click=${() => {
                       this._updateIcon(iconModule, index, { icon_mode: 'static' }, updateModule);
-                      setTimeout(() => this._triggerPreviewUpdate(), 50);
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
                     }}
                   >
                     <ha-icon icon="mdi:image-outline" style="--mdc-icon-size: 20px;"></ha-icon>
@@ -602,28 +499,17 @@ export class UltraIconModule extends BaseUltraModule {
                         lang,
                         'Configure the entity and active/inactive states'
                       ),
-                      [
-                        {
-                          title: localize('editor.icon.entity', lang, 'Entity'),
-                          description: localize(
-                            'editor.icon.entity_desc',
-                            lang,
-                            'Select the entity this icon represents'
-                          ),
-                          hass,
-                          data: { entity: icon.entity || '' },
-                          schema: [this.entityField('entity')],
-                          onChange: (e: CustomEvent) => {
-                            this._handleEntitySelection(
-                              icon,
-                              index,
-                              iconModule,
-                              e.detail.value.entity,
-                              hass,
-                              updateModule
-                            );
-                          },
-                        },
+                      []
+                    )}
+                    <div style="margin-bottom: 16px;">
+                      ${this.renderEntityPickerWithVariables(
+                        hass, config, 'entity', icon.entity || '',
+                        (value: string) => this._handleEntitySelection(icon, index, iconModule, value, hass, updateModule),
+                        undefined,
+                        localize('editor.icon.entity', lang, 'Entity')
+                      )}
+                    </div>
+                    ${this.renderSettingsSection('', '', [
                         {
                           title: localize('editor.icon.inactive_state', lang, 'Inactive State'),
                           description: localize(
@@ -715,7 +601,7 @@ export class UltraIconModule extends BaseUltraModule {
                               updateModule
                             );
                             setTimeout(() => {
-                              this._triggerPreviewUpdate();
+                              this.triggerPreviewUpdate();
                             }, 50);
                           },
                           false
@@ -754,7 +640,7 @@ export class UltraIconModule extends BaseUltraModule {
                               updateModule
                             );
                             setTimeout(() => {
-                              this._triggerPreviewUpdate();
+                              this.triggerPreviewUpdate();
                             }, 50);
                           },
                           false
@@ -793,7 +679,7 @@ export class UltraIconModule extends BaseUltraModule {
                               updateModule
                             );
                             setTimeout(() => {
-                              this._triggerPreviewUpdate();
+                              this.triggerPreviewUpdate();
                             }, 50);
                           },
                           false
@@ -804,27 +690,19 @@ export class UltraIconModule extends BaseUltraModule {
                     <!-- Icon Section -->
                     <div class="settings-section" style="margin-bottom: 24px;">
                       <div class="section-title">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                          <span>${localize('editor.icon.icon_section.title', lang, 'Icon')}</span>
-                          <ha-switch
-                            .checked=${icon.show_icon_when_active !== false &&
-                            icon.show_icon_when_inactive !== false}
-                            @change=${(e: Event) => {
-                              const target = e.target as any;
-                              const enabled = target.checked;
-                              this._updateIcon(
-                                iconModule,
-                                index,
-                                {
-                                  show_icon_when_active: enabled,
-                                  show_icon_when_inactive: enabled,
-                                },
-                                updateModule
-                              );
-                            }}
-                          ></ha-switch>
-                        </div>
+                        <span>${localize('editor.icon.icon_section.title', lang, 'Icon')}</span>
                       </div>
+                      ${this.renderFieldSection(
+                        localize('editor.icon.icon_section.show_icon', lang, 'Show Icon'),
+                        '',
+                        hass,
+                        { show_icon_enabled: icon.show_icon_when_active !== false && icon.show_icon_when_inactive !== false },
+                        [this.booleanField('show_icon_enabled')],
+                        (e: CustomEvent) => {
+                          const enabled = e.detail.value.show_icon_enabled;
+                          this._updateIcon(iconModule, index, { show_icon_when_active: enabled, show_icon_when_inactive: enabled }, updateModule);
+                        }
+                      )}
 
                       ${icon.show_icon_when_active !== false ||
                       icon.show_icon_when_inactive !== false
@@ -921,34 +799,14 @@ export class UltraIconModule extends BaseUltraModule {
                                     ></ultra-color-picker>
                                   </div>
 
-                                  <div class="field-container" style="margin-bottom: 16px;">
-                                    <div class="field-title">
-                                      ${localize(
-                                        'editor.icon.use_state_color_inactive',
-                                        lang,
-                                        'Use State Color'
-                                      )}
-                                    </div>
-                                    <div class="field-description">
-                                      ${localize(
-                                        'editor.icon.use_state_color_inactive_desc',
-                                        lang,
-                                        'Use the entity state color (RGB attributes) for inactive icon color'
-                                      )}
-                                    </div>
-                                    <ha-switch
-                                      .checked=${icon.use_state_color_for_inactive_icon || false}
-                                      @change=${(e: Event) => {
-                                        const target = e.target as any;
-                                        this._updateIcon(
-                                          iconModule,
-                                          index,
-                                          { use_state_color_for_inactive_icon: target.checked },
-                                          updateModule
-                                        );
-                                      }}
-                                    ></ha-switch>
-                                  </div>
+                                  ${this.renderFieldSection(
+                                    localize('editor.icon.use_state_color_inactive', lang, 'Use State Color'),
+                                    localize('editor.icon.use_state_color_inactive_desc', lang, 'Use the entity state color (RGB attributes) for inactive icon color'),
+                                    hass,
+                                    { use_state_color_for_inactive_icon: icon.use_state_color_for_inactive_icon || false },
+                                    [this.booleanField('use_state_color_for_inactive_icon')],
+                                    (e: CustomEvent) => this._updateIcon(iconModule, index, { use_state_color_for_inactive_icon: e.detail.value.use_state_color_for_inactive_icon }, updateModule)
+                                  )}
 
                                   ${this.renderSettingsSection(
                                     localize(
@@ -1331,27 +1189,19 @@ export class UltraIconModule extends BaseUltraModule {
                     <!-- Name Section -->
                     <div class="settings-section" style="margin-bottom: 24px;">
                       <div class="section-title">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                          <span>${localize('editor.icon.name_section.title', lang, 'Name')}</span>
-                          <ha-switch
-                            .checked=${icon.show_name_when_active !== false &&
-                            icon.show_name_when_inactive !== false}
-                            @change=${(e: Event) => {
-                              const target = e.target as any;
-                              const enabled = target.checked;
-                              this._updateIcon(
-                                iconModule,
-                                index,
-                                {
-                                  show_name_when_active: enabled,
-                                  show_name_when_inactive: enabled,
-                                },
-                                updateModule
-                              );
-                            }}
-                          ></ha-switch>
-                        </div>
+                        <span>${localize('editor.icon.name_section.title', lang, 'Name')}</span>
                       </div>
+                      ${this.renderFieldSection(
+                        localize('editor.icon.name_section.show_name', lang, 'Show Name'),
+                        '',
+                        hass,
+                        { show_name_enabled: icon.show_name_when_active !== false && icon.show_name_when_inactive !== false },
+                        [this.booleanField('show_name_enabled')],
+                        (e: CustomEvent) => {
+                          const enabled = e.detail.value.show_name_enabled;
+                          this._updateIcon(iconModule, index, { show_name_when_active: enabled, show_name_when_inactive: enabled }, updateModule);
+                        }
+                      )}
 
                       ${icon.show_name_when_active !== false ||
                       icon.show_name_when_inactive !== false
@@ -1601,27 +1451,19 @@ export class UltraIconModule extends BaseUltraModule {
                     <!-- State Section -->
                     <div class="settings-section" style="margin-bottom: 24px;">
                       <div class="section-title">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                          <span>${localize('editor.icon.state_section.title', lang, 'State')}</span>
-                          <ha-switch
-                            .checked=${icon.show_state_when_active !== false &&
-                            icon.show_state_when_inactive !== false}
-                            @change=${(e: Event) => {
-                              const target = e.target as any;
-                              const enabled = target.checked;
-                              this._updateIcon(
-                                iconModule,
-                                index,
-                                {
-                                  show_state_when_active: enabled,
-                                  show_state_when_inactive: enabled,
-                                },
-                                updateModule
-                              );
-                            }}
-                          ></ha-switch>
-                        </div>
+                        <span>${localize('editor.icon.state_section.title', lang, 'State')}</span>
                       </div>
+                      ${this.renderFieldSection(
+                        localize('editor.icon.state_section.show_state', lang, 'Show State'),
+                        '',
+                        hass,
+                        { show_state_enabled: icon.show_state_when_active !== false && icon.show_state_when_inactive !== false },
+                        [this.booleanField('show_state_enabled')],
+                        (e: CustomEvent) => {
+                          const enabled = e.detail.value.show_state_enabled;
+                          this._updateIcon(iconModule, index, { show_state_when_active: enabled, show_state_when_inactive: enabled }, updateModule);
+                        }
+                      )}
 
                       ${icon.show_state_when_active !== false ||
                       icon.show_state_when_inactive !== false
@@ -2026,36 +1868,14 @@ export class UltraIconModule extends BaseUltraModule {
                             <div
                               style="margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.1); border-radius: 8px; border-left: 4px solid var(--warning-color, #FF9800);"
                             >
-                              <div style="display: flex; align-items: center; gap: 12px;">
-                                <ha-switch
-                                  .checked=${icon.ignore_entity_state_config || false}
-                                  @change=${(e: Event) => {
-                                    const target = e.target as any;
-                                    this._updateIcon(
-                                      iconModule,
-                                      index,
-                                      { ignore_entity_state_config: target.checked },
-                                      updateModule
-                                    );
-                                  }}
-                                ></ha-switch>
-                                <div style="flex: 1;">
-                                  <div style="font-weight: 600; margin-bottom: 4px;">
-                                    ${localize(
-                                      'editor.icon.ignore_entity_state',
-                                      lang,
-                                      'Ignore Entity State Config'
-                                    )}
-                                  </div>
-                                  <div style="font-size: 12px; color: var(--secondary-text-color);">
-                                    ${localize(
-                                      'editor.icon.ignore_entity_state_desc',
-                                      lang,
-                                      'When enabled, entity state settings above will be ignored and template will control active/inactive state for animations'
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
+                              ${this.renderFieldSection(
+                                localize('editor.icon.ignore_entity_state', lang, 'Ignore Entity State Config'),
+                                localize('editor.icon.ignore_entity_state_desc', lang, 'When enabled, entity state settings above will be ignored and template will control active/inactive state for animations'),
+                                hass,
+                                { ignore_entity_state_config: icon.ignore_entity_state_config || false },
+                                [this.booleanField('ignore_entity_state_config')],
+                                (e: CustomEvent) => this._updateIcon(iconModule, index, { ignore_entity_state_config: e.detail.value.ignore_entity_state_config }, updateModule)
+                              )}
                             </div>
 
                             <div
@@ -2238,7 +2058,7 @@ export class UltraIconModule extends BaseUltraModule {
                             );
                             // Trigger re-render to update dropdown UI
                             setTimeout(() => {
-                              this._triggerPreviewUpdate();
+                              this.triggerPreviewUpdate();
                             }, 50);
                           },
                         },
@@ -2329,7 +2149,7 @@ export class UltraIconModule extends BaseUltraModule {
                             );
                             // Trigger re-render to update dropdown UI
                             setTimeout(() => {
-                              this._triggerPreviewUpdate();
+                              this.triggerPreviewUpdate();
                             }, 50);
                           },
                         },
@@ -2391,7 +2211,7 @@ export class UltraIconModule extends BaseUltraModule {
                 { icon_inactive: newIcon, icon_active: newIcon },
                 updateModule
               );
-              setTimeout(() => this._triggerPreviewUpdate(), 50);
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
             },
             false
           )}
@@ -2434,7 +2254,7 @@ export class UltraIconModule extends BaseUltraModule {
                 },
                 updateModule
               );
-              setTimeout(() => this._triggerPreviewUpdate(), 50);
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
             }}
           ></ultra-color-picker>
         </div>
@@ -2477,7 +2297,7 @@ export class UltraIconModule extends BaseUltraModule {
                 updates.active_icon_background_color = 'var(--divider-color)';
               }
               this._updateIcon(iconModule, index, updates, updateModule);
-              setTimeout(() => this._triggerPreviewUpdate(), 50);
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
             },
             false
           )}
@@ -2510,7 +2330,7 @@ export class UltraIconModule extends BaseUltraModule {
                       },
                       updateModule
                     );
-                    setTimeout(() => this._triggerPreviewUpdate(), 50);
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
                   }}
                 ></ultra-color-picker>
               </div>
@@ -2587,38 +2407,24 @@ export class UltraIconModule extends BaseUltraModule {
                 { inactive_icon_animation: next, active_icon_animation: next },
                 updateModule
               );
-              setTimeout(() => this._triggerPreviewUpdate(), 50);
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
             },
             false
           )}
         </div>
 
         <!-- Hover Effect -->
-        <div class="field-container">
-          <div class="field-title">
-            ${localize('editor.icon.hover_effect', lang, 'Hover Effect')}
-          </div>
-          <div class="field-description">
-            ${localize(
-              'editor.icon.hover_effect_desc',
-              lang,
-              'Enable hover animation on mouse over'
-            )}
-          </div>
-          <ha-switch
-            .checked=${icon.enable_hover_effect || false}
-            @change=${(e: Event) => {
-              const target = e.target as any;
-              this._updateIcon(
-                iconModule,
-                index,
-                { enable_hover_effect: target.checked },
-                updateModule
-              );
-              setTimeout(() => this._triggerPreviewUpdate(), 50);
-            }}
-          ></ha-switch>
-        </div>
+        ${this.renderFieldSection(
+          localize('editor.icon.hover_effect', lang, 'Hover Effect'),
+          localize('editor.icon.hover_effect_desc', lang, 'Enable hover animation on mouse over'),
+          hass,
+          { enable_hover_effect: icon.enable_hover_effect || false },
+          [this.booleanField('enable_hover_effect')],
+          (e: CustomEvent) => {
+            this._updateIcon(iconModule, index, { enable_hover_effect: e.detail.value.enable_hover_effect }, updateModule);
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }
+        )}
       </div>
     `;
   }
@@ -2660,6 +2466,7 @@ export class UltraIconModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const iconModule = module as IconModule;
+    const lang = hass?.locale?.language || 'en';
 
     // Initialize template service if needed
     if (!this._templateService && hass) {
@@ -2778,7 +2585,7 @@ export class UltraIconModule extends BaseUltraModule {
               if (typeof window !== 'undefined') {
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                     window._ultraCardUpdateTimer = null;
                   }, 50);
                 }
@@ -2890,6 +2697,9 @@ export class UltraIconModule extends BaseUltraModule {
         ${this.getStyles()}
       </style>`;
 
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
     // GRACEFUL RENDERING: Check for incomplete configuration
     // Static icons are always valid (no entity required)
     // Entity-based icons need an entity to be valid
@@ -2905,8 +2715,8 @@ export class UltraIconModule extends BaseUltraModule {
       return html`
         ${localStyle}
         ${this.renderGradientErrorState(
-          'Add Icons',
-          'Configure icons in the General tab',
+          localize('editor.icon.error_no_icons', lang, 'Add Icons'),
+          localize('editor.icon.error_no_icons_desc', lang, 'Configure icons in the General tab'),
           'mdi:shape-outline'
         )}
       `;
@@ -2916,7 +2726,7 @@ export class UltraIconModule extends BaseUltraModule {
       const iconList = incompleteIcons.map((i, idx) => `Icon ${idx + 1}`).join(', ');
       return html`
         ${localStyle}
-        ${this.renderGradientErrorState('Icons Need Entities', iconList, 'mdi:shape-outline')}
+        ${this.renderGradientErrorState(localize('editor.icon.error_icons_need_entities', lang, 'Icons Need Entities'), iconList, 'mdi:shape-outline')}
       `;
     }
 
@@ -2928,9 +2738,9 @@ export class UltraIconModule extends BaseUltraModule {
           )
         : '';
 
-    return html`
+    return this.wrapWithAnimation(html`
       ${localStyle} ${warningBanner}
-      <div class="icon-module-container" style=${this.styleObjectToCss(containerStyles)}>
+      <div class="icon-module-container ${hoverEffectClass}" style="${designStyles}">
         <div class="icon-module-preview">
           <div
             class="icon-grid"
@@ -3023,7 +2833,7 @@ export class UltraIconModule extends BaseUltraModule {
                       if (typeof window !== 'undefined') {
                         if (!window._ultraCardUpdateTimer) {
                           window._ultraCardUpdateTimer = setTimeout(() => {
-                            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                            this.triggerPreviewUpdate();
                             window._ultraCardUpdateTimer = null;
                           }, 50);
                         }
@@ -3095,7 +2905,7 @@ export class UltraIconModule extends BaseUltraModule {
                         // Use global debounced update
                         if (!window._ultraCardUpdateTimer) {
                           window._ultraCardUpdateTimer = setTimeout(() => {
-                            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                            this.triggerPreviewUpdate();
                             window._ultraCardUpdateTimer = null;
                           }, 50);
                         }
@@ -3150,7 +2960,7 @@ export class UltraIconModule extends BaseUltraModule {
                         // Use global debounced update
                         if (!window._ultraCardUpdateTimer) {
                           window._ultraCardUpdateTimer = setTimeout(() => {
-                            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                            this.triggerPreviewUpdate();
                             window._ultraCardUpdateTimer = null;
                           }, 50);
                         }
@@ -3241,7 +3051,7 @@ export class UltraIconModule extends BaseUltraModule {
                     () => {
                       // Force re-render when template updates
                       if (typeof window !== 'undefined') {
-                        window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                        this.triggerPreviewUpdate();
                       }
                     },
                     undefined, // No context variables
@@ -3449,7 +3259,7 @@ export class UltraIconModule extends BaseUltraModule {
 
               // Get hover effect configuration from module design
               const hoverEffect = (iconModule as any).design?.hover_effect;
-              const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+              const hoverEffectClass = this.getHoverEffectClass(module);
 
               return html`
                 <div
@@ -3631,7 +3441,7 @@ export class UltraIconModule extends BaseUltraModule {
             : ''}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   // Split preview method for child module settings popup only
@@ -3669,7 +3479,7 @@ export class UltraIconModule extends BaseUltraModule {
             () => {
               // Force re-render when template updates
               if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                this.triggerPreviewUpdate();
               }
             }
             // Note: cardConfig not available in renderSplitPreview - only global variables will work here
@@ -3957,7 +3767,7 @@ export class UltraIconModule extends BaseUltraModule {
           templateKey,
           () => {
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              this.triggerPreviewUpdate();
             }
           },
           context
@@ -4017,7 +3827,7 @@ export class UltraIconModule extends BaseUltraModule {
           () => {
             // Force re-render when template updates
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              this.triggerPreviewUpdate();
             }
           }
           // Note: cardConfig not available in _renderSingleIconPreview - only global variables will work here
@@ -4059,7 +3869,7 @@ export class UltraIconModule extends BaseUltraModule {
           () => {
             // Force re-render when template updates
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              this.triggerPreviewUpdate();
             }
           }
           // Note: cardConfig not available in _renderSingleIconPreview - only global variables will work here
@@ -4155,7 +3965,7 @@ export class UltraIconModule extends BaseUltraModule {
           () => {
             // Force re-render when template updates
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              this.triggerPreviewUpdate();
             }
           }
           // Note: cardConfig not available in _renderSingleIconPreview - only global variables will work here
@@ -4323,7 +4133,7 @@ export class UltraIconModule extends BaseUltraModule {
 
     // Get hover effect configuration from module design (if provided)
     const hoverEffect = iconModule ? (iconModule as any).design?.hover_effect : undefined;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(iconModule as any);
 
     return html`
       <div
@@ -4507,7 +4317,7 @@ export class UltraIconModule extends BaseUltraModule {
   ): TemplateResult {
     // Get hover effect configuration from module design
     const hoverEffect = (iconModule as any).design?.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(iconModule as any);
 
     // Get design properties ONLY from the design object (Design tab)
     // This ensures Design tab always takes precedence over General tab
@@ -4577,7 +4387,7 @@ export class UltraIconModule extends BaseUltraModule {
                 templateKey,
                 () => {
                   if (typeof window !== 'undefined') {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                   }
                 },
                 context
@@ -5364,7 +5174,7 @@ export class UltraIconModule extends BaseUltraModule {
           templateKey,
           () => {
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              this.triggerPreviewUpdate();
             }
           },
           context
@@ -5445,7 +5255,7 @@ export class UltraIconModule extends BaseUltraModule {
           () => {
             // Force re-render when template updates
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              this.triggerPreviewUpdate();
             }
           }
           // Note: cardConfig not available in _evaluateIconState - only global variables will work here
@@ -6261,114 +6071,7 @@ export class UltraIconModule extends BaseUltraModule {
       }
 
       /* Gap control styles */
-      .gap-control-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .gap-slider {
-        flex: 1;
-        height: 6px;
-        background: var(--divider-color);
-        border-radius: 3px;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .gap-slider::-webkit-slider-thumb {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider:hover {
-        background: var(--primary-color);
-        opacity: 0.7;
-      }
-
-      .gap-slider:hover::-webkit-slider-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-slider:hover::-moz-range-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-input {
-        width: 48px !important;
-        max-width: 48px !important;
-        min-width: 48px !important;
-        padding: 4px 6px !important;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-      }
-
-      .gap-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-      }
-
-      .reset-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-      }
-
-      .reset-btn:hover {
-        background: var(--primary-color);
-        color: var(--text-primary-color);
-        border-color: var(--primary-color);
-        transform: none;
-      }
-
-      .reset-btn ha-icon {
-        font-size: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0;
-        padding: 0;
-        line-height: 1;
-      }
+      ${BaseUltraModule.getSliderStyles()}
 
       /* Lock button styles */
       .lock-btn {
@@ -6931,7 +6634,7 @@ export class UltraIconModule extends BaseUltraModule {
     // Force UI refresh
     setTimeout(() => {
       try {
-        this._triggerPreviewUpdate();
+        this.triggerPreviewUpdate();
       } catch (_) {}
 
       window.dispatchEvent(
@@ -6964,27 +6667,6 @@ export class UltraIconModule extends BaseUltraModule {
     this._updateTimeout = setTimeout(() => {
       this._updateIcon(iconModule, index, updates, updateModule);
     }, delay);
-  }
-
-  private _triggerPreviewUpdate(): void {
-    // Clear any caches that might be preventing updates
-    this._attributeCache.clear();
-
-    // Dispatch custom events to trigger preview updates
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-      window.dispatchEvent(new CustomEvent('ultra-card-preview-update'));
-      window.dispatchEvent(new CustomEvent('ultra-card-state-changed'));
-    }
-
-    // Also try to trigger a re-render of the current component
-    try {
-      if ((this as any).requestUpdate) {
-        (this as any).requestUpdate();
-      }
-    } catch (e) {
-      // Ignore if requestUpdate is not available
-    }
   }
 
   private _updateIconWithLockSync(
@@ -7107,57 +6789,15 @@ export class UltraIconModule extends BaseUltraModule {
     max: number,
     defaultValue: number
   ): TemplateResult {
-    return html`
-      <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-        <input
-          type="range"
-          class="gap-slider"
-          min="${min}"
-          max="${max}"
-          step="1"
-          .value="${value}"
-          @input=${(e: Event) => {
-            const target = e.target as HTMLInputElement;
-            const newValue = Number(target.value);
-            this._updateIconWithLockSync(iconModule, index, property, newValue, updateModule);
-          }}
-        />
-        <input
-          type="number"
-          class="gap-input"
-          min="${min}"
-          max="${max}"
-          step="1"
-          .value="${value}"
-          @input=${(e: Event) => {
-            const target = e.target as HTMLInputElement;
-            const newValue = Number(target.value);
-            if (!isNaN(newValue) && newValue >= min && newValue <= max) {
-              this._updateIconWithLockSync(iconModule, index, property, newValue, updateModule);
-            }
-          }}
-          @keydown=${(e: KeyboardEvent) => {
-            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-              e.preventDefault();
-              const target = e.target as HTMLInputElement;
-              const currentValue = Number(target.value) || defaultValue;
-              const increment = e.key === 'ArrowUp' ? 1 : -1;
-              const newValue = Math.max(min, Math.min(max, currentValue + increment));
-              this._updateIconWithLockSync(iconModule, index, property, newValue, updateModule);
-            }
-          }}
-        />
-        <button
-          class="reset-btn"
-          @click=${() => {
-            this._updateIconWithLockSync(iconModule, index, property, defaultValue, updateModule);
-          }}
-          title="Reset to default (${defaultValue})"
-        >
-          <ha-icon icon="mdi:refresh"></ha-icon>
-        </button>
-      </div>
-    `;
+    return this.renderSliderField(
+      '',
+      '',
+      value,
+      defaultValue, min, max, 1,
+      (v: number) => {
+        this._updateIconWithLockSync(iconModule, index, property, v, updateModule);
+      }
+    );
   }
 
   // Background padding control for static icons (syncs both active and inactive)
@@ -7167,8 +6807,6 @@ export class UltraIconModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void,
     value: number
   ): TemplateResult {
-    const min = 0;
-    const max = 50;
     const defaultValue = 8;
 
     const updateBothPaddings = (newValue: number) => {
@@ -7182,57 +6820,16 @@ export class UltraIconModule extends BaseUltraModule {
         },
         updateModule
       );
-      setTimeout(() => this._triggerPreviewUpdate(), 50);
+      setTimeout(() => this.triggerPreviewUpdate(), 50);
     };
 
-    return html`
-      <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-        <input
-          type="range"
-          class="gap-slider"
-          min="${min}"
-          max="${max}"
-          step="1"
-          .value="${value}"
-          @input=${(e: Event) => {
-            const target = e.target as HTMLInputElement;
-            updateBothPaddings(Number(target.value));
-          }}
-        />
-        <input
-          type="number"
-          class="gap-input"
-          min="${min}"
-          max="${max}"
-          step="1"
-          .value="${value}"
-          @input=${(e: Event) => {
-            const target = e.target as HTMLInputElement;
-            const newValue = Number(target.value);
-            if (!isNaN(newValue) && newValue >= min && newValue <= max) {
-              updateBothPaddings(newValue);
-            }
-          }}
-          @keydown=${(e: KeyboardEvent) => {
-            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-              e.preventDefault();
-              const target = e.target as HTMLInputElement;
-              const currentValue = Number(target.value) || defaultValue;
-              const increment = e.key === 'ArrowUp' ? 1 : -1;
-              const newValue = Math.max(min, Math.min(max, currentValue + increment));
-              updateBothPaddings(newValue);
-            }
-          }}
-        />
-        <button
-          class="reset-btn"
-          @click=${() => updateBothPaddings(defaultValue)}
-          title="Reset to default (${defaultValue}px)"
-        >
-          <ha-icon icon="mdi:refresh"></ha-icon>
-        </button>
-      </div>
-    `;
+    return this.renderSliderField(
+      '',
+      '',
+      value,
+      defaultValue, 0, 50, 1,
+      updateBothPaddings
+    );
   }
 
   private _renderFieldWithLock(

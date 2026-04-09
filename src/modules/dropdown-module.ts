@@ -6,7 +6,6 @@ import { CardModule, DropdownModule, DropdownOption, UltraCardConfig } from '../
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { TemplateService } from '../services/template-service';
 import {
   parseUnifiedTemplate,
@@ -410,37 +409,14 @@ export class UltraDropdownModule extends BaseUltraModule {
                 </div>
 
                 <!-- Keep Selection State -->
-                <div
-                  style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;"
-                >
-                  <div>
-                    <div
-                      style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-                    >
-                      ${localize(
-                        'editor.dropdown.keep_selection_state.title',
-                        lang,
-                        'Keep Selection State'
-                      )}
-                    </div>
-                    <div
-                      style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
-                    >
-                      ${localize(
-                        'editor.dropdown.keep_selection_state.desc',
-                        lang,
-                        'Remember and display the last selected option (recommended for scene selectors)'
-                      )}
-                    </div>
-                  </div>
-                  <ha-switch
-                    .checked=${dropdownModule.track_state ?? true}
-                    @change=${(e: Event) => {
-                      const target = e.target as any;
-                      updateModule({ track_state: target.checked });
-                    }}
-                  ></ha-switch>
-                </div>
+                ${this.renderFieldSection(
+                  localize('editor.dropdown.keep_selection_state.title', lang, 'Keep Selection State'),
+                  localize('editor.dropdown.keep_selection_state.desc', lang, 'Remember and display the last selected option (recommended for scene selectors)'),
+                  hass,
+                  { track_state: dropdownModule.track_state ?? true },
+                  [this.booleanField('track_state')],
+                  (e: CustomEvent) => updateModule({ track_state: e.detail.value.track_state })
+                )}
 
                 <!-- Closed Dropdown Title Configuration -->
                 <div style="margin-bottom: 16px;">
@@ -494,23 +470,15 @@ export class UltraDropdownModule extends BaseUltraModule {
                             'Entity State Configuration'
                           ),
                           html`
-                            ${this.renderFieldSection(
-                              localize('editor.dropdown.closed_title_entity.title', lang, 'Entity'),
-                              localize(
-                                'editor.dropdown.closed_title_entity.desc',
-                                lang,
-                                'Entity whose state will be displayed when dropdown is closed.'
-                              ),
-                              hass,
-                              { closed_title_entity: dropdownModule.closed_title_entity || '' },
-                              [this.entityField('closed_title_entity')],
-                              (e: CustomEvent) => {
-                                const next = e.detail.value.closed_title_entity;
-                                const prev = dropdownModule.closed_title_entity || '';
-                                if (next === prev) return;
-                                updateModule({ closed_title_entity: next });
+                            ${this.renderEntityPickerWithVariables(
+                              hass, config, 'closed_title_entity', dropdownModule.closed_title_entity || '',
+                              (value: string) => {
+                                if (value === dropdownModule.closed_title_entity) return;
+                                updateModule({ closed_title_entity: value });
                                 setTimeout(() => this.triggerPreviewUpdate(), 50);
-                              }
+                              },
+                              undefined,
+                              localize('editor.dropdown.closed_title_entity.title', lang, 'Entity')
                             )}
                           `
                         )}
@@ -1446,33 +1414,14 @@ export class UltraDropdownModule extends BaseUltraModule {
       ${option.icon
         ? html`
             <div class="field-group" style="margin-bottom: 12px;">
-              <div
-                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
-              >
-                <div>
-                  <div
-                    style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-                  >
-                    ${localize('editor.dropdown.option.use_state_color', lang, 'Use State Color')}
-                  </div>
-                  <div
-                    style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
-                  >
-                    ${localize(
-                      'editor.dropdown.option.use_state_color_desc',
-                      lang,
-                      'Use the entity state color for the icon (overrides custom color)'
-                    )}
-                  </div>
-                </div>
-                <ha-switch
-                  .checked=${option.use_state_color || false}
-                  @change=${(e: Event) => {
-                    const target = e.target as any;
-                    updateOption(option.id, { use_state_color: target.checked });
-                  }}
-                ></ha-switch>
-              </div>
+              ${this.renderFieldSection(
+                localize('editor.dropdown.option.use_state_color', lang, 'Use State Color'),
+                localize('editor.dropdown.option.use_state_color_desc', lang, 'Use the entity state color for the icon (overrides custom color)'),
+                hass,
+                { use_state_color: option.use_state_color || false },
+                [this.booleanField('use_state_color')],
+                (e: CustomEvent) => updateOption(option.id, { use_state_color: e.detail.value.use_state_color })
+              )}
 
               ${!option.use_state_color
                 ? html`
@@ -1557,24 +1506,14 @@ export class UltraDropdownModule extends BaseUltraModule {
                 ),
                 html`
                   <div class="field-group">
-                    ${this.renderFieldSection(
-                      localize('editor.dropdown.option.more_info_entity', lang, 'Entity'),
-                      localize(
-                        'editor.dropdown.option.more_info_entity_desc',
-                        lang,
-                        'Entity to show more information for'
-                      ),
-                      hass,
-                      { entity: option.action.entity || '' },
-                      [this.entityField('entity')],
-                      (e: CustomEvent) => {
-                        const next = e.detail.value.entity;
-                        const prev = option.action.entity || '';
-                        if (next === prev) return;
-                        updateOption(option.id, {
-                          action: { ...option.action, entity: e.detail.value.entity },
-                        });
-                      }
+                    ${this.renderEntityPickerWithVariables(
+                      hass, undefined as any, 'entity', option.action.entity || '',
+                      (value: string) => {
+                        if (value === option.action.entity) return;
+                        updateOption(option.id, { action: { ...option.action, entity: value } });
+                      },
+                      undefined,
+                      localize('editor.dropdown.option.more_info_entity', lang, 'Entity')
                     )}
                   </div>
                 `
@@ -1589,24 +1528,14 @@ export class UltraDropdownModule extends BaseUltraModule {
                 localize('editor.dropdown.option.toggle_config', lang, 'Toggle Configuration'),
                 html`
                   <div class="field-group">
-                    ${this.renderFieldSection(
-                      localize('editor.dropdown.option.toggle_entity', lang, 'Entity'),
-                      localize(
-                        'editor.dropdown.option.toggle_entity_desc',
-                        lang,
-                        'Entity to toggle on/off'
-                      ),
-                      hass,
-                      { entity: option.action.entity || '' },
-                      [this.entityField('entity')],
-                      (e: CustomEvent) => {
-                        const next = e.detail.value.entity;
-                        const prev = option.action.entity || '';
-                        if (next === prev) return;
-                        updateOption(option.id, {
-                          action: { ...option.action, entity: e.detail.value.entity },
-                        });
-                      }
+                    ${this.renderEntityPickerWithVariables(
+                      hass, undefined as any, 'entity', option.action.entity || '',
+                      (value: string) => {
+                        if (value === option.action.entity) return;
+                        updateOption(option.id, { action: { ...option.action, entity: value } });
+                      },
+                      undefined,
+                      localize('editor.dropdown.option.toggle_entity', lang, 'Entity')
                     )}
                   </div>
                 `
@@ -1652,6 +1581,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const dropdownModule = module as DropdownModule;
+    const lang = hass?.locale?.language || 'en';
 
     // Store module context for event handling in portaled dropdowns
     this.moduleContexts.set(dropdownModule.id, { module: dropdownModule, hass, config });
@@ -1767,8 +1697,8 @@ export class UltraDropdownModule extends BaseUltraModule {
       (!dropdownModule.source_entity || dropdownModule.source_entity.trim() === '')
     ) {
       return this.renderGradientErrorState(
-        'Configure Source Entity',
-        'Select a source entity in the General tab',
+        localize('editor.dropdown.error_no_entity', lang, 'Configure Source Entity'),
+        localize('editor.dropdown.error_no_entity_desc', lang, 'Select a source entity in the General tab'),
         'mdi:format-list-bulleted'
       );
     }
@@ -1777,8 +1707,8 @@ export class UltraDropdownModule extends BaseUltraModule {
       // Check if unified template is enabled
       if (!dropdownModule.unified_template_mode || !dropdownModule.unified_template) {
         return this.renderGradientErrorState(
-          'Add Options',
-          'Configure dropdown options in the General tab or enable Unified Template',
+          localize('editor.dropdown.error_no_options', lang, 'Add Options'),
+          localize('editor.dropdown.error_no_options_desc', lang, 'Configure dropdown options in the General tab or enable Unified Template'),
           'mdi:format-list-bulleted'
         );
       }
@@ -1867,7 +1797,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             if (typeof window !== 'undefined') {
               if (!window._ultraCardUpdateTimer) {
                 window._ultraCardUpdateTimer = setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  this.triggerPreviewUpdate();
                   window._ultraCardUpdateTimer = null;
                 }, 50);
               }
@@ -1888,7 +1818,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             hass.__uvc_template_strings[templateKey] = result;
             // Trigger update
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              this.triggerPreviewUpdate();
             }
           }).catch((error) => {
             console.error('Error evaluating template initially:', error);
@@ -2005,7 +1935,8 @@ export class UltraDropdownModule extends BaseUltraModule {
 
     // Get hover effect configuration from module design
     const hoverEffect = (dropdownModule as any).design?.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
     // Determine closed dropdown title based on closed_title_mode
     // Priority: Template display key > closed_title_mode settings
@@ -2089,12 +2020,12 @@ export class UltraDropdownModule extends BaseUltraModule {
       }
     }
 
-    return html`
+    return this.wrapWithAnimation(html`
       <div
         class="dropdown-module-container ${hoverEffectClass}"
         data-module-id="${dropdownModule.id}"
         data-preview-context="${previewContext || 'dashboard'}"
-        style=${this.styleObjectToCss(containerStyles)}
+        style="${designStyles}"
       >
         <div
           class="dropdown-module-preview"
@@ -2440,7 +2371,7 @@ export class UltraDropdownModule extends BaseUltraModule {
           </div>
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   // Helper to get icon color for options (handles both manual and entity mode)

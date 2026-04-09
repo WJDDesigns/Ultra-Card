@@ -7,7 +7,6 @@ import { UcFormUtils } from '../utils/uc-form-utils';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { TemplateService } from '../services/template-service';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { localize } from '../localize/localize';
 import { buildEntityContext } from '../utils/template-context';
@@ -18,6 +17,7 @@ import { sanitizeRichTextHtml } from '../utils/html-sanitizer';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 import '../components/ultra-wysiwyg-editor';
+import '../components/uc-template-cheatsheet';
 
 export class UltraTextModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -85,130 +85,42 @@ export class UltraTextModule extends BaseUltraModule {
       ${this.injectUcFormStyles()}
       <div class="module-general-settings">
         <!-- Module-Wide Size Controls -->
-        <div class="settings-section" style="margin-bottom: 32px;">
-          <div class="section-title">SIZE CONTROLS</div>
-          <div class="section-description" style="margin-bottom: 16px;">
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          >
+            SIZE CONTROLS
+          </div>
+          <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;">
             Control the default sizes for this module. Design tab overrides these settings.
           </div>
           
-          <!-- Text Size Control -->
-          <div class="field-container" style="margin-bottom: 16px;">
-            <div class="field-title">Text Size (${textModule.text_size || 16}px)</div>
-            <div class="field-description">Default size for text content</div>
-            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-              <input
-                type="range"
-                class="gap-slider"
-                min="10"
-                max="48"
-                step="1"
-                .value="${String(textModule.text_size || 16)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  updateModule({ text_size: Number(target.value) });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-              />
-              <input
-                type="number"
-                class="gap-input"
-                min="10"
-                max="100"
-                step="1"
-                .value="${String(textModule.text_size || 16)}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = Number(target.value);
-                  if (!isNaN(value)) {
-                    updateModule({ text_size: value });
-                    setTimeout(() => this.triggerPreviewUpdate(), 50);
-                  }
-                }}
-                @keydown=${(e: KeyboardEvent) => {
-                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const target = e.target as HTMLInputElement;
-                    const currentValue = Number(target.value) || 16;
-                    const increment = e.key === 'ArrowUp' ? 1 : -1;
-                    const newValue = Math.max(10, Math.min(100, currentValue + increment));
-                    updateModule({ text_size: newValue });
-                    setTimeout(() => this.triggerPreviewUpdate(), 50);
-                  }
-                }}
-              />
-              <button
-                class="reset-btn"
-                @click=${() => {
-                  updateModule({ text_size: undefined });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-                title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '16')}"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
-          </div>
+        <!-- Text Size Control -->
+          ${this.renderSliderField(
+            localize('editor.text.text_size', lang, 'Text Size'),
+            'Default size for text content',
+            textModule.text_size ?? 16,
+            16,
+            10, 48, 1,
+            (v: number) => { updateModule({ text_size: v }); },
+            'px'
+          )}
 
           <!-- Icon Size Control (only shown when icon is configured) -->
           ${textModule.icon && textModule.icon.trim() !== ''
-            ? html`
-                <div class="field-container" style="margin-bottom: 16px;">
-                  <div class="field-title">Icon Size (${textModule.icon_size || 24}px)</div>
-                  <div class="field-description">Size of the icon</div>
-                  <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-                    <input
-                      type="range"
-                      class="gap-slider"
-                      min="12"
-                      max="64"
-                      step="1"
-                      .value="${String(textModule.icon_size || 24)}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        updateModule({ icon_size: Number(target.value) });
-                        setTimeout(() => this.triggerPreviewUpdate(), 50);
-                      }}
-                    />
-                    <input
-                      type="number"
-                      class="gap-input"
-                      min="12"
-                      max="100"
-                      step="1"
-                      .value="${String(textModule.icon_size || 24)}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = Number(target.value);
-                        if (!isNaN(value)) {
-                          updateModule({ icon_size: value });
-                          setTimeout(() => this.triggerPreviewUpdate(), 50);
-                        }
-                      }}
-                      @keydown=${(e: KeyboardEvent) => {
-                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                          e.preventDefault();
-                          const target = e.target as HTMLInputElement;
-                          const currentValue = Number(target.value) || 24;
-                          const increment = e.key === 'ArrowUp' ? 1 : -1;
-                          const newValue = Math.max(12, Math.min(100, currentValue + increment));
-                          updateModule({ icon_size: newValue });
-                          setTimeout(() => this.triggerPreviewUpdate(), 50);
-                        }
-                      }}
-                    />
-                    <button
-                      class="reset-btn"
-                      @click=${() => {
-                        updateModule({ icon_size: undefined });
-                        setTimeout(() => this.triggerPreviewUpdate(), 50);
-                      }}
-                      title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '24')}"
-                    >
-                      <ha-icon icon="mdi:refresh"></ha-icon>
-                    </button>
-                  </div>
-                </div>
-              `
+            ? this.renderSliderField(
+                localize('editor.text.icon_size', lang, 'Icon Size'),
+                'Size of the icon',
+                textModule.icon_size ?? 24,
+                24,
+                12, 64, 1,
+                (v: number) => { updateModule({ icon_size: v }); },
+                'px'
+              )
             : ''}
         </div>
 
@@ -530,7 +442,24 @@ export class UltraTextModule extends BaseUltraModule {
                     class="field-title"
                     style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
                   >
-                    ${localize('editor.text.value_template', lang, 'Value Template')}
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                      <span>${localize('editor.text.value_template', lang, 'Value Template')}</span>
+                      <button
+                        style="background: none; border: 1px solid var(--divider-color); border-radius: 4px; padding: 4px 8px; font-size: 11px; color: var(--primary-color); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
+                        title="${localize('editor.text.template_cheatsheet', lang, 'Template Cheatsheet')}"
+                        @click=${(e: Event) => {
+                          (e.currentTarget as HTMLElement).dispatchEvent(
+                            new CustomEvent('uc-open-template-cheatsheet', {
+                              detail: { module: 'text' },
+                              bubbles: true,
+                              composed: true,
+                            })
+                          );
+                        }}
+                      >
+                        <ha-icon icon="mdi:help-circle-outline" style="--mdc-icon-size: 14px;"></ha-icon>
+                      </button>
+                    </div>
                   </div>
                   <div
                     class="field-description"
@@ -542,15 +471,21 @@ export class UltraTextModule extends BaseUltraModule {
                       'Template to render the text using Jinja2 syntax'
                     )}
                   </div>
+
+                  <uc-template-cheatsheet .module=${'text'}></uc-template-cheatsheet>
+
                   <div
                     @mousedown=${(e: Event) => {
-                      // Only stop propagation for drag operations, not clicks on the editor
                       const target = e.target as HTMLElement;
                       if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
                         e.stopPropagation();
                       }
                     }}
                     @dragstart=${(e: Event) => e.stopPropagation()}
+                    @insert-snippet=${(e: CustomEvent) => {
+                      const editor = (e.currentTarget as HTMLElement).querySelector('ultra-template-editor');
+                      (editor as any)?.insertAtCursor?.(e.detail?.value ?? '');
+                    }}
                   >
                     <ultra-template-editor
                       .hass=${hass}
@@ -635,16 +570,16 @@ export class UltraTextModule extends BaseUltraModule {
     const effectiveContent = this._getEffectiveRichContent(textModule);
     if (!textModule.template_mode && !effectiveContent) {
       return this.renderGradientErrorState(
-        'Enter Text Content',
-        'Add text in the General tab',
+        localize('editor.text.error_no_content', lang, 'Enter Text Content'),
+        localize('editor.text.error_no_content_desc', lang, 'Add text in the General tab'),
         'mdi:format-text'
       );
     }
 
     if (textModule.template_mode && (!textModule.template || textModule.template.trim() === '')) {
       return this.renderGradientErrorState(
-        'Configure Template',
-        'Enter template code in the General tab',
+        localize('editor.text.error_no_template', lang, 'Configure Template'),
+        localize('editor.text.error_no_template_desc', lang, 'Enter template code in the General tab'),
         'mdi:code-braces'
       );
     }
@@ -781,7 +716,7 @@ export class UltraTextModule extends BaseUltraModule {
               if (typeof window !== 'undefined') {
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                     window._ultraCardUpdateTimer = null;
                   }, 50);
                 }
@@ -836,7 +771,7 @@ export class UltraTextModule extends BaseUltraModule {
                 // Use global debounced update
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                     window._ultraCardUpdateTimer = null;
                   }, 50);
                 }
@@ -919,7 +854,7 @@ export class UltraTextModule extends BaseUltraModule {
               if (typeof window !== 'undefined') {
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    this.triggerPreviewUpdate();
                     window._ultraCardUpdateTimer = null;
                   }, 50);
                 }
@@ -1017,16 +952,17 @@ export class UltraTextModule extends BaseUltraModule {
 
     // Get hover effect configuration from module design
     const hoverEffect = (moduleWithDesign as any).design?.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
-    return html`
+    return this.wrapWithAnimation(html`
       <div
         class="text-module-container ${hoverEffectClass}"
-        style=${this.styleObjectToCss(containerStyles)}
+        style="${designStyles}"
       >
         <div class="text-module-preview" style=${this.styleObjectToCss(textStyles)}>${element}</div>
       </div>
-    `;
+    `, module, hass);
   }
 
   // Explicit Logic tab renderer (some editors call this directly)
@@ -1316,6 +1252,7 @@ export class UltraTextModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      ${BaseUltraModule.getSliderStyles()}
       .text-module-preview {
         min-height: 20px;
         word-wrap: break-word;

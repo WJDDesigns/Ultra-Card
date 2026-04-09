@@ -168,30 +168,29 @@ export class UltraTimerModule extends BaseUltraModule {
         <!-- Advanced -->
         <div class="settings-section">
           <div class="section-title">${localize('editor.timer.advanced.title', lang, 'Advanced')}</div>
-          ${this.renderFieldSection(
-            localize('editor.timer.timer_entity', lang, 'Timer entity'),
-            localize('editor.timer.timer_entity_desc', lang, 'Optional Home Assistant timer entity to sync with'),
-            hass,
-            { timer_entity: timerModule.timer_entity || '' },
-            [this.entityField('timer_entity')],
-            (e: CustomEvent) => updateModule(e.detail.value)
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'timer_entity', timerModule.timer_entity || '',
+            (value: string) => { updateModule({ timer_entity: value }); this.triggerPreviewUpdate(); },
+            undefined,
+            localize('editor.timer.timer_entity', lang, 'Timer entity')
           )}
-          <div style="margin-top: 16px;">
-            <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">
-              ${localize('editor.timer.show_snooze_dismiss', lang, 'Show Snooze / Dismiss when expired')}
-            </div>
-            <div class="field-description" style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px;">
-              ${localize('editor.timer.show_snooze_dismiss_desc', lang, 'When the timer ends, show Snooze (restart) and Dismiss buttons.')}
-            </div>
-            <ha-switch
-              .checked=${!!timerModule.show_snooze_dismiss}
-              @change=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                updateModule({ show_snooze_dismiss: target.checked });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              }}
-            ></ha-switch>
-          </div>
+          ${this.renderSettingsSection(
+            localize('editor.timer.show_snooze_dismiss', lang, 'Show Snooze / Dismiss when expired'),
+            localize('editor.timer.show_snooze_dismiss_desc', lang, 'When the timer ends, show Snooze (restart) and Dismiss buttons.'),
+            [
+              {
+                title: '',
+                description: '',
+                hass,
+                data: { show_snooze_dismiss: !!timerModule.show_snooze_dismiss },
+                schema: [this.booleanField('show_snooze_dismiss')],
+                onChange: (e: CustomEvent) => {
+                  updateModule({ show_snooze_dismiss: e.detail.value.show_snooze_dismiss });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                },
+              },
+            ]
+          )}
           ${timerModule.show_snooze_dismiss
             ? this.renderFieldSection(
                 localize('editor.timer.snooze_seconds', lang, 'Snooze duration (seconds)'),
@@ -254,7 +253,10 @@ export class UltraTimerModule extends BaseUltraModule {
       timerStateService.start(timerModule.id, seconds, onExpire);
     };
 
-    const content = (() => {
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    const content = ((() => {
       if (status === 'expired') {
         return html`
           <div class="uc-timer uc-timer-expired" style="padding: 16px; text-align: center;">
@@ -423,13 +425,13 @@ export class UltraTimerModule extends BaseUltraModule {
           </div>
         </div>
       `;
-    })();
+    })());
 
-    return html`
-      <div class="uc-timer-wrapper" style="background: var(--card-background-color); border-radius: 12px; overflow: hidden;">
+    return this.wrapWithAnimation(html`
+      <div class="uc-timer-wrapper ${hoverClass}" style="${designStyles}; background: var(--card-background-color); border-radius: 12px; overflow: hidden;">
         ${content}
       </div>
-    `;
+    `, module, hass);
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {

@@ -5,7 +5,6 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, CounterInputModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import '../components/ultra-color-picker';
 
 export class UltraCounterInputModule extends BaseUltraModule {
@@ -60,12 +59,16 @@ export class UltraCounterInputModule extends BaseUltraModule {
         ${this.renderSettingsSection(
           localize('editor.counter_input.entity.title', lang, 'Entity Configuration'),
           localize('editor.counter_input.entity.desc', lang, 'Link to a Home Assistant counter helper entity.'),
-          [{ title: localize('editor.counter_input.entity_field', lang, 'Entity'),
-             description: localize('editor.counter_input.entity_field_desc', lang, 'Select a counter entity to control.'),
-             hass, data: { entity: cntMod.entity || '' },
-             schema: [this.entityField('entity', ['counter'])],
-             onChange: (e: CustomEvent) => updateModule(e.detail.value) }]
+          []
         )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', cntMod.entity || '',
+            (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+            ['counter'],
+            localize('editor.counter_input.entity_field', lang, 'Entity')
+          )}
+        </div>
 
         <div class="settings-section">
           <div class="section-title">${localize('editor.counter_input.appearance.title', lang, 'Appearance')}</div>
@@ -134,13 +137,14 @@ export class UltraCounterInputModule extends BaseUltraModule {
 
   renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const cntMod = module as CounterInputModule;
+    const lang = hass?.locale?.language || 'en';
 
     if (!cntMod.entity?.trim()) {
-      return this.renderGradientErrorState('Configure Entity', 'Select a counter entity in the General tab', 'mdi:counter');
+      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.counter_input.error_configure_entity_desc', lang, 'Select a counter entity in the General tab'), 'mdi:counter');
     }
     const entityState = hass?.states?.[cntMod.entity];
     if (!entityState) {
-      return this.renderGradientErrorState('Entity Not Found', `Entity "${cntMod.entity}" is not available`, 'mdi:alert-circle-outline');
+      return this.renderGradientErrorState(localize('editor.common.error_entity_not_found', lang, 'Entity Not Found'), `Entity "${cntMod.entity}" is not available`, 'mdi:alert-circle-outline');
     }
 
     const currentValue = parseInt(entityState.state, 10) || 0;
@@ -153,7 +157,8 @@ export class UltraCounterInputModule extends BaseUltraModule {
     const showLabel = cntMod.show_label !== false && !!cntMod.label;
     const showReset = cntMod.show_reset !== false;
     const containerStyles = this._buildContainerStyles(designProperties);
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(designProperties.hover_effect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
     const mid = cntMod.id;
 
     const increment = () => { if (cntMod.entity && hass) hass.callService('counter', 'increment', { entity_id: cntMod.entity }); };
@@ -163,7 +168,7 @@ export class UltraCounterInputModule extends BaseUltraModule {
     const btnSize = layout === 'compact' ? 32 : 44;
     const iconSize = layout === 'compact' ? 18 : 22;
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         .cnt-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:8px; padding-left:2px; }
         .cnt-btn-${mid} {
@@ -182,7 +187,7 @@ export class UltraCounterInputModule extends BaseUltraModule {
         .cnt-stacked-${mid} { display:flex; flex-direction:column; align-items:center; gap:12px; }
         .cnt-stacked-btns { display:flex; align-items:center; gap:12px; }
       </style>
-      <div class="${hoverEffectClass}" style=${this._css(containerStyles)}>
+      <div class="${hoverEffectClass}" style="${designStyles}">
         ${showLabel ? html`<div class="cnt-label">${cntMod.label}</div>` : ''}
         ${layout === 'stacked' ? html`
           <div class="cnt-stacked-${mid}">
@@ -205,7 +210,7 @@ export class UltraCounterInputModule extends BaseUltraModule {
           </div>
         `}
       </div>
-    `;
+    `, module, hass);
   }
 
   private _buildContainerStyles(dp: any): Record<string, string> {

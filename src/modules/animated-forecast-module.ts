@@ -6,6 +6,7 @@ import '../components/ultra-color-picker';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import { renderAnimatedForecastModuleEditor } from './animated-forecast-module-editor';
+import { localize } from '../localize/localize';
 
 export class UltraAnimatedForecastModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -91,6 +92,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
     const forecastModule = module as AnimatedForecastModule;
     const moduleWithDesign = forecastModule as any;
     const designFromDesignObject = (forecastModule as any).design || {};
+    const lang = hass?.locale?.language || 'en';
 
     // Create merged design properties object that prioritizes top-level properties (where Global Design saves)
     // over design object properties, and includes all properties needed by the container styles
@@ -253,6 +255,10 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
       (forecastModule.hold_action && forecastModule.hold_action.action !== 'nothing') ||
       (forecastModule.double_tap_action && forecastModule.double_tap_action.action !== 'nothing');
 
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+    const hoverClass = this.getHoverEffectClass(module);
+    const forecastLayoutStyles = `box-sizing: border-box; cursor: ${hasActions ? 'pointer' : 'default'};`;
+
     // Apply text color override from global design - if set, override all text colors
     const globalTextColor = designProperties.color;
     const forecastDayColor = globalTextColor || forecastModule.forecast_day_color || 'var(--primary-text-color)';
@@ -309,12 +315,13 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
       cursor: hasActions ? 'pointer' : 'default',
     };
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         ${this.getStyles()}
       </style>
       <div
-        style=${this.objectToStyleString(containerStyles)}
+        class="${hoverClass}"
+        style="${designStyles}; ${forecastLayoutStyles}"
         @pointerdown=${handlePointerDown}
         @pointerup=${handlePointerUp}
       >
@@ -362,11 +369,11 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
                 `;
               })
             : html`<div style="text-align: center; opacity: 0.6; padding: 16px;">
-                No forecast data available
+                ${localize('editor.animated_forecast.preview.no_data', lang, 'No forecast data available')}
               </div>`}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   /**

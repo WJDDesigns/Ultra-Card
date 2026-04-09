@@ -4,7 +4,6 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, UltraCardConfig } from '../types';
 import { getImageUrl } from '../utils/image-upload';
-import { UltraLinkComponent } from '../components/ultra-link';
 import { getModuleRegistry } from './module-registry';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
@@ -13,8 +12,8 @@ import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { generateCSSVariables } from '../utils/css-variable-utils';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 
-// Use the existing VerticalModule and HorizontalModule interfaces from types
-import { VerticalModule, HorizontalModule } from '../types';
+// Use the existing VerticalModule interface from types
+import { VerticalModule } from '../types';
 
 export class UltraVerticalModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -148,76 +147,19 @@ export class UltraVerticalModule extends BaseUltraModule {
             ${localize('editor.vertical.gap.title', lang, 'Gap Configuration')}
           </div>
 
-          <div style="margin-bottom: 8px;">
-            <div
-              class="field-title"
-              style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-            >
-              ${localize('editor.vertical.gap.between_items', lang, 'Gap Between Items')}
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-            >
-              ${localize(
+          <div style="margin-bottom: 8px; ${verticalModule.alignment === 'space-between' || verticalModule.alignment === 'space-around' ? 'opacity: 0.5; pointer-events: none;' : ''}">
+            ${this.renderSliderField(
+              localize('editor.vertical.gap.between_items', lang, 'Gap Between Items'),
+              localize(
                 'editor.vertical.gap.desc',
                 lang,
                 'Set the spacing between vertical items (in rem units). Use negative values to overlap items. Any value is allowed. Note: Gap is disabled when using Space Between or Space Around distribution.'
-              )}
-            </div>
-            <div
-              class="gap-control-container"
-              style="display: flex; align-items: center; gap: 12px; ${verticalModule.alignment ===
-                'space-between' || verticalModule.alignment === 'space-around'
-                ? 'opacity: 0.5; pointer-events: none;'
-                : ''}"
-            >
-              <input
-                type="range"
-                class="gap-slider"
-                min="-50"
-                max="50"
-                step="0.1"
-                .value="${verticalModule.gap !== undefined ? verticalModule.gap : 1.2}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseFloat(target.value);
-                  updateModule({ gap: value });
-                }}
-              />
-              <input
-                type="number"
-                class="gap-input"
-                style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
-                step="0.1"
-                .value="${verticalModule.gap !== undefined ? verticalModule.gap : 1.2}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseFloat(target.value);
-                  if (!isNaN(value)) {
-                    updateModule({ gap: value });
-                  }
-                }}
-                @keydown=${(e: KeyboardEvent) => {
-                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const target = e.target as HTMLInputElement;
-                    const currentValue = parseFloat(target.value) || 0;
-                    const increment = e.key === 'ArrowUp' ? 0.1 : -0.1;
-                    const newValue = currentValue + increment;
-                    const roundedValue = Math.round(newValue * 10) / 10;
-                    updateModule({ gap: roundedValue });
-                  }
-                }}
-              />
-              <button
-                class="reset-btn"
-                @click=${() => updateModule({ gap: 1.2 })}
-                title="Reset to default (1.2)"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
+              ),
+              verticalModule.gap !== undefined ? verticalModule.gap : 1.2,
+              1.2, -50, 50, 0.1,
+              (v: number) => { updateModule({ gap: v }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+              'rem'
+            )}
           </div>
         </div>
       </div>
@@ -356,8 +298,11 @@ export class UltraVerticalModule extends BaseUltraModule {
       (verticalModule.hold_action && verticalModule.hold_action.action !== 'nothing') ||
       (verticalModule.double_tap_action && verticalModule.double_tap_action.action !== 'nothing');
 
-    return html`
-      <div class="vertical-module-preview">
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    return this.wrapWithAnimation(html`
+      <div class="vertical-module-preview ${hoverClass}" style="${designStyles}">
         <div
           class="vertical-preview-content"
           style="${this.styleObjectToCss(containerStyles)}; cursor: ${hasActions
@@ -433,7 +378,7 @@ export class UltraVerticalModule extends BaseUltraModule {
               `}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   private _renderChildModulePreview(
@@ -1048,107 +993,7 @@ export class UltraVerticalModule extends BaseUltraModule {
         border: none;
       }
 
-      /* Gap control styles */
-      .gap-control-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .gap-slider {
-        flex: 1;
-        height: 6px;
-        background: var(--divider-color);
-        border-radius: 3px;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .gap-slider::-webkit-slider-thumb {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider:hover {
-        background: var(--primary-color);
-        opacity: 0.7;
-      }
-
-      .gap-slider:hover::-webkit-slider-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-slider:hover::-moz-range-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-input {
-        width: 48px !important;
-        max-width: 48px !important;
-        min-width: 48px !important;
-        padding: 4px 6px !important;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-      }
-
-      .gap-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-      }
-
-      .reset-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-
-      .reset-btn:hover {
-        background: var(--primary-color);
-        color: var(--text-primary-color);
-        border-color: var(--primary-color);
-      }
-
-      .reset-btn ha-icon {
-        font-size: 16px;
-      }
+      ${BaseUltraModule.getSliderStyles()}
     `;
   }
 }

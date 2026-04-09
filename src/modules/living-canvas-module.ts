@@ -189,44 +189,18 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
             ],
             (e: CustomEvent) => updateModule(e.detail.value)
           )}
-          <div style="margin-top: 20px; margin-bottom: 12px;">
-            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-              ${localize('editor.living_canvas.canvas_opacity', lang, 'Canvas opacity')}
-            </div>
-            <div class="field-description" style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;">
-              ${localize(
-                'editor.living_canvas.canvas_opacity_desc',
-                lang,
-                'Fades only the WebGL canvas (default 100%). Does not change your Ultra Card or other cards on the view.'
-              )}
-            </div>
-            <div class="number-range-control" style="display: flex; gap: 8px; align-items: center;">
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="1"
-                .value="${String(lc.opacity ?? 100)}"
-                @input=${(e: Event) => {
-                  const v = parseInt((e.target as HTMLInputElement).value, 10);
-                  if (!isNaN(v)) updateModule({ opacity: v });
-                }}
-                style="flex: 0 0 65%; height: 6px; background: var(--divider-color); border-radius: 3px; cursor: pointer;"
-              />
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                .value="${String(lc.opacity ?? 100)}"
-                @input=${(e: Event) => {
-                  const v = parseInt((e.target as HTMLInputElement).value, 10);
-                  if (!isNaN(v)) updateModule({ opacity: v });
-                }}
-                style="flex: 0 0 20%; padding: 6px 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--secondary-background-color); color: var(--primary-text-color); font-size: 13px; text-align: center;"
-              />
-            </div>
-          </div>
+          ${this.renderSliderField(
+            localize('editor.living_canvas.canvas_opacity', lang, 'Canvas Opacity'),
+            localize(
+              'editor.living_canvas.canvas_opacity_desc',
+              lang,
+              'Fades only the WebGL canvas (default 100%). Does not change your Ultra Card or other cards on the view.'
+            ),
+            lc.opacity ?? 100,
+            100, 0, 100, 1,
+            (v: number) => { if (!isNaN(v)) updateModule({ opacity: v }); },
+            '%'
+          )}
         </div>
 
         ${this.renderFieldSection(
@@ -553,7 +527,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
       const presetLabel = pMeta
         ? localize(pMeta.labelKey, lang, pMeta.fallback)
         : lc.preset || 'aurora';
-      return html`
+      return this.wrapWithAnimation(html`
         <div
           style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 8px; border: 2px dashed var(--divider-color);"
         >
@@ -577,9 +551,15 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
             )}
           </div>
         </div>
-      `;
+      `, module, hass);
     }
 
     return html``;
+  }
+
+  getStyles(): string {
+    return `
+      ${BaseUltraModule.getSliderStyles()}
+    `;
   }
 }

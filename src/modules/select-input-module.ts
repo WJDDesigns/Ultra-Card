@@ -5,7 +5,6 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, SelectInputModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import '../components/ultra-color-picker';
 
 export class UltraSelectInputModule extends BaseUltraModule {
@@ -59,12 +58,16 @@ export class UltraSelectInputModule extends BaseUltraModule {
         ${this.renderSettingsSection(
           localize('editor.select_input.entity.title', lang, 'Entity Configuration'),
           localize('editor.select_input.entity.desc', lang, 'Link to a Home Assistant input_select or select entity.'),
-          [{ title: localize('editor.select_input.entity_field', lang, 'Entity'),
-             description: localize('editor.select_input.entity_field_desc', lang, 'Select an input_select entity to bind to.'),
-             hass, data: { entity: selMod.entity || '' },
-             schema: [this.entityField('entity', ['input_select', 'select'])],
-             onChange: (e: CustomEvent) => updateModule(e.detail.value) }]
+          []
         )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', selMod.entity || '',
+            (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+            ['input_select', 'select'],
+            localize('editor.select_input.entity_field', lang, 'Entity')
+          )}
+        </div>
 
         <div class="settings-section">
           <div class="section-title">${localize('editor.select_input.appearance.title', lang, 'Appearance')}</div>
@@ -128,13 +131,14 @@ export class UltraSelectInputModule extends BaseUltraModule {
 
   renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const selMod = module as SelectInputModule;
+    const lang = hass?.locale?.language || 'en';
 
     if (!selMod.entity?.trim()) {
-      return this.renderGradientErrorState('Configure Entity', 'Select an input_select entity in the General tab', 'mdi:form-dropdown');
+      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.select_input.error_configure_entity_desc', lang, 'Select an input_select entity in the General tab'), 'mdi:form-dropdown');
     }
     const entityState = hass?.states?.[selMod.entity];
     if (!entityState) {
-      return this.renderGradientErrorState('Entity Not Found', `Entity "${selMod.entity}" is not available`, 'mdi:alert-circle-outline');
+      return this.renderGradientErrorState(localize('editor.common.error_entity_not_found', lang, 'Entity Not Found'), `Entity "${selMod.entity}" is not available`, 'mdi:alert-circle-outline');
     }
 
     const options: string[] = entityState.attributes?.options || [];
@@ -146,7 +150,8 @@ export class UltraSelectInputModule extends BaseUltraModule {
     const style = selMod.select_style || 'dropdown';
     const showLabel = selMod.show_label !== false && !!selMod.label;
     const containerStyles = this._buildContainerStyles(designProperties);
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(designProperties.hover_effect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
     const mid = selMod.id;
 
     const selectOption = (option: string) => {
@@ -156,7 +161,7 @@ export class UltraSelectInputModule extends BaseUltraModule {
     };
 
     if (style === 'segmented') {
-      return html`
+      return this.wrapWithAnimation(html`
         <style>
           .sel-seg-${mid} { display:flex; border-radius:8px; overflow:hidden; border:1px solid var(--divider-color); }
           .sel-seg-btn-${mid} { flex:1; padding:10px 12px; border:none; background:transparent; cursor:pointer;
@@ -167,7 +172,7 @@ export class UltraSelectInputModule extends BaseUltraModule {
           .sel-seg-btn-${mid}:not(.active):hover { background:rgba(var(--rgb-primary-text-color,0,0,0),.05); }
           .sel-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
         </style>
-        <div class="${hoverEffectClass}" style=${this._css(containerStyles)}>
+        <div class="${hoverEffectClass}" style="${designStyles}">
           ${showLabel ? html`<div class="sel-label">${selMod.label}</div>` : ''}
           <div class="sel-seg-${mid}">
             ${options.map(opt => html`
@@ -175,11 +180,11 @@ export class UltraSelectInputModule extends BaseUltraModule {
             `)}
           </div>
         </div>
-      `;
+      `, module, hass);
     }
 
     if (style === 'chips') {
-      return html`
+      return this.wrapWithAnimation(html`
         <style>
           .sel-chips-${mid} { display:flex; flex-wrap:wrap; gap:8px; }
           .sel-chip-${mid} { padding:8px 16px; border-radius:20px; border:1px solid var(--divider-color);
@@ -189,7 +194,7 @@ export class UltraSelectInputModule extends BaseUltraModule {
           .sel-chip-${mid}:not(.active):hover { border-color:${activeColor}; }
           .sel-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
         </style>
-        <div class="${hoverEffectClass}" style=${this._css(containerStyles)}>
+        <div class="${hoverEffectClass}" style="${designStyles}">
           ${showLabel ? html`<div class="sel-label">${selMod.label}</div>` : ''}
           <div class="sel-chips-${mid}">
             ${options.map(opt => html`
@@ -197,11 +202,11 @@ export class UltraSelectInputModule extends BaseUltraModule {
             `)}
           </div>
         </div>
-      `;
+      `, module, hass);
     }
 
     // Default: dropdown
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         .sel-dd-wrap-${mid} { position:relative; }
         .sel-dd-${mid} { width:100%; padding:12px; font-size:${fontSize}px; color:${textColor}; font-family:inherit;
@@ -212,7 +217,7 @@ export class UltraSelectInputModule extends BaseUltraModule {
           color:var(--secondary-text-color); --mdc-icon-size:20px; }
         .sel-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
       </style>
-      <div class="${hoverEffectClass}" style=${this._css(containerStyles)}>
+      <div class="${hoverEffectClass}" style="${designStyles}">
         ${showLabel ? html`<div class="sel-label">${selMod.label}</div>` : ''}
         <div class="sel-dd-wrap-${mid}">
           <select class="sel-dd-${mid}" .value=${current} @change=${(e: Event) => selectOption((e.target as HTMLSelectElement).value)}>
@@ -221,7 +226,7 @@ export class UltraSelectInputModule extends BaseUltraModule {
           <span class="sel-dd-arrow"><ha-icon icon="mdi:chevron-down"></ha-icon></span>
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   private _buildContainerStyles(dp: any): Record<string, string> {

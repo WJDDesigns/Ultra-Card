@@ -1714,6 +1714,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const dynModule = module as DynamicListModule;
+    const lang = hass?.locale?.language || 'en';
     const sourceType = (() => {
       const raw = String(dynModule.source_type || 'template').toLowerCase();
       if (raw === 'todo') return 'todo';
@@ -1724,8 +1725,8 @@ export class UltraDynamicListModule extends BaseUltraModule {
 
     if (!hass) {
       return this.renderGradientErrorState(
-        'Waiting for Home Assistant',
-        'This module requires a live connection',
+        localize('editor.dynamic_list.error_waiting_ha', lang, 'Waiting for Home Assistant'),
+        localize('editor.dynamic_list.error_waiting_ha_desc', lang, 'This module requires a live connection'),
         'mdi:loading'
       );
     }
@@ -1751,8 +1752,8 @@ export class UltraDynamicListModule extends BaseUltraModule {
             : [];
       if (entityIds.length === 0) {
         return this.renderGradientErrorState(
-          'No Todo List',
-          'Add a to-do list (e.g. Local Todo) or choose one in the General tab. Use "Default (first available)" when you have at least one todo entity.',
+          localize('editor.dynamic_list.error_no_todo', lang, 'No Todo List'),
+          localize('editor.dynamic_list.error_no_todo_desc', lang, 'Add a to-do list (e.g. Local Todo) or choose one in the General tab. Use "Default (first available)" when you have at least one todo entity.'),
           'mdi:format-list-checks'
         );
       }
@@ -1764,7 +1765,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
         if (typeof window !== 'undefined') {
           if (!(window as any)._ultraCardUpdateTimer) {
             (window as any)._ultraCardUpdateTimer = setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              this.triggerPreviewUpdate();
               (window as any)._ultraCardUpdateTimer = null;
             }, 50);
           }
@@ -1851,8 +1852,8 @@ export class UltraDynamicListModule extends BaseUltraModule {
 
       if (entityIds.length === 0) {
         return this.renderGradientErrorState(
-          'No Todo List',
-          'Choose a to-do list entity in the General tab.',
+          localize('editor.dynamic_list.error_no_todo', lang, 'No Todo List'),
+          localize('editor.dynamic_list.error_no_todo_entity_desc', lang, 'Choose a to-do list entity in the General tab.'),
           'mdi:format-list-checks'
         );
       }
@@ -1860,8 +1861,8 @@ export class UltraDynamicListModule extends BaseUltraModule {
       const tplStr = dynModule.todo_dynamic_template?.trim();
       if (!tplStr) {
         return this.renderGradientErrorState(
-          'Add a Template',
-          'Enter a Jinja2 template in the General tab to map your todo items to modules.',
+          localize('editor.dynamic_list.error_add_template', lang, 'Add a Template'),
+          localize('editor.dynamic_list.error_add_template_todo_desc', lang, 'Enter a Jinja2 template in the General tab to map your todo items to modules.'),
           'mdi:code-braces'
         );
       }
@@ -1871,7 +1872,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
       const onUpdate = () => {
         if (typeof window !== 'undefined' && !(window as any)._ultraCardUpdateTimer) {
           (window as any)._ultraCardUpdateTimer = setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+            this.triggerPreviewUpdate();
             (window as any)._ultraCardUpdateTimer = null;
           }, 50);
         }
@@ -1931,8 +1932,8 @@ export class UltraDynamicListModule extends BaseUltraModule {
       } catch (e) {
         console.error('[UltraCard] Dynamic List (todo-template): parse error', rawTodo, e);
         return this.renderGradientErrorState(
-          'Invalid Template Output',
-          'Template must output a JSON array via {{ ns.mods | tojson }}.',
+          localize('editor.dynamic_list.error_invalid_template', lang, 'Invalid Template Output'),
+          localize('editor.dynamic_list.error_invalid_template_desc', lang, 'Template must output a JSON array via {{ ns.mods | tojson }}.'),
           'mdi:alert-circle-outline'
         );
       }
@@ -1942,16 +1943,16 @@ export class UltraDynamicListModule extends BaseUltraModule {
       const actCfg = dynModule.action_source;
       if (!actCfg?.domain || !actCfg?.service) {
         return this.renderGradientErrorState(
-          'Configure an Action',
-          'Set the Domain and Service in the General tab.',
+          localize('editor.dynamic_list.error_configure_action', lang, 'Configure an Action'),
+          localize('editor.dynamic_list.error_configure_action_desc', lang, 'Set the Domain and Service in the General tab.'),
           'mdi:lightning-bolt'
         );
       }
       const tplStr = dynModule.action_template?.trim();
       if (!tplStr) {
         return this.renderGradientErrorState(
-          'Add a Template',
-          'Enter a Jinja2 template in the General tab to map the service response to modules.',
+          localize('editor.dynamic_list.error_add_template', lang, 'Add a Template'),
+          localize('editor.dynamic_list.error_add_template_action_desc', lang, 'Enter a Jinja2 template in the General tab to map the service response to modules.'),
           'mdi:code-braces'
         );
       }
@@ -1962,7 +1963,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
       const onUpdate = () => {
         if (typeof window !== 'undefined' && !(window as any)._ultraCardUpdateTimer) {
           (window as any)._ultraCardUpdateTimer = setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+            this.triggerPreviewUpdate();
             (window as any)._ultraCardUpdateTimer = null;
           }, 50);
         }
@@ -2045,8 +2046,8 @@ export class UltraDynamicListModule extends BaseUltraModule {
       } catch (e) {
         console.error('[UltraCard] Dynamic List (action): parse error', rawAction, e);
         return this.renderGradientErrorState(
-          'Invalid Template Output',
-          'Template must output a JSON array via {{ ns.mods | tojson }}.',
+          localize('editor.dynamic_list.error_invalid_template', lang, 'Invalid Template Output'),
+          localize('editor.dynamic_list.error_invalid_template_action_desc', lang, 'Template must output a JSON array via {{ ns.mods | tojson }}.'),
           'mdi:alert-circle-outline'
         );
       }
@@ -2055,8 +2056,8 @@ export class UltraDynamicListModule extends BaseUltraModule {
       // ─── Template source ──────────────────────────────────────────────────
       if (!dynModule.dynamic_template || dynModule.dynamic_template.trim() === '') {
         return this.renderGradientErrorState(
-          'Add a Jinja2 Template',
-          'Enter a template in the General tab to generate modules dynamically',
+          localize('editor.dynamic_list.error_add_jinja_template', lang, 'Add a Jinja2 Template'),
+          localize('editor.dynamic_list.error_add_jinja_template_desc', lang, 'Enter a template in the General tab to generate modules dynamically'),
           'mdi:code-braces'
         );
       }
@@ -2082,7 +2083,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
             if (typeof window !== 'undefined') {
               if (!(window as any)._ultraCardUpdateTimer) {
                 (window as any)._ultraCardUpdateTimer = setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  this.triggerPreviewUpdate();
                   (window as any)._ultraCardUpdateTimer = null;
                 }, 50);
               }
@@ -2125,8 +2126,8 @@ export class UltraDynamicListModule extends BaseUltraModule {
         } catch (e) {
           console.error('[UltraCard] Dynamic List: failed to parse template output:', raw, e);
           return this.renderGradientErrorState(
-            'Invalid Template Output',
-            'Template must output a JSON array. End your template with {{ ns.mods | tojson }}.',
+            localize('editor.dynamic_list.error_invalid_template', lang, 'Invalid Template Output'),
+            localize('editor.dynamic_list.error_invalid_template_jinja_desc', lang, 'Template must output a JSON array. End your template with {{ ns.mods | tojson }}.'),
             'mdi:alert-circle-outline'
           );
         }
@@ -2195,7 +2196,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
           ? html`
               <button style="${BTN_STYLE}" @click=${() => {
                 this._expandedModules.set(moduleId, false);
-                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                this.triggerPreviewUpdate();
               }}>
                 <ha-icon icon="mdi:chevron-up" style="--mdc-icon-size:16px;"></ha-icon>
                 Show less
@@ -2203,7 +2204,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
           : html`
               <button style="${BTN_STYLE}" @click=${() => {
                 this._expandedModules.set(moduleId, true);
-                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                this.triggerPreviewUpdate();
               }}>
                 <ha-icon icon="mdi:chevron-down" style="--mdc-icon-size:16px;"></ha-icon>
                 Show ${remaining} more
@@ -2219,7 +2220,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
               style="${PAGE_BTN_STYLE}${page === 0 ? 'opacity:0.35;pointer-events:none;' : ''}"
               @click=${() => {
                 this._currentPage.set(moduleId, Math.max(0, page - 1));
-                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                this.triggerPreviewUpdate();
               }}
             ><ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:18px;"></ha-icon></button>
             <span style="font-size:12px;color:var(--secondary-text-color);">${page + 1} / ${totalPages}</span>
@@ -2227,7 +2228,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
               style="${PAGE_BTN_STYLE}${page >= totalPages - 1 ? 'opacity:0.35;pointer-events:none;' : ''}"
               @click=${() => {
                 this._currentPage.set(moduleId, Math.min(totalPages - 1, page + 1));
-                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                this.triggerPreviewUpdate();
               }}
             ><ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:18px;"></ha-icon></button>
           </div>`;
@@ -2307,12 +2308,12 @@ export class UltraDynamicListModule extends BaseUltraModule {
       return needsChildWrapper ? html`<div style="${childFlexStyle}">${wrapped}</div>` : wrapped;
     });
 
-    return html`
+    return this.wrapWithAnimation(html`
       <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
         <div style="${containerStyle}">${renderedModules}</div>
         ${paginationBar}
       </div>
-    `;
+    `, module, hass);
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {

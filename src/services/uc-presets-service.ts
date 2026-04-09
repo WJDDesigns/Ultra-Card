@@ -1,6 +1,7 @@
 import { PresetDefinition, LayoutConfig } from '../types';
 import { VERSION } from '../version';
 import { directoriesProPresetsAPI, WordPressPreset } from './directories-pro-presets-api';
+import pako from 'pako';
 
 /**
  * Service for managing built-in presets, user presets, and WordPress presets
@@ -303,10 +304,25 @@ class UcPresetsService {
   }
 
   /**
-   * Decode base64 to UTF-8 string so special characters (æ, ø, å, etc.) are preserved.
-   * Plain atob() returns a binary string interpreted as Latin-1 and corrupts UTF-8.
+   * Decode base64 (or compressed C:-prefixed) payload to a UTF-8 string.
+   *
+   * Handles two formats:
+   *   "C:<base64>" — new compressed format: base64 → pako.inflate → UTF-8
+   *   "<base64>"   — legacy format: base64 → UTF-8 (TextDecoder)
+   *
+   * Plain atob() returns a binary string interpreted as Latin-1 and corrupts
+   * UTF-8 characters, so TextDecoder is used in both paths.
    */
   private _decodeBase64Utf8(base64: string): string {
+    if (base64.startsWith('C:')) {
+      const raw = atob(base64.slice(2));
+      const bytes = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) {
+        bytes[i] = raw.charCodeAt(i);
+      }
+      const inflated = pako.inflate(bytes);
+      return new TextDecoder('utf-8').decode(inflated);
+    }
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {

@@ -135,8 +135,9 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
     }
 
     return html`
+      ${this.injectUcFormStyles()}
       <style>
-        ${this.injectUcFormStyles()} ${this.getEditorStyles()}
+        ${this.getEditorStyles()}
       </style>
 
       <!-- Size & Layout Section -->
@@ -227,92 +228,25 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
 
         <!-- Badge Size -->
         <div class="field-container" style="margin-bottom: 16px;">
-          <div class="field-title">${localize('editor.badge.badge_size', lang, 'Badge Size')}</div>
-          <div class="field-description">
-            ${localize('editor.badge.badge_size_desc', lang, 'Overall size of the badge in pixels')}
-          </div>
-          <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-            <input
-              type="range"
-              class="gap-slider"
-              min="60"
-              max="300"
-              step="10"
-              .value="${module.badge_size || 120}"
-              @input=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                updateModule({ badge_size: parseInt(target.value) });
-              }}
-            />
-            <input
-              type="number"
-              class="gap-input"
-              min="60"
-              max="300"
-              step="10"
-              .value="${module.badge_size || 120}"
-              @input=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                const value = parseInt(target.value);
-                if (!isNaN(value)) updateModule({ badge_size: value });
-              }}
-            />
-            <button
-              class="reset-btn"
-              @click=${() => updateModule({ badge_size: 120 })}
-              title="Reset to default"
-            >
-              <ha-icon icon="mdi:refresh"></ha-icon>
-            </button>
-          </div>
+          ${this.renderSliderField(
+            localize('editor.badge.badge_size', lang, 'Badge Size'),
+            localize('editor.badge.badge_size_desc', lang, 'Overall size of the badge in pixels'),
+            module.badge_size || 120,
+            120, 60, 300, 10,
+            (v: number) => { updateModule({ badge_size: v }); }
+          )}
         </div>
 
         <!-- Inner Badge Ratio -->
         <div class="field-container">
-          <div class="field-title">
-            ${localize('editor.badge.inner_ratio', lang, 'Inner Badge Ratio')}
-          </div>
-          <div class="field-description">
-            ${localize(
-              'editor.badge.inner_ratio_desc',
-              lang,
-              'Size of inner circle relative to outer (0.4 - 0.8)'
-            )}
-          </div>
-          <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-            <input
-              type="range"
-              class="gap-slider"
-              min="0.4"
-              max="0.8"
-              step="0.05"
-              .value="${module.inner_badge_ratio || 0.6}"
-              @input=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                updateModule({ inner_badge_ratio: parseFloat(target.value) });
-              }}
-            />
-            <input
-              type="number"
-              class="gap-input"
-              min="0.4"
-              max="0.8"
-              step="0.05"
-              .value="${module.inner_badge_ratio || 0.6}"
-              @input=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                const value = parseFloat(target.value);
-                if (!isNaN(value)) updateModule({ inner_badge_ratio: value });
-              }}
-            />
-            <button
-              class="reset-btn"
-              @click=${() => updateModule({ inner_badge_ratio: 0.6 })}
-              title="Reset to default"
-            >
-              <ha-icon icon="mdi:refresh"></ha-icon>
-            </button>
-          </div>
+          ${this.renderSliderField(
+            localize('editor.badge.inner_ratio', lang, 'Inner Badge Ratio'),
+            localize('editor.badge.inner_ratio_desc', lang, 'Size of inner circle relative to outer (0.4 - 0.8)'),
+            module.inner_badge_ratio || 0.6,
+            0.6, 0.4, 0.8, 0.05,
+            (v: number) => { updateModule({ inner_badge_ratio: v }); },
+            ''
+          )}
         </div>
       </div>
     `;
@@ -482,50 +416,14 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
 
         <!-- Rotation Speed -->
         <div class="field-container" style="margin-bottom: 16px;">
-          <div class="field-title">
-            ${localize('editor.badge.rotation_speed', lang, 'Rotation Speed')}
-          </div>
-          <div class="field-description">
-            ${localize(
-              'editor.badge.rotation_speed_desc',
-              lang,
-              'Time in seconds for one full rotation (lower = faster)'
-            )}
-          </div>
-          <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-            <input
-              type="range"
-              class="gap-slider"
-              min="3"
-              max="30"
-              step="1"
-              .value="${module.rotation_speed || 10}"
-              @input=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                updateModule({ rotation_speed: parseInt(target.value) });
-              }}
-            />
-            <input
-              type="number"
-              class="gap-input"
-              min="3"
-              max="30"
-              step="1"
-              .value="${module.rotation_speed || 10}"
-              @input=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                const value = parseInt(target.value);
-                if (!isNaN(value)) updateModule({ rotation_speed: value });
-              }}
-            />
-            <button
-              class="reset-btn"
-              @click=${() => updateModule({ rotation_speed: 10 })}
-              title="Reset to default"
-            >
-              <ha-icon icon="mdi:refresh"></ha-icon>
-            </button>
-          </div>
+          ${this.renderSliderField(
+            localize('editor.badge.rotation_speed', lang, 'Rotation Speed'),
+            localize('editor.badge.rotation_speed_desc', lang, 'Time in seconds for one full rotation (lower = faster)'),
+            module.rotation_speed || 10,
+            10, 3, 30, 1,
+            (v: number) => { updateModule({ rotation_speed: v }); },
+            's'
+          )}
         </div>
 
         <!-- Rotation Direction -->
@@ -559,220 +457,76 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
         </div>
 
         <!-- Color Shift Toggle -->
-        <div
-          style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 12px; background: var(--primary-background-color); border-radius: 8px;"
-        >
-          <div>
-            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 2px;">
-              ${localize('editor.badge.color_shift', lang, 'Color Shift Animation')}
-            </div>
-            <div class="field-description" style="font-size: 12px; margin-bottom: 0;">
-              ${localize(
-                'editor.badge.color_shift_desc',
-                lang,
-                'Animate gradient colors shifting around the ring'
-              )}
-            </div>
-          </div>
-          <ha-switch
-            .checked=${module.enable_color_shift !== false}
-            @change=${(e: Event) => {
-              const target = e.target as any;
-              updateModule({ enable_color_shift: target.checked });
-            }}
-          ></ha-switch>
-        </div>
+        ${this.renderFieldSection(
+          localize('editor.badge.color_shift', lang, 'Color Shift Animation'),
+          localize('editor.badge.color_shift_desc', lang, 'Animate gradient colors shifting around the ring'),
+          hass,
+          { enable_color_shift: module.enable_color_shift !== false },
+          [this.booleanField('enable_color_shift')],
+          (e: CustomEvent) => updateModule({ enable_color_shift: e.detail.value.enable_color_shift })
+        )}
 
         ${module.enable_color_shift !== false
           ? html`
               <div class="field-container" style="margin-bottom: 16px;">
-                <div class="field-title">
-                  ${localize('editor.badge.color_shift_speed', lang, 'Color Shift Speed')}
-                </div>
-                <div class="field-description">
-                  ${localize(
-                    'editor.badge.color_shift_speed_desc',
-                    lang,
-                    'Time in seconds for full color cycle'
-                  )}
-                </div>
-                <div
-                  class="gap-control-container"
-                  style="display: flex; align-items: center; gap: 12px;"
-                >
-                  <input
-                    type="range"
-                    class="gap-slider"
-                    min="2"
-                    max="20"
-                    step="1"
-                    .value="${module.color_shift_speed || 8}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      updateModule({ color_shift_speed: parseInt(target.value) });
-                    }}
-                  />
-                  <input
-                    type="number"
-                    class="gap-input"
-                    min="2"
-                    max="20"
-                    step="1"
-                    .value="${module.color_shift_speed || 8}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = parseInt(target.value);
-                      if (!isNaN(value)) updateModule({ color_shift_speed: value });
-                    }}
-                  />
-                  <button
-                    class="reset-btn"
-                    @click=${() => updateModule({ color_shift_speed: 8 })}
-                    title="Reset to default"
-                  >
-                    <ha-icon icon="mdi:refresh"></ha-icon>
-                  </button>
-                </div>
+                ${this.renderSliderField(
+                  localize('editor.badge.color_shift_speed', lang, 'Color Shift Speed'),
+                  localize('editor.badge.color_shift_speed_desc', lang, 'Time in seconds for full color cycle'),
+                  module.color_shift_speed || 8,
+                  8, 2, 20, 1,
+                  (v: number) => { updateModule({ color_shift_speed: v }); },
+                  's'
+                )}
               </div>
             `
           : ''}
 
         <!-- Glow Effect Toggle -->
-        <div
-          style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 12px; background: var(--primary-background-color); border-radius: 8px;"
-        >
-          <div>
-            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 2px;">
-              ${localize('editor.badge.glow', lang, 'Glow Effect')}
-            </div>
-            <div class="field-description" style="font-size: 12px; margin-bottom: 0;">
-              ${localize(
-                'editor.badge.glow_desc',
-                lang,
-                'Add a soft glow around the badge'
-              )}
-            </div>
-          </div>
-          <ha-switch
-            .checked=${module.enable_glow !== false}
-            @change=${(e: Event) => {
-              const target = e.target as any;
-              updateModule({ enable_glow: target.checked });
-            }}
-          ></ha-switch>
-        </div>
+        ${this.renderFieldSection(
+          localize('editor.badge.glow', lang, 'Glow Effect'),
+          localize('editor.badge.glow_desc', lang, 'Add a soft glow around the badge'),
+          hass,
+          { enable_glow: module.enable_glow !== false },
+          [this.booleanField('enable_glow')],
+          (e: CustomEvent) => updateModule({ enable_glow: e.detail.value.enable_glow })
+        )}
 
         ${module.enable_glow !== false
           ? html`
               <div class="field-container" style="margin-bottom: 16px;">
-                <div class="field-title">
-                  ${localize('editor.badge.glow_intensity', lang, 'Glow Intensity')}
-                </div>
-                <div
-                  class="gap-control-container"
-                  style="display: flex; align-items: center; gap: 12px;"
-                >
-                  <input
-                    type="range"
-                    class="gap-slider"
-                    min="0.1"
-                    max="1"
-                    step="0.1"
-                    .value="${module.glow_intensity || 0.4}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      updateModule({ glow_intensity: parseFloat(target.value) });
-                    }}
-                  />
-                  <input
-                    type="number"
-                    class="gap-input"
-                    min="0.1"
-                    max="1"
-                    step="0.1"
-                    .value="${module.glow_intensity || 0.4}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = parseFloat(target.value);
-                      if (!isNaN(value)) updateModule({ glow_intensity: value });
-                    }}
-                  />
-                  <button
-                    class="reset-btn"
-                    @click=${() => updateModule({ glow_intensity: 0.4 })}
-                    title="Reset to default"
-                  >
-                    <ha-icon icon="mdi:refresh"></ha-icon>
-                  </button>
-                </div>
+                ${this.renderSliderField(
+                  localize('editor.badge.glow_intensity', lang, 'Glow Intensity'),
+                  '',
+                  module.glow_intensity || 0.4,
+                  0.4, 0.1, 1, 0.1,
+                  (v: number) => { updateModule({ glow_intensity: v }); },
+                  ''
+                )}
               </div>
             `
           : ''}
 
         <!-- Pulse Effect Toggle -->
-        <div
-          style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--primary-background-color); border-radius: 8px;"
-        >
-          <div>
-            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 2px;">
-              ${localize('editor.badge.pulse', lang, 'Pulse Effect')}
-            </div>
-            <div class="field-description" style="font-size: 12px; margin-bottom: 0;">
-              ${localize('editor.badge.pulse_desc', lang, 'Add a subtle pulsing animation')}
-            </div>
-          </div>
-          <ha-switch
-            .checked=${module.enable_pulse || false}
-            @change=${(e: Event) => {
-              const target = e.target as any;
-              updateModule({ enable_pulse: target.checked });
-            }}
-          ></ha-switch>
-        </div>
+        ${this.renderFieldSection(
+          localize('editor.badge.pulse', lang, 'Pulse Effect'),
+          localize('editor.badge.pulse_desc', lang, 'Add a subtle pulsing animation'),
+          hass,
+          { enable_pulse: module.enable_pulse || false },
+          [this.booleanField('enable_pulse')],
+          (e: CustomEvent) => updateModule({ enable_pulse: e.detail.value.enable_pulse })
+        )}
 
         ${module.enable_pulse
           ? html`
               <div class="field-container" style="margin-top: 16px;">
-                <div class="field-title">
-                  ${localize('editor.badge.pulse_speed', lang, 'Pulse Speed')}
-                </div>
-                <div
-                  class="gap-control-container"
-                  style="display: flex; align-items: center; gap: 12px;"
-                >
-                  <input
-                    type="range"
-                    class="gap-slider"
-                    min="0.5"
-                    max="5"
-                    step="0.5"
-                    .value="${module.pulse_speed || 2}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      updateModule({ pulse_speed: parseFloat(target.value) });
-                    }}
-                  />
-                  <input
-                    type="number"
-                    class="gap-input"
-                    min="0.5"
-                    max="5"
-                    step="0.5"
-                    .value="${module.pulse_speed || 2}"
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = parseFloat(target.value);
-                      if (!isNaN(value)) updateModule({ pulse_speed: value });
-                    }}
-                  />
-                  <button
-                    class="reset-btn"
-                    @click=${() => updateModule({ pulse_speed: 2 })}
-                    title="Reset to default"
-                  >
-                    <ha-icon icon="mdi:refresh"></ha-icon>
-                  </button>
-                </div>
+                ${this.renderSliderField(
+                  localize('editor.badge.pulse_speed', lang, 'Pulse Speed'),
+                  '',
+                  module.pulse_speed || 2,
+                  2, 0.5, 5, 0.5,
+                  (v: number) => { updateModule({ pulse_speed: v }); },
+                  's'
+                )}
               </div>
             `
           : ''}
@@ -948,8 +702,8 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const badgeModule = module as BadgeOfHonorModule;
-
-    // Badge dimensions
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+    const hoverClass = this.getHoverEffectClass(module);
     const size = badgeModule.badge_size || 120;
     const innerRatio = badgeModule.inner_badge_ratio || 0.6;
     const innerSize = size * innerRatio;
@@ -1001,7 +755,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
       innerBgStyle = 'background: transparent;';
     }
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         @keyframes badge-rotate-${uniqueId} {
           from { transform: rotate(0deg); }
@@ -1140,7 +894,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
         }
       </style>
 
-      <div class="badge-of-honor-wrapper-${uniqueId}">
+      <div class="badge-of-honor-wrapper-${uniqueId} ${hoverClass}" style="${designStyles}">
         <div class="badge-of-honor-container-${uniqueId}">
           <!-- Outer gradient ring with glow -->
           <div class="badge-outer-ring-${uniqueId}">
@@ -1181,7 +935,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
           </div>
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {
@@ -1258,105 +1012,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
         margin-bottom: 16px;
       }
 
-      .gap-control-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .gap-slider {
-        flex: 1;
-        height: 6px;
-        background: var(--divider-color, #cccccc);
-        border-radius: 3px;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .gap-slider::-webkit-slider-thumb {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider:hover {
-        background: var(--primary-color);
-        opacity: 0.7;
-      }
-
-      .gap-slider:hover::-webkit-slider-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-slider:hover::-moz-range-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-input {
-        min-width: 80px;
-        max-width: 120px;
-        padding: 4px 8px !important;
-        border: 1px solid var(--divider-color, #cccccc);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: left;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-      }
-
-      .gap-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-      }
-
-      .reset-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border: 1px solid var(--divider-color, #cccccc);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-
-      .reset-btn:hover {
-        background: var(--primary-color);
-        color: var(--text-primary-color);
-        border-color: var(--primary-color);
-      }
-
-      .reset-btn ha-icon {
-        font-size: 16px;
-      }
+      ${BaseUltraModule.getSliderStyles()}
     `;
   }
 

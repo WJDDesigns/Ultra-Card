@@ -3,10 +3,8 @@ import { repeat } from 'lit/directives/repeat.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, UltraCardConfig } from '../types';
-import { UltraLinkComponent } from '../components/ultra-link';
 import { getImageUrl } from '../utils/image-upload';
 import { getModuleRegistry } from './module-registry';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
@@ -105,6 +103,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                 if (next === prev) return;
 
                 updateModule(e.detail.value);
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
               },
             },
           ]
@@ -133,45 +132,26 @@ export class UltraHorizontalModule extends BaseUltraModule {
               if (next === undefined || next === horizontalModule.vertical_alignment) return;
 
               updateModule({ vertical_alignment: next });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
             },
           },
         ])}
 
         <!-- Allow Wrapping Toggle -->
-        <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
-        >
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="flex: 1;">
-              <div
-                class="field-title"
-                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-              >
-                ${localize('editor.horizontal.wrapping.title', lang, 'Allow Wrapping')}
-              </div>
-              <div
-                class="field-description"
-                style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
-              >
-                ${localize(
-                  'editor.horizontal.wrapping.desc',
-                  lang,
-                  'Allow items to wrap to the next line when they exceed the container width.'
-                )}
-              </div>
-            </div>
-            <div style="margin-left: 16px;">
-              <ha-switch
-                .checked=${horizontalModule.wrap || false}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updateModule({ wrap: target.checked });
-                }}
-              ></ha-switch>
-            </div>
-          </div>
-        </div>
+        ${this.renderSettingsSection(
+          localize('editor.horizontal.wrapping.title', lang, 'Allow Wrapping'),
+          localize('editor.horizontal.wrapping.desc', lang, 'Allow items to wrap to the next line when they exceed the container width.'),
+          [
+            {
+              title: '',
+              description: '',
+              hass,
+              data: { wrap: horizontalModule.wrap || false },
+              schema: [this.booleanField('wrap')],
+              onChange: (e: CustomEvent) => { updateModule({ wrap: e.detail.value.wrap }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+            },
+          ]
+        )}
 
         <!-- Gap Between Items Field with Custom Slider -->
         <div
@@ -186,76 +166,18 @@ export class UltraHorizontalModule extends BaseUltraModule {
           </div>
 
           <div style="margin-bottom: 24px;">
-            <div
-              class="field-title"
-              style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-            >
-              ${localize('editor.horizontal.gap.between_items', lang, 'Gap Between Items')}
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-            >
-              ${localize(
+            ${this.renderSliderField(
+              localize('editor.horizontal.gap.between_items', lang, 'Gap Between Items'),
+              localize(
                 'editor.horizontal.gap.desc',
                 lang,
                 'Set the spacing between horizontal items (in rem units). Use negative values to overlap items. Any value is allowed.'
-              )}
-            </div>
-            <div
-              class="gap-control-container"
-              style="display: flex; align-items: center; gap: 12px;"
-            >
-              <input
-                type="range"
-                class="gap-slider"
-                min="-50"
-                max="50"
-                step="0.1"
-                .value="${horizontalModule.gap !== undefined ? horizontalModule.gap : 0.7}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseFloat(target.value);
-                  updateModule({ gap: value });
-                }}
-              />
-              <input
-                type="number"
-                class="gap-input"
-                style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
-                step="0.1"
-                .value="${horizontalModule.gap !== undefined ? horizontalModule.gap : 0.7}"
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  const value = parseFloat(target.value);
-                  if (!isNaN(value)) {
-                    updateModule({ gap: value });
-                  }
-                }}
-                @keydown=${(e: KeyboardEvent) => {
-                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const target = e.target as HTMLInputElement;
-                    const currentValue = parseFloat(target.value) || 0;
-                    const increment = e.key === 'ArrowUp' ? 0.1 : -0.1;
-                    const newValue = currentValue + increment;
-                    const roundedValue = Math.round(newValue * 10) / 10;
-                    updateModule({ gap: roundedValue });
-                  }
-                }}
-              />
-              <button
-                class="reset-btn"
-                @click=${() => updateModule({ gap: 0.7 })}
-                title="${localize(
-                  'editor.fields.reset_default_value',
-                  lang,
-                  'Reset to default ({value})'
-                ).replace('{value}', '0.7')}"
-              >
-                <ha-icon icon="mdi:refresh"></ha-icon>
-              </button>
-            </div>
+              ),
+              horizontalModule.gap !== undefined ? horizontalModule.gap : 0.7,
+              0.7, -50, 50, 0.1,
+              (v: number) => { updateModule({ gap: v }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+              'rem'
+            )}
           </div>
         </div>
       </div>
@@ -399,7 +321,20 @@ export class UltraHorizontalModule extends BaseUltraModule {
 
     // Get hover effect configuration from module design
     const hoverEffect = (horizontalModule as any).design?.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    // Default 16px top/bottom breathing room.  Overridden the moment the user
+    // sets ANY margin value on this module's Design tab (the shorthand `margin`
+    // property produced by buildDesignStyles then takes precedence in the style
+    // attribute because it appears after the defaults).
+    const effectiveMod = { ...(horizontalModule as any), ...((horizontalModule as any).design || {}) };
+    const hasExplicitMargin =
+      effectiveMod.margin_top !== undefined ||
+      effectiveMod.margin_bottom !== undefined ||
+      effectiveMod.margin_left !== undefined ||
+      effectiveMod.margin_right !== undefined;
+    const defaultMarginStyle = hasExplicitMargin ? '' : 'margin-top: 8px; margin-bottom: 8px;';
 
     // Extract CSS variable prefix for Shadow DOM styling
     const cssVarPrefix = (horizontalModule as any).design?.css_variable_prefix;
@@ -417,13 +352,13 @@ export class UltraHorizontalModule extends BaseUltraModule {
       (horizontalModule.double_tap_action &&
         horizontalModule.double_tap_action.action !== 'nothing');
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         ${this.getStyles()}
       </style>
       <div
         class="horizontal-module-preview"
-        style="${containerStyles.width ? `width: ${containerStyles.width};` : ''}"
+        style="${defaultMarginStyle}; ${designStyles}; ${containerStyles.width ? `width: ${containerStyles.width};` : ''}"
       >
         <div
           class="horizontal-preview-content ${hoverEffectClass}"
@@ -523,7 +458,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
               `}
         </div>
       </div>
-    `;
+    `, module, hass);
   }
 
   private _renderChildModulePreview(
@@ -1404,107 +1339,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
         border: none;
       }
 
-      /* Gap control styles */
-      .gap-control-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .gap-slider {
-        flex: 1;
-        height: 6px;
-        background: var(--divider-color);
-        border-radius: 3px;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .gap-slider::-webkit-slider-thumb {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        cursor: pointer;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .gap-slider:hover {
-        background: var(--primary-color);
-        opacity: 0.7;
-      }
-
-      .gap-slider:hover::-webkit-slider-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-slider:hover::-moz-range-thumb {
-        transform: scale(1.1);
-      }
-
-      .gap-input {
-        width: 48px !important;
-        max-width: 48px !important;
-        min-width: 48px !important;
-        padding: 4px 6px !important;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-size: 13px;
-        text-align: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        box-sizing: border-box;
-      }
-
-      .gap-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-      }
-
-      .reset-btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-
-      .reset-btn:hover {
-        background: var(--primary-color);
-        color: var(--text-primary-color);
-        border-color: var(--primary-color);
-      }
-
-      .reset-btn ha-icon {
-        font-size: 16px;
-      }
+      ${BaseUltraModule.getSliderStyles()}
     `;
   }
 }

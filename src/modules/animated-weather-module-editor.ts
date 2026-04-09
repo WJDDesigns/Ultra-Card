@@ -29,8 +29,12 @@ const WEATHER_ITEMS: Record<string, WeatherItemMeta> = {
   temp_range: { id: 'temp_range', label: 'High/Low', icon: 'mdi:thermometer-lines', column: 'right' },
 };
 
-// Track expanded accordion in module's temporary state (not persisted to config)
+// Module-level state (survives re-renders during a drag)
 const expandedAccordionState: Record<string, string | null> = {};
+const _drag: {
+  item: { itemId: string; fromColumn: 'left' | 'right'; fromIndex: number } | null;
+  activeZone: HTMLElement | null;
+} = { item: null, activeZone: null };
 
 export function renderAnimatedWeatherModuleEditor(
   context: any,
@@ -42,27 +46,29 @@ export function renderAnimatedWeatherModuleEditor(
   const weatherModule = module as AnimatedWeatherModule;
   const lang = hass.locale?.language || 'en';
 
-  // Check which attributes are available in the weather entity
-  const weatherEntity = weatherModule.weather_entity
-    ? hass.states[weatherModule.weather_entity]
-    : null;
-  const hasPrecipitation =
-    weatherEntity?.attributes?.precipitation !== undefined &&
-    weatherEntity?.attributes?.precipitation !== null;
-  const hasPrecipitationProbability =
-    weatherEntity?.attributes?.precipitation_probability !== undefined &&
-    weatherEntity?.attributes?.precipitation_probability !== null;
+  // ─── Entity attribute availability ───────────────────────────────────────────
+
+  const weatherEntity = weatherModule.weather_entity ? hass.states[weatherModule.weather_entity] : null;
+  const hasPrecipitation = weatherEntity?.attributes?.precipitation != null;
+  const hasPrecipitationProbability = weatherEntity?.attributes?.precipitation_probability != null;
   const hasWind =
     weatherEntity?.attributes?.wind_speed !== undefined ||
     weatherEntity?.attributes?.wind_bearing !== undefined;
-  const hasPressure =
-    weatherEntity?.attributes?.pressure !== undefined &&
-    weatherEntity?.attributes?.pressure !== null;
-  const hasVisibility =
-    weatherEntity?.attributes?.visibility !== undefined &&
-    weatherEntity?.attributes?.visibility !== null;
+  const hasPressure = weatherEntity?.attributes?.pressure != null;
+  const hasVisibility = weatherEntity?.attributes?.visibility != null;
 
-  // Get default order if not set
+  const isItemAvailable = (itemId: string): boolean => {
+    if (!WEATHER_ITEMS[itemId]) return false;
+    if (itemId === 'precipitation' && !hasPrecipitation) return false;
+    if (itemId === 'precipitation_probability' && !hasPrecipitationProbability) return false;
+    if (itemId === 'wind' && !hasWind) return false;
+    if (itemId === 'pressure' && !hasPressure) return false;
+    if (itemId === 'visibility' && !hasVisibility) return false;
+    return true;
+  };
+
+  // ─── Column ordering ──────────────────────────────────────────────────────────
+
   const getDefaultOrder = (column: 'left' | 'right'): string[] => {
     if (column === 'left') {
       const items: string[] = ['location', 'condition'];
@@ -73,211 +79,233 @@ export function renderAnimatedWeatherModuleEditor(
       if (hasPressure) items.push('pressure');
       if (hasVisibility) items.push('visibility');
       return items;
-    } else {
-      return ['date', 'temperature', 'temp_range'];
     }
+    return ['date', 'temperature', 'temp_range'];
   };
 
-  const leftOrder = weatherModule.left_column_order || getDefaultOrder('left');
-  const rightOrder = weatherModule.right_column_order || getDefaultOrder('right');
+  // Filter to available items so indices are stable and predictable
+  const leftOrder = (weatherModule.left_column_order || getDefaultOrder('left')).filter(isItemAvailable);
+  const rightOrder = (weatherModule.right_column_order || getDefaultOrder('right')).filter(isItemAvailable);
 
-  // State management
-  let draggedItem: { itemId: string; fromColumn: 'left' | 'right'; fromIndex: number } | null = null;
+  // ─── Accordion state ──────────────────────────────────────────────────────────
+
   const moduleId = weatherModule.id || 'default';
-  
-  // Get expanded accordion state
-  const getExpandedAccordion = () => expandedAccordionState[moduleId] || null;
-  const setExpandedAccordion = (itemId: string | null) => {
-    expandedAccordionState[moduleId] = itemId;
-  };
+  const getExpanded = () => expandedAccordionState[moduleId] || null;
+  const setExpanded = (id: string | null) => { expandedAccordionState[moduleId] = id; };
 
-  // Drag handlers
-  const handleDragStart = (e: DragEvent, itemId: string, column: 'left' | 'right', index: number) => {
-    draggedItem = { itemId, fromColumn: column, fromIndex: index };
+  // ─── Drag handlers ────────────────────────────────────────────────────────────
+
+  const onDragStart = (e: DragEvent, itemId: string, column: 'left' | 'right', index: number) => {
+    _drag.item = { itemId, fromColumn: column, fromIndex: index };
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', itemId);
     }
-    (e.target as HTMLElement).style.opacity = '0.4';
+    // Delay so the drag ghost is captured before the opacity change
+    requestAnimationFrame(() => (e.target as HTMLElement).classList.add('wm-dragging'));
   };
 
-  const handleDragEnd = (e: DragEvent) => {
-    (e.target as HTMLElement).style.opacity = '';
-    draggedItem = null;
-    // Remove all drop zone highlights
-    document.querySelectorAll('.drop-zone-active').forEach(el => el.classList.remove('drop-zone-active'));
+  const onDragEnd = (e: DragEvent) => {
+    (e.target as HTMLElement).classList.remove('wm-dragging');
+    _drag.item = null;
+    if (_drag.activeZone) {
+      _drag.activeZone.classList.remove('wm-drop-active');
+      _drag.activeZone = null;
+    }
   };
 
-  const handleDragOver = (e: DragEvent) => {
+  // Drop zone event handlers
+  const onZoneDragOver = (e: DragEvent) => {
+    if (!_drag.item) return;
     e.preventDefault();
-    if (e.dataTransfer) {
-      e.dataTransfer.dropEffect = 'move';
-    }
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDragEnter = (e: DragEvent) => {
-    (e.currentTarget as HTMLElement).classList.add('drop-zone-active');
-  };
-
-  const handleDragLeave = (e: DragEvent) => {
-    (e.currentTarget as HTMLElement).classList.remove('drop-zone-active');
-  };
-
-  const handleDrop = (e: DragEvent, targetColumn: 'left' | 'right', targetIndex: number) => {
+  const onZoneDragEnter = (e: DragEvent) => {
+    if (!_drag.item) return;
     e.preventDefault();
-    (e.currentTarget as HTMLElement).classList.remove('drop-zone-active');
+    const zone = e.currentTarget as HTMLElement;
+    if (_drag.activeZone && _drag.activeZone !== zone) {
+      _drag.activeZone.classList.remove('wm-drop-active');
+    }
+    _drag.activeZone = zone;
+    zone.classList.add('wm-drop-active');
+  };
 
-    if (!draggedItem) return;
+  const onZoneDragLeave = (e: DragEvent) => {
+    const zone = e.currentTarget as HTMLElement;
+    const related = e.relatedTarget as Node | null;
+    // Only deactivate when truly leaving (not bubbling from a child element)
+    if (!related || !zone.contains(related)) {
+      zone.classList.remove('wm-drop-active');
+      if (_drag.activeZone === zone) _drag.activeZone = null;
+    }
+  };
 
-    const { itemId, fromColumn, fromIndex } = draggedItem;
+  const onZoneDrop = (e: DragEvent, targetColumn: 'left' | 'right', targetIndex: number) => {
+    e.preventDefault();
+    const zone = e.currentTarget as HTMLElement;
+    zone.classList.remove('wm-drop-active');
+    if (_drag.activeZone === zone) _drag.activeZone = null;
 
-    // Create new order arrays
-    let newLeftOrder = [...leftOrder];
-    let newRightOrder = [...rightOrder];
+    const ds = _drag.item;
+    if (!ds) return;
+    _drag.item = null;
 
-    // Remove from source
-    if (fromColumn === 'left') {
-      newLeftOrder.splice(fromIndex, 1);
-    } else {
-      newRightOrder.splice(fromIndex, 1);
+    const { itemId, fromColumn, fromIndex } = ds;
+    let newLeft = [...leftOrder];
+    let newRight = [...rightOrder];
+
+    // Remove from source column
+    if (fromColumn === 'left') newLeft.splice(fromIndex, 1);
+    else newRight.splice(fromIndex, 1);
+
+    // Adjust insert index when moving forward within the same column:
+    // removal shifts every subsequent slot one earlier.
+    let insertAt = targetIndex;
+    if (fromColumn === targetColumn && fromIndex < targetIndex) {
+      insertAt = targetIndex - 1;
     }
 
-    // Add to target
-    if (targetColumn === 'left') {
-      newLeftOrder.splice(targetIndex, 0, itemId);
-    } else {
-      newRightOrder.splice(targetIndex, 0, itemId);
-    }
+    // Insert into target column
+    if (targetColumn === 'left') newLeft.splice(insertAt, 0, itemId);
+    else newRight.splice(insertAt, 0, itemId);
 
-    // Update module
-    updateModule({
-      left_column_order: newLeftOrder,
-      right_column_order: newRightOrder,
-    });
+    // Skip if nothing changed
+    if (newLeft.join(',') === leftOrder.join(',') && newRight.join(',') === rightOrder.join(',')) return;
 
+    updateModule({ left_column_order: newLeft, right_column_order: newRight });
     setTimeout(() => context.triggerPreviewUpdate(), 50);
   };
 
-  // Toggle visibility
-  const toggleVisibility = (itemId: string) => {
-    const showKey = `show_${itemId}` as keyof AnimatedWeatherModule;
-    const currentValue = weatherModule[showKey];
-    updateModule({ [showKey]: currentValue === false ? true : false } as any);
-    setTimeout(() => context.triggerPreviewUpdate(), 50);
-  };
+  // ─── Render helpers ───────────────────────────────────────────────────────────
 
-  // Render accordion item
+  /**
+   * A thin strip between items that grows into a vivid insert-line during drag.
+   * pointer-events: none on children prevents dragLeave from firing when the
+   * cursor moves over the inner indicator div.
+   */
+  const renderDropZone = (column: 'left' | 'right', insertIndex: number, isEmpty = false) => html`
+    <div
+      class="wm-drop-zone${isEmpty ? ' wm-drop-zone-empty' : ''}"
+      @dragover=${onZoneDragOver}
+      @dragenter=${onZoneDragEnter}
+      @dragleave=${onZoneDragLeave}
+      @drop=${(e: DragEvent) => onZoneDrop(e, column, insertIndex)}
+    >
+      <div class="wm-drop-line"></div>
+      ${isEmpty ? html`<span class="wm-drop-hint">Drop here</span>` : ''}
+    </div>
+  `;
+
   const renderAccordionItem = (itemId: string, column: 'left' | 'right', index: number) => {
     const meta = WEATHER_ITEMS[itemId];
     if (!meta) return html``;
 
-    // Check if item should be available (entity has this attribute)
-    if (itemId === 'precipitation' && !hasPrecipitation) return html``;
-    if (itemId === 'precipitation_probability' && !hasPrecipitationProbability) return html``;
-    if (itemId === 'wind' && !hasWind) return html``;
-    if (itemId === 'pressure' && !hasPressure) return html``;
-    if (itemId === 'visibility' && !hasVisibility) return html``;
-
-    const showKey = `show_${itemId}` as keyof AnimatedWeatherModule;
-    const sizeKey = `${itemId}_size` as keyof AnimatedWeatherModule;
+    const showKey  = `show_${itemId}`  as keyof AnimatedWeatherModule;
+    const sizeKey  = `${itemId}_size`  as keyof AnimatedWeatherModule;
     const colorKey = `${itemId}_color` as keyof AnimatedWeatherModule;
 
-    const isVisible = weatherModule[showKey] !== false;
-    const isExpanded = getExpandedAccordion() === itemId;
+    const isVisible  = weatherModule[showKey] !== false;
+    const isExpanded = getExpanded() === itemId;
 
     const toggleExpand = (e: Event) => {
       e.stopPropagation();
-      const currentExpanded = getExpandedAccordion();
-      setExpandedAccordion(currentExpanded === itemId ? null : itemId);
-      // Force re-render
+      setExpanded(getExpanded() === itemId ? null : itemId);
       updateModule({});
     };
 
     return html`
       <div
-        class="accordion-item"
+        class="wm-item"
         draggable="true"
-        @dragstart=${(e: DragEvent) => handleDragStart(e, itemId, column, index)}
-        @dragend=${handleDragEnd}
-        @dragover=${handleDragOver}
-        @dragenter=${handleDragEnter}
-        @dragleave=${handleDragLeave}
-        @drop=${(e: DragEvent) => handleDrop(e, column, index)}
+        @dragstart=${(e: DragEvent) => onDragStart(e, itemId, column, index)}
+        @dragend=${onDragEnd}
       >
-        <div class="accordion-header ${isExpanded ? 'expanded' : ''}">
-          <ha-icon icon="mdi:drag" class="drag-handle"></ha-icon>
-          <ha-icon icon="${meta.icon}" class="item-icon"></ha-icon>
-          <span class="item-label">${meta.label}</span>
+        <div class="wm-item-header ${isExpanded ? 'expanded' : ''}">
+          <ha-icon icon="mdi:drag" class="wm-drag-handle"></ha-icon>
+          <ha-icon icon="${meta.icon}" class="wm-item-icon"></ha-icon>
+          <span class="wm-item-label">${meta.label}</span>
           <ha-icon
             icon="${isVisible ? 'mdi:eye' : 'mdi:eye-off'}"
-            class="visibility-toggle ${isVisible ? 'visible' : 'hidden'}"
+            class="wm-visibility ${isVisible ? 'on' : 'off'}"
             @click=${(e: Event) => {
               e.stopPropagation();
-              toggleVisibility(itemId);
+              updateModule({ [showKey]: isVisible ? false : true } as any);
+              setTimeout(() => context.triggerPreviewUpdate(), 50);
             }}
           ></ha-icon>
           <ha-icon
             icon="mdi:chevron-${isExpanded ? 'up' : 'down'}"
-            class="expand-toggle"
+            class="wm-chevron"
             @click=${toggleExpand}
           ></ha-icon>
         </div>
 
-        ${isExpanded
-          ? html`
-              <div class="accordion-content">
-                <!-- Size Control -->
-                <div class="control-row">
-                  ${context.renderSliderField(
-                    'Size',
-                    '',
-                    (weatherModule[sizeKey] as number) || (column === 'left' ? 14 : 16),
-                    column === 'left' ? 14 : 16,
-                    0,
-                    128,
-                    1,
-                    (value: number) => updateModule({ [sizeKey]: value } as any),
-                    'px'
-                  )}
-                </div>
-
-                <!-- Color Control -->
-                <div class="control-row">
-                  <div class="control-label">Color</div>
-                  <ultra-color-picker
-                    .value="${weatherModule[colorKey] || 'var(--primary-text-color)'}"
-                    .hass="${hass}"
-                    @value-changed=${(e: CustomEvent) => {
-                      updateModule({ [colorKey]: e.detail.value } as any);
-                      setTimeout(() => context.triggerPreviewUpdate(), 50);
-                    }}
-                  ></ultra-color-picker>
-                </div>
-              </div>
-            `
-          : ''}
+        ${isExpanded ? html`
+          <div class="wm-item-content">
+            ${context.renderSliderField(
+              localize('editor.animated_weather.item_size', lang, 'Size'), '',
+              (weatherModule[sizeKey] as number) ?? (column === 'left' ? 14 : 16),
+              column === 'left' ? 14 : 16,
+              0, 128, 1,
+              (v: number) => { updateModule({ [sizeKey]: v } as any); },
+              'px'
+            )}
+            <div class="wm-color-row">
+              <div class="wm-color-label">${localize('editor.animated_weather.item_color', lang, 'Color')}</div>
+              <ultra-color-picker
+                .value="${weatherModule[colorKey] || 'var(--primary-text-color)'}"
+                .hass="${hass}"
+                @value-changed=${(e: CustomEvent) => {
+                  updateModule({ [colorKey]: e.detail.value } as any);
+                  setTimeout(() => context.triggerPreviewUpdate(), 50);
+                }}
+              ></ultra-color-picker>
+            </div>
+          </div>
+        ` : ''}
       </div>
     `;
   };
+
+  const renderColumn = (title: string, column: 'left' | 'right', order: string[]) => html`
+    <div class="wm-column">
+      <div class="wm-column-title">${title}</div>
+      ${order.length === 0
+        ? renderDropZone(column, 0, true)
+        : html`
+            ${renderDropZone(column, 0)}
+            ${order.map((itemId, index) => html`
+              ${renderAccordionItem(itemId, column, index)}
+              ${renderDropZone(column, index + 1)}
+            `)}
+          `
+      }
+    </div>
+  `;
+
+  // ─── Template ─────────────────────────────────────────────────────────────────
 
   return html`
     ${context.injectUcFormStyles()}
     <style>
       ${BaseUltraModule.getSliderStyles()}
-      .weather-editor-container {
+
+      .wm-editor {
         display: flex;
         flex-direction: column;
         gap: 24px;
         padding: 16px;
       }
 
-      .entity-config-section {
+      .wm-section {
         background: var(--secondary-background-color);
         border-radius: 8px;
         padding: 16px;
       }
 
-      .section-title {
+      .wm-section-title {
         font-size: 18px;
         font-weight: 700;
         text-transform: uppercase;
@@ -286,216 +314,307 @@ export function renderAnimatedWeatherModuleEditor(
         letter-spacing: 0.5px;
       }
 
-      .section-description {
+      .wm-section-desc {
         font-size: 13px;
         color: var(--secondary-text-color);
-        margin-bottom: 16px;
         line-height: 1.4;
+        margin-bottom: 0;
       }
 
-      .columns-container {
+      /* ── Two-column grid ─────────────────────── */
+
+      .wm-columns {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 16px;
         margin-top: 24px;
       }
 
-      .column {
+      .wm-column {
         background: var(--secondary-background-color);
         border-radius: 8px;
         padding: 16px;
-        min-height: 200px;
+        min-height: 180px;
       }
 
-      .column-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--primary-color);
-        margin-bottom: 12px;
+      .wm-column-title {
+        font-size: 13px;
+        font-weight: 700;
         text-transform: uppercase;
+        color: var(--primary-color);
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
       }
 
-      .accordion-item {
+      /* ── Draggable items ─────────────────────── */
+
+      .wm-item {
         background: var(--primary-background-color);
         border-radius: 6px;
-        margin-bottom: 8px;
-        cursor: move;
-        border: 2px solid transparent;
-        transition: all 0.2s;
+        border: 1px solid transparent;
+        transition: opacity 0.15s, transform 0.15s, border-color 0.15s;
+        cursor: grab;
+        user-select: none;
       }
 
-      .accordion-item.drop-zone-active {
-        border-color: var(--primary-color);
-        background: var(--primary-color);
+      .wm-item:active { cursor: grabbing; }
+
+      /* Applied one rAF after dragstart so the drag ghost looks normal */
+      .wm-item.wm-dragging {
         opacity: 0.3;
+        transform: scale(0.97);
+        border-color: var(--primary-color);
       }
 
-      .accordion-header {
+      .wm-item-header {
         display: flex;
         align-items: center;
-        padding: 12px;
         gap: 8px;
+        padding: 10px 12px;
         cursor: pointer;
       }
 
-      .drag-handle {
-        --mdc-icon-size: 20px;
+      .wm-drag-handle {
+        --mdc-icon-size: 18px;
         color: var(--secondary-text-color);
         cursor: grab;
+        flex-shrink: 0;
       }
 
-      .drag-handle:active {
-        cursor: grabbing;
-      }
-
-      .item-icon {
-        --mdc-icon-size: 20px;
+      .wm-item-icon {
+        --mdc-icon-size: 18px;
         color: var(--primary-color);
+        flex-shrink: 0;
       }
 
-      .item-label {
+      .wm-item-label {
         flex: 1;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 500;
         color: var(--primary-text-color);
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
-      .visibility-toggle {
-        --mdc-icon-size: 20px;
+      .wm-visibility {
+        --mdc-icon-size: 18px;
         cursor: pointer;
-        transition: color 0.2s;
+        flex-shrink: 0;
+        transition: color 0.15s;
       }
+      .wm-visibility.on  { color: var(--primary-color); }
+      .wm-visibility.off { color: var(--disabled-text-color, #888); }
 
-      .visibility-toggle.visible {
-        color: var(--primary-color);
-      }
-
-      .visibility-toggle.hidden {
-        color: var(--disabled-text-color);
-      }
-
-      .expand-toggle {
-        --mdc-icon-size: 20px;
+      .wm-chevron {
+        --mdc-icon-size: 18px;
         color: var(--secondary-text-color);
+        flex-shrink: 0;
         transition: transform 0.2s;
       }
 
-      .accordion-header.expanded .expand-toggle {
+      .wm-item-header.expanded .wm-chevron {
         transform: rotate(180deg);
       }
 
-      .accordion-content {
-        padding: 0 12px 12px 12px;
+      .wm-item-content {
+        padding: 0 12px 12px;
         display: flex;
         flex-direction: column;
         gap: 12px;
+        border-top: 1px solid var(--divider-color);
       }
 
-      .control-row {
+      .wm-color-row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .wm-color-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+      }
+
+      /* ── Drop zones ──────────────────────────── */
+
+      /*
+       * Each zone is a small invisible strip between items.
+       * .wm-drop-line is the visual indicator — pointer-events:none
+       * so moving the cursor onto it doesn't trigger dragleave on the parent.
+       */
+
+      .wm-drop-zone {
+        height: 10px;
+        position: relative;
+        border-radius: 4px;
+        /* A slightly expanded hit area makes it easier to target */
+        margin: -1px 0;
+        z-index: 1;
+      }
+
+      .wm-drop-line {
+        pointer-events: none;
+        position: absolute;
+        inset: 0;
+        top: 50%;
+        left: 8px;
+        right: 8px;
+        height: 2px;
+        transform: translateY(-50%);
+        border-radius: 2px;
+        background: transparent;
+        transition: background 0.1s, box-shadow 0.1s, height 0.1s;
+      }
+
+      /* Active: grow the zone and show the colored insert line */
+      .wm-drop-zone.wm-drop-active {
+        height: 36px;
+      }
+
+      .wm-drop-zone.wm-drop-active .wm-drop-line {
+        background: var(--primary-color);
+        height: 3px;
+        box-shadow:
+          0 0 0 3px rgba(var(--rgb-primary-color, 3, 169, 244), 0.18),
+          0 0 10px rgba(var(--rgb-primary-color, 3, 169, 244), 0.35);
+      }
+
+      /* Caret dots at each end of the line */
+      .wm-drop-zone.wm-drop-active .wm-drop-line::before,
+      .wm-drop-zone.wm-drop-active .wm-drop-line::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--primary-color);
+      }
+      .wm-drop-zone.wm-drop-active .wm-drop-line::before { left: -4px; }
+      .wm-drop-zone.wm-drop-active .wm-drop-line::after  { right: -4px; }
+
+      /* Empty column drop target */
+      .wm-drop-zone-empty {
+        height: 72px !important;
+        border: 2px dashed var(--divider-color);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: border-color 0.15s, background 0.15s;
+      }
+
+      .wm-drop-zone-empty .wm-drop-line {
+        display: none;
+      }
+
+      .wm-drop-hint {
+        pointer-events: none;
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        transition: color 0.15s;
+      }
+
+      .wm-drop-zone-empty.wm-drop-active {
+        border-color: var(--primary-color);
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.07);
+      }
+
+      .wm-drop-zone-empty.wm-drop-active .wm-drop-hint {
+        color: var(--primary-color);
+        font-weight: 600;
+      }
+
+      /* ── Layout ──────────────────────────────── */
+
+      .wm-control-row {
         display: flex;
         flex-direction: column;
         gap: 8px;
       }
 
-      .control-label {
+      .wm-control-label {
         font-size: 13px;
         font-weight: 500;
         color: var(--secondary-text-color);
       }
 
-      @media (max-width: 768px) {
-        .columns-container {
-          grid-template-columns: 1fr;
-        }
+      @media (max-width: 600px) {
+        .wm-columns { grid-template-columns: 1fr; }
       }
     </style>
 
-    <div class="weather-editor-container">
-      <!-- Entity Configuration -->
-      <div class="entity-config-section">
-        <div class="section-title">Weather Entity</div>
-        ${context.renderUcForm(
-          hass,
-          { weather_entity: weatherModule.weather_entity || '' },
-          [context.entityField('weather_entity', ['weather'])],
-          (e: CustomEvent) => updateModule(e.detail.value),
-          false
+    <div class="wm-editor">
+
+      <!-- Weather Entity -->
+      <div class="wm-section">
+        <div class="wm-section-title">${localize('editor.animated_weather.entity_section', lang, 'Weather Entity')}</div>
+        ${context.renderEntityPickerWithVariables(
+          hass, config, 'weather_entity', weatherModule.weather_entity || '',
+          (value: string) => { updateModule({ weather_entity: value }); context.triggerPreviewUpdate(); },
+          ['weather'],
+          localize('editor.animated_weather.entity', lang, 'Weather Entity')
         )}
       </div>
 
-      <!-- General Settings -->
-      <div class="entity-config-section">
-        <div class="section-title">Layout Settings</div>
-        
-        <!-- Layout Spread -->
+      <!-- Layout Settings -->
+      <div class="wm-section">
+        <div class="wm-section-title">${localize('editor.animated_weather.layout_section', lang, 'Layout Settings')}</div>
+
         ${context.renderSliderField(
-          'Layout Spread',
-          '0% Compact Centered ↔ 100% Full-Width Spread',
-          weatherModule.layout_spread ?? 100,
-          100,
-          0,
-          100,
-          1,
-          (value: number) => updateModule({ layout_spread: value }),
+          localize('editor.animated_weather.layout_spread', lang, 'Layout Spread'),
+          localize('editor.animated_weather.layout_spread_desc', lang, '0% Compact ↔ 100% Full-Width'),
+          weatherModule.layout_spread ?? 100, 100,
+          0, 100, 1,
+          (v: number) => updateModule({ layout_spread: v }),
           '%'
         )}
-
         ${context.renderSliderField(
-          'Left Column Vertical Gap',
-          '0-32px',
-          weatherModule.left_column_gap ?? 8,
-          8,
-          0,
-          32,
-          1,
-          (value: number) => updateModule({ left_column_gap: value }),
+          localize('editor.animated_weather.left_column_gap', lang, 'Left Column Gap'),
+          localize('editor.animated_weather.left_column_gap_desc', lang, '0–32px'),
+          weatherModule.left_column_gap ?? 8, 8,
+          0, 32, 1,
+          (v: number) => updateModule({ left_column_gap: v }),
           'px'
         )}
-
         ${context.renderSliderField(
-          'Right Column Vertical Gap',
-          '0-32px',
-          weatherModule.right_column_gap ?? 8,
-          8,
-          0,
-          32,
-          1,
-          (value: number) => updateModule({ right_column_gap: value }),
+          localize('editor.animated_weather.right_column_gap', lang, 'Right Column Gap'),
+          localize('editor.animated_weather.right_column_gap_desc', lang, '0–32px'),
+          weatherModule.right_column_gap ?? 8, 8,
+          0, 32, 1,
+          (v: number) => updateModule({ right_column_gap: v }),
           'px'
         )}
       </div>
 
-      <!-- Center Column Settings -->
-      <div class="entity-config-section">
-        <div class="section-title">Center Column (Weather Icon)</div>
-        
+      <!-- Center Column (Weather Icon) -->
+      <div class="wm-section">
+        <div class="wm-section-title">${localize('editor.animated_weather.icon_section', lang, 'Center Column (Weather Icon)')}</div>
+
         ${context.renderSliderField(
-          'Icon Size',
-          '0-300px',
-          weatherModule.main_icon_size || 120,
-          120,
-          0,
-          300,
-          10,
-          (value: number) => updateModule({ main_icon_size: value }),
+          localize('editor.animated_weather.icon_size', lang, 'Icon Size'),
+          localize('editor.animated_weather.icon_size_desc', lang, '0–300px'),
+          weatherModule.main_icon_size ?? 120, 120,
+          0, 300, 10,
+          (v: number) => updateModule({ main_icon_size: v }),
           'px'
         )}
 
-        <div class="control-row">
-          <div class="control-label">Icon Style</div>
+        <div class="wm-control-row">
+          <div class="wm-control-label">${localize('editor.animated_weather.icon_style', lang, 'Icon Style')}</div>
           ${context.renderUcForm(
             hass,
             { icon_style: weatherModule.icon_style || 'fill' },
-            [
-              context.selectField('icon_style', [
-                { value: 'fill', label: 'Filled' },
-                { value: 'line', label: 'Outlined' },
-              ]),
-            ],
+            [context.selectField('icon_style', [
+              { value: 'fill', label: localize('editor.animated_weather.icon_style_filled', lang, 'Filled') },
+              { value: 'line', label: localize('editor.animated_weather.icon_style_outlined', lang, 'Outlined') },
+            ])],
             (e: CustomEvent) => {
-              const next = e.detail.value.icon_style;
-              const prev = weatherModule.icon_style;
-              if (next === prev) return;
+              if (e.detail.value.icon_style === weatherModule.icon_style) return;
               updateModule(e.detail.value);
               setTimeout(() => context.triggerPreviewUpdate(), 50);
             },
@@ -504,27 +623,20 @@ export function renderAnimatedWeatherModuleEditor(
         </div>
       </div>
 
-      <!-- Column Layout Editor -->
-      <div class="entity-config-section" style="padding-bottom: 0;">
-        <div class="section-title">Drag & Drop Column Items</div>
-        <div class="section-description">
-          Drag items to reorder them within or between columns. Click the eye icon to toggle visibility. Click the chevron to expand item settings.
+      <!-- Drag & Drop header -->
+      <div class="wm-section" style="padding-bottom: 0;">
+        <div class="wm-section-title">${localize('editor.animated_weather.column_items_section', lang, 'Column Items')}</div>
+        <div class="wm-section-desc">
+          ${localize('editor.animated_weather.column_items_desc', lang, 'Drag items to reorder within or between columns — a blue line shows exactly where the item will land. Click the eye to toggle visibility, the chevron to edit size & color.')}
         </div>
       </div>
 
-      <div class="columns-container">
-        <!-- Left Column -->
-        <div class="column">
-          <div class="column-title">Left Column</div>
-          ${leftOrder.map((itemId, index) => renderAccordionItem(itemId, 'left', index))}
-        </div>
-
-        <!-- Right Column -->
-        <div class="column">
-          <div class="column-title">Right Column</div>
-          ${rightOrder.map((itemId, index) => renderAccordionItem(itemId, 'right', index))}
-        </div>
+      <!-- Drag & Drop columns -->
+      <div class="wm-columns">
+        ${renderColumn(localize('editor.animated_weather.left_column', lang, 'Left Column'),  'left',  leftOrder)}
+        ${renderColumn(localize('editor.animated_weather.right_column', lang, 'Right Column'), 'right', rightOrder)}
       </div>
+
     </div>
   `;
 }

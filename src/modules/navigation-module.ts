@@ -370,33 +370,19 @@ export class UltraNavigationModule extends BaseUltraModule {
             reordering.
           </div>
 
-          <div class="field-container">
-            <div
-              class="field-row"
-              style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0;"
-            >
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <ha-icon icon="mdi:music" style="color: var(--primary-color);"></ha-icon>
-                <div>
-                  <div class="field-title" style="margin: 0;">Media Player Icon</div>
-                  <div class="field-description" style="margin: 0;">
-                    Show a media player icon in the navbar
-                  </div>
-                </div>
-              </div>
-              <ha-switch
-                .checked=${navModule.nav_media_player?.enabled === true}
-                @change=${(e: Event) => {
-                  updateModule({
-                    nav_media_player: {
-                      ...navModule.nav_media_player,
-                      enabled: (e.target as HTMLInputElement).checked,
-                    },
-                  });
-                }}
-              ></ha-switch>
-            </div>
-          </div>
+          ${this.renderFieldSection(
+              'Media Player Icon',
+              'Show a media player icon in the navbar',
+              hass,
+              { nav_media_player_enabled: navModule.nav_media_player?.enabled === true },
+              [this.booleanField('nav_media_player_enabled')],
+              (e: CustomEvent) => updateModule({
+                nav_media_player: {
+                  ...navModule.nav_media_player,
+                  enabled: e.detail.value.nav_media_player_enabled,
+                },
+              })
+            )}
         </div>
 
         <!-- Style Section -->
@@ -483,8 +469,8 @@ export class UltraNavigationModule extends BaseUltraModule {
 
         <!-- Desktop Configuration Section -->
         ${this.renderSettingsSection(
-          'DESKTOP MODE',
-          'Configure navbar appearance and behavior on desktop devices.',
+          localize('editor.navigation.section_desktop', lang, 'DESKTOP MODE'),
+          localize('editor.navigation.section_desktop_desc', lang, 'Configure navbar appearance and behavior on desktop devices.'),
           [
             {
               title: 'Mode',
@@ -634,8 +620,8 @@ export class UltraNavigationModule extends BaseUltraModule {
 
         <!-- Mobile Configuration Section -->
         ${this.renderSettingsSection(
-          'MOBILE MODE',
-          'Configure navbar appearance and behavior on mobile devices.',
+          localize('editor.navigation.section_mobile', lang, 'MOBILE MODE'),
+          localize('editor.navigation.section_mobile_desc', lang, 'Configure navbar appearance and behavior on mobile devices.'),
           [
             {
               title: 'Mode',
@@ -866,8 +852,8 @@ export class UltraNavigationModule extends BaseUltraModule {
 
         <!-- Haptics Section -->
         ${this.renderSettingsSection(
-          'HAPTIC FEEDBACK',
-          'Configure haptic feedback for interactions.',
+          localize('editor.navigation.section_haptics', lang, 'HAPTIC FEEDBACK'),
+          localize('editor.navigation.section_haptics_desc', lang, 'Configure haptic feedback for interactions.'),
           [
             {
               title: 'Enable Haptics',
@@ -992,7 +978,7 @@ export class UltraNavigationModule extends BaseUltraModule {
       const showDockToggle = isInEditModeDashboard && previewContext === 'live';
       const isPreviewExpanded = showDockToggle && ucNavigationService.isEditModePreviewExpanded();
 
-      return html`
+      return this.wrapWithAnimation(html`
         <div
           style="
             padding: 24px;
@@ -1067,7 +1053,7 @@ export class UltraNavigationModule extends BaseUltraModule {
               `
             : ''}
         </div>
-      `;
+      `, module, hass);
     }
 
     // For all other contexts (including actual dashboard viewing), return empty
@@ -1765,13 +1751,12 @@ export class UltraNavigationModule extends BaseUltraModule {
         ? html`
             <div class="field-container" style="margin-top: 8px;">
               <div class="field-title">Entity</div>
-              <ha-entity-picker
-                .hass=${hass}
-                .value=${mediaPlayer.inactive_tap_action?.entity || mediaPlayer.entity || ''}
-                @value-changed=${(e: CustomEvent) =>
-                  updateInactiveTapAction({ entity: e.detail.value })}
-                allow-custom-entity
-              ></ha-entity-picker>
+              ${this.renderEntityPickerWithVariables(
+                hass, config, 'entity', mediaPlayer.inactive_tap_action?.entity || mediaPlayer.entity || '',
+                (value: string) => updateInactiveTapAction({ entity: value }),
+                undefined,
+                'Entity'
+              )}
             </div>
           `
         : ''}
@@ -2638,28 +2623,14 @@ export class UltraNavigationModule extends BaseUltraModule {
                   ? 'Select the entity to toggle.'
                   : 'Select the entity to show more info for.'}
               </div>
-              <ha-form
-                .hass=${hass}
-                .data=${{ entity: route.tap_action?.entity || '' }}
-                .schema=${[
-                  {
-                    name: 'entity',
-                    selector: { entity: {} },
-                  },
-                ]}
-                .computeLabel=${(schema: any) => schema.label || ''}
-                @value-changed=${(e: CustomEvent) => {
-                  e.stopPropagation();
-                  const entity = e.detail?.value?.entity || '';
-                  updateRoute({
-                    tap_action: {
-                      ...(route.tap_action || {}),
-                      action: category as 'toggle' | 'more-info',
-                      entity,
-                    },
-                  });
-                }}
-              ></ha-form>
+              ${this.renderEntityPickerWithVariables(
+                hass, config, 'entity', route.tap_action?.entity || '',
+                (value: string) => updateRoute({
+                  tap_action: { ...(route.tap_action || {}), action: category as 'toggle' | 'more-info', entity: value },
+                }),
+                undefined,
+                'Entity'
+              )}
             </div>
           `
         : ''}
@@ -2802,12 +2773,12 @@ export class UltraNavigationModule extends BaseUltraModule {
             </div>
             <div class="field-container">
               <div class="field-title">Entity</div>
-              <ha-entity-picker
-                .hass=${hass}
-                .value=${badge.entity || ''}
-                @value-changed=${(e: CustomEvent) => updateBadge({ entity: e.detail.value })}
-                allow-custom-entity
-              ></ha-entity-picker>
+              ${this.renderEntityPickerWithVariables(
+                hass, undefined as any, 'entity', badge.entity || '',
+                (value: string) => updateBadge({ entity: value }),
+                undefined,
+                'Entity'
+              )}
             </div>
             <div class="field-container">
               <div class="field-title">Attribute (Optional)</div>
@@ -2853,15 +2824,14 @@ export class UltraNavigationModule extends BaseUltraModule {
           `
         : ''}
 
-      <div class="field-container" style="margin-top: 16px;">
-        <div class="field-title">Hide When Zero</div>
-        <div class="field-description">Hide the badge when the count is 0 or empty.</div>
-        <ha-switch
-          .checked=${badge.hide_when_zero ?? true}
-          @change=${(e: Event) =>
-            updateBadge({ hide_when_zero: (e.target as HTMLInputElement).checked })}
-        ></ha-switch>
-      </div>
+      ${this.renderFieldSection(
+        'Hide When Zero',
+        'Hide the badge when the count is 0 or empty.',
+        hass,
+        { hide_when_zero: badge.hide_when_zero ?? true },
+        [this.booleanField('hide_when_zero')],
+        (e: CustomEvent) => updateBadge({ hide_when_zero: e.detail.value.hide_when_zero })
+      )}
 
       <div class="entity-fields-grid" style="margin-top: 16px;">
         <div class="field-container">

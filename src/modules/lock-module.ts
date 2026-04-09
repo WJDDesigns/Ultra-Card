@@ -28,6 +28,8 @@ export class UltraLockModule extends BaseUltraModule {
   /** Optimistic action until HA state reflects the transition */
   private _lockPending = new Map<string, LockPendingAction>();
 
+  handlesOwnDesignStyles = true;
+
   metadata: ModuleMetadata = {
     type: 'lock',
     title: 'Lock Control',
@@ -94,18 +96,20 @@ export class UltraLockModule extends BaseUltraModule {
         ${this.renderSettingsSection(
           localize('editor.lock.entity_section', lang, 'Entity'),
           localize('editor.lock.entity_section_desc', lang, 'Select the lock to control.'),
-          [
-            {
-              title: localize('editor.lock.entity', lang, 'Lock entity'),
-              description: localize('editor.lock.entity_field_desc', lang, 'Home Assistant lock entity'),
-              hass,
-              data: { entity: lock.entity || '' },
-              schema: [{ name: 'entity', selector: { entity: { domain: 'lock' } } }],
-              onChange: (e: CustomEvent) => {
-                updateModule({ entity: e.detail.value?.entity ?? '' });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              },
+          []
+        )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', lock.entity || '',
+            (value: string) => {
+              updateModule({ entity: value });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
             },
+            ['lock'],
+            localize('editor.lock.entity', lang, 'Lock entity')
+          )}
+        </div>
+        ${this.renderSettingsSection('', '', [
             {
               title: localize('editor.lock.icon_override', lang, 'Icon override'),
               description: localize(

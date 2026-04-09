@@ -5,7 +5,6 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, TextInputModule, UltraCardConfig } from '../types';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
-import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import '../components/ultra-color-picker';
 
 export class UltraTextInputModule extends BaseUltraModule {
@@ -85,23 +84,16 @@ export class UltraTextInputModule extends BaseUltraModule {
             lang,
             'Link to a Home Assistant input_text helper entity.'
           ),
-          [
-            {
-              title: localize('editor.text_input.entity_field', lang, 'Entity'),
-              description: localize(
-                'editor.text_input.entity_field_desc',
-                lang,
-                'Select an input_text entity to bind this text field to.'
-              ),
-              hass,
-              data: { entity: textInputModule.entity || '' },
-              schema: [this.entityField('entity', ['input_text'])],
-              onChange: (e: CustomEvent) => {
-                updateModule(e.detail.value);
-              },
-            },
-          ]
+          []
         )}
+        <div style="margin-bottom: 24px;">
+          ${this.renderEntityPickerWithVariables(
+            hass, config, 'entity', textInputModule.entity || '',
+            (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+            ['input_text'],
+            localize('editor.text_input.entity_field', lang, 'Entity')
+          )}
+        </div>
 
         <!-- Appearance Configuration -->
         <div class="settings-section">
@@ -343,11 +335,12 @@ export class UltraTextInputModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const textInputModule = module as TextInputModule;
+    const lang = hass?.locale?.language || 'en';
 
     if (!textInputModule.entity || !textInputModule.entity.trim()) {
       return this.renderGradientErrorState(
-        'Configure Entity',
-        'Select an input_text entity in the General tab',
+        localize('editor.common.error_configure_entity', lang, 'Configure Entity'),
+        localize('editor.text_input.error_configure_entity_desc', lang, 'Select an input_text entity in the General tab'),
         'mdi:form-textbox'
       );
     }
@@ -355,7 +348,7 @@ export class UltraTextInputModule extends BaseUltraModule {
     const entityState = hass?.states?.[textInputModule.entity];
     if (!entityState) {
       return this.renderGradientErrorState(
-        'Entity Not Found',
+        localize('editor.common.error_entity_not_found', lang, 'Entity Not Found'),
         `Entity "${textInputModule.entity}" is not available`,
         'mdi:alert-circle-outline'
       );
@@ -417,7 +410,8 @@ export class UltraTextInputModule extends BaseUltraModule {
     } as Record<string, string>;
 
     const hoverEffect = designProperties.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+    const hoverEffectClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
     const isMultiline = textInputModule.multiline === true;
     const rows = textInputModule.rows ?? 4;
@@ -471,7 +465,7 @@ export class UltraTextInputModule extends BaseUltraModule {
 
     const moduleId = textInputModule.id;
 
-    return html`
+    return this.wrapWithAnimation(html`
       <style>
         .text-input-wrapper-${moduleId} {
           position: relative;
@@ -552,7 +546,7 @@ export class UltraTextInputModule extends BaseUltraModule {
       </style>
       <div
         class="text-input-module-container ${hoverEffectClass}"
-        style=${this.styleObjectToCss(containerStyles)}
+        style="${designStyles}"
       >
         ${showLabel
           ? html`<div class="text-input-label">${label}</div>`
@@ -595,7 +589,7 @@ export class UltraTextInputModule extends BaseUltraModule {
             </div>`
           : ''}
       </div>
-    `;
+    `, module, hass);
   }
 
   private async setEntityValue(

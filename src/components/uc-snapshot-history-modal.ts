@@ -13,6 +13,8 @@ import { ucCardBackupService, CardBackup } from '../services/uc-card-backup-serv
 import { UserSubscription } from '../services/uc-cloud-auth-service';
 import { UltraCardConfig } from '../types';
 import './uc-snapshot-restore-dialog';
+import { ucToastService } from '../services/uc-toast-service';
+import { ucConfirmService } from '../services/uc-confirm-service';
 import type { RestoreMethodChoice } from './uc-snapshot-restore-dialog';
 
 type TabType = 'snapshots' | 'card-backups';
@@ -46,20 +48,17 @@ export class UcSnapshotHistoryModal extends LitElement {
   }
 
   private async _loadData() {
-    console.log(`🔄 Modal _loadData() called - Active tab: ${this._activeTab}`);
     this._loading = true;
     this._error = null;
 
     try {
       if (this._activeTab === 'snapshots') {
-        console.log('📋 Requesting snapshot list...');
         this._snapshots = await ucSnapshotService.listSnapshots(30);
       } else {
-        console.log('💾 Requesting card backups...');
         this._cardBackups = await ucCardBackupService.listBackups(30);
       }
     } catch (error) {
-      console.error('❌ Failed to load data:', error);
+      console.error('Failed to load data:', error);
       this._error = error instanceof Error ? error.message : 'Failed to load data';
     } finally {
       this._loading = false;
@@ -99,12 +98,8 @@ export class UcSnapshotHistoryModal extends LitElement {
           ? await this._performSmartRestore(result.snapshot_data)
           : await this._performCleanRestore(result.snapshot_data);
 
-      alert(
-        `✅ Snapshot Restored Successfully!\n\n` +
-          `${stats.restored} Ultra Cards restored\n` +
-          `${stats.deleted > 0 ? `${stats.deleted} cards deleted\n` : ''}` +
-          `${stats.skipped > 0 ? `${stats.skipped} cards skipped (no match)\n` : ''}` +
-          `\nRefreshing page...`
+      ucToastService.success(
+        `Snapshot restored: ${stats.restored} card(s) restored. Refreshing page...`
       );
 
       // Fire success event
@@ -122,17 +117,13 @@ export class UcSnapshotHistoryModal extends LitElement {
       }, 2000);
     } catch (error) {
       console.error('Failed to restore snapshot:', error);
-      alert(
-        `❌ Snapshot Restore Failed\n\n` +
-          `Error: ${error instanceof Error ? error.message : 'Unknown error'}\n\n` +
-          `Your dashboard has not been modified.`
+      ucToastService.error(
+        `Snapshot restore failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
 
   private async _performDashboardRestore(snapshotData: any): Promise<void> {
-    console.log('🔄 Starting dashboard restore...');
-
     // Get current Lovelace config
     const lovelaceConfig = await this._getLovelaceConfig();
 
@@ -550,9 +541,11 @@ export class UcSnapshotHistoryModal extends LitElement {
   }
 
   private async _handleRestoreCardBackup(backup: CardBackup) {
-    if (
-      !confirm(`Restore "${backup.card_name}"? This will replace your current card configuration.`)
-    ) {
+    const confirmed = await ucConfirmService.confirm(
+      'Restore Card Backup',
+      `Restore "${backup.card_name}"? This will replace your current card configuration.`
+    );
+    if (!confirmed) {
       return;
     }
 
@@ -571,7 +564,7 @@ export class UcSnapshotHistoryModal extends LitElement {
       this._close();
     } catch (error) {
       console.error('Failed to restore backup:', error);
-      alert(
+      ucToastService.error(
         `Failed to restore backup: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
@@ -579,11 +572,16 @@ export class UcSnapshotHistoryModal extends LitElement {
 
   private async _handleDeleteSnapshot(snapshot: SnapshotListItem) {
     if (snapshot.type === 'auto') {
-      alert('Auto snapshots cannot be deleted manually');
+      ucToastService.warning('Auto snapshots cannot be deleted manually');
       return;
     }
 
-    if (!confirm(`Delete snapshot from ${snapshot.date}? This cannot be undone.`)) {
+    const confirmed = await ucConfirmService.confirm(
+      'Delete Snapshot',
+      `Delete snapshot from ${snapshot.date}? This cannot be undone.`,
+      { destructive: true }
+    );
+    if (!confirmed) {
       return;
     }
 
@@ -592,14 +590,19 @@ export class UcSnapshotHistoryModal extends LitElement {
       this._loadData();
     } catch (error) {
       console.error('Failed to delete snapshot:', error);
-      alert(
+      ucToastService.error(
         `Failed to delete snapshot: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
 
   private async _handleDeleteCardBackup(backup: CardBackup) {
-    if (!confirm(`Delete backup "${backup.card_name}"? This cannot be undone.`)) {
+    const confirmed = await ucConfirmService.confirm(
+      'Delete Backup',
+      `Delete backup "${backup.card_name}"? This cannot be undone.`,
+      { destructive: true }
+    );
+    if (!confirmed) {
       return;
     }
 
@@ -608,12 +611,16 @@ export class UcSnapshotHistoryModal extends LitElement {
       this._loadData();
     } catch (error) {
       console.error('Failed to delete backup:', error);
-      alert(`Failed to delete backup: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      ucToastService.error(`Failed to delete backup: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   private async _handleRenameCardBackup(backup: CardBackup) {
-    const newName = prompt('Enter new name for backup:', backup.card_name);
+    const newName = await ucConfirmService.prompt(
+      'Rename Backup',
+      'Enter a new name for this backup:',
+      backup.card_name
+    );
 
     if (!newName || newName === backup.card_name) {
       return;
@@ -624,7 +631,7 @@ export class UcSnapshotHistoryModal extends LitElement {
       this._loadData();
     } catch (error) {
       console.error('Failed to rename backup:', error);
-      alert(`Failed to rename backup: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      ucToastService.error(`Failed to rename backup: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -634,7 +641,7 @@ export class UcSnapshotHistoryModal extends LitElement {
       ucCardBackupService.downloadBackup(fullBackup);
     } catch (error) {
       console.error('Failed to download backup:', error);
-      alert(
+      ucToastService.error(
         `Failed to download backup: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
@@ -650,7 +657,7 @@ export class UcSnapshotHistoryModal extends LitElement {
 
   private _formatDate(dateString: string): string {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(navigator.language, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -681,8 +688,8 @@ export class UcSnapshotHistoryModal extends LitElement {
       <div class="modal-backdrop" @click="${this._close}">
         <div class="modal-container" @click="${(e: Event) => e.stopPropagation()}">
           <div class="modal-header">
-            <h2>💾 Backup & Snapshot History</h2>
-            <button class="close-btn" @click="${this._close}">✕</button>
+            <h2>Backup &amp; Snapshot History</h2>
+            <button class="close-btn" @click="${this._close}" aria-label="Close">&times;</button>
           </div>
 
           <!-- TABS -->
@@ -691,13 +698,13 @@ export class UcSnapshotHistoryModal extends LitElement {
               class="tab ${this._activeTab === 'snapshots' ? 'active' : ''}"
               @click="${() => this._handleTabChange('snapshots')}"
             >
-              📸 Dashboard Snapshots
+              Dashboard Snapshots
             </button>
             <button
               class="tab ${this._activeTab === 'card-backups' ? 'active' : ''}"
               @click="${() => this._handleTabChange('card-backups')}"
             >
-              💾 Manual Card Backups
+              Manual Card Backups
             </button>
           </div>
 

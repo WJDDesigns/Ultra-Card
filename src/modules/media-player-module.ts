@@ -147,6 +147,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const mp = module as MediaPlayerModule;
+    const lang = hass?.locale?.language || 'en';
 
     return html`
       <style>
@@ -154,24 +155,22 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       </style>
 
       <!-- Entity Configuration -->
-      ${this.renderSettingsSection('Entity Configuration', 'Select the media player entity to control', [
-        {
-          title: 'Media Player Entity',
-          description: 'Select a media player entity (Spotify, Chromecast, etc.)',
-          hass,
-          data: { entity: mp.entity || '' },
-          schema: [
-            {
-              name: 'entity',
-              selector: { entity: { domain: 'media_player' } },
-            },
-          ],
-          onChange: (e: CustomEvent) => updateModule({ entity: e.detail.value.entity }),
-        },
-      ])}
+      ${this.renderSettingsSection(
+        localize('editor.media_player.section_entity', lang, 'Entity Configuration'),
+        localize('editor.media_player.section_entity_desc', lang, 'Select the media player entity to control'),
+        []
+      )}
+      <div style="margin-bottom: 24px;">
+        ${this.renderEntityPickerWithVariables(
+          hass, config, 'entity', mp.entity || '',
+          (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+          ['media_player'],
+          localize('editor.media_player.entity', lang, 'Media Player Entity')
+        )}
+      </div>
 
       <!-- Layout Settings -->
-      ${this.renderSettingsSection('Layout', 'Choose the display layout', [
+      ${this.renderSettingsSection(localize('editor.media_player.section_layout', lang, 'Layout'), localize('editor.media_player.section_layout_desc', lang, 'Choose the display layout'), [
         {
           title: 'Layout Mode',
           description: 'Compact: horizontal bar, Card: full display, Mini: single line',
@@ -207,7 +206,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         : ''}
 
       <!-- Display Options -->
-      ${this.renderSettingsSection('Display Options', 'Choose what elements to show', [
+      ${this.renderSettingsSection(localize('editor.media_player.section_display', lang, 'Display Options'), localize('editor.media_player.section_display_desc', lang, 'Choose what elements to show'), [
         {
           title: 'Show Album Art',
           description: 'Display album artwork or fallback icon',
@@ -307,7 +306,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       ])}
 
       <!-- Behavior Settings -->
-      ${this.renderSettingsSection('Behavior', 'Control interactive behaviors', [
+      ${this.renderSettingsSection(localize('editor.media_player.section_behavior', lang, 'Behavior'), localize('editor.media_player.section_behavior_desc', lang, 'Control interactive behaviors'), [
         {
           title: 'Enable Seek',
           description: 'Allow clicking progress bar to seek',
@@ -335,7 +334,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       ])}
 
       <!-- Visual Settings -->
-      ${this.renderSettingsSection('Visual', 'Customize the appearance', [
+      ${this.renderSettingsSection(localize('editor.media_player.section_visual', lang, 'Visual'), localize('editor.media_player.section_visual_desc', lang, 'Customize the appearance'), [
         {
           title: 'Blurred Background',
           description: 'Use album art as a blurred, darkened background',
@@ -350,43 +349,36 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       ${mp.blurred_background !== false
         ? html`
             <div style="margin-left: 16px; margin-bottom: 16px; padding-left: 12px; border-left: 3px solid var(--primary-color);">
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
-                <div>
-                  <div style="font-size: 13px; font-weight: 500; margin-bottom: 8px;">Blur Amount</div>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <input
-                      type="range"
-                      min="5"
-                      max="60"
-                      .value=${mp.blur_amount || 10}
-                      @input=${(e: Event) => updateModule({ blur_amount: parseInt((e.target as HTMLInputElement).value) })}
-                      style="flex: 1; accent-color: var(--primary-color);"
-                    />
-                    <span style="min-width: 40px; text-align: right; font-size: 12px; color: var(--secondary-text-color);">${mp.blur_amount || 10}px</span>
-                  </div>
-                </div>
-                <div>
-                  <div style="font-size: 13px; font-weight: 500; margin-bottom: 8px;">Blur Opacity</div>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <input
-                      type="range"
-                      min="10"
-                      max="80"
-                      .value=${Math.round((mp.blur_opacity || 0.4) * 100)}
-                      @input=${(e: Event) => updateModule({ blur_opacity: parseInt((e.target as HTMLInputElement).value) / 100 })}
-                      style="flex: 1; accent-color: var(--primary-color);"
-                    />
-                    <span style="min-width: 40px; text-align: right; font-size: 12px; color: var(--secondary-text-color);">${Math.round((mp.blur_opacity || 0.4) * 100)}%</span>
-                  </div>
-                </div>
-              </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <ha-switch
-                  .checked=${mp.blur_expand !== false}
-                  @change=${(e: Event) => updateModule({ blur_expand: (e.target as any).checked })}
-                ></ha-switch>
-                <div style="font-size: 13px;">Expand past card edges</div>
-              </div>
+              ${this.renderSliderField(
+                'Blur Amount',
+                '',
+                mp.blur_amount || 10,
+                10,
+                5,
+                60,
+                1,
+                (value: number) => updateModule({ blur_amount: value }),
+                'px'
+              )}
+              ${this.renderSliderField(
+                'Blur Opacity',
+                '',
+                Math.round((mp.blur_opacity || 0.4) * 100),
+                40,
+                10,
+                80,
+                1,
+                (value: number) => updateModule({ blur_opacity: value / 100 }),
+                '%'
+              )}
+              ${this.renderFieldSection(
+                'Expand past card edges',
+                '',
+                hass,
+                { blur_expand: mp.blur_expand !== false },
+                [this.booleanField('blur_expand')],
+                (e: CustomEvent) => updateModule({ blur_expand: e.detail.value.blur_expand })
+              )}
             </div>
           `
         : ''}
@@ -593,14 +585,15 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const mp = module as MediaPlayerModule;
+    const lang = hass?.locale?.language || 'en';
     const entityId = this.resolveEntity(mp.entity, config);
     const stateObj = entityId ? hass.states[entityId] : undefined;
 
     // Handle missing entity
     if (!entityId || !stateObj) {
       return this.renderGradientErrorState(
-        'Configure Entity',
-        'Select a media player entity in the General tab',
+        localize('editor.media_player.error_no_entity', lang, 'Configure Entity'),
+        localize('editor.media_player.error_no_entity_desc', lang, 'Select a media player entity in the General tab'),
         'mdi:music-off'
       );
     }
@@ -611,16 +604,22 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       return html`<div class="media-player-hidden"></div>`;
     }
 
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
     // Render based on layout mode
-    switch (mp.layout) {
-      case 'card':
-        return this.renderCardLayout(mp, hass, stateObj, config);
-      case 'mini':
-        return this.renderMiniLayout(mp, hass, stateObj, config);
-      case 'compact':
-      default:
-        return this.renderCompactLayout(mp, hass, stateObj, config);
-    }
+    const inner = (() => {
+      switch (mp.layout) {
+        case 'card':
+          return this.renderCardLayout(mp, hass, stateObj, config);
+        case 'mini':
+          return this.renderMiniLayout(mp, hass, stateObj, config);
+        case 'compact':
+        default:
+          return this.renderCompactLayout(mp, hass, stateObj, config);
+      }
+    })();
+    return this.wrapWithAnimation(html`<div class="${hoverClass}" style="${designStyles}">${inner}</div>`, module, hass);
   }
 
   // ============================
