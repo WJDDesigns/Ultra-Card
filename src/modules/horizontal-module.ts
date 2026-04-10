@@ -243,7 +243,15 @@ export class UltraHorizontalModule extends BaseUltraModule {
     const containerStyles: any = {
       padding: this.getPaddingCSS(effective),
       ...bgResult.styles,
-      border: effective.border_width ? this.getBorderCSS(effective) : 'none',
+      border:
+        effective.border_width ||
+        effective.border?.width ||
+        effective.border_color ||
+        effective.border?.color ||
+        (effective.border_style && effective.border_style !== 'none') ||
+        (effective.border?.style && effective.border.style !== 'none')
+          ? this.getBorderCSS(effective)
+          : 'none',
       borderRadius: this.addPixelUnit(borderRadiusValue) || '0',
       // Respect explicit positioning/z-index so the entire row can overlay siblings (e.g., camera)
       // If a z-index is provided but no position, use relative so z-index takes effect
@@ -1088,10 +1096,13 @@ export class UltraHorizontalModule extends BaseUltraModule {
   }
 
   private getBorderCSS(moduleWithDesign: any): string {
-    const width = this.addPixelUnit(moduleWithDesign.border_width) || '0';
-    const style = moduleWithDesign.border_style || 'solid';
-    const color = moduleWithDesign.border_color || 'transparent';
-    return `${width} ${style} ${color}`;
+    // Support both flat properties (legacy) and nested border object (current editor format)
+    const width = moduleWithDesign.border_width ?? moduleWithDesign.border?.width;
+    const style = moduleWithDesign.border_style ?? moduleWithDesign.border?.style ?? 'solid';
+    const color = moduleWithDesign.border_color ?? moduleWithDesign.border?.color ?? 'transparent';
+    const hasStyle = style && style !== 'none';
+    const resolvedWidth = this.addPixelUnit(String(width ?? '')) || (hasStyle ? '1px' : '0');
+    return `${resolvedWidth} ${style} ${color}`;
   }
 
   private getJustifyContent(alignment: string): string {

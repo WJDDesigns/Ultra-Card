@@ -164,6 +164,7 @@ export class UcGestureService {
       '.layout-module-container',
       '.layout-module-actions',
       '.module-settings-popup',
+      '.module-settings-panel',
       '.popup-content',
       '.popup-trigger', // Exclude popup trigger elements to prevent parent gesture conflicts
     ];

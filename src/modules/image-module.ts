@@ -176,6 +176,9 @@ export class UltraImageModule extends BaseUltraModule {
                   undefined,
                   localize('editor.image.entity', lang, 'Entity')
                 )}
+                <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
+                  ${localize('editor.image.entity_desc', lang, 'Select an entity that has an image (e.g., person, camera entities).')}
+                </div>
               `
             )
           : ''}
@@ -194,6 +197,9 @@ export class UltraImageModule extends BaseUltraModule {
                   undefined,
                   localize('editor.image.entity', lang, 'Entity')
                 )}
+                <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
+                  ${localize('editor.image.attribute_entity_desc', lang, 'Select an entity that contains an image URL in one of its attributes.')}
+                </div>
                 ${this.renderFieldSection(
                   localize('editor.image.attribute_name', lang, 'Attribute Name'),
                   localize('editor.image.attribute_name_desc', lang, 'Enter the attribute path (dot notation supported, e.g., vehicle_data.vehicleDetails.generalDashboard).'),

@@ -220,6 +220,9 @@ export class UltraInfoModule extends BaseUltraModule {
               undefined,
               localize('editor.info.entity', lang, 'Entity')
             )}
+            <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
+              ${localize('editor.info.entity_desc', lang, 'Select the entity whose state, icon, and attributes will be displayed.')}
+            </div>
           </div>
         </div>
 

@@ -57,7 +57,7 @@ export class UltraSelectInputModule extends BaseUltraModule {
       <div class="general-tab">
         ${this.renderSettingsSection(
           localize('editor.select_input.entity.title', lang, 'Entity Configuration'),
-          localize('editor.select_input.entity.desc', lang, 'Link to a Home Assistant input_select or select entity.'),
+          localize('editor.select_input.entity.desc', lang, 'Link to a Home Assistant Input Select or select entity.'),
           []
         )}
         <div style="margin-bottom: 24px;">
@@ -134,7 +134,7 @@ export class UltraSelectInputModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
 
     if (!selMod.entity?.trim()) {
-      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.select_input.error_configure_entity_desc', lang, 'Select an input_select entity in the General tab'), 'mdi:form-dropdown');
+      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.select_input.error_configure_entity_desc', lang, 'Select an Input Select entity in the General tab'), 'mdi:form-dropdown');
     }
     const entityState = hass?.states?.[selMod.entity];
     if (!entityState) {

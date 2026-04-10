@@ -176,6 +176,9 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
                         undefined,
                         'Weather Entity'
                       )}
+                      <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
+                        Select a weather entity so the animation automatically matches current conditions.
+                      </div>
 
                       <!-- Current Effect Preview -->
                       ${weatherModule.weather_entity && hass.states[weatherModule.weather_entity]

@@ -175,7 +175,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
           localize(
             'editor.spinbox.entity.desc',
             lang,
-            'Optional: Link to a Home Assistant entity for synced values (e.g., input_number, climate temperature).'
+            'Optional: Link to a Home Assistant entity for synced values (e.g., Input Number, climate temperature).'
           ),
           []
         )}
@@ -591,7 +591,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
                       class="example-description"
                       style="font-size: 11px; color: var(--secondary-text-color);"
                     >
-                      Read value from input_number entity
+                      Read value from Input Number entity
                     </div>
                   </div>
                   <div class="example-item">

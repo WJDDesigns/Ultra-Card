@@ -368,6 +368,9 @@ export class UltraSportsScoreModule extends BaseUltraModule {
                       ['sensor'],
                       localize('editor.sports.sensor_entity', lang, 'Sensor Entity')
                     )}
+                    <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
+                      ${localize('editor.sports.sensor_entity_desc', lang, 'Select a sensor entity that provides the sports score data as JSON attributes.')}
+                    </div>
 
                     ${module.sensor_entity && hass.states[module.sensor_entity]
                       ? html`

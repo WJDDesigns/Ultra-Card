@@ -458,7 +458,7 @@ export class UcFormUtils {
         flex-wrap: wrap;
         align-items: center;
         gap: 6px;
-        margin-bottom: 8px;
+        margin-top: 6px;
         padding: 8px 10px;
         background: var(--secondary-background-color);
         border-radius: 8px;
@@ -530,11 +530,16 @@ export class UcFormUtils {
     domain?: string[],
     label?: string
   ): TemplateResult {
+    // Resolve the display value: if stored as a $variable reference, show the resolved
+    // entity ID so HA's entity picker renders it cleanly (friendly name + icon).
+    const resolvedDisplay = currentValue?.startsWith('$')
+      ? (ucCustomVariablesService.resolveEntityField(currentValue, config) ?? currentValue)
+      : currentValue;
+
     return html`
-      ${UcFormUtils.renderVariableChips(hass, config, currentValue, onChange)}
       ${UcFormUtils.renderForm(
         hass,
-        { [fieldName]: currentValue || '' },
+        { [fieldName]: resolvedDisplay || '' },
         [
           {
             name: fieldName,
@@ -545,7 +550,12 @@ export class UcFormUtils {
           },
         ],
         (e: CustomEvent) => {
-          const newValue = e.detail.value[fieldName];
+          let newValue: string = e.detail.value[fieldName];
+          // If the user picked a $variable reference from the native picker, resolve it
+          // to a real entity ID so the picker always stores concrete entity IDs.
+          if (newValue?.startsWith('$')) {
+            newValue = ucCustomVariablesService.resolveEntityField(newValue, config) ?? newValue;
+          }
           if (newValue !== currentValue) {
             onChange(newValue);
           }
@@ -581,7 +591,7 @@ export class UcFormUtils {
 
   // Label control functions
   private static _hideLabels = (): string => '';
-  private static _defaultComputeLabel = (schema: any): string => schema.name;
+  private static _defaultComputeLabel = (schema: any): string => schema.label || schema.name;
   private static _hideDescriptions = (): string => '';
   private static _defaultComputeDescription = (schema: any): string => schema.description || '';
 

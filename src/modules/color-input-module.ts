@@ -43,7 +43,7 @@ export class UltraColorInputModule extends BaseUltraModule {
 
   private getColorModeOptions(lang: string): Array<{ value: string; label: string }> {
     return [
-      { value: 'hex', label: localize('editor.color_input.mode_options.hex', lang, 'Hex (input_text)') },
+      { value: 'hex', label: localize('editor.color_input.mode_options.hex', lang, 'Hex (Input Text)') },
       { value: 'light_rgb', label: localize('editor.color_input.mode_options.light_rgb', lang, 'Light RGB Color') },
     ];
   }
@@ -68,7 +68,7 @@ export class UltraColorInputModule extends BaseUltraModule {
           <div class="field-group" style="margin-bottom:16px;">
             ${this.renderFieldSection(
               localize('editor.color_input.color_mode', lang, 'Color Mode'),
-              localize('editor.color_input.color_mode_desc', lang, 'Hex stores to input_text, Light RGB controls a light entity'),
+              localize('editor.color_input.color_mode_desc', lang, 'Hex stores to Input Text, Light RGB controls a light entity'),
               hass, { color_mode: colorMod.color_mode || 'hex' },
               [this.selectField('color_mode', this.getColorModeOptions(lang))],
               (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); }
@@ -78,7 +78,7 @@ export class UltraColorInputModule extends BaseUltraModule {
 
         ${this.renderSettingsSection(
           localize('editor.color_input.entity.title', lang, 'Entity Configuration'),
-          localize('editor.color_input.entity.desc', lang, isLightMode ? 'Select a light entity to control.' : 'Select an input_text entity to store the hex color.'),
+          localize('editor.color_input.entity.desc', lang, isLightMode ? 'Select a light entity to control.' : 'Select an Input Text entity to store the hex color.'),
           []
         )}
         <div style="margin-bottom: 24px;">

@@ -588,22 +588,20 @@ class UcExportImportService {
    * Copy text to clipboard.
    *
    * Strategy:
-   *  1. Try navigator.clipboard.writeText (modern API).
-   *  2. Verify the write by reading back with clipboard.readText.
-   *     - If readText succeeds and the content matches → done.
-   *     - If readText is denied (NotAllowedError / SecurityError) → assume writeText
-   *       worked (we can't verify, but this is the common case on desktop browsers
-   *       that don't grant clipboard-read permission without explicit user prompt).
-   *     - If readText returns a different value → writeText silently failed
-   *       (common on Android WebView where the Promise resolves but clipboard stays
-   *       unchanged) → fall through to execCommand.
-   *  3. execCommand('copy') fallback — textarea is kept inside the viewport so that
-   *     mobile WebViews don't reject the selection silently.
-   *  4. If both fail, throw CLIPBOARD_UNAVAILABLE so the caller can show the shortcode
-   *     dialog as a last resort.
+   *  1. Try navigator.clipboard.writeText (modern Clipboard API, requires HTTPS).
+   *  2. If writeText resolves without throwing, the write succeeded — return.
+   *  3. If writeText threw, or the Clipboard API is unavailable (HTTP context),
+   *     throw CLIPBOARD_UNAVAILABLE so the caller can show the shortcode dialog.
    *
-   * @throws Error with message starting 'CLIPBOARD_UNAVAILABLE:' and the text as
-   *         payload when every method fails (e.g. Android companion app WebView).
+   * Note: the legacy execCommand('copy') fallback was removed because it is
+   * unreliable when called after an async await — the browser no longer considers
+   * the call stack to be within a user-gesture, so execCommand returns true but
+   * writes nothing.  Showing the shortcode dialog is a better UX than a silent
+   * false-success that leaves the clipboard unchanged.
+   *
+   * @throws Error with message starting 'CLIPBOARD_UNAVAILABLE:' when the Clipboard
+   *         API is unavailable or denied (e.g. HTTP, Android WebView).  The caller
+   *         should show the shortcode dialog as a manual-copy fallback.
    */
   private async _copyToClipboard(text: string): Promise<void> {
     const clipboardApi = (navigator as unknown as Navigator).clipboard;
@@ -611,53 +609,17 @@ class UcExportImportService {
     if (clipboardApi?.writeText) {
       try {
         await clipboardApi.writeText(text);
-
-        // Verify the write succeeded.  On Android WebView the Promise can resolve
-        // without actually writing anything to the clipboard.
-        if (clipboardApi.readText) {
-          try {
-            const readBack = await clipboardApi.readText();
-            if (readBack === text) {
-              return; // Confirmed success
-            }
-            // readText returned something different — writeText silently failed;
-            // fall through to the execCommand path.
-          } catch (readErr: unknown) {
-            // clipboard-read permission denied (NotAllowedError / SecurityError).
-            // We cannot verify, but on standard desktop browsers writeText works
-            // even without read permission, so conservatively treat as success.
-            const name = (readErr instanceof Error) ? readErr.name : '';
-            if (name === 'NotAllowedError' || name === 'SecurityError') {
-              return;
-            }
-            // Any other readText error — assume writeText also unreliable; fall through.
-          }
-        } else {
-          // No readText support — assume writeText succeeded (standard desktop behaviour).
-          return;
-        }
+        // writeText resolved without throwing — the clipboard has been written.
+        return;
       } catch {
-        // writeText threw (permission denied or API unavailable) — fall through.
+        // writeText threw (permission denied, not a secure context, etc.)
+        // Fall through to CLIPBOARD_UNAVAILABLE so the shortcode dialog is shown.
       }
     }
 
-    // Legacy execCommand fallback.
-    // The textarea must be in the visible viewport area; off-screen elements are
-    // ignored by execCommand('copy') on some mobile WebViews.
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.cssText =
-      'position:fixed;top:0;left:0;width:1px;height:1px;padding:0;border:none;' +
-      'outline:none;box-shadow:none;background:transparent;opacity:0.001;';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    const ok = document.execCommand('copy');
-    document.body.removeChild(textArea);
-    if (!ok) {
-      // Both methods failed — signal caller to show the shortcode dialog fallback.
-      throw new Error('CLIPBOARD_UNAVAILABLE:' + text);
-    }
+    // Clipboard API is unavailable (HTTP context) or denied.
+    // Signal the caller to show the shortcode dialog as a reliable copy fallback.
+    throw new Error('CLIPBOARD_UNAVAILABLE:' + text);
   }
 
   /**

@@ -82,7 +82,7 @@ export class UltraTextInputModule extends BaseUltraModule {
           localize(
             'editor.text_input.entity.desc',
             lang,
-            'Link to a Home Assistant input_text helper entity.'
+            'Link to a Home Assistant Input Text helper entity.'
           ),
           []
         )}
@@ -340,7 +340,7 @@ export class UltraTextInputModule extends BaseUltraModule {
     if (!textInputModule.entity || !textInputModule.entity.trim()) {
       return this.renderGradientErrorState(
         localize('editor.common.error_configure_entity', lang, 'Configure Entity'),
-        localize('editor.text_input.error_configure_entity_desc', lang, 'Select an input_text entity in the General tab'),
+        localize('editor.text_input.error_configure_entity_desc', lang, 'Select an Input Text entity in the General tab'),
         'mdi:form-textbox'
       );
     }

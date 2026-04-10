@@ -47,6 +47,7 @@ export class UltraCardEditor extends LitElement {
   @state() private _activeTab: EditorTab = 'layout';
   @state() private _configDebounceTimeout?: number;
   @state() private _isFullScreen: boolean = false;
+  @state() private _moduleSettingsOpen: boolean = false;
   @state() private _isMobile: boolean = false;
   @state() private _expandedCardSections: Set<string> = new Set(['appearance']);
 
@@ -709,10 +710,21 @@ export class UltraCardEditor extends LitElement {
     const showHubBanner = !hubPanelExists && !this._hubBannerDismissed;
 
     return html`
-      <div class="card-config ${this._isFullScreen ? 'fullscreen' : ''}">
+      <div class="card-config ${this._isFullScreen ? 'fullscreen' : ''} ${this._moduleSettingsOpen ? 'module-settings-open' : ''}">
         ${showHubBanner ? this._renderHubDiscoveryBanner() : ''}
         ${this._renderSyncNotificationBanner()}
         <div class="tabs">
+          ${this._isFullScreen
+            ? html`
+                <button
+                  class="fullscreen-exit-btn"
+                  @click=${() => this._toggleFullScreen()}
+                  title="${localize('editor.tooltips.return_dashboard', lang, 'Exit fullscreen')}"
+                >
+                  <ha-icon icon="mdi:chevron-left"></ha-icon>
+                </button>
+              `
+            : ''}
           <button
             class="tab ${this._activeTab === 'layout' ? 'active' : ''}"
             @click=${() => this._setActiveTab('layout')}
@@ -743,6 +755,8 @@ export class UltraCardEditor extends LitElement {
                 @switch-tab=${(e: CustomEvent) => (this._activeTab = e.detail.tab)}
                 @preview-breakpoint-changed=${this._handlePreviewBreakpointChanged}
                 @toggle-fullscreen=${this._toggleFullScreen}
+                @module-settings-open=${() => (this._moduleSettingsOpen = true)}
+                @module-settings-close=${() => (this._moduleSettingsOpen = false)}
               ></ultra-layout-tab>`
             : this._renderSettingsTab()}
         </div>
@@ -2103,6 +2117,16 @@ export class UltraCardEditor extends LitElement {
         overflow: visible !important;
       }
 
+      /* Hide editor tabs when module settings panel is open */
+      .card-config.module-settings-open .tabs {
+        display: none;
+      }
+
+      /* Ensure tab-content fills full height when tabs are hidden */
+      .card-config.module-settings-open .tab-content {
+        margin-top: 0;
+      }
+
       /* Full screen mode header adjustments - not sticky so it scrolls with content */
       .card-config.fullscreen .tabs {
         border: none;
@@ -2110,6 +2134,34 @@ export class UltraCardEditor extends LitElement {
         padding: 16px;
         justify-content: center;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        position: relative;
+      }
+
+      .fullscreen-exit-btn {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: var(--primary-color);
+        transition: background 0.2s ease, color 0.2s ease;
+      }
+
+      .fullscreen-exit-btn:hover {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .fullscreen-exit-btn ha-icon {
+        --mdc-icon-size: 22px;
       }
 
       /* Remove the gradient line in fullscreen */

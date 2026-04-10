@@ -174,6 +174,9 @@ export class UltraTimerModule extends BaseUltraModule {
             undefined,
             localize('editor.timer.timer_entity', lang, 'Timer entity')
           )}
+          <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; margin-bottom: 16px; color: var(--secondary-text-color);">
+            ${localize('editor.timer.timer_entity_desc', lang, 'Optional: link a Home Assistant timer entity to sync start/stop/pause state with this countdown.')}
+          </div>
           ${this.renderSettingsSection(
             localize('editor.timer.show_snooze_dismiss', lang, 'Show Snooze / Dismiss when expired'),
             localize('editor.timer.show_snooze_dismiss_desc', lang, 'When the timer ends, show Snooze (restart) and Dismiss buttons.'),

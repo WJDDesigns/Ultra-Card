@@ -337,6 +337,9 @@ export class UltraCalendarModule extends BaseUltraModule {
                       ['calendar'],
                       'Entity'
                     )}
+                    <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
+                      Select a Home Assistant calendar entity to show events from.
+                    </div>
                   </div>
 
                   <!-- Custom Name -->

@@ -287,7 +287,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             ${localize(
               'editor.dropdown.source.desc',
               lang,
-              'Choose whether to manually define options or use a select/input_select entity.'
+              'Choose whether to manually define options or use a Select or Input Select entity.'
             )}
           </div>
 
@@ -298,7 +298,7 @@ export class UltraDropdownModule extends BaseUltraModule {
               localize(
                 'editor.dropdown.source_mode.desc',
                 lang,
-                'Manual: Define custom options with actions. Entity: Use options from a select or input_select entity.'
+                'Manual: Define custom options with actions. Entity: Use options from a Select or Input Select entity.'
               ),
               hass,
               { source_mode: dropdownModule.source_mode || 'manual' },
@@ -340,7 +340,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                         localize(
                           'editor.dropdown.source_entity.desc',
                           lang,
-                          'Select or input_select entity to use as the source for dropdown options.'
+                          'Select or Input Select entity to use as the source for dropdown options.'
                         ),
                         hass,
                         { source_entity: dropdownModule.source_entity || '' },

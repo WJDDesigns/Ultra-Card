@@ -559,6 +559,9 @@ export function renderAnimatedWeatherModuleEditor(
           ['weather'],
           localize('editor.animated_weather.entity', lang, 'Weather Entity')
         )}
+        <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
+          ${localize('editor.animated_weather.entity_desc', lang, 'Select a weather entity to drive the animated background and forecast display.')}
+        </div>
       </div>
 
       <!-- Layout Settings -->

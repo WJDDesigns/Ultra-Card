@@ -148,6 +148,9 @@ export class UltraBackgroundModule extends BaseUltraModule {
                   undefined,
                   localize('editor.background.entity', lang, 'Entity')
                 )}
+                <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
+                  ${localize('editor.background.entity_desc', lang, 'Select an entity that provides a picture URL or image (e.g. person, camera, or media player).')}
+                </div>
               `
             )
           : ''}

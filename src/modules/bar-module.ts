@@ -950,7 +950,18 @@ export class UltraBarModule extends BaseUltraModule {
                             )}
                           </div>
                         `
-                      : ''}
+                      : html`
+                          <div
+                            class="field-description"
+                            style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);"
+                          >
+                            ${localize(
+                              'editor.bar.entity.desc_present',
+                              lang,
+                              'The entity that provides the percentage value for the bar.'
+                            )}
+                          </div>
+                        `}
                   </div>
                 `
               : ''
@@ -967,6 +978,12 @@ export class UltraBarModule extends BaseUltraModule {
               undefined,
               localize('editor.bar.limit_entity.title', lang, 'Limit Value Entity (optional)')
             )}
+            <div
+              class="field-description"
+              style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);"
+            >
+              ${localize('editor.bar.limit_entity.desc', lang, 'Optional: Add a vertical indicator line on the bar (e.g. charge limit for EV battery).')}
+            </div>
           </div>
         </div>
 

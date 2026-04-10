@@ -873,7 +873,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
                 ></ultra-template-editor>
               </div>
               <div class="field-group" style="margin-bottom: 12px;">
-                <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 6px;">Watch entities (state_changed refresh)</label>
+                <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 6px;">Watch entities (state changed refresh)</label>
                 <ha-selector
                   .hass=${hass}
                   .selector=${{ entity: { multiple: true } }}

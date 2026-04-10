@@ -9801,6 +9801,7 @@ export class LayoutTab extends LitElement {
     const applyState = (): void => {
       this._selectedModule = { rowIndex, columnIndex, moduleIndex };
       this._showModuleSettings = true;
+      this.dispatchEvent(new CustomEvent('module-settings-open', { bubbles: true, composed: true }));
       if (module?.type === 'external_card') {
         const externalModule = module as any;
         if (externalModule.card_type) {
@@ -9835,7 +9836,8 @@ export class LayoutTab extends LitElement {
     // Capture scroll position before update (for mobile scroll preservation)
     const popupBody = this.shadowRoot?.querySelector('.popup-body') as HTMLElement;
     const selectorBody = this.shadowRoot?.querySelector('.selector-body') as HTMLElement;
-    const scrollContainer = popupBody || selectorBody;
+    const panelBody = this.shadowRoot?.querySelector('.module-settings-panel .module-tab-content') as HTMLElement;
+    const scrollContainer = popupBody || selectorBody || panelBody;
     if (scrollContainer) {
       this._savedScrollPosition = scrollContainer.scrollTop;
       this._shouldRestoreScroll = true;
@@ -10883,6 +10885,7 @@ export class LayoutTab extends LitElement {
       this._showModuleSettings = false;
       this._selectedModule = null;
       this._isClosingModuleSettings = false;
+      this.dispatchEvent(new CustomEvent('module-settings-close', { bubbles: true, composed: true }));
       this.requestUpdate();
     }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
     this.requestUpdate();
@@ -10907,6 +10910,7 @@ export class LayoutTab extends LitElement {
       this._selectedNestedChildIndex = -1; // Reset nested child index
       this._selectedNestedNestedChildIndex = -1; // Reset deep nested child index
       this._isClosingLayoutChildSettings = false;
+      this.dispatchEvent(new CustomEvent('module-settings-close', { bubbles: true, composed: true }));
       this.requestUpdate();
     }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
     this.requestUpdate();
@@ -10919,6 +10923,7 @@ export class LayoutTab extends LitElement {
       this._showTabsSectionChildSettings = false;
       this._selectedTabsSectionChild = null;
       this._isClosingTabsSectionChildSettings = false;
+      this.dispatchEvent(new CustomEvent('module-settings-close', { bubbles: true, composed: true }));
       this.requestUpdate();
     }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
     this.requestUpdate();
@@ -13065,6 +13070,7 @@ export class LayoutTab extends LitElement {
   private _openRowSettings(rowIndex: number): void {
     this._selectedRowForSettings = rowIndex;
     this._showRowSettings = true;
+    this.dispatchEvent(new CustomEvent('module-settings-open', { bubbles: true, composed: true }));
   }
 
   private _updateRow(updates: Partial<CardRow>): void {
@@ -13092,6 +13098,7 @@ export class LayoutTab extends LitElement {
   private _openColumnSettings(rowIndex: number, columnIndex: number): void {
     this._selectedColumnForSettings = { rowIndex, columnIndex };
     this._showColumnSettings = true;
+    this.dispatchEvent(new CustomEvent('module-settings-open', { bubbles: true, composed: true }));
   }
 
   private _closeColumnSettings(): void {
@@ -13105,6 +13112,7 @@ export class LayoutTab extends LitElement {
       this._customSizingValid = false;
       this._customSizingError = '';
       this._isClosingColumnSettings = false;
+      this.dispatchEvent(new CustomEvent('module-settings-close', { bubbles: true, composed: true }));
       this.requestUpdate();
     }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
   }
@@ -13115,6 +13123,7 @@ export class LayoutTab extends LitElement {
     window.setTimeout(() => {
       this._showRowSettings = false;
       this._isClosingRowSettings = false;
+      this.dispatchEvent(new CustomEvent('module-settings-close', { bubbles: true, composed: true }));
       this.requestUpdate();
     }, LayoutTab.POPUP_CLOSE_ANIMATION_MS);
   }
@@ -18126,6 +18135,7 @@ export class LayoutTab extends LitElement {
     } as any;
     this._showTabsSectionChildSettings = true;
     this._activeTabsChildTab = 'general';
+    this.dispatchEvent(new CustomEvent('module-settings-open', { bubbles: true, composed: true }));
     this.requestUpdate();
   }
 
@@ -18553,6 +18563,7 @@ export class LayoutTab extends LitElement {
     };
     this._showTabsSectionChildSettings = true;
     this._activeTabsChildTab = 'general';
+    this.dispatchEvent(new CustomEvent('module-settings-open', { bubbles: true, composed: true }));
     this.requestUpdate();
   }
 
@@ -21132,6 +21143,7 @@ export class LayoutTab extends LitElement {
     this._selectedNestedChildIndex = -1;
     this._selectedNestedNestedChildIndex = -1;
     this._showLayoutChildSettings = true;
+    this.dispatchEvent(new CustomEvent('module-settings-open', { bubbles: true, composed: true }));
   }
 
   private _duplicateLayoutChildModule(
@@ -21408,6 +21420,7 @@ export class LayoutTab extends LitElement {
     this._selectedNestedChildIndex = nestedChildIndex;
     this._selectedNestedNestedChildIndex = -1;
     this._showLayoutChildSettings = true;
+    this.dispatchEvent(new CustomEvent('module-settings-open', { bubbles: true, composed: true }));
   }
 
   /**
@@ -21449,6 +21462,7 @@ export class LayoutTab extends LitElement {
     this._selectedNestedChildIndex = deepNestedIndex;
     this._selectedNestedNestedChildIndex = deepChildIndex;
     this._showLayoutChildSettings = true;
+    this.dispatchEvent(new CustomEvent('module-settings-open', { bubbles: true, composed: true }));
   }
 
   /**
@@ -22399,56 +22413,44 @@ export class LayoutTab extends LitElement {
 
     const lang = this.hass?.locale?.language || 'en';
     return html`
-      <div class="module-settings-popup ${this._isClosingTabsSectionChildSettings ? 'is-closing' : ''}">
-        <div class="popup-overlay" @click=${() => this._closeTabsSectionChildSettings()}></div>
-        <div
-          class="popup-content draggable-popup"
-          id="tabs-child-popup-${rowIndex}-${columnIndex}-${moduleIndex}-${sectionIndex}-${childIndex}"
-          @click=${(e: Event) => e.stopPropagation()}
-        >
-          <div
-            class="popup-header"
-            @mousedown=${(e: MouseEvent) => {
-              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
-              if (popup) this._startPopupDrag(e, popup);
-            }}
-          >
-            <h3>${this._getModuleSettingsTitle(module, lang)}</h3>
-            <div class="header-actions" @mousedown=${(e: Event) => e.stopPropagation()}>
-              <button
-                class="action-button duplicate-button"
-                @click=${() => {
-                  if (this._selectedTabsSectionChild) {
-                    this._duplicateTabsSectionChildFromPopup();
-                    this._closeTabsSectionChildSettings();
-                  }
-                }}
-                title="${localize('editor.layout.duplicate_module', lang, 'Duplicate Module')}"
-              >
-                <ha-icon icon="mdi:content-duplicate"></ha-icon>
-              </button>
-              <button
-                class="action-button delete-button"
-                @click=${() => {
-                  if (this._selectedTabsSectionChild) {
-                    this._deleteTabsSectionChildFromPopup();
-                    this._closeTabsSectionChildSettings();
-                  }
-                }}
-                title="${localize('editor.layout.delete_module', lang, 'Delete Module')}"
-              >
-                <ha-icon icon="mdi:delete"></ha-icon>
-              </button>
-              <button class="close-button" @click=${() => this._closeTabsSectionChildSettings()}>
-                ×
-              </button>
-            </div>
+      <div class="module-settings-panel ${this._isClosingTabsSectionChildSettings ? 'is-closing' : ''}">
+        <div class="panel-header">
+          <button class="panel-back-btn" @click=${() => this._closeTabsSectionChildSettings()}>
+            <ha-icon icon="mdi:chevron-left"></ha-icon>
+          </button>
+          <h3 class="panel-title">${this._getModuleSettingsTitle(module, lang)}</h3>
+          <div class="header-actions">
+            <button
+              class="action-button duplicate-button"
+              @click=${() => {
+                if (this._selectedTabsSectionChild) {
+                  this._duplicateTabsSectionChildFromPopup();
+                  this._closeTabsSectionChildSettings();
+                }
+              }}
+              title="${localize('editor.layout.duplicate_module', lang, 'Duplicate Module')}"
+            >
+              <ha-icon icon="mdi:content-duplicate"></ha-icon>
+            </button>
+            <button
+              class="action-button delete-button"
+              @click=${() => {
+                if (this._selectedTabsSectionChild) {
+                  this._deleteTabsSectionChildFromPopup();
+                  this._closeTabsSectionChildSettings();
+                }
+              }}
+              title="${localize('editor.layout.delete_module', lang, 'Delete Module')}"
+            >
+              <ha-icon icon="mdi:delete"></ha-icon>
+            </button>
           </div>
+        </div>
 
-          <div class="popup-body">
-            ${this._renderTabsSectionChildPreview()}
+        <div class="module-tab-content">
+          ${this._renderTabsSectionChildPreview()}
 
-            <div class="module-tabs">
+          <div class="module-tabs">
               ${module.type === 'external_card'
                 ? (() => {
                     const externalModule = module as any;
@@ -22546,7 +22548,6 @@ export class LayoutTab extends LitElement {
               ${this._activeTabsChildTab === 'design'
                 ? this._renderTabsSectionChildDesignTab(module)
                 : ''}
-            </div>
           </div>
         </div>
       </div>
@@ -23220,6 +23221,189 @@ export class LayoutTab extends LitElement {
       </div>
     `;
   }
+
+  private _renderModuleSettingsPanel(): TemplateResult {
+    if (!this._selectedModule) return html``;
+
+    const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
+    const module = this.config.layout?.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+
+    if (!module) return html``;
+
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(module.type);
+    const hasActionsTab =
+      module.type !== 'external_card' &&
+      moduleHandler &&
+      typeof (moduleHandler as any).renderActionsTab === 'function';
+    const hasOtherTab = false;
+
+    if (
+      (this._activeModuleTab === 'actions' && !hasActionsTab) ||
+      (this._activeModuleTab === 'other' && !hasOtherTab) ||
+      (this._activeModuleTab === 'yaml' && module.type !== 'external_card')
+    ) {
+      this._activeModuleTab = 'general';
+    }
+
+    if (module.type === 'external_card') {
+      const externalModule = module as any;
+      const isNativeCard = externalModule.card_type && externalModule.card_type.startsWith('hui-');
+      const hasEditor =
+        isNativeCard || ucExternalCardsService.hasCardEditor(externalModule.card_type);
+      if (!hasEditor && this._activeModuleTab === 'general') {
+        this._activeModuleTab = 'yaml';
+      }
+      if (this._activeModuleTab === 'actions') {
+        this._activeModuleTab = hasEditor ? 'general' : 'yaml';
+      }
+    }
+
+    const lang = this.hass?.locale?.language || 'en';
+    return html`
+      <div class="module-settings-panel ${this._isClosingModuleSettings ? 'is-closing' : ''}">
+        <div class="panel-header">
+          <button
+            class="panel-back-btn"
+            @click=${() => this._closeModuleSettings()}
+            title="${localize('editor.layout.back_to_builder', lang, 'Back to builder')}"
+          >
+            <ha-icon icon="mdi:chevron-left"></ha-icon>
+          </button>
+          <h3 class="panel-title">${this._getModuleSettingsTitle(module, lang)}</h3>
+          <div class="header-actions">
+            <button
+              class="action-button duplicate-button"
+              @click=${() => {
+                if (this._selectedModule) {
+                  this._duplicateModule(
+                    this._selectedModule.rowIndex,
+                    this._selectedModule.columnIndex,
+                    this._selectedModule.moduleIndex
+                  );
+                  this._closeModuleSettings();
+                }
+              }}
+              title="${localize('editor.layout.duplicate_module', lang, 'Duplicate Module')}"
+            >
+              <ha-icon icon="mdi:content-duplicate"></ha-icon>
+            </button>
+            <button
+              class="action-button delete-button"
+              @click=${() => {
+                if (this._selectedModule) {
+                  this._deleteModule(
+                    this._selectedModule.rowIndex,
+                    this._selectedModule.columnIndex,
+                    this._selectedModule.moduleIndex
+                  );
+                  this._closeModuleSettings();
+                }
+              }}
+              title="${localize('editor.layout.delete_module', lang, 'Delete Module')}"
+            >
+              <ha-icon icon="mdi:delete"></ha-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="module-tabs">
+          ${module.type === 'external_card'
+            ? (() => {
+                const externalModule = module as any;
+                const isNativeCard =
+                  externalModule.card_type && externalModule.card_type.startsWith('hui-');
+                const hasEditor =
+                  isNativeCard ||
+                  ucExternalCardsService.hasCardEditor(externalModule.card_type);
+                return hasEditor
+                  ? html`
+                      <button
+                        class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
+                        @click=${() => (this._activeModuleTab = 'general')}
+                      >
+                        ${localize('editor.layout.general_tab', lang, 'General')}
+                      </button>
+                    `
+                  : '';
+              })()
+            : html`
+                <button
+                  class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
+                  @click=${() => (this._activeModuleTab = 'general')}
+                >
+                  ${localize('editor.layout.general_tab', lang, 'General')}
+                </button>
+              `}
+          ${module.type === 'external_card'
+            ? html`
+                <button
+                  class="module-tab ${this._activeModuleTab === 'yaml' ? 'active' : ''}"
+                  @click=${() => {
+                    this._activeModuleTab = 'yaml';
+                    this.requestUpdate();
+                  }}
+                >
+                  YAML
+                </button>
+              `
+            : hasActionsTab
+              ? html`
+                  <button
+                    class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
+                    @click=${() => (this._activeModuleTab = 'actions')}
+                  >
+                    ${localize('editor.layout.actions_tab', lang, 'Actions')}
+                  </button>
+                `
+              : ''}
+          ${hasOtherTab
+            ? html`
+                <button
+                  class="module-tab ${this._activeModuleTab === 'other' ? 'active' : ''}"
+                  @click=${() => (this._activeModuleTab = 'other')}
+                >
+                  ${localize('editor.layout.other_tab', lang, 'Other')}
+                </button>
+              `
+            : ''}
+          <button
+            class="module-tab ${this._activeModuleTab === 'logic' ? 'active' : ''}"
+            @click=${() => (this._activeModuleTab = 'logic')}
+          >
+            ${localize('editor.layout.logic_tab', lang, 'Logic')}
+          </button>
+          <button
+            class="module-tab ${this._activeModuleTab === 'design' ? 'active' : ''}"
+            @click=${() => (this._activeModuleTab = 'design')}
+          >
+            ${localize('editor.layout.design_tab', lang, 'Design')}
+          </button>
+        </div>
+
+        <div class="module-tab-content">
+          ${this._activeModuleTab === 'general'
+            ? module.type === 'external_card' &&
+              !ucExternalCardsService.hasCardEditor((module as any).card_type)
+              ? ''
+              : this._renderGeneralTab(module)
+            : ''}
+          ${this._activeModuleTab === 'yaml' && module.type === 'external_card'
+            ? this._renderYamlTab(module)
+            : ''}
+          ${this._activeModuleTab === 'actions' && hasActionsTab
+            ? this._renderActionsTab(module)
+            : ''}
+          ${this._activeModuleTab === 'other' && hasOtherTab
+            ? this._renderOtherTab(module)
+            : ''}
+          ${this._activeModuleTab === 'logic' ? this._renderModuleLogicTab(module) : ''}
+          ${this._activeModuleTab === 'design' ? this._renderDesignTab(module) : ''}
+        </div>
+      </div>
+    `;
+  }
+
   private _renderLayoutChildSettings(): TemplateResult {
     if (!this._selectedLayoutChild) return html``;
 
@@ -23316,35 +23500,24 @@ export class LayoutTab extends LitElement {
 
     const lang = this.hass?.locale?.language || 'en';
     return html`
-      <div class="module-settings-popup ${this._isClosingLayoutChildSettings ? 'is-closing' : ''}">
-        <div class="popup-overlay" @click=${() => this._closeLayoutChildSettings()}></div>
-        <div
-          class="popup-content draggable-popup"
-          id="child-popup-${this._selectedLayoutChild?.parentRowIndex}-${this._selectedLayoutChild
-            ?.parentColumnIndex}-${this._selectedLayoutChild?.parentModuleIndex}-${this
-            ._selectedLayoutChild?.childIndex}"
-          @click=${(e: Event) => e.stopPropagation()}
-        >
-          <div
-            class="popup-header"
-            @mousedown=${(e: MouseEvent) => {
-              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
-              if (popup) this._startPopupDrag(e, popup);
-            }}
-          >
-            <h3>
-              ${localize(
-                'editor.layout.child_module_settings_title',
-                lang,
-                'Child Module Settings'
-              )}
-              -
-              ${this._getModuleSettingsTitle(childModule, lang).replace(
-                /^(Module Settings - |Child Module Settings - )/,
-                ''
-              )}
-            </h3>
-            <div class="header-actions" @mousedown=${(e: Event) => e.stopPropagation()}>
+      <div class="module-settings-panel ${this._isClosingLayoutChildSettings ? 'is-closing' : ''}">
+        <div class="panel-header">
+          <button class="panel-back-btn" @click=${() => this._closeLayoutChildSettings()}>
+            <ha-icon icon="mdi:chevron-left"></ha-icon>
+          </button>
+          <h3 class="panel-title">
+            ${localize(
+              'editor.layout.child_module_settings_title',
+              lang,
+              'Child Module Settings'
+            )}
+            -
+            ${this._getModuleSettingsTitle(childModule, lang).replace(
+              /^(Module Settings - |Child Module Settings - )/,
+              ''
+            )}
+          </h3>
+          <div class="header-actions">
               <button
                 class="action-button duplicate-button"
                 @click=${() => {
@@ -23431,14 +23604,12 @@ export class LayoutTab extends LitElement {
               >
                 <ha-icon icon="mdi:delete"></ha-icon>
               </button>
-              <button class="close-button" @click=${() => this._closeLayoutChildSettings()}>
-                ×
-              </button>
             </div>
           </div>
 
-          <!-- Child module preview -->
-          <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
+          <div class="module-tab-content">
+            <!-- Child module preview -->
+            <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
             <div
               class="preview-header"
               @click=${(e: Event) => {
@@ -23562,42 +23733,26 @@ export class LayoutTab extends LitElement {
             </button>
           </div>
 
-          <div class="popup-body">
-            <div class="module-tab-content">
-              ${this._activeModuleTab === 'general'
-                ? this._renderLayoutChildGeneralTab(childModule)
-                : ''}
-              ${this._activeModuleTab === 'yaml' && childModule.type === 'external_card'
-                ? (() => {
-                    return this._renderLayoutChildYamlTab(childModule);
-                  })()
-                : ''}
-              ${this._activeModuleTab === 'actions' && hasActionsTab
-                ? this._renderLayoutChildActionsTab(childModule)
-                : ''}
-              ${this._activeModuleTab === 'other' && hasOtherTab
-                ? this._renderLayoutChildOtherTab(childModule)
-                : ''}
-              ${this._activeModuleTab === 'logic'
-                ? this._renderLayoutChildLogicTab(childModule)
-                : ''}
-              ${this._activeModuleTab === 'design'
-                ? this._renderLayoutChildDesignTab(childModule)
-                : ''}
-            </div>
-          </div>
-
-          <!-- Resize handle -->
-          <div
-            class="resize-handle"
-            @mousedown=${(e: MouseEvent) => {
-              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
-              if (popup) this._startPopupResize(e, popup);
-            }}
-            title="Drag to resize"
-          >
-            <ha-icon icon="mdi:resize-bottom-right"></ha-icon>
-          </div>
+          ${this._activeModuleTab === 'general'
+            ? this._renderLayoutChildGeneralTab(childModule)
+            : ''}
+          ${this._activeModuleTab === 'yaml' && childModule.type === 'external_card'
+            ? (() => {
+                return this._renderLayoutChildYamlTab(childModule);
+              })()
+            : ''}
+          ${this._activeModuleTab === 'actions' && hasActionsTab
+            ? this._renderLayoutChildActionsTab(childModule)
+            : ''}
+          ${this._activeModuleTab === 'other' && hasOtherTab
+            ? this._renderLayoutChildOtherTab(childModule)
+            : ''}
+          ${this._activeModuleTab === 'logic'
+            ? this._renderLayoutChildLogicTab(childModule)
+            : ''}
+          ${this._activeModuleTab === 'design'
+            ? this._renderLayoutChildDesignTab(childModule)
+            : ''}
         </div>
       </div>
     `;
@@ -23942,113 +24097,88 @@ export class LayoutTab extends LitElement {
     if (!row) return html``;
 
     return html`
-      <div class="settings-popup ${this._isClosingRowSettings ? 'is-closing' : ''}">
-        <div class="popup-overlay" @click=${() => this._closeRowSettings()}></div>
-        <div
-          class="popup-content draggable-popup"
-          id="row-popup-${this._selectedRowForSettings}"
-          @click=${(e: Event) => e.stopPropagation()}
-        >
-          <div
-            class="popup-header"
-            @mousedown=${(e: MouseEvent) => {
-              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
-              if (popup) this._startPopupDrag(e, popup);
-            }}
-          >
-            <h3>
+      <div class="module-settings-panel ${this._isClosingRowSettings ? 'is-closing' : ''}">
+        <div class="panel-header">
+          <button class="panel-back-btn" @click=${() => this._closeRowSettings()}>
+            <ha-icon icon="mdi:chevron-left"></ha-icon>
+          </button>
+          <h3 class="panel-title">
+            ${localize(
+              'editor.layout.row_settings',
+              this.hass?.locale?.language || 'en',
+              'Row Settings'
+            )}
+          </h3>
+          <div class="header-actions">
+            <button
+              class="action-button duplicate-button"
+              @click=${() => {
+                this._duplicateRow(this._selectedRowForSettings);
+                this._closeRowSettings();
+              }}
+              title="Duplicate Row"
+            >
+              <ha-icon icon="mdi:content-duplicate"></ha-icon>
+            </button>
+            <button
+              class="action-button delete-button"
+              @click=${() => {
+                this._deleteRow(this._selectedRowForSettings);
+                this._closeRowSettings();
+              }}
+              title="Delete Row"
+            >
+              <ha-icon icon="mdi:delete"></ha-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="module-tab-content">
+          ${this._renderRowPreview(row)}
+
+          <div class="settings-tabs">
+            <button
+              class="settings-tab ${this._activeRowTab === 'general' ? 'active' : ''}"
+              @click=${() => (this._activeRowTab = 'general')}
+            >
               ${localize(
-                'editor.layout.row_settings',
+                'editor.layout.general_tab',
                 this.hass?.locale?.language || 'en',
-                'Row Settings'
+                'General'
               )}
-            </h3>
-            <div class="header-actions" @mousedown=${(e: Event) => e.stopPropagation()}>
-              <button
-                class="action-button duplicate-button"
-                @click=${() => {
-                  this._duplicateRow(this._selectedRowForSettings);
-                  this._closeRowSettings();
-                }}
-                title="Duplicate Row"
-              >
-                <ha-icon icon="mdi:content-duplicate"></ha-icon>
-              </button>
-              <button
-                class="action-button delete-button"
-                @click=${() => {
-                  this._deleteRow(this._selectedRowForSettings);
-                  this._closeRowSettings();
-                }}
-                title="Delete Row"
-              >
-                <ha-icon icon="mdi:delete"></ha-icon>
-              </button>
-              <button class="close-button" @click=${() => this._closeRowSettings()}>
-                ×
-              </button>
-            </div>
+            </button>
+            <button
+              class="settings-tab ${this._activeRowTab === 'actions' ? 'active' : ''}"
+              @click=${() => (this._activeRowTab = 'actions')}
+            >
+              ${localize(
+                'editor.layout.actions_tab',
+                this.hass?.locale?.language || 'en',
+                'Actions'
+              )}
+            </button>
+            <button
+              class="settings-tab ${this._activeRowTab === 'logic' ? 'active' : ''}"
+              @click=${() => (this._activeRowTab = 'logic')}
+            >
+              ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
+            </button>
+            <button
+              class="settings-tab ${this._activeRowTab === 'design' ? 'active' : ''}"
+              @click=${() => (this._activeRowTab = 'design')}
+            >
+              ${localize(
+                'editor.layout.design_tab',
+                this.hass?.locale?.language || 'en',
+                'Design'
+              )}
+            </button>
           </div>
-
-          <div class="popup-body">
-            ${this._renderRowPreview(row)}
-
-            <div class="settings-tabs">
-              <button
-                class="settings-tab ${this._activeRowTab === 'general' ? 'active' : ''}"
-                @click=${() => (this._activeRowTab = 'general')}
-              >
-                ${localize(
-                  'editor.layout.general_tab',
-                  this.hass?.locale?.language || 'en',
-                  'General'
-                )}
-              </button>
-              <button
-                class="settings-tab ${this._activeRowTab === 'actions' ? 'active' : ''}"
-                @click=${() => (this._activeRowTab = 'actions')}
-              >
-                ${localize(
-                  'editor.layout.actions_tab',
-                  this.hass?.locale?.language || 'en',
-                  'Actions'
-                )}
-              </button>
-              <button
-                class="settings-tab ${this._activeRowTab === 'logic' ? 'active' : ''}"
-                @click=${() => (this._activeRowTab = 'logic')}
-              >
-                ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
-              </button>
-              <button
-                class="settings-tab ${this._activeRowTab === 'design' ? 'active' : ''}"
-                @click=${() => (this._activeRowTab = 'design')}
-              >
-                ${localize(
-                  'editor.layout.design_tab',
-                  this.hass?.locale?.language || 'en',
-                  'Design'
-                )}
-              </button>
-            </div>
-            <div class="settings-tab-content">
-              ${this._activeRowTab === 'general' ? this._renderRowGeneralTab(row) : ''}
-              ${this._activeRowTab === 'actions' ? this._renderRowActionsTab(row) : ''}
-              ${this._activeRowTab === 'logic' ? this._renderRowLogicTab(row) : ''}
-              ${this._activeRowTab === 'design' ? this._renderRowDesignTab(row) : ''}
-            </div>
-          </div>
-
-          <!-- Resize handle -->
-          <div
-            class="resize-handle"
-            @mousedown=${(e: MouseEvent) => {
-              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
-              if (popup) this._startPopupResize(e, popup);
-            }}
-            title="Drag to resize"
-          >
-            <ha-icon icon="mdi:resize-bottom-right"></ha-icon>
+          <div class="settings-tab-content">
+            ${this._activeRowTab === 'general' ? this._renderRowGeneralTab(row) : ''}
+            ${this._activeRowTab === 'actions' ? this._renderRowActionsTab(row) : ''}
+            ${this._activeRowTab === 'logic' ? this._renderRowLogicTab(row) : ''}
+            ${this._activeRowTab === 'design' ? this._renderRowDesignTab(row) : ''}
           </div>
         </div>
       </div>
@@ -24063,122 +24193,98 @@ export class LayoutTab extends LitElement {
     if (!column) return html``;
 
     return html`
-      <div class="settings-popup ${this._isClosingColumnSettings ? 'is-closing' : ''}">
-        <div class="popup-overlay" @click=${() => this._closeColumnSettings()}></div>
-        <div
-          class="popup-content draggable-popup"
-          id="column-popup-${this._selectedColumnForSettings?.rowIndex}-${this
-            ._selectedColumnForSettings?.columnIndex}"
-          @click=${(e: Event) => e.stopPropagation()}
-        >
-          <div
-            class="popup-header"
-            @mousedown=${(e: MouseEvent) => {
-              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
-              if (popup) this._startPopupDrag(e, popup);
-            }}
-          >
-            <h3>
+      <div class="module-settings-panel ${this._isClosingColumnSettings ? 'is-closing' : ''}">
+        <div class="panel-header">
+          <button class="panel-back-btn" @click=${() => this._closeColumnSettings()}>
+            <ha-icon icon="mdi:chevron-left"></ha-icon>
+          </button>
+          <h3 class="panel-title">
+            ${localize(
+              'editor.layout.column_settings',
+              this.hass?.locale?.language || 'en',
+              'Column Settings'
+            )}
+          </h3>
+          <div class="header-actions">
+            <button
+              class="action-button duplicate-button"
+              @click=${() => {
+                if (this._selectedColumnForSettings) {
+                  this._duplicateColumn(
+                    this._selectedColumnForSettings.rowIndex,
+                    this._selectedColumnForSettings.columnIndex
+                  );
+                  this._closeColumnSettings();
+                }
+              }}
+              title="Duplicate Column"
+            >
+              <ha-icon icon="mdi:content-duplicate"></ha-icon>
+            </button>
+            <button
+              class="action-button delete-button"
+              @click=${() => {
+                if (this._selectedColumnForSettings) {
+                  this._deleteColumn(
+                    this._selectedColumnForSettings.rowIndex,
+                    this._selectedColumnForSettings.columnIndex
+                  );
+                  this._closeColumnSettings();
+                }
+              }}
+              title="Delete Column"
+            >
+              <ha-icon icon="mdi:delete"></ha-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="module-tab-content">
+          ${this._renderColumnPreview(column)}
+
+          <div class="settings-tabs">
+            <button
+              class="settings-tab ${this._activeColumnTab === 'general' ? 'active' : ''}"
+              @click=${() => (this._activeColumnTab = 'general')}
+            >
               ${localize(
-                'editor.layout.column_settings',
+                'editor.layout.general_tab',
                 this.hass?.locale?.language || 'en',
-                'Column Settings'
+                'General'
               )}
-            </h3>
-            <div class="header-actions" @mousedown=${(e: Event) => e.stopPropagation()}>
-              <button
-                class="action-button duplicate-button"
-                @click=${() => {
-                  if (this._selectedColumnForSettings) {
-                    this._duplicateColumn(
-                      this._selectedColumnForSettings.rowIndex,
-                      this._selectedColumnForSettings.columnIndex
-                    );
-                    this._closeColumnSettings();
-                  }
-                }}
-                title="Duplicate Column"
-              >
-                <ha-icon icon="mdi:content-duplicate"></ha-icon>
-              </button>
-              <button
-                class="action-button delete-button"
-                @click=${() => {
-                  if (this._selectedColumnForSettings) {
-                    this._deleteColumn(
-                      this._selectedColumnForSettings.rowIndex,
-                      this._selectedColumnForSettings.columnIndex
-                    );
-                    this._closeColumnSettings();
-                  }
-                }}
-                title="Delete Column"
-              >
-                <ha-icon icon="mdi:delete"></ha-icon>
-              </button>
-              <button class="close-button" @click=${() => this._closeColumnSettings()}>×</button>
-            </div>
+            </button>
+            <button
+              class="settings-tab ${this._activeColumnTab === 'actions' ? 'active' : ''}"
+              @click=${() => (this._activeColumnTab = 'actions')}
+            >
+              ${localize(
+                'editor.layout.actions_tab',
+                this.hass?.locale?.language || 'en',
+                'Actions'
+              )}
+            </button>
+            <button
+              class="settings-tab ${this._activeColumnTab === 'logic' ? 'active' : ''}"
+              @click=${() => (this._activeColumnTab = 'logic')}
+            >
+              ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
+            </button>
+            <button
+              class="settings-tab ${this._activeColumnTab === 'design' ? 'active' : ''}"
+              @click=${() => (this._activeColumnTab = 'design')}
+            >
+              ${localize(
+                'editor.layout.design_tab',
+                this.hass?.locale?.language || 'en',
+                'Design'
+              )}
+            </button>
           </div>
-
-          <div class="popup-body">
-            ${this._renderColumnPreview(column)}
-
-            <div class="settings-tabs">
-              <button
-                class="settings-tab ${this._activeColumnTab === 'general' ? 'active' : ''}"
-                @click=${() => (this._activeColumnTab = 'general')}
-              >
-                ${localize(
-                  'editor.layout.general_tab',
-                  this.hass?.locale?.language || 'en',
-                  'General'
-                )}
-              </button>
-              <button
-                class="settings-tab ${this._activeColumnTab === 'actions' ? 'active' : ''}"
-                @click=${() => (this._activeColumnTab = 'actions')}
-              >
-                ${localize(
-                  'editor.layout.actions_tab',
-                  this.hass?.locale?.language || 'en',
-                  'Actions'
-                )}
-              </button>
-              <button
-                class="settings-tab ${this._activeColumnTab === 'logic' ? 'active' : ''}"
-                @click=${() => (this._activeColumnTab = 'logic')}
-              >
-                ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
-              </button>
-              <button
-                class="settings-tab ${this._activeColumnTab === 'design' ? 'active' : ''}"
-                @click=${() => (this._activeColumnTab = 'design')}
-              >
-                ${localize(
-                  'editor.layout.design_tab',
-                  this.hass?.locale?.language || 'en',
-                  'Design'
-                )}
-              </button>
-            </div>
-            <div class="settings-tab-content">
-              ${this._activeColumnTab === 'general' ? this._renderColumnGeneralTab(column) : ''}
-              ${this._activeColumnTab === 'actions' ? this._renderColumnActionsTab(column) : ''}
-              ${this._activeColumnTab === 'logic' ? this._renderColumnLogicTab(column) : ''}
-              ${this._activeColumnTab === 'design' ? this._renderColumnDesignTab(column) : ''}
-            </div>
-          </div>
-
-          <!-- Resize handle -->
-          <div
-            class="resize-handle"
-            @mousedown=${(e: MouseEvent) => {
-              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
-              if (popup) this._startPopupResize(e, popup);
-            }}
-            title="Drag to resize"
-          >
-            <ha-icon icon="mdi:resize-bottom-right"></ha-icon>
+          <div class="settings-tab-content">
+            ${this._activeColumnTab === 'general' ? this._renderColumnGeneralTab(column) : ''}
+            ${this._activeColumnTab === 'actions' ? this._renderColumnActionsTab(column) : ''}
+            ${this._activeColumnTab === 'logic' ? this._renderColumnLogicTab(column) : ''}
+            ${this._activeColumnTab === 'design' ? this._renderColumnDesignTab(column) : ''}
           </div>
         </div>
       </div>
@@ -26804,12 +26910,10 @@ export class LayoutTab extends LitElement {
       ucDashboardScannerService.initialize(this.hass);
     }
 
-    // Patch HA dialog containment when any popup is open, restore when all closed
-    const anyPopupOpen =
-      !!this._selectedModule ||
-      !!this._selectedLayoutChild ||
-      !!this._selectedTabsSectionChild ||
-      !!this._showModuleSelector;
+    // Patch HA dialog containment only for module selector (position:fixed overlay).
+    // All settings panels (module, row, column, layout child, tabs child) now use the
+    // inline panel pattern and do not need dialog patching.
+    const anyPopupOpen = !!this._showModuleSelector;
     if (anyPopupOpen) {
       this._patchDialogContainment(true);
     } else if (this._savedDialogStyles) {
@@ -26856,7 +26960,8 @@ export class LayoutTab extends LitElement {
       const restoreScroll = () => {
         const popupBody = this.shadowRoot?.querySelector('.popup-body') as HTMLElement;
         const selectorBody = this.shadowRoot?.querySelector('.selector-body') as HTMLElement;
-        const scrollContainer = popupBody || selectorBody;
+        const panelBody = this.shadowRoot?.querySelector('.module-settings-panel .module-tab-content') as HTMLElement;
+        const scrollContainer = popupBody || selectorBody || panelBody;
 
         if (scrollContainer && scrollPos !== null) {
           // Force instant scroll (no smooth scrolling)
@@ -26917,7 +27022,7 @@ export class LayoutTab extends LitElement {
     const lang = this.hass?.locale?.language || 'en';
 
     return html`
-      <div class="layout-builder ${this.isFullScreen ? 'fullscreen' : ''}">
+      <div class="layout-builder ${this.isFullScreen ? 'fullscreen' : ''} ${this._showModuleSettings || this._isClosingModuleSettings || this._showLayoutChildSettings || this._isClosingLayoutChildSettings || this._showTabsSectionChildSettings || this._isClosingTabsSectionChildSettings || this._showRowSettings || this._isClosingRowSettings || this._showColumnSettings || this._isClosingColumnSettings ? 'module-settings-open' : ''}">
         ${this.isFullScreen && this.hass
           ? html`
               <div class="fullscreen-preview">
@@ -27671,7 +27776,7 @@ export class LayoutTab extends LitElement {
 
         ${this._showModuleSelector ? this._renderModuleSelector() : ''}
         ${this._showModuleSettings || this._isClosingModuleSettings
-          ? this._renderModuleSettings()
+          ? this._renderModuleSettingsPanel()
           : ''}
         ${this._showLayoutChildSettings || this._isClosingLayoutChildSettings
           ? this._renderLayoutChildSettings()
@@ -33616,6 +33721,109 @@ export class LayoutTab extends LitElement {
         overflow-x: visible;
       }
 
+      /* Module Settings Inline Panel — replaces the builder tree when editing a module */
+      @keyframes ucPanelSlideIn {
+        from {
+          opacity: 0;
+          transform: translateX(-16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes ucPanelSlideOut {
+        from {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateX(-16px);
+        }
+      }
+
+      .module-settings-panel {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        background: var(--card-background-color);
+        animation: ucPanelSlideIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      .module-settings-panel.is-closing {
+        animation: ucPanelSlideOut ${LayoutTab.POPUP_CLOSE_ANIMATION_MS}ms ease-in both;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .module-settings-panel,
+        .module-settings-panel.is-closing {
+          animation: none !important;
+        }
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px 10px 8px;
+        border-bottom: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        flex-shrink: 0;
+      }
+
+      .panel-back-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: var(--primary-color);
+        flex-shrink: 0;
+        transition: background 0.2s ease, color 0.2s ease;
+      }
+
+      .panel-back-btn:hover {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .panel-back-btn ha-icon {
+        --mdc-icon-size: 22px;
+      }
+
+      .panel-title {
+        flex: 1;
+        margin: 0;
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--primary-text-color);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* Hide builder chrome when the inline settings panel is active */
+      .layout-builder.module-settings-open .fullscreen-preview,
+      .layout-builder.module-settings-open .builder-toolbar,
+      .layout-builder.module-settings-open .tree-breadcrumbs,
+      .layout-builder.module-settings-open .tree-view-container,
+      .layout-builder.module-settings-open .rows-container {
+        display: none !important;
+      }
+
+      .layout-builder.module-settings-open {
+        padding: 0;
+      }
+
       /* Smooth open animation for row/column/module settings dialogs */
       @keyframes ucDialogOverlayIn {
         from {
@@ -34193,7 +34401,7 @@ export class LayoutTab extends LitElement {
       }
 
       .module-tab-content {
-        padding: 24px;
+        padding: 24px 0;
         flex: 1;
         overflow-y: auto; /* body scrolls */
         overflow-x: visible; /* allow dropdown menus to render outside content column */

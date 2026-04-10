@@ -58,7 +58,7 @@ export class UltraSliderInputModule extends BaseUltraModule {
       <div class="general-tab">
         ${this.renderSettingsSection(
           localize('editor.slider_input.entity.title', lang, 'Entity Configuration'),
-          localize('editor.slider_input.entity.desc', lang, 'Link to a Home Assistant input_number helper entity.'),
+          localize('editor.slider_input.entity.desc', lang, 'Link to a Home Assistant Input Number helper entity.'),
           []
         )}
         <div style="margin-bottom: 24px;">
@@ -193,7 +193,7 @@ export class UltraSliderInputModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
 
     if (!sliderMod.entity?.trim()) {
-      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.slider_input.error_configure_entity_desc', lang, 'Select an input_number entity in the General tab'), 'mdi:tune-variant');
+      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.slider_input.error_configure_entity_desc', lang, 'Select an Input Number entity in the General tab'), 'mdi:tune-variant');
     }
 
     const entityState = hass?.states?.[sliderMod.entity];

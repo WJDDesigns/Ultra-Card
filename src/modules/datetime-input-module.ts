@@ -103,7 +103,7 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
           localize(
             'editor.datetime_input.entity.desc',
             lang,
-            'Link to a Home Assistant input_datetime helper entity.'
+            'Link to a Home Assistant Input Datetime helper entity.'
           ),
           []
         )}
@@ -262,7 +262,7 @@ export class UltraDatetimeInputModule extends BaseUltraModule {
     if (!dtModule.entity || !dtModule.entity.trim()) {
       return this.renderGradientErrorState(
         localize('editor.common.error_configure_entity', lang, 'Configure Entity'),
-        localize('editor.datetime_input.error_configure_entity_desc', lang, 'Select an input_datetime entity in the General tab'),
+        localize('editor.datetime_input.error_configure_entity_desc', lang, 'Select an Input Datetime entity in the General tab'),
         'mdi:calendar-clock'
       );
     }

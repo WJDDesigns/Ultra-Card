@@ -295,6 +295,9 @@ export class UltraQrCodeModule extends BaseUltraModule {
               undefined,
               localize('editor.qr_code.entity_picker', lang, 'Entity')
             )}
+            <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
+              ${localize('editor.qr_code.entity_picker_desc', lang, 'Select an entity whose state (or attribute) will be encoded into the QR code.')}
+            </div>
             ${this.renderFieldSection(
               localize('editor.qr_code.attribute', lang, 'Attribute (optional)'),
               localize('editor.qr_code.attribute_desc', lang, 'Leave empty to use state; or e.g. friendly_name'),

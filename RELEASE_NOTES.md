@@ -1,5 +1,37 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta2
+
+This beta replaces every floating settings popup in the editor with a clean slide-in panel and ships a round of fit-and-finish fixes across borders, entity pickers, condition labels, and the clipboard export path.
+
+---
+
+### 🚀 New Features
+
+- **Settings Slide-In Panels** — All floating draggable popups in the editor (module settings, row settings, column settings, layout child settings, and tabs section child settings) are replaced with a full-height slide-in panel that takes over the editor area. The editor tabs hide while a settings panel is open, giving the settings form more room and keeping the workspace clean. A back arrow (←) replaces the × close button.
+- **Fullscreen Exit Button** — When the editor is in fullscreen mode, a dedicated back arrow appears in the editor header for quick exit, complementing the existing keyboard shortcut.
+
+### 🔧 Improvements
+
+- **Border rendering for all modules** — `getBorderCSS()` now reads both the legacy flat properties (`border_width`, `border_color`, `border_style`) and the current nested `border` object (`border.width`, `border.color`, `border.style`). Borders set via the Design tab now render correctly on horizontal, vertical, and all other layout modules.
+- **Entity picker variable display** — `renderEntityPickerWithVariables` resolves `$variable` references before passing the value to `ha-form`, so the picker shows the entity's friendly name and icon instead of the raw variable token.
+- **`ha-form` field labels** — The default `computeLabel` now prefers `schema.label` over `schema.name`, fixing fields that were showing their internal key name instead of the configured display label.
+- **Logic condition operator labels** — "contains", "not_contains", "has_value", and "no_value" condition operators are now properly title-cased ("Contains", "Not Contains", "Has Value", "No Value") across accordion, bar, popup, grid, dynamic list, info, and all other modules that use logic conditions.
+- **Clipboard export** — The multi-step read-back verification and `execCommand` fallback are removed in favour of a simpler contract: if `navigator.clipboard.writeText` resolves without throwing, the write succeeded. If it throws (HTTP context, permission denied, mobile WebView), the shortcode dialog is shown immediately instead of a silent false-success.
+- **Entity field descriptions** — Several module entity pickers now include a description below the field explaining what to select: Bar (source entity and limit entity), Slider Control, Gauge, Calendar, Animated Weather, and Background (entity source mode).
+- **Animated Weather module** — Entity picker now shows a description guiding users to pick a `weather.*` entity.
+- **Background module** — Entity source mode picker now shows a description for supported entity types (person, camera, media player).
+- **Boolean Input module** — Entity type label corrected from "input_boolean" to "Input Boolean" for consistency with HA naming.
+- **Dropdown module** — Source mode descriptions updated from "select/input_select" to "Select or Input Select" for consistency.
+- **Dynamic list module** — Watch entities label corrected from "state_changed refresh" to "state changed refresh".
+
+### 🐛 Bug Fixes
+
+- **Column settings panel scroll** — The column settings panel now correctly uses the `.module-tab-content` scroll container when open, fixing cases where the settings body could not be scrolled.
+- **Module settings panel scroll** — Same fix applied to all five settings panel types — the scroll container lookup now searches for `.module-settings-panel .module-tab-content` as an additional candidate, so long settings forms are always scrollable.
+
+---
+
 ## Version 3.3.0-beta1
 
 The first beta of 3.3.0 brings a friendlier editor, smarter entity handling, a new toast notification layer, and a wave of accessibility and consistency improvements across nearly every module.

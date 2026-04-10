@@ -234,6 +234,9 @@ export class UltraAccordionModule extends BaseUltraModule {
                       undefined,
                       localize('editor.accordion.title.entity', lang, 'Title Entity')
                     )}
+                    <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
+                      ${localize('editor.accordion.title.entity_desc', lang, 'Select an entity whose state will be used as the accordion header title.')}
+                    </div>
 
                     <!-- Show Entity Name Toggle -->
                     ${this.renderSettingsSection(
@@ -1151,10 +1154,10 @@ export class UltraAccordionModule extends BaseUltraModule {
                             { value: '>=', label: '>=' },
                             { value: '<', label: '<' },
                             { value: '<=', label: '<=' },
-                            { value: 'contains', label: 'contains' },
-                            { value: 'not_contains', label: 'not_contains' },
-                            { value: 'has_value', label: 'has_value' },
-                            { value: 'no_value', label: 'no_value' },
+                            { value: 'contains', label: 'Contains' },
+                            { value: 'not_contains', label: 'Not Contains' },
+                            { value: 'has_value', label: 'Has Value' },
+                            { value: 'no_value', label: 'No Value' },
                           ]),
                         ],
                         (e: CustomEvent) => onChange(e.detail.value)
@@ -1199,8 +1202,8 @@ export class UltraAccordionModule extends BaseUltraModule {
                             { value: '>=', label: '>=' },
                             { value: '<', label: '<' },
                             { value: '<=', label: '<=' },
-                            { value: 'contains', label: 'contains' },
-                            { value: 'not_contains', label: 'not_contains' },
+                            { value: 'contains', label: 'Contains' },
+                            { value: 'not_contains', label: 'Not Contains' },
                           ]),
                         ],
                         (e: CustomEvent) => onChange(e.detail.value)

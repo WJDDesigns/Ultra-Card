@@ -1112,6 +1112,9 @@ export class UltraSliderControlModule extends BaseUltraModule {
                     undefined,
                     'Entity'
                   )}
+                  <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; margin-bottom: 8px; color: var(--secondary-text-color);">
+                    Select the entity this slider controls (e.g. a light, input_number, or media player).
+                  </div>
                   ${this.renderFieldSection(
                     'Bar Type',
                     'Type of slider bar (auto-detected)',

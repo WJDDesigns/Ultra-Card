@@ -61,7 +61,7 @@ export class UltraBooleanInputModule extends BaseUltraModule {
       <div class="general-tab">
         ${this.renderSettingsSection(
           localize('editor.boolean_input.entity.title', lang, 'Entity Configuration'),
-          localize('editor.boolean_input.entity.desc', lang, 'Link to a Home Assistant input_boolean or switch entity.'),
+          localize('editor.boolean_input.entity.desc', lang, 'Link to a Home Assistant Input Boolean or switch entity.'),
           []
         )}
         <div style="margin-bottom: 24px;">
@@ -161,7 +161,7 @@ export class UltraBooleanInputModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
 
     if (!boolMod.entity?.trim()) {
-      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.boolean_input.error_configure_entity_desc', lang, 'Select an input_boolean entity in the General tab'), 'mdi:toggle-switch-outline');
+      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.boolean_input.error_configure_entity_desc', lang, 'Select an Input Boolean entity in the General tab'), 'mdi:toggle-switch-outline');
     }
     const entityState = hass?.states?.[boolMod.entity];
     if (!entityState) {

@@ -208,6 +208,9 @@ export class UltraGaugeModule extends BaseUltraModule {
             ['sensor', 'input_number'],
             localize('editor.gauge.entity', hass?.locale?.language || 'en', 'Entity')
           )}
+          <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
+            ${localize('editor.gauge.entity_desc', hass?.locale?.language || 'en', 'Select a sensor or input number entity whose value will be displayed on the gauge.')}
+          </div>
         </div>
 
         <div style="margin-bottom: 24px;">

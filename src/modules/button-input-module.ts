@@ -59,7 +59,7 @@ export class UltraButtonInputModule extends BaseUltraModule {
       <div class="general-tab">
         ${this.renderSettingsSection(
           localize('editor.button_input.entity.title', lang, 'Entity Configuration'),
-          localize('editor.button_input.entity.desc', lang, 'Link to a Home Assistant input_button helper entity.'),
+          localize('editor.button_input.entity.desc', lang, 'Link to a Home Assistant Input Button helper entity.'),
           []
         )}
         <div style="margin-bottom: 24px;">
@@ -137,7 +137,7 @@ export class UltraButtonInputModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
 
     if (!btnMod.entity?.trim()) {
-      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.button_input.error_configure_entity_desc', lang, 'Select an input_button entity in the General tab'), 'mdi:gesture-tap-button');
+      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.button_input.error_configure_entity_desc', lang, 'Select an Input Button entity in the General tab'), 'mdi:gesture-tap-button');
     }
     const entityState = hass?.states?.[btnMod.entity];
     if (!entityState) {

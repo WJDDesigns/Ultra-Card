@@ -212,8 +212,11 @@ export class UltraVerticalModule extends BaseUltraModule {
       ...bgResult.styles,
       border:
         effective.border_width ||
+        effective.border?.width ||
         effective.border_color ||
-        (effective.border_style && effective.border_style !== 'none')
+        effective.border?.color ||
+        (effective.border_style && effective.border_style !== 'none') ||
+        (effective.border?.style && effective.border.style !== 'none')
           ? this.getBorderCSS(effective)
           : 'none',
       borderRadius: this.addPixelUnit(borderRadiusValue) || '0',
@@ -784,12 +787,13 @@ export class UltraVerticalModule extends BaseUltraModule {
   }
 
   private getBorderCSS(moduleWithDesign: any): string {
-    // Default to 1px if style is set but width is not
-    const hasStyle = moduleWithDesign.border_style && moduleWithDesign.border_style !== 'none';
-    const width = this.addPixelUnit(moduleWithDesign.border_width) || (hasStyle ? '1px' : '0');
-    const style = moduleWithDesign.border_style || 'solid';
-    const color = moduleWithDesign.border_color || 'var(--divider-color)';
-    return `${width} ${style} ${color}`;
+    // Support both flat properties (legacy) and nested border object (current editor format)
+    const width = moduleWithDesign.border_width ?? moduleWithDesign.border?.width;
+    const style = moduleWithDesign.border_style ?? moduleWithDesign.border?.style ?? 'solid';
+    const color = moduleWithDesign.border_color ?? moduleWithDesign.border?.color ?? 'var(--divider-color)';
+    const hasStyle = style && style !== 'none';
+    const resolvedWidth = this.addPixelUnit(String(width ?? '')) || (hasStyle ? '1px' : '0');
+    return `${resolvedWidth} ${style} ${color}`;
   }
 
   private getJustifyContent(alignment: string): string {

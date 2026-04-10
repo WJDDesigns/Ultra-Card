@@ -65,7 +65,7 @@ export class UltraNumberInputModule extends BaseUltraModule {
       <div class="general-tab">
         ${this.renderSettingsSection(
           localize('editor.number_input.entity.title', lang, 'Entity Configuration'),
-          localize('editor.number_input.entity.desc', lang, 'Link to a Home Assistant input_number helper entity.'),
+          localize('editor.number_input.entity.desc', lang, 'Link to a Home Assistant Input Number helper entity.'),
           []
         )}
         <div style="margin-bottom: 24px;">
@@ -194,7 +194,7 @@ export class UltraNumberInputModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
 
     if (!numModule.entity?.trim()) {
-      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.number_input.error_configure_entity_desc', lang, 'Select an input_number entity in the General tab'), 'mdi:numeric');
+      return this.renderGradientErrorState(localize('editor.common.error_configure_entity', lang, 'Configure Entity'), localize('editor.number_input.error_configure_entity_desc', lang, 'Select an Input Number entity in the General tab'), 'mdi:numeric');
     }
 
     const entityState = hass?.states?.[numModule.entity];
