@@ -834,7 +834,7 @@ export class UltraButtonModule extends BaseUltraModule {
         : '0',
       margin: hasMargin
         ? `${marginTop || '8px'} ${marginRight || '0'} ${marginBottom || '8px'} ${marginLeft || '0'}`
-        : '0',
+        : '8px 0',
       background: designProperties.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },
