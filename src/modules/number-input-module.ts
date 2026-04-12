@@ -321,7 +321,7 @@ export class UltraNumberInputModule extends BaseUltraModule {
       padding: dp.padding_top || dp.padding_bottom || dp.padding_left || dp.padding_right
         ? `${dp.padding_top || '0px'} ${dp.padding_right || '0px'} ${dp.padding_bottom || '0px'} ${dp.padding_left || '0px'}` : '0',
       margin: dp.margin_top || dp.margin_bottom || dp.margin_left || dp.margin_right
-        ? `${dp.margin_top || '8px'} ${dp.margin_right || '0px'} ${dp.margin_bottom || '8px'} ${dp.margin_left || '0px'}` : '8px 0',
+        ? `${dp.margin_top || '8px'} ${dp.margin_right || '0px'} ${dp.margin_bottom || '8px'} ${dp.margin_left || '0px'}` : '0',
       background: dp.background_color || 'transparent',
       'border-radius': dp.border_radius || '0',
       border: dp.border_style && dp.border_style !== 'none'

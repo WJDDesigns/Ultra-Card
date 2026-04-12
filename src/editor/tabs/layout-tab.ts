@@ -143,10 +143,14 @@ export class LayoutTab extends LitElement {
   @state() private _selectedRowForLayout = -1;
   @state() private _columnLayoutBreakpoint: DeviceBreakpoint = 'desktop';
 
-  // Custom column sizing state
+  // Custom column sizing state (column layout selector overlay)
   @state() private _customSizingInput = '';
   @state() private _customSizingValid = false;
   @state() private _customSizingError = '';
+
+  // Inline column sizing state (row settings panel)
+  @state() private _inlineSizingInput = '';
+  @state() private _inlineSizingError = '';
 
   // Collapsible preview in headers - now tracks per module
   @state() private _collapsedPreviewModules: Set<string> = new Set();
@@ -158,7 +162,7 @@ export class LayoutTab extends LitElement {
   @state() private _collapsedRows: Set<number> = new Set();
   @state() private _collapsedColumns: Set<string> = new Set();
   // Pin state for preview window (unpinned by default)
-  @state() private _isPreviewPinned = false;
+  @state() private _isPreviewPinned = true;
   // Drag state for condition reordering
   @state() private _draggingCondition:
     | { scope: 'module'; fromIndex: number }
@@ -8261,6 +8265,21 @@ export class LayoutTab extends LitElement {
       const currentLayout = this._ensureLayout();
       const entityReferences = entityDetector.scanLayout(currentLayout);
 
+      // Also include custom variables (card-level) so the remap dialog can update them
+      const cardVars: Array<{ id: string; name: string; entity: string }> =
+        (this.config._customVariables || []).filter((v: any) => !v.isGlobal && v.entity);
+      for (const v of cardVars) {
+        const alreadyIncluded = entityReferences.some(r => r.entityId === v.entity);
+        if (!alreadyIncluded) {
+          entityReferences.push({
+            entityId: v.entity,
+            locations: [`_customVariables[$${v.name}]`],
+            moduleType: 'variable',
+            context: `Custom variable $${v.name}`,
+          });
+        }
+      }
+
       if (entityReferences.length === 0) {
         this._showToast('No entities found in this card', 'info');
         return;
@@ -8316,7 +8335,29 @@ export class LayoutTab extends LitElement {
         layout = this._removeModulesWithEntities(layout, result.skippedEntityIds);
       }
 
+      // Also remap custom variables
+      const mappingMap = new Map(result.mappings.map(m => [m.original, m.mapped]));
+      const currentCardVars: any[] = this.config._customVariables || [];
+      const updatedCardVars = currentCardVars.map((v: any) => {
+        if (!v.isGlobal && v.entity && mappingMap.has(v.entity)) {
+          return { ...v, entity: mappingMap.get(v.entity) };
+        }
+        return v;
+      });
+      const varsChanged = updatedCardVars.some(
+        (v: any, i: number) => v.entity !== currentCardVars[i].entity
+      );
+
       this._updateLayout(layout);
+      if (varsChanged) {
+        this.dispatchEvent(
+          new CustomEvent('config-changed', {
+            detail: { config: { ...this.config, layout, _customVariables: updatedCardVars } },
+            bubbles: true,
+            composed: true,
+          })
+        );
+      }
       this._showToast(
         `Entities remapped! ${result.mappings.length} mapping(s) applied.`,
         'success'
@@ -13186,6 +13227,9 @@ export class LayoutTab extends LitElement {
 
     if (!module) return html``;
 
+    // Don't show a preview for layout container modules (horizontal, vertical, slider, etc.)
+    if (this._isLayoutModule(module.type)) return html``;
+
     // Key by module identity + entity + breakpoint so Live Preview DOM is recreated when the
     // user binds an entity (or changes breakpoint). Avoids stale nested preview subtrees.
     const previewKey = `${module.id}:${(module as any).entity ?? ''}:${this._previewBreakpoint}`;
@@ -13228,7 +13272,7 @@ export class LayoutTab extends LitElement {
                 : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')}"
             ></ha-icon>
             <span style="flex: 1;">
-              ${localize('editor.layout.live_preview', lang, 'Live Preview')}
+              ${localize('editor.layout.module_preview', lang, 'Module Preview')}
             </span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -22447,109 +22491,108 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
 
-        <div class="module-tab-content">
-          ${this._renderTabsSectionChildPreview()}
+        ${!this.isFullScreen && this._isPreviewPinned ? this._renderTabsSectionChildPreview() : ''}
 
-          <div class="module-tabs">
-              ${module.type === 'external_card'
-                ? (() => {
-                    const externalModule = module as any;
-                    const isNativeCard =
-                      externalModule.card_type && externalModule.card_type.startsWith('hui-');
-                    const hasEditor =
-                      isNativeCard ||
-                      ucExternalCardsService.hasCardEditor(externalModule.card_type);
-                    return hasEditor
-                      ? html`
-                          <button
-                            class="module-tab ${this._activeTabsChildTab === 'general'
-                              ? 'active'
-                              : ''}"
-                            @click=${() => (this._activeTabsChildTab = 'general')}
-                          >
-                            ${localize('editor.layout.general_tab', lang, 'General')}
-                          </button>
-                        `
-                      : '';
-                  })()
-                : html`
-                    <button
-                      class="module-tab ${this._activeTabsChildTab === 'general' ? 'active' : ''}"
-                      @click=${() => (this._activeTabsChildTab = 'general')}
-                    >
-                      ${localize('editor.layout.general_tab', lang, 'General')}
-                    </button>
-                  `}
-              ${module.type === 'external_card'
+        <div class="module-tabs">
+            ${module.type === 'external_card'
+              ? (() => {
+                  const externalModule = module as any;
+                  const isNativeCard =
+                    externalModule.card_type && externalModule.card_type.startsWith('hui-');
+                  const hasEditor =
+                    isNativeCard ||
+                    ucExternalCardsService.hasCardEditor(externalModule.card_type);
+                  return hasEditor
+                    ? html`
+                        <button
+                          class="module-tab ${this._activeTabsChildTab === 'general'
+                            ? 'active'
+                            : ''}"
+                          @click=${() => (this._activeTabsChildTab = 'general')}
+                        >
+                          ${localize('editor.layout.general_tab', lang, 'General')}
+                        </button>
+                      `
+                    : '';
+                })()
+              : html`
+                  <button
+                    class="module-tab ${this._activeTabsChildTab === 'general' ? 'active' : ''}"
+                    @click=${() => (this._activeTabsChildTab = 'general')}
+                  >
+                    ${localize('editor.layout.general_tab', lang, 'General')}
+                  </button>
+                `}
+            ${module.type === 'external_card'
+              ? html`
+                  <button
+                    class="module-tab ${this._activeTabsChildTab === 'yaml' ? 'active' : ''}"
+                    @click=${() => {
+                      this._activeTabsChildTab = 'yaml';
+                      this.requestUpdate();
+                    }}
+                  >
+                    YAML
+                  </button>
+                `
+              : hasActionsTab
                 ? html`
                     <button
-                      class="module-tab ${this._activeTabsChildTab === 'yaml' ? 'active' : ''}"
-                      @click=${() => {
-                        this._activeTabsChildTab = 'yaml';
-                        this.requestUpdate();
-                      }}
+                      class="module-tab ${this._activeTabsChildTab === 'actions' ? 'active' : ''}"
+                      @click=${() => (this._activeTabsChildTab = 'actions')}
                     >
-                      YAML
-                    </button>
-                  `
-                : hasActionsTab
-                  ? html`
-                      <button
-                        class="module-tab ${this._activeTabsChildTab === 'actions' ? 'active' : ''}"
-                        @click=${() => (this._activeTabsChildTab = 'actions')}
-                      >
-                        ${localize('editor.layout.actions_tab', lang, 'Actions')}
-                      </button>
-                    `
-                  : ''}
-              ${hasOtherTab
-                ? html`
-                    <button
-                      class="module-tab ${this._activeTabsChildTab === 'other' ? 'active' : ''}"
-                      @click=${() => (this._activeTabsChildTab = 'other')}
-                    >
-                      ${localize('editor.layout.other_tab', lang, 'Other')}
+                      ${localize('editor.layout.actions_tab', lang, 'Actions')}
                     </button>
                   `
                 : ''}
-              <button
-                class="module-tab ${this._activeTabsChildTab === 'logic' ? 'active' : ''}"
-                @click=${() => (this._activeTabsChildTab = 'logic')}
-              >
-                ${localize('editor.layout.logic_tab', lang, 'Logic')}
-              </button>
-              <button
-                class="module-tab ${this._activeTabsChildTab === 'design' ? 'active' : ''}"
-                @click=${() => (this._activeTabsChildTab = 'design')}
-              >
-                ${localize('editor.layout.design_tab', lang, 'Design')}
-              </button>
-            </div>
-
-            <div class="module-tab-content">
-              ${this._activeTabsChildTab === 'general'
-                ? module.type === 'external_card' &&
-                  !ucExternalCardsService.hasCardEditor((module as any).card_type)
-                  ? ''
-                  : this._renderTabsSectionChildGeneralTab(module)
-                : ''}
-              ${this._activeTabsChildTab === 'yaml' && module.type === 'external_card'
-                ? this._renderTabsSectionChildYamlTab(module)
-                : ''}
-              ${this._activeTabsChildTab === 'actions' && hasActionsTab
-                ? this._renderTabsSectionChildActionsTab(module)
-                : ''}
-              ${this._activeTabsChildTab === 'other' && hasOtherTab
-                ? this._renderTabsSectionChildOtherTab(module)
-                : ''}
-              ${this._activeTabsChildTab === 'logic'
-                ? this._renderTabsSectionChildLogicTab(module)
-                : ''}
-              ${this._activeTabsChildTab === 'design'
-                ? this._renderTabsSectionChildDesignTab(module)
-                : ''}
+            ${hasOtherTab
+              ? html`
+                  <button
+                    class="module-tab ${this._activeTabsChildTab === 'other' ? 'active' : ''}"
+                    @click=${() => (this._activeTabsChildTab = 'other')}
+                  >
+                    ${localize('editor.layout.other_tab', lang, 'Other')}
+                  </button>
+                `
+              : ''}
+            <button
+              class="module-tab ${this._activeTabsChildTab === 'logic' ? 'active' : ''}"
+              @click=${() => (this._activeTabsChildTab = 'logic')}
+            >
+              ${localize('editor.layout.logic_tab', lang, 'Logic')}
+            </button>
+            <button
+              class="module-tab ${this._activeTabsChildTab === 'design' ? 'active' : ''}"
+              @click=${() => (this._activeTabsChildTab = 'design')}
+            >
+              ${localize('editor.layout.design_tab', lang, 'Design')}
+            </button>
           </div>
-        </div>
+
+          <div class="module-tab-content">
+            ${!this.isFullScreen && !this._isPreviewPinned ? this._renderTabsSectionChildPreview() : ''}
+            ${this._activeTabsChildTab === 'general'
+              ? module.type === 'external_card' &&
+                !ucExternalCardsService.hasCardEditor((module as any).card_type)
+                ? ''
+                : this._renderTabsSectionChildGeneralTab(module)
+              : ''}
+            ${this._activeTabsChildTab === 'yaml' && module.type === 'external_card'
+              ? this._renderTabsSectionChildYamlTab(module)
+              : ''}
+            ${this._activeTabsChildTab === 'actions' && hasActionsTab
+              ? this._renderTabsSectionChildActionsTab(module)
+              : ''}
+            ${this._activeTabsChildTab === 'other' && hasOtherTab
+              ? this._renderTabsSectionChildOtherTab(module)
+              : ''}
+            ${this._activeTabsChildTab === 'logic'
+              ? this._renderTabsSectionChildLogicTab(module)
+              : ''}
+            ${this._activeTabsChildTab === 'design'
+              ? this._renderTabsSectionChildDesignTab(module)
+              : ''}
+          </div>
       </div>
     `;
   }
@@ -22607,6 +22650,9 @@ export class LayoutTab extends LitElement {
       return html``;
     }
 
+    // Don't show a preview for layout container modules (horizontal, vertical, slider, etc.)
+    if (this._isLayoutModule(module.type)) return html``;
+
     const lang = this.hass?.locale?.language || 'en';
 
     // Use the same preview wrapper as regular modules for consistent styling
@@ -22650,7 +22696,7 @@ export class LayoutTab extends LitElement {
                 : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')}"
             ></ha-icon>
             <span style="flex: 1;">
-              ${localize('editor.layout.live_preview', lang, 'Live Preview')}
+              ${localize('editor.layout.module_preview', lang, 'Module Preview')}
             </span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -23404,6 +23450,143 @@ export class LayoutTab extends LitElement {
     `;
   }
 
+  private _renderLayoutChildPreview(): TemplateResult {
+    if (!this._selectedLayoutChild) return html``;
+
+    const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+      this._selectedLayoutChild;
+
+    const layout = this._ensureLayout();
+    const parentRow = layout.rows[parentRowIndex];
+    if (!parentRow || !parentRow.columns[parentColumnIndex]) return html``;
+    const parentColumn = parentRow.columns[parentColumnIndex];
+    if (!parentColumn.modules || !parentColumn.modules[parentModuleIndex]) return html``;
+    const layoutModule = parentColumn.modules[parentModuleIndex] as any;
+
+    let childModule: any;
+    if (this._selectedNestedNestedChildIndex >= 0 && this._selectedNestedChildIndex >= 0) {
+      if (!layoutModule.modules || !layoutModule.modules[childIndex]) return html``;
+      const nestedLayoutModule = layoutModule.modules[childIndex] as any;
+      if (!nestedLayoutModule.modules || !nestedLayoutModule.modules[this._selectedNestedChildIndex])
+        return html``;
+      const deepLayoutModule = nestedLayoutModule.modules[this._selectedNestedChildIndex] as any;
+      if (!deepLayoutModule.modules || !deepLayoutModule.modules[this._selectedNestedNestedChildIndex])
+        return html``;
+      childModule = deepLayoutModule.modules[this._selectedNestedNestedChildIndex];
+    } else if (this._selectedNestedChildIndex >= 0) {
+      if (!layoutModule.modules || !layoutModule.modules[childIndex]) return html``;
+      const nestedLayoutModule = layoutModule.modules[childIndex] as any;
+      if (!nestedLayoutModule.modules || !nestedLayoutModule.modules[this._selectedNestedChildIndex])
+        return html``;
+      childModule = nestedLayoutModule.modules[this._selectedNestedChildIndex];
+    } else {
+      if (!layoutModule.modules || !layoutModule.modules[childIndex]) return html``;
+      childModule = layoutModule.modules[childIndex];
+    }
+
+    if (!childModule) return html``;
+
+    // Don't show a preview for layout container modules (horizontal, vertical, slider, etc.)
+    if (this._isLayoutModule(childModule.type)) return html``;
+
+    return this._renderModulePreviewBlock(childModule);
+  }
+
+  private _renderModulePreviewBlock(module: any): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    return html`
+      <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
+        <div
+          class="preview-header"
+          @click=${(e: Event) => {
+            e.stopPropagation();
+            this._togglePreviewCollapsed(e);
+          }}
+          @touchend=${(e: Event) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this._togglePreviewCollapsed(e);
+          }}
+          style="cursor: pointer;"
+          title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
+        >
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <ha-icon
+              class="preview-pin-icon ${this._isPreviewPinned ? 'pinned' : ''}"
+              icon="${this._isPreviewPinned ? 'mdi:pin' : 'mdi:pin-outline'}"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._togglePreviewPin();
+              }}
+              @touchend=${(e: Event) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this._togglePreviewPin();
+              }}
+              title="${this._isPreviewPinned
+                ? localize(
+                    'editor.layout.unpin_preview',
+                    lang,
+                    'Unpin preview (scroll with content)'
+                  )
+                : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')}"
+            ></ha-icon>
+            <span style="flex: 1;">
+              ${localize('editor.layout.module_preview', lang, 'Module Preview')}
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <uc-breakpoint-preview
+              .selectedBreakpoint=${this._previewBreakpoint}
+              @breakpoint-changed=${(e: CustomEvent) => {
+                e.stopPropagation();
+                this._handlePreviewBreakpointChange(e);
+              }}
+              @click=${(e: Event) => e.stopPropagation()}
+              @touchend=${(e: Event) => e.stopPropagation()}
+            ></uc-breakpoint-preview>
+            <ha-icon
+              class="preview-caret"
+              icon="${this._isCurrentModulePreviewCollapsed()
+                ? 'mdi:chevron-down'
+                : 'mdi:chevron-up'}"
+            ></ha-icon>
+          </div>
+        </div>
+        <div
+          class="preview-content"
+          style="display: ${this._isCurrentModulePreviewCollapsed() ? 'none' : 'block'};"
+        >
+          <div
+            class="preview-breakpoint-container ${this._previewBreakpoint}"
+            style="${this._getPreviewBreakpointStyle()}"
+          >
+            ${this._renderSingleModuleWithAnimation(module)}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderActiveModulePreviewForFullscreen(): TemplateResult {
+    if (
+      (this._showLayoutChildSettings || this._isClosingLayoutChildSettings) &&
+      this._selectedLayoutChild
+    ) {
+      return this._renderLayoutChildPreview();
+    }
+    if (
+      (this._showTabsSectionChildSettings || this._isClosingTabsSectionChildSettings) &&
+      this._selectedTabsSectionChild
+    ) {
+      return this._renderTabsSectionChildPreview();
+    }
+    if ((this._showModuleSettings || this._isClosingModuleSettings) && this._selectedModule) {
+      return this._renderModulePreview();
+    }
+    return html``;
+  }
+
   private _renderLayoutChildSettings(): TemplateResult {
     if (!this._selectedLayoutChild) return html``;
 
@@ -23607,78 +23790,7 @@ export class LayoutTab extends LitElement {
             </div>
           </div>
 
-          <div class="module-tab-content">
-            <!-- Child module preview -->
-            <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
-            <div
-              class="preview-header"
-              @click=${(e: Event) => {
-                e.stopPropagation();
-                this._togglePreviewCollapsed(e);
-              }}
-              @touchend=${(e: Event) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this._togglePreviewCollapsed(e);
-              }}
-              style="cursor: pointer;"
-              title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
-            >
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <ha-icon
-                  class="preview-pin-icon ${this._isPreviewPinned ? 'pinned' : ''}"
-                  icon="${this._isPreviewPinned ? 'mdi:pin' : 'mdi:pin-outline'}"
-                  @click=${(e: Event) => {
-                    e.stopPropagation();
-                    this._togglePreviewPin();
-                  }}
-                  @touchend=${(e: Event) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this._togglePreviewPin();
-                  }}
-                  title="${this._isPreviewPinned
-                    ? localize(
-                        'editor.layout.unpin_preview',
-                        lang,
-                        'Unpin preview (scroll with content)'
-                      )
-                    : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')}"
-                ></ha-icon>
-                <span style="flex: 1;">
-                  ${localize('editor.layout.live_preview', lang, 'Live Preview')}
-                </span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <uc-breakpoint-preview
-                  .selectedBreakpoint=${this._previewBreakpoint}
-                  @breakpoint-changed=${(e: CustomEvent) => {
-                    e.stopPropagation();
-                    this._handlePreviewBreakpointChange(e);
-                  }}
-                  @click=${(e: Event) => e.stopPropagation()}
-                  @touchend=${(e: Event) => e.stopPropagation()}
-                ></uc-breakpoint-preview>
-                <ha-icon
-                  class="preview-caret"
-                  icon="${this._isCurrentModulePreviewCollapsed()
-                    ? 'mdi:chevron-down'
-                    : 'mdi:chevron-up'}"
-                ></ha-icon>
-              </div>
-            </div>
-            <div
-              class="preview-content"
-              style="display: ${this._isCurrentModulePreviewCollapsed() ? 'none' : 'block'};"
-            >
-              <div
-                class="preview-breakpoint-container ${this._previewBreakpoint}"
-                style="${this._getPreviewBreakpointStyle()}"
-              >
-                ${this._renderSingleModuleWithAnimation(childModule)}
-              </div>
-            </div>
-          </div>
+          ${!this.isFullScreen && this._isPreviewPinned ? this._renderLayoutChildPreview() : ''}
 
           <div class="module-tabs">
             <button
@@ -23733,27 +23845,29 @@ export class LayoutTab extends LitElement {
             </button>
           </div>
 
-          ${this._activeModuleTab === 'general'
-            ? this._renderLayoutChildGeneralTab(childModule)
-            : ''}
-          ${this._activeModuleTab === 'yaml' && childModule.type === 'external_card'
-            ? (() => {
-                return this._renderLayoutChildYamlTab(childModule);
-              })()
-            : ''}
-          ${this._activeModuleTab === 'actions' && hasActionsTab
-            ? this._renderLayoutChildActionsTab(childModule)
-            : ''}
-          ${this._activeModuleTab === 'other' && hasOtherTab
-            ? this._renderLayoutChildOtherTab(childModule)
-            : ''}
-          ${this._activeModuleTab === 'logic'
-            ? this._renderLayoutChildLogicTab(childModule)
-            : ''}
-          ${this._activeModuleTab === 'design'
-            ? this._renderLayoutChildDesignTab(childModule)
-            : ''}
-        </div>
+          <div class="module-tab-content">
+            ${!this.isFullScreen && !this._isPreviewPinned ? this._renderLayoutChildPreview() : ''}
+            ${this._activeModuleTab === 'general'
+              ? this._renderLayoutChildGeneralTab(childModule)
+              : ''}
+            ${this._activeModuleTab === 'yaml' && childModule.type === 'external_card'
+              ? (() => {
+                  return this._renderLayoutChildYamlTab(childModule);
+                })()
+              : ''}
+            ${this._activeModuleTab === 'actions' && hasActionsTab
+              ? this._renderLayoutChildActionsTab(childModule)
+              : ''}
+            ${this._activeModuleTab === 'other' && hasOtherTab
+              ? this._renderLayoutChildOtherTab(childModule)
+              : ''}
+            ${this._activeModuleTab === 'logic'
+              ? this._renderLayoutChildLogicTab(childModule)
+              : ''}
+            ${this._activeModuleTab === 'design'
+              ? this._renderLayoutChildDesignTab(childModule)
+              : ''}
+          </div>
       </div>
     `;
   }
@@ -24133,47 +24247,46 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
 
-        <div class="module-tab-content">
-          ${this._renderRowPreview(row)}
+        <div class="settings-tabs">
+          <button
+            class="settings-tab ${this._activeRowTab === 'general' ? 'active' : ''}"
+            @click=${() => (this._activeRowTab = 'general')}
+          >
+            ${localize(
+              'editor.layout.general_tab',
+              this.hass?.locale?.language || 'en',
+              'General'
+            )}
+          </button>
+          <button
+            class="settings-tab ${this._activeRowTab === 'actions' ? 'active' : ''}"
+            @click=${() => (this._activeRowTab = 'actions')}
+          >
+            ${localize(
+              'editor.layout.actions_tab',
+              this.hass?.locale?.language || 'en',
+              'Actions'
+            )}
+          </button>
+          <button
+            class="settings-tab ${this._activeRowTab === 'logic' ? 'active' : ''}"
+            @click=${() => (this._activeRowTab = 'logic')}
+          >
+            ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
+          </button>
+          <button
+            class="settings-tab ${this._activeRowTab === 'design' ? 'active' : ''}"
+            @click=${() => (this._activeRowTab = 'design')}
+          >
+            ${localize(
+              'editor.layout.design_tab',
+              this.hass?.locale?.language || 'en',
+              'Design'
+            )}
+          </button>
+        </div>
 
-          <div class="settings-tabs">
-            <button
-              class="settings-tab ${this._activeRowTab === 'general' ? 'active' : ''}"
-              @click=${() => (this._activeRowTab = 'general')}
-            >
-              ${localize(
-                'editor.layout.general_tab',
-                this.hass?.locale?.language || 'en',
-                'General'
-              )}
-            </button>
-            <button
-              class="settings-tab ${this._activeRowTab === 'actions' ? 'active' : ''}"
-              @click=${() => (this._activeRowTab = 'actions')}
-            >
-              ${localize(
-                'editor.layout.actions_tab',
-                this.hass?.locale?.language || 'en',
-                'Actions'
-              )}
-            </button>
-            <button
-              class="settings-tab ${this._activeRowTab === 'logic' ? 'active' : ''}"
-              @click=${() => (this._activeRowTab = 'logic')}
-            >
-              ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
-            </button>
-            <button
-              class="settings-tab ${this._activeRowTab === 'design' ? 'active' : ''}"
-              @click=${() => (this._activeRowTab = 'design')}
-            >
-              ${localize(
-                'editor.layout.design_tab',
-                this.hass?.locale?.language || 'en',
-                'Design'
-              )}
-            </button>
-          </div>
+        <div class="module-tab-content">
           <div class="settings-tab-content">
             ${this._activeRowTab === 'general' ? this._renderRowGeneralTab(row) : ''}
             ${this._activeRowTab === 'actions' ? this._renderRowActionsTab(row) : ''}
@@ -24239,47 +24352,46 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
 
-        <div class="module-tab-content">
-          ${this._renderColumnPreview(column)}
+        <div class="settings-tabs">
+          <button
+            class="settings-tab ${this._activeColumnTab === 'general' ? 'active' : ''}"
+            @click=${() => (this._activeColumnTab = 'general')}
+          >
+            ${localize(
+              'editor.layout.general_tab',
+              this.hass?.locale?.language || 'en',
+              'General'
+            )}
+          </button>
+          <button
+            class="settings-tab ${this._activeColumnTab === 'actions' ? 'active' : ''}"
+            @click=${() => (this._activeColumnTab = 'actions')}
+          >
+            ${localize(
+              'editor.layout.actions_tab',
+              this.hass?.locale?.language || 'en',
+              'Actions'
+            )}
+          </button>
+          <button
+            class="settings-tab ${this._activeColumnTab === 'logic' ? 'active' : ''}"
+            @click=${() => (this._activeColumnTab = 'logic')}
+          >
+            ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
+          </button>
+          <button
+            class="settings-tab ${this._activeColumnTab === 'design' ? 'active' : ''}"
+            @click=${() => (this._activeColumnTab = 'design')}
+          >
+            ${localize(
+              'editor.layout.design_tab',
+              this.hass?.locale?.language || 'en',
+              'Design'
+            )}
+          </button>
+        </div>
 
-          <div class="settings-tabs">
-            <button
-              class="settings-tab ${this._activeColumnTab === 'general' ? 'active' : ''}"
-              @click=${() => (this._activeColumnTab = 'general')}
-            >
-              ${localize(
-                'editor.layout.general_tab',
-                this.hass?.locale?.language || 'en',
-                'General'
-              )}
-            </button>
-            <button
-              class="settings-tab ${this._activeColumnTab === 'actions' ? 'active' : ''}"
-              @click=${() => (this._activeColumnTab = 'actions')}
-            >
-              ${localize(
-                'editor.layout.actions_tab',
-                this.hass?.locale?.language || 'en',
-                'Actions'
-              )}
-            </button>
-            <button
-              class="settings-tab ${this._activeColumnTab === 'logic' ? 'active' : ''}"
-              @click=${() => (this._activeColumnTab = 'logic')}
-            >
-              ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
-            </button>
-            <button
-              class="settings-tab ${this._activeColumnTab === 'design' ? 'active' : ''}"
-              @click=${() => (this._activeColumnTab = 'design')}
-            >
-              ${localize(
-                'editor.layout.design_tab',
-                this.hass?.locale?.language || 'en',
-                'Design'
-              )}
-            </button>
-          </div>
+        <div class="module-tab-content">
           <div class="settings-tab-content">
             ${this._activeColumnTab === 'general' ? this._renderColumnGeneralTab(column) : ''}
             ${this._activeColumnTab === 'actions' ? this._renderColumnActionsTab(column) : ''}
@@ -24639,6 +24751,73 @@ export class LayoutTab extends LitElement {
                   </div>
                 `
               : ''}
+          </div>
+        </div>
+
+        <!-- Column Sizing Section -->
+        <div class="settings-section">
+          <div class="section-title">Column Sizing</div>
+          <div class="field-container">
+            <div class="field-description">
+              Set custom CSS grid sizing for this row's columns (e.g.,
+              "${this._getCustomSizingPlaceholder(row.columns?.length || 1)}"). Must have
+              exactly ${row.columns?.length || 1} value${(row.columns?.length || 1) !== 1 ? 's' : ''}.
+              Changes apply instantly when valid.
+            </div>
+            <input
+              type="text"
+              class="${this._inlineSizingError ? 'has-error' : ''}"
+              placeholder="${this._getCustomSizingPlaceholder(row.columns?.length || 1)}"
+              .value="${this._inlineSizingInput ||
+                (row.column_layout === 'custom' ? row.custom_column_sizing || '' : '')}"
+              @focus=${(e: Event) => {
+                const input = e.target as HTMLInputElement;
+                if (!this._inlineSizingInput) {
+                  this._inlineSizingInput =
+                    row.column_layout === 'custom' ? row.custom_column_sizing || '' : '';
+                  input.value = this._inlineSizingInput;
+                }
+              }}
+              @input=${(e: Event) => {
+                const input = e.target as HTMLInputElement;
+                this._inlineSizingInput = input.value;
+                const columnCount = row.columns?.length || 1;
+                const validation = this._validateCustomColumnSizingExact(input.value, columnCount);
+                this._inlineSizingError = validation.valid ? '' : (validation.error || '');
+                if (validation.valid && input.value.trim()) {
+                  const layout = this._ensureLayout();
+                  const newLayout = JSON.parse(JSON.stringify(layout));
+                  newLayout.rows[this._selectedRowForSettings].column_layout = 'custom';
+                  newLayout.rows[this._selectedRowForSettings].custom_column_sizing =
+                    input.value.trim();
+                  this._updateLayout(newLayout);
+                }
+              }}
+              @keydown=${(e: KeyboardEvent) => {
+                if (e.key === 'Escape') {
+                  this._inlineSizingInput = '';
+                  this._inlineSizingError = '';
+                }
+              }}
+            />
+            ${this._inlineSizingError
+              ? html`<div class="validation-error" style="margin-top:4px;">${this._inlineSizingError}</div>`
+              : ''}
+            ${row.column_layout === 'custom' && row.custom_column_sizing
+              ? html`<div style="margin-top:6px;font-size:12px;color:var(--secondary-text-color);">
+                  Current: <code style="background:var(--card-background-color);padding:1px 4px;border-radius:3px;">${row.custom_column_sizing}</code>
+                </div>`
+              : ''}
+            <button
+              style="margin-top:10px;padding:6px 12px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;line-height:1;"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._openColumnLayoutSelector(this._selectedRowForSettings);
+              }}
+            >
+              <ha-icon icon="mdi:table-column" style="--mdc-icon-size:16px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></ha-icon>
+              Open Full Layout Selector
+            </button>
           </div>
         </div>
 
@@ -27024,27 +27203,64 @@ export class LayoutTab extends LitElement {
     return html`
       <div class="layout-builder ${this.isFullScreen ? 'fullscreen' : ''} ${this._showModuleSettings || this._isClosingModuleSettings || this._showLayoutChildSettings || this._isClosingLayoutChildSettings || this._showTabsSectionChildSettings || this._isClosingTabsSectionChildSettings || this._showRowSettings || this._isClosingRowSettings || this._showColumnSettings || this._isClosingColumnSettings ? 'module-settings-open' : ''}">
         ${this.isFullScreen && this.hass
-          ? html`
-              <div class="fullscreen-preview">
-                <div class="fullscreen-preview-label">
-                  ${localize('editor.layout.card_preview', lang, 'Card Preview')}
+          ? (this._showModuleSettings ||
+            this._isClosingModuleSettings ||
+            this._showLayoutChildSettings ||
+            this._isClosingLayoutChildSettings ||
+            this._showTabsSectionChildSettings ||
+            this._isClosingTabsSectionChildSettings)
+            ? html`
+                <div class="fullscreen-top-row">
+                  <div class="fullscreen-module-col">
+                    <div class="fullscreen-section-label">
+                      ${localize('editor.layout.module_preview', lang, 'Module Preview')}
+                    </div>
+                    <div class="fullscreen-module-col-content">
+                      ${this._renderActiveModulePreviewForFullscreen()}
+                    </div>
+                  </div>
+                  <div class="fullscreen-card-col">
+                    <div class="fullscreen-section-label">
+                      ${localize('editor.layout.card_preview', lang, 'Card Preview')}
+                    </div>
+                    <div class="fullscreen-preview-card" style="height: ${this._previewHeightPx}px;">
+                      <ultra-card .hass=${this.hass} .config=${this.config}></ultra-card>
+                    </div>
+                    <div
+                      class="fullscreen-preview-resize-handle"
+                      title="${localize(
+                        'editor.layout.resize_preview',
+                        lang,
+                        'Drag to resize preview'
+                      )}"
+                      @mousedown=${this._onPreviewResizeStart}
+                    >
+                      <ha-icon icon="mdi:arrow-expand-vertical"></ha-icon>
+                    </div>
+                  </div>
                 </div>
-                <div class="fullscreen-preview-card" style="height: ${this._previewHeightPx}px;">
-                  <ultra-card .hass=${this.hass} .config=${this.config}></ultra-card>
+              `
+            : html`
+                <div class="fullscreen-preview">
+                  <div class="fullscreen-preview-label">
+                    ${localize('editor.layout.card_preview', lang, 'Card Preview')}
+                  </div>
+                  <div class="fullscreen-preview-card" style="height: ${this._previewHeightPx}px;">
+                    <ultra-card .hass=${this.hass} .config=${this.config}></ultra-card>
+                  </div>
+                  <div
+                    class="fullscreen-preview-resize-handle"
+                    title="${localize(
+                      'editor.layout.resize_preview',
+                      lang,
+                      'Drag to resize preview'
+                    )}"
+                    @mousedown=${this._onPreviewResizeStart}
+                  >
+                    <ha-icon icon="mdi:arrow-expand-vertical"></ha-icon>
+                  </div>
                 </div>
-                <div
-                  class="fullscreen-preview-resize-handle"
-                  title="${localize(
-                    'editor.layout.resize_preview',
-                    lang,
-                    'Drag to resize preview'
-                  )}"
-                  @mousedown=${this._onPreviewResizeStart}
-                >
-                  <ha-icon icon="mdi:arrow-expand-vertical"></ha-icon>
-                </div>
-              </div>
-            `
+              `
           : ''}
         <div class="builder-toolbar">
           <div class="toolbar-row">
@@ -27267,6 +27483,18 @@ export class LayoutTab extends LitElement {
                       <span class="column-layout-text">${this._getCurrentLayoutText(row)}</span>
                     </div>
                     <div class="row-title-right">
+                      <button
+                        class="row-col-sizing-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._openColumnLayoutSelector(rowIndex);
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        @dragstart=${(e: Event) => e.preventDefault()}
+                        title="Column Sizing"
+                      >
+                        <ha-icon icon="mdi:table-column"></ha-icon>
+                      </button>
                       <button
                         class="row-settings-btn"
                         @click=${(e: Event) => {
@@ -29719,14 +29947,6 @@ export class LayoutTab extends LitElement {
                 ? html` <div class="validation-error">${this._customSizingError}</div> `
                 : ''}
 
-              <button
-                class="apply-custom-btn"
-                ?disabled="${!this._customSizingValid}"
-                @click=${() => this._applyCustomSizingBreakpoint(breakpoint)}
-              >
-                Apply Custom Sizing
-              </button>
-
               ${isCustomLayout
                 ? html`<div class="current-custom-badge">Currently using custom sizing</div>`
                 : ''}
@@ -29872,6 +30092,11 @@ export class LayoutTab extends LitElement {
       this._customSizingValid = validation.valid;
       this._customSizingError = validation.error || '';
     }
+
+    // Auto-apply when valid
+    if (this._customSizingValid && this._customSizingInput.trim()) {
+      this._applyCustomSizingBreakpoint(breakpoint);
+    }
   }
 
   /**
@@ -29972,11 +30197,6 @@ export class LayoutTab extends LitElement {
     }
 
     this._updateLayout(newLayout);
-
-    // Reset custom sizing state
-    this._customSizingInput = '';
-    this._customSizingValid = false;
-    this._customSizingError = '';
   }
 
   private _onCustomSizingInput(e: Event): void {
@@ -32000,6 +32220,26 @@ export class LayoutTab extends LitElement {
         color: white;
       }
 
+      .row-col-sizing-btn {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        padding: 0;
+        border-radius: 4px;
+        transition: background-color 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+      }
+
+      .row-col-sizing-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+
       .delete-row-btn {
         background: none;
         border: none;
@@ -33669,6 +33909,7 @@ export class LayoutTab extends LitElement {
         z-index: ${Z_INDEX.POPUP_TABS};
         background: var(--card-background-color);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        flex-shrink: 0;
         /* Don't use isolation: isolate - it prevents fixed dropdowns from escaping */
       }
 
@@ -33694,12 +33935,11 @@ export class LayoutTab extends LitElement {
       }
 
       .settings-tab-content {
-        padding: 24px;
+        padding: 0 24px 24px;
         flex: 1 1 auto;
         min-height: 0; /* allow parent to control height */
         overflow-y: auto;
         overflow-x: visible; /* allow dropdowns to render outside */
-        /* Keep content BELOW sticky tabs */
         position: relative;
         z-index: 1;
       }
@@ -33812,7 +34052,6 @@ export class LayoutTab extends LitElement {
       }
 
       /* Hide builder chrome when the inline settings panel is active */
-      .layout-builder.module-settings-open .fullscreen-preview,
       .layout-builder.module-settings-open .builder-toolbar,
       .layout-builder.module-settings-open .tree-breadcrumbs,
       .layout-builder.module-settings-open .tree-view-container,
@@ -33820,8 +34059,123 @@ export class LayoutTab extends LitElement {
         display: none !important;
       }
 
+      /* Non-fullscreen: hide card preview when settings open */
+      .layout-builder:not(.fullscreen).module-settings-open .fullscreen-preview {
+        display: none !important;
+      }
+
+      /* Fullscreen + settings open: top row (module left / card right) + settings full width below */
+      .layout-builder.fullscreen.module-settings-open {
+        flex-direction: column !important;
+        padding: 12px;
+        gap: 12px;
+        overflow: hidden;
+      }
+
+      .fullscreen-top-row {
+        display: flex;
+        flex-direction: row;
+        gap: 12px;
+        flex-shrink: 0;
+        width: 100%;
+        max-height: 45vh;
+      }
+
+      .fullscreen-module-col,
+      .fullscreen-card-col {
+        flex: 1;
+        min-width: 0;
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--card-background-color);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .fullscreen-section-label {
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--secondary-text-color);
+        border-bottom: 1px solid var(--divider-color);
+        flex-shrink: 0;
+      }
+
+      .fullscreen-module-col-content {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
+      }
+
+      /* Module preview inside the fullscreen top row: no extra margins, no pin/collapse */
+      .fullscreen-module-col .module-preview {
+        margin: 0;
+        border: none;
+        border-radius: 0;
+      }
+
+      .fullscreen-module-col .preview-header {
+        background: var(--secondary-background-color, rgba(0,0,0,0.05));
+      }
+
+      /* Hide pin and collapse controls in fullscreen top-row (preview is always visible) */
+      .fullscreen-module-col .preview-pin-icon,
+      .fullscreen-module-col .preview-caret {
+        display: none;
+      }
+
+      /* Settings panel full width at bottom */
+      .layout-builder.fullscreen.module-settings-open .module-settings-panel {
+        flex: 1;
+        max-width: none !important;
+        max-height: calc(55vh - 80px);
+        overflow-y: auto;
+        order: unset;
+        min-height: 0;
+      }
+
+      /* Non-fullscreen: Module Preview full width in the settings panel */
+      .module-settings-panel > .module-preview {
+        margin: 0 0 0 0;
+      }
+      .module-tab-content > .module-preview {
+        margin: 0 0 16px 0;
+      }
+
+      /* Non-fullscreen card preview inside settings layout */
+      .layout-builder:not(.fullscreen).module-settings-open .fullscreen-preview-label {
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--secondary-text-color);
+        border-bottom: 1px solid var(--divider-color);
+      }
+
+      .layout-builder:not(.fullscreen).module-settings-open .fullscreen-preview-card {
+        min-height: 80px;
+        overflow: auto;
+        padding: 12px;
+      }
+
+      .layout-builder:not(.fullscreen).module-settings-open .fullscreen-preview-card ultra-card {
+        display: block;
+      }
+
       .layout-builder.module-settings-open {
         padding: 0;
+      }
+
+      /* Bound the editor height when settings panel is open so module-tab-content can scroll.
+         160px accounts for the HA dialog title bar, tabs row, and footer buttons. */
+      .layout-builder:not(.fullscreen).module-settings-open {
+        max-height: calc(100svh - 160px);
+        overflow: hidden;
       }
 
       /* Smooth open animation for row/column/module settings dialogs */
@@ -34266,12 +34620,12 @@ export class LayoutTab extends LitElement {
         overflow: hidden; /* prevent content from overflowing the preview container */
         max-width: 100%;
         transition: all 0.3s ease;
+        flex-shrink: 0; /* never shrink when inside a flex column settings panel */
       }
 
-      /* Pinned preview - sticky positioning */
+      /* Pinned preview - visually highlighted; placement (outside scroll) keeps it in view */
       .module-preview.pinned {
-        position: sticky;
-        top: 16px;
+        position: relative;
         z-index: 1;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         border-color: var(--primary-color);
@@ -34376,6 +34730,7 @@ export class LayoutTab extends LitElement {
         z-index: ${Z_INDEX.BASE_CONTENT};
         background: var(--card-background-color);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        flex-shrink: 0;
         /* Don't use isolation: isolate - it prevents fixed dropdowns from escaping */
       }
 
@@ -34401,14 +34756,13 @@ export class LayoutTab extends LitElement {
       }
 
       .module-tab-content {
-        padding: 24px 0;
+        padding: 16px 0 0;
         flex: 1;
-        overflow-y: auto; /* body scrolls */
-        overflow-x: visible; /* allow dropdown menus to render outside content column */
+        overflow-y: auto;
+        overflow-x: visible;
         width: 100%;
         box-sizing: border-box;
-        min-height: 0; /* Allow flex child to shrink below content size */
-        /* Keep content BELOW sticky tabs */
+        min-height: 0;
         position: relative;
         z-index: 0;
       }

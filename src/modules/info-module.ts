@@ -1815,6 +1815,11 @@ export class UltraInfoModule extends BaseUltraModule {
               if (entity.unified_template_mode && entity.unified_template) {
                 if (!this._templateService && hass) {
                   this._templateService = new TemplateService(hass);
+                } else if (this._templateService && hass) {
+                  // CRITICAL: Update the template service's hass reference to ensure
+                  // template results are stored in the same hass object we read from.
+                  // Without this, results may be stored in an old hass reference.
+                  this._templateService.updateHass(hass);
                 }
 
                 // Preprocess custom variables ($variable_name) before Jinja evaluation
@@ -1888,6 +1893,8 @@ export class UltraInfoModule extends BaseUltraModule {
                 // Initialize template service if needed
                 if (!this._templateService && hass) {
                   this._templateService = new TemplateService(hass);
+                } else if (this._templateService && hass) {
+                  this._templateService.updateHass(hass);
                 }
 
                 // Preprocess custom variables ($variable_name) before Jinja evaluation
@@ -2001,6 +2008,8 @@ export class UltraInfoModule extends BaseUltraModule {
                               // Initialize template service if needed
                               if (!this._templateService && hass) {
                                 this._templateService = new TemplateService(hass);
+                              } else if (this._templateService && hass) {
+                                this._templateService.updateHass(hass);
                               }
 
                               // Preprocess custom variables ($variable_name) before Jinja evaluation

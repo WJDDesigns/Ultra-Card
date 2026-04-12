@@ -1409,6 +1409,7 @@ export interface HorizontalModule extends BaseModule {
   alignment?: 'left' | 'center' | 'right' | 'space-between' | 'space-around' | 'justify';
   vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch' | 'baseline';
   gap?: number;
+  gap_unit?: 'px' | 'rem' | 'em' | '%' | 'vw' | 'vh';
   wrap?: boolean;
   // Global action configuration
   tap_action?: {
@@ -1470,6 +1471,7 @@ export interface VerticalModule extends BaseModule {
   // Backward-compatible addition; UI will prefer this over legacy vertical alignment for cross-axis
   horizontal_alignment?: 'left' | 'center' | 'right' | 'stretch';
   gap?: number;
+  gap_unit?: 'px' | 'rem' | 'em' | '%' | 'vw' | 'vh';
   // Global action configuration
   tap_action?: {
     action:

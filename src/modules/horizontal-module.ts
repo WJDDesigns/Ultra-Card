@@ -27,13 +27,21 @@ export class UltraHorizontalModule extends BaseUltraModule {
     tags: ['layout', 'horizontal', 'vertical', 'alignment', 'container', 'flexbox'],
   };
 
+  /**
+   * Same reasoning as UltraVerticalModule — the horizontal module manages all its own
+   * design-tab styles in containerStyles / renderPreview so we skip the outer
+   * uc-module-design-wrapper to prevent double application of margin/padding.
+   */
+  handlesOwnDesignStyles = true;
+
   createDefault(id?: string, hass?: HomeAssistant): HorizontalModule {
     return {
       id: id || this.generateId('horizontal'),
       type: 'horizontal',
       alignment: 'center', // Default to center alignment for better UX
       vertical_alignment: undefined, // No default - let flexbox work naturally
-      gap: 0.7,
+      gap: 8,
+      gap_unit: 'px',
       wrap: false,
       modules: [],
       // Global action configuration
@@ -166,18 +174,91 @@ export class UltraHorizontalModule extends BaseUltraModule {
           </div>
 
           <div style="margin-bottom: 24px;">
-            ${this.renderSliderField(
-              localize('editor.horizontal.gap.between_items', lang, 'Gap Between Items'),
-              localize(
-                'editor.horizontal.gap.desc',
-                lang,
-                'Set the spacing between horizontal items (in rem units). Use negative values to overlap items. Any value is allowed.'
-              ),
-              horizontalModule.gap !== undefined ? horizontalModule.gap : 0.7,
-              0.7, -50, 50, 0.1,
-              (v: number) => { updateModule({ gap: v }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
-              'rem'
-            )}
+            ${(() => {
+              const unit: string = (horizontalModule as any).gap_unit || 'rem';
+              const isPx = unit === 'px';
+              const defaultVal = isPx ? 8 : 0.7;
+              const gapNum = horizontalModule.gap !== undefined && horizontalModule.gap !== null
+                ? horizontalModule.gap : defaultVal;
+              const sliderMin = isPx ? -100 : -10;
+              const sliderMax = isPx ? 100 : 10;
+              const sliderStep = isPx ? 1 : 0.1;
+
+              const convertGap = (fromUnit: string, toUnit: string, val: number): number => {
+                if (fromUnit === toUnit) return val;
+                const toPx = (v: number, u: string) => u === 'px' ? v : u === '%' ? v : u === 'vw' ? v : u === 'vh' ? v : v * 16;
+                const fromPx = (v: number, u: string) => u === 'px' ? v : u === '%' ? v : u === 'vw' ? v : u === 'vh' ? v : Math.round((v / 16) * 10) / 10;
+                return fromPx(toPx(val, fromUnit), toUnit);
+              };
+
+              const unitOptions = [
+                { value: 'px', label: 'px' },
+                { value: 'rem', label: 'rem' },
+                { value: 'em', label: 'em' },
+                { value: '%', label: '%' },
+                { value: 'vw', label: 'vw' },
+                { value: 'vh', label: 'vh' },
+              ];
+
+              return html`
+                <div class="field-title">${localize('editor.horizontal.gap.between_items', lang, 'Gap Between Items')} (${gapNum}${unit})</div>
+                <div class="field-description" style="margin-bottom: 10px;">
+                  ${localize('editor.horizontal.gap.desc', lang, 'Set the spacing between horizontal items. Use negative values to overlap items.')}
+                </div>
+                <div class="gap-control-container" style="display: flex; align-items: center; gap: 8px;">
+                  <select
+                    style="flex-shrink: 0; width: 56px; height: 32px; border-radius: 6px; border: 1px solid var(--divider-color); background: var(--card-background-color, var(--primary-background-color)); color: var(--primary-text-color); font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; outline: none; padding: 0 4px;"
+                    @change=${(e: Event) => {
+                      const newUnit = (e.target as HTMLSelectElement).value;
+                      const converted = convertGap(unit, newUnit, gapNum);
+                      updateModule({ gap: converted, gap_unit: newUnit } as any);
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
+                  >
+                    ${unitOptions.map(opt => html`
+                      <option value="${opt.value}" ?selected=${unit === opt.value}>${opt.label}</option>
+                    `)}
+                  </select>
+                  <input
+                    type="range"
+                    class="gap-slider"
+                    min="${sliderMin}"
+                    max="${sliderMax}"
+                    step="${sliderStep}"
+                    .value="${String(gapNum)}"
+                    @input=${(e: Event) => {
+                      updateModule({ gap: Number((e.target as HTMLInputElement).value) });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
+                  />
+                  <input
+                    type="number"
+                    class="gap-input"
+                    min="${sliderMin}"
+                    max="${sliderMax}"
+                    step="${sliderStep}"
+                    .value="${String(gapNum)}"
+                    @input=${(e: Event) => {
+                      const val = Number((e.target as HTMLInputElement).value);
+                      if (!isNaN(val)) {
+                        updateModule({ gap: val });
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }
+                    }}
+                  />
+                  <button
+                    class="reset-btn"
+                    @click=${() => {
+                      updateModule({ gap: defaultVal });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
+                    title="Reset to default (${defaultVal}${unit})"
+                  >
+                    <ha-icon icon="mdi:refresh"></ha-icon>
+                  </button>
+                </div>
+              `;
+            })()}
           </div>
         </div>
       </div>
@@ -202,7 +283,11 @@ export class UltraHorizontalModule extends BaseUltraModule {
     // Wrapping should use flexbox wrap, not force column mode
 
     // Container styles for positioning and effects
-    const gapValue = horizontalModule.gap !== undefined ? horizontalModule.gap : 0.7;
+    const gapUnit: string = (horizontalModule as any).gap_unit || 'rem';
+    const isPxUnit = gapUnit === 'px';
+    const gapValue = horizontalModule.gap !== undefined && horizontalModule.gap !== null
+      ? Number(horizontalModule.gap)
+      : (isPxUnit ? 8 : 0.7);
     // Only use alignment if user explicitly sets it - let flexbox work naturally
     const horizontalAlign = horizontalModule.alignment;
 
@@ -218,17 +303,25 @@ export class UltraHorizontalModule extends BaseUltraModule {
     // Calculate margins - only use user-set margins, no auto-positioning logic
     const contentMargin = this.getMarginCSS(effective);
 
+    // When design.background_filter is set the background must be rendered via a ::before
+    // pseudo-element so the filter only affects the background without blurring the content.
+    const hasBackgroundFilter =
+      (effective as any).background_filter &&
+      (effective as any).background_filter !== 'none';
+
     // Use computeBackgroundStyles for consistent background handling (fixes themed colors with opacity)
     // This utility properly sets both 'background' and 'backgroundColor' which ensures
     // CSS variables like var(--ha-card-background) with rgba values render correctly
-    const bgResult = computeBackgroundStyles({
-      color: effective.background_color,
-      fallback: 'transparent',
-      image: this.getBackgroundImageCSS(effective, hass),
-      imageSize: effective.background_size || 'cover',
-      imagePosition: effective.background_position || 'center',
-      imageRepeat: effective.background_repeat || 'no-repeat',
-    });
+    const bgResult = hasBackgroundFilter
+      ? { styles: {} as Record<string, string> }
+      : computeBackgroundStyles({
+          color: effective.background_color,
+          fallback: 'transparent',
+          image: this.getBackgroundImageCSS(effective, hass),
+          imageSize: effective.background_size || 'cover',
+          imagePosition: effective.background_position || 'center',
+          imageRepeat: effective.background_repeat || 'no-repeat',
+        });
 
     // Get border radius from multiple possible sources:
     // 1. design.border_radius (via effective spread)
@@ -257,6 +350,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
       // If a z-index is provided but no position, use relative so z-index takes effect
       position: (effective as any).position || ((effective as any).z_index ? 'relative' : 'static'),
       zIndex: (effective as any).z_index || 'auto',
+      // background_filter requires isolation so the ::before pseudo-element stays clipped
+      ...(hasBackgroundFilter ? { isolation: 'isolate' } : {}),
       // Respect sizing controls from design/global design
       // Only set width if user explicitly controls it, otherwise let flexbox handle sizing
       width: width,
@@ -273,7 +368,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
       // Only apply justify-content if user explicitly sets alignment
       justifyContent: horizontalAlign ? this.getJustifyContent(horizontalAlign) : undefined,
       // Only use gap for positive values, use negative margins for negative values
-      gap: gapValue >= 0 ? `${gapValue}rem` : '0',
+      gap: gapValue >= 0 ? `${gapValue}${gapUnit}` : '0',
       // Enable wrapping when wrap option is true
       flexWrap: horizontalModule.wrap ? 'wrap' : 'nowrap',
       // Only apply align-items if user explicitly sets vertical alignment
@@ -330,12 +425,31 @@ export class UltraHorizontalModule extends BaseUltraModule {
     // Get hover effect configuration from module design
     const hoverEffect = (horizontalModule as any).design?.hover_effect;
     const hoverEffectClass = this.getHoverEffectClass(module);
-    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
-    // Default 16px top/bottom breathing room.  Overridden the moment the user
-    // sets ANY margin value on this module's Design tab (the shorthand `margin`
-    // property produced by buildDesignStyles then takes precedence in the style
-    // attribute because it appears after the defaults).
+    // Build design styles but strip all visual-surface properties from the outer wrapper.
+    // border, borderRadius, background*, padding, boxShadow, backdropFilter, clipPath and
+    // overflow are already applied on the inner .horizontal-preview-content div via
+    // containerStyles.  Keeping them on the outer wrapper too causes a visible double border
+    // and double background.  Margin is also stripped here — it is handled in containerStyles
+    // (explicit) or via the default below (when none set).
+    const _allDesignStyles = this.buildDesignStyles(module, hass);
+    const VISUAL_SURFACE_PROPS = new Set([
+      'border', 'borderRadius',
+      'padding', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight',
+      'background', 'backgroundColor', 'backgroundImage',
+      'backgroundSize', 'backgroundPosition', 'backgroundRepeat',
+      'boxShadow', 'backdropFilter', 'webkitBackdropFilter',
+      'clipPath', 'overflow', 'isolation', 'filter',
+      'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
+    ]);
+    const _wrapperOnlyStyles = Object.fromEntries(
+      Object.entries(_allDesignStyles).filter(([k]) => !VISUAL_SURFACE_PROPS.has(k))
+    ) as Record<string, string | undefined>;
+    const designStyles = this.buildStyleString(_wrapperOnlyStyles);
+
+    // Default top/bottom breathing room.  When the user sets any explicit margin the
+    // margin is already in containerStyles (see below), so we only apply the default
+    // when no explicit margin is present.
     const effectiveMod = { ...(horizontalModule as any), ...((horizontalModule as any).design || {}) };
     const hasExplicitMargin =
       effectiveMod.margin_top !== undefined ||
@@ -351,6 +465,24 @@ export class UltraHorizontalModule extends BaseUltraModule {
     if (cssVarPrefix) {
       const cssVars = generateCSSVariables(cssVarPrefix, (horizontalModule as any).design);
       Object.assign(containerStyles, cssVars);
+    }
+
+    // When background_filter is set, inject CSS variables for the ::before pseudo-element
+    if (hasBackgroundFilter) {
+      const bgImageCSS = this.getBackgroundImageCSS(effective, hass);
+      if (bgImageCSS && bgImageCSS !== 'none') {
+        containerStyles['--bg-image'] = bgImageCSS;
+      }
+      if (effective.background_color) {
+        containerStyles['--bg-color'] = effective.background_color;
+      }
+      containerStyles['--bg-size'] = effective.background_size || 'cover';
+      containerStyles['--bg-position'] = effective.background_position || 'center';
+      containerStyles['--bg-repeat'] = effective.background_repeat || 'no-repeat';
+      containerStyles['--bg-filter'] = (effective as any).background_filter;
+      if (!containerStyles.position || containerStyles.position === 'static') {
+        containerStyles.position = 'relative';
+      }
     }
 
     // Check if actions are configured
@@ -397,7 +529,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   visibleChildren,
                   (cm) => cm.id || cm.type,
                   (childModule, index) => {
-                    const childMargin = gapValue < 0 && index > 0 ? `0 0 0 ${gapValue}rem` : '0';
+                    const childMargin = gapValue < 0 && index > 0 ? `0 0 0 ${gapValue}${gapUnit}` : '0';
                     const isNegativeGap = gapValue < 0;
 
                     const layoutShouldGrow = horizontalModule.alignment === 'justify';
@@ -658,6 +790,29 @@ export class UltraHorizontalModule extends BaseUltraModule {
    */
   private applyLayoutDesignToChild(childModule: CardModule, layoutDesign: any): CardModule {
     const mergedModule = { ...childModule } as any;
+
+    // ── Margin zeroing ──────────────────────────────────────────────────────
+    // Inside a horizontal layout the parent gap controls horizontal spacing.
+    // Suppress the module's '8px 0' default margin unless the user has
+    // explicitly set a margin via the Design tab.
+    const childDesign = (childModule as any).design || {};
+    const hasExplicitMargin =
+      childDesign.margin_top !== undefined ||
+      childDesign.margin_bottom !== undefined ||
+      childDesign.margin_left !== undefined ||
+      childDesign.margin_right !== undefined ||
+      (childModule as any).margin_top !== undefined ||
+      (childModule as any).margin_bottom !== undefined ||
+      (childModule as any).margin_left !== undefined ||
+      (childModule as any).margin_right !== undefined;
+
+    if (!hasExplicitMargin) {
+      mergedModule.margin_top = '0';
+      mergedModule.margin_bottom = '0';
+      mergedModule.margin_left = '0';
+      mergedModule.margin_right = '0';
+    }
+    // ── End margin zeroing ──────────────────────────────────────────────────
 
     // Apply text properties if they exist in layout design
     if (layoutDesign.color) mergedModule.color = layoutDesign.color;
@@ -1155,6 +1310,22 @@ export class UltraHorizontalModule extends BaseUltraModule {
         border: none;
         transition: all 0.2s ease;
         position: relative;
+      }
+
+      /* Background-filter pseudo-element — filters only the background, not the content */
+      .horizontal-preview-content[style*="--bg-filter"]::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-color: var(--bg-color, transparent);
+        background-image: var(--bg-image, none);
+        background-size: var(--bg-size, cover);
+        background-position: var(--bg-position, center);
+        background-repeat: var(--bg-repeat, no-repeat);
+        filter: var(--bg-filter);
+        border-radius: inherit;
+        z-index: -1;
+        pointer-events: none;
       }
 
       /* When horizontal layout has actions, disable pointer events on children so container action takes precedence */

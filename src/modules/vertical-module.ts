@@ -27,6 +27,16 @@ export class UltraVerticalModule extends BaseUltraModule {
     tags: ['layout', 'vertical', 'alignment', 'container', 'flexbox'],
   };
 
+  /**
+   * The vertical module applies all design-tab styles (background, padding, margin,
+   * border, shadow, backdrop-filter, etc.) directly on its own .vertical-preview-content
+   * container via containerStyles in renderPreview.  Letting uc-module-preview-service
+   * also wrap it with the same styles causes double application of margin/padding which
+   * shifts the vertical position of the content within the column and breaks
+   * column vertical-alignment centering.
+   */
+  handlesOwnDesignStyles = true;
+
   createDefault(id?: string, hass?: HomeAssistant): VerticalModule {
     return {
       id: id || this.generateId('vertical'),
@@ -35,7 +45,8 @@ export class UltraVerticalModule extends BaseUltraModule {
       alignment: 'center',
       // Cross-axis alignment for items in the single column defaults to 'stretch'
       horizontal_alignment: 'stretch',
-      gap: 1.2,
+      gap: 8,
+      gap_unit: 'px',
       modules: [],
       // Global action configuration
       tap_action: { action: 'nothing' },
@@ -77,7 +88,7 @@ export class UltraVerticalModule extends BaseUltraModule {
                 'Choose how items are aligned horizontally within the column.'
               ),
               hass,
-              data: { horizontal_alignment: verticalModule.horizontal_alignment || 'center' },
+              data: { horizontal_alignment: verticalModule.horizontal_alignment || 'stretch' },
               schema: [
                 this.selectField('horizontal_alignment', [
                   { value: 'left', label: localize('editor.common.left', lang, 'Left') },
@@ -88,7 +99,7 @@ export class UltraVerticalModule extends BaseUltraModule {
               ],
               onChange: (e: CustomEvent) => {
                 const next = e.detail.value.horizontal_alignment;
-                const prev = verticalModule.horizontal_alignment || 'center';
+                const prev = verticalModule.horizontal_alignment || 'stretch';
                 if (next === prev) return;
                 updateModule(e.detail.value);
                 // Trigger re-render to update dropdown UI
@@ -105,7 +116,7 @@ export class UltraVerticalModule extends BaseUltraModule {
                 'How items are distributed along the vertical axis.'
               ),
               hass,
-              data: { alignment: verticalModule.alignment || 'top' },
+              data: { alignment: verticalModule.alignment || 'center' },
               schema: [
                 this.selectField('alignment', [
                   { value: 'top', label: localize('editor.common.top', lang, 'Top') },
@@ -123,7 +134,7 @@ export class UltraVerticalModule extends BaseUltraModule {
               ],
               onChange: (e: CustomEvent) => {
                 const next = e.detail.value.alignment;
-                const prev = verticalModule.alignment || 'top';
+                const prev = verticalModule.alignment || 'center';
                 if (next === prev) return;
                 updateModule(e.detail.value);
                 // Trigger re-render to update dropdown UI
@@ -147,20 +158,97 @@ export class UltraVerticalModule extends BaseUltraModule {
             ${localize('editor.vertical.gap.title', lang, 'Gap Configuration')}
           </div>
 
-          <div style="margin-bottom: 8px; ${verticalModule.alignment === 'space-between' || verticalModule.alignment === 'space-around' ? 'opacity: 0.5; pointer-events: none;' : ''}">
-            ${this.renderSliderField(
-              localize('editor.vertical.gap.between_items', lang, 'Gap Between Items'),
-              localize(
-                'editor.vertical.gap.desc',
-                lang,
-                'Set the spacing between vertical items (in rem units). Use negative values to overlap items. Any value is allowed. Note: Gap is disabled when using Space Between or Space Around distribution.'
-              ),
-              verticalModule.gap !== undefined ? verticalModule.gap : 1.2,
-              1.2, -50, 50, 0.1,
-              (v: number) => { updateModule({ gap: v }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
-              'rem'
-            )}
-          </div>
+          ${(() => {
+            // Backward compat: if gap_unit is not stored, the value was rem (old behavior)
+            const unit: string = (verticalModule as any).gap_unit || 'rem';
+            const isPx = unit === 'px';
+            const isRem = unit === 'rem' || unit === 'em';
+            const defaultVal = isPx ? 8 : 1.2;
+            const gapNum = verticalModule.gap !== undefined && verticalModule.gap !== null
+              ? Number(verticalModule.gap)
+              : defaultVal;
+            const sliderMin = isPx ? -100 : -10;
+            const sliderMax = isPx ? 100 : 10;
+            const sliderStep = isPx ? 1 : 0.1;
+            const disabled = verticalModule.alignment === 'space-between' || verticalModule.alignment === 'space-around';
+
+            const convertGap = (fromUnit: string, toUnit: string, val: number): number => {
+              if (fromUnit === toUnit) return val;
+              const toPx = (v: number, u: string) => u === 'px' ? v : u === '%' ? v : u === 'vw' ? v : u === 'vh' ? v : v * 16;
+              const fromPx = (v: number, u: string) => u === 'px' ? v : u === '%' ? v : u === 'vw' ? v : u === 'vh' ? v : Math.round((v / 16) * 10) / 10;
+              return fromPx(toPx(val, fromUnit), toUnit);
+            };
+
+            const unitOptions = [
+              { value: 'px', label: 'px' },
+              { value: 'rem', label: 'rem' },
+              { value: 'em', label: 'em' },
+              { value: '%', label: '%' },
+              { value: 'vw', label: 'vw' },
+              { value: 'vh', label: 'vh' },
+            ];
+
+            return html`
+              <div style="margin-bottom: 8px; ${disabled ? 'opacity: 0.5; pointer-events: none;' : ''}">
+                <div class="field-title">${localize('editor.vertical.gap.between_items', lang, 'Gap Between Items')} (${gapNum}${unit})</div>
+                <div class="field-description" style="margin-bottom: 10px;">
+                  ${localize('editor.vertical.gap.desc', lang, 'Set the spacing between vertical items. Use negative values to overlap items. Note: Gap is disabled when using Space Between or Space Around distribution.')}
+                </div>
+                <div class="gap-control-container" style="display: flex; align-items: center; gap: 8px;">
+                  <select
+                    style="flex-shrink: 0; width: 56px; height: 32px; border-radius: 6px; border: 1px solid var(--divider-color); background: var(--card-background-color, var(--primary-background-color)); color: var(--primary-text-color); font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; outline: none; padding: 0 4px;"
+                    @change=${(e: Event) => {
+                      const newUnit = (e.target as HTMLSelectElement).value;
+                      const converted = convertGap(unit, newUnit, gapNum);
+                      updateModule({ gap: converted, gap_unit: newUnit } as any);
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
+                  >
+                    ${unitOptions.map(opt => html`
+                      <option value="${opt.value}" ?selected=${unit === opt.value}>${opt.label}</option>
+                    `)}
+                  </select>
+                  <input
+                    type="range"
+                    class="gap-slider"
+                    min="${sliderMin}"
+                    max="${sliderMax}"
+                    step="${sliderStep}"
+                    .value="${String(gapNum)}"
+                    @input=${(e: Event) => {
+                      updateModule({ gap: Number((e.target as HTMLInputElement).value) });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
+                  />
+                  <input
+                    type="number"
+                    class="gap-input"
+                    min="${sliderMin}"
+                    max="${sliderMax}"
+                    step="${sliderStep}"
+                    .value="${String(gapNum)}"
+                    @input=${(e: Event) => {
+                      const val = Number((e.target as HTMLInputElement).value);
+                      if (!isNaN(val)) {
+                        updateModule({ gap: val });
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }
+                    }}
+                  />
+                  <button
+                    class="reset-btn"
+                    @click=${() => {
+                      updateModule({ gap: defaultVal });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
+                    title="Reset to default (${defaultVal}${unit})"
+                  >
+                    <ha-icon icon="mdi:refresh"></ha-icon>
+                  </button>
+                </div>
+              </div>
+            `;
+          })()}
         </div>
       </div>
     `;
@@ -182,19 +270,30 @@ export class UltraVerticalModule extends BaseUltraModule {
     const hasChildren = verticalModule.modules && verticalModule.modules.length > 0;
 
     // Container styles for positioning and effects
-    const gapValue = verticalModule.gap !== undefined ? verticalModule.gap : 1.2;
+    const gapUnit: string = (verticalModule as any).gap_unit || 'rem';
+    const isPxUnit = gapUnit === 'px';
+    const gapValue = verticalModule.gap !== undefined && verticalModule.gap !== null
+      ? Number(verticalModule.gap)
+      : (isPxUnit ? 8 : 1.2);
 
-    // Use computeBackgroundStyles for consistent background handling (fixes themed colors with opacity)
-    // This utility properly sets both 'background' and 'backgroundColor' which ensures
-    // CSS variables like var(--ha-card-background) with rgba values render correctly
-    const bgResult = computeBackgroundStyles({
-      color: effective.background_color,
-      fallback: 'transparent',
-      image: this.getBackgroundImageCSS(effective, hass),
-      imageSize: effective.background_size || 'cover',
-      imagePosition: effective.background_position || 'center',
-      imageRepeat: effective.background_repeat || 'no-repeat',
-    });
+    // When design.background_filter is set the background must be rendered via a ::before
+    // pseudo-element so the filter (e.g. opacity(0.2)) only affects the background image
+    // without blurring the content.  In that case we set CSS variables on the container
+    // and rely on getStyles() ::before rule instead of inlining the background directly.
+    const hasBackgroundFilter =
+      (effective as any).background_filter &&
+      (effective as any).background_filter !== 'none';
+
+    const bgResult = hasBackgroundFilter
+      ? { styles: {} as Record<string, string> }
+      : computeBackgroundStyles({
+          color: effective.background_color,
+          fallback: 'transparent',
+          image: this.getBackgroundImageCSS(effective, hass),
+          imageSize: effective.background_size || 'cover',
+          imagePosition: effective.background_position || 'center',
+          imageRepeat: effective.background_repeat || 'no-repeat',
+        });
 
     // Get border radius from multiple possible sources:
     // 1. design.border_radius (via effective spread)
@@ -224,6 +323,8 @@ export class UltraVerticalModule extends BaseUltraModule {
       // If a z-index is provided but no position, use relative so z-index takes effect
       position: (effective as any).position || ((effective as any).z_index ? 'relative' : 'static'),
       zIndex: (effective as any).z_index || 'auto',
+      // background_filter requires isolation so the ::before pseudo-element stays clipped
+      ...(hasBackgroundFilter ? { isolation: 'isolate' } : {}),
       // Respect sizing controls from design/global design
       width: (effective as any).width || undefined,
       height: (effective as any).height || undefined,
@@ -242,9 +343,9 @@ export class UltraVerticalModule extends BaseUltraModule {
         gapValue >= 0 &&
         verticalModule.alignment !== 'space-between' &&
         verticalModule.alignment !== 'space-around'
-          ? `${gapValue}rem`
+          ? `${gapValue}${gapUnit}`
           : '0',
-      alignItems: this.getAlignItems(verticalModule.horizontal_alignment || 'center'),
+      alignItems: this.getAlignItems(verticalModule.horizontal_alignment || 'stretch'),
       // Allow fully collapsed layouts when designers set 0 padding/margin
       // Only set min-height if explicitly specified by user, otherwise let content determine height
       minHeight: (effective as any).min_height || 'auto',
@@ -295,6 +396,26 @@ export class UltraVerticalModule extends BaseUltraModule {
       Object.assign(containerStyles, cssVars);
     }
 
+    // When background_filter is set, inject the CSS variables for the ::before pseudo-element
+    // (see getStyles() .vertical-preview-content[style*="--bg-filter"]::before rule)
+    if (hasBackgroundFilter) {
+      const bgImageCSS = this.getBackgroundImageCSS(effective, hass);
+      if (bgImageCSS && bgImageCSS !== 'none') {
+        containerStyles['--bg-image'] = bgImageCSS;
+      }
+      if (effective.background_color) {
+        containerStyles['--bg-color'] = effective.background_color;
+      }
+      containerStyles['--bg-size'] = effective.background_size || 'cover';
+      containerStyles['--bg-position'] = effective.background_position || 'center';
+      containerStyles['--bg-repeat'] = effective.background_repeat || 'no-repeat';
+      containerStyles['--bg-filter'] = (effective as any).background_filter;
+      // Ensure position:relative so the pseudo-element can anchor
+      if (!containerStyles.position || containerStyles.position === 'static') {
+        containerStyles.position = 'relative';
+      }
+    }
+
     // Check if actions are configured
     const hasActions =
       (verticalModule.tap_action && verticalModule.tap_action.action !== 'nothing') ||
@@ -302,7 +423,26 @@ export class UltraVerticalModule extends BaseUltraModule {
       (verticalModule.double_tap_action && verticalModule.double_tap_action.action !== 'nothing');
 
     const hoverClass = this.getHoverEffectClass(module);
-    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    // Build design styles but strip all visual-surface properties from the outer wrapper.
+    // border, borderRadius, background*, padding, boxShadow, backdropFilter, clipPath and
+    // overflow are already applied on the inner .vertical-preview-content div via
+    // containerStyles.  Keeping them on the outer wrapper too causes a visible double border
+    // and double background.  Margin is also stripped — it is handled in containerStyles.
+    const _allDesignStyles = this.buildDesignStyles(module, hass);
+    const VISUAL_SURFACE_PROPS = new Set([
+      'border', 'borderRadius',
+      'padding', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight',
+      'background', 'backgroundColor', 'backgroundImage',
+      'backgroundSize', 'backgroundPosition', 'backgroundRepeat',
+      'boxShadow', 'backdropFilter', 'webkitBackdropFilter',
+      'clipPath', 'overflow', 'isolation', 'filter',
+      'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
+    ]);
+    const _wrapperOnlyStyles = Object.fromEntries(
+      Object.entries(_allDesignStyles).filter(([k]) => !VISUAL_SURFACE_PROPS.has(k))
+    ) as Record<string, string | undefined>;
+    const designStyles = this.buildStyleString(_wrapperOnlyStyles);
 
     return this.wrapWithAnimation(html`
       <div class="vertical-module-preview ${hoverClass}" style="${designStyles}">
@@ -340,7 +480,7 @@ export class UltraVerticalModule extends BaseUltraModule {
                       index > 0 &&
                       verticalModule.alignment !== 'space-between' &&
                       verticalModule.alignment !== 'space-around';
-                    const childMargin = useNegativeMargin ? `${gapValue}rem 0 0 0` : '0';
+                    const childMargin = useNegativeMargin ? `${gapValue}${gapUnit} 0 0 0` : '0';
                     const isNegativeGap = useNegativeMargin;
                     return html`
                       <div
@@ -565,6 +705,33 @@ export class UltraVerticalModule extends BaseUltraModule {
    */
   private applyLayoutDesignToChild(childModule: CardModule, layoutDesign: any): CardModule {
     const mergedModule = { ...childModule } as any;
+
+    // ── Margin zeroing ──────────────────────────────────────────────────────
+    // When a module lives inside a vertical layout, the parent's gap property
+    // is the sole source of spacing between children.  Modules that have NOT
+    // been explicitly configured with a margin via the Design tab should render
+    // with margin:0 so they don't double-stack space on top of the gap.
+    // Modules that DO have an explicit Design-tab margin keep their value.
+    const childDesign = (childModule as any).design || {};
+    const hasExplicitMargin =
+      childDesign.margin_top !== undefined ||
+      childDesign.margin_bottom !== undefined ||
+      childDesign.margin_left !== undefined ||
+      childDesign.margin_right !== undefined ||
+      (childModule as any).margin_top !== undefined ||
+      (childModule as any).margin_bottom !== undefined ||
+      (childModule as any).margin_left !== undefined ||
+      (childModule as any).margin_right !== undefined;
+
+    if (!hasExplicitMargin) {
+      // Use '0' (truthy string) so the child's renderPreview enters the
+      // explicit branch and outputs margin:0 instead of the '8px 0' fallback.
+      mergedModule.margin_top = '0';
+      mergedModule.margin_bottom = '0';
+      mergedModule.margin_left = '0';
+      mergedModule.margin_right = '0';
+    }
+    // ── End margin zeroing ──────────────────────────────────────────────────
 
     // Apply text properties if they exist in layout design
     if (layoutDesign.color) mergedModule.color = layoutDesign.color;
@@ -842,6 +1009,22 @@ export class UltraVerticalModule extends BaseUltraModule {
         border: none;
         transition: all 0.2s ease;
         position: relative;
+      }
+
+      /* Background-filter pseudo-element — filters only the background, not the content */
+      .vertical-preview-content[style*="--bg-filter"]::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-color: var(--bg-color, transparent);
+        background-image: var(--bg-image, none);
+        background-size: var(--bg-size, cover);
+        background-position: var(--bg-position, center);
+        background-repeat: var(--bg-repeat, no-repeat);
+        filter: var(--bg-filter);
+        border-radius: inherit;
+        z-index: -1;
+        pointer-events: none;
       }
 
       /* When vertical layout has actions, disable pointer events on children so container action takes precedence */

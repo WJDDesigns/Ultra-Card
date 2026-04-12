@@ -787,11 +787,17 @@ export class UltraBarModule extends BaseUltraModule {
                     <div
                       style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 16px;"
                     >
-                      ${localize(
-                        'editor.bar.range.desc',
-                        lang,
-                        "Override auto-detected range. Enter a number or use a Jinja2 template (e.g., {{ states('sensor.max') }})."
-                      )}
+                      ${barModule.percentage_type === 'difference'
+                        ? localize(
+                            'editor.bar.range.desc_difference',
+                            lang,
+                            "Override the visible range. Enter values in the same unit as your entities (e.g. km). Leave blank to auto-detect from the Total Entity."
+                          )
+                        : localize(
+                            'editor.bar.range.desc',
+                            lang,
+                            "Override auto-detected range. Enter a number or use a Jinja2 template (e.g., {{ states('sensor.max') }})."
+                          )}
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -869,7 +875,9 @@ export class UltraBarModule extends BaseUltraModule {
                             : barModule.percentage_max !== undefined
                               ? String(barModule.percentage_max)
                               : ''}
-                          placeholder="${localize('editor.bar.range.auto', lang, 'Auto (100)')}"
+                          placeholder="${barModule.percentage_type === 'difference'
+                            ? localize('editor.bar.range.auto_total', lang, 'Auto (total entity)')
+                            : localize('editor.bar.range.auto', lang, 'Auto (100)')}"
                           @input=${(e: Event) => {
                             // Capture value immediately before debounce
                             const target = e.target as HTMLInputElement;
@@ -3540,9 +3548,14 @@ export class UltraBarModule extends BaseUltraModule {
     if (barModule.limit_entity && hass?.states[barModule.limit_entity]) {
       const limitState = hass.states[barModule.limit_entity];
       const limitValue = parseFloat(limitState.state) || 0;
-      // If the base percentage is template/attribute/difference, we don't know maxValue.
-      // Assume limit values are already in percent unless an entity with max is provided.
-      const baseMax = 100; // safe default
+      const pctTypeForLimit = (barModule as any).percentage_type || 'entity';
+      let baseMax = 100;
+      if (pctTypeForLimit === 'difference') {
+        // In difference mode the limit entity is in the same real-world unit as the total entity.
+        const totalId = (barModule as any).percentage_total_entity;
+        const totalVal = totalId ? parseFloat(String(hass?.states[totalId]?.state ?? '0')) : 0;
+        if (totalVal > 0) baseMax = totalVal;
+      }
       limitPercentage = Math.min(Math.max((limitValue / baseMax) * 100, 0), 100);
     }
 
@@ -3627,6 +3640,18 @@ export class UltraBarModule extends BaseUltraModule {
       const { min: manualMin, max: manualMax } = resolveMinMax();
       if (manualMin !== undefined) scaleMin = manualMin;
       if (manualMax !== undefined) scaleMax = manualMax;
+
+      // In difference mode, default the tick-mark scale to the actual entity range (0..total)
+      // so labels show real-world values (e.g. km) instead of percentages.
+      const pctTypeForScale = (barModule as any).percentage_type || 'entity';
+      if (pctTypeForScale === 'difference') {
+        if (manualMin === undefined) scaleMin = 0;
+        if (manualMax === undefined) {
+          const totalId = (barModule as any).percentage_total_entity;
+          const totalVal = totalId ? parseFloat(String(hass?.states[totalId]?.state ?? '0')) : 0;
+          if (totalVal > 0) scaleMax = totalVal;
+        }
+      }
     }
 
     // Apply design properties with priority - design properties override module properties
@@ -5201,8 +5226,11 @@ export class UltraBarModule extends BaseUltraModule {
               ${(() => {
                 if (!showPercentageText) return '';
 
-                // If a manual min/max range is set, the bar fill no longer represents the raw entity value.
-                // In that case, always show the calculated percent so the text matches the fill.
+                // If show_value is explicitly enabled, always respect it regardless of min/max range.
+                if (barModule.show_value) return percentageDisplayText;
+
+                // If a manual min/max range is set, the bar fill no longer represents the raw entity
+                // value as a simple percentage, so show the calculated percent to match the fill.
                 const hasManualRange =
                   barModule.percentage_min !== undefined ||
                   barModule.percentage_max !== undefined ||
@@ -5211,8 +5239,7 @@ export class UltraBarModule extends BaseUltraModule {
 
                 if (hasManualRange) return `${displayPercentage}%`;
 
-                // Legacy behavior: allow showing the raw value in the bar text.
-                return barModule.show_value ? percentageDisplayText : `${displayPercentage}%`;
+                return `${displayPercentage}%`;
               })()}
             </div>
           </div>

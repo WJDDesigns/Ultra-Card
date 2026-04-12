@@ -375,7 +375,13 @@ export class UltraIconModule extends BaseUltraModule {
               iconModule.text_size || 16,
               16, 10, 48, 1,
               (v: number) => {
-                updateModule({ text_size: v });
+                const updatedIcons = iconModule.icons.map((ic: any) => ({
+                  ...ic,
+                  text_size: v,
+                  active_text_size: v,
+                  inactive_text_size: v,
+                }));
+                updateModule({ text_size: v, icons: updatedIcons });
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               }
             )}
@@ -389,7 +395,13 @@ export class UltraIconModule extends BaseUltraModule {
               iconModule.icon_size || 24,
               24, 12, 64, 1,
               (v: number) => {
-                updateModule({ icon_size: v });
+                const updatedIcons = iconModule.icons.map((ic: any) => ({
+                  ...ic,
+                  icon_size: v,
+                  active_icon_size: v,
+                  inactive_icon_size: v,
+                }));
+                updateModule({ icon_size: v, icons: updatedIcons });
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               }
             )}
@@ -2849,9 +2861,8 @@ export class UltraIconModule extends BaseUltraModule {
                   const parsed = parseUnifiedTemplate(unifiedResult);
                   if (!hasTemplateError(parsed)) {
                     if (parsed.icon) displayIcon = parsed.icon;
-                    // Only apply template icon_color when ignore_entity_state_config is true
-                    // This allows users to use templates for dynamic icons while keeping active/inactive colors
-                    if (parsed.icon_color && icon.ignore_entity_state_config) {
+                    // Apply template icon_color when provided — takes priority over active/inactive colors
+                    if (parsed.icon_color) {
                       displayColor = parsed.icon_color;
                     }
                     // Store template name, state_text, and colors for later use
@@ -3780,9 +3791,8 @@ export class UltraIconModule extends BaseUltraModule {
         const parsed = parseUnifiedTemplate(unifiedResult);
         if (!hasTemplateError(parsed)) {
           if (parsed.icon) displayIcon = parsed.icon;
-          // Only apply template icon_color when ignore_entity_state_config is true
-          // This allows users to use templates for dynamic icons while keeping active/inactive colors
-          if (parsed.icon_color && icon.ignore_entity_state_config) {
+          // Apply template icon_color when provided — takes priority over active/inactive colors
+          if (parsed.icon_color) {
             displayColor = parsed.icon_color;
           }
           // Store template name, state_text, and colors for later use
