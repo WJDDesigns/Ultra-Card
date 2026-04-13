@@ -16,19 +16,14 @@ import { computeBackgroundStyles } from '../utils/uc-color-utils';
 
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
-import '../components/uc-template-cheatsheet';
+
 import { buildEntityContext } from '../utils/template-context';
 import {
   parseUnifiedTemplate,
   hasTemplateError,
   getTemplateError,
-  isStringResult,
+  unifiedTemplateIcon,
 } from '../utils/template-parser';
-import {
-  detectLegacyTemplates,
-  migrateToUnified,
-  shouldShowMigrationPrompt,
-} from '../utils/template-migration';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 
 type IconAnimation = NonNullable<IconConfig['active_icon_animation']>;
@@ -210,12 +205,6 @@ export class UltraIconModule extends BaseUltraModule {
           custom_inactive_name_text: '',
           custom_active_name_text: '',
 
-          // Legacy template modes (deprecated)
-          inactive_template_mode: false,
-          inactive_template: '',
-          active_template_mode: false,
-          active_template: '',
-
           // Entity color options
           use_entity_color_for_icon: false,
           use_state_color_for_inactive_icon: false,
@@ -312,16 +301,6 @@ export class UltraIconModule extends BaseUltraModule {
           url: '',
           service: '',
           service_data: {},
-
-          // Legacy template support
-          template_mode: false,
-          template: '',
-
-          // Dynamic templates
-          dynamic_icon_template_mode: false,
-          dynamic_icon_template: '',
-          dynamic_color_template_mode: false,
-          dynamic_color_template: '',
 
           // Unified template system
           unified_template_mode: false,
@@ -1722,102 +1701,11 @@ export class UltraIconModule extends BaseUltraModule {
                         : ''}
                     </div>
 
-                    <!-- Migration Banner (if legacy templates detected) -->
-                    ${shouldShowMigrationPrompt(icon)
-                      ? html`
-                          <div
-                            class="migration-banner"
-                            style="
-                        background: linear-gradient(135deg, rgba(var(--rgb-primary-color), 0.1), rgba(var(--rgb-primary-color), 0.05));
-                        border: 2px solid var(--primary-color);
-                        border-radius: 12px;
-                        padding: 20px;
-                        margin-bottom: 24px;
-                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                      "
-                          >
-                            <div style="display: flex; align-items: start; gap: 16px;">
-                              <ha-icon
-                                icon="mdi:lightbulb-on-outline"
-                                style="color: var(--primary-color); font-size: 32px; flex-shrink: 0;"
-                              ></ha-icon>
-                              <div style="flex: 1;">
-                                <div
-                                  style="font-size: 18px; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;"
-                                >
-                                  ${localize(
-                                    'editor.icon.migration_title',
-                                    lang,
-                                    'Template Migration Available'
-                                  )}
-                                </div>
-                                <div
-                                  style="font-size: 14px; color: var(--primary-text-color); margin-bottom: 12px; line-height: 1.5;"
-                                >
-                                  ${localize(
-                                    'editor.icon.migration_desc',
-                                    lang,
-                                    `You have ${detectLegacyTemplates(icon).templateCount} separate template(s). Combine them into one unified template for easier editing and better entity remapping support.`
-                                  )}
-                                </div>
-                                <div style="display: flex; gap: 12px;">
-                                  <button
-                                    style="
-                                background: var(--primary-color);
-                                color: white;
-                                border: none;
-                                border-radius: 8px;
-                                padding: 10px 20px;
-                                font-size: 14px;
-                                font-weight: 600;
-                                cursor: pointer;
-                                transition: all 0.2s ease;
-                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-                              "
-                                    @click=${() => {
-                                      const migration = migrateToUnified(icon);
-                                      this._updateIcon(
-                                        iconModule,
-                                        index,
-                                        {
-                                          unified_template_mode: migration.unified_template_mode,
-                                          unified_template: migration.unified_template,
-                                          ignore_entity_state_config:
-                                            migration.ignore_entity_state_config,
-                                          // Disable legacy templates after migration
-                                          template_mode: false,
-                                          dynamic_icon_template_mode: false,
-                                          dynamic_color_template_mode: false,
-                                        },
-                                        updateModule
-                                      );
-                                    }}
-                                    @mouseover=${(e: Event) => {
-                                      const btn = e.target as HTMLElement;
-                                      btn.style.transform = 'translateY(-2px)';
-                                      btn.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-                                    }}
-                                    @mouseout=${(e: Event) => {
-                                      const btn = e.target as HTMLElement;
-                                      btn.style.transform = 'translateY(0)';
-                                      btn.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
-                                    }}
-                                  >
-                                    ${localize(
-                                      'editor.icon.migrate_button',
-                                      lang,
-                                      'Migrate to Unified Template'
-                                    )}
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        `
-                      : ''}
-
-                    <!-- Unified Template Section (New Preferred Method) -->
-                    <div class="template-section" style="margin-bottom: 24px;">
+                    <!-- Unified Template Section -->
+                    <div
+                      class="template-section"
+                      style="margin-bottom: 24px;"
+                    >
                       <div class="template-header">
                         <div class="switch-container">
                           <div class="switch-label-row">
@@ -1870,9 +1758,6 @@ export class UltraIconModule extends BaseUltraModule {
                           )}
                         </div>
                       </div>
-
-                      <!-- Cheatsheet Component (always available) -->
-                      <uc-template-cheatsheet .module=${'icon'}></uc-template-cheatsheet>
 
                       ${icon.unified_template_mode
                         ? html`
@@ -2639,7 +2524,6 @@ export class UltraIconModule extends BaseUltraModule {
         moduleWithDesign.padding_right
           ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
           : '0',
-      // Standard 8px top/bottom margin for proper web design spacing
       margin:
         designProperties.margin_top ||
         designProperties.margin_bottom ||
@@ -2649,8 +2533,8 @@ export class UltraIconModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
-          : '8px 0',
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '0px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '0px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
+          : '0',
       background:
         templateContainerBg ||
         designProperties.background_color ||
@@ -2860,7 +2744,8 @@ export class UltraIconModule extends BaseUltraModule {
                 if (unifiedResult && String(unifiedResult).trim() !== '') {
                   const parsed = parseUnifiedTemplate(unifiedResult);
                   if (!hasTemplateError(parsed)) {
-                    if (parsed.icon) displayIcon = parsed.icon;
+                    const uIcon = unifiedTemplateIcon(parsed);
+                    if (uIcon) displayIcon = uIcon;
                     // Apply template icon_color when provided — takes priority over active/inactive colors
                     if (parsed.icon_color) {
                       displayColor = parsed.icon_color;
@@ -2871,6 +2756,8 @@ export class UltraIconModule extends BaseUltraModule {
                     }
                     if (parsed.state_text !== undefined) {
                       (icon as any)._template_state_text = parsed.state_text;
+                    } else if (parsed._isString && parsed.content && !uIcon) {
+                      (icon as any)._template_state_text = String(parsed.content).trim();
                     }
                     if (parsed.name_color) {
                       (icon as any)._template_name_color = parsed.name_color;
@@ -2883,110 +2770,8 @@ export class UltraIconModule extends BaseUltraModule {
                     }
                   }
                 }
-              }
-              // PRIORITY 2: Apply dynamic icon template if enabled (legacy)
-              else if (icon.dynamic_icon_template_mode && icon.dynamic_icon_template) {
-                // Initialize template service if needed
-                if (!this._templateService && hass) {
-                  this._templateService = new TemplateService(hass);
-                } else if (this._templateService && hass) {
-                  // CRITICAL: Update the template service's hass reference
-                  this._templateService.updateHass(hass);
-                }
-
-                const templateHash = this._hashString(icon.dynamic_icon_template);
-                const templateKey = `dynamic_icon_${icon.entity}_${icon.id}_${templateHash}`;
-
-                // Initialize template strings object if not already done
-                if (!hass.__uvc_template_strings) {
-                  hass.__uvc_template_strings = {};
-                }
-
-                // Subscribe to template if not already subscribed
-                if (
-                  this._templateService &&
-                  !this._templateService.hasTemplateSubscription(templateKey)
-                ) {
-                  this._templateService.subscribeToTemplate(
-                    icon.dynamic_icon_template,
-                    templateKey,
-                    () => {
-                      // Force re-render when template updates
-                      if (typeof window !== 'undefined') {
-                        // Use global debounced update
-                        if (!window._ultraCardUpdateTimer) {
-                          window._ultraCardUpdateTimer = setTimeout(() => {
-                            this.triggerPreviewUpdate();
-                            window._ultraCardUpdateTimer = null;
-                          }, 50);
-                        }
-                      }
-                    },
-                    undefined, // No context variables
-                    config // Pass config for card-specific variable resolution
-                  );
-                }
-
-                // Get template result for dynamic icon
-                const iconTemplateResult = hass?.__uvc_template_strings?.[templateKey];
-                if (iconTemplateResult && String(iconTemplateResult).trim() !== '') {
-                  displayIcon = String(iconTemplateResult);
-                }
-              } else {
-                // Use entity's current icon if no custom icon is set (for dynamic weather icons, etc.)
-                if (entityState?.attributes?.icon && !displayIcon) {
-                  displayIcon = entityState.attributes.icon;
-                }
-              }
-
-              // PRIORITY 3: Apply dynamic color template if enabled (legacy)
-              if (icon.dynamic_color_template_mode && icon.dynamic_color_template) {
-                // Initialize template service if needed
-                if (!this._templateService && hass) {
-                  this._templateService = new TemplateService(hass);
-                } else if (this._templateService && hass) {
-                  // CRITICAL: Update the template service's hass reference
-                  this._templateService.updateHass(hass);
-                }
-
-                const templateHash = this._hashString(icon.dynamic_color_template);
-                const templateKey = `dynamic_color_${icon.entity}_${icon.id}_${templateHash}`;
-
-                // Initialize template strings object if not already done
-                if (!hass.__uvc_template_strings) {
-                  hass.__uvc_template_strings = {};
-                }
-
-                // Subscribe to template if not already subscribed
-                if (
-                  this._templateService &&
-                  !this._templateService.hasTemplateSubscription(templateKey)
-                ) {
-                  this._templateService.subscribeToTemplate(
-                    icon.dynamic_color_template,
-                    templateKey,
-                    () => {
-                      // Force re-render when template updates
-                      if (typeof window !== 'undefined') {
-                        // Use global debounced update
-                        if (!window._ultraCardUpdateTimer) {
-                          window._ultraCardUpdateTimer = setTimeout(() => {
-                            this.triggerPreviewUpdate();
-                            window._ultraCardUpdateTimer = null;
-                          }, 50);
-                        }
-                      }
-                    },
-                    undefined, // No context variables
-                    config // Pass config for card-specific variable resolution
-                  );
-                }
-
-                // Get template result for dynamic color
-                const colorTemplateResult = hass?.__uvc_template_strings?.[templateKey];
-                if (colorTemplateResult && String(colorTemplateResult).trim() !== '') {
-                  displayColor = String(colorTemplateResult);
-                }
+              } else if (entityState?.attributes?.icon && !displayIcon) {
+                displayIcon = entityState.attributes.icon;
               }
 
               const nameColor =
@@ -3035,96 +2820,7 @@ export class UltraIconModule extends BaseUltraModule {
               // PRIORITY 1: Check unified template state_text first
               if ((icon as any)._template_state_text !== undefined) {
                 displayState = (icon as any)._template_state_text;
-              }
-              // PRIORITY 2: Check template_mode for state text (legacy)
-              else if (icon.template_mode && icon.template) {
-                // Initialize template service if needed
-                if (!this._templateService && hass) {
-                  this._templateService = new TemplateService(hass);
-                }
-
-                const templateHash = this._hashString(icon.template);
-                const templateKey = `display_${icon.entity}_${icon.id}_${templateHash}`;
-
-                // Initialize template strings object if not already done
-                if (!hass.__uvc_template_strings) {
-                  hass.__uvc_template_strings = {};
-                }
-
-                // Subscribe to template if not already subscribed
-                if (
-                  this._templateService &&
-                  !this._templateService.hasTemplateSubscription(templateKey)
-                ) {
-                  this._templateService.subscribeToTemplate(
-                    icon.template,
-                    templateKey,
-                    () => {
-                      // Force re-render when template updates
-                      if (typeof window !== 'undefined') {
-                        this.triggerPreviewUpdate();
-                      }
-                    },
-                    undefined, // No context variables
-                    config // Pass config for card-specific variable resolution
-                  );
-                }
-
-                // Get template result for state text
-                const templateResult = hass?.__uvc_template_strings?.[templateKey];
-                if (templateResult !== undefined && String(templateResult).trim() !== '') {
-                  const trimmedResult = String(templateResult).trim();
-                  const resultString = trimmedResult.toLowerCase();
-                  // Check if template returned an icon name (starts with mdi:, hass:, etc.)
-                  const isIconName = /^(mdi:|hass:|hass-clab:|hc:)/.test(trimmedResult);
-                  // Only use template result as state text if it's NOT a boolean-like value or an icon name
-                  const isBooleanResult = [
-                    'true',
-                    'false',
-                    'on',
-                    'off',
-                    'yes',
-                    'no',
-                    '0',
-                    '1',
-                  ].includes(resultString);
-
-                  if (isIconName) {
-                    // Template returned an icon name - use it for the icon instead of state text
-                    displayIcon = trimmedResult;
-                    // Use actual entity state for display state when icon is being controlled by template
-                    displayState = this._getDisplayStateValue(icon, hass, isActive);
-                  } else if (!isBooleanResult) {
-                    // Check if template returned 'unknown' due to non-existent entity
-                    if (String(templateResult) === 'unknown') {
-                      displayState = `Template Error: Check entity names`;
-                    } else {
-                      displayState = String(templateResult);
-                    }
-                  } else {
-                    // Template returned boolean or empty - use normal custom text logic
-                    displayState = isActive
-                      ? icon.custom_active_state_text && icon.custom_active_state_text.trim() !== ''
-                        ? icon.custom_active_state_text
-                        : this._formatValueWithUnits(currentState, icon.entity, icon, hass)
-                      : icon.custom_inactive_state_text &&
-                          icon.custom_inactive_state_text.trim() !== ''
-                        ? icon.custom_inactive_state_text
-                        : this._formatValueWithUnits(currentState, icon.entity, icon, hass);
-                  }
-                } else {
-                  // No template result yet - use normal logic
-                  displayState = isActive
-                    ? icon.custom_active_state_text && icon.custom_active_state_text.trim() !== ''
-                      ? icon.custom_active_state_text
-                      : this._formatValueWithUnits(currentState, icon.entity, icon, hass)
-                    : icon.custom_inactive_state_text &&
-                        icon.custom_inactive_state_text.trim() !== ''
-                      ? icon.custom_inactive_state_text
-                      : this._formatValueWithUnits(currentState, icon.entity, icon, hass);
-                }
               } else {
-                // No template_mode - check for attribute selection first, then custom text, then entity state
                 displayState = this._getDisplayStateValue(icon, hass, isActive);
               }
 
@@ -3466,71 +3162,6 @@ export class UltraIconModule extends BaseUltraModule {
 
       // Use the same evaluation logic as the main preview
       isCurrentlyActive = this._evaluateIconState(firstIcon, hass);
-
-      // Legacy template mode check (kept for backward compatibility)
-      if (firstIcon.template_mode && firstIcon.template) {
-        // Initialize template service if needed
-        if (!this._templateService && hass) {
-          this._templateService = new TemplateService(hass);
-        }
-
-        const templateHash = this._hashString(firstIcon.template);
-        const templateKey = `display_${firstIcon.entity}_${firstIcon.id}_${templateHash}`;
-
-        // Initialize template strings object if not already done
-        if (!hass.__uvc_template_strings) {
-          hass.__uvc_template_strings = {};
-        }
-
-        // Subscribe to template if not already subscribed
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(
-            firstIcon.template,
-            templateKey,
-            () => {
-              // Force re-render when template updates
-              if (typeof window !== 'undefined') {
-                this.triggerPreviewUpdate();
-              }
-            }
-            // Note: cardConfig not available in renderSplitPreview - only global variables will work here
-          );
-        }
-
-        // Get template result and evaluate as boolean
-        const templateResult = hass?.__uvc_template_strings?.[templateKey];
-        if (templateResult !== undefined) {
-          const result = String(templateResult).toLowerCase();
-          const isBooleanResult = ['true', 'false', 'on', 'off', 'yes', 'no', '0', '1'].includes(
-            result
-          );
-
-          if (isBooleanResult) {
-            // Template returned boolean-like value, use it directly
-            isCurrentlyActive =
-              ['true', 'on', 'yes', '1'].includes(result) ||
-              (parseFloat(result) > 0 && !isNaN(parseFloat(result)));
-          } else if (String(templateResult).trim() !== '') {
-            // Check if template result matches the actual entity state
-            const entityState = hass?.states[firstIcon.entity];
-            const actualState = entityState?.state || 'unknown';
-
-            if (String(templateResult) === actualState) {
-              // Template returned actual entity state - use normal entity evaluation
-              isCurrentlyActive = this._evaluateIconState(firstIcon, hass);
-            } else {
-              // Template returned custom text (like "About to Rain") - this means active condition is met
-              isCurrentlyActive = true;
-            }
-          } else {
-            // Template returned empty/false - inactive condition
-            isCurrentlyActive = false;
-          }
-        }
-      } else {
-        // Use normal entity state evaluation
-        isCurrentlyActive = this._evaluateIconState(firstIcon, hass);
-      }
     }
 
     // Ensure global styles are available
@@ -3762,17 +3393,40 @@ export class UltraIconModule extends BaseUltraModule {
     if (icon.unified_template_mode && icon.unified_template) {
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
+      } else if (this._templateService && hass) {
+        // CRITICAL: Keep hass reference current so template results land on the
+        // same object the renderer reads from (prevents stale color in editor preview).
+        this._templateService.updateHass(hass);
       }
 
       const templateHash = this._hashString(icon.unified_template);
-      const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}`;
+
+      // For the inactive editor preview, simulate the "inactive state" value so the
+      // template evaluates as it would when the entity is actually in its inactive state.
+      // Without this, both previews evaluate with the real entity state, causing the
+      // inactive preview to show the same icon/color as the active preview even when
+      // the entity has different active vs inactive values (e.g. inactive_attribute: min).
+      let previewStateOverride: string | null = null;
+      if (!isActiveState && entityState) {
+        if (icon.inactive_attribute && entityState.attributes?.[icon.inactive_attribute] !== undefined) {
+          previewStateOverride = String(entityState.attributes[icon.inactive_attribute]);
+        } else if (icon.inactive_state && icon.inactive_state.trim() !== '') {
+          previewStateOverride = icon.inactive_state;
+        }
+      }
+
+      const templateKeySuffix = previewStateOverride !== null ? `_inactive_preview` : '';
+      const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}${templateKeySuffix}`;
 
       if (!hass.__uvc_template_strings) {
         hass.__uvc_template_strings = {};
       }
 
       if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-        const context = this._getEntityContext(icon, hass);
+        const baseContext = this._getEntityContext(icon, hass);
+        const context = previewStateOverride !== null
+          ? { ...baseContext, state: previewStateOverride, state_number: parseFloat(previewStateOverride) }
+          : baseContext;
         this._templateService.subscribeToTemplate(
           icon.unified_template,
           templateKey,
@@ -3790,7 +3444,8 @@ export class UltraIconModule extends BaseUltraModule {
       if (unifiedResult && String(unifiedResult).trim() !== '') {
         const parsed = parseUnifiedTemplate(unifiedResult);
         if (!hasTemplateError(parsed)) {
-          if (parsed.icon) displayIcon = parsed.icon;
+          const uIcon = unifiedTemplateIcon(parsed);
+          if (uIcon) displayIcon = uIcon;
           // Apply template icon_color when provided — takes priority over active/inactive colors
           if (parsed.icon_color) {
             displayColor = parsed.icon_color;
@@ -3801,6 +3456,8 @@ export class UltraIconModule extends BaseUltraModule {
           }
           if (parsed.state_text !== undefined) {
             (icon as any)._template_state_text = parsed.state_text;
+          } else if (parsed._isString && parsed.content && !uIcon) {
+            (icon as any)._template_state_text = String(parsed.content).trim();
           }
           if (parsed.name_color) {
             (icon as any)._template_name_color = parsed.name_color;
@@ -3813,84 +3470,8 @@ export class UltraIconModule extends BaseUltraModule {
           }
         }
       }
-    }
-    // PRIORITY 2: Apply dynamic icon template if enabled (legacy)
-    else if (icon.dynamic_icon_template_mode && icon.dynamic_icon_template) {
-      // Initialize template service if needed
-      if (!this._templateService && hass) {
-        this._templateService = new TemplateService(hass);
-      }
-
-      const templateHash = this._hashString(icon.dynamic_icon_template);
-      const templateKey = `dynamic_icon_${icon.entity}_${icon.id}_${templateHash}`;
-
-      // Initialize template strings object if not already done
-      if (!hass.__uvc_template_strings) {
-        hass.__uvc_template_strings = {};
-      }
-
-      // Subscribe to template if not already subscribed
-      if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-        this._templateService.subscribeToTemplate(
-          icon.dynamic_icon_template,
-          templateKey,
-          () => {
-            // Force re-render when template updates
-            if (typeof window !== 'undefined') {
-              this.triggerPreviewUpdate();
-            }
-          }
-          // Note: cardConfig not available in _renderSingleIconPreview - only global variables will work here
-        );
-      }
-
-      // Get template result for dynamic icon
-      const iconTemplateResult = hass?.__uvc_template_strings?.[templateKey];
-      if (iconTemplateResult && String(iconTemplateResult).trim() !== '') {
-        displayIcon = String(iconTemplateResult);
-      }
-    } else {
-      // Use entity's current icon if no custom icon is set (for dynamic weather icons, etc.)
-      if (entityState?.attributes?.icon && !displayIcon) {
-        displayIcon = entityState.attributes.icon;
-      }
-    }
-
-    // PRIORITY 3: Apply dynamic color template if enabled (legacy)
-    if (icon.dynamic_color_template_mode && icon.dynamic_color_template) {
-      // Initialize template service if needed
-      if (!this._templateService && hass) {
-        this._templateService = new TemplateService(hass);
-      }
-
-      const templateHash = this._hashString(icon.dynamic_color_template);
-      const templateKey = `dynamic_color_${icon.entity}_${icon.id}_${templateHash}`;
-
-      // Initialize template strings object if not already done
-      if (!hass.__uvc_template_strings) {
-        hass.__uvc_template_strings = {};
-      }
-
-      // Subscribe to template if not already subscribed
-      if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-        this._templateService.subscribeToTemplate(
-          icon.dynamic_color_template,
-          templateKey,
-          () => {
-            // Force re-render when template updates
-            if (typeof window !== 'undefined') {
-              this.triggerPreviewUpdate();
-            }
-          }
-          // Note: cardConfig not available in _renderSingleIconPreview - only global variables will work here
-        );
-      }
-
-      // Get template result for dynamic color
-      const colorTemplateResult = hass?.__uvc_template_strings?.[templateKey];
-      if (colorTemplateResult && String(colorTemplateResult).trim() !== '') {
-        displayColor = String(colorTemplateResult);
-      }
+    } else if (entityState?.attributes?.icon && !displayIcon) {
+      displayIcon = entityState.attributes.icon;
     }
 
     const nameColor =
@@ -3951,76 +3532,7 @@ export class UltraIconModule extends BaseUltraModule {
     // PRIORITY 1: Check unified template state_text first
     if ((icon as any)._template_state_text !== undefined) {
       displayState = (icon as any)._template_state_text;
-    }
-    // PRIORITY 2: Check if template mode is enabled for state text customization (legacy)
-    else if (icon.template_mode && icon.template) {
-      // Initialize template service if needed
-      if (!this._templateService && hass) {
-        this._templateService = new TemplateService(hass);
-      }
-
-      const templateHash = this._hashString(icon.template);
-      const templateKey = `state_${icon.entity}_${icon.id}_${templateHash}`;
-
-      // Initialize template strings object if not already done
-      if (!hass.__uvc_template_strings) {
-        hass.__uvc_template_strings = {};
-      }
-
-      // Subscribe to template if not already subscribed
-      if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-        this._templateService.subscribeToTemplate(
-          icon.template,
-          templateKey,
-          () => {
-            // Force re-render when template updates
-            if (typeof window !== 'undefined') {
-              this.triggerPreviewUpdate();
-            }
-          }
-          // Note: cardConfig not available in _renderSingleIconPreview - only global variables will work here
-        );
-      }
-
-      // Get template result for state text
-      const templateResult = hass?.__uvc_template_strings?.[templateKey];
-      if (templateResult !== undefined && String(templateResult).trim() !== '') {
-        const trimmedResult = String(templateResult).trim();
-        const resultString = trimmedResult.toLowerCase();
-        // Check if template returned an icon name (starts with mdi:, hass:, etc.)
-        const isIconName = /^(mdi:|hass:|hass-clab:|hc:)/.test(trimmedResult);
-        // Only use template result as state text if it's NOT a boolean-like value or an icon name
-        const isBooleanResult = ['true', 'false', 'on', 'off', 'yes', 'no', '0', '1'].includes(
-          resultString
-        );
-
-        if (isIconName) {
-          // Template returned an icon name - use it for the icon instead of state text
-          displayIcon = trimmedResult;
-          // Use actual entity state for display state when icon is being controlled by template
-          displayState = this._getDisplayStateValue(icon, hass, isActiveState);
-        } else if (!isBooleanResult) {
-          // Check if template returned 'unknown' due to non-existent entity
-          if (String(templateResult) === 'unknown') {
-            displayState = `Template Error: Check entity names`;
-          } else {
-            displayState = String(templateResult);
-          }
-        } else {
-          // Template returned boolean - use for visibility but keep actual state for text
-          displayState = isActiveState
-            ? icon.custom_active_state_text && icon.custom_active_state_text.trim() !== ''
-              ? icon.custom_active_state_text
-              : this._formatValueWithUnits(currentState, icon.entity, icon, hass)
-            : icon.custom_inactive_state_text && icon.custom_inactive_state_text.trim() !== ''
-              ? icon.custom_inactive_state_text
-              : this._formatValueWithUnits(currentState, icon.entity, icon, hass);
-        }
-      } else {
-        displayState = this._formatValueWithUnits(currentState, icon.entity, icon, hass);
-      }
     } else {
-      // Use the new display state helper that checks for attributes
       displayState = this._getDisplayStateValue(icon, hass, isActiveState);
     }
 
@@ -5234,82 +4746,6 @@ export class UltraIconModule extends BaseUltraModule {
       // shouldUseEntityStateForActive is already true
     }
 
-    // PRIORITY 2: Check legacy template_mode (deprecated)
-    // Skip this if we're using unified template with ignore_entity_state_config
-    // (in that case, shouldUseEntityStateForActive is true and we go straight to entity state evaluation)
-    // IMPORTANT: If active_state is explicitly configured, prioritize entity state check over template result
-    // Templates should only affect display, not active state evaluation when active_state is set
-    if (!shouldUseEntityStateForActive && icon.template_mode && icon.template) {
-      // Initialize template service if needed
-      if (!this._templateService && hass) {
-        this._templateService = new TemplateService(hass);
-      } else if (this._templateService && hass) {
-        // CRITICAL: Update the template service's hass reference
-        this._templateService.updateHass(hass);
-      }
-
-      const templateHash = this._hashString(icon.template);
-      const templateKey = `display_${icon.entity}_${icon.id}_${templateHash}`;
-
-      // Initialize template strings object if not already done
-      if (!hass.__uvc_template_strings) {
-        hass.__uvc_template_strings = {};
-      }
-
-      // Subscribe to template if not already subscribed
-      // Note: cardConfig not available in _evaluateIconState - only global variables will work here
-      if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-        this._templateService.subscribeToTemplate(
-          icon.template,
-          templateKey,
-          () => {
-            // Force re-render when template updates
-            if (typeof window !== 'undefined') {
-              this.triggerPreviewUpdate();
-            }
-          }
-          // Note: cardConfig not available in _evaluateIconState - only global variables will work here
-        );
-      }
-
-      // Get template result and evaluate for active state
-      const templateResult = hass?.__uvc_template_strings?.[templateKey];
-      if (templateResult !== undefined) {
-        const result = String(templateResult).toLowerCase();
-        const isBooleanResult = ['true', 'false', 'on', 'off', 'yes', 'no', '0', '1'].includes(
-          result
-        );
-
-        if (isBooleanResult) {
-          // Template returned boolean-like value, use it directly for active state
-          return (
-            ['true', 'on', 'yes', '1'].includes(result) ||
-            (parseFloat(result) > 0 && !isNaN(parseFloat(result)))
-          );
-        } else if (String(templateResult).trim() !== '') {
-          // Template returned custom text - check if it matches actual entity state
-          if (String(templateResult) === currentState) {
-            // Template returned actual entity state - use normal entity evaluation
-            // Fall through to normal evaluation below
-          } else {
-            // Template returned custom text
-            // If active_state is explicitly configured, prioritize entity state check over template result
-            // This ensures animations work correctly when active_state is set
-            if (icon.active_state || icon.inactive_state) {
-              // Fall through to normal entity state evaluation below
-              // Template is only for display, not for determining active state
-            } else {
-              // No active_state configured - template result indicates active condition was met
-              return true;
-            }
-          }
-        } else {
-          // Template returned empty - inactive
-          return false;
-        }
-      }
-    }
-
     // If both active_state and inactive_state are defined, check both
     if (icon.active_state && icon.inactive_state) {
       if (this._matchesState(activeValue, icon.active_state, entityState)) {
@@ -5421,21 +4857,6 @@ export class UltraIconModule extends BaseUltraModule {
       /* Scope all icon-form tweaks to icon module editor only */
       .icon-module-general-settings [slot='label'] {
         display: none !important;
-      }
-
-      /* Make dynamic template toggles more compact */
-      .icon-module-general-settings ha-form[data-field='dynamic_icon_template_mode'] ha-switch,
-      .icon-module-general-settings ha-form[data-field='dynamic_color_template_mode'] ha-switch {
-        --mdc-switch-track-width: 36px !important;
-        --mdc-switch-track-height: 20px !important;
-        --switch-checked-track-color: var(--primary-color) !important;
-        --switch-unchecked-track-color: var(--disabled-color) !important;
-        transform: scale(0.8) !important;
-      }
-
-      .icon-module-general-settings ha-form[data-field='dynamic_icon_template_mode'] .mdc-switch,
-      .icon-module-general-settings ha-form[data-field='dynamic_color_template_mode'] .mdc-switch {
-        transform: scale(0.8) !important;
       }
 
 
@@ -6436,12 +5857,6 @@ export class UltraIconModule extends BaseUltraModule {
       custom_inactive_name_text: '',
       custom_active_name_text: '',
 
-      // Legacy template modes (deprecated)
-      inactive_template_mode: false,
-      inactive_template: '',
-      active_template_mode: false,
-      active_template: '',
-
       // Entity color options
       use_entity_color_for_icon: false,
       use_state_color_for_inactive_icon: false,
@@ -6543,16 +5958,6 @@ export class UltraIconModule extends BaseUltraModule {
       url: '',
       service: '',
       service_data: {},
-
-      // Legacy template support
-      template_mode: false,
-      template: '',
-
-      // Dynamic templates
-      dynamic_icon_template_mode: false,
-      dynamic_icon_template: '',
-      dynamic_color_template_mode: false,
-      dynamic_color_template: '',
 
       // Unified template system
       unified_template_mode: false,

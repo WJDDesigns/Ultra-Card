@@ -82,6 +82,7 @@ import '../uc-card-selector-tab';
 import '../uc-presets-selector-tab';
 import '../uc-favorites-selector-tab';
 import '../uc-modules-selector-tab';
+import '../../components/uc-template-cheatsheet';
 import '../../panels/components/uc-hub-login-dialog';
 import '../../panels/components/uc-hub-rate-dialog';
 import '../../panels/components/uc-hub-submit-preset-dialog';
@@ -22457,7 +22458,14 @@ export class LayoutTab extends LitElement {
 
     const lang = this.hass?.locale?.language || 'en';
     return html`
-      <div class="module-settings-panel ${this._isClosingTabsSectionChildSettings ? 'is-closing' : ''}">
+      <div class="module-settings-panel ${this._isClosingTabsSectionChildSettings ? 'is-closing' : ''}"
+        @uc-open-template-cheatsheet=${(e: CustomEvent) => {
+          e.stopPropagation();
+          const panel = e.currentTarget as HTMLElement;
+          const cs = panel.querySelector('uc-template-cheatsheet') as any;
+          if (cs) { cs.module = e.detail?.module || 'info'; cs.open = true; }
+        }}
+      >
         <div class="panel-header">
           <button class="panel-back-btn" @click=${() => this._closeTabsSectionChildSettings()}>
             <ha-icon icon="mdi:chevron-left"></ha-icon>
@@ -22593,6 +22601,7 @@ export class LayoutTab extends LitElement {
               ? this._renderTabsSectionChildDesignTab(module)
               : ''}
           </div>
+        <uc-template-cheatsheet pane></uc-template-cheatsheet>
       </div>
     `;
   }
@@ -23307,7 +23316,14 @@ export class LayoutTab extends LitElement {
 
     const lang = this.hass?.locale?.language || 'en';
     return html`
-      <div class="module-settings-panel ${this._isClosingModuleSettings ? 'is-closing' : ''}">
+      <div class="module-settings-panel ${this._isClosingModuleSettings ? 'is-closing' : ''}"
+        @uc-open-template-cheatsheet=${(e: CustomEvent) => {
+          e.stopPropagation();
+          const panel = e.currentTarget as HTMLElement;
+          const cs = panel.querySelector('uc-template-cheatsheet') as any;
+          if (cs) { cs.module = e.detail?.module || 'info'; cs.open = true; }
+        }}
+      >
         <div class="panel-header">
           <button
             class="panel-back-btn"
@@ -23446,6 +23462,7 @@ export class LayoutTab extends LitElement {
           ${this._activeModuleTab === 'logic' ? this._renderModuleLogicTab(module) : ''}
           ${this._activeModuleTab === 'design' ? this._renderDesignTab(module) : ''}
         </div>
+        <uc-template-cheatsheet pane></uc-template-cheatsheet>
       </div>
     `;
   }
@@ -23683,7 +23700,14 @@ export class LayoutTab extends LitElement {
 
     const lang = this.hass?.locale?.language || 'en';
     return html`
-      <div class="module-settings-panel ${this._isClosingLayoutChildSettings ? 'is-closing' : ''}">
+      <div class="module-settings-panel ${this._isClosingLayoutChildSettings ? 'is-closing' : ''}"
+        @uc-open-template-cheatsheet=${(e: CustomEvent) => {
+          e.stopPropagation();
+          const panel = e.currentTarget as HTMLElement;
+          const cs = panel.querySelector('uc-template-cheatsheet') as any;
+          if (cs) { cs.module = e.detail?.module || 'info'; cs.open = true; }
+        }}
+      >
         <div class="panel-header">
           <button class="panel-back-btn" @click=${() => this._closeLayoutChildSettings()}>
             <ha-icon icon="mdi:chevron-left"></ha-icon>
@@ -23868,6 +23892,7 @@ export class LayoutTab extends LitElement {
               ? this._renderLayoutChildDesignTab(childModule)
               : ''}
           </div>
+        <uc-template-cheatsheet pane></uc-template-cheatsheet>
       </div>
     `;
   }
@@ -24211,7 +24236,14 @@ export class LayoutTab extends LitElement {
     if (!row) return html``;
 
     return html`
-      <div class="module-settings-panel ${this._isClosingRowSettings ? 'is-closing' : ''}">
+      <div class="module-settings-panel ${this._isClosingRowSettings ? 'is-closing' : ''}"
+        @uc-open-template-cheatsheet=${(e: CustomEvent) => {
+          e.stopPropagation();
+          const panel = e.currentTarget as HTMLElement;
+          const cs = panel.querySelector('uc-template-cheatsheet') as any;
+          if (cs) { cs.module = e.detail?.module || 'layout'; cs.open = true; }
+        }}
+      >
         <div class="panel-header">
           <button class="panel-back-btn" @click=${() => this._closeRowSettings()}>
             <ha-icon icon="mdi:chevron-left"></ha-icon>
@@ -24294,6 +24326,7 @@ export class LayoutTab extends LitElement {
             ${this._activeRowTab === 'design' ? this._renderRowDesignTab(row) : ''}
           </div>
         </div>
+        <uc-template-cheatsheet pane></uc-template-cheatsheet>
       </div>
     `;
   }
@@ -24306,7 +24339,14 @@ export class LayoutTab extends LitElement {
     if (!column) return html``;
 
     return html`
-      <div class="module-settings-panel ${this._isClosingColumnSettings ? 'is-closing' : ''}">
+      <div class="module-settings-panel ${this._isClosingColumnSettings ? 'is-closing' : ''}"
+        @uc-open-template-cheatsheet=${(e: CustomEvent) => {
+          e.stopPropagation();
+          const panel = e.currentTarget as HTMLElement;
+          const cs = panel.querySelector('uc-template-cheatsheet') as any;
+          if (cs) { cs.module = e.detail?.module || 'layout'; cs.open = true; }
+        }}
+      >
         <div class="panel-header">
           <button class="panel-back-btn" @click=${() => this._closeColumnSettings()}>
             <ha-icon icon="mdi:chevron-left"></ha-icon>
@@ -24399,6 +24439,7 @@ export class LayoutTab extends LitElement {
             ${this._activeColumnTab === 'design' ? this._renderColumnDesignTab(column) : ''}
           </div>
         </div>
+        <uc-template-cheatsheet pane></uc-template-cheatsheet>
       </div>
     `;
   }
@@ -24944,7 +24985,7 @@ export class LayoutTab extends LitElement {
   private _renderRowLogicTab(row: CardRow): TemplateResult {
     return GlobalLogicTab.render(row as any, this.hass, (updates: Partial<CardRow>) => {
       this._updateRow(updates);
-    });
+    }, 'row');
   }
 
   private _renderRowDesignTab(row: CardRow): TemplateResult {
@@ -25160,7 +25201,7 @@ export class LayoutTab extends LitElement {
   private _renderColumnLogicTab(column: CardColumn): TemplateResult {
     return GlobalLogicTab.render(column as any, this.hass, (updates: Partial<CardColumn>) => {
       this._updateColumn(updates);
-    });
+    }, 'column');
   }
 
   private _renderColumnDesignTab(column: CardColumn): TemplateResult {
@@ -30234,6 +30275,7 @@ export class LayoutTab extends LitElement {
   static get styles() {
     return css`
       :host {
+        display: block;
         --accent-color: var(--orange-color, #ff9800);
         --orange-color: #ff9800;
         --secondary-color: var(--orange-color, #ff9800);
@@ -33985,6 +34027,7 @@ export class LayoutTab extends LitElement {
       }
 
       .module-settings-panel {
+        position: relative;
         display: flex;
         flex-direction: column;
         flex: 1;
@@ -34172,9 +34215,9 @@ export class LayoutTab extends LitElement {
       }
 
       /* Bound the editor height when settings panel is open so module-tab-content can scroll.
-         160px accounts for the HA dialog title bar, tabs row, and footer buttons. */
+         Accounts for the HA dialog title bar, footer buttons, and dialog padding. */
       .layout-builder:not(.fullscreen).module-settings-open {
-        max-height: calc(100svh - 160px);
+        max-height: calc(100vh - 160px);
         overflow: hidden;
       }
 

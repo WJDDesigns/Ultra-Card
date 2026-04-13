@@ -748,11 +748,10 @@ export class UltraImageModule extends BaseUltraModule {
         designProperties.padding_right
           ? `${this.addPixelUnit(designProperties.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left) || '0px'}`
           : '0',
-      // Standard 8px top/bottom margin for proper web design spacing
       margin:
         designProperties.margin_top || designProperties.margin_bottom || marginLeft || marginRight
-          ? `${designProperties.margin_top || (imageModule as any).margin?.top?.toString() || (imageModule as any).margin_top || '8px'} ${marginRight} ${designProperties.margin_bottom || (imageModule as any).margin?.bottom?.toString() || (imageModule as any).margin_bottom || '8px'} ${marginLeft}`
-          : '8px 0',
+          ? `${designProperties.margin_top || (imageModule as any).margin?.top?.toString() || (imageModule as any).margin_top || '0px'} ${marginRight} ${designProperties.margin_bottom || (imageModule as any).margin?.bottom?.toString() || (imageModule as any).margin_bottom || '0px'} ${marginLeft}`
+          : '0',
       background: designProperties.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(designProperties, hass),
       backgroundSize: designProperties.background_size || 'cover',

@@ -9,13 +9,14 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import '../components/ultra-color-picker';
 import '../components/uc-gradient-editor';
 import '../components/ultra-template-editor';
-import '../components/uc-template-cheatsheet';
+
 import '../components/bar-side-actions';
 import { formatEntityState } from '../utils/number-format';
 import { TemplateService } from '../services/template-service';
 import { localize } from '../localize/localize';
 import { buildEntityContext } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import {
   GradientStop,
   generateGradientString,
@@ -61,9 +62,6 @@ export class UltraBarModule extends BaseUltraModule {
       percentage_current_entity: '',
       percentage_total_entity: '',
 
-      // Template mode
-      percentage_template: '',
-
       // Time Progress mode (real-time timestamp-based calculation)
       time_progress_start_entity: '',
       time_progress_end_entity: '',
@@ -82,10 +80,6 @@ export class UltraBarModule extends BaseUltraModule {
       // Manual Min/Max Range (overrides auto-detection)
       percentage_min: undefined, // undefined = auto-detect
       percentage_max: undefined, // undefined = auto-detect
-      percentage_min_template_mode: false,
-      percentage_min_template: '',
-      percentage_max_template_mode: false,
-      percentage_max_template: '',
 
       // Bar Appearance - Fix height default to be explicit
       height: 20, // Explicit default height in pixels
@@ -115,8 +109,6 @@ export class UltraBarModule extends BaseUltraModule {
       left_condition_type: 'none',
       left_condition_entity: '',
       left_condition_state: '',
-      left_template_mode: false,
-      left_template: '',
       left_title_size: 14,
       left_value_size: 14,
       left_title_color: '',
@@ -133,8 +125,6 @@ export class UltraBarModule extends BaseUltraModule {
       right_condition_type: 'none',
       right_condition_entity: '',
       right_condition_state: '',
-      right_template_mode: false,
-      right_template: '',
       right_title_size: 14,
       right_value_size: 14,
       right_title_color: '',
@@ -176,12 +166,13 @@ export class UltraBarModule extends BaseUltraModule {
       scale_show_labels: true,
       scale_label_size: 10,
       scale_label_color: '',
+      scale_tick_color: '',
       scale_position: 'below',
+      scale_custom_ticks: '',
+      scale_custom_labels: '',
 
       // Animation & Templates
       animation: true,
-      template_mode: false,
-      template: '',
       unified_template_mode: false,
       unified_template: '',
 
@@ -358,7 +349,6 @@ export class UltraBarModule extends BaseUltraModule {
           value: 'difference',
           label: localize('editor.bar.perc_type.difference', lang, 'Difference'),
         },
-        { value: 'template', label: localize('editor.bar.perc_type.template', lang, 'Template') },
         {
           value: 'time_progress',
           label: localize('editor.bar.perc_type.time_progress', lang, 'Time Progress (Real-time)'),
@@ -473,107 +463,6 @@ export class UltraBarModule extends BaseUltraModule {
                         undefined,
                         localize('editor.bar.diff_config.total_entity', lang, 'Total Value Entity')
                       )}
-                    </div>
-                  `
-                )
-              : ''
-          }
-
-          <!-- Template Field -->
-          ${
-            barModule.percentage_type === 'template'
-              ? this.renderConditionalFieldsGroup(
-                  localize('editor.bar.template_config.title', lang, 'Template Configuration'),
-                  html`
-                    <div
-                      style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px;"
-                    >
-                      <div
-                        class="section-title"
-                        style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
-                      >
-                        ${localize(
-                          'editor.bar.template_config.title',
-                          lang,
-                          'Template Configuration'
-                        )}
-                      </div>
-                      <div
-                        class="field-description"
-                        style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
-                      >
-                        ${localize(
-                          'editor.bar.template_config.desc',
-                          lang,
-                          'Configure template settings'
-                        )}
-                      </div>
-                      <div class="field-group" style="margin-bottom: 0;">
-                        <div
-                          class="field-title"
-                          style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
-                        >
-                          ${localize(
-                            'editor.bar.template_config.percentage_template',
-                            lang,
-                            'Percentage Template'
-                          )}
-                        </div>
-                        <div
-                          class="field-description"
-                          style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
-                        >
-                          ${localize(
-                            'editor.bar.template_config.percentage_template_desc',
-                            lang,
-                            "Enter a Jinja2 template that returns a number between 0-100 for the percentage. Example: {{ (states('sensor.battery_level') | float) * 100 }}"
-                          )}
-                        </div>
-                        <uc-template-cheatsheet .module=${'bar'}></uc-template-cheatsheet>
-
-                        <div
-                          @mousedown=${(e: Event) => {
-                            const target = e.target as HTMLElement;
-                            if (
-                              !target.closest('ultra-template-editor') &&
-                              !target.closest('.cm-editor')
-                            ) {
-                              e.stopPropagation();
-                            }
-                          }}
-                          @dragstart=${(e: Event) => e.stopPropagation()}
-                          @insert-snippet=${(e: CustomEvent) => {
-                            const editor = (e.currentTarget as HTMLElement).querySelector('ultra-template-editor');
-                            (editor as any)?.insertAtCursor?.(e.detail?.value ?? '');
-                          }}
-                        >
-                          <button
-                            style="background: none; border: 1px solid var(--divider-color); border-radius: 4px; padding: 4px 8px; font-size: 11px; color: var(--primary-color); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 8px;"
-                            title="${localize('editor.bar.template_cheatsheet', lang, 'Template Cheatsheet')}"
-                            @click=${(e: Event) => {
-                              (e.currentTarget as HTMLElement).dispatchEvent(
-                                new CustomEvent('uc-open-template-cheatsheet', {
-                                  detail: { module: 'bar' },
-                                  bubbles: true,
-                                  composed: true,
-                                })
-                              );
-                            }}
-                          >
-                            <ha-icon icon="mdi:help-circle-outline" style="--mdc-icon-size: 14px;"></ha-icon>
-                            ${localize('editor.bar.template_cheatsheet', lang, 'Template Cheatsheet')}
-                          </button>
-                          <ultra-template-editor
-                            .hass=${hass}
-                            .value=${barModule.percentage_template || ''}
-                            .placeholder=${"{{ (states('sensor.battery_level') | float) }}"}
-                            .minHeight=${100}
-                            .maxHeight=${300}
-                            @value-changed=${(e: CustomEvent) =>
-                              updateModule({ percentage_template: e.detail.value })}
-                          ></ultra-template-editor>
-                        </div>
-                      </div>
                     </div>
                   `
                 )
@@ -769,9 +658,7 @@ export class UltraBarModule extends BaseUltraModule {
           }
 
           <!-- Manual Min/Max Range Configuration -->
-          ${
-            barModule.percentage_type !== 'template'
-              ? html`
+          ${html`
                   <div
                     style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 16px; border-left: 3px solid var(--primary-color);"
                   >
@@ -796,7 +683,7 @@ export class UltraBarModule extends BaseUltraModule {
                         : localize(
                             'editor.bar.range.desc',
                             lang,
-                            "Override auto-detected range. Enter a number or use a Jinja2 template (e.g., {{ states('sensor.max') }})."
+                            'Override auto-detected range with numbers. For dynamic min/max or labels, enable the unified template (value_min, value_max, left_label, right_label).'
                           )}
                     </div>
 
@@ -809,38 +696,20 @@ export class UltraBarModule extends BaseUltraModule {
                           ${localize('editor.bar.range.min', lang, 'Minimum')}
                         </span>
                         <ha-textfield
-                          .value=${barModule.percentage_min_template_mode &&
-                          barModule.percentage_min_template
-                            ? barModule.percentage_min_template
-                            : barModule.percentage_min !== undefined
-                              ? String(barModule.percentage_min)
-                              : ''}
+                          .value=${barModule.percentage_min !== undefined
+                            ? String(barModule.percentage_min)
+                            : ''}
                           placeholder="${localize('editor.bar.range.auto', lang, 'Auto (0)')}"
                           @input=${(e: Event) => {
-                            // Capture value immediately before debounce
                             const target = e.target as HTMLInputElement;
                             const val = (target?.value || '').trim();
                             clearTimeout(this._templateInputDebounce);
                             this._templateInputDebounce = setTimeout(() => {
-                              // Auto-detect if it's a template (contains {{ or {%)
-                              const isTemplate = val.includes('{{') || val.includes('{%');
-                              if (isTemplate) {
-                                updateModule({
-                                  percentage_min_template_mode: true,
-                                  percentage_min_template: val,
-                                  percentage_min: undefined,
-                                });
-                              } else if (val === '') {
-                                updateModule({
-                                  percentage_min_template_mode: false,
-                                  percentage_min_template: '',
-                                  percentage_min: undefined,
-                                });
+                              if (val === '') {
+                                updateModule({ percentage_min: undefined });
                               } else {
                                 const num = parseFloat(val);
                                 updateModule({
-                                  percentage_min_template_mode: false,
-                                  percentage_min_template: '',
                                   percentage_min: isNaN(num) ? undefined : num,
                                 });
                               }
@@ -848,17 +717,6 @@ export class UltraBarModule extends BaseUltraModule {
                           }}
                           style="width: 100%;"
                         ></ha-textfield>
-                        ${barModule.percentage_min_template_mode &&
-                        barModule.percentage_min_template &&
-                        (barModule.percentage_min_template.includes('{{') ||
-                          barModule.percentage_min_template.includes('{%'))
-                          ? html`<span
-                              style="font-size: 10px; color: var(--primary-color); margin-top: 2px;"
-                            >
-                              <ha-icon icon="mdi:code-braces" style="font-size: 10px;"></ha-icon>
-                              Template
-                            </span>`
-                          : ''}
                       </div>
 
                       <!-- Max Value -->
@@ -869,40 +727,22 @@ export class UltraBarModule extends BaseUltraModule {
                           ${localize('editor.bar.range.max', lang, 'Maximum')}
                         </span>
                         <ha-textfield
-                          .value=${barModule.percentage_max_template_mode &&
-                          barModule.percentage_max_template
-                            ? barModule.percentage_max_template
-                            : barModule.percentage_max !== undefined
-                              ? String(barModule.percentage_max)
-                              : ''}
+                          .value=${barModule.percentage_max !== undefined
+                            ? String(barModule.percentage_max)
+                            : ''}
                           placeholder="${barModule.percentage_type === 'difference'
                             ? localize('editor.bar.range.auto_total', lang, 'Auto (total entity)')
                             : localize('editor.bar.range.auto', lang, 'Auto (100)')}"
                           @input=${(e: Event) => {
-                            // Capture value immediately before debounce
                             const target = e.target as HTMLInputElement;
                             const val = (target?.value || '').trim();
                             clearTimeout(this._templateInputDebounce);
                             this._templateInputDebounce = setTimeout(() => {
-                              // Auto-detect if it's a template (contains {{ or {%)
-                              const isTemplate = val.includes('{{') || val.includes('{%');
-                              if (isTemplate) {
-                                updateModule({
-                                  percentage_max_template_mode: true,
-                                  percentage_max_template: val,
-                                  percentage_max: undefined,
-                                });
-                              } else if (val === '') {
-                                updateModule({
-                                  percentage_max_template_mode: false,
-                                  percentage_max_template: '',
-                                  percentage_max: undefined,
-                                });
+                              if (val === '') {
+                                updateModule({ percentage_max: undefined });
                               } else {
                                 const num = parseFloat(val);
                                 updateModule({
-                                  percentage_max_template_mode: false,
-                                  percentage_max_template: '',
                                   percentage_max: isNaN(num) ? undefined : num,
                                 });
                               }
@@ -910,23 +750,10 @@ export class UltraBarModule extends BaseUltraModule {
                           }}
                           style="width: 100%;"
                         ></ha-textfield>
-                        ${barModule.percentage_max_template_mode &&
-                        barModule.percentage_max_template &&
-                        (barModule.percentage_max_template.includes('{{') ||
-                          barModule.percentage_max_template.includes('{%'))
-                          ? html`<span
-                              style="font-size: 10px; color: var(--primary-color); margin-top: 2px;"
-                            >
-                              <ha-icon icon="mdi:code-braces" style="font-size: 10px;"></ha-icon>
-                              Template
-                            </span>`
-                          : ''}
                       </div>
                     </div>
                   </div>
-                `
-              : ''
-          }
+                `}
 
           <!-- Bar Percentage Entity (only for Entity percentage type; template/difference/attribute/range have their own config) -->
           ${
@@ -1496,6 +1323,83 @@ export class UltraBarModule extends BaseUltraModule {
                       `
                     : ''}
 
+                  <!-- Tick Color -->
+                  <div class="field-group" style="margin-bottom: 16px;">
+                    <div
+                      class="field-title"
+                      style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 8px;"
+                    >
+                      ${localize('editor.bar.scale.tick_color', lang, 'Tick Color')}
+                    </div>
+                    <ultra-color-picker
+                      .hass=${hass}
+                      .value=${(barModule as any).scale_tick_color || ''}
+                      .placeholder=${'var(--divider-color)'}
+                      @value-changed=${(e: CustomEvent) =>
+                        updateModule({ scale_tick_color: e.detail.value })}
+                    ></ultra-color-picker>
+                  </div>
+
+                  <!-- Custom Tick Positions -->
+                  <div class="field-group" style="margin-bottom: 16px;">
+                    <div
+                      class="field-title"
+                      style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                    >
+                      ${localize('editor.bar.scale.custom_ticks', lang, 'Custom Tick Positions')}
+                    </div>
+                    <div
+                      class="field-description"
+                      style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
+                    >
+                      ${localize(
+                        'editor.bar.scale.custom_ticks_desc',
+                        lang,
+                        'Comma-separated values in your entity\'s unit. Overrides the number of divisions (e.g. 10,20,30,40). Leave blank to use evenly spaced divisions.'
+                      )}
+                    </div>
+                    <ha-textfield
+                      style="width: 100%;"
+                      .value=${(barModule as any).scale_custom_ticks || ''}
+                      .placeholder=${'e.g. 10,20,30,40'}
+                      @change=${(e: Event) =>
+                        updateModule({ scale_custom_ticks: (e.target as HTMLInputElement).value })}
+                    ></ha-textfield>
+                  </div>
+
+                  <!-- Custom Tick Labels -->
+                  ${(barModule as any).scale_custom_ticks?.trim()
+                    ? html`
+                        <div class="field-group" style="margin-bottom: 16px;">
+                          <div
+                            class="field-title"
+                            style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                          >
+                            ${localize('editor.bar.scale.custom_labels', lang, 'Custom Tick Labels')}
+                          </div>
+                          <div
+                            class="field-description"
+                            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
+                          >
+                            ${localize(
+                              'editor.bar.scale.custom_labels_desc',
+                              lang,
+                              'Optional comma-separated labels matching each custom tick (e.g. Reserve,1/4,1/2,3/4,Full). Leave blank to show the numeric values.'
+                            )}
+                          </div>
+                          <ha-textfield
+                            style="width: 100%;"
+                            .value=${(barModule as any).scale_custom_labels || ''}
+                            .placeholder=${'e.g. Reserve,1/4,1/2,3/4,Full'}
+                            @change=${(e: Event) =>
+                              updateModule({
+                                scale_custom_labels: (e.target as HTMLInputElement).value,
+                              })}
+                          ></ha-textfield>
+                        </div>
+                      `
+                    : ''}
+
                   <!-- Scale Position -->
                   <div class="field-group" style="margin-bottom: 0;">
                     <div
@@ -1774,8 +1678,7 @@ export class UltraBarModule extends BaseUltraModule {
             barModule.show_percentage !== false
               ? html`
                   <!-- Display Type Toggle - Only show for difference and template types -->
-                  ${barModule.percentage_type === 'difference' ||
-                  barModule.percentage_type === 'template'
+                  ${barModule.percentage_type === 'difference'
                     ? html`
                         ${this.renderFieldSection(
                           localize('editor.bar.text_display.show_value', lang, 'Show Value Instead of Percentage'),
@@ -1934,6 +1837,70 @@ export class UltraBarModule extends BaseUltraModule {
           }
         </div>
 
+        <!-- Unified Template Section -->
+        <div style="margin-bottom: 24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:16px;font-weight:600;">${localize('editor.bar.unified_template.toggle', lang, 'Template mode')}</span>
+              <button
+                type="button"
+                class="help-btn"
+                style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                title="${localize('editor.bar.unified_template.cheatsheet', lang, 'Template cheatsheet')}"
+                @click=${(e: Event) => {
+                  (e.currentTarget as HTMLElement).dispatchEvent(
+                    new CustomEvent('uc-open-template-cheatsheet', {
+                      bubbles: true,
+                      composed: true,
+                      detail: { module: 'bar' },
+                    })
+                  );
+                }}
+              >
+                <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
+              </button>
+            </div>
+            <ha-switch
+              .checked=${barModule.unified_template_mode || false}
+              @change=${(e: Event) =>
+                updateModule({ unified_template_mode: (e.target as any).checked })}
+            ></ha-switch>
+          </div>
+          <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; line-height: 1.5;">
+            ${localize(
+              'editor.bar.unified_template.desc',
+              lang,
+              'One Jinja template returning JSON: value, label, color, left_label, right_label, value_min, value_max, container_background_color.'
+            )}
+          </div>
+          ${barModule.unified_template_mode
+            ? html`
+                <div
+                  style="margin-top:12px;"
+                  @mousedown=${(e: Event) => {
+                    const t = e.target as HTMLElement;
+                    if (!t.closest('ultra-template-editor') && !t.closest('.cm-editor')) e.stopPropagation();
+                  }}
+                  @dragstart=${(e: Event) => e.stopPropagation()}
+                  @insert-snippet=${(e: CustomEvent) => {
+                    const ed = (e.currentTarget as HTMLElement).querySelector('ultra-template-editor');
+                    (ed as any)?.insertAtCursor?.(e.detail?.value ?? '');
+                  }}
+                >
+                  <ultra-template-editor
+                    .hass=${hass}
+                    .value=${barModule.unified_template || ''}
+                    .placeholder=${'{\n  "value": "{{ states(\'sensor.battery_level\') | float }}",\n  "label": "{{ friendly_name }}"\n}'}
+                    .minHeight=${120}
+                    .maxHeight=${400}
+                    @value-changed=${(e: CustomEvent) =>
+                      updateModule({ unified_template: e.detail.value })}
+                  ></ultra-template-editor>
+                </div>
+              `
+            : ''}
+        </div>
+
         <!-- Left Side Section -->
         <div
           class="settings-section"
@@ -1952,7 +1919,6 @@ export class UltraBarModule extends BaseUltraModule {
                   left_enabled: true,
                   left_title: barModule.left_title || 'Fuel',
                   left_entity: barModule.left_entity || '',
-                  left_template_mode: barModule.left_template_mode || false,
                   left_title_size: barModule.left_title_size || 14,
                   left_value_size: barModule.left_value_size || 14,
                   left_title_color: barModule.left_title_color || 'var(--primary-text-color)',
@@ -1963,8 +1929,6 @@ export class UltraBarModule extends BaseUltraModule {
                   left_enabled: false,
                   left_title: '',
                   left_entity: '',
-                  left_template_mode: false,
-                  left_template: '',
                 });
               }
             }
@@ -2020,71 +1984,6 @@ export class UltraBarModule extends BaseUltraModule {
                     (v: number) => { updateModule({ left_value_size: v }); },
                     'px'
                   )}
-                  <!-- Left Template Mode -->
-                  ${this.renderFieldSection(
-                    localize('editor.bar.left.template_mode', lang, 'Template Mode'),
-                    '',
-                    hass,
-                    { left_template_mode: barModule.left_template_mode || false },
-                    [this.booleanField('left_template_mode')],
-                    (e: CustomEvent) => updateModule({ left_template_mode: e.detail.value.left_template_mode })
-                  )}
-                  ${barModule.left_template_mode
-                    ? html`
-                        <div
-                          class="field-description"
-                          style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
-                        >
-                          ${localize(
-                            'editor.bar.left.template_desc',
-                            lang,
-                            "Use a template to format the displayed value. Templates use Home Assistant's Jinja2 syntax."
-                          )}
-                        </div>
-                        <div class="field-group" style="margin-bottom: 0;">
-                          <div
-                            class="field-title"
-                            style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
-                          >
-                            ${localize('editor.bar.left.value_template', lang, 'Value Template')}
-                          </div>
-                          <div
-                            class="field-description"
-                            style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
-                          >
-                            ${localize(
-                              'editor.bar.left.value_template_desc',
-                              lang,
-                              'Template to format the left-side value using Jinja2 syntax'
-                            )}
-                          </div>
-                          <div
-                            @mousedown=${(e: Event) => {
-                              // Only stop propagation for drag operations, not clicks on the editor
-                              const target = e.target as HTMLElement;
-                              if (
-                                !target.closest('ultra-template-editor') &&
-                                !target.closest('.cm-editor')
-                              ) {
-                                e.stopPropagation();
-                              }
-                            }}
-                            @dragstart=${(e: Event) => e.stopPropagation()}
-                          >
-                            <ultra-template-editor
-                              .hass=${hass}
-                              .value=${barModule.left_template || ''}
-                              .placeholder=${"{{ states('sensor.example') }}"}
-                              .minHeight=${100}
-                              .maxHeight=${300}
-                              @value-changed=${(e: CustomEvent) =>
-                                updateModule({ left_template: e.detail.value })}
-                            ></ultra-template-editor>
-                          </div>
-                        </div>
-                      `
-                    : ''}
-
                   <!-- Left Side Actions (isolated component) -->
                   <bar-side-actions
                     .hass=${hass}
@@ -2130,7 +2029,6 @@ export class UltraBarModule extends BaseUltraModule {
                   right_enabled: true,
                   right_title: barModule.right_title || 'Range',
                   right_entity: barModule.right_entity || '',
-                  right_template_mode: barModule.right_template_mode || false,
                   right_title_size: barModule.right_title_size || 14,
                   right_value_size: barModule.right_value_size || 14,
                   right_title_color: barModule.right_title_color || 'var(--primary-text-color)',
@@ -2141,8 +2039,6 @@ export class UltraBarModule extends BaseUltraModule {
                   right_enabled: false,
                   right_title: '',
                   right_entity: '',
-                  right_template_mode: false,
-                  right_template: '',
                 });
               }
             }
@@ -2196,70 +2092,6 @@ export class UltraBarModule extends BaseUltraModule {
                     (v: number) => { updateModule({ right_value_size: v }); },
                     'px'
                   )}
-                  ${this.renderFieldSection(
-                    localize('editor.bar.right.template_mode', lang, 'Template Mode'),
-                    '',
-                    hass,
-                    { right_template_mode: barModule.right_template_mode || false },
-                    [this.booleanField('right_template_mode')],
-                    (e: CustomEvent) => updateModule({ right_template_mode: e.detail.value.right_template_mode })
-                  )}
-                  ${barModule.right_template_mode
-                    ? html`
-                        <div
-                          class="field-description"
-                          style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
-                        >
-                          ${localize(
-                            'editor.bar.right.template_desc',
-                            lang,
-                            "Use a template to format the displayed value. Templates use Home Assistant's Jinja2 syntax."
-                          )}
-                        </div>
-                        <div class="field-group" style="margin-bottom: 0;">
-                          <div
-                            class="field-title"
-                            style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
-                          >
-                            ${localize('editor.bar.right.value_template', lang, 'Value Template')}
-                          </div>
-                          <div
-                            class="field-description"
-                            style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
-                          >
-                            ${localize(
-                              'editor.bar.right.value_template_desc',
-                              lang,
-                              'Template to format the right-side value using Jinja2 syntax'
-                            )}
-                          </div>
-                          <div
-                            @mousedown=${(e: Event) => {
-                              // Only stop propagation for drag operations, not clicks on the editor
-                              const target = e.target as HTMLElement;
-                              if (
-                                !target.closest('ultra-template-editor') &&
-                                !target.closest('.cm-editor')
-                              ) {
-                                e.stopPropagation();
-                              }
-                            }}
-                            @dragstart=${(e: Event) => e.stopPropagation()}
-                          >
-                            <ultra-template-editor
-                              .hass=${hass}
-                              .value=${barModule.right_template || ''}
-                              .placeholder=${"{{ states('sensor.example') }}"}
-                              .minHeight=${100}
-                              .maxHeight=${300}
-                              @value-changed=${(e: CustomEvent) =>
-                                updateModule({ right_template: e.detail.value })}
-                            ></ultra-template-editor>
-                          </div>
-                        </div>
-                      `
-                    : ''}
-
                   <!-- Right Side Actions (isolated component) -->
                   <bar-side-actions
                     .hass=${hass}
@@ -3054,7 +2886,8 @@ export class UltraBarModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
 
     // Clean up time progress interval if mode has changed
-    const pctType = (barModule as any).percentage_type || 'entity';
+    const pctTypeRaw = (barModule as any).percentage_type || 'entity';
+    const pctType = pctTypeRaw === 'template' ? 'entity' : pctTypeRaw;
     if (pctType !== 'time_progress' && this._timeProgressInterval) {
       if (this._timeProgressCleanup) {
         this._timeProgressCleanup();
@@ -3094,14 +2927,24 @@ export class UltraBarModule extends BaseUltraModule {
 
     const clampPercent = (p: number) => Math.min(Math.max(p, 0), 100);
 
+    let unifiedBarLeftLabel = '';
+    let unifiedBarRightLabel = '';
+    let unifiedBarValueMin: number | undefined;
+    let unifiedBarValueMax: number | undefined;
+
     // PRIORITY 1: Unified template (if enabled)
     if (barModule.unified_template_mode && barModule.unified_template) {
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
+      } else if (this._templateService && hass) {
+        this._templateService.updateHass(hass);
       }
       if (hass) {
         if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-        const templateHash = this._hashString(barModule.unified_template);
+        const processedUnifiedTemplate = preprocessTemplateVariables(
+          barModule.unified_template, hass, config
+        );
+        const templateHash = this._hashString(processedUnifiedTemplate);
         const templateKey = `unified_bar_${barModule.id}_${templateHash}`;
 
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
@@ -3109,7 +2952,7 @@ export class UltraBarModule extends BaseUltraModule {
             entity: barModule.entity,
           });
           this._templateService.subscribeToTemplate(
-            barModule.unified_template,
+            processedUnifiedTemplate,
             templateKey,
             () => {
               if (typeof window !== 'undefined') {
@@ -3139,6 +2982,26 @@ export class UltraBarModule extends BaseUltraModule {
             }
             if (parsed.color) barColor = parsed.color;
             if (parsed.label) barLabel = parsed.label;
+            if (parsed.left_label !== undefined && String(parsed.left_label).trim() !== '') {
+              unifiedBarLeftLabel = String(parsed.left_label).trim();
+            }
+            if (parsed.right_label !== undefined && String(parsed.right_label).trim() !== '') {
+              unifiedBarRightLabel = String(parsed.right_label).trim();
+            }
+            if (parsed.value_min !== undefined) {
+              const n =
+                typeof parsed.value_min === 'number'
+                  ? parsed.value_min
+                  : parseFloat(String(parsed.value_min));
+              if (!isNaN(n)) unifiedBarValueMin = n;
+            }
+            if (parsed.value_max !== undefined) {
+              const n =
+                typeof parsed.value_max === 'number'
+                  ? parsed.value_max
+                  : parseFloat(String(parsed.value_max));
+              if (!isNaN(n)) unifiedBarValueMax = n;
+            }
           }
         }
       }
@@ -3148,94 +3011,15 @@ export class UltraBarModule extends BaseUltraModule {
     const hasValidEntity = barModule.entity && hass?.states[barModule.entity];
     const isPreviewMode = !hasValidEntity;
 
-    // Helper to resolve min/max values from templates or static values
     const resolveMinMax = (): { min: number | undefined; max: number | undefined } => {
       let resolvedMin: number | undefined = barModule.percentage_min;
       let resolvedMax: number | undefined = barModule.percentage_max;
-
-      // Helper to check if value is a real Jinja template
-      const isRealTemplate = (val: string) => val.includes('{{') || val.includes('{%');
-
-      // Resolve min template if enabled
-      if (barModule.percentage_min_template_mode && barModule.percentage_min_template) {
-        const tpl = barModule.percentage_min_template;
-        // If it's just a plain number (not a real template), use it directly
-        if (!isRealTemplate(tpl)) {
-          const directNum = parseFloat(tpl);
-          if (!isNaN(directNum)) resolvedMin = directNum;
-        } else if (hass) {
-          // Real Jinja template - use template service
-          if (!this._templateService) {
-            this._templateService = new TemplateService(hass);
-          }
-          if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-          const key = `bar_min_${barModule.id}_${this._hashString(tpl)}`;
-          if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
-            this._templateService.subscribeToTemplate(
-              tpl,
-              key,
-              () => {
-                if (typeof window !== 'undefined') {
-                  if (!window._ultraCardUpdateTimer) {
-                    window._ultraCardUpdateTimer = setTimeout(() => {
-                      this.triggerPreviewUpdate();
-                      window._ultraCardUpdateTimer = null;
-                    }, 50);
-                  }
-                }
-              },
-              undefined, // No context variables
-              config // Pass config for card-specific variable resolution
-            );
-          }
-          const rendered = hass.__uvc_template_strings?.[key];
-          if (rendered !== undefined) {
-            const num = parseFloat(String(rendered));
-            if (!isNaN(num)) resolvedMin = num;
-          }
-        }
+      if (barModule.unified_template_mode && unifiedBarValueMin !== undefined) {
+        resolvedMin = unifiedBarValueMin;
       }
-
-      // Resolve max template if enabled
-      if (barModule.percentage_max_template_mode && barModule.percentage_max_template) {
-        const tpl = barModule.percentage_max_template;
-        // If it's just a plain number (not a real template), use it directly
-        if (!isRealTemplate(tpl)) {
-          const directNum = parseFloat(tpl);
-          if (!isNaN(directNum)) resolvedMax = directNum;
-        } else if (hass) {
-          // Real Jinja template - use template service
-          if (!this._templateService) {
-            this._templateService = new TemplateService(hass);
-          }
-          if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-          const key = `bar_max_${barModule.id}_${this._hashString(tpl)}`;
-          if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
-            this._templateService.subscribeToTemplate(
-              tpl,
-              key,
-              () => {
-                if (typeof window !== 'undefined') {
-                  if (!window._ultraCardUpdateTimer) {
-                    window._ultraCardUpdateTimer = setTimeout(() => {
-                      this.triggerPreviewUpdate();
-                      window._ultraCardUpdateTimer = null;
-                    }, 50);
-                  }
-                }
-              },
-              undefined, // No context variables
-              config // Pass config for card-specific variable resolution
-            );
-          }
-          const rendered = hass.__uvc_template_strings?.[key];
-          if (rendered !== undefined) {
-            const num = parseFloat(String(rendered));
-            if (!isNaN(num)) resolvedMax = num;
-          }
-        }
+      if (barModule.unified_template_mode && unifiedBarValueMax !== undefined) {
+        resolvedMax = unifiedBarValueMax;
       }
-
       return { min: resolvedMin, max: resolvedMax };
     };
 
@@ -3256,7 +3040,8 @@ export class UltraBarModule extends BaseUltraModule {
 
     // PRIORITY 2: Legacy percentage calculations (only if unified template didn't set percentage)
     if (!barModule.unified_template_mode) {
-      const pctType = (barModule as any).percentage_type || 'entity';
+      let pctType = (barModule as any).percentage_type || 'entity';
+      if (pctType === 'template') pctType = 'entity';
 
       // PRIORITY 2.5: Time Progress calculation (real-time frontend calculation)
       if (pctType === 'time_progress') {
@@ -3335,43 +3120,6 @@ export class UltraBarModule extends BaseUltraModule {
                 this._timeProgressInterval = null;
               }
             };
-          }
-        }
-      } else if (pctType === 'template' && (barModule as any).percentage_template) {
-        // Template-driven percentage (template already returns final percentage, no min/max needed)
-        if (!this._templateService && hass) {
-          this._templateService = new TemplateService(hass);
-        }
-        if (hass) {
-          if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-          const tpl = (barModule as any).percentage_template as string;
-          const key = `bar_percentage_${barModule.id}_${this._hashString(tpl)}`;
-          if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
-            this._templateService.subscribeToTemplate(
-              tpl,
-              key,
-              () => {
-                if (typeof window !== 'undefined') {
-                  // Use global debounced update
-                  if (!window._ultraCardUpdateTimer) {
-                    window._ultraCardUpdateTimer = setTimeout(() => {
-                      this.triggerPreviewUpdate();
-                      window._ultraCardUpdateTimer = null;
-                    }, 50);
-                  }
-                }
-              },
-              undefined, // No context variables
-              config // Pass config for card-specific variable resolution
-            );
-          }
-          const rendered = hass.__uvc_template_strings?.[key];
-          if (rendered !== undefined) {
-            const num = parseFloat(String(rendered));
-            if (!isNaN(num)) {
-              // Accept 0..100 directly; if 0..1 assume fraction and upscale
-              percentage = num <= 1 ? clampPercent(num * 100) : clampPercent(num);
-            }
           }
         }
       } else if (pctType === 'attribute') {
@@ -3455,42 +3203,10 @@ export class UltraBarModule extends BaseUltraModule {
       percentage = 65; // Demo value for preview
     }
 
-    // Get left side values with template support
     let leftDisplay = '';
-    if (barModule.left_template_mode && barModule.left_template) {
-      if (!this._templateService && hass) {
-        this._templateService = new TemplateService(hass);
-      }
-      if (hass) {
-        if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-        const templateHash = this._hashString(barModule.left_template);
-        const templateKey = `bar_left_${barModule.id}_${templateHash}`;
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(
-            barModule.left_template,
-            templateKey,
-            () => {
-              if (typeof window !== 'undefined') {
-                // Use global debounced update
-                if (!window._ultraCardUpdateTimer) {
-                  window._ultraCardUpdateTimer = setTimeout(() => {
-                    this.triggerPreviewUpdate();
-                    window._ultraCardUpdateTimer = null;
-                  }, 50);
-                }
-              }
-            },
-            undefined, // No context variables
-            config // Pass config for card-specific variable resolution
-          );
-        }
-        const rendered = hass.__uvc_template_strings?.[templateKey];
-        if (rendered !== undefined && String(rendered).trim() !== '') {
-          leftDisplay = String(rendered);
-        }
-      }
-    }
-    if (!leftDisplay && barModule.left_entity && hass?.states[barModule.left_entity]) {
+    if (barModule.unified_template_mode && unifiedBarLeftLabel) {
+      leftDisplay = unifiedBarLeftLabel;
+    } else if (barModule.left_entity && hass?.states[barModule.left_entity]) {
       const leftState = hass.states[barModule.left_entity];
       try {
         leftDisplay = formatEntityState(hass, barModule.left_entity, { includeUnit: true });
@@ -3499,42 +3215,10 @@ export class UltraBarModule extends BaseUltraModule {
       }
     }
 
-    // Get right side values with template support
     let rightDisplay = '';
-    if (barModule.right_template_mode && barModule.right_template) {
-      if (!this._templateService && hass) {
-        this._templateService = new TemplateService(hass);
-      }
-      if (hass) {
-        if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-        const templateHash = this._hashString(barModule.right_template);
-        const templateKey = `bar_right_${barModule.id}_${templateHash}`;
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(
-            barModule.right_template,
-            templateKey,
-            () => {
-              if (typeof window !== 'undefined') {
-                // Use global debounced update
-                if (!window._ultraCardUpdateTimer) {
-                  window._ultraCardUpdateTimer = setTimeout(() => {
-                    this.triggerPreviewUpdate();
-                    window._ultraCardUpdateTimer = null;
-                  }, 50);
-                }
-              }
-            },
-            undefined, // No context variables
-            config // Pass config for card-specific variable resolution
-          );
-        }
-        const rendered = hass.__uvc_template_strings?.[templateKey];
-        if (rendered !== undefined && String(rendered).trim() !== '') {
-          rightDisplay = String(rendered);
-        }
-      }
-    }
-    if (!rightDisplay && barModule.right_entity && hass?.states[barModule.right_entity]) {
+    if (barModule.unified_template_mode && unifiedBarRightLabel) {
+      rightDisplay = unifiedBarRightLabel;
+    } else if (barModule.right_entity && hass?.states[barModule.right_entity]) {
       const rightState = hass.states[barModule.right_entity];
       try {
         rightDisplay = formatEntityState(hass, barModule.right_entity, { includeUnit: true });
@@ -3549,14 +3233,33 @@ export class UltraBarModule extends BaseUltraModule {
       const limitState = hass.states[barModule.limit_entity];
       const limitValue = parseFloat(limitState.state) || 0;
       const pctTypeForLimit = (barModule as any).percentage_type || 'entity';
-      let baseMax = 100;
+      const { min: limitManualMin, max: limitManualMax } = resolveMinMax();
+
       if (pctTypeForLimit === 'difference') {
         // In difference mode the limit entity is in the same real-world unit as the total entity.
         const totalId = (barModule as any).percentage_total_entity;
         const totalVal = totalId ? parseFloat(String(hass?.states[totalId]?.state ?? '0')) : 0;
-        if (totalVal > 0) baseMax = totalVal;
+        const baseMax = totalVal > 0 ? totalVal : 100;
+        limitPercentage = calculatePercentageWithRange(limitValue, 0, baseMax, limitManualMin, limitManualMax);
+      } else {
+        // Entity / attribute mode: derive the same auto min/max as the main bar entity so the
+        // limit line is positioned on the same scale, then apply any manual override.
+        const mainEntityState = hass?.states[barModule.entity];
+        let autoMin = 0;
+        let autoMax = 100;
+        if (mainEntityState) {
+          const unit = mainEntityState.attributes?.unit_of_measurement || '';
+          if (mainEntityState.attributes?.min !== undefined) {
+            autoMin = parseFloat(String(mainEntityState.attributes.min)) || 0;
+          }
+          if (mainEntityState.attributes?.max !== undefined) {
+            autoMax = parseFloat(String(mainEntityState.attributes.max)) || 100;
+          } else if (unit === '%' || mainEntityState.attributes?.device_class === 'battery') {
+            autoMax = 100;
+          }
+        }
+        limitPercentage = calculatePercentageWithRange(limitValue, autoMin, autoMax, limitManualMin, limitManualMax);
       }
-      limitPercentage = Math.min(Math.max((limitValue / baseMax) * 100, 0), 100);
     }
 
     // Calculate range values for Range mode
@@ -3813,7 +3516,8 @@ export class UltraBarModule extends BaseUltraModule {
       }
 
       // Time Progress mode: always show formatted time
-      const pctType = (barModule as any).percentage_type || 'entity';
+      const pctTypeInnerRaw = (barModule as any).percentage_type || 'entity';
+      const pctType = pctTypeInnerRaw === 'template' ? 'entity' : pctTypeInnerRaw;
       if (pctType === 'time_progress' && timeProgressDisplay) {
         return timeProgressDisplay;
       }
@@ -3833,16 +3537,6 @@ export class UltraBarModule extends BaseUltraModule {
               });
             } catch (_e) {
               return `${currentState.state}${currentState.attributes?.unit_of_measurement || ''}`;
-            }
-          }
-        } else if (pctType === 'template') {
-          const template = (barModule as any).percentage_template;
-          if (template && hass) {
-            if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-            const key = `bar_percentage_${barModule.id}_${this._hashString(template)}`;
-            const rendered = hass.__uvc_template_strings?.[key];
-            if (rendered !== undefined) {
-              return String(rendered);
             }
           }
         }
@@ -4493,7 +4187,6 @@ export class UltraBarModule extends BaseUltraModule {
         moduleWithDesign.padding_right
           ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
           : '0',
-      // Standard 8px top/bottom margin for proper web design spacing
       margin:
         designProperties.margin_top ||
         designProperties.margin_bottom ||
@@ -4503,8 +4196,8 @@ export class UltraBarModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
-          : '8px 0',
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '0px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '0px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
+          : '0',
       background: containerBackground,
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },
@@ -5234,8 +4927,8 @@ export class UltraBarModule extends BaseUltraModule {
                 const hasManualRange =
                   barModule.percentage_min !== undefined ||
                   barModule.percentage_max !== undefined ||
-                  (barModule.percentage_min_template_mode && !!barModule.percentage_min_template) ||
-                  (barModule.percentage_max_template_mode && !!barModule.percentage_max_template);
+                  (barModule.unified_template_mode &&
+                    (unifiedBarValueMin !== undefined || unifiedBarValueMax !== undefined));
 
                 if (hasManualRange) return `${displayPercentage}%`;
 
@@ -5267,22 +4960,53 @@ export class UltraBarModule extends BaseUltraModule {
                 const scaleLabelSize = (barModule as any).scale_label_size || 10;
                 const scaleLabelColor =
                   (barModule as any).scale_label_color || 'var(--secondary-text-color)';
+                const scaleTickColor =
+                  (barModule as any).scale_tick_color || 'var(--divider-color)';
                 const scalePosition = (barModule as any).scale_position || 'below';
                 const scaleRange = scaleMax - scaleMin;
 
-                const ticks = Array.from({ length: scaleDivisions + 1 }, (_, i) => {
-                  const value = scaleMin + (scaleRange * i) / scaleDivisions;
-                  const position = (i / scaleDivisions) * 100;
-                  return { value, position };
-                });
+                // Build tick list: custom positions take precedence over even divisions
+                const customTicksRaw: string = (barModule as any).scale_custom_ticks || '';
+                const customLabelsRaw: string = (barModule as any).scale_custom_labels || '';
+                let ticks: { position: number; label: string }[];
+
+                if (customTicksRaw.trim()) {
+                  const customValues = customTicksRaw
+                    .split(',')
+                    .map(s => parseFloat(s.trim()))
+                    .filter(v => !isNaN(v));
+                  const customLabels = customLabelsRaw
+                    .split(',')
+                    .map(s => s.trim());
+                  ticks = customValues.map((val, i) => {
+                    const position = scaleRange > 0
+                      ? Math.min(100, Math.max(0, ((val - scaleMin) / scaleRange) * 100))
+                      : 0;
+                    const label = customLabels[i] !== undefined && customLabels[i] !== ''
+                      ? customLabels[i]
+                      : (Number.isInteger(val) ? String(val) : val.toFixed(1));
+                    return { position, label };
+                  });
+                } else {
+                  ticks = Array.from({ length: scaleDivisions + 1 }, (_, i) => {
+                    const val = scaleMin + (scaleRange * i) / scaleDivisions;
+                    const position = (i / scaleDivisions) * 100;
+                    const label = Number.isInteger(val) ? String(val) : val.toFixed(1);
+                    return { position, label };
+                  });
+                }
+
+                const isCustomLayout = customTicksRaw.trim() !== '';
 
                 return html`
                   <div
                     class="bar-scale"
                     style="
-                      display: flex;
-                      justify-content: space-between;
+                      position: ${isCustomLayout ? 'relative' : 'static'};
+                      display: ${isCustomLayout ? 'block' : 'flex'};
+                      justify-content: ${isCustomLayout ? 'unset' : 'space-between'};
                       width: ${barWidth};
+                      height: ${isCustomLayout ? (scaleShowLabels ? `${scaleLabelSize + 12}px` : '12px') : 'auto'};
                       margin-top: ${scalePosition === 'below' ? '6px' : '0'};
                       margin-bottom: ${scalePosition === 'above' ? '6px' : '0'};
                       order: ${scalePosition === 'above' ? '-1' : '1'};
@@ -5298,6 +5022,9 @@ export class UltraBarModule extends BaseUltraModule {
                         <div
                           class="scale-tick"
                           style="
+                            ${isCustomLayout
+                              ? `position: absolute; left: ${tick.position}%; transform: translateX(-50%);`
+                              : ''}
                             display: flex;
                             flex-direction: ${scalePosition === 'above'
                             ? 'column-reverse'
@@ -5310,7 +5037,7 @@ export class UltraBarModule extends BaseUltraModule {
                             style="
                               width: 1px;
                               height: 6px;
-                              background: var(--divider-color);
+                              background: ${scaleTickColor};
                             "
                           ></div>
                           ${scaleShowLabels
@@ -5324,9 +5051,7 @@ export class UltraBarModule extends BaseUltraModule {
                                     white-space: nowrap;
                                   "
                                 >
-                                  ${Number.isInteger(tick.value)
-                                    ? tick.value
-                                    : tick.value.toFixed(1)}
+                                  ${tick.label}
                                 </span>
                               `
                             : ''}

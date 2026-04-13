@@ -6,6 +6,7 @@ import { getModuleRegistry } from './module-registry';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { localize } from '../localize/localize';
+import { autoMigrateCardModule } from '../utils/template-migration';
 
 export class UltraTabsModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -1661,7 +1662,12 @@ export class UltraTabsModule extends BaseUltraModule {
 
         return html`
           <div class="tab-child-module" style="${childDesignStyle}">
-            ${childModuleHandler.renderPreview(childModule, hass, config, previewContext)}
+            ${childModuleHandler.renderPreview(
+              autoMigrateCardModule(childModule),
+              hass,
+              config,
+              previewContext
+            )}
           </div>
         `;
       })}

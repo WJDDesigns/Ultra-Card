@@ -1,4 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
+import { parseTemplateColorResult } from '../utils/uc-template-color-result';
 
 /**
  * Extended HomeAssistant interface to store dynamic color template results
@@ -136,59 +137,7 @@ export class DynamicColorService {
    * @returns Processed color value
    */
   public parseColorResult(result: any): string {
-    if (result === undefined || result === null) {
-      return 'var(--primary-color)';
-    }
-
-    // String values (most common for colors)
-    if (typeof result === 'string') {
-      const trimmedResult = result.trim();
-
-      // Check if it looks like a valid color value
-      if (this.isValidColor(trimmedResult)) {
-        return trimmedResult;
-      }
-
-      // If it doesn't look like a color, log a warning and return default
-      console.warn(
-        `[UltraVehicleCard] Color template evaluated to invalid color '${trimmedResult}', using default.`
-      );
-      return 'var(--primary-color)';
-    }
-
-    // If it's something else, log it and return default
-    console.warn(
-      `[UltraVehicleCard] Color template evaluated to non-string type '${typeof result}', using default.`
-    );
-    return 'var(--primary-color)';
-  }
-
-  /**
-   * Basic validation to check if a string looks like a valid color
-   * @param color The color string to validate
-   * @returns True if it looks like a valid color
-   */
-  private isValidColor(color: string): boolean {
-    // Check for CSS gradient functions (linear-gradient, radial-gradient, etc.)
-    if (color.toLowerCase().includes('gradient')) {
-      // Basic validation for gradient syntax - must start with gradient type and have parentheses
-      const gradientPattern =
-        /^(linear-gradient|radial-gradient|conic-gradient|repeating-linear-gradient|repeating-radial-gradient)\(.*\)$/i;
-      return gradientPattern.test(color.trim());
-    }
-
-    // Check for common color formats
-    const colorPatterns = [
-      /^#[0-9A-Fa-f]{3,8}$/, // Hex colors (#fff, #ffffff, #ffffff00)
-      /^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/i, // RGB
-      /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)$/i, // RGBA
-      /^hsl\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*\)$/i, // HSL
-      /^hsla\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*,\s*[\d.]+\s*\)$/i, // HSLA
-      /^var\(--[\w-]+\)$/i, // CSS variables
-      /^(red|green|blue|yellow|orange|purple|pink|brown|black|white|gray|grey|transparent)$/i, // Named colors
-    ];
-
-    return colorPatterns.some(pattern => pattern.test(color));
+    return parseTemplateColorResult(result, 'var(--primary-color)');
   }
 
   /**

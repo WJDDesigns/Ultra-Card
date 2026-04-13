@@ -152,6 +152,8 @@ export class FormUtils {
       'enabled',
       'disabled',
       'template',
+      'unified_template',
+      'unified_template_mode',
       'mode',
       'type',
       'size',

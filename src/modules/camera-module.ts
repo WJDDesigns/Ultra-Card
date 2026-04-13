@@ -14,9 +14,13 @@ import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { TemplateService } from '../services/template-service';
 import { buildEntityContext } from '../utils/template-context';
-import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
+import {
+  parseUnifiedTemplate,
+  hasTemplateError,
+  unifiedTemplateEntityId,
+} from '../utils/template-parser';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import '../components/ultra-template-editor';
-import '../components/uc-template-cheatsheet';
 
 const CAMERA_PLAYER_SELECTORS = new Set([
   'ha-web-rtc-player',
@@ -109,9 +113,8 @@ export class UltraCameraModule extends BaseUltraModule {
       hold_action: { action: 'nothing' },
       double_tap_action: { action: 'nothing' },
 
-      // Template support
-      template_mode: false,
-      template: '',
+      unified_template_mode: false,
+      unified_template: '',
 
       // Global design defaults for camera module - responsive by default
       design: {
@@ -760,189 +763,71 @@ export class UltraCameraModule extends BaseUltraModule {
 
         <!-- Link configuration intentionally omitted for Camera module per design guidelines -->
 
-        <!-- Template Mode Section -->
-        <div
-          class="settings-section template-mode-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 24px;"
-        >
-          <div
-            class="section-title"
-            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
-          >
-            ${localize('editor.camera.template.title', lang, 'Template Mode')}
+        <!-- Unified Template Section -->
+        <div style="margin-top: 24px; margin-bottom: 24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:16px;font-weight:600;">${localize('editor.camera.unified_template.toggle', lang, 'Template mode')}</span>
+              <button
+                type="button"
+                class="help-btn"
+                style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                title="${localize('editor.camera.unified_template.cheatsheet', lang, 'Template cheatsheet')}"
+                @click=${(e: Event) => {
+                  (e.currentTarget as HTMLElement).dispatchEvent(
+                    new CustomEvent('uc-open-template-cheatsheet', {
+                      bubbles: true,
+                      composed: true,
+                      detail: { module: 'camera' },
+                    })
+                  );
+                }}
+              >
+                <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
+              </button>
+            </div>
+            <ha-switch
+              .checked=${cameraModule.unified_template_mode || false}
+              @change=${(e: Event) =>
+                updateModule({ unified_template_mode: (e.target as any).checked })}
+            ></ha-switch>
           </div>
-          <div
-            class="field-description"
-            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
-          >
+          <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; line-height: 1.5;">
             ${localize(
-              'editor.camera.template.desc',
+              'editor.camera.unified_template.desc',
               lang,
-              'Use a template to dynamically set the camera entity. Templates allow you to use Home Assistant templating syntax for conditional camera selection.'
+              'Return JSON: entity, visible, overlay_text, overlay_color — or a plain entity_id string.'
             )}
           </div>
 
-          <div class="field-group" style="margin-bottom: 16px;">
-            <ha-form
-              .hass=${hass}
-              .data=${{ template_mode: cameraModule.template_mode || false }}
-              .schema=${[
-                {
-                  name: 'template_mode',
-                  label: localize('editor.camera.template.mode_label', lang, 'Template Mode'),
-                  description: localize(
-                    'editor.camera.template.mode_desc',
-                    lang,
-                    'Use Home Assistant templating syntax to dynamically select camera entity'
-                  ),
-                  selector: { boolean: {} },
-                },
-              ]}
-              .computeLabel=${(schema: any) => schema.label || schema.name}
-              .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) =>
-                updateModule({ template_mode: e.detail.value.template_mode })}
-            ></ha-form>
-          </div>
-
-          ${cameraModule.template_mode
+          ${cameraModule.unified_template_mode
             ? html`
-                <div class="field-group" style="margin-bottom: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
-                  >
-                    ${localize(
-                      'editor.camera.template.camera_template_label',
-                      lang,
-                      'Camera Template'
-                    )}
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
-                  >
-                    ${localize(
-                      'editor.camera.template.camera_template_desc',
-                      lang,
-                      'Template to dynamically set the camera entity using Jinja2 syntax'
-                    )}
-                  </div>
-                  <uc-template-cheatsheet .module=${'camera'}></uc-template-cheatsheet>
-
-                  <div style="margin-bottom: 8px;">
-                    <button
-                      style="background: none; border: 1px solid var(--divider-color); border-radius: 4px; padding: 4px 8px; font-size: 11px; color: var(--primary-color); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
-                      title="${localize('editor.camera.template_cheatsheet', lang, 'Template Cheatsheet')}"
-                      @click=${(e: Event) => {
-                        (e.currentTarget as HTMLElement).dispatchEvent(
-                          new CustomEvent('uc-open-template-cheatsheet', {
-                            detail: { module: 'camera' },
-                            bubbles: true,
-                            composed: true,
-                          })
-                        );
-                      }}
-                    >
-                      <ha-icon icon="mdi:help-circle-outline" style="--mdc-icon-size: 14px;"></ha-icon>
-                      ${localize('editor.camera.template_cheatsheet', lang, 'Template Cheatsheet')}
-                    </button>
-                  </div>
-
-                  <div
-                    @mousedown=${(e: Event) => {
-                      const target = e.target as HTMLElement;
-                      if (
-                        !target.closest('ultra-template-editor') &&
-                        !target.closest('.cm-editor')
-                      ) {
-                        e.stopPropagation();
-                      }
+                <div
+                  @mousedown=${(e: Event) => {
+                    const target = e.target as HTMLElement;
+                    if (
+                      !target.closest('ultra-template-editor') &&
+                      !target.closest('.cm-editor')
+                    ) {
+                      e.stopPropagation();
+                    }
+                  }}
+                  @dragstart=${(e: Event) => e.stopPropagation()}
+                  @insert-snippet=${(e: CustomEvent) => {
+                    const editor = (e.currentTarget as HTMLElement).querySelector('ultra-template-editor');
+                    (editor as any)?.insertAtCursor?.(e.detail?.value ?? '');
+                  }}
+                >
+                  <ultra-template-editor
+                    .hass=${hass}
+                    .value=${cameraModule.unified_template || ''}
+                    .placeholder=${'{\n  "entity": "{{ \'camera.outdoor\' if is_state(\'weather.home\', \'sunny\') else \'camera.indoor\' }}"\n}'}
+                    .minHeight=${100}
+                    .maxHeight=${300}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ unified_template: e.detail.value });
                     }}
-                    @dragstart=${(e: Event) => e.stopPropagation()}
-                    @insert-snippet=${(e: CustomEvent) => {
-                      const editor = (e.currentTarget as HTMLElement).querySelector('ultra-template-editor');
-                      (editor as any)?.insertAtCursor?.(e.detail?.value ?? '');
-                    }}
-                  >
-                    <ultra-template-editor
-                      .hass=${hass}
-                      .value=${cameraModule.template || ''}
-                      .placeholder=${"{{ 'camera.outdoor' if is_state('weather.home', 'sunny') else 'camera.indoor' }}"}
-                      .minHeight=${100}
-                      .maxHeight=${300}
-                      @value-changed=${(e: CustomEvent) => {
-                        updateModule({ template: e.detail.value });
-                      }}
-                    ></ultra-template-editor>
-                  </div>
-                </div>
-
-                <div class="template-examples">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
-                  >
-                    ${localize('editor.camera.template.examples_title', lang, 'Common Examples:')}
-                  </div>
-
-                  <div class="example-item" style="margin-bottom: 16px;">
-                    <div
-                      class="example-code"
-                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
-                    >
-                      'camera.outdoor' if is_state('weather.home', 'sunny') else ''
-                    </div>
-                    <div
-                      class="example-description"
-                      style="font-size: 12px; color: var(--secondary-text-color);"
-                    >
-                      ${localize(
-                        'editor.camera.template.example1_desc',
-                        lang,
-                        'Show camera when weather is sunny'
-                      )}
-                    </div>
-                  </div>
-
-                  <div class="example-item" style="margin-bottom: 16px;">
-                    <div
-                      class="example-code"
-                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
-                    >
-                      'camera.front_door' if is_state('input_boolean.show_front', 'on') else
-                      'camera.back_yard'
-                    </div>
-                    <div
-                      class="example-description"
-                      style="font-size: 12px; color: var(--secondary-text-color);"
-                    >
-                      ${localize(
-                        'editor.camera.template.example2_desc',
-                        lang,
-                        'Switch between cameras based on input boolean'
-                      )}
-                    </div>
-                  </div>
-
-                  <div class="example-item" style="margin-bottom: 16px;">
-                    <div
-                      class="example-code"
-                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
-                    >
-                      states('input_select.active_camera')
-                    </div>
-                    <div
-                      class="example-description"
-                      style="font-size: 12px; color: var(--secondary-text-color);"
-                    >
-                      ${localize(
-                        'editor.camera.template.example3_desc',
-                        lang,
-                        'Use input select to choose camera entity'
-                      )}
-                    </div>
-                  </div>
+                  ></ultra-template-editor>
                 </div>
               `
             : ''}
@@ -971,10 +856,11 @@ export class UltraCameraModule extends BaseUltraModule {
     const lang = hass.locale?.language || 'en';
 
     // GRACEFUL RENDERING: Check for incomplete configuration
-    if (
-      !cameraModule.template_mode &&
-      (!cameraModule.entity || cameraModule.entity.trim() === '')
-    ) {
+    const unifiedOn =
+      !!cameraModule.unified_template_mode &&
+      !!(cameraModule.unified_template && String(cameraModule.unified_template).trim());
+
+    if (!unifiedOn && (!cameraModule.entity || cameraModule.entity.trim() === '')) {
       return this.renderGradientErrorState(
         localize('editor.camera.error_no_entity', lang, 'Select Camera Entity'),
         localize('editor.camera.error_no_entity_desc', lang, 'Choose a camera entity in the General tab'),
@@ -982,13 +868,10 @@ export class UltraCameraModule extends BaseUltraModule {
       );
     }
 
-    if (
-      cameraModule.template_mode &&
-      (!cameraModule.template || cameraModule.template.trim() === '')
-    ) {
+    if (unifiedOn && !String(cameraModule.unified_template).trim()) {
       return this.renderGradientErrorState(
         localize('editor.camera.error_no_template', lang, 'Configure Template'),
-        localize('editor.camera.error_no_template_desc', lang, 'Enter template code in the General tab'),
+        localize('editor.camera.error_no_template_desc', lang, 'Enter unified template in the General tab'),
         'mdi:camera-outline'
       );
     }
@@ -1002,17 +885,24 @@ export class UltraCameraModule extends BaseUltraModule {
     let templateOverlayText: string | undefined;
     let templateOverlayColor: string | undefined;
 
-    if (cameraModule.template_mode && cameraModule.template) {
+    if (cameraModule.unified_template_mode && cameraModule.unified_template) {
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
+      } else if (this._templateService && hass) {
+        this._templateService.updateHass(hass);
       }
 
       if (hass) {
         if (!hass.__uvc_template_strings) {
           hass.__uvc_template_strings = {};
         }
-        const templateHash = this._hashString(cameraModule.template);
-        const templateKey = `camera_${cameraModule.id}_${templateHash}`;
+        const processed = preprocessTemplateVariables(
+          cameraModule.unified_template,
+          hass,
+          config
+        );
+        const templateHash = this._hashString(processed);
+        const templateKey = `unified_camera_${cameraModule.id}_${templateHash}`;
 
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
           const context = buildEntityContext(cameraModule.entity || '', hass, {
@@ -1021,7 +911,7 @@ export class UltraCameraModule extends BaseUltraModule {
           });
 
           this._templateService.subscribeToTemplate(
-            cameraModule.template,
+            processed,
             templateKey,
             () => {
               if (typeof window !== 'undefined') {
@@ -1047,9 +937,9 @@ export class UltraCameraModule extends BaseUltraModule {
         if (templateResult && String(templateResult).trim() !== '') {
           const parsed = parseUnifiedTemplate(templateResult);
           if (!hasTemplateError(parsed)) {
-            // Extract entity
-            if (parsed.entity) {
-              templateEntity = parsed.entity;
+            const ent = unifiedTemplateEntityId(parsed) || parsed.entity;
+            if (ent) {
+              templateEntity = ent;
             }
 
             // Extract visibility
@@ -1124,7 +1014,7 @@ export class UltraCameraModule extends BaseUltraModule {
     // Include audio_enabled in key to ensure audio updates trigger re-render when needed
     const audioEnabled = this._isAudioActive(cameraModule);
     let stableKey: string;
-    if (cameraModule.template_mode && cameraEntity === this._lastRenderedEntity && cameraEntity) {
+    if (cameraModule.unified_template_mode && cameraEntity === this._lastRenderedEntity && cameraEntity) {
       // Same entity - use stable key to prevent Lit from recreating hui-image
       // This prevents WebRTC SDP errors during template editing
       // But include audio state to allow audio changes to update
@@ -1759,11 +1649,11 @@ export class UltraCameraModule extends BaseUltraModule {
 
     // Get camera entity
     let cameraEntity = module.entity;
-    if (module.template_mode && module.template) {
+    if (module.unified_template_mode && module.unified_template) {
       try {
         const hass = (document.querySelector('home-assistant') as any)?.hass;
         if (hass) {
-          const template = module.template;
+          const template = module.unified_template;
           const entityMatch = template.match(/['"]([^'"]+)['"]/);
           if (entityMatch) {
             cameraEntity = entityMatch[1];
@@ -2350,11 +2240,11 @@ export class UltraCameraModule extends BaseUltraModule {
     try {
       // Get camera entity first
       let cameraEntity = module.entity;
-      if (module.template_mode && module.template) {
+      if (module.unified_template_mode && module.unified_template) {
         try {
           const hass = (document.querySelector('home-assistant') as any)?.hass;
           if (hass) {
-            const template = module.template;
+            const template = module.unified_template;
             const entityMatch = template.match(/['"]([^'"]+)['"]/);
             if (entityMatch) {
               cameraEntity = entityMatch[1];
@@ -2606,12 +2496,11 @@ export class UltraCameraModule extends BaseUltraModule {
     // Get the camera entity
     let cameraEntity = module.entity;
 
-    // Handle template mode (same logic as preview)
-    if (module.template_mode && module.template) {
+    if (module.unified_template_mode && module.unified_template) {
       try {
         const hass = (document.querySelector('home-assistant') as any)?.hass;
         if (hass) {
-          let evaluatedTemplate = module.template;
+          let evaluatedTemplate = module.unified_template;
 
           // Replace state() function calls
           const stateMatches = evaluatedTemplate.match(/states\(['"]([^'"]+)['"]\)/g);
@@ -3920,14 +3809,13 @@ export class UltraCameraModule extends BaseUltraModule {
   }
 
   private getMarginWithDesign(designProperties: any, moduleWithDesign: any): string {
-    // Standard 8px top/bottom margin for proper web design spacing
     if (
       designProperties.margin_top ||
       designProperties.margin_bottom ||
       designProperties.margin_left ||
       designProperties.margin_right
     ) {
-      return `${designProperties.margin_top || '8px'} ${designProperties.margin_right || '0px'} ${designProperties.margin_bottom || '8px'} ${designProperties.margin_left || '0px'}`;
+      return `${designProperties.margin_top || '0px'} ${designProperties.margin_right || '0px'} ${designProperties.margin_bottom || '0px'} ${designProperties.margin_left || '0px'}`;
     }
     return this.getMarginCSS(moduleWithDesign);
   }
@@ -3973,16 +3861,15 @@ export class UltraCameraModule extends BaseUltraModule {
   }
 
   private getMarginCSS(moduleWithDesign: any): string {
-    // Standard 8px top/bottom margin for proper web design spacing
     if (
       moduleWithDesign.margin_top ||
       moduleWithDesign.margin_bottom ||
       moduleWithDesign.margin_left ||
       moduleWithDesign.margin_right
     ) {
-      return `${this.addPixelUnit(moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`;
+      return `${this.addPixelUnit(moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`;
     }
-    return '8px 0';
+    return '0';
   }
 
   private getBackgroundCSS(moduleWithDesign: any): string {

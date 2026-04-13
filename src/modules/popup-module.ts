@@ -12,6 +12,7 @@ import { getImageUrl } from '../utils/image-upload';
 import { registerPopupTrigger, unregisterPopupTrigger } from '../services/popup-trigger-registry';
 import '../components/ultra-color-picker';
 import { ucToastService } from '../services/uc-toast-service';
+import { autoMigrateCardModule } from '../utils/template-migration';
 
 // Global store to persist popup state across module re-instantiation/reloads
 // This survives HA preview/dash re-renders because it's kept on window
@@ -3605,7 +3606,7 @@ export class UltraPopupModule extends BaseUltraModule {
                     return html`
                       <div class="popup-child-module" style="${childDesignStyle}">
                         ${childModuleHandler.renderPreview(
-                          childModule,
+                          autoMigrateCardModule(childModule),
                           hass,
                           config,
                           previewContext

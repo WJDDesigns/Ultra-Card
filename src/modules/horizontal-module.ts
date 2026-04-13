@@ -11,6 +11,7 @@ import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { generateCSSVariables } from '../utils/css-variable-utils';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
+import { autoMigrateCardModule } from '../utils/template-migration';
 // Use the existing HorizontalModule and VerticalModule interfaces from types
 import { HorizontalModule, VerticalModule } from '../types';
 
@@ -206,19 +207,6 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   ${localize('editor.horizontal.gap.desc', lang, 'Set the spacing between horizontal items. Use negative values to overlap items.')}
                 </div>
                 <div class="gap-control-container" style="display: flex; align-items: center; gap: 8px;">
-                  <select
-                    style="flex-shrink: 0; width: 56px; height: 32px; border-radius: 6px; border: 1px solid var(--divider-color); background: var(--card-background-color, var(--primary-background-color)); color: var(--primary-text-color); font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; outline: none; padding: 0 4px;"
-                    @change=${(e: Event) => {
-                      const newUnit = (e.target as HTMLSelectElement).value;
-                      const converted = convertGap(unit, newUnit, gapNum);
-                      updateModule({ gap: converted, gap_unit: newUnit } as any);
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }}
-                  >
-                    ${unitOptions.map(opt => html`
-                      <option value="${opt.value}" ?selected=${unit === opt.value}>${opt.label}</option>
-                    `)}
-                  </select>
                   <input
                     type="range"
                     class="gap-slider"
@@ -246,6 +234,19 @@ export class UltraHorizontalModule extends BaseUltraModule {
                       }
                     }}
                   />
+                  <select
+                    style="flex-shrink: 0; width: 56px; height: 32px; border-radius: 6px; border: 1px solid var(--divider-color); background: var(--card-background-color, var(--primary-background-color)); color: var(--primary-text-color); font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; outline: none; padding: 0 4px;"
+                    @change=${(e: Event) => {
+                      const newUnit = (e.target as HTMLSelectElement).value;
+                      const converted = convertGap(unit, newUnit, gapNum);
+                      updateModule({ gap: converted, gap_unit: newUnit } as any);
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
+                  >
+                    ${unitOptions.map(opt => html`
+                      <option value="${opt.value}" ?selected=${unit === opt.value}>${opt.label}</option>
+                    `)}
+                  </select>
                   <button
                     class="reset-btn"
                     @click=${() => {
@@ -300,8 +301,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
         ? (effective as any).width
         : undefined; // No default - let flexbox handle it naturally
 
-    // Calculate margins - only use user-set margins, no auto-positioning logic
-    const contentMargin = this.getMarginCSS(effective);
+    // Margin is now applied on the outer wrapper via buildDesignStyles
+    // (populated by the v1→v2 migration for legacy configs or the Design tab).
 
     // When design.background_filter is set the background must be rendered via a ::before
     // pseudo-element so the filter only affects the background without blurring the content.
@@ -402,10 +403,6 @@ export class UltraHorizontalModule extends BaseUltraModule {
       boxSizing: 'border-box',
     };
 
-    // Only add margin to containerStyles if user explicitly set it
-    if (contentMargin !== undefined && contentMargin !== '0') {
-      containerStyles.margin = contentMargin;
-    }
 
     // Create gesture handlers using centralized service
     // Service automatically handles nested module editor control exclusion
@@ -426,12 +423,11 @@ export class UltraHorizontalModule extends BaseUltraModule {
     const hoverEffect = (horizontalModule as any).design?.hover_effect;
     const hoverEffectClass = this.getHoverEffectClass(module);
 
-    // Build design styles but strip all visual-surface properties from the outer wrapper.
+    // Build design styles but strip visual-surface properties from the outer wrapper.
     // border, borderRadius, background*, padding, boxShadow, backdropFilter, clipPath and
     // overflow are already applied on the inner .horizontal-preview-content div via
-    // containerStyles.  Keeping them on the outer wrapper too causes a visible double border
-    // and double background.  Margin is also stripped here — it is handled in containerStyles
-    // (explicit) or via the default below (when none set).
+    // containerStyles.  Margin is kept on the outer wrapper so it controls inter-module
+    // spacing (stamped by the v1→v2 migration for legacy configs, or set via Design tab).
     const _allDesignStyles = this.buildDesignStyles(module, hass);
     const VISUAL_SURFACE_PROPS = new Set([
       'border', 'borderRadius',
@@ -440,23 +436,11 @@ export class UltraHorizontalModule extends BaseUltraModule {
       'backgroundSize', 'backgroundPosition', 'backgroundRepeat',
       'boxShadow', 'backdropFilter', 'webkitBackdropFilter',
       'clipPath', 'overflow', 'isolation', 'filter',
-      'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
     ]);
     const _wrapperOnlyStyles = Object.fromEntries(
       Object.entries(_allDesignStyles).filter(([k]) => !VISUAL_SURFACE_PROPS.has(k))
     ) as Record<string, string | undefined>;
     const designStyles = this.buildStyleString(_wrapperOnlyStyles);
-
-    // Default top/bottom breathing room.  When the user sets any explicit margin the
-    // margin is already in containerStyles (see below), so we only apply the default
-    // when no explicit margin is present.
-    const effectiveMod = { ...(horizontalModule as any), ...((horizontalModule as any).design || {}) };
-    const hasExplicitMargin =
-      effectiveMod.margin_top !== undefined ||
-      effectiveMod.margin_bottom !== undefined ||
-      effectiveMod.margin_left !== undefined ||
-      effectiveMod.margin_right !== undefined;
-    const defaultMarginStyle = hasExplicitMargin ? '' : 'margin-top: 8px; margin-bottom: 8px;';
 
     // Extract CSS variable prefix for Shadow DOM styling
     const cssVarPrefix = (horizontalModule as any).design?.css_variable_prefix;
@@ -498,7 +482,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
       </style>
       <div
         class="horizontal-module-preview"
-        style="${defaultMarginStyle}; ${designStyles}; ${containerStyles.width ? `width: ${containerStyles.width};` : ''}"
+        style="${designStyles}; ${containerStyles.width ? `width: ${containerStyles.width};` : ''}"
       >
         <div
           class="horizontal-preview-content ${hoverEffectClass}"
@@ -672,8 +656,9 @@ export class UltraHorizontalModule extends BaseUltraModule {
     const shouldShowProOverlay = isProModule && !hasProAccess;
 
     if (moduleHandler) {
+      const migratedChild = autoMigrateCardModule(moduleToRender);
       const moduleContent = moduleHandler.renderPreview(
-        moduleToRender,
+        migratedChild,
         hass,
         config,
         previewContext
@@ -792,9 +777,10 @@ export class UltraHorizontalModule extends BaseUltraModule {
     const mergedModule = { ...childModule } as any;
 
     // ── Margin zeroing ──────────────────────────────────────────────────────
-    // Inside a horizontal layout the parent gap controls horizontal spacing.
-    // Suppress the module's '8px 0' default margin unless the user has
-    // explicitly set a margin via the Design tab.
+    // Inside a horizontal layout the parent gap controls spacing between
+    // children.  Modules with migrated design.margin_* values keep them,
+    // but children without explicit margins stay at 0 so gap is the sole
+    // spacing source.
     const childDesign = (childModule as any).design || {};
     const hasExplicitMargin =
       childDesign.margin_top !== undefined ||
@@ -1178,15 +1164,6 @@ export class UltraHorizontalModule extends BaseUltraModule {
       moduleWithDesign.padding_left ||
       moduleWithDesign.padding_right
       ? `${this.addPixelUnit(moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_left) || '0px'}`
-      : '0';
-  }
-
-  private getMarginCSS(moduleWithDesign: any): string {
-    return moduleWithDesign.margin_top ||
-      moduleWithDesign.margin_bottom ||
-      moduleWithDesign.margin_left ||
-      moduleWithDesign.margin_right
-      ? `${this.addPixelUnit(moduleWithDesign.margin_top) || '0'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '0'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0'}`
       : '0';
   }
 

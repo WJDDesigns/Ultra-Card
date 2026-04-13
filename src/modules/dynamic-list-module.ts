@@ -11,6 +11,7 @@ import { getModuleRegistry } from './module-registry';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { localize } from '../localize/localize';
+import { autoMigrateCardModule } from '../utils/template-migration';
 
 import '../components/ultra-template-editor';
 import '../components/ultra-color-picker';
@@ -1908,7 +1909,11 @@ export class UltraDynamicListModule extends BaseUltraModule {
       const itemsJson = JSON.stringify(allItems);
       const prefixedTemplate = `{% set items = ${itemsJson} %}\n${tplStr}`;
 
-      if (!this._templateService) this._templateService = new TemplateService(hass);
+      if (!this._templateService) {
+        this._templateService = new TemplateService(hass);
+      } else {
+        this._templateService.updateHass(hass);
+      }
       if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
 
       const processedTpl = preprocessTemplateVariables(prefixedTemplate, hass, config);
@@ -2022,7 +2027,11 @@ export class UltraDynamicListModule extends BaseUltraModule {
       const responseJson = JSON.stringify(cachedResponse);
       const prefixedTemplate = `{% set response = ${responseJson} %}\n${tplStr}`;
 
-      if (!this._templateService) this._templateService = new TemplateService(hass);
+      if (!this._templateService) {
+        this._templateService = new TemplateService(hass);
+      } else {
+        this._templateService.updateHass(hass);
+      }
       if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
 
       const processedTpl = preprocessTemplateVariables(prefixedTemplate, hass, config);
@@ -2063,6 +2072,8 @@ export class UltraDynamicListModule extends BaseUltraModule {
       }
       if (!this._templateService) {
         this._templateService = new TemplateService(hass);
+      } else {
+        this._templateService.updateHass(hass);
       }
       if (!hass.__uvc_template_strings) {
         hass.__uvc_template_strings = {};
@@ -2298,7 +2309,12 @@ export class UltraDynamicListModule extends BaseUltraModule {
         ...childModule,
         design: { ...parentDesign, ...((childModule as any).design || {}) },
       };
-      const content = moduleHandler.renderPreview(moduleWithDesign, hass, config, previewContext);
+      const content = moduleHandler.renderPreview(
+        autoMigrateCardModule(moduleWithDesign as CardModule),
+        hass,
+        config,
+        previewContext
+      );
       // When vertical list and align_h is center/end, wrap so the list block shrinks and centers (or aligns end)
       const centerListBlock = !useGrid && direction === 'vertical' && (alignH === 'center' || alignH === 'end');
       const wrapStyle = centerListBlock

@@ -6,6 +6,7 @@ import { getModuleRegistry } from './module-registry';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { localize } from '../localize/localize';
+import { autoMigrateCardModule } from '../utils/template-migration';
 
 export class UltraAccordionModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -1544,7 +1545,12 @@ export class UltraAccordionModule extends BaseUltraModule {
                 // Render child module
                 return html`
                   <div class="accordion-child-module" style="margin-bottom: 8px;">
-                    ${childModuleHandler.renderPreview(childModule, hass, config, previewContext)}
+                    ${childModuleHandler.renderPreview(
+                      autoMigrateCardModule(childModule),
+                      hass,
+                      config,
+                      previewContext
+                    )}
                   </div>
                 `;
               })

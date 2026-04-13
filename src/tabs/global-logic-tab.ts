@@ -1,20 +1,25 @@
 import { html, TemplateResult } from 'lit';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { FormUtils } from '../utils/form-utils';
-import type { CardModule, DeviceBreakpoint, DEVICE_BREAKPOINTS } from '../types';
+import type { CardModule, CardColumn, CardRow, DeviceBreakpoint } from '../types';
 import { localize } from '../localize/localize';
 import '../components/ultra-template-editor';
 
+export type GlobalLogicTarget = 'module' | 'row' | 'column';
+
 export class GlobalLogicTab {
-  static render<M extends CardModule>(
+  static render<M extends CardModule | CardRow | CardColumn>(
     module: M,
     hass: HomeAssistant,
-    updateModule: (updates: Partial<M>) => void
+    updateModule: (updates: Partial<M>) => void,
+    logicTarget: GlobalLogicTarget = 'module'
   ): TemplateResult {
     const conditions = ((module as any).display_conditions || []) as any[];
     const displayMode = ((module as any).display_mode || 'always') as 'always' | 'every' | 'any';
     const hiddenOnDevices = ((module as any).hidden_on_devices || []) as DeviceBreakpoint[];
     const lang = hass?.locale?.language || 'en';
+    const showUnifiedLayoutVisibility = logicTarget === 'row' || logicTarget === 'column';
+    const rowCol = module as any;
 
     // Helper to toggle device visibility
     const toggleDeviceHidden = (device: DeviceBreakpoint): void => {
@@ -31,6 +36,107 @@ export class GlobalLogicTab {
     return html`
       <div class="uc-global-logic-tab">
         ${FormUtils.injectCleanFormStyles()}
+
+        ${showUnifiedLayoutVisibility
+          ? html`
+              <div
+                class="settings-section uc-unified-layout-visibility"
+                style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px; border-left: 3px solid var(--primary-color);"
+              >
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                  <ha-icon icon="mdi:code-json" style="color: var(--primary-color);"></ha-icon>
+                  <span style="font-size: 16px; font-weight: 700; color: var(--primary-text-color);">
+                    ${localize(
+                      'editor.layout.unified_visibility.section_title',
+                      lang,
+                      'Unified visibility template'
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    class="help-btn"
+                    style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;margin-left:4px;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                    title=${localize(
+                      'editor.layout.unified_visibility.cheatsheet_title',
+                      lang,
+                      'Template cheatsheet'
+                    )}
+                    @click=${(e: Event) => {
+                      (e.currentTarget as HTMLElement).dispatchEvent(
+                        new CustomEvent('uc-open-template-cheatsheet', {
+                          bubbles: true,
+                          composed: true,
+                          detail: { module: 'layout' },
+                        })
+                      );
+                    }}
+                  >
+                    <ha-icon
+                      icon="mdi:help-circle"
+                      style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"
+                    ></ha-icon>
+                  </button>
+                </div>
+                <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px;">
+                  ${localize(
+                    'editor.layout.unified_visibility.section_desc',
+                    lang,
+                    'Return JSON with a boolean "visible" key (or use active / is_active, or a plain true/false string). When enabled, this runs in addition to the display conditions below. Uses the same $variables as module templates.'
+                  )}
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
+                  <span style="font-weight: 600;"
+                    >${localize('editor.layout.unified_visibility.toggle', lang, 'Template mode')}</span
+                  >
+                  <ha-switch
+                    .checked=${!!rowCol.unified_template_mode}
+                    @change=${(e: Event) => {
+                      const checked = Boolean((e.target as any).checked);
+                      const updates: any = { unified_template_mode: checked };
+                      if (checked && !(String(rowCol.unified_template || '').trim())) {
+                        updates.unified_template = '{\n  "visible": true\n}';
+                      }
+                      updateModule(updates);
+                    }}
+                  ></ha-switch>
+                </div>
+                ${rowCol.unified_template_mode
+                  ? html`
+                      <div
+                        style="margin-top: 12px;"
+                        @mousedown=${(e: Event) => {
+                          const t = e.target as HTMLElement;
+                          if (!t.closest('ultra-template-editor') && !t.closest('.cm-editor')) {
+                            e.stopPropagation();
+                          }
+                        }}
+                        @dragstart=${(e: Event) => e.stopPropagation()}
+                        @insert-snippet=${(e: CustomEvent) => {
+                          const ed = (e.currentTarget as HTMLElement).querySelector(
+                            'ultra-template-editor'
+                          );
+                          (ed as any)?.insertAtCursor?.(e.detail?.value ?? '');
+                        }}
+                      >
+                        <ultra-template-editor
+                          .hass=${hass}
+                          .value=${rowCol.unified_template || ''}
+                          .placeholder=${localize(
+                            'editor.layout.unified_visibility.placeholder',
+                            lang,
+                            '{ "visible": {{ states(\'input_boolean.show_row\') == \'on\' }} }'
+                          )}
+                          .minHeight=${120}
+                          .maxHeight=${360}
+                          @value-changed=${(e: CustomEvent) =>
+                            updateModule({ unified_template: e.detail.value } as Partial<M>)}
+                        ></ultra-template-editor>
+                      </div>
+                    `
+                  : ''}
+              </div>
+            `
+          : ''}
 
         <!-- Hide on Devices Section -->
         <div

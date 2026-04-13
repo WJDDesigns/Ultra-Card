@@ -8,8 +8,14 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import { TemplateService } from '../services/template-service';
 import { buildEntityContext } from '../utils/template-context';
-import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
+import {
+  parseUnifiedTemplate,
+  hasTemplateError,
+  unifiedTemplateNumericValue,
+} from '../utils/template-parser';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import '../components/ultra-color-picker';
+import '../components/ultra-template-editor';
 import { getImageUrl } from '../utils/image-upload';
 
 export class UltraSpinboxModule extends BaseUltraModule {
@@ -59,9 +65,8 @@ export class UltraSpinboxModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      // Template support
-      template_mode: false,
-      template: '',
+      unified_template_mode: false,
+      unified_template: '',
     };
   }
 
@@ -521,106 +526,63 @@ export class UltraSpinboxModule extends BaseUltraModule {
             `
           : ''}
 
-        <!-- Template Mode -->
-        <div class="settings-section">
-          <div class="section-title">
-            ${localize('editor.spinbox.template.title', lang, 'Template Mode')}
+        <!-- Unified template -->
+        <div style="margin-top: 16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:16px;font-weight:600;">${localize('editor.spinbox.unified_template.toggle', lang, 'Template mode')}</span>
+              <button
+                type="button"
+                class="help-btn"
+                style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                title="${localize('editor.spinbox.unified_template.cheatsheet', lang, 'Template cheatsheet')}"
+                @click=${(e: Event) => {
+                  (e.currentTarget as HTMLElement).dispatchEvent(
+                    new CustomEvent('uc-open-template-cheatsheet', {
+                      bubbles: true,
+                      composed: true,
+                      detail: { module: 'spinbox' },
+                    })
+                  );
+                }}
+              >
+                <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
+              </button>
+            </div>
+            <ha-switch
+              .checked=${spinboxModule.unified_template_mode || false}
+              @change=${(e: Event) => updateModule({ unified_template_mode: (e.target as any).checked })}
+            ></ha-switch>
           </div>
-
-          ${this.renderFieldSection(
-            localize('editor.spinbox.template_mode', lang, 'Enable Template Mode'),
-            localize('editor.spinbox.template_mode_desc', lang, 'Use Jinja2 templates to dynamically compute the displayed value'),
-            hass,
-            { template_mode: spinboxModule.template_mode || false },
-            [this.booleanField('template_mode')],
-            (e: CustomEvent) => updateModule({ template_mode: e.detail.value.template_mode })
-          )}
-
-          ${spinboxModule.template_mode
+          <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; line-height: 1.5;">
+            ${localize(
+              'editor.spinbox.unified_template.desc',
+              lang,
+              'JSON with value, button_background_color, button_text_color, value_color — or a plain numeric Jinja result.'
+            )}
+          </div>
+          ${spinboxModule.unified_template_mode
             ? html`
-                <div class="field-group" style="margin-bottom: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-                  >
-                    ${localize('editor.spinbox.template', lang, 'Value Template')}
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;"
-                  >
-                    ${localize(
-                      'editor.spinbox.template_desc',
-                      lang,
-                      'Jinja2 template for value (e.g., {{ states("input_number.temperature") }})'
-                    )}
-                  </div>
-                  <ha-form
+                <div
+                  style="margin-top: 12px;"
+                  @mousedown=${(e: Event) => {
+                    const t = e.target as HTMLElement;
+                    if (!t.closest('ultra-template-editor') && !t.closest('.cm-editor')) e.stopPropagation();
+                  }}
+                  @dragstart=${(e: Event) => e.stopPropagation()}
+                >
+                  <ultra-template-editor
                     .hass=${hass}
-                    .data=${{ template: spinboxModule.template || '' }}
-                    .schema=${[
-                      {
-                        name: 'template',
-                        label: '',
-                        selector: { text: { multiline: true } },
-                      },
-                    ]}
-                    .computeLabel=${(schema: any) => schema.label || schema.name}
-                    .computeDescription=${(schema: any) => schema.description || ''}
-                    @value-changed=${(e: CustomEvent) => {
-                      updateModule(e.detail.value);
-                    }}
-                  ></ha-form>
-                </div>
-
-                <div class="template-examples">
-                  <div
-                    class="field-title"
-                    style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
-                  >
-                    ${localize('editor.spinbox.template_examples', lang, 'Common Examples:')}
-                  </div>
-                  <div class="example-item" style="margin-bottom: 12px;">
-                    <div
-                      class="example-code"
-                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 11px; color: #d4d4d4; margin-bottom: 4px;"
-                    >
-                      {{ states('input_number.temperature') | float }}
-                    </div>
-                    <div
-                      class="example-description"
-                      style="font-size: 11px; color: var(--secondary-text-color);"
-                    >
-                      Read value from Input Number entity
-                    </div>
-                  </div>
-                  <div class="example-item">
-                    <div
-                      class="example-code"
-                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 11px; color: #d4d4d4; margin-bottom: 4px;"
-                    >
-                      {{ state_attr('climate.thermostat', 'temperature') }}
-                    </div>
-                    <div
-                      class="example-description"
-                      style="font-size: 11px; color: var(--secondary-text-color);"
-                    >
-                      Read temperature from climate entity
-                    </div>
-                  </div>
+                    .value=${spinboxModule.unified_template || ''}
+                    .placeholder=${'{\n  "value": "{{ states(\'input_number.temp\') | float }}",\n  "value_color": "var(--primary-text-color)"\n}'}
+                    .minHeight=${120}
+                    .maxHeight=${360}
+                    @value-changed=${(e: CustomEvent) =>
+                      updateModule({ unified_template: e.detail.value })}
+                  ></ultra-template-editor>
                 </div>
               `
-            : html`
-                <div
-                  style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
-                >
-                  ${localize(
-                    'editor.spinbox.template_disabled',
-                    lang,
-                    'Enable template mode to use dynamic values'
-                  )}
-                </div>
-              `}
+            : ''}
         </div>
       </div>
     `;
@@ -659,17 +621,24 @@ export class UltraSpinboxModule extends BaseUltraModule {
     let templateButtonTextColor: string | undefined;
     let templateValueColor: string | undefined;
 
-    if (spinboxModule.template_mode && spinboxModule.template) {
+    if (spinboxModule.unified_template_mode && spinboxModule.unified_template) {
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
+      } else if (this._templateService && hass) {
+        this._templateService.updateHass(hass);
       }
 
       if (hass) {
         if (!hass.__uvc_template_strings) {
           hass.__uvc_template_strings = {};
         }
-        const templateHash = this._hashString(spinboxModule.template);
-        const templateKey = `spinbox_${spinboxModule.id}_${templateHash}`;
+        const processed = preprocessTemplateVariables(
+          spinboxModule.unified_template,
+          hass,
+          config
+        );
+        const templateHash = this._hashString(processed);
+        const templateKey = `unified_spinbox_${spinboxModule.id}_${templateHash}`;
 
         if (
           this._templateService &&
@@ -682,7 +651,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
           });
 
           this._templateService.subscribeToTemplate(
-            spinboxModule.template,
+            processed,
             templateKey,
             () => {
               if (typeof window !== 'undefined') {
@@ -717,6 +686,9 @@ export class UltraSpinboxModule extends BaseUltraModule {
               if (!isNaN(num)) {
                 templateValue = num;
               }
+            } else {
+              const n = unifiedTemplateNumericValue(parsed);
+              if (n !== undefined && !isNaN(n)) templateValue = n;
             }
 
             // Extract colors
@@ -875,8 +847,8 @@ export class UltraSpinboxModule extends BaseUltraModule {
         designProperties.margin_bottom ||
         designProperties.margin_left ||
         designProperties.margin_right
-          ? `${designProperties.margin_top || '8px'} ${designProperties.margin_right || '0px'} ${designProperties.margin_bottom || '8px'} ${designProperties.margin_left || '0px'}`
-          : '8px 0',
+          ? `${designProperties.margin_top || '0px'} ${designProperties.margin_right || '0px'} ${designProperties.margin_bottom || '0px'} ${designProperties.margin_left || '0px'}`
+          : '0',
       background: designProperties.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },

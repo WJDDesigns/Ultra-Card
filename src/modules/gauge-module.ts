@@ -8,12 +8,17 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import '../components/ultra-color-picker';
 import '../components/uc-gradient-editor';
 import '../components/ultra-template-editor';
-import '../components/uc-template-cheatsheet';
+
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { GlobalDesignTab } from '../tabs/global-design-tab';
 import { TemplateService } from '../services/template-service';
-import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
+import {
+  parseUnifiedTemplate,
+  hasTemplateError,
+  unifiedTemplateNumericValue,
+} from '../utils/template-parser';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { buildEntityContext } from '../utils/template-context';
 
 export class UltraGaugeModule extends BaseUltraModule {
@@ -262,25 +267,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const valueType = gaugeModule.value_type || 'entity';
-    let unifiedTemplateEnabled = gaugeModule.unified_template_mode || false;
-
-    // Auto-migrate: If legacy template exists but unified template mode is off, enable it and migrate
-    if (
-      !unifiedTemplateEnabled &&
-      gaugeModule.value_template &&
-      gaugeModule.value_template.trim() !== '' &&
-      !gaugeModule.unified_template
-    ) {
-      // Auto-migrate on render
-      const updates: Partial<GaugeModule> = {
-        unified_template_mode: true,
-        unified_template: gaugeModule.value_template,
-        value_type: 'entity',
-        value_template: '',
-      };
-      updateModule(updates);
-      unifiedTemplateEnabled = true;
-    }
+    const unifiedTemplateEnabled = gaugeModule.unified_template_mode || false;
 
     return html`
       <div class="settings-section">
@@ -339,60 +326,56 @@ export class UltraGaugeModule extends BaseUltraModule {
             `
           : ''}
 
-        <!-- Template Mode Section -->
-        <div class="template-section" style="margin-bottom: 24px; margin-top: 24px;">
-          ${this.renderFieldSection(
-            'Template Mode',
-            'Use Jinja2 templates for dynamic value and color control.',
-            hass,
-            { unified_template_mode: unifiedTemplateEnabled },
-            [this.booleanField('unified_template_mode')],
-            (e: CustomEvent) => {
-              const checked = e.detail.value.unified_template_mode;
-              const updates: Partial<GaugeModule> = { unified_template_mode: checked };
-              if (checked && gaugeModule.value_template && !gaugeModule.unified_template) {
-                updates.unified_template = gaugeModule.value_template;
-                updates.value_type = 'entity';
-                updates.value_template = '';
-              }
-              updateModule(updates);
-              setTimeout(() => this.triggerPreviewUpdate(), 50);
-            }
-          )}
-
+        <!-- Unified Template Section -->
+        <div style="margin-bottom: 24px; margin-top: 24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:16px;font-weight:600;">${localize('editor.gauge.unified_template.toggle', hass?.locale?.language || 'en', 'Template mode')}</span>
+              <button
+                type="button"
+                class="help-btn"
+                style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                title="${localize('editor.gauge.unified_template.cheatsheet', hass?.locale?.language || 'en', 'Template cheatsheet')}"
+                @click=${(e: Event) => {
+                  (e.currentTarget as HTMLElement).dispatchEvent(
+                    new CustomEvent('uc-open-template-cheatsheet', {
+                      bubbles: true,
+                      composed: true,
+                      detail: { module: 'gauge' },
+                    })
+                  );
+                }}
+              >
+                <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
+              </button>
+            </div>
+            <ha-switch
+              .checked=${gaugeModule.unified_template_mode || false}
+              @change=${(e: Event) => {
+                updateModule({ unified_template_mode: (e.target as any).checked });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }}
+            ></ha-switch>
+          </div>
+          <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; line-height: 1.5;">
+            ${localize(
+              'editor.gauge.unified_template.desc',
+              hass?.locale?.language || 'en',
+              'Use Jinja2 templates to dynamically set gauge value, gauge_color, and container_background_color.'
+            )}
+          </div>
           ${unifiedTemplateEnabled
             ? html`
-                <uc-template-cheatsheet .module=${'gauge'}></uc-template-cheatsheet>
-                <div style="margin-bottom: 8px;">
-                  <button
-                    style="background: none; border: 1px solid var(--divider-color); border-radius: 4px; padding: 4px 8px; font-size: 11px; color: var(--primary-color); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
-                    title="Template Cheatsheet"
-                    @click=${(e: Event) => {
-                      (e.currentTarget as HTMLElement).dispatchEvent(
-                        new CustomEvent('uc-open-template-cheatsheet', {
-                          detail: { module: 'gauge' },
-                          bubbles: true,
-                          composed: true,
-                        })
-                      );
-                    }}
-                  >
-                    <ha-icon icon="mdi:help-circle-outline" style="--mdc-icon-size: 14px;"></ha-icon>
-                    Template Cheatsheet
-                  </button>
-                </div>
-                <div 
-                  class="template-content"
+                <div
+                  style="margin-top:12px;"
                   @mousedown=${(e: Event) => {
-                    const target = e.target as HTMLElement;
-                    if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
-                      e.stopPropagation();
-                    }
+                    const t = e.target as HTMLElement;
+                    if (!t.closest('ultra-template-editor') && !t.closest('.cm-editor')) e.stopPropagation();
                   }}
                   @dragstart=${(e: Event) => e.stopPropagation()}
                   @insert-snippet=${(e: CustomEvent) => {
-                    const editor = (e.currentTarget as HTMLElement).querySelector('ultra-template-editor');
-                    (editor as any)?.insertAtCursor?.(e.detail?.value ?? '');
+                    const ed = (e.currentTarget as HTMLElement).querySelector('ultra-template-editor');
+                    (ed as any)?.insertAtCursor?.(e.detail?.value ?? '');
                   }}
                 >
                   <ultra-template-editor
@@ -406,37 +389,6 @@ export class UltraGaugeModule extends BaseUltraModule {
                       setTimeout(() => this.triggerPreviewUpdate(), 50);
                     }}
                   ></ultra-template-editor>
-                  <div class="template-help">
-                    <p><strong>Return simple number for value-only:</strong></p>
-                    <ul>
-                      <li><code>{{ states('sensor.temperature') | float }}</code> → Changes gauge value only</li>
-                    </ul>
-                    <p><strong>Return JSON for multiple properties:</strong></p>
-                    <ul>
-                      <li><code>{ "value": 75, "gauge_color": "#FF0000" }</code></li>
-                      <li>Available properties: <code>value</code> (number), <code>gauge_color</code> (CSS color)</li>
-                    </ul>
-                    <p><strong>Entity context variables (no need to hardcode entity ID):</strong></p>
-                    <ul>
-                      <li><code>entity</code> → Entity ID (${gaugeModule.entity || 'N/A'})</li>
-                      <li><code>state</code> → Current state value</li>
-                      <li><code>name</code> → Entity name</li>
-                      <li><code>attributes</code> → All entity attributes</li>
-                      <li><code>unit</code> → Unit of measurement</li>
-                      <li><code>domain</code> → Entity domain (e.g., 'sensor', 'input_number')</li>
-                      <li><code>device_class</code> → Device class</li>
-                    </ul>
-                    <p><strong>Example - Dynamic color based on temperature:</strong></p>
-                    <code
-                      style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-size: 11px;"
-                    >
-                      {% set temp = state | float %}<br />
-                      {<br />
-                      &nbsp;&nbsp;"value": {{ temp }},<br />
-                      &nbsp;&nbsp;"gauge_color": "{% if temp > 25 %}#FF4444{% elif temp > 20 %}#FF8800{% else %}#00CC00{% endif %}"<br />
-                      }
-                    </code>
-                  </div>
                 </div>
               `
             : ''}
@@ -1652,7 +1604,6 @@ export class UltraGaugeModule extends BaseUltraModule {
     // For template mode or unified template mode, allow rendering even without entity
     if (
       !gaugeModule.unified_template_mode &&
-      gaugeModule.value_type !== 'template' &&
       (!gaugeModule.entity || gaugeModule.entity.trim() === '')
     ) {
       return this.renderGradientErrorState(
@@ -1731,7 +1682,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       })
       .join('; ');
 
-    const value = this.calculateGaugeValue(gaugeModule, hass);
+    const value = this.calculateGaugeValue(gaugeModule, hass, config);
     const displayName = this.getDisplayName(gaugeModule, hass);
 
     const gestureHandlers = this.createGestureHandlers(
@@ -1814,15 +1765,20 @@ export class UltraGaugeModule extends BaseUltraModule {
     `, module, hass);
   }
 
-  private calculateGaugeValue(gaugeModule: GaugeModule, hass: HomeAssistant): number {
+  private calculateGaugeValue(gaugeModule: GaugeModule, hass: HomeAssistant, config?: UltraCardConfig): number {
     // PRIORITY 1: Unified template (if enabled)
     if (gaugeModule.unified_template_mode && gaugeModule.unified_template) {
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
+      } else if (this._templateService && hass) {
+        this._templateService.updateHass(hass);
       }
       if (hass) {
         if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-        const templateHash = this._hashString(gaugeModule.unified_template);
+        const processedUnifiedTemplate = preprocessTemplateVariables(
+          gaugeModule.unified_template, hass, config
+        );
+        const templateHash = this._hashString(processedUnifiedTemplate);
         const templateKey = `unified_gauge_${gaugeModule.id}_${templateHash}`;
 
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
@@ -1830,7 +1786,7 @@ export class UltraGaugeModule extends BaseUltraModule {
             entity: gaugeModule.entity,
           });
           this._templateService.subscribeToTemplate(
-            gaugeModule.unified_template,
+            processedUnifiedTemplate,
             templateKey,
             () => {
               if (typeof window !== 'undefined') {
@@ -1842,8 +1798,8 @@ export class UltraGaugeModule extends BaseUltraModule {
                 }
               }
             },
-            context
-            // Note: cardConfig not available in calculateGaugeValue - only global variables will work here
+            context,
+            config
           );
         }
 
@@ -1858,12 +1814,17 @@ export class UltraGaugeModule extends BaseUltraModule {
                 return num;
               }
             }
+            const plainNum = unifiedTemplateNumericValue(parsed);
+            if (plainNum !== undefined && !isNaN(plainNum)) {
+              return plainNum;
+            }
           }
         }
       }
     }
 
-    const valueType = gaugeModule.value_type || 'entity';
+    const valueType =
+      gaugeModule.value_type === 'template' ? 'entity' : gaugeModule.value_type || 'entity';
 
     if (valueType === 'entity') {
       const entityState = hass.states[gaugeModule.entity];
@@ -1880,56 +1841,6 @@ export class UltraGaugeModule extends BaseUltraModule {
       if (!entityState) return gaugeModule.min_value || 0;
       const attrValue = entityState.attributes[gaugeModule.value_attribute_name];
       return parseFloat(attrValue) || 0;
-    }
-
-    if (valueType === 'template' && gaugeModule.value_template) {
-      // Initialize template service if needed
-      if (!this._templateService && hass) {
-        this._templateService = new TemplateService(hass);
-      }
-
-      if (hass) {
-        // Ensure template string cache exists on hass
-        if (!hass.__uvc_template_strings) {
-          hass.__uvc_template_strings = {};
-        }
-
-        // Create unique template key using hash
-        const templateHash = this._hashString(gaugeModule.value_template);
-        const templateKey = `gauge_value_${gaugeModule.id}_${templateHash}`;
-
-        // Subscribe to template if not already subscribed
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(
-            gaugeModule.value_template,
-            templateKey,
-            () => {
-              // Trigger update when template result changes
-              if (typeof window !== 'undefined') {
-                if (!window._ultraCardUpdateTimer) {
-                  window._ultraCardUpdateTimer = setTimeout(() => {
-                    this.triggerPreviewUpdate();
-                    window._ultraCardUpdateTimer = null;
-                  }, 50);
-                }
-              }
-            }
-            // Note: cardConfig not available in calculateGaugeValue - only global variables will work here
-          );
-        }
-
-        // Get rendered template result
-        const rendered = hass.__uvc_template_strings?.[templateKey];
-        if (rendered !== undefined && String(rendered).trim() !== '') {
-          const num = parseFloat(String(rendered));
-          if (!isNaN(num)) {
-            return num;
-          }
-        }
-      }
-
-      // Return default if template not yet evaluated or invalid
-      return gaugeModule.min_value || 0;
     }
 
     return gaugeModule.min_value || 0;
@@ -3983,15 +3894,21 @@ export class UltraGaugeModule extends BaseUltraModule {
   private getColorAtValue(
     gaugeModule: GaugeModule,
     percentage: number,
-    hass?: HomeAssistant
+    hass?: HomeAssistant,
+    config?: UltraCardConfig
   ): string {
     // PRIORITY 1: Unified template color (if enabled)
     if (gaugeModule.unified_template_mode && gaugeModule.unified_template && hass) {
       if (!this._templateService) {
         this._templateService = new TemplateService(hass);
+      } else {
+        this._templateService.updateHass(hass);
       }
       if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-      const templateHash = this._hashString(gaugeModule.unified_template);
+      const processedUnifiedTemplate = preprocessTemplateVariables(
+        gaugeModule.unified_template, hass, config
+      );
+      const templateHash = this._hashString(processedUnifiedTemplate);
       const templateKey = `unified_gauge_${gaugeModule.id}_${templateHash}`;
 
       const unifiedResult = hass.__uvc_template_strings?.[templateKey];
@@ -4856,11 +4773,6 @@ export class UltraGaugeModule extends BaseUltraModule {
         }
       }
 
-      if (gaugeModule.value_type === 'template') {
-        if (!gaugeModule.value_template || gaugeModule.value_template.trim() === '') {
-          errors.push('Template is required when using template value type');
-        }
-      }
     }
 
     return { valid: errors.length === 0, errors };

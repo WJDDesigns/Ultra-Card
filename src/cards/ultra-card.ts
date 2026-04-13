@@ -204,10 +204,12 @@ export class UltraCard extends LitElement {
       const rowAny = row as any;
       if ((row.display_conditions?.length ?? 0) > 0) return true;
       if (rowAny.template_mode && rowAny.template) return true;
+      if (rowAny.unified_template_mode && String(rowAny.unified_template || '').trim()) return true;
       return !!row.columns?.some(col => {
         const colAny = col as any;
         if ((col.display_conditions?.length ?? 0) > 0) return true;
         if (colAny.template_mode && colAny.template) return true;
+        if (colAny.unified_template_mode && String(colAny.unified_template || '').trim()) return true;
         return col.modules?.some(mod => (mod.display_conditions?.length ?? 0) > 0);
       });
     });
@@ -1077,6 +1079,7 @@ export class UltraCard extends LitElement {
 
     return {
       type: 'custom:ultra-card',
+      _config_version: 2,
       card_background: 'var(--card-background-color, var(--ha-card-background, white))',
       card_border_radius: 12,
       card_border_color: 'var(--divider-color)',
@@ -1657,7 +1660,7 @@ export class UltraCard extends LitElement {
     // logicService already has hass from the card's hass setter
 
     // Check row display conditions (handles both template_mode and regular conditions)
-    const shouldShow = logicService.evaluateRowVisibility(row);
+    const shouldShow = logicService.evaluateRowVisibility(row, this.config);
 
     // Also check global design logic properties if they exist
     const rowWithDesign = row as any;
@@ -1966,7 +1969,7 @@ export class UltraCard extends LitElement {
 
   private _renderColumn(column: CardColumn, ctx: RenderContext, colIndex: number): TemplateResult {
     // Check column display conditions (handles both template_mode and regular conditions)
-    const shouldShow = logicService.evaluateColumnVisibility(column);
+    const shouldShow = logicService.evaluateColumnVisibility(column, this.config);
 
     // Also check global design logic properties if they exist
     const columnWithDesign = column as any;

@@ -311,8 +311,6 @@ export interface TextModule extends BaseModule {
   letter_spacing?: string;
   text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
   font_style?: 'normal' | 'italic' | 'oblique';
-  template_mode?: boolean;
-  template?: string;
   // Unified template system
   unified_template_mode?: boolean;
   unified_template?: string;
@@ -506,9 +504,6 @@ export interface ImageModule extends BaseModule {
   hover_translate_x?: number;
   hover_translate_y?: number;
   hover_transition?: number;
-  // Template support
-  template_mode?: boolean;
-  template?: string;
   // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;
@@ -544,12 +539,6 @@ export interface InfoEntityConfig {
   url?: string;
   service?: string;
   service_data?: Record<string, any>;
-  template_mode?: boolean;
-  template?: string;
-  dynamic_icon_template_mode?: boolean;
-  dynamic_icon_template?: string;
-  dynamic_color_template_mode?: boolean;
-  dynamic_color_template?: string;
   // Unified template system (replaces multiple template boxes)
   unified_template_mode?: boolean;
   unified_template?: string;
@@ -658,9 +647,6 @@ export interface BarModule extends BaseModule {
   percentage_current_entity?: string;
   percentage_total_entity?: string;
 
-  // Template mode
-  percentage_template?: string;
-
   // Time Progress mode (real-time timestamp-based calculation)
   time_progress_start_entity?: string;
   time_progress_end_entity?: string;
@@ -679,10 +665,6 @@ export interface BarModule extends BaseModule {
   // Manual Min/Max Range (overrides auto-detection)
   percentage_min?: number;
   percentage_max?: number;
-  percentage_min_template_mode?: boolean;
-  percentage_min_template?: string;
-  percentage_max_template_mode?: boolean;
-  percentage_max_template?: string;
 
   // Bar Appearance
   bar_direction?: 'left-to-right' | 'right-to-left';
@@ -726,8 +708,6 @@ export interface BarModule extends BaseModule {
   left_condition_type?: 'none' | 'entity' | 'template';
   left_condition_entity?: string;
   left_condition_state?: string;
-  left_template_mode?: boolean;
-  left_template?: string;
   left_title_size?: number;
   left_value_size?: number;
   left_title_color?: string;
@@ -740,8 +720,6 @@ export interface BarModule extends BaseModule {
   right_condition_type?: 'none' | 'entity' | 'template';
   right_condition_entity?: string;
   right_condition_state?: string;
-  right_template_mode?: boolean;
-  right_template?: string;
   right_title_size?: number;
   right_value_size?: number;
   right_title_color?: string;
@@ -792,12 +770,13 @@ export interface BarModule extends BaseModule {
   scale_show_labels?: boolean; // Show numeric labels on ticks
   scale_label_size?: number;
   scale_label_color?: string;
+  scale_tick_color?: string; // Color of the tick mark lines (default: var(--divider-color))
   scale_position?: 'above' | 'below'; // Position relative to bar
+  scale_custom_ticks?: string; // Comma-separated real-world values for custom tick positions (e.g. "10,20,30,40")
+  scale_custom_labels?: string; // Comma-separated labels matching custom ticks (e.g. "Reserve,1/4,1/2,3/4")
 
   // Animation & Templates
   animation?: boolean;
-  template_mode?: boolean;
-  template?: string;
   // Unified template system
   unified_template_mode?: boolean;
   unified_template?: string;
@@ -916,8 +895,6 @@ export interface GaugeModule extends BaseModule {
   value_entity?: string;
   value_attribute_entity?: string;
   value_attribute_name?: string;
-  value_template?: string;
-
   // Range Configuration
   min_value?: number;
   max_value?: number;
@@ -1040,9 +1017,6 @@ export interface GaugeModule extends BaseModule {
     opacity?: number;
   }>;
 
-  // Template support
-  template_mode?: boolean;
-  template?: string;
   // Unified template system
   unified_template_mode?: boolean;
   unified_template?: string;
@@ -1123,12 +1097,6 @@ export interface IconConfig {
   custom_active_state_text?: string;
   custom_inactive_name_text?: string;
   custom_active_name_text?: string;
-
-  // Template modes for state evaluation
-  inactive_template_mode?: boolean;
-  inactive_template?: string;
-  active_template_mode?: boolean;
-  active_template?: string;
 
   // Entity color options
   use_entity_color_for_icon?: boolean;
@@ -1319,16 +1287,6 @@ export interface IconConfig {
   url?: string;
   service?: string;
   service_data?: Record<string, any>;
-
-  // Template support (legacy)
-  template_mode?: boolean;
-  template?: string;
-
-  // Dynamic templates
-  dynamic_icon_template_mode?: boolean;
-  dynamic_icon_template?: string;
-  dynamic_color_template_mode?: boolean;
-  dynamic_color_template?: string;
 
   // Unified template system (replaces multiple template boxes)
   unified_template_mode?: boolean;
@@ -2431,9 +2389,6 @@ export interface SpinboxModule extends BaseModule {
   // Value display configuration
   value_color?: string;
   value_font_size?: number;
-  // Template support
-  template_mode?: boolean;
-  template?: string;
   // Unified template system
   unified_template_mode?: boolean;
   unified_template?: string;
@@ -2495,8 +2450,6 @@ export interface MarkdownModule extends BaseModule {
   markdown_content: string;
   link?: string; // Legacy support
   hide_if_no_link?: boolean;
-  template_mode?: boolean;
-  template?: string;
   // Unified template system
   unified_template_mode?: boolean;
   unified_template?: string;
@@ -2678,9 +2631,6 @@ export interface CameraModule extends BaseModule {
     service_data?: Record<string, any>;
   };
 
-  // Template support
-  template_mode?: boolean;
-  template?: string;
   // Unified template system
   unified_template_mode?: boolean;
   unified_template?: string;
@@ -2882,9 +2832,10 @@ export interface GraphsModule extends BaseModule {
   auto_refresh?: boolean;
   refresh_interval?: number;
 
-  // Templates
-  template_mode?: boolean;
-  template?: string;
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
 
   // Global action configuration
   tap_action?: {
@@ -3662,10 +3613,11 @@ export interface VideoBackgroundModule extends BaseModule {
 // QR Code Module (Pro) - content source and display options
 export interface QrCodeModule extends BaseModule {
   type: 'qr_code';
-  // Content source: static URL/text, HA template, or entity state/attribute
-  content_mode: 'static' | 'template' | 'entity';
+  // Content source: static URL/text, unified template, or entity state/attribute
+  content_mode: 'static' | 'entity' | 'unified';
   content_static?: string; // For static: URL or text to encode
-  content_template?: string; // For template: HA Jinja2 template
+  unified_template_mode?: boolean;
+  unified_template?: string;
   content_entity?: string; // For entity: entity_id
   content_attribute?: string; // Optional attribute (when content_mode === 'entity')
   // Display
@@ -3792,8 +3744,8 @@ export interface StatusSummaryEntity {
     color: string;
   }[];
 
-  // Custom template for color
-  custom_color_template?: string;
+  unified_template_mode?: boolean;
+  unified_template?: string;
 }
 
 // Status Summary Module - Display entity activity with timestamps and color coding
@@ -3844,18 +3796,12 @@ export interface StatusSummaryModule extends BaseModule {
     color: string;
   }[];
 
-  // Global custom template
-  global_custom_color_template?: string;
-
   // Default colors (when entity has no custom rules)
   default_text_color: string;
   default_icon_color: string;
   header_text_color: string;
   header_background_color: string;
 
-  // Template support for entire module
-  template_mode?: boolean;
-  template?: string;
   unified_template_mode?: boolean;
   unified_template?: string;
 
@@ -3883,8 +3829,8 @@ export interface TogglePoint {
   match_state?: string | string[]; // Can match multiple states
 
   // Template-based matching (for advanced conditions like ranges)
-  match_template_mode?: boolean; // Enable template mode instead of simple entity/state matching
-  match_template?: string; // Jinja2 template that evaluates to true/false
+  unified_template_mode?: boolean;
+  unified_template?: string;
 
   // Styling
   background_color?: string;
@@ -5073,8 +5019,13 @@ export interface CardColumn {
   border_width?: number;
   display_mode?: 'always' | 'every' | 'any';
   display_conditions?: DisplayCondition[];
+  /** @deprecated Prefer unified_template for visibility (JSON `visible` key). */
   template_mode?: boolean;
+  /** @deprecated Prefer unified_template. */
   template?: string;
+  /** Unified layout visibility: JSON with optional `visible` (and fallbacks per template-parser). */
+  unified_template_mode?: boolean;
+  unified_template?: string;
   // Responsive visibility - hide on specific device breakpoints
   hidden_on_devices?: DeviceBreakpoint[];
   // Design properties with priority system
@@ -5160,8 +5111,13 @@ export interface CardRow {
   border_width?: number;
   display_mode?: 'always' | 'every' | 'any';
   display_conditions?: DisplayCondition[];
+  /** @deprecated Prefer unified_template for visibility (JSON `visible` key). */
   template_mode?: boolean;
+  /** @deprecated Prefer unified_template. */
   template?: string;
+  /** Unified layout visibility: JSON with optional `visible` (and fallbacks per template-parser). */
+  unified_template_mode?: boolean;
+  unified_template?: string;
   // Responsive visibility - hide on specific device breakpoints
   hidden_on_devices?: DeviceBreakpoint[];
   // Design properties with priority system
@@ -5348,6 +5304,10 @@ export interface ExportData {
 export interface UltraCardConfig {
   type: string;
   layout: LayoutConfig;
+  // Schema version — bumped when defaults change and a migration is needed.
+  // v1 (or undefined): modules rely on implicit 8px top/bottom margin default
+  // v2: default margin removed; modules carry explicit design.margin_* if they need spacing
+  _config_version?: number;
   // Internal trust/origin metadata used to harden imported/shared content.
   _contentOrigin?: 'local' | 'imported' | 'preset_standard' | 'preset_community';
   global_css?: string;

@@ -5,6 +5,8 @@ import { CardModule, GraphsModule, GraphEntityConfig, UltraCardConfig } from '..
 import { TemplateService } from '../services/template-service';
 import { buildEntityContext, buildMultiEntityContext } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import '../components/ultra-template-editor';
 import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
@@ -204,9 +206,8 @@ export class UltraGraphsModule extends BaseUltraModule {
       hold_action: undefined,
       double_tap_action: undefined,
 
-      // Templates
-      template_mode: false,
-      template: '',
+      unified_template_mode: false,
+      unified_template: '',
 
       // Logic (visibility) defaults
       display_mode: 'always',
@@ -1958,6 +1959,64 @@ export class UltraGraphsModule extends BaseUltraModule {
             </div>
           </div>
         </div>
+
+        <div style="margin-top: 16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:16px;font-weight:600;">${localize('editor.graphs.unified_template.toggle', lang, 'Template mode')}</span>
+              <button
+                type="button"
+                class="help-btn"
+                style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                title="${localize('editor.graphs.unified_template.cheatsheet', lang, 'Template cheatsheet')}"
+                @click=${(e: Event) => {
+                  (e.currentTarget as HTMLElement).dispatchEvent(
+                    new CustomEvent('uc-open-template-cheatsheet', {
+                      bubbles: true,
+                      composed: true,
+                      detail: { module: 'graphs' },
+                    })
+                  );
+                }}
+              >
+                <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
+              </button>
+            </div>
+            <ha-switch
+              .checked=${graphsModule.unified_template_mode || false}
+              @change=${(e: Event) => updateModule({ unified_template_mode: (e.target as any).checked })}
+            ></ha-switch>
+          </div>
+          <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; line-height: 1.5;">
+            ${localize(
+              'editor.graphs.unified_template.desc',
+              lang,
+              'Optional JSON: colors (array), global_color, fill_area, pie_fill.'
+            )}
+          </div>
+          ${graphsModule.unified_template_mode
+            ? html`
+                <div
+                  style="margin-top: 12px;"
+                  @mousedown=${(e: Event) => {
+                    const t = e.target as HTMLElement;
+                    if (!t.closest('ultra-template-editor') && !t.closest('.cm-editor')) e.stopPropagation();
+                  }}
+                  @dragstart=${(e: Event) => e.stopPropagation()}
+                >
+                  <ultra-template-editor
+                    .hass=${hass}
+                    .value=${graphsModule.unified_template || ''}
+                    .placeholder=${'{\n  "colors": ["#4CAF50", "#FFC107", "#F44336"],\n  "fill_area": true\n}'}
+                    .minHeight=${120}
+                    .maxHeight=${360}
+                    @value-changed=${(e: CustomEvent) =>
+                      updateModule({ unified_template: e.detail.value })}
+                  ></ultra-template-editor>
+                </div>
+              `
+            : ''}
+        </div>
       </div>
     `;
   }
@@ -1992,17 +2051,20 @@ export class UltraGraphsModule extends BaseUltraModule {
     let templateFillArea: boolean | undefined;
     let templatePieFill: number | undefined;
 
-    if (graphsModule.template_mode && graphsModule.template) {
+    if (graphsModule.unified_template_mode && graphsModule.unified_template) {
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
+      } else if (this._templateService && hass) {
+        this._templateService.updateHass(hass);
       }
 
       if (hass) {
         if (!hass.__uvc_template_strings) {
           hass.__uvc_template_strings = {};
         }
-        const templateHash = this._hashString(graphsModule.template);
-        const templateKey = `graphs_${graphsModule.id}_${templateHash}`;
+        const processed = preprocessTemplateVariables(graphsModule.unified_template, hass, config);
+        const templateHash = this._hashString(processed);
+        const templateKey = `unified_graphs_${graphsModule.id}_${templateHash}`;
 
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
           // Build context with primary entity or multi-entity context
@@ -2031,7 +2093,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                 });
 
           this._templateService.subscribeToTemplate(
-            graphsModule.template,
+            processed,
             templateKey,
             () => {
               if (typeof window !== 'undefined') {
@@ -2158,8 +2220,8 @@ export class UltraGraphsModule extends BaseUltraModule {
     });
 
     const isFullLayout = (graphsModule as any).chart_layout === 'full';
-    const defaultMarginV = isFullLayout ? '0px' : '8px';
-    const defaultMargin = isFullLayout ? '0' : '8px 0';
+    const defaultMarginV = '0px';
+    const defaultMargin = '0';
 
     const containerStyles = {
       padding:
@@ -5060,14 +5122,12 @@ export class UltraGraphsModule extends BaseUltraModule {
   }
 
   private getMarginCSS(moduleWithDesign: any): string {
-    const isFullLayout = moduleWithDesign.chart_layout === 'full';
-    const defaultV = isFullLayout ? '0px' : '8px';
     return moduleWithDesign.margin_top ||
       moduleWithDesign.margin_bottom ||
       moduleWithDesign.margin_left ||
       moduleWithDesign.margin_right
-      ? `${this.addPixelUnit(moduleWithDesign.margin_top) || defaultV} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || defaultV} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`
-      : isFullLayout ? '0' : '8px 0';
+      ? `${this.addPixelUnit(moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`
+      : '0';
   }
 
   private getBackgroundCSS(moduleWithDesign: any): string {
@@ -5148,13 +5208,11 @@ export class UltraGraphsModule extends BaseUltraModule {
       }
     }
 
-    // Template validation - only if template mode is explicitly enabled
     if (
-      graphsModule.template_mode &&
-      graphsModule.template &&
-      graphsModule.template.trim() === ''
+      graphsModule.unified_template_mode &&
+      (!graphsModule.unified_template || String(graphsModule.unified_template).trim() === '')
     ) {
-      errors.push('Template code is required when template mode is enabled');
+      errors.push('Unified template is required when template mode is enabled');
     }
 
     return {

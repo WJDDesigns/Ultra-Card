@@ -19,6 +19,7 @@ const TEMPLATE_CAPABLE_MODULES: { type: string; title: string }[] = [
   { type: 'dropdown', title: 'Dropdown' },
   { type: 'gauge', title: 'Gauge' },
   { type: 'display_conditions', title: 'Display conditions' },
+  { type: 'layout', title: 'Layout (row/column visibility)' },
 ];
 
 interface CopyableExample {

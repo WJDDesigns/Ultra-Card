@@ -9,6 +9,7 @@ import { getModuleRegistry } from './module-registry';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
+import { autoMigrateCardModule } from '../utils/template-migration';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
 import '../components/ultra-color-picker';
 import Swiper from 'swiper';
@@ -2755,7 +2756,7 @@ export class UltraSliderModule extends BaseUltraModule {
                         return html`
                           <div class="child-module-wrapper" style="width: 100%;">
                             ${childModuleHandler.renderPreview(
-                              childModule,
+                              autoMigrateCardModule(childModule),
                               hass,
                               config,
                               previewContext
@@ -2768,7 +2769,7 @@ export class UltraSliderModule extends BaseUltraModule {
                       return html`
                         <div class="child-module-wrapper" style="width: 100%;">
                           ${childModuleHandler.renderPreview(
-                            childModule,
+                            autoMigrateCardModule(childModule),
                             hass,
                             config,
                             previewContext

@@ -11,6 +11,7 @@ import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { generateCSSVariables } from '../utils/css-variable-utils';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
+import { autoMigrateCardModule } from '../utils/template-migration';
 
 // Use the existing VerticalModule interface from types
 import { VerticalModule } from '../types';
@@ -195,19 +196,6 @@ export class UltraVerticalModule extends BaseUltraModule {
                   ${localize('editor.vertical.gap.desc', lang, 'Set the spacing between vertical items. Use negative values to overlap items. Note: Gap is disabled when using Space Between or Space Around distribution.')}
                 </div>
                 <div class="gap-control-container" style="display: flex; align-items: center; gap: 8px;">
-                  <select
-                    style="flex-shrink: 0; width: 56px; height: 32px; border-radius: 6px; border: 1px solid var(--divider-color); background: var(--card-background-color, var(--primary-background-color)); color: var(--primary-text-color); font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; outline: none; padding: 0 4px;"
-                    @change=${(e: Event) => {
-                      const newUnit = (e.target as HTMLSelectElement).value;
-                      const converted = convertGap(unit, newUnit, gapNum);
-                      updateModule({ gap: converted, gap_unit: newUnit } as any);
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }}
-                  >
-                    ${unitOptions.map(opt => html`
-                      <option value="${opt.value}" ?selected=${unit === opt.value}>${opt.label}</option>
-                    `)}
-                  </select>
                   <input
                     type="range"
                     class="gap-slider"
@@ -235,6 +223,19 @@ export class UltraVerticalModule extends BaseUltraModule {
                       }
                     }}
                   />
+                  <select
+                    style="flex-shrink: 0; width: 56px; height: 32px; border-radius: 6px; border: 1px solid var(--divider-color); background: var(--card-background-color, var(--primary-background-color)); color: var(--primary-text-color); font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; outline: none; padding: 0 4px;"
+                    @change=${(e: Event) => {
+                      const newUnit = (e.target as HTMLSelectElement).value;
+                      const converted = convertGap(unit, newUnit, gapNum);
+                      updateModule({ gap: converted, gap_unit: newUnit } as any);
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
+                  >
+                    ${unitOptions.map(opt => html`
+                      <option value="${opt.value}" ?selected=${unit === opt.value}>${opt.label}</option>
+                    `)}
+                  </select>
                   <button
                     class="reset-btn"
                     @click=${() => {
@@ -587,8 +588,9 @@ export class UltraVerticalModule extends BaseUltraModule {
     const shouldShowProOverlay = isProModule && !hasProAccess;
 
     if (moduleHandler) {
+      const migratedChild = autoMigrateCardModule(moduleToRender);
       const moduleContent = moduleHandler.renderPreview(
-        moduleToRender,
+        migratedChild,
         hass,
         config,
         previewContext
@@ -707,11 +709,10 @@ export class UltraVerticalModule extends BaseUltraModule {
     const mergedModule = { ...childModule } as any;
 
     // ── Margin zeroing ──────────────────────────────────────────────────────
-    // When a module lives inside a vertical layout, the parent's gap property
-    // is the sole source of spacing between children.  Modules that have NOT
-    // been explicitly configured with a margin via the Design tab should render
-    // with margin:0 so they don't double-stack space on top of the gap.
-    // Modules that DO have an explicit Design-tab margin keep their value.
+    // Inside a vertical layout the parent's gap property controls spacing
+    // between children.  Modules with migrated design.margin_* values should
+    // keep them, but ensure children without explicit margins stay at 0 so
+    // gap remains the sole spacing source.
     const childDesign = (childModule as any).design || {};
     const hasExplicitMargin =
       childDesign.margin_top !== undefined ||
@@ -724,8 +725,6 @@ export class UltraVerticalModule extends BaseUltraModule {
       (childModule as any).margin_right !== undefined;
 
     if (!hasExplicitMargin) {
-      // Use '0' (truthy string) so the child's renderPreview enters the
-      // explicit branch and outputs margin:0 instead of the '8px 0' fallback.
       mergedModule.margin_top = '0';
       mergedModule.margin_bottom = '0';
       mergedModule.margin_left = '0';

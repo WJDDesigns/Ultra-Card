@@ -13,14 +13,14 @@ import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { getPopupForModule } from '../services/popup-trigger-registry';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
-import '../components/uc-template-cheatsheet';
+
 import { buildEntityContext } from '../utils/template-context';
-import { parseUnifiedTemplate, hasTemplateError, getTemplateError } from '../utils/template-parser';
 import {
-  detectLegacyTemplates,
-  migrateToUnified,
-  shouldShowMigrationPrompt,
-} from '../utils/template-migration';
+  parseUnifiedTemplate,
+  hasTemplateError,
+  getTemplateError,
+  unifiedTemplateIcon,
+} from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 
 export class UltraInfoModule extends BaseUltraModule {
@@ -72,12 +72,6 @@ export class UltraInfoModule extends BaseUltraModule {
           url: '',
           service: '',
           service_data: {},
-          template_mode: false,
-          template: '',
-          dynamic_icon_template_mode: false,
-          dynamic_icon_template: '',
-          dynamic_color_template_mode: false,
-          dynamic_color_template: '',
           // Unified template system
           unified_template_mode: false,
           unified_template: '',
@@ -648,81 +642,7 @@ export class UltraInfoModule extends BaseUltraModule {
           </div>
         </div>
 
-        <!-- Migration Banner (if legacy templates detected) -->
-        ${shouldShowMigrationPrompt(entity)
-          ? html`
-              <div
-                class="migration-banner"
-                style="
-                  background: linear-gradient(135deg, rgba(var(--rgb-primary-color), 0.1), rgba(var(--rgb-primary-color), 0.05));
-                  border: 2px solid var(--primary-color);
-                  border-radius: 12px;
-                  padding: 20px;
-                  margin-bottom: 24px;
-                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                "
-              >
-                <div style="display: flex; align-items: start; gap: 16px;">
-                  <ha-icon
-                    icon="mdi:lightbulb-on-outline"
-                    style="color: var(--primary-color); font-size: 32px; flex-shrink: 0;"
-                  ></ha-icon>
-                  <div style="flex: 1;">
-                    <div
-                      style="font-size: 18px; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;"
-                    >
-                      ${localize(
-                        'editor.info.migration_title',
-                        lang,
-                        'Template Migration Available'
-                      )}
-                    </div>
-                    <div
-                      style="font-size: 14px; color: var(--primary-text-color); margin-bottom: 12px; line-height: 1.5;"
-                    >
-                      ${localize(
-                        'editor.info.migration_desc',
-                        lang,
-                        `Combine your templates into one unified template for easier editing.`
-                      )}
-                    </div>
-                    <button
-                      style="
-                        background: var(--primary-color);
-                        color: white;
-                        border: none;
-                        border-radius: 8px;
-                        padding: 10px 20px;
-                        font-size: 14px;
-                        font-weight: 600;
-                        cursor: pointer;
-                      "
-                      @click=${() => {
-                        const migration = migrateToUnified(entity);
-                        this._updateEntity(
-                          infoModule,
-                          0,
-                          {
-                            unified_template_mode: migration.unified_template_mode,
-                            unified_template: migration.unified_template,
-                            ignore_entity_state_config: migration.ignore_entity_state_config,
-                            template_mode: false,
-                            dynamic_icon_template_mode: false,
-                            dynamic_color_template_mode: false,
-                          },
-                          updateModule
-                        );
-                      }}
-                    >
-                      ${localize('editor.info.migrate_button', lang, 'Migrate to Unified Template')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            `
-          : ''}
-
-        <!-- Unified Template Section (New Preferred Method) -->
+        <!-- Unified Template Section -->
         <div class="template-section" style="margin-bottom: 24px;">
           <div class="template-header">
             <div class="switch-container">
@@ -776,9 +696,6 @@ export class UltraInfoModule extends BaseUltraModule {
               )}
             </div>
           </div>
-
-          <!-- Cheatsheet Component (always available) -->
-          <uc-template-cheatsheet .module=${'info'}></uc-template-cheatsheet>
 
           ${entity.unified_template_mode
             ? html`
@@ -1536,7 +1453,6 @@ export class UltraInfoModule extends BaseUltraModule {
         moduleWithDesign.padding_right
           ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
           : '16px',
-      // Standard 8px top/bottom margin for proper web design spacing
       margin:
         designProperties.margin_top ||
         designProperties.margin_bottom ||
@@ -1546,8 +1462,8 @@ export class UltraInfoModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
-          : '8px 0',
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '0px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '0px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
+          : '0',
       border:
         (designProperties.border_style || moduleWithDesign.border_style) &&
         (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
@@ -1589,19 +1505,22 @@ export class UltraInfoModule extends BaseUltraModule {
 
     // Check if any entity has a template-based container background color (needs to be parsed from template strings)
     let templateContainerBg = '';
-    for (const entity of validEntities) {
+    for (let bgIdx = 0; bgIdx < validEntities.length; bgIdx++) {
+      const entity = validEntities[bgIdx];
       // Check if entity has unified template mode enabled
       if (entity.unified_template_mode && entity.unified_template) {
         // Initialize template service if needed
         if (!this._templateService && hass) {
           this._templateService = new TemplateService(hass);
+        } else if (this._templateService && hass) {
+          this._templateService.updateHass(hass);
         }
 
         // IMPORTANT: Must use the PROCESSED template (after variable substitution) for the hash
         // to match the key used when subscribing to the template
         const processedTemplate = preprocessTemplateVariables(entity.unified_template, hass, config);
         const templateHash = this._hashString(processedTemplate);
-        const templateKey = `unified_info_${entity.entity}_${validEntities.indexOf(entity)}_${templateHash}`;
+        const templateKey = `unified_info_${entity.entity}_${bgIdx}_${templateHash}`;
 
         // Check if we already have the rendered template result
         const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
@@ -1712,89 +1631,22 @@ export class UltraInfoModule extends BaseUltraModule {
 
               const entityState = hass?.states[entity.entity];
 
-              // Process template if template_mode is enabled
               let displayValue: string;
-              if (entity.template_mode && entity.template) {
-                // Initialize template service
-                if (!this._templateService && hass) {
-                  this._templateService = new TemplateService(hass);
-                }
-
-                // Ensure template string cache exists on hass
-                if (hass) {
-                  if (!hass.__uvc_template_strings) {
-                    hass.__uvc_template_strings = {};
-                  }
-
-                  // Preprocess custom variables ($variable_name) before Jinja evaluation
-                  const processedTemplate = preprocessTemplateVariables(
-                    entity.template,
-                    hass,
-                    config
-                  );
-
-                  const templateHash = this._hashString(processedTemplate);
-                  // Use only template hash and index for key to prevent subscription leaks when module ID changes
-                  // Module ID can change during editor updates, but template content + index is stable
-                  const templateKey = `info_entity_${index}_${templateHash}`;
-
-                  // Subscribe if needed
-                  if (
-                    this._templateService &&
-                    !this._templateService.hasTemplateSubscription(templateKey)
-                  ) {
-                    this._templateService.subscribeToTemplate(
-                      processedTemplate,
-                      templateKey,
-                      () => {
-                        if (typeof window !== 'undefined') {
-                          // Use global debounced update
-                          if (!window._ultraCardUpdateTimer) {
-                            window._ultraCardUpdateTimer = setTimeout(() => {
-                              // Use global debounced update
-                              if (!window._ultraCardUpdateTimer) {
-                                window._ultraCardUpdateTimer = setTimeout(() => {
-                                  this.triggerPreviewUpdate();
-                                  window._ultraCardUpdateTimer = null;
-                                }, 50);
-                              }
-                              window._ultraCardUpdateTimer = null;
-                            }, 50);
-                          }
-                        }
-                      },
-                      undefined, // No context variables
-                      config // Pass config for card-specific variable resolution
-                    );
-                  }
-
-                  // Use latest rendered string if available
-                  const rendered = hass.__uvc_template_strings?.[templateKey];
-                  if (rendered !== undefined && String(rendered).trim() !== '') {
-                    displayValue = String(rendered);
-                  } else {
-                    // Show template error message instead of entity state
-                    displayValue = 'Template Error: Invalid or incomplete template';
-                  }
-                }
-              } else {
-                // Non-template path: use attribute or entity state
-                if (entityState) {
-                  if (entity.attribute && entityState.attributes?.[entity.attribute] !== undefined) {
-                    const attrValue = entityState.attributes[entity.attribute];
-                    displayValue = String(attrValue);
-                    if (entity.show_units !== false) {
-                      const unit = entityState.attributes?.unit_of_measurement;
-                      if (unit) displayValue += ` ${unit}`;
-                    }
-                  } else {
-                    displayValue = formatEntityState(hass, entity.entity, {
-                      includeUnit: entity.show_units !== false,
-                    });
+              if (entityState) {
+                if (entity.attribute && entityState.attributes?.[entity.attribute] !== undefined) {
+                  const attrValue = entityState.attributes[entity.attribute];
+                  displayValue = String(attrValue);
+                  if (entity.show_units !== false) {
+                    const unit = entityState.attributes?.unit_of_measurement;
+                    if (unit) displayValue += ` ${unit}`;
                   }
                 } else {
-                  displayValue = 'N/A';
+                  displayValue = formatEntityState(hass, entity.entity, {
+                    includeUnit: entity.show_units !== false,
+                  });
                 }
+              } else {
+                displayValue = 'N/A';
               }
 
               const hasCustomName =
@@ -1866,7 +1718,8 @@ export class UltraInfoModule extends BaseUltraModule {
                 if (unifiedResult && String(unifiedResult).trim() !== '') {
                   const parsed = parseUnifiedTemplate(unifiedResult);
                   if (!hasTemplateError(parsed)) {
-                    if (parsed.icon) displayIcon = parsed.icon;
+                    const uIcon = unifiedTemplateIcon(parsed);
+                    if (uIcon) displayIcon = uIcon;
                     if (parsed.icon_color) displayIconColor = parsed.icon_color;
                     // Store template properties for later use
                     if (parsed.name) {
@@ -1874,6 +1727,8 @@ export class UltraInfoModule extends BaseUltraModule {
                     }
                     if (parsed.state_text !== undefined) {
                       (entity as any)._template_state_text = parsed.state_text;
+                    } else if (parsed._isString && parsed.content && !uIcon) {
+                      (entity as any)._template_state_text = String(parsed.content).trim();
                     }
                     if (parsed.name_color) {
                       (entity as any)._template_name_color = parsed.name_color;
@@ -1886,56 +1741,6 @@ export class UltraInfoModule extends BaseUltraModule {
                         parsed.container_background_color;
                     }
                   }
-                }
-              }
-              // PRIORITY 2: Apply dynamic icon template if enabled (legacy)
-              else if (entity.dynamic_icon_template_mode && entity.dynamic_icon_template) {
-                // Initialize template service if needed
-                if (!this._templateService && hass) {
-                  this._templateService = new TemplateService(hass);
-                } else if (this._templateService && hass) {
-                  this._templateService.updateHass(hass);
-                }
-
-                // Preprocess custom variables ($variable_name) before Jinja evaluation
-                const processedIconTemplate = preprocessTemplateVariables(
-                  entity.dynamic_icon_template,
-                  hass,
-                  config
-                );
-
-                const templateHash = this._hashString(processedIconTemplate);
-                const templateKey = `dynamic_icon_info_${entity.entity}_${index}_${templateHash}`;
-
-                if (!hass.__uvc_template_strings) {
-                  hass.__uvc_template_strings = {};
-                }
-
-                if (
-                  this._templateService &&
-                  !this._templateService.hasTemplateSubscription(templateKey)
-                ) {
-                  this._templateService.subscribeToTemplate(
-                    processedIconTemplate,
-                    templateKey,
-                    () => {
-                      if (typeof window !== 'undefined') {
-                        if (!window._ultraCardUpdateTimer) {
-                          window._ultraCardUpdateTimer = setTimeout(() => {
-                            this.triggerPreviewUpdate();
-                            window._ultraCardUpdateTimer = null;
-                          }, 50);
-                        }
-                      }
-                    },
-                    undefined, // No context variables
-                    config // Pass config for card-specific variable resolution
-                  );
-                }
-
-                const iconTemplateResult = hass?.__uvc_template_strings?.[templateKey];
-                if (iconTemplateResult && String(iconTemplateResult).trim() !== '') {
-                  displayIcon = String(iconTemplateResult);
                 }
               }
 
@@ -1996,72 +1801,7 @@ export class UltraInfoModule extends BaseUltraModule {
                         <ha-icon
                           icon="${displayIcon}"
                           class="entity-icon"
-                          style="color: ${(() => {
-                            // Use color from unified/dynamic templates or default
-                            let finalColor = displayIconColor;
-
-                            // PRIORITY 3: Apply dynamic color template if enabled (legacy, only if not using unified)
-                            if (
-                              entity.dynamic_color_template_mode &&
-                              entity.dynamic_color_template
-                            ) {
-                              // Initialize template service if needed
-                              if (!this._templateService && hass) {
-                                this._templateService = new TemplateService(hass);
-                              } else if (this._templateService && hass) {
-                                this._templateService.updateHass(hass);
-                              }
-
-                              // Preprocess custom variables ($variable_name) before Jinja evaluation
-                              const processedColorTemplate = preprocessTemplateVariables(
-                                entity.dynamic_color_template,
-                                hass,
-                                config
-                              );
-
-                              const templateHash = this._hashString(processedColorTemplate);
-                              const templateKey = `dynamic_color_info_${entity.entity}_${index}_${templateHash}`;
-
-                              if (!hass.__uvc_template_strings) {
-                                hass.__uvc_template_strings = {};
-                              }
-
-                              if (
-                                this._templateService &&
-                                !this._templateService.hasTemplateSubscription(templateKey)
-                              ) {
-                                this._templateService.subscribeToTemplate(
-                                  processedColorTemplate,
-                                  templateKey,
-                                  () => {
-                                    if (typeof window !== 'undefined') {
-                                      if (!window._ultraCardUpdateTimer) {
-                                        window._ultraCardUpdateTimer = setTimeout(() => {
-                                          window.dispatchEvent(
-                                            new CustomEvent('ultra-card-template-update')
-                                          );
-                                          window._ultraCardUpdateTimer = null;
-                                        }, 50);
-                                      }
-                                    }
-                                  },
-                                  undefined, // No context variables
-                                  config // Pass config for card-specific variable resolution
-                                );
-                              }
-
-                              const colorTemplateResult =
-                                hass?.__uvc_template_strings?.[templateKey];
-                              if (
-                                colorTemplateResult &&
-                                String(colorTemplateResult).trim() !== ''
-                              ) {
-                                finalColor = String(colorTemplateResult);
-                              }
-                            }
-
-                            return finalColor;
-                          })()}; --mdc-icon-size: ${getIconSizeWithUnits(
+                          style="color: ${displayIconColor}; --mdc-icon-size: ${getIconSizeWithUnits(
                             designProperties.font_size,
                             entity.icon_size || 26
                           )};"
@@ -2904,12 +2644,6 @@ export class UltraInfoModule extends BaseUltraModule {
       url: '',
       service: '',
       service_data: {},
-      template_mode: false,
-      template: '',
-      dynamic_icon_template_mode: false,
-      dynamic_icon_template: '',
-      dynamic_color_template_mode: false,
-      dynamic_color_template: '',
       // Unified template system
       unified_template_mode: false,
       unified_template: '',

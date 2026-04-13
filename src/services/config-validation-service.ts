@@ -1,5 +1,6 @@
 import { UltraCardConfig, CardModule, CardRow, CardColumn, isResponsiveDesign, ResponsiveDesignProperties, SharedDesignProperties } from '../types';
 import { getModuleRegistry } from '../modules/module-registry';
+import { migrateLayoutVisibilityTemplates, migrateModuleDefaultMargins } from '../utils/template-migration';
 
 export interface ValidationResult {
   valid: boolean;
@@ -45,6 +46,8 @@ export class ConfigValidationService {
     }
 
     this._migrateDesignToResponsive(correctedConfig);
+    migrateLayoutVisibilityTemplates(correctedConfig);
+    migrateModuleDefaultMargins(correctedConfig);
 
     if (!correctedConfig.type) {
       correctedConfig.type = 'custom:ultra-card';

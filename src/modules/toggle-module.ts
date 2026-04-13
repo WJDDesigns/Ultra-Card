@@ -8,7 +8,10 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import { localize } from '../localize/localize';
 import { TemplateService } from '../services/template-service';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import '../components/ultra-color-picker';
+import '../components/ultra-template-editor';
 
 export class UltraToggleModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -101,6 +104,11 @@ export class UltraToggleModule extends BaseUltraModule {
       toggleModule.toggle_points.forEach((point, index) => {
         if (!point.label || point.label.trim() === '') {
           errors.push(`Toggle point ${index + 1} must have a label`);
+        }
+        const utm = point.unified_template_mode;
+        const ut = String(point.unified_template || '').trim();
+        if (utm && !ut) {
+          errors.push(`Toggle point ${index + 1}: unified template is required when template match mode is on`);
         }
       });
     }
@@ -789,7 +797,7 @@ export class UltraToggleModule extends BaseUltraModule {
             'Choose how to determine when this toggle point should be active'
           ),
           hass,
-          { match_mode: point.match_template_mode ? 'template' : 'entity' },
+          { match_mode: point.unified_template_mode ? 'template' : 'entity' },
           [
             this.selectField('match_mode', [
               {
@@ -804,21 +812,24 @@ export class UltraToggleModule extends BaseUltraModule {
           ],
           (e: CustomEvent) => {
             const mode = e.detail.value.match_mode;
-            const isCurrentlyTemplate = point.match_template_mode || false;
+            const isCurrentlyTemplate = !!point.unified_template_mode;
             if ((mode === 'template') === isCurrentlyTemplate) return;
 
-            // Update the point based on selected mode
             if (mode === 'entity') {
               this.updateTogglePoint(
                 index,
-                { match_template_mode: false, match_template: '' },
+                { unified_template_mode: false, unified_template: '' },
                 module,
                 updateModule
               );
-            } else if (mode === 'template') {
+            } else {
               this.updateTogglePoint(
                 index,
-                { match_template_mode: true, match_entity: '', match_state: '' },
+                {
+                  unified_template_mode: true,
+                  match_entity: '',
+                  match_state: '',
+                },
                 module,
                 updateModule
               );
@@ -826,50 +837,65 @@ export class UltraToggleModule extends BaseUltraModule {
             setTimeout(() => this.triggerPreviewUpdate(), 50);
           }
         )}
-        ${point.match_template_mode
+        ${point.unified_template_mode
           ? html`
-              <!-- Template Mode UI -->
               <div
                 style="border-left: 3px solid var(--primary-color); padding-left: 12px; margin-top: 12px;"
               >
-                ${UcFormUtils.renderFieldSection(
-                  localize('editor.toggle.point_match_template', lang, 'Match Template'),
-                  localize(
-                    'editor.toggle.point_match_template_desc',
-                    lang,
-                    'Jinja2 template that evaluates to true when this point should be active'
-                  ),
-                  hass,
-                  { match_template: point.match_template || '' },
-                  [UcFormUtils.text('match_template', true)],
-                  (e: CustomEvent) =>
-                    this.updateTogglePoint(
-                      index,
-                      { match_template: e.detail.value.match_template },
-                      module,
-                      updateModule
-                    )
-                )}
                 <div
-                  style="font-size: 11px; color: var(--secondary-text-color); margin-top: 8px; padding: 8px; background: var(--card-background-color); border-radius: 4px;"
+                  style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;"
                 >
-                  <strong>${localize('editor.toggle.template_examples', lang, 'Examples')}:</strong
-                  ><br />
-                  • ${localize('editor.toggle.template_example_range', lang, 'Range')}:
-                  <code style="font-size: 10px;"
-                    >{{ state_attr('cover.garage', 'current_position') | int >= 15 and
-                    state_attr('cover.garage', 'current_position') | int &lt;= 25 }}</code
-                  ><br />
-                  • ${localize('editor.toggle.template_example_brightness', lang, 'Brightness')}:
-                  <code style="font-size: 10px;"
-                    >{{ state_attr('light.living_room', 'brightness') | int > 200 }}</code
-                  ><br />
-                  •
-                  ${localize('editor.toggle.template_example_multi', lang, 'Multiple conditions')}:
-                  <code style="font-size: 10px;"
-                    >{{ states('climate.hvac') == 'heat' and state_attr('climate.hvac',
-                    'temperature') > 20 }}</code
+                  <span
+                    >${localize(
+                      'editor.toggle.unified_match_desc',
+                      lang,
+                      'JSON with a boolean "match" key, or a plain Jinja expression that renders to true/false when this point should be active.'
+                    )}</span
                   >
+                  <button
+                    type="button"
+                    class="help-btn"
+                    style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                    title="${localize('editor.toggle.template_cheatsheet', lang, 'Template cheatsheet')}"
+                    @click=${(e: Event) => {
+                      (e.currentTarget as HTMLElement).dispatchEvent(
+                        new CustomEvent('uc-open-template-cheatsheet', {
+                          bubbles: true,
+                          composed: true,
+                          detail: { module: 'toggle' },
+                        })
+                      );
+                    }}
+                  >
+                    <ha-icon
+                      icon="mdi:help-circle"
+                      style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"
+                    ></ha-icon>
+                  </button>
+                </div>
+                <div
+                  style="margin-top: 12px;"
+                  @mousedown=${(e: Event) => {
+                    const t = e.target as HTMLElement;
+                    if (!t.closest('ultra-template-editor') && !t.closest('.cm-editor'))
+                      e.stopPropagation();
+                  }}
+                  @dragstart=${(e: Event) => e.stopPropagation()}
+                >
+                  <ultra-template-editor
+                    .hass=${hass}
+                    .value=${point.unified_template || ''}
+                    .placeholder=${'{\n  "match": "{{ state_attr(\'cover.garage\', \'current_position\') | int >= 15 }}"\n}'}
+                    .minHeight=${120}
+                    .maxHeight=${360}
+                    @value-changed=${(e: CustomEvent) =>
+                      this.updateTogglePoint(
+                        index,
+                        { unified_template: e.detail.value },
+                        module,
+                        updateModule
+                      )}
+                  ></ultra-template-editor>
                 </div>
               </div>
             `
@@ -1453,6 +1479,8 @@ export class UltraToggleModule extends BaseUltraModule {
     // Initialize template service if needed
     if (!this._templateService && hass) {
       this._templateService = new TemplateService(hass);
+    } else if (this._templateService && hass) {
+      this._templateService.updateHass(hass);
     }
 
     // Subscribe to any template-based toggle points
@@ -1466,7 +1494,9 @@ export class UltraToggleModule extends BaseUltraModule {
     const hasEntityTracking =
       toggleModule.tracking_entity ||
       toggleModule.toggle_points.some(
-        p => (p.match_entity && p.match_state) || (p.match_template_mode && p.match_template)
+        p =>
+          (p.match_entity && p.match_state) ||
+          (p.unified_template_mode && p.unified_template)
       );
 
     if (hasEntityTracking) {
@@ -1530,13 +1560,15 @@ export class UltraToggleModule extends BaseUltraModule {
     }
 
     for (const point of module.toggle_points) {
-      if (point.match_template_mode && point.match_template) {
-        const templateHash = this._hashString(point.match_template);
-        const templateKey = `toggle_match_${module.id}_${point.id}_${templateHash}`;
+      const ut = point.unified_template;
+      if (point.unified_template_mode && ut) {
+        const processed = preprocessTemplateVariables(ut, hass, undefined);
+        const templateHash = this._hashString(processed);
+        const templateKey = `toggle_unified_${module.id}_${point.id}_${templateHash}`;
 
         if (!this._templateService.hasTemplateSubscription(templateKey)) {
           this._templateService.subscribeToTemplate(
-            point.match_template,
+            processed,
             templateKey,
             () => {
               // When template result changes, trigger a preview update
@@ -1576,16 +1608,26 @@ export class UltraToggleModule extends BaseUltraModule {
     // PRIORITY 1: Check template-based matching first
     // Templates allow for more complex conditions (ranges, attributes, etc.)
     for (const point of module.toggle_points) {
-      if (point.match_template_mode && point.match_template) {
-        const templateHash = this._hashString(point.match_template);
-        const templateKey = `toggle_match_${module.id}_${point.id}_${templateHash}`;
+      const ut = point.unified_template;
+      if (point.unified_template_mode && ut) {
+        const processed = preprocessTemplateVariables(ut, hass, undefined);
+        const templateHash = this._hashString(processed);
+        const templateKey = `toggle_unified_${module.id}_${point.id}_${templateHash}`;
 
-        // Check the rendered template result
         const renderedResult = hass.__uvc_template_strings?.[templateKey];
         if (renderedResult !== undefined) {
-          const isMatch = this._parseTemplateResultAsBoolean(renderedResult);
-          if (isMatch) {
-            return point.id;
+          const parsed = parseUnifiedTemplate(renderedResult);
+          if (!hasTemplateError(parsed)) {
+            const raw =
+              parsed.match !== undefined
+                ? parsed.match
+                : parsed._isString && parsed.content !== undefined
+                  ? parsed.content
+                  : renderedResult;
+            const isMatch = this._parseTemplateResultAsBoolean(raw);
+            if (isMatch) {
+              return point.id;
+            }
           }
         }
       }
@@ -1599,7 +1641,7 @@ export class UltraToggleModule extends BaseUltraModule {
       // Find first toggle point that matches the entity state
       const matchingPoint = module.toggle_points.find(point => {
         // Skip template-mode points (already checked above)
-        if (point.match_template_mode) return false;
+        if (point.unified_template_mode) return false;
 
         const usesTrackingEntity =
           point.match_entity === module.tracking_entity || !point.match_entity;
@@ -1617,7 +1659,7 @@ export class UltraToggleModule extends BaseUltraModule {
     // PRIORITY 3: Check each toggle point's individual match_entity (simple mode)
     for (const point of module.toggle_points) {
       // Skip template-mode points (already checked above)
-      if (point.match_template_mode) continue;
+      if (point.unified_template_mode) continue;
 
       if (point.match_entity && hass.states[point.match_entity]) {
         const entityState = hass.states[point.match_entity].state;

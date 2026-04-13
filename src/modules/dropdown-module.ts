@@ -12,6 +12,8 @@ import {
   hasTemplateError,
   isStringResult,
 } from '../utils/template-parser';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import { buildEntityContext } from '../utils/template-context';
 import { safeGetItem, safeSetItem } from '../utils/safe-storage';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
@@ -1609,14 +1611,13 @@ export class UltraDropdownModule extends BaseUltraModule {
         moduleWithDesign.padding_right
           ? `${moduleWithDesign.padding_top || '0px'} ${moduleWithDesign.padding_right || '0px'} ${moduleWithDesign.padding_bottom || '0px'} ${moduleWithDesign.padding_left || '0px'}`
           : '0',
-      // Standard 8px top/bottom margin for proper web design spacing
       margin:
         moduleWithDesign.margin_top ||
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${moduleWithDesign.margin_top || '8px'} ${moduleWithDesign.margin_right || '0'} ${moduleWithDesign.margin_bottom || '8px'} ${moduleWithDesign.margin_left || '0'}`
-          : '8px 0',
+          ? `${moduleWithDesign.margin_top || '0'} ${moduleWithDesign.margin_right || '0'} ${moduleWithDesign.margin_bottom || '0'} ${moduleWithDesign.margin_left || '0'}`
+          : '0',
       background: moduleWithDesign.background_color || 'transparent',
       'border-radius': moduleWithDesign.border_radius || '4px',
       border:
@@ -1776,9 +1777,14 @@ export class UltraDropdownModule extends BaseUltraModule {
       // Unified template mode: get options and display properties from template
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
+      } else if (this._templateService && hass) {
+        this._templateService.updateHass(hass);
       }
 
-      const templateHash = this._hashString(dropdownModule.unified_template!);
+      const processedUnifiedTemplate = preprocessTemplateVariables(
+        dropdownModule.unified_template!, hass, config
+      );
+      const templateHash = this._hashString(processedUnifiedTemplate);
       const templateKey = `unified_dropdown_${dropdownModule.id}_${templateHash}`;
 
       if (!hass.__uvc_template_strings) {
@@ -1789,9 +1795,12 @@ export class UltraDropdownModule extends BaseUltraModule {
         this._templateService &&
         !this._templateService.hasTemplateSubscription(templateKey)
       ) {
+        const context = buildEntityContext(dropdownModule.entity || '', hass, {
+          entity: dropdownModule.entity,
+        });
         // Subscribe to template for updates
         this._templateService.subscribeToTemplate(
-          dropdownModule.unified_template!,
+          processedUnifiedTemplate,
           templateKey,
           () => {
             if (typeof window !== 'undefined') {
@@ -1803,14 +1812,14 @@ export class UltraDropdownModule extends BaseUltraModule {
               }
             }
           },
-          undefined, // No context variables
-          config // Pass config for card-specific variable resolution
+          context,
+          config
         );
         
         // Try initial evaluation via API for immediate result
         if (hass.callApi) {
           hass.callApi<string>('POST', 'template', {
-            template: dropdownModule.unified_template!,
+            template: processedUnifiedTemplate,
           }).then((result) => {
             if (!hass.__uvc_template_strings) {
               hass.__uvc_template_strings = {};
@@ -3084,7 +3093,10 @@ export class UltraDropdownModule extends BaseUltraModule {
       });
     } else if (isUnifiedTemplateMode) {
       // Unified template mode: get options from template
-      const templateHash = this._hashString(dropdownModule.unified_template!);
+      const processedUnifiedTemplate = preprocessTemplateVariables(
+        dropdownModule.unified_template!, hass, config
+      );
+      const templateHash = this._hashString(processedUnifiedTemplate);
       const templateKey = `unified_dropdown_${dropdownModule.id}_${templateHash}`;
       const unifiedTemplateResult = hass?.__uvc_template_strings?.[templateKey];
       

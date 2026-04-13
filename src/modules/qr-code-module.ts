@@ -8,8 +8,15 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { localize } from '../localize/localize';
 import { TemplateService } from '../services/template-service';
+import {
+  parseUnifiedTemplate,
+  hasTemplateError,
+  unifiedTemplateQrContent,
+} from '../utils/template-parser';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { uploadImage, getImageUrl } from '../utils/image-upload';
 import '../components/ultra-color-picker';
+import '../components/ultra-template-editor';
 import { ucToastService } from '../services/uc-toast-service';
 
 /** Event dispatched when QR data URL is ready so the card can re-render */
@@ -177,6 +184,8 @@ export class UltraQrCodeModule extends BaseUltraModule {
       type: 'qr_code',
       content_mode: 'static',
       content_static: 'https://www.home-assistant.io',
+      unified_template_mode: false,
+      unified_template: '',
       size: 200,
       alignment: 'center',
       show_label: false,
@@ -260,10 +269,21 @@ export class UltraQrCodeModule extends BaseUltraModule {
             data: { content_mode: qrModule.content_mode || 'static' },
             schema: [this.selectField('content_mode', [
               { value: 'static', label: localize('editor.qr_code.static', lang, 'Static URL / Text') },
-              { value: 'template', label: localize('editor.qr_code.template', lang, 'HA Template') },
+              {
+                value: 'unified',
+                label: localize('editor.qr_code.unified_template', lang, 'Unified template'),
+              },
               { value: 'entity', label: localize('editor.qr_code.entity', lang, 'Entity State') },
             ])],
-            onChange: (e: CustomEvent) => { updateModule({ content_mode: e.detail.value.content_mode as 'static' | 'template' | 'entity' }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
+            onChange: (e: CustomEvent) => {
+              const mode = e.detail.value.content_mode as 'static' | 'entity' | 'unified';
+              updateModule({
+                content_mode: mode,
+                unified_template_mode: mode === 'unified',
+                ...(mode !== 'unified' ? { unified_template: '' } : {}),
+              });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            },
           },
         ]
       )}
@@ -277,15 +297,62 @@ export class UltraQrCodeModule extends BaseUltraModule {
             (e: CustomEvent) => { updateModule({ content_static: e.detail.value.content_static }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
           )
         : ''}
-      ${qrModule.content_mode === 'template'
-        ? this.renderFieldSection(
-            localize('editor.qr_code.template_content', lang, 'Template'),
-            localize('editor.qr_code.template_desc', lang, 'Jinja2 template that outputs the string to encode'),
-            hass,
-            { content_template: qrModule.content_template || '' },
-            [this.textField('content_template', true)],
-            (e: CustomEvent) => { updateModule({ content_template: e.detail.value.content_template }); setTimeout(() => this.triggerPreviewUpdate(), 50); }
-          )
+      ${qrModule.content_mode === 'unified' || qrModule.unified_template_mode
+        ? html`
+            <div>
+              <div
+                style="font-size: 13px; color: var(--secondary-text-color); margin: 8px 0 12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;"
+              >
+                <span
+                  >${localize(
+                    'editor.qr_code.unified_template_desc',
+                    lang,
+                    'JSON with "qr_content" (URL or text to encode), or a plain Jinja string result.'
+                  )}</span
+                >
+                <button
+                  type="button"
+                  class="help-btn"
+                  style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                  title="${localize('editor.qr_code.unified_cheatsheet', lang, 'Template cheatsheet')}"
+                  @click=${(e: Event) => {
+                    (e.currentTarget as HTMLElement).dispatchEvent(
+                      new CustomEvent('uc-open-template-cheatsheet', {
+                        bubbles: true,
+                        composed: true,
+                        detail: { module: 'qr' },
+                      })
+                    );
+                  }}
+                >
+                  <ha-icon
+                    icon="mdi:help-circle"
+                    style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"
+                  ></ha-icon>
+                </button>
+              </div>
+            <div
+              style="margin-top: 12px;"
+              @mousedown=${(e: Event) => {
+                const t = e.target as HTMLElement;
+                if (!t.closest('ultra-template-editor') && !t.closest('.cm-editor')) e.stopPropagation();
+              }}
+              @dragstart=${(e: Event) => e.stopPropagation()}
+            >
+              <ultra-template-editor
+                .hass=${hass}
+                .value=${qrModule.unified_template || ''}
+                .placeholder=${'{\n  "qr_content": "{{ states(\'sensor.door_lock\') }}"\n}'}
+                .minHeight=${120}
+                .maxHeight=${360}
+                @value-changed=${(e: CustomEvent) => {
+                  updateModule({ unified_template: e.detail.value });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+              ></ultra-template-editor>
+            </div>
+            </div>
+          `
         : ''}
       ${qrModule.content_mode === 'entity'
         ? html`
@@ -601,6 +668,16 @@ export class UltraQrCodeModule extends BaseUltraModule {
     `;
   }
 
+  private _hashString(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash).toString(36);
+  }
+
   private renderProLockUI(lang: string): TemplateResult {
     return html`
       <div
@@ -656,6 +733,39 @@ export class UltraQrCodeModule extends BaseUltraModule {
   }
 
   private _resolveContent(module: QrCodeModule, hass: HomeAssistant, config?: UltraCardConfig): string {
+    const legacyTemplate =
+      (module as any).content_mode === 'template' && (module as any).content_template;
+    const unifiedOn =
+      module.unified_template_mode === true ||
+      module.content_mode === 'unified' ||
+      !!legacyTemplate;
+    const templateSource = legacyTemplate
+      ? String((module as any).content_template)
+      : (module.unified_template || '').trim();
+
+    if (unifiedOn && templateSource && hass) {
+      const processed = preprocessTemplateVariables(templateSource, hass, config);
+      const templateHash = this._hashString(processed);
+      const key = `qr_unified_${module.id}_${templateHash}`;
+      const cached = (hass as any).__uvc_template_strings?.[key];
+      if (cached != null) {
+        const parsed = parseUnifiedTemplate(String(cached));
+        if (!hasTemplateError(parsed)) {
+          const q = unifiedTemplateQrContent(parsed);
+          if (q) return q.trim();
+        }
+      }
+      try {
+        const svc = new TemplateService(hass);
+        svc.subscribeToTemplate(processed, key, () => {
+          window.dispatchEvent(new CustomEvent(UC_QR_DATA_READY_EVENT));
+        }, {}, config);
+      } catch (_) {
+        // ignore
+      }
+      return '';
+    }
+
     const mode = module.content_mode || 'static';
     if (mode === 'static') {
       return (module.content_static || '').trim() || 'https://www.home-assistant.io';
@@ -668,20 +778,6 @@ export class UltraQrCodeModule extends BaseUltraModule {
       }
       return stateObj.state != null ? String(stateObj.state) : '';
     }
-    if (mode === 'template' && module.content_template && hass) {
-      const key = `qr_${module.id}`;
-      const cached = (hass as any).__uvc_template_strings?.[key];
-      if (cached != null) return String(cached).trim();
-      try {
-        const svc = new TemplateService(hass);
-        svc.subscribeToTemplate(module.content_template, key, () => {
-          window.dispatchEvent(new CustomEvent(UC_QR_DATA_READY_EVENT));
-        }, {}, config);
-      } catch (_) {
-        // ignore
-      }
-      return '';
-    }
     return '';
   }
 
@@ -692,6 +788,13 @@ export class UltraQrCodeModule extends BaseUltraModule {
     _previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const qrModule = module as QrCodeModule;
+    const legacyTpl =
+      (qrModule as any).content_mode === 'template' && (qrModule as any).content_template;
+    const unifiedPending =
+      (qrModule.unified_template_mode ||
+        qrModule.content_mode === 'unified' ||
+        !!legacyTpl) &&
+      String(legacyTpl || qrModule.unified_template || '').trim().length > 0;
     const content = this._resolveContent(qrModule, hass, config);
     const size = Math.min(512, Math.max(64, qrModule.size ?? 200));
     const fg = qrModule.fg_color || '#000000';
@@ -726,7 +829,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
     const key = cacheKey(qrModule, content, hass);
     let dataUrl = qrDataUrlCache.get(key);
 
-    if (!content && qrModule.content_mode !== 'template') {
+    if (!content && !unifiedPending) {
       return html`
         <div class="qr-code-module-preview qr-code-placeholder" style="text-align: center; padding: 24px; color: var(--secondary-text-color);">
           <ha-icon icon="mdi:qrcode" style="--mdi-icon-size: 48px; opacity: 0.5;"></ha-icon>
@@ -914,8 +1017,11 @@ export class UltraQrCodeModule extends BaseUltraModule {
     if (mode === 'static' && !(qr.content_static || '').trim()) {
       errors.push('Static content is required when source is Static');
     }
-    if (mode === 'template' && !(qr.content_template || '').trim()) {
-      errors.push('Template is required when source is Template');
+    if (
+      (mode === 'unified' || qr.unified_template_mode) &&
+      !(String(qr.unified_template || '').trim())
+    ) {
+      errors.push('Unified template is required when source is Unified template');
     }
     if (mode === 'entity' && !(qr.content_entity || '').trim()) {
       errors.push('Entity is required when source is Entity');

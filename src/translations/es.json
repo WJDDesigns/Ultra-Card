@@ -151,7 +151,14 @@
       "getting_started_preset": "Start from a Preset",
       "getting_started_module": "Add Your First Module",
       "getting_started_hub": "Explore the Hub",
-      "getting_started_dismiss": "Don't show again"
+      "getting_started_dismiss": "Don't show again",
+      "unified_visibility": {
+        "section_title": "Unified visibility template",
+        "section_desc": "Return JSON with a boolean \"visible\" key (or use active / is_active, or a plain true/false string). When enabled, this runs in addition to the display conditions below. Uses the same $variables as module templates.",
+        "toggle": "Template mode",
+        "cheatsheet_title": "Template cheatsheet",
+        "placeholder": "{ \"visible\": {{ states('input_boolean.show_row') == 'on' }} }"
+      }
     },
     "common": {
       "left": "Izquierda",
@@ -523,7 +530,9 @@
         "entity": "Entidad (0-100)",
         "attribute": "Atributo de entidad",
         "difference": "Diferencia",
-        "template": "Plantilla"
+        "template": "Plantilla",
+        "time_progress": "Time Progress (Real-time)",
+        "range": "Range (Start to End)"
       },
       "attribute_section": {
         "title": "Configuración de atributo de entidad",
@@ -738,7 +747,49 @@
       "error_no_entity": "Select Entity",
       "error_no_entity_desc": "Choose an entity in the General tab",
       "error_no_range": "Configure Range",
-      "error_no_range_desc": "Set range start and end entities in the General tab"
+      "error_no_range_desc": "Set range start and end entities in the General tab",
+      "percentage_type": {
+        "title": "Percentage Type"
+      },
+      "time_progress_config": {
+        "title": "Time Progress Configuration",
+        "desc": "Configure real-time progress between two timestamp entities. Updates smoothly in the browser without backend load.",
+        "start_entity": "Start Timestamp Entity",
+        "end_entity": "End Timestamp Entity",
+        "direction": "Progress Direction",
+        "direction_desc": "Forward shows elapsed time from start to now. Backward shows remaining time from now to end.",
+        "update_interval": "Update Interval (ms)",
+        "update_interval_desc": "How often to update the progress bar in milliseconds. Default: 1000 (1 second). Lower values = smoother but more CPU usage."
+      },
+      "time_progress": {
+        "forward": "Forward (Elapsed)",
+        "backward": "Backward (Remaining)"
+      },
+      "range_config": {
+        "title": "Range Configuration",
+        "desc": "Configure the start and end values for the range visualization.",
+        "start_entity": "Range Start Entity",
+        "start_attribute": "Start Attribute (Optional)",
+        "start_attribute_desc": "If the value is in an attribute, enter the attribute name here.",
+        "end_entity": "Range End Entity",
+        "end_attribute": "End Attribute (Optional)",
+        "end_attribute_desc": "If the value is in an attribute, enter the attribute name here.",
+        "current_entity": "Current Value Entity",
+        "current_color": "Marker Color"
+      },
+      "range": {
+        "title": "Value Range (Min/Max)",
+        "min": "Minimum",
+        "max": "Maximum",
+        "auto": "Auto (0)",
+        "auto_total": "Auto (total entity)"
+      },
+      "unified_template": {
+        "title": "Unified Template",
+        "desc": "One Jinja template returning JSON: value, label, color, left_label, right_label, value_min, value_max, container_background_color.",
+        "toggle": "Template mode",
+        "cheatsheet": "Template cheatsheet"
+      }
     },
     "image": {
       "settings": "Configuración de imagen",
@@ -1011,7 +1062,13 @@
       },
       "error_no_chart_type": "Select Chart Type",
       "error_no_chart_type_desc": "Choose a chart type in the General tab",
-      "error_no_entities": "Configure Entities"
+      "error_no_entities": "Configure Entities",
+      "unified_template": {
+        "title": "Unified Template",
+        "desc": "Optional JSON: colors (array), global_color, fill_area, pie_fill.",
+        "toggle": "Template mode",
+        "cheatsheet": "Template cheatsheet"
+      }
     },
     "button": {
       "basic": {
@@ -1255,7 +1312,14 @@
       "error_no_entity": "Select Camera Entity",
       "error_no_entity_desc": "Choose a camera entity in the General tab",
       "error_no_template": "Configure Template",
-      "error_no_template_desc": "Enter template code in the General tab"
+      "error_no_template_desc": "Enter template code in the General tab",
+      "unified_template": {
+        "title": "Unified Template",
+        "desc": "Return JSON: entity, visible, overlay_text, overlay_color — or a plain entity_id string.",
+        "toggle": "Template mode",
+        "toggle_desc": "Dynamically select camera and overlay via one Jinja template",
+        "cheatsheet": "Template cheatsheet"
+      }
     },
     "separator": {
       "config": {
@@ -1791,7 +1855,13 @@
         "circle": "Circle"
       },
       "button_gap": "Button Gap",
-      "button_gap_desc": "Space between increment and decrement buttons in pixels"
+      "button_gap_desc": "Space between increment and decrement buttons in pixels",
+      "unified_template": {
+        "title": "Unified Template",
+        "desc": "JSON with value, button_background_color, button_text_color, value_color — or a plain numeric Jinja result.",
+        "toggle": "Template mode",
+        "cheatsheet": "Template cheatsheet"
+      }
     },
     "cloud_backup": {
       "title": "Cloud Backup",
@@ -2449,7 +2519,9 @@
       "point_match_mode_desc": "Choose how to determine when this toggle point should be active",
       "match_mode_none": "None (Manual Only)",
       "match_mode_entity": "Entity State",
-      "match_mode_template": "Template (Advanced)"
+      "match_mode_template": "Template (Advanced)",
+      "unified_match_desc": "Return JSON with \"match\": true when this point should be active, or a plain true/false string.",
+      "template_cheatsheet": "Template cheatsheet"
     },
     "custom_variables": {
       "title": "Custom Variables",
@@ -3320,6 +3392,161 @@
       "right_column": "Right Column",
       "item_size": "Size",
       "item_color": "Color"
+    },
+    "status_summary": {
+      "title_display": "TITLE & DISPLAY",
+      "title": "Title",
+      "title_desc": "Title to display at the top of the summary.",
+      "show_title": "Show Title",
+      "show_title_desc": "Display the title at the top of the summary.",
+      "show_last_change_header": "Show Last Change Header",
+      "show_last_change_header_desc": "Display \"Last Change\" column header.",
+      "show_time_header": "Show Time Header",
+      "show_time_header_desc": "Display \"Time\" column header.",
+      "sort_by": "Sort By",
+      "sort_by_desc": "How to sort the entity list.",
+      "sort_direction": "Sort Direction",
+      "sort_direction_desc": "Sort order direction.",
+      "max_items_to_show": "Max Items to Show",
+      "max_items_to_show_desc": "Maximum number of entities to display. Set to 0 for unlimited.",
+      "global_display_settings": "GLOBAL DISPLAY SETTINGS",
+      "global_display_settings_desc": "Set default display options for all entities. Individual entity settings will override these.",
+      "global_show_icon": "Show Icons",
+      "global_show_icon_desc": "Display entity icons by default for all entities.",
+      "global_show_state": "Show States",
+      "global_show_state_desc": "Display entity states (e.g., \"on\", \"off\") by default for all entities.",
+      "entity_management": "ENTITY MANAGEMENT",
+      "add_entity": "Add Entity",
+      "auto_filter": "AUTO FILTER",
+      "enable_auto_filter": "Enable Auto Filter",
+      "enable_auto_filter_desc": "Automatically include entities based on domain and device class filters.",
+      "include_filters": "Include Filters",
+      "include_filters_desc": "Add domains or partial names to include. Examples: \"binary_sensor\", \"light\", \"garage\", \"kitchen\"",
+      "exclude_filters": "Exclude Filters",
+      "exclude_filters_desc": "Add domains or partial names to exclude. Examples: \"battery\", \"update\", \"unavailable\"",
+      "global_color_mode": "GLOBAL COLOR MODE",
+      "global_color_mode_desc": "Set a default color mode for all entities. Individual entity color modes will override this setting.",
+      "global_color_mode_select": "Global Color Mode",
+      "global_color_mode_select_desc": "How to determine colors for entities by default.",
+      "global_unified_color_desc": "JSON with a \"color\" key (CSS color), or a plain template that renders a color string.",
+      "time_filtering": "TIME FILTERING",
+      "max_time_since_change": "Max Time Since Change (minutes)",
+      "layout": "LAYOUT",
+      "row_height": "Row Height (px)",
+      "row_height_desc": "Height of each entity row in pixels.",
+      "row_gap": "Row Gap (px)",
+      "row_gap_desc": "Gap between entity rows in pixels.",
+      "max_entity_name_length": "Max Entity Name Length",
+      "max_entity_name_length_desc": "Maximum number of characters to display for entity names before truncating.",
+      "show_separator_lines": "Show Separator Lines",
+      "show_separator_lines_desc": "Display lines between entity rows.",
+      "default_colors": "DEFAULT COLORS",
+      "default_text_color": "Default Text Color",
+      "default_icon_color": "Default Icon Color",
+      "header_text_color": "Header Text Color",
+      "header_background_color": "Header Background Color",
+      "entity": "Entity",
+      "entity_desc": "Entity to monitor for status.",
+      "label": "Label Override",
+      "label_desc": "Custom label to display instead of entity name.",
+      "icon": "Icon Override",
+      "icon_desc": "Custom icon to display instead of entity icon.",
+      "show_icon": "Show Icon",
+      "show_icon_desc": "Display entity icon. Leave unset to use global setting.",
+      "show_state": "Show State",
+      "show_state_desc": "Display entity state. Leave unset to use global setting.",
+      "color_mode": "Color Mode",
+      "color_mode_desc": "How to determine the color for this entity.",
+      "entity_unified_color_desc": "JSON with a \"color\" key, or a plain template that renders a color string.",
+      "global_state_colors": "Global State Colors",
+      "add_state_color": "Add State Color",
+      "global_time_thresholds": "Global Time Thresholds",
+      "add_time_threshold": "Add Time Threshold",
+      "state_colors": "State Colors",
+      "time_thresholds": "Time Thresholds",
+      "max_time_since_change_desc": "Hide entities that haven't changed in this many minutes. Leave empty for no limit.",
+      "template_cheatsheet": "Template cheatsheet"
+    },
+    "qr_code": {
+      "content_title": "Content",
+      "content_title_desc": "Configure the text or URL to encode.",
+      "content_mode": "Source",
+      "content_mode_desc": "Where to get the text to encode",
+      "static": "Static URL / Text",
+      "unified_template": "Unified template",
+      "entity": "Entity State",
+      "static_content": "URL or text",
+      "static_desc": "Text or URL to encode in the QR code",
+      "unified_template_desc": "JSON with \"qr_content\" (URL or text to encode), or a plain Jinja string result.",
+      "entity_picker": "Entity",
+      "entity_picker_desc": "Select an entity whose state (or attribute) will be encoded into the QR code.",
+      "attribute": "Attribute (optional)",
+      "attribute_desc": "Leave empty to use state; or e.g. friendly_name",
+      "display_title": "Display",
+      "alignment": "Alignment",
+      "align_left": "Left",
+      "align_center": "Center",
+      "align_right": "Right",
+      "show_label": "Show label",
+      "size": "Size",
+      "size_desc": "Width and height in pixels",
+      "label_text": "Label text",
+      "label_below": "Label below QR",
+      "style_title": "Style",
+      "dot_style": "Dot pattern",
+      "dot_style_desc": "Shape of each individual data module",
+      "dot_square": "Square",
+      "dot_dots": "Dots",
+      "dot_rounded": "Rounded",
+      "dot_extra_rounded": "Extra Rounded",
+      "dot_classy": "Classy",
+      "dot_classy_rounded": "Classy Rounded",
+      "corner_square_style": "Corner squares",
+      "corner_square_desc": "Shape of the three large corner finder squares",
+      "cs_square": "Square",
+      "cs_dot": "Dot",
+      "cs_extra_rounded": "Extra Rounded",
+      "corner_dot_style": "Corner dots",
+      "corner_dot_desc": "Shape of the small inner dots inside each corner square",
+      "cd_square": "Square",
+      "cd_dot": "Dot",
+      "logo_title": "Logo / Icon",
+      "logo_enabled": "Show logo in center",
+      "logo_image_type": "Logo source",
+      "logo_image_type_desc": "Where to load the logo image from",
+      "logo_source_url": "Image URL",
+      "logo_source_upload": "Upload Image",
+      "logo_source_entity": "Entity Image",
+      "logo_source_attribute": "Entity Attribute",
+      "logo_url": "Logo image URL",
+      "logo_url_desc": "Direct URL to a PNG, JPG, or SVG image. Use /local/ paths for best results.",
+      "cors_title": "Image blocked by CORS",
+      "cors_hint": "Copy the image to /config/www/ and use /local/your-image.png instead.",
+      "logo_upload_label": "Upload logo image",
+      "logo_upload_desc": "Click to upload a PNG, JPG, or SVG from your device.",
+      "logo_uploaded": "Uploaded",
+      "logo_entity": "Entity",
+      "logo_attribute": "Attribute name",
+      "logo_attribute_desc": "Attribute path containing the image URL (dot notation supported).",
+      "logo_size": "Logo size",
+      "logo_size_desc": "Logo as a fraction of the QR code area (10–30%).",
+      "logo_margin": "Logo margin",
+      "logo_margin_desc": "Padding around the logo in pixels.",
+      "logo_ec_tip_title": "Tip: use H error correction",
+      "logo_ec_tip": "Set error correction to H (30%) in the Advanced section for the best logo clarity.",
+      "logo_hide_bg_dots": "Hide dots behind logo",
+      "advanced_title": "Advanced",
+      "fg_color": "Foreground color",
+      "bg_color": "Background color",
+      "error_correction": "Error correction",
+      "error_correction_desc": "Higher = more damage tolerance, larger code",
+      "quiet_zone": "Quiet zone (margin)",
+      "quiet_zone_desc": "Modules around the QR code (0–10)",
+      "pro_description": "QR Code is a Pro feature that generates scannable QR codes from URLs, text, templates, or entity state.",
+      "no_content": "Add content in General tab",
+      "generating": "Generating QR...",
+      "cors_error": "Logo not loaded — the image server blocked cross-origin requests. Use a /local/ path or a CORS-enabled URL.",
+      "unified_cheatsheet": "Template cheatsheet"
     }
   },
   "hub": {

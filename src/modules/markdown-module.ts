@@ -14,6 +14,7 @@ import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { sanitizeMarkdownHtml } from '../utils/html-sanitizer';
 import { marked } from 'marked';
 
+
 export class UltraMarkdownModule extends BaseUltraModule {
   private _templateService: TemplateService | null = null;
   private _renderedContentCache: Map<string, string> = new Map();
@@ -103,11 +104,8 @@ All standard markdown features are automatically enabled!`,
       enable_html: false,
       enable_tables: true,
       enable_code_highlighting: true,
-      // Template configuration
-      template_mode: false,
       unified_template_mode: false,
       unified_template: '',
-      template: '',
       // Global action configuration
       tap_action: { action: 'nothing' },
       hold_action: { action: 'nothing' },
@@ -155,27 +153,43 @@ All standard markdown features are automatically enabled!`,
                 'Enter your markdown content with full formatting support'
               )}
             </div>
-            <div
-              @mousedown=${(e: Event) => {
-                // Only stop propagation for drag operations, not clicks on the editor
-                const target = e.target as HTMLElement;
-                if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
-                  e.stopPropagation();
-                }
-              }}
-              @dragstart=${(e: Event) => e.stopPropagation()}
-            >
-              <ultra-template-editor
-                .hass=${hass}
-                .value=${markdownModule.markdown_content || ''}
-                .placeholder=${'# Welcome\n\nEnter your **markdown** content here with full formatting support...\n\n- Lists\n- **Bold** and *italic*\n- Tables, code blocks, and more!'}
-                .minHeight=${200}
-                .maxHeight=${400}
-                @value-changed=${(e: CustomEvent) => {
-                  updateModule({ markdown_content: e.detail.value });
-                }}
-              ></ultra-template-editor>
-            </div>
+            ${!markdownModule.unified_template_mode
+              ? html`
+                  <div
+                    @mousedown=${(e: Event) => {
+                      const target = e.target as HTMLElement;
+                      if (
+                        !target.closest('ultra-template-editor') &&
+                        !target.closest('.cm-editor')
+                      ) {
+                        e.stopPropagation();
+                      }
+                    }}
+                    @dragstart=${(e: Event) => e.stopPropagation()}
+                  >
+                    <ultra-template-editor
+                      .hass=${hass}
+                      .value=${markdownModule.markdown_content || ''}
+                      .placeholder=${'# Welcome\n\nEnter your **markdown** content here with full formatting support...\n\n- Lists\n- **Bold** and *italic*\n- Tables, code blocks, and more!'}
+                      .minHeight=${200}
+                      .maxHeight=${400}
+                      @value-changed=${(e: CustomEvent) => {
+                        updateModule({ markdown_content: e.detail.value });
+                      }}
+                    ></ultra-template-editor>
+                  </div>
+                `
+              : html`
+                  <div
+                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; padding: 12px; background: var(--divider-color); border-radius: 8px;"
+                  >
+                    ${localize(
+                      'editor.markdown.unified_replaces_editor',
+                      lang,
+                      'Static markdown editor is hidden while Unified Template Mode is on. Turn it off to edit markdown here, or supply markdown in the unified template `content` field.'
+                    )}
+                  </div>
+                `}
           </div>
         </div>
 
@@ -196,166 +210,85 @@ All standard markdown features are automatically enabled!`,
             ]
           )}
 
-        <!-- Template Configuration -->
-        <div
-          class="settings-section template-mode-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 24px;"
-        >
-          <div
-            class="section-title"
-            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
-          >
-            ${localize('editor.markdown.template_mode', lang, 'Template Mode')}
-          </div>
-          <div
-            class="field-description"
-            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
-          >
-            ${localize(
-              'editor.markdown.template_mode_desc',
-              lang,
-              'Use Home Assistant templating syntax to render markdown content dynamically'
-            )}
-          </div>
-
-          <div class="field-group" style="margin-bottom: 16px;">
-            <ha-form
-              .hass=${hass}
-              .data=${{ template_mode: markdownModule.template_mode || false }}
-              .schema=${[
-                {
-                  name: 'template_mode',
-                  label: localize('editor.markdown.template_mode', lang, 'Template Mode'),
-                  description: localize(
-                    'editor.markdown.template_mode_desc',
+        <!-- Unified Template Section -->
+        <div class="template-section" style="margin-top: 24px; margin-bottom: 24px;">
+          <div class="template-header">
+            <div class="switch-container">
+              <div class="switch-label-row">
+                <label class="switch-label"
+                  >${localize(
+                    'editor.markdown.unified_template_section.toggle',
                     lang,
-                    'Use Home Assistant templating syntax to render markdown content dynamically'
-                  ),
-                  selector: { boolean: {} },
-                },
-              ]}
-              .computeLabel=${(schema: any) => schema.label || schema.name}
-              .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) =>
-                updateModule({ template_mode: e.detail.value.template_mode })}
-            ></ha-form>
+                    'Template mode'
+                  )}</label
+                >
+                <button
+                  class="help-btn"
+                  style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                  title="${localize('editor.markdown.template_cheatsheet', lang, 'Template Cheatsheet')}"
+                  @click=${(e: Event) => {
+                    (e.currentTarget as HTMLElement).dispatchEvent(
+                      new CustomEvent('uc-open-template-cheatsheet', {
+                        detail: { module: 'markdown' },
+                        bubbles: true,
+                        composed: true,
+                      })
+                    );
+                  }}
+                >
+                  <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
+                </button>
+              </div>
+              <label class="switch">
+                <input
+                  type="checkbox"
+                  .checked=${markdownModule.unified_template_mode || false}
+                  @change=${(e: Event) => {
+                    const checked = (e.target as HTMLInputElement).checked;
+                    updateModule({ unified_template_mode: checked });
+                  }}
+                />
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="template-description">
+              ${localize(
+                'editor.markdown.unified_template_section.desc',
+                lang,
+                'Return JSON with a `content` string (markdown). Optional `color` and `container_background_color`.'
+              )}
+            </div>
           </div>
 
-          ${markdownModule.template_mode
+          ${markdownModule.unified_template_mode
             ? html`
-                <div class="field-group" style="margin-bottom: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
-                  >
-                    ${localize('editor.markdown.template.content', lang, 'Template Content')}
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
-                  >
-                    ${localize(
-                      'editor.markdown.template.content_desc',
-                      lang,
-                      'Enter markdown content with Jinja2 templates that will be processed dynamically'
-                    )}
-                  </div>
-                  <div
-                    @mousedown=${(e: Event) => {
-                      // Only stop propagation for drag operations, not clicks on the editor
-                      const target = e.target as HTMLElement;
-                      if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
-                        e.stopPropagation();
-                      }
+                <div
+                  class="template-content"
+                  style="margin-top: 12px;"
+                  @mousedown=${(e: Event) => {
+                    const target = e.target as HTMLElement;
+                    if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                      e.stopPropagation();
+                    }
+                  }}
+                  @dragstart=${(e: Event) => e.stopPropagation()}
+                  @insert-snippet=${(e: CustomEvent) => {
+                    const editor = (e.currentTarget as HTMLElement).querySelector(
+                      'ultra-template-editor'
+                    );
+                    (editor as any)?.insertAtCursor?.(e.detail?.value ?? '');
+                  }}
+                >
+                  <ultra-template-editor
+                    .hass=${hass}
+                    .value=${markdownModule.unified_template || ''}
+                    .placeholder=${'{\n  "content": "# Status\\n\\n{{ states(\'sensor.example\') }}",\n  "color": "var(--primary-text-color)"\n}'}
+                    .minHeight=${160}
+                    .maxHeight=${400}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ unified_template: e.detail.value });
                     }}
-                    @dragstart=${(e: Event) => e.stopPropagation()}
-                  >
-                    <ultra-template-editor
-                      .hass=${hass}
-                      .value=${markdownModule.template || markdownModule.markdown_content || ''}
-                      .placeholder=${"# Welcome Home\n\nToday is **{{ now().strftime('%A, %B %d') }}**\n\nCurrent temperature: {{ states('sensor.temperature') }}°F"}
-                      .minHeight=${200}
-                      .maxHeight=${400}
-                      @value-changed=${(e: CustomEvent) => {
-                        updateModule({ template: e.detail.value });
-                      }}
-                    ></ultra-template-editor>
-                  </div>
-                </div>
-
-                <div class="template-examples">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
-                  >
-                    ${localize('editor.markdown.template.examples_title', lang, 'Common Examples:')}
-                  </div>
-
-                  <div class="example-item" style="margin-bottom: 16px;">
-                    <div
-                      class="example-code"
-                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
-                    >
-                      # Dashboard Header<br />
-                      Today is **{{ now().strftime('%A, %B %d') }}**<br />
-                      Temperature: {{ states('sensor.temperature') }}°F
-                    </div>
-                    <div
-                      class="example-description"
-                      style="font-size: 12px; color: var(--secondary-text-color);"
-                    >
-                      ${localize(
-                        'editor.markdown.template.examples.header',
-                        lang,
-                        'Dynamic header with current date and sensor values'
-                      )}
-                    </div>
-                  </div>
-
-                  <div class="example-item" style="margin-bottom: 16px;">
-                    <div
-                      class="example-code"
-                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
-                    >
-                      ## System Status<br />
-                      - ✅ Internet: Connected<br />
-                      - ✅ Security: {{ states('alarm_control_panel.home') }}<br />
-                      - ⚠️ Backup: {{ states('sensor.backup_status') }}
-                    </div>
-                    <div
-                      class="example-description"
-                      style="font-size: 12px; color: var(--secondary-text-color);"
-                    >
-                      ${localize(
-                        'editor.markdown.template.examples.status',
-                        lang,
-                        'Status list with dynamic entity states'
-                      )}
-                    </div>
-                  </div>
-
-                  <div class="example-item" style="margin-bottom: 16px;">
-                    <div
-                      class="example-code"
-                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
-                    >
-                      ### Quick Info<br /><br />
-                      | Sensor | Value |<br />
-                      | ----------- | ------------------------------------ |<br />
-                      | Temperature | {{ states('sensor.temperature') }}°F |<br />
-                      | Humidity | {{ states('sensor.humidity') }}% |
-                    </div>
-                    <div
-                      class="example-description"
-                      style="font-size: 12px; color: var(--secondary-text-color);"
-                    >
-                      ${localize(
-                        'editor.markdown.template.examples.table',
-                        lang,
-                        'Table with dynamic sensor data'
-                      )}
-                    </div>
-                  </div>
+                  ></ultra-template-editor>
                 </div>
               `
             : ''}
@@ -382,8 +315,15 @@ All standard markdown features are automatically enabled!`,
     const markdownModule = module as MarkdownModule;
     const lang = hass?.locale?.language || 'en';
 
+    const unifiedOn =
+      !!markdownModule.unified_template_mode &&
+      !!(markdownModule.unified_template && String(markdownModule.unified_template).trim());
+
     // GRACEFUL RENDERING: Check for incomplete configuration
-    if (!markdownModule.markdown_content || markdownModule.markdown_content.trim() === '') {
+    if (
+      !unifiedOn &&
+      (!markdownModule.markdown_content || markdownModule.markdown_content.trim() === '')
+    ) {
       return this.renderGradientErrorState(
         localize('editor.markdown.error_no_content', lang, 'Add Markdown Content'),
         localize('editor.markdown.error_no_content_desc', lang, 'Enter markdown content in the General tab'),
@@ -490,12 +430,17 @@ All standard markdown features are automatically enabled!`,
     if (markdownModule.unified_template_mode && markdownModule.unified_template) {
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
+      } else if (this._templateService && hass) {
+        this._templateService.updateHass(hass);
       }
       if (hass) {
         if (!hass.__uvc_template_strings) {
           hass.__uvc_template_strings = {};
         }
-        const templateHash = this._hashString(markdownModule.unified_template);
+        const processedUnifiedTemplate = preprocessTemplateVariables(
+          markdownModule.unified_template, hass, config
+        );
+        const templateHash = this._hashString(processedUnifiedTemplate);
         const templateKey = `unified_markdown_${markdownModule.id}_${templateHash}`;
 
         // Subscribe to template if not already subscribed (needed for template evaluation)
@@ -504,7 +449,7 @@ All standard markdown features are automatically enabled!`,
             markdown_content: markdownModule.markdown_content,
           });
           this._templateService.subscribeToTemplate(
-            markdownModule.unified_template,
+            processedUnifiedTemplate,
             templateKey,
             () => {
               if (typeof window !== 'undefined') {
@@ -606,7 +551,7 @@ All standard markdown features are automatically enabled!`,
       boxSizing: 'border-box',
     };
 
-    const contentStyles = {
+    let contentStyles = {
       fontSize: (() => {
         if (
           designProperties.font_size &&
@@ -705,6 +650,8 @@ All standard markdown features are automatically enabled!`,
         // Initialize template service if needed
         if (!this._templateService) {
           this._templateService = new TemplateService(hass);
+        } else {
+          this._templateService.updateHass(hass);
         }
 
         // Ensure template string cache exists on hass
@@ -773,10 +720,15 @@ All standard markdown features are automatically enabled!`,
     if (markdownModule.unified_template_mode && markdownModule.unified_template) {
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
+      } else if (this._templateService && hass) {
+        this._templateService.updateHass(hass);
       }
       if (hass) {
         if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-        const templateHash = this._hashString(markdownModule.unified_template);
+        const processedUnifiedTemplate = preprocessTemplateVariables(
+          markdownModule.unified_template, hass, config
+        );
+        const templateHash = this._hashString(processedUnifiedTemplate);
         const templateKey = `unified_markdown_${markdownModule.id}_${templateHash}`;
 
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
@@ -784,7 +736,7 @@ All standard markdown features are automatically enabled!`,
             markdown_content: markdownModule.markdown_content,
           });
           this._templateService.subscribeToTemplate(
-            markdownModule.unified_template,
+            processedUnifiedTemplate,
             templateKey,
             () => {
               if (typeof window !== 'undefined') {
@@ -805,19 +757,23 @@ All standard markdown features are automatically enabled!`,
         if (unifiedResult && String(unifiedResult).trim() !== '') {
           const parsed = parseUnifiedTemplate(unifiedResult);
           if (!hasTemplateError(parsed)) {
-            if (parsed.content !== undefined) sourceContent = parsed.content;
+            if (parsed.state_text !== undefined && String(parsed.state_text).trim() !== '') {
+              sourceContent = String(parsed.state_text);
+            } else if (parsed.content !== undefined && String(parsed.content).trim() !== '') {
+              sourceContent = String(parsed.content);
+            } else if (parsed._isString && parsed.content !== undefined) {
+              sourceContent = String(parsed.content).trim();
+            }
             if (parsed.color) contentColor = parsed.color;
           }
         }
       }
-    }
-    // PRIORITY 2: Legacy template mode
-    else if (markdownModule.template_mode && markdownModule.template) {
-      sourceContent = markdownModule.template;
-    }
-    // PRIORITY 3: Regular markdown content
-    else {
+    } else {
       sourceContent = markdownModule.markdown_content || '';
+    }
+
+    if (contentColor) {
+      contentStyles = { ...contentStyles, color: contentColor };
     }
 
     const contentKey = `${markdownModule.id}_${this._hashString(sourceContent)}`;
@@ -1052,6 +1008,62 @@ All standard markdown features are automatically enabled!`,
           grid-template-columns: 1fr;
           gap: 16px;
         }
+      }
+
+      .template-header .switch-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0;
+      }
+      .template-header .switch-label-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .template-header .switch-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--primary-color);
+      }
+      .template-header .switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+      }
+      .template-header .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .template-header .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--disabled-color);
+        transition: 0.3s;
+        border-radius: 24px;
+      }
+      .template-header .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+      }
+      .template-header input:checked + .slider {
+        background-color: var(--primary-color);
+      }
+      .template-header input:checked + .slider:before {
+        transform: translateX(20px);
       }
     `;
   }

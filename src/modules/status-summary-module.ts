@@ -6,21 +6,14 @@ import { UcFormUtils } from '../utils/uc-form-utils';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
-import { DynamicColorService } from '../services/dynamic-color-service';
+import { parseTemplateColorResult } from '../utils/uc-template-color-result';
+import { TemplateService } from '../services/template-service';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import { buildEntityContext } from '../utils/template-context';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { localize } from '../localize/localize';
 import '../components/ultra-color-picker';
-
-/** One DynamicColorService per hass (shared across cards) so subscriptions dedupe by template key. */
-function getSharedDynamicColorService(hass: HomeAssistant): DynamicColorService {
-  const h = hass as HomeAssistant & { __ucDynamicColorService?: DynamicColorService };
-  if (!h.__ucDynamicColorService) {
-    h.__ucDynamicColorService = new DynamicColorService(hass);
-  } else {
-    h.__ucDynamicColorService.updateHass(hass);
-  }
-  return h.__ucDynamicColorService;
-}
+import '../components/ultra-template-editor';
 
 function dispatchStatusSummaryTemplateUpdate(): void {
   if (typeof window === 'undefined') return;
@@ -44,6 +37,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
   private _expandedEntities: Set<string> = new Set();
   private _draggedItem: StatusSummaryEntity | null = null;
   private _hass?: HomeAssistant;
+  private _templateService: TemplateService | null = null;
 
   createDefault(id?: string, hass?: HomeAssistant): StatusSummaryModule {
     // Create a default entity for demonstration
@@ -95,7 +89,6 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
       global_color_mode: 'none',
       global_state_colors: {},
       global_time_colors: [],
-      global_custom_color_template: '',
 
       // Default colors
       default_text_color: 'var(--primary-text-color)',
@@ -103,9 +96,6 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
       header_text_color: 'var(--primary-text-color)',
       header_background_color: 'var(--secondary-background-color)',
 
-      // Template support
-      template_mode: false,
-      template: '',
       unified_template_mode: false,
       unified_template: '',
 
@@ -139,8 +129,29 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
           if (!entity.entity || entity.entity.trim() === '') {
             errors.push(`Entity ${index + 1} must have an entity ID configured`);
           }
+          if (
+            entity.color_mode === 'custom' &&
+            !(String(
+              entity.unified_template ||
+                (entity as { custom_color_template?: string }).custom_color_template ||
+                ''
+            ).trim())
+          ) {
+            errors.push(`Entity ${index + 1}: unified color template is required when color mode is Custom`);
+          }
         });
       }
+    }
+
+    if (
+      summaryModule.global_color_mode === 'custom' &&
+      !(String(
+        summaryModule.unified_template ||
+          (summaryModule as { global_custom_color_template?: string }).global_custom_color_template ||
+          ''
+      ).trim())
+    ) {
+      errors.push('Global unified color template is required when global color mode is Custom');
     }
 
     return { valid: errors.length === 0, errors };
@@ -767,8 +778,18 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
                 { value: 'custom', label: 'Custom Template' },
               ]),
             ],
-            (e: CustomEvent) =>
-              updateModule({ global_color_mode: e.detail.value.global_color_mode })
+            (e: CustomEvent) => {
+              const mode = e.detail.value.global_color_mode;
+              const updates: Partial<StatusSummaryModule> = { global_color_mode: mode };
+              if (
+                mode === 'custom' &&
+                !(String(summaryModule.unified_template || '').trim() || '')
+              ) {
+                updates.unified_template = '{\n  "color": "{{ state }}"\n}';
+                updates.unified_template_mode = true;
+              }
+              updateModule(updates);
+            }
           )}
           ${summaryModule.global_color_mode === 'state'
             ? this.renderGlobalStateColorEditor(summaryModule, updateModule, lang)
@@ -778,27 +799,65 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
             : ''}
           ${summaryModule.global_color_mode === 'custom'
             ? html`
-                ${UcFormUtils.renderFieldSection(
-                  localize(
-                    'editor.status_summary.global_custom_color_template',
-                    lang,
-                    'Global Custom Color Template'
-                  ),
-                  localize(
-                    'editor.status_summary.global_custom_color_template_desc',
-                    lang,
-                    'Template that returns a color value for all entities.'
-                  ),
-                  hass,
-                  {
-                    global_custom_color_template: summaryModule.global_custom_color_template || '',
-                  },
-                  [UcFormUtils.text('global_custom_color_template', true)],
-                  (e: CustomEvent) =>
-                    updateModule({
-                      global_custom_color_template: e.detail.value.global_custom_color_template,
-                    })
-                )}
+                <div>
+                  <div
+                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;"
+                  >
+                    <span
+                      >${localize(
+                        'editor.status_summary.global_unified_color_desc',
+                        lang,
+                        'JSON with a "color" key (CSS color), or a plain template that renders a color string.'
+                      )}</span
+                    >
+                    <button
+                      type="button"
+                      class="help-btn"
+                      style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                      title="${localize(
+                        'editor.status_summary.template_cheatsheet',
+                        lang,
+                        'Template cheatsheet'
+                      )}"
+                      @click=${(e: Event) => {
+                        (e.currentTarget as HTMLElement).dispatchEvent(
+                          new CustomEvent('uc-open-template-cheatsheet', {
+                            bubbles: true,
+                            composed: true,
+                            detail: { module: 'status_summary' },
+                          })
+                        );
+                      }}
+                    >
+                      <ha-icon
+                        icon="mdi:help-circle"
+                        style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"
+                      ></ha-icon>
+                    </button>
+                  </div>
+                  <div
+                    style="margin-top: 12px;"
+                    @mousedown=${(e: Event) => {
+                      const t = e.target as HTMLElement;
+                      if (!t.closest('ultra-template-editor') && !t.closest('.cm-editor')) e.stopPropagation();
+                    }}
+                    @dragstart=${(e: Event) => e.stopPropagation()}
+                    @insert-snippet=${(e: CustomEvent) => {
+                      const ed = (e.currentTarget as HTMLElement).querySelector('ultra-template-editor');
+                      (ed as any)?.insertAtCursor?.(e.detail?.value ?? '');
+                    }}
+                  >
+                    <ultra-template-editor
+                      .hass=${hass}
+                      .value=${summaryModule.unified_template || ''}
+                      .placeholder=${'{\n  "color": "{% if is_state(entity, \'on\') %}#4caf50{% else %}var(--disabled-text-color){% endif %}"\n}'}
+                      .minHeight=${120}
+                      .maxHeight=${360}
+                      @value-changed=${(e: CustomEvent) =>
+                        updateModule({ unified_template: e.detail.value })}
+                    ></ultra-template-editor>
+                  </div>
+                </div>
               `
             : ''}
         </div>
@@ -1176,13 +1235,15 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
                     { value: 'custom', label: 'Custom Template' },
                   ]),
                 ],
-                (e: CustomEvent) =>
-                  this.updateEntity(
-                    index,
-                    { color_mode: e.detail.value.color_mode },
-                    module,
-                    updateModule
-                  )
+                (e: CustomEvent) => {
+                  const mode = e.detail.value.color_mode;
+                  const patch: Partial<StatusSummaryEntity> = { color_mode: mode };
+                  if (mode === 'custom' && !(String(entity.unified_template || '').trim() || '')) {
+                    patch.unified_template = '{\n  "color": "{{ state }}"\n}';
+                    patch.unified_template_mode = true;
+                  }
+                  this.updateEntity(index, patch, module, updateModule);
+                }
               )}
               ${entity.color_mode === 'state'
                 ? this.renderStateColorEditor(entity, index, module, updateModule, lang)
@@ -1192,28 +1253,73 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
                 : ''}
               ${entity.color_mode === 'custom'
                 ? html`
-                    ${UcFormUtils.renderFieldSection(
-                      localize(
-                        'editor.status_summary.custom_color_template',
-                        lang,
-                        'Custom Color Template'
-                      ),
-                      localize(
-                        'editor.status_summary.custom_color_template_desc',
-                        lang,
-                        'Template that returns a color value.'
-                      ),
-                      hass,
-                      { custom_color_template: entity.custom_color_template || '' },
-                      [UcFormUtils.text('custom_color_template', true)],
-                      (e: CustomEvent) =>
-                        this.updateEntity(
-                          index,
-                          { custom_color_template: e.detail.value.custom_color_template },
-                          module,
-                          updateModule
-                        )
-                    )}
+                    <div>
+                      <div
+                        style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;"
+                      >
+                        <span
+                          >${localize(
+                            'editor.status_summary.entity_unified_color_desc',
+                            lang,
+                            'JSON with a "color" key, or a plain template that renders a color string.'
+                          )}</span
+                        >
+                        <button
+                          type="button"
+                          class="help-btn"
+                          style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                          title="${localize(
+                            'editor.status_summary.template_cheatsheet',
+                            lang,
+                            'Template cheatsheet'
+                          )}"
+                          @click=${(e: Event) => {
+                            (e.currentTarget as HTMLElement).dispatchEvent(
+                              new CustomEvent('uc-open-template-cheatsheet', {
+                                bubbles: true,
+                                composed: true,
+                                detail: { module: 'status_summary' },
+                              })
+                            );
+                          }}
+                        >
+                          <ha-icon
+                            icon="mdi:help-circle"
+                            style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"
+                          ></ha-icon>
+                        </button>
+                      </div>
+                      <div
+                        style="margin-top: 12px;"
+                        @mousedown=${(e: Event) => {
+                          const t = e.target as HTMLElement;
+                          if (!t.closest('ultra-template-editor') && !t.closest('.cm-editor'))
+                            e.stopPropagation();
+                        }}
+                        @dragstart=${(e: Event) => e.stopPropagation()}
+                        @insert-snippet=${(e: CustomEvent) => {
+                          const ed = (e.currentTarget as HTMLElement).querySelector(
+                            'ultra-template-editor'
+                          );
+                          (ed as any)?.insertAtCursor?.(e.detail?.value ?? '');
+                        }}
+                      >
+                        <ultra-template-editor
+                          .hass=${hass}
+                          .value=${entity.unified_template || ''}
+                          .placeholder=${'{\n  "color": "{% if is_state(entity, \'on\') %}#ff9800{% else %}var(--primary-text-color){% endif %}"\n}'}
+                          .minHeight=${120}
+                          .maxHeight=${360}
+                          @value-changed=${(e: CustomEvent) =>
+                            this.updateEntity(
+                              index,
+                              { unified_template: e.detail.value },
+                              module,
+                              updateModule
+                            )}
+                        ></ultra-template-editor>
+                      </div>
+                    </div>
                   `
                 : ''}
             </div>
@@ -2064,7 +2170,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
             const stateObj = hass.states[item.entity.entity];
             if (!stateObj) return '';
 
-            const color = this.getEntityColor(item.entity, stateObj, summaryModule, hass);
+            const color = this.getEntityColor(item.entity, stateObj, summaryModule, hass, config);
             const iconName =
               item.entity.icon ||
               stateObj.attributes.icon ||
@@ -2241,36 +2347,83 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
     return stateObj?.attributes.friendly_name || entity.entity;
   }
 
-  /** Subscribe to HA render_template for custom color templates (idempotent per key). */
+  private _hashString(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash).toString(36);
+  }
+
+  private _colorFromRenderedUnified(hass: HomeAssistant, rendered: string): string {
+    const parsed = parseUnifiedTemplate(rendered);
+    if (hasTemplateError(parsed)) return 'var(--primary-color)';
+    const raw =
+      parsed.color !== undefined
+        ? String(parsed.color)
+        : parsed._isString && parsed.content !== undefined
+          ? String(parsed.content)
+          : '';
+    if (!raw.trim()) return 'var(--primary-color)';
+    return parseTemplateColorResult(raw.trim(), 'var(--primary-color)');
+  }
+
+  /** Subscribe to HA render_template for unified color templates (idempotent per key). */
   private _ensureStatusSummaryColorSubscriptions(
     summaryModule: StatusSummaryModule,
     hass: HomeAssistant,
     config?: UltraCardConfig
   ): void {
-    const svc = getSharedDynamicColorService(hass);
-    if (
-      summaryModule.global_color_mode === 'custom' &&
-      summaryModule.global_custom_color_template?.trim()
-    ) {
-      const tpl = preprocessTemplateVariables(
-        summaryModule.global_custom_color_template.trim(),
-        hass,
-        config
-      );
-      void svc.subscribeToColorTemplate(
-        tpl,
-        `uc_status_summary_${summaryModule.id}_global_color`,
-        dispatchStatusSummaryTemplateUpdate
-      );
+    if (!hass) return;
+    if (!this._templateService) {
+      this._templateService = new TemplateService(hass);
+    } else {
+      this._templateService.updateHass(hass);
     }
-    for (const ent of summaryModule.entities || []) {
-      if (ent.color_mode === 'custom' && ent.custom_color_template?.trim()) {
-        const tpl = preprocessTemplateVariables(ent.custom_color_template.trim(), hass, config);
-        void svc.subscribeToColorTemplate(
-          tpl,
-          `uc_status_summary_${summaryModule.id}_entity_${ent.id}_color`,
-          dispatchStatusSummaryTemplateUpdate
+    if (!hass.__uvc_template_strings) {
+      hass.__uvc_template_strings = {};
+    }
+
+    const globalTpl = (
+      (summaryModule.unified_template || '').trim() ||
+      (
+        (summaryModule as { global_custom_color_template?: string }).global_custom_color_template || ''
+      ).trim()
+    );
+    if (summaryModule.global_color_mode === 'custom' && globalTpl) {
+      const processed = preprocessTemplateVariables(globalTpl, hass, config);
+      const key = `unified_status_summary_global_${summaryModule.id}_${this._hashString(processed)}`;
+      if (!this._templateService.hasTemplateSubscription(key)) {
+        this._templateService.subscribeToTemplate(
+          processed,
+          key,
+          dispatchStatusSummaryTemplateUpdate,
+          {},
+          config
         );
+      }
+    }
+
+    for (const ent of summaryModule.entities || []) {
+      const entTpl = (
+        (ent.unified_template || '').trim() ||
+        ((ent as { custom_color_template?: string }).custom_color_template || '').trim()
+      );
+      if (ent.color_mode === 'custom' && entTpl) {
+        const processed = preprocessTemplateVariables(entTpl, hass, config);
+        const key = `unified_status_summary_entity_${summaryModule.id}_${ent.id}_${this._hashString(processed)}`;
+        if (!this._templateService.hasTemplateSubscription(key)) {
+          const vars = buildEntityContext(ent.entity, hass, { name: ent.label });
+          this._templateService.subscribeToTemplate(
+            processed,
+            key,
+            dispatchStatusSummaryTemplateUpdate,
+            vars,
+            config
+          );
+        }
       }
     }
   }
@@ -2279,63 +2432,61 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
     entity: StatusSummaryEntity,
     stateObj: any,
     module: StatusSummaryModule,
-    hass: HomeAssistant
+    hass: HomeAssistant,
+    config?: UltraCardConfig
   ): string {
     // Priority: per-entity color mode > global color mode > default
 
-    // Check per-entity color mode first (if not 'none')
     if (entity.color_mode !== 'none') {
-      if (entity.color_mode === 'custom' && entity.custom_color_template) {
-        const svc = getSharedDynamicColorService(hass);
-        const key = `uc_status_summary_${module.id}_entity_${entity.id}_color`;
-        const resolved = svc.getColorResult(key);
-        if (resolved && resolved !== 'var(--primary-color)') {
-          return resolved;
-        }
-        const raw = (hass as HomeAssistant & { __uvc_dynamic_colors?: Record<string, string> })
-          .__uvc_dynamic_colors?.[key];
-        if (typeof raw === 'string' && raw.trim()) {
-          return svc.parseColorResult(raw);
+      if (entity.color_mode === 'custom') {
+        const entTpl = (
+          (entity.unified_template || '').trim() ||
+          ((entity as { custom_color_template?: string }).custom_color_template || '').trim()
+        );
+        if (entTpl) {
+          const processed = preprocessTemplateVariables(entTpl, hass, config);
+          const key = `unified_status_summary_entity_${module.id}_${entity.id}_${this._hashString(processed)}`;
+          const raw = hass.__uvc_template_strings?.[key];
+          if (raw !== undefined && String(raw).trim()) {
+            return this._colorFromRenderedUnified(hass, String(raw));
+          }
         }
       } else if (entity.color_mode === 'state' && entity.state_colors) {
         const stateColor = entity.state_colors[stateObj.state];
         if (stateColor) return stateColor;
       } else if (entity.color_mode === 'time' && entity.time_colors) {
         const minutesSinceChange = (Date.now() - new Date(stateObj.last_changed).getTime()) / 60000;
-        // Sort thresholds ascending and find first match
         const sorted = [...entity.time_colors].sort((a, b) => a.threshold - b.threshold);
         const match = sorted.find(rule => minutesSinceChange <= rule.threshold);
         if (match) return match.color;
       }
     }
 
-    // Fall back to global color mode
     if (module.global_color_mode !== 'none') {
-      if (module.global_color_mode === 'custom' && module.global_custom_color_template) {
-        const svc = getSharedDynamicColorService(hass);
-        const key = `uc_status_summary_${module.id}_global_color`;
-        const resolved = svc.getColorResult(key);
-        if (resolved && resolved !== 'var(--primary-color)') {
-          return resolved;
-        }
-        const raw = (hass as HomeAssistant & { __uvc_dynamic_colors?: Record<string, string> })
-          .__uvc_dynamic_colors?.[key];
-        if (typeof raw === 'string' && raw.trim()) {
-          return svc.parseColorResult(raw);
+      if (module.global_color_mode === 'custom') {
+        const globalTpl = (
+          (module.unified_template || '').trim() ||
+          ((module as { global_custom_color_template?: string }).global_custom_color_template || '').trim()
+        );
+        if (globalTpl) {
+          const processed = preprocessTemplateVariables(globalTpl, hass, config);
+          const key = `unified_status_summary_global_${module.id}_${this._hashString(processed)}`;
+          const raw = hass.__uvc_template_strings?.[key];
+          if (raw !== undefined && String(raw).trim()) {
+            return this._colorFromRenderedUnified(hass, String(raw));
+          }
         }
       } else if (module.global_color_mode === 'state' && module.global_state_colors) {
         const stateColor = module.global_state_colors[stateObj.state];
         if (stateColor) return stateColor;
       } else if (module.global_color_mode === 'time' && module.global_time_colors) {
         const minutesSinceChange = (Date.now() - new Date(stateObj.last_changed).getTime()) / 60000;
-        // Sort thresholds ascending and find first match
         const sorted = [...module.global_time_colors].sort((a, b) => a.threshold - b.threshold);
         const match = sorted.find(rule => minutesSinceChange <= rule.threshold);
         if (match) return match.color;
       }
     }
 
-    // Fall back to default color
     return module.default_text_color || 'var(--primary-text-color)';
   }
 

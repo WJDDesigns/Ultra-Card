@@ -23,6 +23,12 @@ export interface UnifiedTemplateResult {
   // Display properties (bar module)
   value?: number | string;
   label?: string;
+  /** Side labels (legacy left_template / right_template) */
+  left_label?: string;
+  right_label?: string;
+  /** Min/max for percentage bar (legacy percentage_min/max templates) */
+  value_min?: number | string;
+  value_max?: number | string;
 
   // Display properties (gauge module)
   gauge_color?: string; // Gauge color (overrides color_mode when set)
@@ -44,9 +50,17 @@ export interface UnifiedTemplateResult {
   overlay_text?: string; // Overlay text to display
   overlay_color?: string; // Overlay text color
 
+  /** Toggle point match (legacy match_template) */
+  match?: boolean | string;
+  /** QR payload (legacy content_template) */
+  qr_content?: string;
+  /** Icon active state when using unified JSON (alias: is_active) */
+  active?: boolean;
+  is_active?: boolean;
+
   // Error information
   _error?: string;
-  _isString?: boolean; // True if result was a simple string (not JSON)
+  _isString?: boolean; // True if result was a simple string (not JSON) — value in `content`, not assumed to be an icon
 }
 
 /**
@@ -86,6 +100,12 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
     // Bar module properties
     if (templateResult.value !== undefined) result.value = templateResult.value;
     if (templateResult.label !== undefined) result.label = String(templateResult.label).trim();
+    if (templateResult.left_label !== undefined)
+      result.left_label = String(templateResult.left_label).trim();
+    if (templateResult.right_label !== undefined)
+      result.right_label = String(templateResult.right_label).trim();
+    if (templateResult.value_min !== undefined) result.value_min = templateResult.value_min;
+    if (templateResult.value_max !== undefined) result.value_max = templateResult.value_max;
 
     // Gauge module properties
     if (templateResult.gauge_color !== undefined)
@@ -121,6 +141,13 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
       result.overlay_text = String(templateResult.overlay_text).trim();
     if (templateResult.overlay_color !== undefined)
       result.overlay_color = String(templateResult.overlay_color).trim();
+
+    if (templateResult.match !== undefined) result.match = templateResult.match;
+    if (templateResult.qr_content !== undefined)
+      result.qr_content = String(templateResult.qr_content).trim();
+    if (templateResult.active !== undefined) result.active = Boolean(templateResult.active);
+    if (templateResult.is_active !== undefined)
+      result.is_active = Boolean(templateResult.is_active);
 
     return result;
   }
@@ -166,6 +193,10 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
       // Bar module properties
       if (parsed.value !== undefined) result.value = parsed.value;
       if (parsed.label !== undefined) result.label = String(parsed.label).trim();
+      if (parsed.left_label !== undefined) result.left_label = String(parsed.left_label).trim();
+      if (parsed.right_label !== undefined) result.right_label = String(parsed.right_label).trim();
+      if (parsed.value_min !== undefined) result.value_min = parsed.value_min;
+      if (parsed.value_max !== undefined) result.value_max = parsed.value_max;
 
       // Gauge module properties
       if (parsed.gauge_color !== undefined)
@@ -202,6 +233,11 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
       if (parsed.overlay_color !== undefined)
         result.overlay_color = String(parsed.overlay_color).trim();
 
+      if (parsed.match !== undefined) result.match = parsed.match;
+      if (parsed.qr_content !== undefined) result.qr_content = String(parsed.qr_content).trim();
+      if (parsed.active !== undefined) result.active = Boolean(parsed.active);
+      if (parsed.is_active !== undefined) result.is_active = Boolean(parsed.is_active);
+
       return result;
     } catch (error) {
       return {
@@ -210,11 +246,74 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
     }
   }
 
-  // Simple string return - treat as icon name (backward compatible)
+  // Simple string return — neutral `content`; callers map to icon / value / entity / qr_content as needed
   return {
-    icon: resultStr,
+    content: resultStr,
     _isString: true,
   };
+}
+
+const ICON_NAME_RE = /^(mdi:|hass:|hass-clab:|hc:)/i;
+
+/** Icon name from unified result (explicit icon or icon-like plain string in content) */
+export function unifiedTemplateIcon(parsed: UnifiedTemplateResult): string | undefined {
+  if (parsed.icon) return String(parsed.icon).trim();
+  if (parsed._isString && parsed.content) {
+    const t = String(parsed.content).trim();
+    if (ICON_NAME_RE.test(t)) return t;
+  }
+  return undefined;
+}
+
+/** Numeric value from unified result (explicit value or plain numeric content string) */
+export function unifiedTemplateNumericValue(parsed: UnifiedTemplateResult): number | undefined {
+  if (parsed.value !== undefined && parsed.value !== '') {
+    const n =
+      typeof parsed.value === 'number' ? parsed.value : parseFloat(String(parsed.value));
+    if (!isNaN(n)) return n;
+  }
+  if (parsed._isString && parsed.content !== undefined && parsed.content !== '') {
+    const n = parseFloat(String(parsed.content).trim());
+    if (!isNaN(n)) return n;
+  }
+  return undefined;
+}
+
+/** Entity id from unified result (explicit entity or plain entity_id-like content) */
+export function unifiedTemplateEntityId(parsed: UnifiedTemplateResult): string | undefined {
+  if (parsed.entity) return String(parsed.entity).trim();
+  if (parsed._isString && parsed.content) {
+    const t = String(parsed.content).trim();
+    if (/^[a-z_]+\.[a-z0-9_.]+$/i.test(t)) return t;
+  }
+  return undefined;
+}
+
+/** QR / text payload from unified result */
+export function unifiedTemplateQrContent(parsed: UnifiedTemplateResult): string | undefined {
+  if (parsed.qr_content) return String(parsed.qr_content).trim();
+  if (parsed.content) return String(parsed.content).trim();
+  return undefined;
+}
+
+/** Resolved active flag from unified JSON (supports active / is_active) */
+export function unifiedTemplateActive(parsed: UnifiedTemplateResult): boolean | undefined {
+  if (parsed.active !== undefined) return Boolean(parsed.active);
+  if (parsed.is_active !== undefined) return Boolean(parsed.is_active);
+  return undefined;
+}
+
+/** Row/column visibility: JSON `visible` / `active` / plain boolean-ish string */
+export function unifiedTemplateVisible(parsed: UnifiedTemplateResult): boolean | undefined {
+  if (parsed.visible !== undefined) return Boolean(parsed.visible);
+  const active = unifiedTemplateActive(parsed);
+  if (active !== undefined) return active;
+  if (parsed._isString && parsed.content !== undefined) {
+    const t = String(parsed.content).trim().toLowerCase();
+    if (['true', 'on', 'yes', '1'].includes(t)) return true;
+    if (['false', 'off', 'no', '0', 'unavailable', 'unknown', 'none', ''].includes(t)) return false;
+  }
+  return undefined;
 }
 
 /**

@@ -8,6 +8,7 @@ import { UcHoverEffectsService } from './uc-hover-effects-service';
 import { localize } from '../localize/localize';
 import { responsiveDesignService } from './uc-responsive-design-service';
 import { ucCustomVariablesService } from './uc-custom-variables-service';
+import { autoMigrateCardModule } from '../utils/template-migration';
 
 /**
  * Centralized Module Preview Service
@@ -296,10 +297,11 @@ class UcModulePreviewService {
 
     // Step 1: Resolve all variable references in the module
     const resolvedModule = ucCustomVariablesService.resolveModuleVariables(module, config);
+    const migratedModule = autoMigrateCardModule(resolvedModule);
     const moduleToRender =
       previewContext === 'live'
-        ? this._applyPreviewBreakpointDesign(resolvedModule)
-        : resolvedModule;
+        ? this._applyPreviewBreakpointDesign(migratedModule)
+        : migratedModule;
     const content = moduleHandler.renderPreview(moduleToRender, hass, config, previewContext);
 
     // Step 2: Apply design-tab styles as an outer wrapper when the module doesn't self-handle

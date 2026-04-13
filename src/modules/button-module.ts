@@ -833,8 +833,8 @@ export class UltraButtonModule extends BaseUltraModule {
         ? `${paddingTop || '0'} ${paddingRight || '0'} ${paddingBottom || '0'} ${paddingLeft || '0'}`
         : '0',
       margin: hasMargin
-        ? `${marginTop || '8px'} ${marginRight || '0'} ${marginBottom || '8px'} ${marginLeft || '0'}`
-        : '8px 0',
+        ? `${marginTop || '0'} ${marginRight || '0'} ${marginBottom || '0'} ${marginLeft || '0'}`
+        : '0',
       background: designProperties.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },

@@ -2122,9 +2122,13 @@ export class UltraCardEditor extends LitElement {
         display: none;
       }
 
-      /* Ensure tab-content fills full height when tabs are hidden */
+      .card-config.module-settings-open {
+        padding: 0;
+      }
+
       .card-config.module-settings-open .tab-content {
         margin-top: 0;
+        min-height: 0 !important;
       }
 
       /* Full screen mode header adjustments - not sticky so it scrolls with content */

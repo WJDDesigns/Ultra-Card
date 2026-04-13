@@ -1,6 +1,7 @@
 import { HomeAssistant } from 'custom-card-helpers';
-import { DisplayCondition } from '../types';
+import { DisplayCondition, UltraCardConfig } from '../types';
 import { TemplateService } from './template-service';
+import { parseUnifiedTemplate, unifiedTemplateVisible } from '../utils/template-parser';
 
 /**
  * Service for evaluating display conditions and controlling element visibility
@@ -129,9 +130,17 @@ export class LogicService {
    * @param row The row to evaluate
    * @returns true if element should be visible, false otherwise
    */
-  public evaluateRowVisibility(row: any): boolean {
+  public evaluateRowVisibility(row: any, cardConfig?: UltraCardConfig): boolean {
     if (!this._canEvaluateLogic()) {
       return true; // Show by default if hass not available
+    }
+
+    if (row.unified_template_mode && row.unified_template) {
+      return this._evaluateUnifiedLayoutVisibility(
+        String(row.unified_template),
+        `layout_row_${row.id}`,
+        cardConfig
+      );
     }
 
     // Check if template mode is enabled
@@ -157,9 +166,17 @@ export class LogicService {
    * @param column The column to evaluate
    * @returns true if element should be visible, false otherwise
    */
-  public evaluateColumnVisibility(column: any): boolean {
+  public evaluateColumnVisibility(column: any, cardConfig?: UltraCardConfig): boolean {
     if (!this._canEvaluateLogic()) {
       return true; // Show by default if hass not available
+    }
+
+    if (column.unified_template_mode && column.unified_template) {
+      return this._evaluateUnifiedLayoutVisibility(
+        String(column.unified_template),
+        `layout_column_${column.id}`,
+        cardConfig
+      );
     }
 
     // Check if template mode is enabled
@@ -479,6 +496,47 @@ export class LogicService {
   /**
    * Evaluate template-based condition (local heuristics first, then HA render_template).
    */
+  /**
+   * Row/column unified_template: subscribe via TemplateService (unified_* keys), parse JSON `visible`.
+   */
+  private _evaluateUnifiedLayoutVisibility(
+    templateStr: string,
+    keyMiddle: string,
+    cardConfig?: UltraCardConfig
+  ): boolean {
+    if (!this.hass || !this.templateService || !templateStr.trim()) {
+      return true;
+    }
+    const templateHash = this._hashString(templateStr);
+    const templateKey = `unified_${keyMiddle}_${templateHash}`;
+    if (!this.templateService.hasTemplateSubscription(templateKey)) {
+      void this.templateService.subscribeToTemplate(
+        templateStr,
+        templateKey,
+        () => {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('ultra-card-template-update', {
+                bubbles: true,
+                composed: true,
+                detail: { moduleType: 'layout_unified' },
+              })
+            );
+          }
+        },
+        {},
+        cardConfig
+      );
+    }
+    const raw = this.hass.__uvc_template_strings?.[templateKey];
+    if (raw === undefined || raw === null) {
+      return false;
+    }
+    const parsed = parseUnifiedTemplate(raw);
+    const v = unifiedTemplateVisible(parsed);
+    return v !== false;
+  }
+
   private evaluateTemplateCondition(condition: DisplayCondition): boolean {
     if (!condition.template || !this.hass) {
       return true;
