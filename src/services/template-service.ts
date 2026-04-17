@@ -325,12 +325,32 @@ export class TemplateService {
   }
 
   /**
-   * Update the Home Assistant reference
+   * Update the Home Assistant reference.
+   *
+   * HA replaces the hass object on every entity state change (any entity, not
+   * just the watched one).  Subscription callbacks write template results to
+   * `this.hass.__uvc_template_strings`, so when the object changes the results
+   * are lost and the next synchronous render reads `undefined`.  To prevent
+   * this, we carry over `__uvc_template_strings` from the outgoing object to
+   * the incoming one.  Subscription callbacks will continue to overwrite with
+   * fresh values as they arrive.
    */
   public updateHass(hass: HomeAssistant): void {
+    if (this.hass && hass !== this.hass) {
+      if (this.hass.__uvc_template_strings) {
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+        Object.assign(hass.__uvc_template_strings, this.hass.__uvc_template_strings);
+      }
+      if ((this.hass as any).__uvc_todo_cache) {
+        if (!(hass as any).__uvc_todo_cache) {
+          (hass as any).__uvc_todo_cache = Object.create(null);
+        }
+        Object.assign((hass as any).__uvc_todo_cache, (this.hass as any).__uvc_todo_cache);
+      }
+    }
     this.hass = hass;
-    // Clear cache when hass reference changes to ensure fresh data
     this._evaluationCache.clear();
-    this._previousStringResults.clear();
   }
 }

@@ -267,6 +267,7 @@ const PAGE_BTN_STYLE = `
 export class UltraDynamicListModule extends BaseUltraModule {
   private _templateService: TemplateService | null = null;
   private _todoService: UltraCardTodoService | null = null;
+  private _prevHass: HomeAssistant | null = null;
   // Per-module-instance state for show-more and pagination
   private _expandedModules: Map<string, boolean> = new Map();
   private _currentPage: Map<string, number> = new Map();
@@ -1731,6 +1732,18 @@ export class UltraDynamicListModule extends BaseUltraModule {
         'mdi:loading'
       );
     }
+
+    // Carry over todo cache when HA replaces the hass object (it does so on
+    // every entity state change).  Without this, the cache written by an
+    // in-flight getItems() call is lost on the old object and the card gets
+    // stuck showing "Loading todo items…" indefinitely.
+    if (this._prevHass && this._prevHass !== hass && (this._prevHass as any).__uvc_todo_cache) {
+      if (!(hass as any).__uvc_todo_cache) {
+        (hass as any).__uvc_todo_cache = Object.create(null);
+      }
+      Object.assign((hass as any).__uvc_todo_cache, (this._prevHass as any).__uvc_todo_cache);
+    }
+    this._prevHass = hass;
 
     let generatedModules: CardModule[] = [];
 

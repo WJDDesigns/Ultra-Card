@@ -618,12 +618,22 @@ export class UltraCard extends LitElement {
   private _collectModuleEntityIds(mod: any, ids: Set<string>): void {
     if (!mod || typeof mod !== 'object') return;
 
+    // Resolve $variable references to real entity IDs so shouldUpdate can track them
+    const addEntityValue = (val: string) => {
+      if (val.startsWith('$')) {
+        const resolved = ucCustomVariablesService.resolveEntityField(val, this.config);
+        if (resolved && resolved.includes('.')) ids.add(resolved);
+      } else if (val.includes('.')) {
+        ids.add(val);
+      }
+    };
+
     for (const key of Object.keys(mod)) {
       const val = mod[key];
 
       if (key === 'display_conditions' && Array.isArray(val)) {
         val.forEach((c: any) => {
-          if (c?.entity && typeof c.entity === 'string') ids.add(c.entity);
+          if (c?.entity && typeof c.entity === 'string') addEntityValue(c.entity);
         });
         continue;
       }
@@ -632,16 +642,16 @@ export class UltraCard extends LitElement {
       if (key === 'type' || key === 'id' || key.startsWith('_')) continue;
 
       // String property whose name contains "entity" → likely an entity ID
-      if (typeof val === 'string' && val.includes('.') && key.toLowerCase().includes('entity')) {
-        ids.add(val);
+      if (typeof val === 'string' && key.toLowerCase().includes('entity')) {
+        addEntityValue(val);
         continue;
       }
 
       // `entities` array: string[] or { entity: string }[]
       if (key === 'entities' && Array.isArray(val)) {
         val.forEach((e: any) => {
-          if (typeof e === 'string') ids.add(e);
-          else if (e?.entity && typeof e.entity === 'string') ids.add(e.entity);
+          if (typeof e === 'string') addEntityValue(e);
+          else if (e?.entity && typeof e.entity === 'string') addEntityValue(e.entity);
         });
         continue;
       }
@@ -651,23 +661,19 @@ export class UltraCard extends LitElement {
       if (Array.isArray(val)) {
         for (const item of val) {
           if (!item || typeof item !== 'object') {
-            if (typeof item === 'string' && item.includes('.')) ids.add(item);
+            if (typeof item === 'string') addEntityValue(item);
             continue;
           }
           for (const itemKey of Object.keys(item)) {
             const itemVal = item[itemKey];
-            if (
-              typeof itemVal === 'string' &&
-              itemVal.includes('.') &&
-              itemKey.toLowerCase().includes('entity')
-            ) {
-              ids.add(itemVal);
+            if (typeof itemVal === 'string' && itemKey.toLowerCase().includes('entity')) {
+              addEntityValue(itemVal);
             }
             // Handle nested entities arrays inside items (e.g. presets[].entities)
             if (itemKey === 'entities' && Array.isArray(itemVal)) {
               itemVal.forEach((e: any) => {
-                if (typeof e === 'string') ids.add(e);
-                else if (e?.entity && typeof e.entity === 'string') ids.add(e.entity);
+                if (typeof e === 'string') addEntityValue(e);
+                else if (e?.entity && typeof e.entity === 'string') addEntityValue(e.entity);
               });
             }
           }
@@ -679,12 +685,8 @@ export class UltraCard extends LitElement {
       if (val && typeof val === 'object' && !Array.isArray(val)) {
         for (const subKey of Object.keys(val)) {
           const subVal = val[subKey];
-          if (
-            typeof subVal === 'string' &&
-            subVal.includes('.') &&
-            subKey.toLowerCase().includes('entity')
-          ) {
-            ids.add(subVal);
+          if (typeof subVal === 'string' && subKey.toLowerCase().includes('entity')) {
+            addEntityValue(subVal);
           }
         }
       }
@@ -715,13 +717,22 @@ export class UltraCard extends LitElement {
       }
     };
 
+    const addEntityValue = (val: string) => {
+      if (val.startsWith('$')) {
+        const resolved = ucCustomVariablesService.resolveEntityField(val, config);
+        if (resolved && resolved.includes('.')) ids.add(resolved);
+      } else if (val.includes('.')) {
+        ids.add(val);
+      }
+    };
+
     for (const row of config.layout.rows) {
       row.display_conditions?.forEach(c => {
-        if (c.entity && typeof c.entity === 'string') ids.add(c.entity);
+        if (c.entity && typeof c.entity === 'string') addEntityValue(c.entity);
       });
       for (const col of row.columns || []) {
         col.display_conditions?.forEach(c => {
-          if (c.entity && typeof c.entity === 'string') ids.add(c.entity);
+          if (c.entity && typeof c.entity === 'string') addEntityValue(c.entity);
         });
         processModules(col.modules || []);
       }
@@ -738,10 +749,12 @@ export class UltraCard extends LitElement {
     const cache = this._getConfigCache();
     const entityIds = cache.relevantEntityIds;
     if (entityIds.size === 0) {
-      if (cache.hasLogicConditions) {
-        if (!oldHass?.states) return true;
-        return false;
-      }
+      // No entity IDs collected from config fields — we cannot selectively
+      // filter which hass changes are relevant.  Allow the update so that
+      // entity-driven changes (action results, $variable-referenced entities,
+      // template-only cards) are rendered.  Template subscriptions also drive
+      // updates via 'ultra-card-template-update' → requestUpdate() (which
+      // bypasses this branch because changedProps won't contain 'hass').
       return true;
     }
     for (const id of entityIds) {

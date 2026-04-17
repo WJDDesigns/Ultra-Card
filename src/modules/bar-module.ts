@@ -388,7 +388,11 @@ export class UltraBarModule extends BaseUltraModule {
               const next = e.detail.value?.percentage_type;
               if (next === undefined || next === barModule.percentage_type) return;
 
-              updateModule({ percentage_type: next });
+              const update: Record<string, any> = { percentage_type: next };
+              if (next !== 'entity' && next !== 'template') {
+                update.percentage_template = '';
+              }
+              updateModule(update);
             }
           )}
         </div>
@@ -708,11 +712,16 @@ export class UltraBarModule extends BaseUltraModule {
                               if (val === '') {
                                 updateModule({ percentage_min: undefined });
                               } else {
-                                const num = parseFloat(val);
+                                let normalized = val;
+                                if (normalized.includes(',') && !normalized.includes('.')) {
+                                  normalized = normalized.replace(',', '.');
+                                }
+                                const num = parseFloat(normalized);
                                 updateModule({
                                   percentage_min: isNaN(num) ? undefined : num,
                                 });
                               }
+                              this.triggerPreviewUpdate();
                             }, 300);
                           }}
                           style="width: 100%;"
@@ -741,11 +750,16 @@ export class UltraBarModule extends BaseUltraModule {
                               if (val === '') {
                                 updateModule({ percentage_max: undefined });
                               } else {
-                                const num = parseFloat(val);
+                                let normalized = val;
+                                if (normalized.includes(',') && !normalized.includes('.')) {
+                                  normalized = normalized.replace(',', '.');
+                                }
+                                const num = parseFloat(normalized);
                                 updateModule({
                                   percentage_max: isNaN(num) ? undefined : num,
                                 });
                               }
+                              this.triggerPreviewUpdate();
                             }, 300);
                           }}
                           style="width: 100%;"
@@ -2896,8 +2910,8 @@ export class UltraBarModule extends BaseUltraModule {
     }
 
     // GRACEFUL RENDERING: Check for incomplete configuration
-    // Time Progress mode and Range mode don't need main entity
-    const needsEntity = pctType !== 'time_progress' && pctType !== 'range';
+    // Time Progress, Range, and Difference modes don't need the main entity
+    const needsEntity = pctType !== 'time_progress' && pctType !== 'range' && pctType !== 'difference';
     if (needsEntity && (!barModule.entity || barModule.entity.trim() === '')) {
       return this.renderGradientErrorState(
         localize('editor.bar.error_no_entity', lang, 'Select Entity'),
@@ -2926,6 +2940,23 @@ export class UltraBarModule extends BaseUltraModule {
     let timeProgressDisplay: string | undefined; // For time progress mode display
 
     const clampPercent = (p: number) => Math.min(Math.max(p, 0), 100);
+
+    // Locale-safe parseFloat: handles European comma decimal separators (e.g. "30,96" → 30.96)
+    const safeParseFloat = (val: unknown): number => {
+      if (val === undefined || val === null) return NaN;
+      if (typeof val === 'number') return val;
+      let s = String(val).trim();
+      if (s.includes(',')) {
+        const lastComma = s.lastIndexOf(',');
+        const lastDot = s.lastIndexOf('.');
+        if (lastComma > lastDot) {
+          s = s.substring(0, lastComma).replace(/[.,]/g, '') + '.' + s.substring(lastComma + 1);
+        } else {
+          s = s.replace(/,/g, '');
+        }
+      }
+      return parseFloat(s);
+    };
 
     let unifiedBarLeftLabel = '';
     let unifiedBarRightLabel = '';
@@ -3009,7 +3040,13 @@ export class UltraBarModule extends BaseUltraModule {
 
     // For preview purposes, if no entity is configured, show a demo bar with 65%
     const hasValidEntity = barModule.entity && hass?.states[barModule.entity];
-    const isPreviewMode = !hasValidEntity;
+    const hasDifferenceEntities =
+      pctType === 'difference' &&
+      (barModule as any).percentage_current_entity &&
+      (barModule as any).percentage_total_entity &&
+      hass?.states[(barModule as any).percentage_current_entity] &&
+      hass?.states[(barModule as any).percentage_total_entity];
+    const isPreviewMode = !hasValidEntity && !hasDifferenceEntities;
 
     const resolveMinMax = (): { min: number | undefined; max: number | undefined } => {
       let resolvedMin: number | undefined = barModule.percentage_min;
@@ -3129,7 +3166,7 @@ export class UltraBarModule extends BaseUltraModule {
         const st = entId ? hass?.states[entId] : undefined;
         const raw = attrName ? (st?.attributes as any)?.[attrName] : undefined;
         const unit = st?.attributes?.unit_of_measurement || '';
-        const num = parseFloat(String(raw ?? '0'));
+        const num = safeParseFloat(raw ?? '0');
         if (!isNaN(num)) {
           // If manual min/max are set, use them for range calculation
           if (manualMin !== undefined || manualMax !== undefined) {
@@ -3137,9 +3174,9 @@ export class UltraBarModule extends BaseUltraModule {
           } else if (unit === '%' || String(raw).toString().trim().endsWith('%')) {
             percentage = clampPercent(num);
           } else if (st?.attributes?.max) {
-            const max = parseFloat(String(st.attributes.max));
+            const max = safeParseFloat(st.attributes.max);
             const min =
-              st?.attributes?.min !== undefined ? parseFloat(String(st.attributes.min)) : 0;
+              st?.attributes?.min !== undefined ? safeParseFloat(st.attributes.min) : 0;
             percentage = calculatePercentageWithRange(num, min, max);
           } else {
             // Assume direct percent
@@ -3151,8 +3188,8 @@ export class UltraBarModule extends BaseUltraModule {
         const { min: manualMin, max: manualMax } = resolveMinMax();
         const currId = (barModule as any).percentage_current_entity;
         const totalId = (barModule as any).percentage_total_entity;
-        const curr = currId ? parseFloat(String(hass?.states[currId]?.state ?? '0')) : 0;
-        const total = totalId ? parseFloat(String(hass?.states[totalId]?.state ?? '0')) : 0;
+        const curr = currId ? (safeParseFloat(hass?.states[currId]?.state) || 0) : 0;
+        const total = totalId ? (safeParseFloat(hass?.states[totalId]?.state) || 0) : 0;
 
         if (manualMin !== undefined || manualMax !== undefined) {
           // If manual range is set, use current value against that range
@@ -3175,17 +3212,17 @@ export class UltraBarModule extends BaseUltraModule {
         let unit = '';
 
         if (entityState) {
-          value = parseFloat(entityState.state) || 0;
+          value = safeParseFloat(entityState.state) || 0;
           unit = entityState.attributes?.unit_of_measurement || '';
 
           // Auto-detect min from entity attributes
           if (entityState.attributes?.min !== undefined) {
-            autoMin = parseFloat(String(entityState.attributes.min)) || 0;
+            autoMin = safeParseFloat(entityState.attributes.min) || 0;
           }
 
           // Auto-detect max from entity attributes
           if (entityState.attributes?.max !== undefined) {
-            autoMax = parseFloat(String(entityState.attributes.max)) || 100;
+            autoMax = safeParseFloat(entityState.attributes.max) || 100;
           } else if (unit === '%') {
             autoMax = 100;
           } else if (entityState.attributes?.device_class === 'battery') {
@@ -3231,16 +3268,23 @@ export class UltraBarModule extends BaseUltraModule {
     let limitPercentage = 0;
     if (barModule.limit_entity && hass?.states[barModule.limit_entity]) {
       const limitState = hass.states[barModule.limit_entity];
-      const limitValue = parseFloat(limitState.state) || 0;
+      const limitValue = safeParseFloat(limitState.state) || 0;
       const pctTypeForLimit = (barModule as any).percentage_type || 'entity';
       const { min: limitManualMin, max: limitManualMax } = resolveMinMax();
 
       if (pctTypeForLimit === 'difference') {
-        // In difference mode the limit entity is in the same real-world unit as the total entity.
+        // In difference mode the limit entity is in the same real-world unit as the
+        // current/total entities.  Mirror the exact same math used for the main bar fill
+        // so that when the limit entity equals the current entity, both land at the
+        // same position — regardless of whether a manual range is configured.
         const totalId = (barModule as any).percentage_total_entity;
-        const totalVal = totalId ? parseFloat(String(hass?.states[totalId]?.state ?? '0')) : 0;
-        const baseMax = totalVal > 0 ? totalVal : 100;
-        limitPercentage = calculatePercentageWithRange(limitValue, 0, baseMax, limitManualMin, limitManualMax);
+        const total = totalId ? (safeParseFloat(hass?.states[totalId]?.state) || 0) : 0;
+
+        if (limitManualMin !== undefined || limitManualMax !== undefined) {
+          limitPercentage = calculatePercentageWithRange(limitValue, 0, total, limitManualMin, limitManualMax);
+        } else {
+          limitPercentage = total > 0 ? clampPercent((limitValue / total) * 100) : 0;
+        }
       } else {
         // Entity / attribute mode: derive the same auto min/max as the main bar entity so the
         // limit line is positioned on the same scale, then apply any manual override.
@@ -3250,10 +3294,10 @@ export class UltraBarModule extends BaseUltraModule {
         if (mainEntityState) {
           const unit = mainEntityState.attributes?.unit_of_measurement || '';
           if (mainEntityState.attributes?.min !== undefined) {
-            autoMin = parseFloat(String(mainEntityState.attributes.min)) || 0;
+            autoMin = safeParseFloat(mainEntityState.attributes.min) || 0;
           }
           if (mainEntityState.attributes?.max !== undefined) {
-            autoMax = parseFloat(String(mainEntityState.attributes.max)) || 100;
+            autoMax = safeParseFloat(mainEntityState.attributes.max) || 100;
           } else if (unit === '%' || mainEntityState.attributes?.device_class === 'battery') {
             autoMax = 100;
           }
@@ -3284,8 +3328,8 @@ export class UltraBarModule extends BaseUltraModule {
         const state = hass.states[startEntity];
         rangeStartValue =
           startAttr && state.attributes?.[startAttr] !== undefined
-            ? parseFloat(String(state.attributes[startAttr]))
-            : parseFloat(state.state);
+            ? safeParseFloat(state.attributes[startAttr])
+            : safeParseFloat(state.state);
         if (isNaN(rangeStartValue)) rangeStartValue = scaleMin;
       }
 
@@ -3297,8 +3341,8 @@ export class UltraBarModule extends BaseUltraModule {
         const state = hass.states[endEntity];
         rangeEndValue =
           endAttr && state.attributes?.[endAttr] !== undefined
-            ? parseFloat(String(state.attributes[endAttr]))
-            : parseFloat(state.state);
+            ? safeParseFloat(state.attributes[endAttr])
+            : safeParseFloat(state.state);
         if (isNaN(rangeEndValue)) rangeEndValue = scaleMax;
       }
 
@@ -3309,8 +3353,8 @@ export class UltraBarModule extends BaseUltraModule {
         const state = hass.states[currentEntity];
         const currentValue =
           currentAttr && state.attributes?.[currentAttr] !== undefined
-            ? parseFloat(String(state.attributes[currentAttr]))
-            : parseFloat(state.state);
+            ? safeParseFloat(state.attributes[currentAttr])
+            : safeParseFloat(state.state);
         if (!isNaN(currentValue) && scaleRange > 0) {
           rangeCurrentPercent = Math.min(
             100,
@@ -3351,7 +3395,7 @@ export class UltraBarModule extends BaseUltraModule {
         if (manualMin === undefined) scaleMin = 0;
         if (manualMax === undefined) {
           const totalId = (barModule as any).percentage_total_entity;
-          const totalVal = totalId ? parseFloat(String(hass?.states[totalId]?.state ?? '0')) : 0;
+          const totalVal = totalId ? (safeParseFloat(hass?.states[totalId]?.state) || 0) : 0;
           if (totalVal > 0) scaleMax = totalVal;
         }
       }
@@ -3523,22 +3567,22 @@ export class UltraBarModule extends BaseUltraModule {
       }
 
       if (barModule.show_value) {
-        if (isPreviewMode) {
-          return '65 kWh';
-        }
-
         if (pctType === 'difference') {
           const currentEntity = (barModule as any).percentage_current_entity;
           if (currentEntity && hass?.states[currentEntity]) {
-            const currentState = hass.states[currentEntity];
             try {
               return formatEntityState(hass, currentEntity, {
                 includeUnit: true,
               });
             } catch (_e) {
+              const currentState = hass.states[currentEntity];
               return `${currentState.state}${currentState.attributes?.unit_of_measurement || ''}`;
             }
           }
+        }
+
+        if (isPreviewMode) {
+          return '65 kWh';
         }
 
         const entityState = hass?.states[barModule.entity];
@@ -4263,6 +4307,8 @@ export class UltraBarModule extends BaseUltraModule {
           : moduleWithDesign.text_shadow_h && moduleWithDesign.text_shadow_v
             ? `${moduleWithDesign.text_shadow_h || '0'} ${moduleWithDesign.text_shadow_v || '0'} ${moduleWithDesign.text_shadow_blur || '0'} ${moduleWithDesign.text_shadow_color || 'rgba(0,0,0,0.25)'}`
             : 'none',
+      display: 'flex',
+      flexDirection: 'column',
     };
 
     // Create gesture handlers using centralized service
@@ -4938,7 +4984,7 @@ export class UltraBarModule extends BaseUltraModule {
           </div>
 
           ${
-            !hass?.states[barModule.entity] && barModule.entity
+            !hass?.states[barModule.entity] && barModule.entity && !hasDifferenceEntities
               ? html`
                   <div
                     class="entity-error"

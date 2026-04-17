@@ -3890,6 +3890,8 @@ export class UltraIconModule extends BaseUltraModule {
           if (icon.unified_template_mode && icon.unified_template) {
             if (!this._templateService && hass) {
               this._templateService = new TemplateService(hass);
+            } else if (this._templateService && hass) {
+              this._templateService.updateHass(hass);
             }
 
             const templateHash = this._hashString(icon.unified_template);
@@ -3954,7 +3956,7 @@ export class UltraIconModule extends BaseUltraModule {
             displayIcon = entityState.attributes.icon;
           }
 
-          const displayColor = isActive
+          let displayColor = isActive
             ? icon.use_state_color_for_active_icon
               ? this._getEntityStateColor(entityState) || icon.active_icon_color
               : icon.use_entity_color_for_icon
@@ -3969,6 +3971,16 @@ export class UltraIconModule extends BaseUltraModule {
                   ? `rgb(${entityState.attributes.rgb_color.join(',')})`
                   : icon.inactive_icon_color
                 : icon.inactive_icon_color;
+
+          // Apply unified template overrides (takes priority over active/inactive colors)
+          if (icon.unified_template_mode && icon.unified_template) {
+            if ((icon as any)._template_icon) {
+              displayIcon = (icon as any)._template_icon;
+            }
+            if ((icon as any)._template_icon_color) {
+              displayColor = (icon as any)._template_icon_color;
+            }
+          }
 
           const nameColor =
             (icon as any)._template_name_color ||

@@ -80,8 +80,11 @@ export function hasLegacyTemplatesForKind(config: any, kind: LegacyMigrationKind
       return Boolean(config.template_mode && config.template);
     case 'bar': {
       const b = config as any;
+      const pctType = b.percentage_type || 'entity';
+      const pctTemplateIsRelevant =
+        pctType === 'entity' || pctType === 'template' || !pctType;
       return Boolean(
-        b.percentage_template ||
+        (b.percentage_template && pctTemplateIsRelevant) ||
           (b.percentage_min_template_mode && b.percentage_min_template) ||
           (b.percentage_max_template_mode && b.percentage_max_template) ||
           (b.left_template_mode && b.left_template) ||
