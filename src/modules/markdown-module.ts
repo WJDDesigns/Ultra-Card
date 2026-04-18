@@ -452,6 +452,7 @@ All standard markdown features are automatically enabled!`,
             processedUnifiedTemplate,
             templateKey,
             () => {
+              this._clearMarkdownCache(markdownModule.id);
               if (typeof window !== 'undefined') {
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
@@ -668,6 +669,7 @@ All standard markdown features are automatically enabled!`,
             templateContent,
             templateKey,
             () => {
+              this._clearMarkdownCache(markdownModule.id);
               if (typeof window !== 'undefined') {
                 // Use global debounced update
                 if (!window._ultraCardUpdateTimer) {
@@ -739,6 +741,7 @@ All standard markdown features are automatically enabled!`,
             processedUnifiedTemplate,
             templateKey,
             () => {
+              this._clearMarkdownCache(markdownModule.id);
               if (typeof window !== 'undefined') {
                 if (!window._ultraCardUpdateTimer) {
                   window._ultraCardUpdateTimer = setTimeout(() => {
@@ -783,7 +786,8 @@ All standard markdown features are automatically enabled!`,
 
     // Check if content contains templates - if so, always re-process to get latest template values
     const hasTemplates = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/.test(sourceContent);
-    const shouldReProcess = !this._renderedContentCache.has(contentKey) || hasTemplates;
+    const shouldReProcess =
+      !this._renderedContentCache.has(contentKey) || hasTemplates || unifiedOn;
 
     if (shouldReProcess) {
       try {

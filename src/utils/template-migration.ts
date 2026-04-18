@@ -163,8 +163,11 @@ export function migrateToUnified(config: any, kind?: LegacyMigrationKind): Migra
 
   if (kind === 'bar') {
     const b = config as any;
+    const pctType = b.percentage_type || 'entity';
     const parts: string[] = [];
-    if (b.percentage_template) {
+    // In difference mode, do not migrate percentage_template into unified "value" — it was
+    // often a legacy % helper and would override current/total fill when unified mode is on.
+    if (b.percentage_template && pctType !== 'difference') {
       migratedFrom.push('percentage_template');
       parts.push(`"value": ${wrapTemplateInJinja(String(b.percentage_template))}`);
     }

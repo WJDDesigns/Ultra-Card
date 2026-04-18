@@ -156,6 +156,8 @@ export class UltraCard extends LitElement {
     livingCanvasModules: Array<{ id: string; module: CardModule }>;
     backgroundModules: Array<{ id: string; module: CardModule }>;
     navigationModules: Array<{ id: string; module: CardModule }>;
+    /** When true, any hass change should re-render (markdown / Jinja not fully tracked in entity set). */
+    requiresHassBroadUpdates: boolean;
   } | null = null;
 
   private _getConfigCache(): NonNullable<UltraCard['_configCache']> {
@@ -216,6 +218,19 @@ export class UltraCard extends LitElement {
     const has3rdPartyCards = moduleTypes.has('external_card');
     const hasNonExternalModules = Array.from(moduleTypes).some(t => t !== 'external_card');
 
+    let requiresHassBroadUpdates = false;
+    const jinjaInMarkdown = (s: string) => /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/.test(s);
+    for (const mod of allModules) {
+      if (mod.type !== 'markdown') continue;
+      const m = mod as any;
+      const unifiedOn =
+        !!m.unified_template_mode && !!(m.unified_template && String(m.unified_template).trim());
+      if (unifiedOn || jinjaInMarkdown(String(m.markdown_content || ''))) {
+        requiresHassBroadUpdates = true;
+        break;
+      }
+    }
+
     this._configCache = {
       layoutKey,
       relevantEntityIds,
@@ -232,6 +247,7 @@ export class UltraCard extends LitElement {
       livingCanvasModules,
       backgroundModules,
       navigationModules,
+      requiresHassBroadUpdates,
     };
     return this._configCache;
   }
@@ -615,6 +631,41 @@ export class UltraCard extends LitElement {
    * "entity" (e.g. left_entity, weather_entity, timer_entity), and entity
    * fields inside any array-of-objects property (icons, bars, nodes, markers, etc.).
    */
+  /** Collect entity_id / entity from tap/hold/double_tap actions and nested targets. */
+  private _collectEntitiesFromAction(
+    action: any,
+    ids: Set<string>,
+    addEntityValue: (val: string) => void
+  ): void {
+    if (!action || typeof action !== 'object') return;
+    const stack: any[] = [action];
+    const seen = new Set<any>();
+    while (stack.length) {
+      const obj = stack.pop();
+      if (!obj || typeof obj !== 'object' || seen.has(obj)) continue;
+      seen.add(obj);
+      if (typeof obj.entity === 'string') addEntityValue(obj.entity);
+      if (typeof obj.entity_id === 'string') addEntityValue(obj.entity_id);
+      if (Array.isArray(obj.entity_id)) {
+        for (const e of obj.entity_id) {
+          if (typeof e === 'string') addEntityValue(e);
+        }
+      }
+      for (const k of Object.keys(obj)) {
+        const v = (obj as any)[k];
+        if (v && typeof v === 'object') {
+          if (Array.isArray(v)) {
+            for (const item of v) {
+              if (item && typeof item === 'object') stack.push(item);
+            }
+          } else {
+            stack.push(v);
+          }
+        }
+      }
+    }
+  }
+
   private _collectModuleEntityIds(mod: any, ids: Set<string>): void {
     if (!mod || typeof mod !== 'object') return;
 
@@ -691,6 +742,10 @@ export class UltraCard extends LitElement {
         }
       }
     }
+
+    this._collectEntitiesFromAction(mod.tap_action, ids, addEntityValue);
+    this._collectEntitiesFromAction(mod.hold_action, ids, addEntityValue);
+    this._collectEntitiesFromAction(mod.double_tap_action, ids, addEntityValue);
   }
 
   private _getRelevantEntityIds(): Set<string> {
@@ -747,6 +802,9 @@ export class UltraCard extends LitElement {
     const newHass = this.hass;
     if (!newHass?.states) return true;
     const cache = this._getConfigCache();
+    if (cache.requiresHassBroadUpdates) {
+      return true;
+    }
     const entityIds = cache.relevantEntityIds;
     if (entityIds.size === 0) {
       // No entity IDs collected from config fields — we cannot selectively

@@ -17,6 +17,7 @@ import { localize } from '../localize/localize';
 import { buildEntityContext } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import { parseLocaleNumber, parseCustomTickValues } from '../utils/parse-locale-number';
 import {
   GradientStop,
   generateGradientString,
@@ -2935,28 +2936,12 @@ export class UltraBarModule extends BaseUltraModule {
 
     // Resolve bar percentage based on selected percentage calculation mode
     let percentage = 0;
+    let unifiedFilledFromTemplate = false;
     let barColor: string | undefined;
     let barLabel: string | undefined;
     let timeProgressDisplay: string | undefined; // For time progress mode display
 
     const clampPercent = (p: number) => Math.min(Math.max(p, 0), 100);
-
-    // Locale-safe parseFloat: handles European comma decimal separators (e.g. "30,96" → 30.96)
-    const safeParseFloat = (val: unknown): number => {
-      if (val === undefined || val === null) return NaN;
-      if (typeof val === 'number') return val;
-      let s = String(val).trim();
-      if (s.includes(',')) {
-        const lastComma = s.lastIndexOf(',');
-        const lastDot = s.lastIndexOf('.');
-        if (lastComma > lastDot) {
-          s = s.substring(0, lastComma).replace(/[.,]/g, '') + '.' + s.substring(lastComma + 1);
-        } else {
-          s = s.replace(/,/g, '');
-        }
-      }
-      return parseFloat(s);
-    };
 
     let unifiedBarLeftLabel = '';
     let unifiedBarRightLabel = '';
@@ -3004,11 +2989,16 @@ export class UltraBarModule extends BaseUltraModule {
         if (unifiedResult && String(unifiedResult).trim() !== '') {
           const parsed = parseUnifiedTemplate(unifiedResult);
           if (!hasTemplateError(parsed)) {
-            if (parsed.value !== undefined) {
+            // Difference mode uses current/total entities for fill — do not let migrated
+            // unified "value" (e.g. legacy percentage_template) override the bar scale.
+            if (pctType !== 'difference' && parsed.value !== undefined) {
               const num =
-                typeof parsed.value === 'number' ? parsed.value : parseFloat(String(parsed.value));
+                typeof parsed.value === 'number'
+                  ? parsed.value
+                  : parseLocaleNumber(String(parsed.value));
               if (!isNaN(num)) {
                 percentage = num <= 1 ? clampPercent(num * 100) : clampPercent(num);
+                unifiedFilledFromTemplate = true;
               }
             }
             if (parsed.color) barColor = parsed.color;
@@ -3023,14 +3013,14 @@ export class UltraBarModule extends BaseUltraModule {
               const n =
                 typeof parsed.value_min === 'number'
                   ? parsed.value_min
-                  : parseFloat(String(parsed.value_min));
+                  : parseLocaleNumber(String(parsed.value_min));
               if (!isNaN(n)) unifiedBarValueMin = n;
             }
             if (parsed.value_max !== undefined) {
               const n =
                 typeof parsed.value_max === 'number'
                   ? parsed.value_max
-                  : parseFloat(String(parsed.value_max));
+                  : parseLocaleNumber(String(parsed.value_max));
               if (!isNaN(n)) unifiedBarValueMax = n;
             }
           }
@@ -3051,10 +3041,12 @@ export class UltraBarModule extends BaseUltraModule {
     const resolveMinMax = (): { min: number | undefined; max: number | undefined } => {
       let resolvedMin: number | undefined = barModule.percentage_min;
       let resolvedMax: number | undefined = barModule.percentage_max;
-      if (barModule.unified_template_mode && unifiedBarValueMin !== undefined) {
+      const allowUnifiedRange =
+        barModule.unified_template_mode && pctType !== 'difference';
+      if (allowUnifiedRange && unifiedBarValueMin !== undefined) {
         resolvedMin = unifiedBarValueMin;
       }
-      if (barModule.unified_template_mode && unifiedBarValueMax !== undefined) {
+      if (allowUnifiedRange && unifiedBarValueMax !== undefined) {
         resolvedMax = unifiedBarValueMax;
       }
       return { min: resolvedMin, max: resolvedMax };
@@ -3075,8 +3067,8 @@ export class UltraBarModule extends BaseUltraModule {
       return clampPercent(((value - min) / range) * 100);
     };
 
-    // PRIORITY 2: Legacy percentage calculations (only if unified template didn't set percentage)
-    if (!barModule.unified_template_mode) {
+    // PRIORITY 2: Legacy percentage when unified is off, or unified did not supply a numeric value
+    if (!barModule.unified_template_mode || !unifiedFilledFromTemplate) {
       let pctType = (barModule as any).percentage_type || 'entity';
       if (pctType === 'template') pctType = 'entity';
 
@@ -3166,7 +3158,7 @@ export class UltraBarModule extends BaseUltraModule {
         const st = entId ? hass?.states[entId] : undefined;
         const raw = attrName ? (st?.attributes as any)?.[attrName] : undefined;
         const unit = st?.attributes?.unit_of_measurement || '';
-        const num = safeParseFloat(raw ?? '0');
+        const num = parseLocaleNumber(raw ?? '0');
         if (!isNaN(num)) {
           // If manual min/max are set, use them for range calculation
           if (manualMin !== undefined || manualMax !== undefined) {
@@ -3174,9 +3166,9 @@ export class UltraBarModule extends BaseUltraModule {
           } else if (unit === '%' || String(raw).toString().trim().endsWith('%')) {
             percentage = clampPercent(num);
           } else if (st?.attributes?.max) {
-            const max = safeParseFloat(st.attributes.max);
+            const max = parseLocaleNumber(st.attributes.max);
             const min =
-              st?.attributes?.min !== undefined ? safeParseFloat(st.attributes.min) : 0;
+              st?.attributes?.min !== undefined ? parseLocaleNumber(st.attributes.min) : 0;
             percentage = calculatePercentageWithRange(num, min, max);
           } else {
             // Assume direct percent
@@ -3188,8 +3180,8 @@ export class UltraBarModule extends BaseUltraModule {
         const { min: manualMin, max: manualMax } = resolveMinMax();
         const currId = (barModule as any).percentage_current_entity;
         const totalId = (barModule as any).percentage_total_entity;
-        const curr = currId ? (safeParseFloat(hass?.states[currId]?.state) || 0) : 0;
-        const total = totalId ? (safeParseFloat(hass?.states[totalId]?.state) || 0) : 0;
+        const curr = currId ? (parseLocaleNumber(hass?.states[currId]?.state) || 0) : 0;
+        const total = totalId ? (parseLocaleNumber(hass?.states[totalId]?.state) || 0) : 0;
 
         if (manualMin !== undefined || manualMax !== undefined) {
           // If manual range is set, use current value against that range
@@ -3212,17 +3204,17 @@ export class UltraBarModule extends BaseUltraModule {
         let unit = '';
 
         if (entityState) {
-          value = safeParseFloat(entityState.state) || 0;
+          value = parseLocaleNumber(entityState.state) || 0;
           unit = entityState.attributes?.unit_of_measurement || '';
 
           // Auto-detect min from entity attributes
           if (entityState.attributes?.min !== undefined) {
-            autoMin = safeParseFloat(entityState.attributes.min) || 0;
+            autoMin = parseLocaleNumber(entityState.attributes.min) || 0;
           }
 
           // Auto-detect max from entity attributes
           if (entityState.attributes?.max !== undefined) {
-            autoMax = safeParseFloat(entityState.attributes.max) || 100;
+            autoMax = parseLocaleNumber(entityState.attributes.max) || 100;
           } else if (unit === '%') {
             autoMax = 100;
           } else if (entityState.attributes?.device_class === 'battery') {
@@ -3235,8 +3227,26 @@ export class UltraBarModule extends BaseUltraModule {
       }
     }
 
+    // Unified template can still drive labels/colors in difference mode — compute fill separately.
+    if (barModule.unified_template_mode && pctType === 'difference') {
+      const { min: manualMin, max: manualMax } = resolveMinMax();
+      const currId = (barModule as any).percentage_current_entity;
+      const totalId = (barModule as any).percentage_total_entity;
+      const curr = currId ? (parseLocaleNumber(hass?.states[currId]?.state) || 0) : 0;
+      const total = totalId ? (parseLocaleNumber(hass?.states[totalId]?.state) || 0) : 0;
+      if (manualMin !== undefined || manualMax !== undefined) {
+        percentage = calculatePercentageWithRange(curr, 0, total, manualMin, manualMax);
+      } else {
+        percentage = total > 0 ? clampPercent((curr / total) * 100) : 0;
+      }
+    }
+
     // If in preview mode (no valid entity), show demo percentage
-    if (isPreviewMode && !barModule.unified_template_mode) {
+    if (
+      isPreviewMode &&
+      (!barModule.unified_template_mode ||
+        (pctType === 'difference' && !hasDifferenceEntities))
+    ) {
       percentage = 65; // Demo value for preview
     }
 
@@ -3268,7 +3278,7 @@ export class UltraBarModule extends BaseUltraModule {
     let limitPercentage = 0;
     if (barModule.limit_entity && hass?.states[barModule.limit_entity]) {
       const limitState = hass.states[barModule.limit_entity];
-      const limitValue = safeParseFloat(limitState.state) || 0;
+      const limitValue = parseLocaleNumber(limitState.state) || 0;
       const pctTypeForLimit = (barModule as any).percentage_type || 'entity';
       const { min: limitManualMin, max: limitManualMax } = resolveMinMax();
 
@@ -3278,7 +3288,7 @@ export class UltraBarModule extends BaseUltraModule {
         // so that when the limit entity equals the current entity, both land at the
         // same position — regardless of whether a manual range is configured.
         const totalId = (barModule as any).percentage_total_entity;
-        const total = totalId ? (safeParseFloat(hass?.states[totalId]?.state) || 0) : 0;
+        const total = totalId ? (parseLocaleNumber(hass?.states[totalId]?.state) || 0) : 0;
 
         if (limitManualMin !== undefined || limitManualMax !== undefined) {
           limitPercentage = calculatePercentageWithRange(limitValue, 0, total, limitManualMin, limitManualMax);
@@ -3294,10 +3304,10 @@ export class UltraBarModule extends BaseUltraModule {
         if (mainEntityState) {
           const unit = mainEntityState.attributes?.unit_of_measurement || '';
           if (mainEntityState.attributes?.min !== undefined) {
-            autoMin = safeParseFloat(mainEntityState.attributes.min) || 0;
+            autoMin = parseLocaleNumber(mainEntityState.attributes.min) || 0;
           }
           if (mainEntityState.attributes?.max !== undefined) {
-            autoMax = safeParseFloat(mainEntityState.attributes.max) || 100;
+            autoMax = parseLocaleNumber(mainEntityState.attributes.max) || 100;
           } else if (unit === '%' || mainEntityState.attributes?.device_class === 'battery') {
             autoMax = 100;
           }
@@ -3328,8 +3338,8 @@ export class UltraBarModule extends BaseUltraModule {
         const state = hass.states[startEntity];
         rangeStartValue =
           startAttr && state.attributes?.[startAttr] !== undefined
-            ? safeParseFloat(state.attributes[startAttr])
-            : safeParseFloat(state.state);
+            ? parseLocaleNumber(state.attributes[startAttr])
+            : parseLocaleNumber(state.state);
         if (isNaN(rangeStartValue)) rangeStartValue = scaleMin;
       }
 
@@ -3341,8 +3351,8 @@ export class UltraBarModule extends BaseUltraModule {
         const state = hass.states[endEntity];
         rangeEndValue =
           endAttr && state.attributes?.[endAttr] !== undefined
-            ? safeParseFloat(state.attributes[endAttr])
-            : safeParseFloat(state.state);
+            ? parseLocaleNumber(state.attributes[endAttr])
+            : parseLocaleNumber(state.state);
         if (isNaN(rangeEndValue)) rangeEndValue = scaleMax;
       }
 
@@ -3353,8 +3363,8 @@ export class UltraBarModule extends BaseUltraModule {
         const state = hass.states[currentEntity];
         const currentValue =
           currentAttr && state.attributes?.[currentAttr] !== undefined
-            ? safeParseFloat(state.attributes[currentAttr])
-            : safeParseFloat(state.state);
+            ? parseLocaleNumber(state.attributes[currentAttr])
+            : parseLocaleNumber(state.state);
         if (!isNaN(currentValue) && scaleRange > 0) {
           rangeCurrentPercent = Math.min(
             100,
@@ -3395,7 +3405,7 @@ export class UltraBarModule extends BaseUltraModule {
         if (manualMin === undefined) scaleMin = 0;
         if (manualMax === undefined) {
           const totalId = (barModule as any).percentage_total_entity;
-          const totalVal = totalId ? (safeParseFloat(hass?.states[totalId]?.state) || 0) : 0;
+          const totalVal = totalId ? (parseLocaleNumber(hass?.states[totalId]?.state) || 0) : 0;
           if (totalVal > 0) scaleMax = totalVal;
         }
       }
@@ -3548,6 +3558,8 @@ export class UltraBarModule extends BaseUltraModule {
         : 'translate(-100%, -50%) translateX(-4px)';
 
     const showPercentageText = barModule.show_percentage !== false;
+    /** Show overlay when percentage and/or raw value text is enabled */
+    const showBarOverlayText = showPercentageText || !!barModule.show_value;
     const percentageTextAlignment = barModule.percentage_text_alignment || 'center';
 
     // Calculate the display text for the bar
@@ -3555,19 +3567,17 @@ export class UltraBarModule extends BaseUltraModule {
     const displayPercentage = Math.round(percentage);
 
     const percentageDisplayText = (() => {
-      if (!showPercentageText) {
-        return '';
-      }
+      const pctTypeInnerRaw = (barModule as any).percentage_type || 'entity';
+      const pctTypeInner = pctTypeInnerRaw === 'template' ? 'entity' : pctTypeInnerRaw;
 
       // Time Progress mode: always show formatted time
-      const pctTypeInnerRaw = (barModule as any).percentage_type || 'entity';
-      const pctType = pctTypeInnerRaw === 'template' ? 'entity' : pctTypeInnerRaw;
-      if (pctType === 'time_progress' && timeProgressDisplay) {
+      if (pctTypeInner === 'time_progress' && timeProgressDisplay) {
         return timeProgressDisplay;
       }
 
+      // show_value wins even when "Show percentage" is off
       if (barModule.show_value) {
-        if (pctType === 'difference') {
+        if (pctTypeInner === 'difference') {
           const currentEntity = (barModule as any).percentage_current_entity;
           if (currentEntity && hass?.states[currentEntity]) {
             try {
@@ -3598,7 +3608,10 @@ export class UltraBarModule extends BaseUltraModule {
         return 'N/A';
       }
 
-      // Use the pre-calculated displayPercentage
+      if (!showPercentageText) {
+        return '';
+      }
+
       return `${displayPercentage}%`;
     })();
 
@@ -4206,6 +4219,7 @@ export class UltraBarModule extends BaseUltraModule {
 
     // Use the actual bar_width setting from the module
     const barWidth = `${normalizedWidth}%`;
+    const showScaleForFooter = !!(barModule as any).show_scale;
     let barContainerAlignment = 'flex-start';
     switch (barModule.bar_alignment) {
       case 'left':
@@ -4328,6 +4342,135 @@ export class UltraBarModule extends BaseUltraModule {
     // Get hover effect using canonical base method
     const hoverEffectClass = this.getHoverEffectClass(module);
 
+    const renderBarScaleTicks = (): TemplateResult => {
+      if (!showScaleForFooter) return html``;
+
+      const scaleDivisions = (barModule as any).scale_divisions || 5;
+      const scaleShowLabels = (barModule as any).scale_show_labels !== false;
+      const scaleLabelSize = (barModule as any).scale_label_size || 10;
+      const scaleLabelColor =
+        (barModule as any).scale_label_color || 'var(--secondary-text-color)';
+      const scaleTickColor = (barModule as any).scale_tick_color || 'var(--divider-color)';
+      const scalePosition = (barModule as any).scale_position || 'below';
+      const scaleRange = scaleMax - scaleMin;
+
+      const pctTypeTicksRaw = (barModule as any).percentage_type || 'entity';
+      const pctTypeTicks = pctTypeTicksRaw === 'template' ? 'entity' : pctTypeTicksRaw;
+      let scaleTickPercentSuffix = '';
+      if (
+        (pctTypeTicks === 'entity' || pctTypeTicks === 'attribute') &&
+        barModule.entity &&
+        hass?.states[barModule.entity]
+      ) {
+        const stEnt = hass.states[barModule.entity];
+        if (stEnt.attributes?.unit_of_measurement === '%') {
+          scaleTickPercentSuffix = '%';
+        } else if (stEnt.attributes?.device_class === 'battery') {
+          scaleTickPercentSuffix = '%';
+        }
+      }
+
+      const customTicksRaw: string = (barModule as any).scale_custom_ticks || '';
+      const customLabelsRaw: string = (barModule as any).scale_custom_labels || '';
+      let ticks: { position: number; label: string }[];
+
+      if (customTicksRaw.trim()) {
+        const customValues = parseCustomTickValues(customTicksRaw);
+        const customLabels = customLabelsRaw.split(',').map(s => s.trim());
+        ticks = customValues.map((val, i) => {
+          const position =
+            scaleRange > 0 ? Math.min(100, Math.max(0, ((val - scaleMin) / scaleRange) * 100)) : 0;
+          const userLabel = customLabels[i] !== undefined && customLabels[i] !== '';
+          const baseLabel = userLabel
+            ? customLabels[i]
+            : Number.isInteger(val)
+              ? String(val)
+              : val.toFixed(1);
+          const label =
+            userLabel || !scaleTickPercentSuffix || String(baseLabel).includes('%')
+              ? baseLabel
+              : `${baseLabel}${scaleTickPercentSuffix}`;
+          return { position, label };
+        });
+      } else {
+        ticks = Array.from({ length: scaleDivisions + 1 }, (_, i) => {
+          const val = scaleMin + (scaleRange * i) / scaleDivisions;
+          const position = (i / scaleDivisions) * 100;
+          const base = Number.isInteger(val) ? String(val) : val.toFixed(1);
+          const label = scaleTickPercentSuffix ? `${base}${scaleTickPercentSuffix}` : base;
+          return { position, label };
+        });
+      }
+
+      const isCustomLayout = customTicksRaw.trim() !== '';
+
+      return html`
+        <div
+          class="bar-scale"
+          style="
+            position: ${isCustomLayout ? 'relative' : 'static'};
+            display: ${isCustomLayout ? 'block' : 'flex'};
+            justify-content: ${isCustomLayout ? 'unset' : 'space-between'};
+            width: ${barWidth};
+            height: ${isCustomLayout ? (scaleShowLabels ? `${scaleLabelSize + 12}px` : '12px') : 'auto'};
+            margin-top: 0;
+            margin-bottom: 0;
+            align-self: ${barModule.bar_alignment === 'left'
+              ? 'flex-start'
+              : barModule.bar_alignment === 'right'
+                ? 'flex-end'
+                : 'center'};
+          "
+        >
+          ${ticks.map(
+            tick => html`
+              <div
+                class="scale-tick"
+                style="
+                  ${isCustomLayout
+                    ? `position: absolute; left: ${tick.position}%; transform: ${
+                        tick.position <= 0.5
+                          ? 'translateX(0)'
+                          : tick.position >= 99.5
+                            ? 'translateX(-100%)'
+                            : 'translateX(-50%)'
+                      };`
+                    : ''}
+                  display: flex;
+                  flex-direction: ${scalePosition === 'above' ? 'column-reverse' : 'column'};
+                  align-items: center;
+                  min-width: 0;
+                "
+              >
+                <div
+                  style="
+                    width: 1px;
+                    height: 6px;
+                    background: ${scaleTickColor};
+                  "
+                ></div>
+                ${scaleShowLabels
+                  ? html`
+                      <span
+                        style="
+                          font-size: ${scaleLabelSize}px;
+                          color: ${scaleLabelColor};
+                          margin-top: ${scalePosition === 'below' ? '2px' : '0'};
+                          margin-bottom: ${scalePosition === 'above' ? '2px' : '0'};
+                          white-space: nowrap;
+                        "
+                      >
+                        ${tick.label}
+                      </span>
+                    `
+                  : ''}
+              </div>
+            `
+          )}
+        </div>
+      `;
+    };
+
     return this.wrapWithAnimation(html`
       <style>
         ${this.getStyles()}
@@ -4370,7 +4513,7 @@ export class UltraBarModule extends BaseUltraModule {
             background: ${trackBackground};
             ${shouldGrow ? 'min-width: 0;' : 'min-width: 80px;'}
             border-radius: ${borderRadius}px;
-            overflow: 'visible';
+            overflow: visible;
             position: relative;
             transition: ${barModule.animation !== false ? 'all 0.3s ease' : 'none'};
             border: ${
@@ -4854,7 +4997,13 @@ export class UltraBarModule extends BaseUltraModule {
                     width: 2px; 
                     background-color: ${barModule.limit_color || 'var(--warning-color)'}; 
                     z-index: 5; 
-                    transform: translateX(-50%);
+                    transform: ${
+                      limitPercentage <= 0.5
+                        ? 'translateX(0)'
+                        : limitPercentage >= 99.5
+                          ? 'translateX(-100%)'
+                          : 'translateX(-50%)'
+                    };
                   "
                       title="${(() => {
                         try {
@@ -4924,7 +5073,7 @@ export class UltraBarModule extends BaseUltraModule {
             <div
               class="percentage-text"
               style="
-                display: ${showPercentageText ? 'block' : 'none'};
+                display: ${showBarOverlayText ? 'block' : 'none'};
                 position: absolute;
                 top: 50%;
                 left: ${
@@ -4962,24 +5111,7 @@ export class UltraBarModule extends BaseUltraModule {
                 max-width: 100%;
               "
             >
-              ${(() => {
-                if (!showPercentageText) return '';
-
-                // If show_value is explicitly enabled, always respect it regardless of min/max range.
-                if (barModule.show_value) return percentageDisplayText;
-
-                // If a manual min/max range is set, the bar fill no longer represents the raw entity
-                // value as a simple percentage, so show the calculated percent to match the fill.
-                const hasManualRange =
-                  barModule.percentage_min !== undefined ||
-                  barModule.percentage_max !== undefined ||
-                  (barModule.unified_template_mode &&
-                    (unifiedBarValueMin !== undefined || unifiedBarValueMax !== undefined));
-
-                if (hasManualRange) return `${displayPercentage}%`;
-
-                return `${displayPercentage}%`;
-              })()}
+              ${percentageDisplayText}
             </div>
           </div>
 
@@ -4997,116 +5129,29 @@ export class UltraBarModule extends BaseUltraModule {
           }
         </div>
 
-        <!-- Scale/Tick Marks -->
+        <!-- Scale/Tick Marks: own row — when "below", always directly under the bar (never inline with labels) -->
         ${
-          (barModule as any).show_scale
-            ? (() => {
-                const scaleDivisions = (barModule as any).scale_divisions || 5;
-                const scaleShowLabels = (barModule as any).scale_show_labels !== false;
-                const scaleLabelSize = (barModule as any).scale_label_size || 10;
-                const scaleLabelColor =
-                  (barModule as any).scale_label_color || 'var(--secondary-text-color)';
-                const scaleTickColor =
-                  (barModule as any).scale_tick_color || 'var(--divider-color)';
-                const scalePosition = (barModule as any).scale_position || 'below';
-                const scaleRange = scaleMax - scaleMin;
-
-                // Build tick list: custom positions take precedence over even divisions
-                const customTicksRaw: string = (barModule as any).scale_custom_ticks || '';
-                const customLabelsRaw: string = (barModule as any).scale_custom_labels || '';
-                let ticks: { position: number; label: string }[];
-
-                if (customTicksRaw.trim()) {
-                  const customValues = customTicksRaw
-                    .split(',')
-                    .map(s => parseFloat(s.trim()))
-                    .filter(v => !isNaN(v));
-                  const customLabels = customLabelsRaw
-                    .split(',')
-                    .map(s => s.trim());
-                  ticks = customValues.map((val, i) => {
-                    const position = scaleRange > 0
-                      ? Math.min(100, Math.max(0, ((val - scaleMin) / scaleRange) * 100))
-                      : 0;
-                    const label = customLabels[i] !== undefined && customLabels[i] !== ''
-                      ? customLabels[i]
-                      : (Number.isInteger(val) ? String(val) : val.toFixed(1));
-                    return { position, label };
-                  });
-                } else {
-                  ticks = Array.from({ length: scaleDivisions + 1 }, (_, i) => {
-                    const val = scaleMin + (scaleRange * i) / scaleDivisions;
-                    const position = (i / scaleDivisions) * 100;
-                    const label = Number.isInteger(val) ? String(val) : val.toFixed(1);
-                    return { position, label };
-                  });
-                }
-
-                const isCustomLayout = customTicksRaw.trim() !== '';
-
-                return html`
-                  <div
-                    class="bar-scale"
-                    style="
-                      position: ${isCustomLayout ? 'relative' : 'static'};
-                      display: ${isCustomLayout ? 'block' : 'flex'};
-                      justify-content: ${isCustomLayout ? 'unset' : 'space-between'};
-                      width: ${barWidth};
-                      height: ${isCustomLayout ? (scaleShowLabels ? `${scaleLabelSize + 12}px` : '12px') : 'auto'};
-                      margin-top: ${scalePosition === 'below' ? '6px' : '0'};
-                      margin-bottom: ${scalePosition === 'above' ? '6px' : '0'};
-                      order: ${scalePosition === 'above' ? '-1' : '1'};
-                      align-self: ${barModule.bar_alignment === 'left'
+          showScaleForFooter
+            ? html`
+                <div
+                  class="bar-scale-standalone-host"
+                  style="
+                    width: 100%;
+                    display: flex;
+                    justify-content: ${barModule.bar_alignment === 'left'
                       ? 'flex-start'
                       : barModule.bar_alignment === 'right'
                         ? 'flex-end'
                         : 'center'};
-                    "
-                  >
-                    ${ticks.map(
-                      tick => html`
-                        <div
-                          class="scale-tick"
-                          style="
-                            ${isCustomLayout
-                              ? `position: absolute; left: ${tick.position}%; transform: translateX(-50%);`
-                              : ''}
-                            display: flex;
-                            flex-direction: ${scalePosition === 'above'
-                            ? 'column-reverse'
-                            : 'column'};
-                            align-items: center;
-                            min-width: 0;
-                          "
-                        >
-                          <div
-                            style="
-                              width: 1px;
-                              height: 6px;
-                              background: ${scaleTickColor};
-                            "
-                          ></div>
-                          ${scaleShowLabels
-                            ? html`
-                                <span
-                                  style="
-                                    font-size: ${scaleLabelSize}px;
-                                    color: ${scaleLabelColor};
-                                    margin-top: ${scalePosition === 'below' ? '2px' : '0'};
-                                    margin-bottom: ${scalePosition === 'above' ? '2px' : '0'};
-                                    white-space: nowrap;
-                                  "
-                                >
-                                  ${tick.label}
-                                </span>
-                              `
-                            : ''}
-                        </div>
-                      `
-                    )}
-                  </div>
-                `;
-              })()
+                    flex-shrink: 0;
+                    order: ${(barModule as any).scale_position === 'above' ? '-1' : '0'};
+                    margin-top: ${(barModule as any).scale_position !== 'above' ? '4px' : '0'};
+                    margin-bottom: ${(barModule as any).scale_position === 'above' ? '4px' : '0'};
+                  "
+                >
+                  ${renderBarScaleTicks()}
+                </div>
+              `
             : ''
         }
 

@@ -1663,6 +1663,11 @@ export class UltraInfoModule extends BaseUltraModule {
               let displayIconColor =
                 designProperties.color || entity.icon_color || 'var(--primary-color)';
 
+              let tmplName: string | undefined;
+              let tmplStateText: string | undefined;
+              let tmplNameColor: string | undefined;
+              let tmplStateColor: string | undefined;
+
               // PRIORITY 1: Unified template (if enabled)
               if (entity.unified_template_mode && entity.unified_template) {
                 if (!this._templateService && hass) {
@@ -1721,35 +1726,23 @@ export class UltraInfoModule extends BaseUltraModule {
                     const uIcon = unifiedTemplateIcon(parsed);
                     if (uIcon) displayIcon = uIcon;
                     if (parsed.icon_color) displayIconColor = parsed.icon_color;
-                    // Store template properties for later use
-                    if (parsed.name) {
-                      (entity as any)._template_name = parsed.name;
-                    }
+                    if (parsed.name) tmplName = String(parsed.name);
                     if (parsed.state_text !== undefined) {
-                      (entity as any)._template_state_text = parsed.state_text;
+                      tmplStateText = String(parsed.state_text);
                     } else if (parsed._isString && parsed.content && !uIcon) {
-                      (entity as any)._template_state_text = String(parsed.content).trim();
+                      tmplStateText = String(parsed.content).trim();
                     }
-                    if (parsed.name_color) {
-                      (entity as any)._template_name_color = parsed.name_color;
-                    }
-                    if (parsed.state_color) {
-                      (entity as any)._template_state_color = parsed.state_color;
-                    }
-                    if (parsed.container_background_color) {
-                      (entity as any)._template_container_background_color =
-                        parsed.container_background_color;
-                    }
+                    if (parsed.name_color) tmplNameColor = String(parsed.name_color);
+                    if (parsed.state_color) tmplStateColor = String(parsed.state_color);
                   }
                 }
               }
 
-              // Override displayName and displayValue with template values AFTER template processing
-              if ((entity as any)._template_name !== undefined) {
-                displayName = (entity as any)._template_name;
+              if (tmplName !== undefined) {
+                displayName = tmplName;
               }
-              if ((entity as any)._template_state_text !== undefined) {
-                displayValue = (entity as any)._template_state_text;
+              if (tmplStateText !== undefined) {
+                displayValue = tmplStateText;
               }
 
               const iconPosition = entity.icon_position || 'left';
@@ -1838,7 +1831,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     <div
                       class="entity-name"
                       style="
-                        color: ${(entity as any)._template_name_color ||
+                        color: ${tmplNameColor ||
                           designProperties.color ||
                           entity.name_color ||
                           'var(--secondary-text-color)'};
@@ -1873,7 +1866,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     <div
                       class="entity-value"
                       style="
-                        color: ${(entity as any)._template_state_color ||
+                        color: ${tmplStateColor ||
                           designProperties.color ||
                           entity.state_color ||
                           entity.text_color ||
