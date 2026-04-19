@@ -1,0 +1,4 @@
+Fixed bar difference mode so it no longer depends on a main entity and added clearer fallback entity handling in the visual editor
+Added dedicated difference-mode validation states for missing or invalid current/total entities to prevent silent 0% output
+Improved bar custom tick labels by supporting per-tick hidden labels via -, none, {none}, {{none}}, or hide tokens and updated helper text
+Updated info module size defaults UX with explicit module-wide defaults, clear per-entity guidance, and apply-to-all actions for text and icon sizing

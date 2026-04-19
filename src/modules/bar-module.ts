@@ -41,6 +41,20 @@ export class UltraBarModule extends BaseUltraModule {
   private _timeProgressInterval: any = null;
   private _timeProgressCleanup: (() => void) | null = null;
 
+  /**
+   * Normalize booleans coming from editor/YAML, including string values.
+   */
+  private normalizeBoolean(value: unknown, defaultValue: boolean): boolean {
+    if (value === undefined || value === null) return defaultValue;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'true') return true;
+      if (normalized === 'false') return false;
+    }
+    return Boolean(value);
+  }
+
   createDefault(id?: string, hass?: HomeAssistant): BarModule {
     // Auto-detect suitable battery sensor
     const autoEntity = this.findSuitableBatterySensor(hass);
@@ -337,6 +351,8 @@ export class UltraBarModule extends BaseUltraModule {
   ): TemplateResult {
     const barModule = module as BarModule;
     const lang = hass?.locale?.language || 'en';
+    const showPercentageText = this.normalizeBoolean(barModule.show_percentage, true);
+    const showValueInstead = this.normalizeBoolean(barModule.show_value, false);
 
     // Stable schema for percentage type select (memoized by language)
     const percentageTypeSchema = [
@@ -770,9 +786,11 @@ export class UltraBarModule extends BaseUltraModule {
                   </div>
                 `}
 
-          <!-- Bar Percentage Entity (only for Entity percentage type; template/difference/attribute/range have their own config) -->
+          <!-- Bar Percentage Entity (shown for entity mode and as optional fallback for difference mode) -->
           ${
-            !barModule.percentage_type || barModule.percentage_type === 'entity'
+            !barModule.percentage_type ||
+            barModule.percentage_type === 'entity' ||
+            barModule.percentage_type === 'difference'
               ? html`
                   <div style="margin-top: 24px;">
                     ${this.renderEntityPickerWithVariables(
@@ -782,9 +800,15 @@ export class UltraBarModule extends BaseUltraModule {
                       barModule.entity || '',
                       (value: string) => updateModule({ entity: value }),
                       ['sensor', 'input_number'],
-                      localize('editor.bar.entity.title', lang, 'Bar Percentage Entity')
+                      barModule.percentage_type === 'difference'
+                        ? localize(
+                            'editor.bar.entity.fallback_title',
+                            lang,
+                            'Fallback Entity (optional)'
+                          )
+                        : localize('editor.bar.entity.title', lang, 'Bar Percentage Entity')
                     )}
-                    ${!barModule.entity
+                    ${!barModule.entity && barModule.percentage_type !== 'difference'
                       ? html`
                           <div
                             style="color: var(--warning-color); font-size: 12px; margin-top: 4px; font-style: italic;"
@@ -805,11 +829,17 @@ export class UltraBarModule extends BaseUltraModule {
                             class="field-description"
                             style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);"
                           >
-                            ${localize(
-                              'editor.bar.entity.desc_present',
-                              lang,
-                              'The entity that provides the percentage value for the bar.'
-                            )}
+                            ${barModule.percentage_type === 'difference'
+                              ? localize(
+                                  'editor.bar.entity.fallback_desc',
+                                  lang,
+                                  'Optional fallback entity for text/labels. Difference mode uses Current and Total entities for bar calculation.'
+                                )
+                              : localize(
+                                  'editor.bar.entity.desc_present',
+                                  lang,
+                                  'The entity that provides the percentage value for the bar.'
+                                )}
                           </div>
                         `}
                   </div>
@@ -1399,7 +1429,7 @@ export class UltraBarModule extends BaseUltraModule {
                             ${localize(
                               'editor.bar.scale.custom_labels_desc',
                               lang,
-                              'Optional comma-separated labels matching each custom tick (e.g. Reserve,1/4,1/2,3/4,Full). Leave blank to show the numeric values.'
+                              'Optional comma-separated labels matching each custom tick (e.g. Reserve,1/4,1/2,3/4,Full). Leave blank to show numeric values. Use "-" (or "{none}") for a specific tick to hide that label.'
                             )}
                           </div>
                           <ha-textfield
@@ -1684,13 +1714,22 @@ export class UltraBarModule extends BaseUltraModule {
             localize('editor.bar.text_display.title', lang, 'Text Display'),
             localize('editor.bar.text_display.desc', lang, 'Control the visibility and appearance of text values shown directly on the bar. For difference and template modes, you can choose to display raw entity values instead of percentages.'),
             hass,
-            { show_percentage: barModule.show_percentage !== false },
+            { show_percentage: showPercentageText },
             [this.booleanField('show_percentage')],
-            (e: CustomEvent) => updateModule({ show_percentage: e.detail.value.show_percentage })
+            (e: CustomEvent) => {
+              const nextShowPercentage = this.normalizeBoolean(
+                e.detail.value.show_percentage,
+                true
+              );
+              updateModule({
+                show_percentage: nextShowPercentage,
+                ...(nextShowPercentage ? {} : { show_value: false }),
+              });
+            }
           )}
 
           ${
-            barModule.show_percentage !== false
+            showPercentageText
               ? html`
                   <!-- Display Type Toggle - Only show for difference and template types -->
                   ${barModule.percentage_type === 'difference'
@@ -1699,9 +1738,12 @@ export class UltraBarModule extends BaseUltraModule {
                           localize('editor.bar.text_display.show_value', lang, 'Show Value Instead of Percentage'),
                           localize('editor.bar.text_display.show_value_desc', lang, 'When enabled, shows the actual entity value instead of percentage. Useful for displaying raw sensor values like "45 kWh" instead of "75%".'),
                           hass,
-                          { show_value: barModule.show_value || false },
+                          { show_value: showValueInstead },
                           [this.booleanField('show_value')],
-                          (e: CustomEvent) => updateModule({ show_value: e.detail.value.show_value })
+                          (e: CustomEvent) =>
+                            updateModule({
+                              show_value: this.normalizeBoolean(e.detail.value.show_value, false),
+                            })
                         )}
                       `
                     : ''}
@@ -2934,6 +2976,33 @@ export class UltraBarModule extends BaseUltraModule {
       }
     }
 
+    // For Difference mode, require current/total entities and validate they exist
+    if (pctType === 'difference') {
+      const currentEntity = (barModule as any).percentage_current_entity;
+      const totalEntity = (barModule as any).percentage_total_entity;
+
+      if (!currentEntity || !totalEntity) {
+        return this.renderGradientErrorState(
+          localize('editor.bar.error_no_difference', lang, 'Configure Difference'),
+          localize(
+            'editor.bar.error_no_difference_desc',
+            lang,
+            'Set current and total entities in the Difference configuration.'
+          ),
+          'mdi:swap-horizontal-bold'
+        );
+      }
+
+      const missingEntities = [currentEntity, totalEntity].filter(entityId => !hass?.states[entityId]);
+      if (missingEntities.length > 0) {
+        return this.renderGradientErrorState(
+          localize('editor.bar.error_difference_not_found', lang, 'Difference entities not found'),
+          missingEntities.join(', '),
+          'mdi:alert-circle-outline'
+        );
+      }
+    }
+
     // Resolve bar percentage based on selected percentage calculation mode
     let percentage = 0;
     let unifiedFilledFromTemplate = false;
@@ -3557,9 +3626,8 @@ export class UltraBarModule extends BaseUltraModule {
         ? 'translate(-100%, -50%) translateX(4px)'
         : 'translate(-100%, -50%) translateX(-4px)';
 
-    const showPercentageText = barModule.show_percentage !== false;
-    /** Show overlay when percentage and/or raw value text is enabled */
-    const showBarOverlayText = showPercentageText || !!barModule.show_value;
+    const showPercentageText = this.normalizeBoolean(barModule.show_percentage, true);
+    const showValueInstead = this.normalizeBoolean(barModule.show_value, false);
     const percentageTextAlignment = barModule.percentage_text_alignment || 'center';
 
     // Calculate the display text for the bar
@@ -3575,8 +3643,8 @@ export class UltraBarModule extends BaseUltraModule {
         return timeProgressDisplay;
       }
 
-      // show_value wins even when "Show percentage" is off
-      if (barModule.show_value) {
+      // show_value: display raw entity value instead of percentage
+      if (showPercentageText && showValueInstead) {
         if (pctTypeInner === 'difference') {
           const currentEntity = (barModule as any).percentage_current_entity;
           if (currentEntity && hass?.states[currentEntity]) {
@@ -4372,7 +4440,7 @@ export class UltraBarModule extends BaseUltraModule {
 
       const customTicksRaw: string = (barModule as any).scale_custom_ticks || '';
       const customLabelsRaw: string = (barModule as any).scale_custom_labels || '';
-      let ticks: { position: number; label: string }[];
+      let ticks: { position: number; label: string | null }[];
 
       if (customTicksRaw.trim()) {
         const customValues = parseCustomTickValues(customTicksRaw);
@@ -4380,14 +4448,27 @@ export class UltraBarModule extends BaseUltraModule {
         ticks = customValues.map((val, i) => {
           const position =
             scaleRange > 0 ? Math.min(100, Math.max(0, ((val - scaleMin) / scaleRange) * 100)) : 0;
-          const userLabel = customLabels[i] !== undefined && customLabels[i] !== '';
-          const baseLabel = userLabel
-            ? customLabels[i]
+          const rawLabel = customLabels[i];
+          const hasCustomLabel = rawLabel !== undefined && rawLabel !== '';
+          const normalizedLabel = (rawLabel || '').toLowerCase();
+          const hideLabel =
+            normalizedLabel === '-' ||
+            normalizedLabel === 'none' ||
+            normalizedLabel === '{none}' ||
+            normalizedLabel === '{{none}}' ||
+            normalizedLabel === 'hide';
+
+          if (hideLabel) {
+            return { position, label: null };
+          }
+
+          const baseLabel = hasCustomLabel
+            ? rawLabel
             : Number.isInteger(val)
               ? String(val)
               : val.toFixed(1);
           const label =
-            userLabel || !scaleTickPercentSuffix || String(baseLabel).includes('%')
+            hasCustomLabel || !scaleTickPercentSuffix || String(baseLabel).includes('%')
               ? baseLabel
               : `${baseLabel}${scaleTickPercentSuffix}`;
           return { position, label };
@@ -4423,49 +4504,53 @@ export class UltraBarModule extends BaseUltraModule {
           "
         >
           ${ticks.map(
-            tick => html`
-              <div
-                class="scale-tick"
-                style="
-                  ${isCustomLayout
-                    ? `position: absolute; left: ${tick.position}%; transform: ${
-                        tick.position <= 0.5
-                          ? 'translateX(0)'
-                          : tick.position >= 99.5
-                            ? 'translateX(-100%)'
-                            : 'translateX(-50%)'
-                      };`
-                    : ''}
-                  display: flex;
-                  flex-direction: ${scalePosition === 'above' ? 'column-reverse' : 'column'};
-                  align-items: center;
-                  min-width: 0;
-                "
-              >
+            tick => {
+              const labelTransform = tick.position <= 0.5
+                ? 'translateX(0)'
+                : tick.position >= 99.5
+                  ? 'translateX(-100%)'
+                  : 'translateX(-50%)';
+
+              return html`
                 <div
+                  class="scale-tick"
                   style="
-                    width: 1px;
-                    height: 6px;
-                    background: ${scaleTickColor};
+                    ${isCustomLayout
+                      ? `position: absolute; left: ${tick.position}%; top: 0;`
+                      : ''}
+                    display: flex;
+                    flex-direction: ${scalePosition === 'above' ? 'column-reverse' : 'column'};
+                    align-items: center;
+                    min-width: 0;
                   "
-                ></div>
-                ${scaleShowLabels
-                  ? html`
-                      <span
-                        style="
-                          font-size: ${scaleLabelSize}px;
-                          color: ${scaleLabelColor};
-                          margin-top: ${scalePosition === 'below' ? '2px' : '0'};
-                          margin-bottom: ${scalePosition === 'above' ? '2px' : '0'};
-                          white-space: nowrap;
-                        "
-                      >
-                        ${tick.label}
-                      </span>
-                    `
-                  : ''}
-              </div>
-            `
+                >
+                  <div
+                    style="
+                      width: 1px;
+                      height: 6px;
+                      background: ${scaleTickColor};
+                      ${isCustomLayout ? 'transform: translateX(-50%);' : ''}
+                    "
+                  ></div>
+                  ${scaleShowLabels && tick.label !== null
+                    ? html`
+                        <span
+                          style="
+                            font-size: ${scaleLabelSize}px;
+                            color: ${scaleLabelColor};
+                            margin-top: ${scalePosition === 'below' ? '2px' : '0'};
+                            margin-bottom: ${scalePosition === 'above' ? '2px' : '0'};
+                            white-space: nowrap;
+                            ${isCustomLayout ? `transform: ${labelTransform};` : ''}
+                          "
+                        >
+                          ${tick.label}
+                        </span>
+                      `
+                    : ''}
+                </div>
+              `;
+            }
           )}
         </div>
       `;
@@ -5073,7 +5158,7 @@ export class UltraBarModule extends BaseUltraModule {
             <div
               class="percentage-text"
               style="
-                display: ${showBarOverlayText ? 'block' : 'none'};
+                display: ${showPercentageText ? 'block' : 'none'};
                 position: absolute;
                 top: 50%;
                 left: ${
@@ -5116,7 +5201,9 @@ export class UltraBarModule extends BaseUltraModule {
           </div>
 
           ${
-            !hass?.states[barModule.entity] && barModule.entity && !hasDifferenceEntities
+            pctType !== 'difference' &&
+            !hass?.states[barModule.entity] &&
+            barModule.entity
               ? html`
                   <div
                     class="entity-error"

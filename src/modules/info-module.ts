@@ -152,20 +152,39 @@ export class UltraInfoModule extends BaseUltraModule {
           color: white !important;
           border-radius: 2px !important;
         }
+
+        .apply-size-btn {
+          margin-top: 8px;
+          width: 100%;
+          padding: 8px 10px;
+          border: 1px solid var(--divider-color);
+          border-radius: 6px;
+          background: var(--card-background-color);
+          color: var(--primary-text-color);
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 500;
+          transition: all 0.2s ease;
+        }
+
+        .apply-size-btn:hover {
+          border-color: var(--primary-color);
+          background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+        }
       </style>
       <div class="module-general-settings">
         <!-- Module-Wide Size Controls -->
         <div class="settings-section" style="margin-bottom: 32px;">
-          <div class="section-title">SIZE CONTROLS</div>
+          <div class="section-title">SIZE DEFAULTS (ALL ENTITIES)</div>
           <div class="section-description" style="margin-bottom: 16px;">
-            Control the default text and icon sizes for this module. Design tab overrides these settings.
+            Set module-wide defaults here, then use Apply to push them to all entities. Individual entity size settings below can still be adjusted after this. Design tab font size overrides these settings.
           </div>
           
           <!-- Text Size Control -->
           <div class="field-container" style="margin-bottom: 16px;">
             ${this.renderSliderField(
               `Text Size (${infoModule.text_size || 16}px)`,
-              'Default size for all text elements (name, value)',
+              'Module default text size (name + value). Use Apply to update all entities now.',
               infoModule.text_size || 16,
               16, 10, 48, 1,
               (v: number) => {
@@ -173,13 +192,28 @@ export class UltraInfoModule extends BaseUltraModule {
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               }
             )}
+            <button
+              class="apply-size-btn"
+              @click=${() => {
+                const textSize = infoModule.text_size || 16;
+                const updatedEntities = (infoModule.info_entities || []).map(entityItem => ({
+                  ...entityItem,
+                  name_size: textSize,
+                  text_size: textSize,
+                }));
+                updateModule({ info_entities: updatedEntities });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }}
+            >
+              ${localize('editor.info.size_defaults.apply_text', lang, 'Apply text size to all entities')}
+            </button>
           </div>
 
           <!-- Icon Size Control -->
           <div class="field-container" style="margin-bottom: 16px;">
             ${this.renderSliderField(
               `Icon Size (${infoModule.icon_size || 24}px)`,
-              'Default size for all icons',
+              'Module default icon size. Use Apply to update all entities now.',
               infoModule.icon_size || 24,
               24, 12, 64, 1,
               (v: number) => {
@@ -187,6 +221,20 @@ export class UltraInfoModule extends BaseUltraModule {
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               }
             )}
+            <button
+              class="apply-size-btn"
+              @click=${() => {
+                const iconSize = infoModule.icon_size || 24;
+                const updatedEntities = (infoModule.info_entities || []).map(entityItem => ({
+                  ...entityItem,
+                  icon_size: iconSize,
+                }));
+                updateModule({ info_entities: updatedEntities });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }}
+            >
+              ${localize('editor.info.size_defaults.apply_icon', lang, 'Apply icon size to all entities')}
+            </button>
           </div>
         </div>
 
@@ -763,6 +811,13 @@ export class UltraInfoModule extends BaseUltraModule {
             style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
           >
             ${localize('editor.info.size_section.title', lang, 'Size Settings')}
+          </div>
+          <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);">
+            ${localize(
+              'editor.info.size_section.desc',
+              lang,
+              'These controls affect the selected entity only. Use "Size Defaults (All Entities)" above to apply values to all entities at once.'
+            )}
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 20px;">

@@ -1,5 +1,22 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta8
+
+### 🚀 New Features
+
+- **Added Dedicated difference-mode validation states for missing or invalid current/total entities to prevent silent 0% output** - Improved state tracking and automatic updates
+
+### 🔧 Improvements
+
+- **Improved Bar custom tick labels by supporting per-tick hidden labels via -, none, {none}, {{none}}, or hide tokens and updated helper text** - Improved text rendering and styling capabilities
+- **Updated Info module size defaults UX with explicit module-wide defaults, clear per-entity guidance, and apply-to-all actions for text and icon sizing** - Enhanced module functionality for better user experience
+
+### 🐛 Bug Fixes
+
+- **Fixed Bar difference mode so it no longer depends on a main entity and added clearer fallback entity handling in the visual editor** - Better entity state handling and real-time display
+
+---
+
 ## Version 3.3.0-beta2
 
 This beta replaces every floating settings popup in the editor with a clean slide-in panel and ships a round of fit-and-finish fixes across borders, entity pickers, condition labels, and the clipboard export path.

@@ -7482,12 +7482,10 @@ export class LayoutTab extends LitElement {
         newModule = {
           id: `bar-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           type: 'bar',
-          entity: 'sensor.battery_level',
           bar_color: 'var(--primary-color)',
           // Default container background should be transparent; track color is handled separately
           background_color: 'transparent',
           height: 20,
-          show_value: true,
         } as BarModule;
         // Ensure no default title is set
         delete (newModule as any).name;
