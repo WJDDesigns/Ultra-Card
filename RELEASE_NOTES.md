@@ -1,5 +1,22 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta9
+
+### 🔧 Improvements
+
+- **Improved unified template subscriptions to refresh when template context variables change** - String-based template subscriptions now compare a stable signature of template + variables and automatically resubscribe when context changes, preventing stale `state`-driven values.
+- **Refined template subscription lifecycle cleanup with a shared key-level unsubscribe path** - Ensures stale subscriptions and cached results are consistently cleared during refresh and prefix/global teardown.
+
+### 🐛 Bug Fixes
+
+- **Fixed icon and info unified template updates that could stall after the first state change** - Templates that rely on runtime context like `state|float` (for `icon_color`, `state_text`, and related fields) now continue updating without requiring a manual page refresh.
+
+### ⚠️ Warning
+
+- Testing focus: verify dashboards with heavy unified templates, rapid entity updates, and mixed icon/info modules to confirm no regression in update frequency or responsiveness.
+
+---
+
 ## Version 3.3.0-beta8
 
 ### 🚀 New Features

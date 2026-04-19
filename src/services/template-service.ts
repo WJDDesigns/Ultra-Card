@@ -42,6 +42,8 @@ function isStringBasedTemplate(templateKey: string): boolean {
  */
 export class TemplateService {
   private _templateSubscriptions: Map<string, Promise<() => Promise<void>>> = new Map();
+  /** Track the last subscription signature per key (template + variables). */
+  private _subscriptionSignatures: Map<string, string> = new Map();
   private _templateResults: Map<string, boolean> = new Map();
   // Store previous string values for string-based templates (unified, info_entity, state_text)
   // These need string comparison for change detection, not boolean comparison
@@ -70,6 +72,12 @@ export class TemplateService {
    * Check if a template subscription exists
    */
   public hasTemplateSubscription(templateKey: string): boolean {
+    // String-based templates commonly depend on runtime context variables (e.g. `state`).
+    // Force a cheap "ensure" call path so subscribeToTemplate() can refresh the
+    // websocket subscription when those variables change.
+    if (isStringBasedTemplate(templateKey)) {
+      return false;
+    }
     return this._templateSubscriptions.has(templateKey);
   }
 
@@ -104,16 +112,21 @@ export class TemplateService {
       return;
     }
 
-    // If we already have a subscription for this key, DO NOT recreate it
-    // Just return early - the existing subscription is still active
-    if (this._templateSubscriptions.has(templateKey)) {
-      return; // Subscription already exists, don't create a duplicate
-    }
-
     // Preprocess custom variables ($variable_name) before sending to Home Assistant
     // This allows users to use {{ $my_variable }} syntax to reference entity states
     // Pass cardConfig to support card-specific (local) variables
     const processedTemplate = preprocessTemplateVariables(template, this.hass, cardConfig);
+    const nextSignature = this._buildSubscriptionSignature(processedTemplate, variables);
+
+    // Reuse active subscriptions when template + variables are unchanged.
+    // If context changed (e.g. `state` variable), refresh the subscription for this key.
+    if (this._templateSubscriptions.has(templateKey)) {
+      const prevSignature = this._subscriptionSignatures.get(templateKey);
+      if (prevSignature === nextSignature) {
+        return;
+      }
+      await this._unsubscribeTemplateKey(templateKey);
+    }
 
     try {
       // Create a subscription to the template
@@ -172,9 +185,58 @@ export class TemplateService {
 
       // Store the unsubscribe function directly instead of wrapping it in a Promise
       this._templateSubscriptions.set(templateKey, Promise.resolve(unsubFunc));
+      this._subscriptionSignatures.set(templateKey, nextSignature);
     } catch (err) {
       console.error(`[UltraCard] Failed to subscribe to template: ${template}`, err);
     }
+  }
+
+  /**
+   * Build a deterministic signature for template subscriptions so we can detect
+   * variable/context changes and refresh the websocket subscription safely.
+   */
+  private _buildSubscriptionSignature(
+    processedTemplate: string,
+    variables?: Record<string, any>
+  ): string {
+    return `${processedTemplate}::${this._stableSerialize(variables || {})}`;
+  }
+
+  /**
+   * Deterministic serializer (sorted object keys) used for subscription signatures.
+   */
+  private _stableSerialize(value: any): string {
+    if (value === null || value === undefined) return String(value);
+    if (typeof value !== 'object') return JSON.stringify(value);
+    if (Array.isArray(value)) return `[${value.map(v => this._stableSerialize(v)).join(',')}]`;
+
+    const keys = Object.keys(value).sort();
+    return `{${keys
+      .map(key => `${JSON.stringify(key)}:${this._stableSerialize((value as Record<string, any>)[key])}`)
+      .join(',')}}`;
+  }
+
+  /**
+   * Unsubscribe and clear a single subscription key.
+   */
+  private async _unsubscribeTemplateKey(templateKey: string): Promise<void> {
+    const subPromise = this._templateSubscriptions.get(templateKey);
+    if (subPromise) {
+      try {
+        const unsubFn = await Promise.resolve(subPromise).catch(() => null);
+        if (unsubFn && typeof unsubFn === 'function') {
+          await unsubFn();
+        }
+      } catch {
+        // Keep teardown resilient; stale subscriptions should never block refresh.
+      }
+    }
+
+    this._templateSubscriptions.delete(templateKey);
+    this._subscriptionSignatures.delete(templateKey);
+    this._templateResults.delete(templateKey);
+    this._previousStringResults.delete(templateKey);
+    this._evaluationCache.delete(templateKey);
   }
 
   /**
@@ -269,21 +331,7 @@ export class TemplateService {
       if (key.startsWith(prefix)) toRemove.push(key);
     }
     for (const key of toRemove) {
-      const subPromise = this._templateSubscriptions.get(key);
-      if (subPromise) {
-        try {
-          const unsubFn = await Promise.resolve(subPromise).catch(() => null);
-          if (unsubFn && typeof unsubFn === 'function') {
-            try {
-              await unsubFn();
-            } catch {}
-          }
-        } catch {}
-      }
-      this._templateSubscriptions.delete(key);
-      this._templateResults.delete(key);
-      this._previousStringResults.delete(key);
-      this._evaluationCache.delete(key);
+      await this._unsubscribeTemplateKey(key);
     }
   }
 
@@ -319,6 +367,7 @@ export class TemplateService {
 
     // Clear subscriptions and results regardless of any errors
     this._templateSubscriptions.clear();
+    this._subscriptionSignatures.clear();
     this._templateResults.clear();
     this._evaluationCache.clear(); // Also clear the cache
     this._previousStringResults.clear(); // Clear string comparison cache
