@@ -1,5 +1,22 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta10
+
+### 🔧 Improvements
+
+- **Improved string-template refresh timing with immediate priming after subscription changes** - When unified/info/state string templates resubscribe due to context changes, the engine now performs an immediate one-shot evaluation so the current state is available without waiting for websocket timing.
+- **Refined template key reset behavior during subscription replacement** - Old per-key template string cache entries are now cleared during teardown to prevent stale values from leaking into the next render.
+
+### 🐛 Bug Fixes
+
+- **Fixed unified template values rendering one state behind in icon/info modules** - Color and text templates that rely on `state` context no longer lag by one transition (for example 5/7/9 threshold color mappings now update on the correct current value).
+
+### ⚠️ Warning
+
+- Testing focus: verify rapid value changes (5→7→9 and reverse), mixed template-heavy dashboards, and confirm no regressions in non-templated active/inactive icon behavior.
+
+---
+
 ## Version 3.3.0-beta9
 
 ### 🔧 Improvements

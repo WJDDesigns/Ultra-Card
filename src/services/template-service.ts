@@ -186,6 +186,18 @@ export class TemplateService {
       // Store the unsubscribe function directly instead of wrapping it in a Promise
       this._templateSubscriptions.set(templateKey, Promise.resolve(unsubFunc));
       this._subscriptionSignatures.set(templateKey, nextSignature);
+
+      // Prime newly-created/refreshed string-based subscriptions with an immediate
+      // one-shot evaluation so UI does not render one update behind while waiting
+      // for websocket push timing.
+      if (isStringBasedTemplate(templateKey)) {
+        await this._primeStringTemplateResult(
+          processedTemplate,
+          templateKey,
+          variables,
+          onResultChanged
+        );
+      }
     } catch (err) {
       console.error(`[UltraCard] Failed to subscribe to template: ${template}`, err);
     }
@@ -237,6 +249,51 @@ export class TemplateService {
     this._templateResults.delete(templateKey);
     this._previousStringResults.delete(templateKey);
     this._evaluationCache.delete(templateKey);
+    if (this.hass?.__uvc_template_strings) {
+      delete this.hass.__uvc_template_strings[templateKey];
+    }
+  }
+
+  /**
+   * Immediately evaluate a string-based template after (re)subscribing so the
+   * current render state is available without waiting for async push timing.
+   */
+  private async _primeStringTemplateResult(
+    processedTemplate: string,
+    templateKey: string,
+    variables?: Record<string, any>,
+    onResultChanged?: () => void
+  ): Promise<void> {
+    if (!this.hass) return;
+    try {
+      const renderedResult = await this.hass.callApi<any>('POST', 'template', {
+        template: processedTemplate,
+        variables: variables || {},
+      });
+      const renderedString = String(renderedResult);
+
+      if (!this.hass.__uvc_template_strings) {
+        this.hass.__uvc_template_strings = {};
+      }
+
+      const previousString = this._previousStringResults.get(templateKey);
+      this.hass.__uvc_template_strings[templateKey] = renderedResult;
+      this._previousStringResults.set(templateKey, renderedString);
+
+      const boolValue = this.parseTemplateResult(renderedResult, templateKey);
+      this._templateResults.set(templateKey, boolValue);
+      this._evaluationCache.set(templateKey, {
+        value: boolValue,
+        timestamp: Date.now(),
+        stringValue: renderedString,
+      });
+
+      if (previousString !== renderedString && onResultChanged) {
+        onResultChanged();
+      }
+    } catch {
+      // Keep websocket subscription as source of truth if one-shot priming fails.
+    }
   }
 
   /**
