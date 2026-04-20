@@ -37,6 +37,8 @@ export class UltraInfoModule extends BaseUltraModule {
 
   private _templateService?: TemplateService;
   private _templateInputDebounce: any = null;
+  /** Last resolved unified icon_color per template key (covers brief cache gaps after invalidate). */
+  private _lastUnifiedInfoIconColorByKey = new Map<string, string>();
 
   createDefault(id?: string, hass?: HomeAssistant): InfoModule {
     return {
@@ -106,6 +108,28 @@ export class UltraInfoModule extends BaseUltraModule {
       display_mode: 'always',
       display_conditions: [],
     };
+  }
+
+  /**
+   * Build a collision-resistant unified template key for info entities.
+   * Includes module + entity scopes so identical templates across modules don't overwrite each other.
+   */
+  private _buildUnifiedInfoTemplateKey(
+    infoModule: InfoModule,
+    entity: InfoEntityConfig,
+    entityIndex: number,
+    processedTemplate: string,
+    cardConfig?: UltraCardConfig
+  ): string {
+    const cardScope =
+      (cardConfig as any)?.__ucInstanceId && String((cardConfig as any).__ucInstanceId).trim() !== ''
+        ? String((cardConfig as any).__ucInstanceId)
+        : 'card_unknown';
+    const moduleScope = infoModule.id && infoModule.id.trim() !== '' ? infoModule.id : 'module_unknown';
+    const entityScope =
+      entity.id && entity.id.trim() !== '' ? entity.id : `idx_${entityIndex.toString()}`;
+    const templateHash = this._hashString(processedTemplate);
+    return `unified_info_${cardScope}_${moduleScope}_${entity.entity}_${entityScope}_${templateHash}`;
   }
 
   renderGeneralTab(
@@ -1574,8 +1598,13 @@ export class UltraInfoModule extends BaseUltraModule {
         // IMPORTANT: Must use the PROCESSED template (after variable substitution) for the hash
         // to match the key used when subscribing to the template
         const processedTemplate = preprocessTemplateVariables(entity.unified_template, hass, config);
-        const templateHash = this._hashString(processedTemplate);
-        const templateKey = `unified_info_${entity.entity}_${bgIdx}_${templateHash}`;
+        const templateKey = this._buildUnifiedInfoTemplateKey(
+          infoModule,
+          entity,
+          bgIdx,
+          processedTemplate,
+          config
+        );
 
         // Check if we already have the rendered template result
         const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
@@ -1715,8 +1744,15 @@ export class UltraInfoModule extends BaseUltraModule {
                   : entityState?.attributes?.friendly_name || entity.entity;
               // Get base icon and color
               let displayIcon = entity.icon || entityState?.attributes?.icon || 'mdi:help-circle';
+              // When unified templates drive icon_color, avoid defaulting to primary (blue) while
+              // the websocket result is still empty — that reads as a "wrong color" flash.
               let displayIconColor =
-                designProperties.color || entity.icon_color || 'var(--primary-color)';
+                entity.unified_template_mode && entity.unified_template
+                  ? designProperties.color ||
+                    entity.icon_color ||
+                    entity.state_color ||
+                    'var(--secondary-text-color)'
+                  : designProperties.color || entity.icon_color || 'var(--primary-color)';
 
               let tmplName: string | undefined;
               let tmplStateText: string | undefined;
@@ -1741,8 +1777,13 @@ export class UltraInfoModule extends BaseUltraModule {
                   config
                 );
 
-                const templateHash = this._hashString(processedUnifiedTemplate);
-                const templateKey = `unified_info_${entity.entity}_${index}_${templateHash}`;
+                const templateKey = this._buildUnifiedInfoTemplateKey(
+                  infoModule,
+                  entity,
+                  index,
+                  processedUnifiedTemplate,
+                  config
+                );
 
                 if (!hass.__uvc_template_strings) {
                   hass.__uvc_template_strings = {};
@@ -1760,14 +1801,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     processedUnifiedTemplate,
                     templateKey,
                     () => {
-                      if (typeof window !== 'undefined') {
-                        if (!window._ultraCardUpdateTimer) {
-                          window._ultraCardUpdateTimer = setTimeout(() => {
-                            this.triggerPreviewUpdate();
-                            window._ultraCardUpdateTimer = null;
-                          }, 50);
-                        }
-                      }
+                      this.triggerPreviewUpdate();
                     },
                     context,
                     config // Pass config for card-specific variable resolution
@@ -1780,7 +1814,13 @@ export class UltraInfoModule extends BaseUltraModule {
                   if (!hasTemplateError(parsed)) {
                     const uIcon = unifiedTemplateIcon(parsed);
                     if (uIcon) displayIcon = uIcon;
-                    if (parsed.icon_color) displayIconColor = parsed.icon_color;
+                    if (parsed.icon_color) {
+                      displayIconColor = parsed.icon_color;
+                      this._lastUnifiedInfoIconColorByKey.set(
+                        templateKey,
+                        String(parsed.icon_color)
+                      );
+                    }
                     if (parsed.name) tmplName = String(parsed.name);
                     if (parsed.state_text !== undefined) {
                       tmplStateText = String(parsed.state_text);
@@ -1790,6 +1830,10 @@ export class UltraInfoModule extends BaseUltraModule {
                     if (parsed.name_color) tmplNameColor = String(parsed.name_color);
                     if (parsed.state_color) tmplStateColor = String(parsed.state_color);
                   }
+                }
+                if (!unifiedResult || String(unifiedResult).trim() === '') {
+                  const held = this._lastUnifiedInfoIconColorByKey.get(templateKey);
+                  if (held) displayIconColor = held;
                 }
               }
 
@@ -2963,15 +3007,7 @@ export class UltraInfoModule extends BaseUltraModule {
         hass.__uvc_template_strings[templateKey] = result;
 
         // Trigger UI update for any listeners (editor popup + main card)
-        if (typeof window !== 'undefined') {
-          // Use global debounced update
-          if (!window._ultraCardUpdateTimer) {
-            window._ultraCardUpdateTimer = setTimeout(() => {
-              this.triggerPreviewUpdate();
-              window._ultraCardUpdateTimer = null;
-            }, 50);
-          }
-        }
+        this.triggerPreviewUpdate();
       } catch (error) {
         // Silent fail - template may be incomplete or invalid
       }

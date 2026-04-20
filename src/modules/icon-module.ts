@@ -47,6 +47,8 @@ export class UltraIconModule extends BaseUltraModule {
   private _attributeCache = new Map<string, { value: string; label: string }[]>();
   private _updateTimeout?: NodeJS.Timeout;
   private _processingAttributes = new Set<string>();
+  /** Last resolved unified icon_color per template key (covers brief cache gaps after invalidate). */
+  private _lastUnifiedIconDisplayColorByKey = new Map<string, string>();
 
   // Ensure animation/keyframe CSS is globally available (outside editor shadow DOM)
   private static _globalStylesInjected = false;
@@ -93,6 +95,33 @@ export class UltraIconModule extends BaseUltraModule {
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(36); // Convert to base36 for shorter strings
+  }
+
+  /**
+   * Build a collision-resistant unified template key for icon items.
+   * Includes module + icon scopes so duplicated/missing icon ids don't collide.
+   */
+  private _buildUnifiedIconTemplateKey(
+    icon: IconConfig,
+    processedTemplate: string,
+    cardConfig?: UltraCardConfig,
+    moduleId?: string,
+    iconIndex?: number,
+    suffix = ''
+  ): string {
+    const cardScope =
+      (cardConfig as any)?.__ucInstanceId && String((cardConfig as any).__ucInstanceId).trim() !== ''
+        ? String((cardConfig as any).__ucInstanceId)
+        : 'card_unknown';
+    const moduleScope = moduleId && moduleId.trim() !== '' ? moduleId : 'module_unknown';
+    const iconScope =
+      icon.id && String(icon.id).trim() !== ''
+        ? String(icon.id)
+        : iconIndex !== undefined
+          ? `idx_${iconIndex.toString()}`
+          : `hash_${this._hashString(`${icon.entity || ''}|${icon.name || ''}|${icon.icon_inactive || ''}|${icon.icon_active || ''}`)}`;
+    const templateHash = this._hashString(processedTemplate);
+    return `unified_${cardScope}_${moduleScope}_${icon.entity}_${iconScope}_${templateHash}${suffix}`;
   }
 
   /**
@@ -2457,7 +2486,8 @@ export class UltraIconModule extends BaseUltraModule {
     // This needs to happen BEFORE containerStyles are built
     let templateContainerBg = '';
     const tempValidIcons = (iconModule.icons || []).filter(i => i.entity && i.entity.trim() !== '');
-    for (const icon of tempValidIcons) {
+    for (let tempIconIdx = 0; tempIconIdx < tempValidIcons.length; tempIconIdx++) {
+      const icon = tempValidIcons[tempIconIdx];
       // Check if icon has unified template mode enabled
       if (icon.unified_template_mode && icon.unified_template) {
         // Initialize template service if needed
@@ -2470,9 +2500,13 @@ export class UltraIconModule extends BaseUltraModule {
           hass,
           config
         );
-        const templateHash = this._hashString(processedUnifiedTemplate);
-        // Use the same key format as the render loop: unified_${entity}_${id}_${hash}
-        const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}`;
+        const templateKey = this._buildUnifiedIconTemplateKey(
+          icon,
+          processedUnifiedTemplate,
+          config,
+          iconModule.id,
+          tempIconIdx
+        );
 
         if (!hass.__uvc_template_strings) {
           hass.__uvc_template_strings = {};
@@ -2485,14 +2519,7 @@ export class UltraIconModule extends BaseUltraModule {
             processedUnifiedTemplate,
             templateKey,
             () => {
-              if (typeof window !== 'undefined') {
-                if (!window._ultraCardUpdateTimer) {
-                  window._ultraCardUpdateTimer = setTimeout(() => {
-                    this.triggerPreviewUpdate();
-                    window._ultraCardUpdateTimer = null;
-                  }, 50);
-                }
-              }
+              this.triggerPreviewUpdate();
             },
             context,
             config // Pass config for card-specific variable resolution
@@ -2657,7 +2684,7 @@ export class UltraIconModule extends BaseUltraModule {
             justify-content: ${iconModule.alignment || 'center'};
           "
           >
-            ${validIcons.slice(0, 6).map(icon => {
+            ${validIcons.slice(0, 6).map((icon, iconIdx) => {
               const isStaticIcon = icon.icon_mode === 'static';
               const entityState = isStaticIcon ? undefined : hass?.states[icon.entity];
               const currentState = entityState?.state || 'unknown';
@@ -2726,8 +2753,13 @@ export class UltraIconModule extends BaseUltraModule {
                   hass,
                   config
                 );
-                const templateHash = this._hashString(processedUnifiedTemplate);
-                const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}`;
+                const templateKey = this._buildUnifiedIconTemplateKey(
+                  icon,
+                  processedUnifiedTemplate,
+                  config,
+                  iconModule.id,
+                  iconIdx
+                );
 
                 if (!hass.__uvc_template_strings) {
                   hass.__uvc_template_strings = {};
@@ -2742,14 +2774,7 @@ export class UltraIconModule extends BaseUltraModule {
                     processedUnifiedTemplate,
                     templateKey,
                     () => {
-                      if (typeof window !== 'undefined') {
-                        if (!window._ultraCardUpdateTimer) {
-                          window._ultraCardUpdateTimer = setTimeout(() => {
-                            this.triggerPreviewUpdate();
-                            window._ultraCardUpdateTimer = null;
-                          }, 50);
-                        }
-                      }
+                      this.triggerPreviewUpdate();
                     },
                     context,
                     config // Pass config for card-specific variable resolution
@@ -2765,6 +2790,10 @@ export class UltraIconModule extends BaseUltraModule {
                     // Apply template icon_color when provided — takes priority over active/inactive colors
                     if (parsed.icon_color) {
                       displayColor = parsed.icon_color;
+                      this._lastUnifiedIconDisplayColorByKey.set(
+                        templateKey,
+                        String(parsed.icon_color)
+                      );
                     }
                     if (parsed.name) tmplName = String(parsed.name);
                     if (parsed.state_text !== undefined) {
@@ -2776,6 +2805,19 @@ export class UltraIconModule extends BaseUltraModule {
                     if (parsed.state_color) tmplStateColor = String(parsed.state_color);
                     if (parsed.container_background_color) {
                       templateContainerBgColor = parsed.container_background_color;
+                    }
+                  }
+                }
+                if (!unifiedResult || String(unifiedResult).trim() === '') {
+                  const held = this._lastUnifiedIconDisplayColorByKey.get(templateKey);
+                  if (held) {
+                    displayColor = held;
+                  } else if (!isStaticIcon) {
+                    const stateTint = this._getEntityStateColor(entityState);
+                    if (stateTint) {
+                      displayColor = stateTint;
+                    } else if (displayColor === 'var(--primary-color)') {
+                      displayColor = 'var(--secondary-text-color)';
                     }
                   }
                 }
@@ -3348,8 +3390,16 @@ export class UltraIconModule extends BaseUltraModule {
           display: flex;
         "
       >
-        ${iconsToShow.map(icon =>
-          this._renderSingleIconPreview(icon, hass, isActiveState, iconModule, designProperties)
+        ${iconsToShow.map((icon, iconIdx) =>
+          this._renderSingleIconPreview(
+            icon,
+            hass,
+            isActiveState,
+            iconModule,
+            designProperties,
+            undefined,
+            iconIdx
+          )
         )}
       </div>
     `;
@@ -3361,7 +3411,8 @@ export class UltraIconModule extends BaseUltraModule {
     isActiveState: boolean,
     iconModule?: IconModule,
     designProperties?: any,
-    cardConfig?: UltraCardConfig
+    cardConfig?: UltraCardConfig,
+    iconIndex?: number
   ): TemplateResult {
     const entityState = hass?.states[icon.entity];
     const currentState = entityState?.state || 'unknown';
@@ -3418,7 +3469,6 @@ export class UltraIconModule extends BaseUltraModule {
         hass,
         cardConfig
       );
-      const templateHash = this._hashString(processedUnifiedTemplate);
 
       // For the inactive editor preview, simulate the "inactive state" value so the
       // template evaluates as it would when the entity is actually in its inactive state.
@@ -3435,7 +3485,14 @@ export class UltraIconModule extends BaseUltraModule {
       }
 
       const templateKeySuffix = previewStateOverride !== null ? `_inactive_preview` : '';
-      const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}${templateKeySuffix}`;
+      const templateKey = this._buildUnifiedIconTemplateKey(
+        icon,
+        processedUnifiedTemplate,
+        cardConfig,
+        iconModule?.id,
+        iconIndex,
+        templateKeySuffix
+      );
 
       if (!hass.__uvc_template_strings) {
         hass.__uvc_template_strings = {};
@@ -3472,6 +3529,7 @@ export class UltraIconModule extends BaseUltraModule {
           // Apply template icon_color when provided — takes priority over active/inactive colors
           if (parsed.icon_color) {
             displayColor = parsed.icon_color;
+            this._lastUnifiedIconDisplayColorByKey.set(templateKey, String(parsed.icon_color));
           }
           if (parsed.name) tmplName = String(parsed.name);
           if (parsed.state_text !== undefined) {
@@ -3485,6 +3543,10 @@ export class UltraIconModule extends BaseUltraModule {
             templateContainerBgColor = parsed.container_background_color;
           }
         }
+      }
+      if (!unifiedResult || String(unifiedResult).trim() === '') {
+        const held = this._lastUnifiedIconDisplayColorByKey.get(templateKey);
+        if (held) displayColor = held;
       }
     } else if (entityState?.attributes?.icon && !displayIcon) {
       displayIcon = entityState.attributes.icon;
@@ -3892,7 +3954,7 @@ export class UltraIconModule extends BaseUltraModule {
           justify-content: ${iconModule.alignment || 'center'};
         "
       >
-        ${iconModule.icons.slice(0, 6).map(icon => {
+        ${iconModule.icons.slice(0, 6).map((icon, previewIndex) => {
           const entityState = hass?.states[icon.entity];
           const currentState = entityState?.state || 'unknown';
           // Force the active state based on the forceActive parameter
@@ -3920,8 +3982,13 @@ export class UltraIconModule extends BaseUltraModule {
               hass,
               undefined
             );
-            const templateHash = this._hashString(processedUnifiedTemplate);
-            const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}`;
+            const templateKey = this._buildUnifiedIconTemplateKey(
+              icon,
+              processedUnifiedTemplate,
+              undefined,
+              iconModule.id,
+              previewIndex
+            );
 
             if (!hass.__uvc_template_strings) {
               hass.__uvc_template_strings = {};
@@ -3951,7 +4018,10 @@ export class UltraIconModule extends BaseUltraModule {
                 const uIcon = unifiedTemplateIcon(parsed);
                 if (uIcon) tmplIcon = uIcon;
                 else if (parsed.icon) tmplIcon = String(parsed.icon);
-                if (parsed.icon_color) tmplIconColor = String(parsed.icon_color);
+                if (parsed.icon_color) {
+                  tmplIconColor = String(parsed.icon_color);
+                  this._lastUnifiedIconDisplayColorByKey.set(templateKey, tmplIconColor);
+                }
                 if (parsed.name) tmplName = String(parsed.name);
                 if (parsed.state_text !== undefined) tmplStateText = String(parsed.state_text);
                 if (parsed.name_color) tmplNameColor = String(parsed.name_color);
@@ -3960,6 +4030,10 @@ export class UltraIconModule extends BaseUltraModule {
                   templateContainerBgColor = parsed.container_background_color;
                 }
               }
+            }
+            if (!unifiedResult || String(unifiedResult).trim() === '') {
+              const held = this._lastUnifiedIconDisplayColorByKey.get(templateKey);
+              if (held) tmplIconColor = held;
             }
           }
 
@@ -4714,8 +4788,11 @@ export class UltraIconModule extends BaseUltraModule {
         hass,
         undefined
       );
-      const templateHash = this._hashString(processedUnifiedTemplate);
-      const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}`;
+      const templateKey = this._buildUnifiedIconTemplateKey(
+        icon,
+        processedUnifiedTemplate,
+        undefined
+      );
 
       if (!hass.__uvc_template_strings) {
         hass.__uvc_template_strings = {};

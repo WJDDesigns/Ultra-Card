@@ -1,5 +1,28 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta11
+
+### 🔧 Improvements
+
+- **More reliable multi-template refreshes** — `triggerPreviewUpdate` now clears and reschedules a single debounced `ultra-card-template-update` dispatch instead of skipping when a timer was already armed, so overlapping websocket callbacks from different modules no longer get dropped on busy dashboards.
+- **Snappier template follow-through** — Default debounce for template-driven updates is reduced from 150ms to 50ms for module triggers, the main card listener, and the global actions tab helper.
+- **Smoother unified-template icon colors (Info)** — While unified mode is waiting on HA, the icon color chain avoids defaulting to primary blue: it prefers design / `icon_color` / `state_color`, then secondary text.
+- **Smoother unified-template icon colors (Icon)** — When the per-key template cache is briefly empty during resubscribe, the renderer reuses the last successful unified `icon_color` for that key (in-memory), with sensible fallbacks when no prior color exists yet.
+
+### 🐛 Bug Fixes
+
+- **Unified icon / info colors sticking or lagging** — Addresses the interaction between cache invalidation, websocket `render_template` results, and UI refresh scheduling so templated colors and text keep up with entity state without requiring a full page reload.
+
+### 🧹 Cleanup
+
+- **Removed debug instrumentation** — Temporary session logging (`fetch` to local ingest, Palisade-specific traces) has been stripped from `template-service`, `info-module`, and `icon-module`.
+
+### ⚠️ Note
+
+- If you rely on very fast entity churn, sanity-check mixed unified-template cards; behavior should match or improve vs beta10, with less “first callback wins” starvation.
+
+---
+
 ## Version 3.3.0-beta10
 
 ### 🔧 Improvements

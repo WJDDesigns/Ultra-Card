@@ -3041,12 +3041,7 @@ export class UltraBarModule extends BaseUltraModule {
             templateKey,
             () => {
               if (typeof window !== 'undefined') {
-                if (!window._ultraCardUpdateTimer) {
-                  window._ultraCardUpdateTimer = setTimeout(() => {
-                    this.triggerPreviewUpdate();
-                    window._ultraCardUpdateTimer = null;
-                  }, 50);
-                }
+                this.triggerPreviewUpdate();
               }
             },
             context,

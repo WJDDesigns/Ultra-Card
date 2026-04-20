@@ -193,17 +193,18 @@ export class GlobalActionsTab extends LitElement {
   }
 
   private _triggerPreviewUpdate(): void {
-    // Dispatch custom event to update any live previews
-    if (!window._ultraCardUpdateTimer) {
-      window._ultraCardUpdateTimer = setTimeout(() => {
-        const event = new CustomEvent('ultra-card-template-update', {
-          bubbles: true,
-          composed: true,
-        });
-        window.dispatchEvent(event);
-        window._ultraCardUpdateTimer = null;
-      }, 50);
+    if (window._ultraCardUpdateTimer) {
+      clearTimeout(window._ultraCardUpdateTimer);
+      window._ultraCardUpdateTimer = null;
     }
+    window._ultraCardUpdateTimer = setTimeout(() => {
+      window._ultraCardUpdateTimer = null;
+      const event = new CustomEvent('ultra-card-template-update', {
+        bubbles: true,
+        composed: true,
+      });
+      window.dispatchEvent(event);
+    }, 50);
   }
 
   protected render() {

@@ -373,7 +373,7 @@ export class UltraCard extends LitElement {
         this._templateUpdateDebounceTimer = undefined;
         this.requestUpdate();
         this._updateHoverEffectStyles();
-      }, 150);
+      }, 50);
     };
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
 

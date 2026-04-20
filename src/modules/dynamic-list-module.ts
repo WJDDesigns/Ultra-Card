@@ -1776,14 +1776,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
       }
       const cache = (hass as any).__uvc_todo_cache as { [entityId: string]: TodoItem[] } | undefined;
       const onUpdate = () => {
-        if (typeof window !== 'undefined') {
-          if (!(window as any)._ultraCardUpdateTimer) {
-            (window as any)._ultraCardUpdateTimer = setTimeout(() => {
-              this.triggerPreviewUpdate();
-              (window as any)._ultraCardUpdateTimer = null;
-            }, 50);
-          }
-        }
+        this.triggerPreviewUpdate();
       };
       let anyMissing = false;
       for (const eid of entityIds) {
@@ -1884,12 +1877,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
       if (!this._todoService) this._todoService = new UltraCardTodoService();
       const cache = (hass as any).__uvc_todo_cache as { [entityId: string]: TodoItem[] } | undefined;
       const onUpdate = () => {
-        if (typeof window !== 'undefined' && !(window as any)._ultraCardUpdateTimer) {
-          (window as any)._ultraCardUpdateTimer = setTimeout(() => {
-            this.triggerPreviewUpdate();
-            (window as any)._ultraCardUpdateTimer = null;
-          }, 50);
-        }
+        this.triggerPreviewUpdate();
       };
       let anyMissing = false;
       for (const eid of entityIds) {
@@ -1979,12 +1967,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
       const cachedResponse = this._actionCache.get(cacheKey);
 
       const onUpdate = () => {
-        if (typeof window !== 'undefined' && !(window as any)._ultraCardUpdateTimer) {
-          (window as any)._ultraCardUpdateTimer = setTimeout(() => {
-            this.triggerPreviewUpdate();
-            (window as any)._ultraCardUpdateTimer = null;
-          }, 50);
-        }
+        this.triggerPreviewUpdate();
       };
 
       const fetchAction = async () => {
@@ -2104,14 +2087,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
           processedTemplate,
           templateKey,
           () => {
-            if (typeof window !== 'undefined') {
-              if (!(window as any)._ultraCardUpdateTimer) {
-                (window as any)._ultraCardUpdateTimer = setTimeout(() => {
-                  this.triggerPreviewUpdate();
-                  (window as any)._ultraCardUpdateTimer = null;
-                }, 50);
-              }
-            }
+            this.triggerPreviewUpdate();
           },
           {},
           config

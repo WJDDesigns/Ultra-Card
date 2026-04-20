@@ -1571,15 +1571,7 @@ export class UltraToggleModule extends BaseUltraModule {
             processed,
             templateKey,
             () => {
-              // When template result changes, trigger a preview update
-              if (typeof window !== 'undefined') {
-                if (!window._ultraCardUpdateTimer) {
-                  window._ultraCardUpdateTimer = setTimeout(() => {
-                    this.triggerPreviewUpdate();
-                    window._ultraCardUpdateTimer = null;
-                  }, 50);
-                }
-              }
+              this.triggerPreviewUpdate();
             }
             // Note: cardConfig not available in _subscribeToToggleTemplates - only global variables will work here
           );

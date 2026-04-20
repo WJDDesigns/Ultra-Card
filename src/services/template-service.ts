@@ -44,6 +44,8 @@ export class TemplateService {
   private _templateSubscriptions: Map<string, Promise<() => Promise<void>>> = new Map();
   /** Track the last subscription signature per key (template + variables). */
   private _subscriptionSignatures: Map<string, string> = new Map();
+  /** Monotonic generation per template key to ignore stale async responses. */
+  private _templateGenerations: Map<string, number> = new Map();
   private _templateResults: Map<string, boolean> = new Map();
   // Store previous string values for string-based templates (unified, info_entity, state_text)
   // These need string comparison for change detection, not boolean comparison
@@ -72,13 +74,14 @@ export class TemplateService {
    * Check if a template subscription exists
    */
   public hasTemplateSubscription(templateKey: string): boolean {
+    const hasExisting = this._templateSubscriptions.has(templateKey);
     // String-based templates commonly depend on runtime context variables (e.g. `state`).
     // Force a cheap "ensure" call path so subscribeToTemplate() can refresh the
     // websocket subscription when those variables change.
     if (isStringBasedTemplate(templateKey)) {
       return false;
     }
-    return this._templateSubscriptions.has(templateKey);
+    return hasExisting;
   }
 
   /**
@@ -125,56 +128,28 @@ export class TemplateService {
       if (prevSignature === nextSignature) {
         return;
       }
+      // IMPORTANT: render paths call subscribeToTemplate() without await and then
+      // synchronously read hass.__uvc_template_strings[templateKey] in the same frame.
+      // Clear stale value before the first await so old colors/text cannot be reused
+      // while async unsubscribe/re-subscribe is in flight.
+      this._invalidateTemplateCaches(templateKey);
       await this._unsubscribeTemplateKey(templateKey);
     }
 
     try {
+      // Every (re)subscription gets a new generation token. Any late websocket/API
+      // result from previous generations is ignored to prevent "one step behind"
+      // visual updates when state changes rapidly.
+      const generation = this._nextTemplateGeneration(templateKey);
+
       // Create a subscription to the template
       const unsubFunc = this.hass.connection.subscribeMessage(
         (message: any) => {
+          if (!this._isCurrentGeneration(templateKey, generation)) {
+            return;
+          }
           // Extract the rendered result from the message
-          const renderedResult = message.result;
-          const renderedString = String(renderedResult);
-
-          // Store the original rendered string for use in state text templates
-          if (!this.hass.__uvc_template_strings) {
-            this.hass.__uvc_template_strings = {};
-          }
-          this.hass.__uvc_template_strings[templateKey] = renderedResult;
-
-          // Determine if value changed based on template type
-          let hasChanged = false;
-
-          if (isStringBasedTemplate(templateKey)) {
-            // For unified/info_entity/state_text templates, compare actual string results
-            // These templates return JSON/text that must be compared as strings, not booleans
-            // (parseTemplateResult returns true for all unified templates, breaking change detection)
-            const previousString = this._previousStringResults.get(templateKey);
-            hasChanged = previousString !== renderedString;
-            this._previousStringResults.set(templateKey, renderedString);
-          } else {
-            // For boolean templates (active/inactive state), compare boolean results
-            const newValue = this.parseTemplateResult(renderedResult, templateKey);
-            const oldValue = this._templateResults.get(templateKey);
-            hasChanged = newValue !== oldValue;
-            this._templateResults.set(templateKey, newValue);
-          }
-
-          if (hasChanged) {
-            // Only request a re-render if the value actually changed
-            if (onResultChanged) {
-              onResultChanged();
-            }
-          }
-
-          // Also cache the result (for backward compatibility)
-          const boolValue = this.parseTemplateResult(renderedResult, templateKey);
-          this._templateResults.set(templateKey, boolValue);
-          this._evaluationCache.set(templateKey, {
-            value: boolValue,
-            timestamp: Date.now(),
-            stringValue: renderedString,
-          });
+          this._applyRenderedTemplateResult(message.result, templateKey, onResultChanged);
         },
         {
           type: 'render_template',
@@ -187,17 +162,11 @@ export class TemplateService {
       this._templateSubscriptions.set(templateKey, Promise.resolve(unsubFunc));
       this._subscriptionSignatures.set(templateKey, nextSignature);
 
-      // Prime newly-created/refreshed string-based subscriptions with an immediate
-      // one-shot evaluation so UI does not render one update behind while waiting
-      // for websocket push timing.
-      if (isStringBasedTemplate(templateKey)) {
-        await this._primeStringTemplateResult(
-          processedTemplate,
-          templateKey,
-          variables,
-          onResultChanged
-        );
-      }
+      // NOTE: Keep websocket `render_template` as the single source of truth.
+      // The fallback POST /template priming path can race and overwrite newer
+      // websocket values in some HA environments, causing incorrect colors.
+      // With generation guards + sync cache invalidation in place, websocket
+      // updates remain ordered and correct without priming writes.
     } catch (err) {
       console.error(`[UltraCard] Failed to subscribe to template: ${template}`, err);
     }
@@ -229,6 +198,73 @@ export class TemplateService {
   }
 
   /**
+   * Move template key to the next generation and return it.
+   */
+  private _nextTemplateGeneration(templateKey: string): number {
+    const next = (this._templateGenerations.get(templateKey) || 0) + 1;
+    this._templateGenerations.set(templateKey, next);
+    return next;
+  }
+
+  /**
+   * Check whether an async response belongs to the currently active generation.
+   */
+  private _isCurrentGeneration(templateKey: string, generation: number): boolean {
+    return this._templateGenerations.get(templateKey) === generation;
+  }
+
+  /**
+   * Apply rendered template result to internal caches and trigger rerender callback when changed.
+   */
+  private _applyRenderedTemplateResult(
+    renderedResult: any,
+    templateKey: string,
+    onResultChanged?: () => void
+  ): void {
+    const renderedString =
+      renderedResult !== null && typeof renderedResult === 'object'
+        ? this._stableSerialize(renderedResult)
+        : String(renderedResult);
+
+    // Store the original rendered string for use in state text templates
+    if (!this.hass.__uvc_template_strings) {
+      this.hass.__uvc_template_strings = {};
+    }
+    this.hass.__uvc_template_strings[templateKey] = renderedResult;
+
+    // Determine if value changed based on template type
+    let hasChanged = false;
+
+    if (isStringBasedTemplate(templateKey)) {
+      // For unified/info_entity/state_text templates, compare actual string results
+      // These templates return JSON/text that must be compared as strings, not booleans
+      // (parseTemplateResult returns true for all unified templates, breaking change detection)
+      const previousString = this._previousStringResults.get(templateKey);
+      hasChanged = previousString !== renderedString;
+      this._previousStringResults.set(templateKey, renderedString);
+    } else {
+      // For boolean templates (active/inactive state), compare boolean results
+      const newValue = this.parseTemplateResult(renderedResult, templateKey);
+      const oldValue = this._templateResults.get(templateKey);
+      hasChanged = newValue !== oldValue;
+      this._templateResults.set(templateKey, newValue);
+    }
+
+    if (hasChanged && onResultChanged) {
+      onResultChanged();
+    }
+
+    // Also cache the result (for backward compatibility)
+    const boolValue = this.parseTemplateResult(renderedResult, templateKey);
+    this._templateResults.set(templateKey, boolValue);
+    this._evaluationCache.set(templateKey, {
+      value: boolValue,
+      timestamp: Date.now(),
+      stringValue: renderedString,
+    });
+  }
+
+  /**
    * Unsubscribe and clear a single subscription key.
    */
   private async _unsubscribeTemplateKey(templateKey: string): Promise<void> {
@@ -246,53 +282,21 @@ export class TemplateService {
 
     this._templateSubscriptions.delete(templateKey);
     this._subscriptionSignatures.delete(templateKey);
+    // Invalidate in-flight async responses for this key.
+    this._nextTemplateGeneration(templateKey);
+    this._invalidateTemplateCaches(templateKey);
+  }
+
+  /**
+   * Clear cached template values for one key (sync-safe).
+   * Used both during async unsubscribe and immediately before awaiting teardown.
+   */
+  private _invalidateTemplateCaches(templateKey: string): void {
     this._templateResults.delete(templateKey);
     this._previousStringResults.delete(templateKey);
     this._evaluationCache.delete(templateKey);
     if (this.hass?.__uvc_template_strings) {
       delete this.hass.__uvc_template_strings[templateKey];
-    }
-  }
-
-  /**
-   * Immediately evaluate a string-based template after (re)subscribing so the
-   * current render state is available without waiting for async push timing.
-   */
-  private async _primeStringTemplateResult(
-    processedTemplate: string,
-    templateKey: string,
-    variables?: Record<string, any>,
-    onResultChanged?: () => void
-  ): Promise<void> {
-    if (!this.hass) return;
-    try {
-      const renderedResult = await this.hass.callApi<any>('POST', 'template', {
-        template: processedTemplate,
-        variables: variables || {},
-      });
-      const renderedString = String(renderedResult);
-
-      if (!this.hass.__uvc_template_strings) {
-        this.hass.__uvc_template_strings = {};
-      }
-
-      const previousString = this._previousStringResults.get(templateKey);
-      this.hass.__uvc_template_strings[templateKey] = renderedResult;
-      this._previousStringResults.set(templateKey, renderedString);
-
-      const boolValue = this.parseTemplateResult(renderedResult, templateKey);
-      this._templateResults.set(templateKey, boolValue);
-      this._evaluationCache.set(templateKey, {
-        value: boolValue,
-        timestamp: Date.now(),
-        stringValue: renderedString,
-      });
-
-      if (previousString !== renderedString && onResultChanged) {
-        onResultChanged();
-      }
-    } catch {
-      // Keep websocket subscription as source of truth if one-shot priming fails.
     }
   }
 
@@ -425,6 +429,7 @@ export class TemplateService {
     // Clear subscriptions and results regardless of any errors
     this._templateSubscriptions.clear();
     this._subscriptionSignatures.clear();
+    this._templateGenerations.clear();
     this._templateResults.clear();
     this._evaluationCache.clear(); // Also clear the cache
     this._previousStringResults.clear(); // Clear string comparison cache

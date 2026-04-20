@@ -454,12 +454,7 @@ All standard markdown features are automatically enabled!`,
             () => {
               this._clearMarkdownCache(markdownModule.id);
               if (typeof window !== 'undefined') {
-                if (!window._ultraCardUpdateTimer) {
-                  window._ultraCardUpdateTimer = setTimeout(() => {
-                    this.triggerPreviewUpdate();
-                    window._ultraCardUpdateTimer = null;
-                  }, 50);
-                }
+                this.triggerPreviewUpdate();
               }
             },
             context,
@@ -672,12 +667,7 @@ All standard markdown features are automatically enabled!`,
               this._clearMarkdownCache(markdownModule.id);
               if (typeof window !== 'undefined') {
                 // Use global debounced update
-                if (!window._ultraCardUpdateTimer) {
-                  window._ultraCardUpdateTimer = setTimeout(() => {
-                    this.triggerPreviewUpdate();
-                    window._ultraCardUpdateTimer = null;
-                  }, 50);
-                }
+                this.triggerPreviewUpdate();
               }
             },
             undefined, // No context variables
@@ -743,12 +733,7 @@ All standard markdown features are automatically enabled!`,
             () => {
               this._clearMarkdownCache(markdownModule.id);
               if (typeof window !== 'undefined') {
-                if (!window._ultraCardUpdateTimer) {
-                  window._ultraCardUpdateTimer = setTimeout(() => {
-                    this.triggerPreviewUpdate();
-                    window._ultraCardUpdateTimer = null;
-                  }, 50);
-                }
+                this.triggerPreviewUpdate();
               }
             },
             context,
