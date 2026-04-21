@@ -1,5 +1,19 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta12
+
+### 🔧 Improvements
+
+- **Info module anti-flash: neutral initial color** — The `displayIconColor` fallback chain in unified template mode no longer includes `entity.icon_color` (which defaults to `var(--primary-color)` / primary blue). It now falls back to `entity.state_color` then `var(--secondary-text-color)`, so the icon stays in a neutral tone while the first websocket result is in flight instead of flashing blue.
+- **Extended last-known-color caching to all info module colors** — The in-memory anti-flash cache now covers `icon_color`, `name_color`, `state_color`, and icon itself. When the template cache is briefly cleared during re-subscription, all four values hold their last resolved state rather than reverting to defaults.
+- **Toggle module template subscriptions now context-aware** — Changed the subscription key prefix from `toggle_unified_` to `unified_toggle_` so the template service treats toggle templates as string-based. Subscriptions now correctly refresh when context variables (e.g. `{{ state }}`) change, matching the behavior of icon, info, bar, gauge, and spinbox modules. The old `if (!hasTemplateSubscription)` guard is also removed so the signature comparison is reached on every render.
+
+### 🐛 Bug Fixes
+
+- **Info module unified template colors not updating after initial render** — Root cause was the fallback to `entity.icon_color: var(--primary-color)` which masked the held cache value and made subsequent re-renders look stuck or flash blue. Now fixed with both the fallback chain change and the broader per-key hold cache.
+
+---
+
 ## Version 3.3.0-beta11
 
 ### 🔧 Improvements

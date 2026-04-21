@@ -1564,18 +1564,16 @@ export class UltraToggleModule extends BaseUltraModule {
       if (point.unified_template_mode && ut) {
         const processed = preprocessTemplateVariables(ut, hass, undefined);
         const templateHash = this._hashString(processed);
-        const templateKey = `toggle_unified_${module.id}_${point.id}_${templateHash}`;
+        const templateKey = `unified_toggle_${module.id}_${point.id}_${templateHash}`;
 
-        if (!this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(
-            processed,
-            templateKey,
-            () => {
-              this.triggerPreviewUpdate();
-            }
-            // Note: cardConfig not available in _subscribeToToggleTemplates - only global variables will work here
-          );
-        }
+        this._templateService.subscribeToTemplate(
+          processed,
+          templateKey,
+          () => {
+            this.triggerPreviewUpdate();
+          }
+          // Note: cardConfig not available in _subscribeToToggleTemplates - only global variables will work here
+        );
       }
     }
   }
@@ -1604,7 +1602,7 @@ export class UltraToggleModule extends BaseUltraModule {
       if (point.unified_template_mode && ut) {
         const processed = preprocessTemplateVariables(ut, hass, undefined);
         const templateHash = this._hashString(processed);
-        const templateKey = `toggle_unified_${module.id}_${point.id}_${templateHash}`;
+        const templateKey = `unified_toggle_${module.id}_${point.id}_${templateHash}`;
 
         const renderedResult = hass.__uvc_template_strings?.[templateKey];
         if (renderedResult !== undefined) {

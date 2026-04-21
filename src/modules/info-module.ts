@@ -39,6 +39,12 @@ export class UltraInfoModule extends BaseUltraModule {
   private _templateInputDebounce: any = null;
   /** Last resolved unified icon_color per template key (covers brief cache gaps after invalidate). */
   private _lastUnifiedInfoIconColorByKey = new Map<string, string>();
+  /** Last resolved unified name_color per template key. */
+  private _lastUnifiedInfoNameColorByKey = new Map<string, string>();
+  /** Last resolved unified state_color per template key. */
+  private _lastUnifiedInfoStateColorByKey = new Map<string, string>();
+  /** Last resolved unified icon per template key. */
+  private _lastUnifiedInfoIconByKey = new Map<string, string>();
 
   createDefault(id?: string, hass?: HomeAssistant): InfoModule {
     return {
@@ -1746,10 +1752,13 @@ export class UltraInfoModule extends BaseUltraModule {
               let displayIcon = entity.icon || entityState?.attributes?.icon || 'mdi:help-circle';
               // When unified templates drive icon_color, avoid defaulting to primary (blue) while
               // the websocket result is still empty — that reads as a "wrong color" flash.
+              // In unified template mode the template drives icon_color; skip entity.icon_color
+              // (which defaults to var(--primary-color)) to avoid a blue flash while the first
+              // websocket result is in flight. The _lastUnifiedInfoIconColorByKey cache fills in the
+              // last known color as soon as the first subscription fires.
               let displayIconColor =
                 entity.unified_template_mode && entity.unified_template
                   ? designProperties.color ||
-                    entity.icon_color ||
                     entity.state_color ||
                     'var(--secondary-text-color)'
                   : designProperties.color || entity.icon_color || 'var(--primary-color)';
@@ -1813,7 +1822,10 @@ export class UltraInfoModule extends BaseUltraModule {
                   const parsed = parseUnifiedTemplate(unifiedResult);
                   if (!hasTemplateError(parsed)) {
                     const uIcon = unifiedTemplateIcon(parsed);
-                    if (uIcon) displayIcon = uIcon;
+                    if (uIcon) {
+                      displayIcon = uIcon;
+                      this._lastUnifiedInfoIconByKey.set(templateKey, uIcon);
+                    }
                     if (parsed.icon_color) {
                       displayIconColor = parsed.icon_color;
                       this._lastUnifiedInfoIconColorByKey.set(
@@ -1827,13 +1839,25 @@ export class UltraInfoModule extends BaseUltraModule {
                     } else if (parsed._isString && parsed.content && !uIcon) {
                       tmplStateText = String(parsed.content).trim();
                     }
-                    if (parsed.name_color) tmplNameColor = String(parsed.name_color);
-                    if (parsed.state_color) tmplStateColor = String(parsed.state_color);
+                    if (parsed.name_color) {
+                      tmplNameColor = String(parsed.name_color);
+                      this._lastUnifiedInfoNameColorByKey.set(templateKey, tmplNameColor);
+                    }
+                    if (parsed.state_color) {
+                      tmplStateColor = String(parsed.state_color);
+                      this._lastUnifiedInfoStateColorByKey.set(templateKey, tmplStateColor);
+                    }
                   }
                 }
                 if (!unifiedResult || String(unifiedResult).trim() === '') {
-                  const held = this._lastUnifiedInfoIconColorByKey.get(templateKey);
-                  if (held) displayIconColor = held;
+                  const heldColor = this._lastUnifiedInfoIconColorByKey.get(templateKey);
+                  if (heldColor) displayIconColor = heldColor;
+                  const heldIcon = this._lastUnifiedInfoIconByKey.get(templateKey);
+                  if (heldIcon) displayIcon = heldIcon;
+                  const heldNameColor = this._lastUnifiedInfoNameColorByKey.get(templateKey);
+                  if (heldNameColor) tmplNameColor = heldNameColor;
+                  const heldStateColor = this._lastUnifiedInfoStateColorByKey.get(templateKey);
+                  if (heldStateColor) tmplStateColor = heldStateColor;
                 }
               }
 
