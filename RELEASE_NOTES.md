@@ -1,5 +1,19 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta13
+
+### 🐛 Bug Fixes
+
+- **Info module unified template colors never update on fast-changing sensors** — Identified the root cause: hold caches (`_lastUnifiedInfoIconColorByKey` etc.) were only populated in the render path, but `subscribeToTemplate` clears `hass.__uvc_template_strings[key]` *synchronously* before the render reads the value whenever entity state changes. This meant the hold was never set for frequently-updating sensors, so the color stayed permanently neutral/white. Fix: hold caches are now populated immediately inside the WS subscription callback (before the 100 ms debounce), so the holds always survive the next render's synchronous cache invalidation.
+- **Icon module: same hold-cache race condition hardened** — Applied the same callback-time hold-cache update to all five subscription sites in the icon module via a new `_refreshIconHoldCaches()` helper. Icon module worked previously because icon entities tend to change state infrequently; this makes it robust for fast-changing entities too.
+
+### ⚠️ Testing Focus
+
+- **Frequently-updating sensors** (fuel consumption, temperature, power draw, etc.) with unified template colors in info module items — colors should now update on every state change without flash or stuck values.
+- Tap/toggle entities used in icon module should be unaffected (regression check).
+
+---
+
 ## Version 3.3.0-beta12
 
 ### 🔧 Improvements

@@ -2774,6 +2774,7 @@ export class UltraIconModule extends BaseUltraModule {
                     processedUnifiedTemplate,
                     templateKey,
                     () => {
+                      this._refreshIconHoldCaches(templateKey);
                       this.triggerPreviewUpdate();
                     },
                     context,
@@ -3512,6 +3513,7 @@ export class UltraIconModule extends BaseUltraModule {
           templateKey,
           () => {
             if (typeof window !== 'undefined') {
+              this._refreshIconHoldCaches(templateKey);
               this.triggerPreviewUpdate();
             }
           },
@@ -4004,6 +4006,7 @@ export class UltraIconModule extends BaseUltraModule {
                 templateKey,
                 () => {
                   if (typeof window !== 'undefined') {
+                    this._refreshIconHoldCaches(templateKey);
                     this.triggerPreviewUpdate();
                   }
                 },
@@ -4807,6 +4810,7 @@ export class UltraIconModule extends BaseUltraModule {
           templateKey,
           () => {
             if (typeof window !== 'undefined') {
+              this._refreshIconHoldCaches(templateKey);
               this.triggerPreviewUpdate();
             }
           },
@@ -4947,6 +4951,20 @@ export class UltraIconModule extends BaseUltraModule {
 
     // Default fallback
     return false;
+  }
+
+  /**
+   * Read the current template result for a key and refresh hold caches immediately.
+   * Called from subscription callbacks so the holds survive the sync cache invalidation
+   * that subscribeToTemplate runs before any re-render reaches the render path.
+   */
+  private _refreshIconHoldCaches(templateKey: string): void {
+    const result = this._templateService?.hass?.__uvc_template_strings?.[templateKey];
+    if (!result || String(result).trim() === '') return;
+    const parsed = parseUnifiedTemplate(result);
+    if (hasTemplateError(parsed)) return;
+    if (parsed.icon_color)
+      this._lastUnifiedIconDisplayColorByKey.set(templateKey, String(parsed.icon_color));
   }
 
   /**

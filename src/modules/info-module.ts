@@ -1810,6 +1810,36 @@ export class UltraInfoModule extends BaseUltraModule {
                     processedUnifiedTemplate,
                     templateKey,
                     () => {
+                      // Update hold caches HERE (inside callback, before debounce fires).
+                      // By the time the re-render runs, subscribeToTemplate may have already
+                      // cleared hass.__uvc_template_strings[key] via _invalidateTemplateCaches.
+                      // Reading and caching the result immediately ensures the hold survives
+                      // that synchronous invalidation.
+                      const cbResult =
+                        this._templateService?.hass?.__uvc_template_strings?.[templateKey];
+                      if (cbResult && String(cbResult).trim() !== '') {
+                        const cbParsed = parseUnifiedTemplate(cbResult);
+                        if (!hasTemplateError(cbParsed)) {
+                          const cbIcon = unifiedTemplateIcon(cbParsed);
+                          if (cbIcon)
+                            this._lastUnifiedInfoIconByKey.set(templateKey, cbIcon);
+                          if (cbParsed.icon_color)
+                            this._lastUnifiedInfoIconColorByKey.set(
+                              templateKey,
+                              String(cbParsed.icon_color)
+                            );
+                          if (cbParsed.name_color)
+                            this._lastUnifiedInfoNameColorByKey.set(
+                              templateKey,
+                              String(cbParsed.name_color)
+                            );
+                          if (cbParsed.state_color)
+                            this._lastUnifiedInfoStateColorByKey.set(
+                              templateKey,
+                              String(cbParsed.state_color)
+                            );
+                        }
+                      }
                       this.triggerPreviewUpdate();
                     },
                     context,

@@ -4511,7 +4511,7 @@ export class UltraBarModule extends BaseUltraModule {
                   class="scale-tick"
                   style="
                     ${isCustomLayout
-                      ? `position: absolute; left: ${tick.position}%; top: 0;`
+                      ? `position: absolute; left: ${tick.position}%; top: 0; width: 0; min-width: 0; overflow: visible;`
                       : ''}
                     display: flex;
                     flex-direction: ${scalePosition === 'above' ? 'column-reverse' : 'column'};
@@ -4524,7 +4524,7 @@ export class UltraBarModule extends BaseUltraModule {
                       width: 1px;
                       height: 6px;
                       background: ${scaleTickColor};
-                      ${isCustomLayout ? 'transform: translateX(-50%);' : ''}
+                      flex-shrink: 0;
                     "
                   ></div>
                   ${scaleShowLabels && tick.label !== null
