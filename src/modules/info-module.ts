@@ -14,14 +14,16 @@ import { getPopupForModule } from '../services/popup-trigger-registry';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
-import { buildEntityContext } from '../utils/template-context';
 import {
   parseUnifiedTemplate,
   hasTemplateError,
   getTemplateError,
   unifiedTemplateIcon,
 } from '../utils/template-parser';
-import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import {
+  preprocessTemplateVariables,
+  injectEntityContextIntoTemplate,
+} from '../utils/uc-template-processor';
 
 export class UltraInfoModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -37,14 +39,6 @@ export class UltraInfoModule extends BaseUltraModule {
 
   private _templateService?: TemplateService;
   private _templateInputDebounce: any = null;
-  /** Last resolved unified icon_color per template key (covers brief cache gaps after invalidate). */
-  private _lastUnifiedInfoIconColorByKey = new Map<string, string>();
-  /** Last resolved unified name_color per template key. */
-  private _lastUnifiedInfoNameColorByKey = new Map<string, string>();
-  /** Last resolved unified state_color per template key. */
-  private _lastUnifiedInfoStateColorByKey = new Map<string, string>();
-  /** Last resolved unified icon per template key. */
-  private _lastUnifiedInfoIconByKey = new Map<string, string>();
 
   createDefault(id?: string, hass?: HomeAssistant): InfoModule {
     return {
@@ -1601,9 +1595,13 @@ export class UltraInfoModule extends BaseUltraModule {
           this._templateService.updateHass(hass);
         }
 
-        // IMPORTANT: Must use the PROCESSED template (after variable substitution) for the hash
-        // to match the key used when subscribing to the template
-        const processedTemplate = preprocessTemplateVariables(entity.unified_template, hass, config);
+        // IMPORTANT: Must use the PROCESSED template (after variable substitution AND entity
+        // context injection) for the hash to match the key used when subscribing to the template.
+        const processedTemplate = preprocessTemplateVariables(
+          injectEntityContextIntoTemplate(entity.unified_template, entity.entity),
+          hass,
+          config
+        );
         const templateKey = this._buildUnifiedInfoTemplateKey(
           infoModule,
           entity,
@@ -1750,18 +1748,8 @@ export class UltraInfoModule extends BaseUltraModule {
                   : entityState?.attributes?.friendly_name || entity.entity;
               // Get base icon and color
               let displayIcon = entity.icon || entityState?.attributes?.icon || 'mdi:help-circle';
-              // When unified templates drive icon_color, avoid defaulting to primary (blue) while
-              // the websocket result is still empty — that reads as a "wrong color" flash.
-              // In unified template mode the template drives icon_color; skip entity.icon_color
-              // (which defaults to var(--primary-color)) to avoid a blue flash while the first
-              // websocket result is in flight. The _lastUnifiedInfoIconColorByKey cache fills in the
-              // last known color as soon as the first subscription fires.
               let displayIconColor =
-                entity.unified_template_mode && entity.unified_template
-                  ? designProperties.color ||
-                    entity.state_color ||
-                    'var(--secondary-text-color)'
-                  : designProperties.color || entity.icon_color || 'var(--primary-color)';
+                designProperties.color || entity.icon_color || 'var(--primary-color)';
 
               let tmplName: string | undefined;
               let tmplStateText: string | undefined;
@@ -1775,13 +1763,14 @@ export class UltraInfoModule extends BaseUltraModule {
                 } else if (this._templateService && hass) {
                   // CRITICAL: Update the template service's hass reference to ensure
                   // template results are stored in the same hass object we read from.
-                  // Without this, results may be stored in an old hass reference.
                   this._templateService.updateHass(hass);
                 }
 
-                // Preprocess custom variables ($variable_name) before Jinja evaluation
+                // Inject entity context (state/attributes/etc.) into the template as
+                // `{% set %}` statements so HA auto-tracks the entity and re-evaluates
+                // on state change. This lets us subscribe ONCE and never resubscribe.
                 const processedUnifiedTemplate = preprocessTemplateVariables(
-                  entity.unified_template,
+                  injectEntityContextIntoTemplate(entity.unified_template, entity.entity),
                   hass,
                   config
                 );
@@ -1802,48 +1791,21 @@ export class UltraInfoModule extends BaseUltraModule {
                   this._templateService &&
                   !this._templateService.hasTemplateSubscription(templateKey)
                 ) {
-                  const context = buildEntityContext(entity.entity, hass, {
+                  // Static context only — state/attributes/etc. are now injected into
+                  // the template itself via `{% set %}`.
+                  const context = {
                     name: entity.name,
                     icon: entity.icon,
-                  });
+                    entity: entity.entity,
+                  };
                   this._templateService.subscribeToTemplate(
                     processedUnifiedTemplate,
                     templateKey,
                     () => {
-                      // Update hold caches HERE (inside callback, before debounce fires).
-                      // By the time the re-render runs, subscribeToTemplate may have already
-                      // cleared hass.__uvc_template_strings[key] via _invalidateTemplateCaches.
-                      // Reading and caching the result immediately ensures the hold survives
-                      // that synchronous invalidation.
-                      const cbResult =
-                        this._templateService?.hass?.__uvc_template_strings?.[templateKey];
-                      if (cbResult && String(cbResult).trim() !== '') {
-                        const cbParsed = parseUnifiedTemplate(cbResult);
-                        if (!hasTemplateError(cbParsed)) {
-                          const cbIcon = unifiedTemplateIcon(cbParsed);
-                          if (cbIcon)
-                            this._lastUnifiedInfoIconByKey.set(templateKey, cbIcon);
-                          if (cbParsed.icon_color)
-                            this._lastUnifiedInfoIconColorByKey.set(
-                              templateKey,
-                              String(cbParsed.icon_color)
-                            );
-                          if (cbParsed.name_color)
-                            this._lastUnifiedInfoNameColorByKey.set(
-                              templateKey,
-                              String(cbParsed.name_color)
-                            );
-                          if (cbParsed.state_color)
-                            this._lastUnifiedInfoStateColorByKey.set(
-                              templateKey,
-                              String(cbParsed.state_color)
-                            );
-                        }
-                      }
                       this.triggerPreviewUpdate();
                     },
                     context,
-                    config // Pass config for card-specific variable resolution
+                    config
                   );
                 }
 
@@ -1852,42 +1814,17 @@ export class UltraInfoModule extends BaseUltraModule {
                   const parsed = parseUnifiedTemplate(unifiedResult);
                   if (!hasTemplateError(parsed)) {
                     const uIcon = unifiedTemplateIcon(parsed);
-                    if (uIcon) {
-                      displayIcon = uIcon;
-                      this._lastUnifiedInfoIconByKey.set(templateKey, uIcon);
-                    }
-                    if (parsed.icon_color) {
-                      displayIconColor = parsed.icon_color;
-                      this._lastUnifiedInfoIconColorByKey.set(
-                        templateKey,
-                        String(parsed.icon_color)
-                      );
-                    }
+                    if (uIcon) displayIcon = uIcon;
+                    if (parsed.icon_color) displayIconColor = parsed.icon_color;
                     if (parsed.name) tmplName = String(parsed.name);
                     if (parsed.state_text !== undefined) {
                       tmplStateText = String(parsed.state_text);
                     } else if (parsed._isString && parsed.content && !uIcon) {
                       tmplStateText = String(parsed.content).trim();
                     }
-                    if (parsed.name_color) {
-                      tmplNameColor = String(parsed.name_color);
-                      this._lastUnifiedInfoNameColorByKey.set(templateKey, tmplNameColor);
-                    }
-                    if (parsed.state_color) {
-                      tmplStateColor = String(parsed.state_color);
-                      this._lastUnifiedInfoStateColorByKey.set(templateKey, tmplStateColor);
-                    }
+                    if (parsed.name_color) tmplNameColor = String(parsed.name_color);
+                    if (parsed.state_color) tmplStateColor = String(parsed.state_color);
                   }
-                }
-                if (!unifiedResult || String(unifiedResult).trim() === '') {
-                  const heldColor = this._lastUnifiedInfoIconColorByKey.get(templateKey);
-                  if (heldColor) displayIconColor = heldColor;
-                  const heldIcon = this._lastUnifiedInfoIconByKey.get(templateKey);
-                  if (heldIcon) displayIcon = heldIcon;
-                  const heldNameColor = this._lastUnifiedInfoNameColorByKey.get(templateKey);
-                  if (heldNameColor) tmplNameColor = heldNameColor;
-                  const heldStateColor = this._lastUnifiedInfoStateColorByKey.get(templateKey);
-                  if (heldStateColor) tmplStateColor = heldStateColor;
                 }
               }
 

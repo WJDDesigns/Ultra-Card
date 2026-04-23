@@ -1,5 +1,32 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta14
+
+### 🐛 Critical Fix: Reverted template engine to the proven 3.2.1 model + entity context auto-tracking
+
+After several betas of patching around edge cases, beta14 takes a different approach: we went back to the `3.2.1` template service (which was stable in production for months) and solved the original "one step behind" bug at its root, so all the fragile race-condition fixes become unnecessary.
+
+**What changed under the hood:**
+
+- **Entity context is now injected directly into the Jinja template** before it's sent to Home Assistant. Your `{{ state }}`, `{{ attributes.foo }}`, `{{ state_number }}`, etc. are automatically prepended with `{% set state = states('sensor.xxx').state %}` etc. HA's `render_template` websocket sees these `states(...)` calls, auto-tracks the referenced entity, and re-evaluates + re-pushes the template on every state change — no resubscription required.
+- **Template service reverted to a "subscribe once, never refresh" model** matching 3.2.1. No more signature comparison, generation tokens, synchronous cache invalidations, or hold-cache workarounds. The websocket is the single source of truth; whatever it pushes becomes the current value.
+- **`updateHass` carries over `__uvc_template_strings`** from the outgoing hass object to the new one, so results don't get lost when HA creates a new hass object on every entity state change.
+
+**What this fixes:**
+
+- ✅ Info module unified-template colors now update live on every state change (including fast-changing sensors).
+- ✅ Icon module colors keep the same behavior they had in 3.2.1, without the race conditions introduced by later betas.
+- ✅ Bar, gauge, spinbox, toggle, and dropdown unified-template entities also benefit from the auto-tracking injection.
+- ✅ No more "stuck at white/neutral", "one step behind", or "blue flash then correct" symptoms.
+
+### ⚠️ Testing Focus
+
+- Unified template `icon_color` on fast-updating sensors in both info and icon modules.
+- Templates that use `{{ state }}`, `{{ state_number }}`, `{{ attributes.* }}`, `{{ friendly_name }}`, `{{ unit }}` — all should receive live updates without a page refresh.
+- If you already use `{{ states('sensor.xxx') }}` directly, nothing changes for you.
+
+---
+
 ## Version 3.3.0-beta13
 
 ### 🐛 Bug Fixes

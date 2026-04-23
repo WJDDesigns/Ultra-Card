@@ -9,7 +9,10 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import { localize } from '../localize/localize';
 import { TemplateService } from '../services/template-service';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
-import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import {
+  preprocessTemplateVariables,
+  injectEntityContextIntoTemplate,
+} from '../utils/uc-template-processor';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
@@ -1562,7 +1565,12 @@ export class UltraToggleModule extends BaseUltraModule {
     for (const point of module.toggle_points) {
       const ut = point.unified_template;
       if (point.unified_template_mode && ut) {
-        const processed = preprocessTemplateVariables(ut, hass, undefined);
+        const trackedEntity = point.match_entity || module.tracking_entity || '';
+        const processed = preprocessTemplateVariables(
+          injectEntityContextIntoTemplate(ut, trackedEntity),
+          hass,
+          undefined
+        );
         const templateHash = this._hashString(processed);
         const templateKey = `unified_toggle_${module.id}_${point.id}_${templateHash}`;
 
@@ -1572,7 +1580,6 @@ export class UltraToggleModule extends BaseUltraModule {
           () => {
             this.triggerPreviewUpdate();
           }
-          // Note: cardConfig not available in _subscribeToToggleTemplates - only global variables will work here
         );
       }
     }
@@ -1600,7 +1607,12 @@ export class UltraToggleModule extends BaseUltraModule {
     for (const point of module.toggle_points) {
       const ut = point.unified_template;
       if (point.unified_template_mode && ut) {
-        const processed = preprocessTemplateVariables(ut, hass, undefined);
+        const trackedEntity = point.match_entity || module.tracking_entity || '';
+        const processed = preprocessTemplateVariables(
+          injectEntityContextIntoTemplate(ut, trackedEntity),
+          hass,
+          undefined
+        );
         const templateHash = this._hashString(processed);
         const templateKey = `unified_toggle_${module.id}_${point.id}_${templateHash}`;
 

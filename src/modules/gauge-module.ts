@@ -18,7 +18,10 @@ import {
   hasTemplateError,
   unifiedTemplateNumericValue,
 } from '../utils/template-parser';
-import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import {
+  preprocessTemplateVariables,
+  injectEntityContextIntoTemplate,
+} from '../utils/uc-template-processor';
 import { buildEntityContext } from '../utils/template-context';
 
 export class UltraGaugeModule extends BaseUltraModule {
@@ -1776,7 +1779,9 @@ export class UltraGaugeModule extends BaseUltraModule {
       if (hass) {
         if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
         const processedUnifiedTemplate = preprocessTemplateVariables(
-          gaugeModule.unified_template, hass, config
+          injectEntityContextIntoTemplate(gaugeModule.unified_template, gaugeModule.entity),
+          hass,
+          config
         );
         const templateHash = this._hashString(processedUnifiedTemplate);
         const templateKey = `unified_gauge_${gaugeModule.id}_${templateHash}`;
@@ -3901,7 +3906,9 @@ export class UltraGaugeModule extends BaseUltraModule {
       }
       if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
       const processedUnifiedTemplate = preprocessTemplateVariables(
-        gaugeModule.unified_template, hass, config
+        injectEntityContextIntoTemplate(gaugeModule.unified_template, gaugeModule.entity),
+        hass,
+        config
       );
       const templateHash = this._hashString(processedUnifiedTemplate);
       const templateKey = `unified_gauge_${gaugeModule.id}_${templateHash}`;

@@ -11,6 +11,65 @@ import { UltraCardConfig } from '../types';
  */
 
 /**
+ * Escape a string for safe inclusion as a Jinja string literal.
+ */
+function escapeJinjaString(value: string): string {
+  return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+/**
+ * Inject entity context into a unified template as Jinja `{% set %}` statements.
+ *
+ * Historically Ultra Card passed entity context (state, attributes, etc.) via the
+ * `variables` parameter of HA's `render_template` websocket subscription. HA treats
+ * these variables as static one-shot injections and does NOT track them as template
+ * dependencies. This means templates using `{{ state }}` never re-evaluate when the
+ * entity state changes — the result is "stuck on the initial value" until the card
+ * is re-rendered or re-subscribed.
+ *
+ * By prepending `{% set state = states('<entity>').state %}` etc. to the template,
+ * HA sees `states(...)` calls and automatically tracks the referenced entity as a
+ * dependency. When the entity state changes, HA re-evaluates the template and pushes
+ * a fresh result via the existing websocket subscription — no resubscribe required.
+ *
+ * @param template Raw template (may contain `{{ state }}`, `{{ attributes.foo }}`, etc.)
+ * @param entityId Entity ID whose context should be injected. Pass empty string to skip.
+ * @returns Template with entity context prepended as `{% set %}` statements.
+ */
+export function injectEntityContextIntoTemplate(
+  template: string,
+  entityId?: string | null
+): string {
+  if (!template || typeof template !== 'string') return template;
+  if (!entityId || typeof entityId !== 'string' || entityId.trim() === '') return template;
+
+  const safeEntityId = escapeJinjaString(entityId.trim());
+  const entityRef = `states('${safeEntityId}')`;
+  const domain = entityId.split('.')[0] || 'unknown';
+  const safeDomain = escapeJinjaString(domain);
+
+  // These Jinja `{% set %}` statements shadow any identically-named variables that may
+  // still be passed via `variables`, so callers can safely drop them from their context.
+  // We wrap attributes with `default({})` to match the old fallback when the entity is
+  // missing/unavailable, and compute derived values (state_number, state_boolean, etc.)
+  // from the live state so the user's template gets fresh values on every re-evaluation.
+  const injection = [
+    `{% set _uc_state_obj = ${entityRef} %}`,
+    `{% set state = _uc_state_obj.state if _uc_state_obj else 'unavailable' %}`,
+    `{% set attributes = _uc_state_obj.attributes if _uc_state_obj else {} %}`,
+    `{% set unit = attributes.unit_of_measurement | default('') %}`,
+    `{% set device_class = attributes.device_class | default('') %}`,
+    `{% set friendly_name = attributes.friendly_name | default('') %}`,
+    `{% set domain = '${safeDomain}' %}`,
+    `{% set entity = '${safeEntityId}' %}`,
+    `{% set state_number = state | float(0) %}`,
+    `{% set state_boolean = state in ['on', 'true', 'yes', 'active', 'home', '1', 'open', 'unlocked'] %}`,
+  ].join('\n');
+
+  return `${injection}\n${template}`;
+}
+
+/**
  * Preprocess a template string, replacing all $variable references with their resolved values
  * @param template The template string containing $variable references
  * @param hass HomeAssistant instance for entity state lookup

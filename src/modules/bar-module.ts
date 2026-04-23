@@ -16,7 +16,10 @@ import { TemplateService } from '../services/template-service';
 import { localize } from '../localize/localize';
 import { buildEntityContext } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
-import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import {
+  preprocessTemplateVariables,
+  injectEntityContextIntoTemplate,
+} from '../utils/uc-template-processor';
 import { parseLocaleNumber, parseCustomTickValues } from '../utils/parse-locale-number';
 import {
   GradientStop,
@@ -3027,7 +3030,9 @@ export class UltraBarModule extends BaseUltraModule {
       if (hass) {
         if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
         const processedUnifiedTemplate = preprocessTemplateVariables(
-          barModule.unified_template, hass, config
+          injectEntityContextIntoTemplate(barModule.unified_template, barModule.entity),
+          hass,
+          config
         );
         const templateHash = this._hashString(processedUnifiedTemplate);
         const templateKey = `unified_bar_${barModule.id}_${templateHash}`;
@@ -4478,17 +4483,16 @@ export class UltraBarModule extends BaseUltraModule {
         });
       }
 
-      const isCustomLayout = customTicksRaw.trim() !== '';
+      const scaleHeight = scaleShowLabels ? `${scaleLabelSize + 12}px` : '12px';
 
       return html`
         <div
           class="bar-scale"
           style="
-            position: ${isCustomLayout ? 'relative' : 'static'};
-            display: ${isCustomLayout ? 'block' : 'flex'};
-            justify-content: ${isCustomLayout ? 'unset' : 'space-between'};
+            position: relative;
+            display: block;
             width: ${barWidth};
-            height: ${isCustomLayout ? (scaleShowLabels ? `${scaleLabelSize + 12}px` : '12px') : 'auto'};
+            height: ${scaleHeight};
             margin-top: 0;
             margin-bottom: 0;
             align-self: ${barModule.bar_alignment === 'left'
@@ -4510,13 +4514,15 @@ export class UltraBarModule extends BaseUltraModule {
                 <div
                   class="scale-tick"
                   style="
-                    ${isCustomLayout
-                      ? `position: absolute; left: ${tick.position}%; top: 0; width: 0; min-width: 0; overflow: visible;`
-                      : ''}
+                    position: absolute;
+                    left: ${tick.position}%;
+                    top: 0;
+                    width: 0;
                     display: flex;
                     flex-direction: ${scalePosition === 'above' ? 'column-reverse' : 'column'};
                     align-items: center;
                     min-width: 0;
+                    overflow: visible;
                   "
                 >
                   <div
@@ -4536,7 +4542,7 @@ export class UltraBarModule extends BaseUltraModule {
                             margin-top: ${scalePosition === 'below' ? '2px' : '0'};
                             margin-bottom: ${scalePosition === 'above' ? '2px' : '0'};
                             white-space: nowrap;
-                            ${isCustomLayout ? `transform: ${labelTransform};` : ''}
+                            transform: ${labelTransform};
                           "
                         >
                           ${tick.label}

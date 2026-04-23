@@ -13,7 +13,10 @@ import {
   hasTemplateError,
   unifiedTemplateNumericValue,
 } from '../utils/template-parser';
-import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import {
+  preprocessTemplateVariables,
+  injectEntityContextIntoTemplate,
+} from '../utils/uc-template-processor';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 import { getImageUrl } from '../utils/image-upload';
@@ -633,7 +636,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
           hass.__uvc_template_strings = {};
         }
         const processed = preprocessTemplateVariables(
-          spinboxModule.unified_template,
+          injectEntityContextIntoTemplate(spinboxModule.unified_template, spinboxModule.entity),
           hass,
           config
         );

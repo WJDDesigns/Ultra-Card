@@ -12,7 +12,10 @@ import {
   hasTemplateError,
   isStringResult,
 } from '../utils/template-parser';
-import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import {
+  preprocessTemplateVariables,
+  injectEntityContextIntoTemplate,
+} from '../utils/uc-template-processor';
 import { buildEntityContext } from '../utils/template-context';
 import { safeGetItem, safeSetItem } from '../utils/safe-storage';
 import '../components/ultra-color-picker';
@@ -1782,7 +1785,12 @@ export class UltraDropdownModule extends BaseUltraModule {
       }
 
       const processedUnifiedTemplate = preprocessTemplateVariables(
-        dropdownModule.unified_template!, hass, config
+        injectEntityContextIntoTemplate(
+          dropdownModule.unified_template!,
+          dropdownModule.source_entity
+        ),
+        hass,
+        config
       );
       const templateHash = this._hashString(processedUnifiedTemplate);
       const templateKey = `unified_dropdown_${dropdownModule.id}_${templateHash}`;
@@ -1795,8 +1803,8 @@ export class UltraDropdownModule extends BaseUltraModule {
         this._templateService &&
         !this._templateService.hasTemplateSubscription(templateKey)
       ) {
-        const context = buildEntityContext(dropdownModule.entity || '', hass, {
-          entity: dropdownModule.entity,
+        const context = buildEntityContext(dropdownModule.source_entity || '', hass, {
+          entity: dropdownModule.source_entity,
         });
         // Subscribe to template for updates
         this._templateService.subscribeToTemplate(
@@ -3089,7 +3097,12 @@ export class UltraDropdownModule extends BaseUltraModule {
     } else if (isUnifiedTemplateMode) {
       // Unified template mode: get options from template
       const processedUnifiedTemplate = preprocessTemplateVariables(
-        dropdownModule.unified_template!, hass, config
+        injectEntityContextIntoTemplate(
+          dropdownModule.unified_template!,
+          dropdownModule.source_entity
+        ),
+        hass,
+        config
       );
       const templateHash = this._hashString(processedUnifiedTemplate);
       const templateKey = `unified_dropdown_${dropdownModule.id}_${templateHash}`;

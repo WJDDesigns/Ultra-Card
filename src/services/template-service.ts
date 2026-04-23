@@ -38,14 +38,23 @@ function isStringBasedTemplate(templateKey: string): boolean {
 }
 
 /**
- * Service class for handling template evaluation and subscription in Ultra Vehicle Card
+ * Service class for handling template evaluation and subscription in Ultra Card.
+ *
+ * Design note (v3.3.0-beta14+):
+ * ----------------------------
+ * Starting with beta14 we subscribe to a template exactly ONCE per unique key and
+ * never refresh the subscription.  Home Assistant's `render_template` websocket
+ * auto-tracks entities referenced via `states('...')`, `state_attr(...)`, etc.
+ * To make this work with user templates that use `{{ state }}`, each call site
+ * runs the template through `injectEntityContextIntoTemplate()` first, which
+ * prepends `{% set state = states('<entity>').state %}` and friends.  HA then
+ * sees live entity references and re-evaluates + re-pushes on every state change.
+ *
+ * This matches the 3.2.1 model (which was stable for users) and eliminates the
+ * race conditions that made beta releases flaky.
  */
 export class TemplateService {
   private _templateSubscriptions: Map<string, Promise<() => Promise<void>>> = new Map();
-  /** Track the last subscription signature per key (template + variables). */
-  private _subscriptionSignatures: Map<string, string> = new Map();
-  /** Monotonic generation per template key to ignore stale async responses. */
-  private _templateGenerations: Map<string, number> = new Map();
   private _templateResults: Map<string, boolean> = new Map();
   // Store previous string values for string-based templates (unified, info_entity, state_text)
   // These need string comparison for change detection, not boolean comparison
@@ -71,17 +80,10 @@ export class TemplateService {
   }
 
   /**
-   * Check if a template subscription exists
+   * Check if a template subscription already exists for the given key.
    */
   public hasTemplateSubscription(templateKey: string): boolean {
-    const hasExisting = this._templateSubscriptions.has(templateKey);
-    // String-based templates commonly depend on runtime context variables (e.g. `state`).
-    // Force a cheap "ensure" call path so subscribeToTemplate() can refresh the
-    // websocket subscription when those variables change.
-    if (isStringBasedTemplate(templateKey)) {
-      return false;
-    }
-    return hasExisting;
+    return this._templateSubscriptions.has(templateKey);
   }
 
   /**
@@ -92,17 +94,27 @@ export class TemplateService {
   }
 
   /**
-   * REMOVED: evaluateTemplate method - use subscribeToTemplate instead
-   * This method was causing API flooding and is no longer needed since we use WebSocket subscriptions
+   * Expose the current hass reference so modules can update their own cached
+   * template result maps from subscription callbacks.
    */
+  public getHass(): HomeAssistant {
+    return this.hass;
+  }
 
   /**
-   * Subscribe to a template and store results for later use
-   * @param template The template string to subscribe to
-   * @param templateKey The unique key to identify this template subscription
-   * @param onResultChanged Optional callback when template result changes
-   * @param variables Optional context variables to pass to the template (for entity context)
-   * @param cardConfig Optional card config for card-specific variable resolution
+   * Subscribe to a template and store results for later use.
+   *
+   * Call sites should inject entity context into the template BEFORE calling this
+   * (via `injectEntityContextIntoTemplate()`), so HA can auto-track the underlying
+   * entities and re-push on every state change without us needing to resubscribe.
+   *
+   * @param template Fully-processed template string to subscribe to (after `$variable`
+   *   and entity context injection — this is exactly what's sent to HA).
+   * @param templateKey Unique key identifying this subscription.
+   * @param onResultChanged Optional callback when the rendered result changes.
+   * @param variables Optional static context variables (name, icon config, etc. — do
+   *   NOT include state/attributes since those should be injected into the template).
+   * @param cardConfig Optional card config for card-specific variable resolution.
    */
   public async subscribeToTemplate(
     template: string,
@@ -115,188 +127,63 @@ export class TemplateService {
       return;
     }
 
-    // Preprocess custom variables ($variable_name) before sending to Home Assistant
-    // This allows users to use {{ $my_variable }} syntax to reference entity states
-    // Pass cardConfig to support card-specific (local) variables
-    const processedTemplate = preprocessTemplateVariables(template, this.hass, cardConfig);
-    const nextSignature = this._buildSubscriptionSignature(processedTemplate, variables);
-
-    // Reuse active subscriptions when template + variables are unchanged.
-    // If context changed (e.g. `state` variable), refresh the subscription for this key.
+    // Subscribe-once model: if a subscription already exists for this key, keep it.
     if (this._templateSubscriptions.has(templateKey)) {
-      const prevSignature = this._subscriptionSignatures.get(templateKey);
-      if (prevSignature === nextSignature) {
-        return;
-      }
-      // IMPORTANT: render paths call subscribeToTemplate() without await and then
-      // synchronously read hass.__uvc_template_strings[templateKey] in the same frame.
-      // Clear stale value before the first await so old colors/text cannot be reused
-      // while async unsubscribe/re-subscribe is in flight.
-      this._invalidateTemplateCaches(templateKey);
-      await this._unsubscribeTemplateKey(templateKey);
+      return;
     }
 
-    try {
-      // Every (re)subscription gets a new generation token. Any late websocket/API
-      // result from previous generations is ignored to prevent "one step behind"
-      // visual updates when state changes rapidly.
-      const generation = this._nextTemplateGeneration(templateKey);
+    // Preprocess `$variable_name` references (card-local and global variables).
+    // Entity context (state/attributes/etc.) should already be injected by the caller.
+    const processedTemplate = preprocessTemplateVariables(template, this.hass, cardConfig);
 
-      // Create a subscription to the template
+    try {
       const unsubFunc = this.hass.connection.subscribeMessage(
         (message: any) => {
-          if (!this._isCurrentGeneration(templateKey, generation)) {
-            return;
+          const renderedResult = message.result;
+          const renderedString =
+            renderedResult !== null && typeof renderedResult === 'object'
+              ? JSON.stringify(renderedResult)
+              : String(renderedResult);
+
+          if (!this.hass.__uvc_template_strings) {
+            this.hass.__uvc_template_strings = {};
           }
-          // Extract the rendered result from the message
-          this._applyRenderedTemplateResult(message.result, templateKey, onResultChanged);
+          this.hass.__uvc_template_strings[templateKey] = renderedResult;
+
+          let hasChanged = false;
+          if (isStringBasedTemplate(templateKey)) {
+            const previousString = this._previousStringResults.get(templateKey);
+            hasChanged = previousString !== renderedString;
+            this._previousStringResults.set(templateKey, renderedString);
+          } else {
+            const newValue = this.parseTemplateResult(renderedResult, templateKey);
+            const oldValue = this._templateResults.get(templateKey);
+            hasChanged = newValue !== oldValue;
+            this._templateResults.set(templateKey, newValue);
+          }
+
+          if (hasChanged && onResultChanged) {
+            onResultChanged();
+          }
+
+          const boolValue = this.parseTemplateResult(renderedResult, templateKey);
+          this._templateResults.set(templateKey, boolValue);
+          this._evaluationCache.set(templateKey, {
+            value: boolValue,
+            timestamp: Date.now(),
+            stringValue: renderedString,
+          });
         },
         {
           type: 'render_template',
           template: processedTemplate,
-          variables: variables || {}, // Pass entity context variables to HA
+          variables: variables || {},
         }
       );
 
-      // Store the unsubscribe function directly instead of wrapping it in a Promise
       this._templateSubscriptions.set(templateKey, Promise.resolve(unsubFunc));
-      this._subscriptionSignatures.set(templateKey, nextSignature);
-
-      // NOTE: Keep websocket `render_template` as the single source of truth.
-      // The fallback POST /template priming path can race and overwrite newer
-      // websocket values in some HA environments, causing incorrect colors.
-      // With generation guards + sync cache invalidation in place, websocket
-      // updates remain ordered and correct without priming writes.
     } catch (err) {
       console.error(`[UltraCard] Failed to subscribe to template: ${template}`, err);
-    }
-  }
-
-  /**
-   * Build a deterministic signature for template subscriptions so we can detect
-   * variable/context changes and refresh the websocket subscription safely.
-   */
-  private _buildSubscriptionSignature(
-    processedTemplate: string,
-    variables?: Record<string, any>
-  ): string {
-    return `${processedTemplate}::${this._stableSerialize(variables || {})}`;
-  }
-
-  /**
-   * Deterministic serializer (sorted object keys) used for subscription signatures.
-   */
-  private _stableSerialize(value: any): string {
-    if (value === null || value === undefined) return String(value);
-    if (typeof value !== 'object') return JSON.stringify(value);
-    if (Array.isArray(value)) return `[${value.map(v => this._stableSerialize(v)).join(',')}]`;
-
-    const keys = Object.keys(value).sort();
-    return `{${keys
-      .map(key => `${JSON.stringify(key)}:${this._stableSerialize((value as Record<string, any>)[key])}`)
-      .join(',')}}`;
-  }
-
-  /**
-   * Move template key to the next generation and return it.
-   */
-  private _nextTemplateGeneration(templateKey: string): number {
-    const next = (this._templateGenerations.get(templateKey) || 0) + 1;
-    this._templateGenerations.set(templateKey, next);
-    return next;
-  }
-
-  /**
-   * Check whether an async response belongs to the currently active generation.
-   */
-  private _isCurrentGeneration(templateKey: string, generation: number): boolean {
-    return this._templateGenerations.get(templateKey) === generation;
-  }
-
-  /**
-   * Apply rendered template result to internal caches and trigger rerender callback when changed.
-   */
-  private _applyRenderedTemplateResult(
-    renderedResult: any,
-    templateKey: string,
-    onResultChanged?: () => void
-  ): void {
-    const renderedString =
-      renderedResult !== null && typeof renderedResult === 'object'
-        ? this._stableSerialize(renderedResult)
-        : String(renderedResult);
-
-    // Store the original rendered string for use in state text templates
-    if (!this.hass.__uvc_template_strings) {
-      this.hass.__uvc_template_strings = {};
-    }
-    this.hass.__uvc_template_strings[templateKey] = renderedResult;
-
-    // Determine if value changed based on template type
-    let hasChanged = false;
-
-    if (isStringBasedTemplate(templateKey)) {
-      // For unified/info_entity/state_text templates, compare actual string results
-      // These templates return JSON/text that must be compared as strings, not booleans
-      // (parseTemplateResult returns true for all unified templates, breaking change detection)
-      const previousString = this._previousStringResults.get(templateKey);
-      hasChanged = previousString !== renderedString;
-      this._previousStringResults.set(templateKey, renderedString);
-    } else {
-      // For boolean templates (active/inactive state), compare boolean results
-      const newValue = this.parseTemplateResult(renderedResult, templateKey);
-      const oldValue = this._templateResults.get(templateKey);
-      hasChanged = newValue !== oldValue;
-      this._templateResults.set(templateKey, newValue);
-    }
-
-    if (hasChanged && onResultChanged) {
-      onResultChanged();
-    }
-
-    // Also cache the result (for backward compatibility)
-    const boolValue = this.parseTemplateResult(renderedResult, templateKey);
-    this._templateResults.set(templateKey, boolValue);
-    this._evaluationCache.set(templateKey, {
-      value: boolValue,
-      timestamp: Date.now(),
-      stringValue: renderedString,
-    });
-  }
-
-  /**
-   * Unsubscribe and clear a single subscription key.
-   */
-  private async _unsubscribeTemplateKey(templateKey: string): Promise<void> {
-    const subPromise = this._templateSubscriptions.get(templateKey);
-    if (subPromise) {
-      try {
-        const unsubFn = await Promise.resolve(subPromise).catch(() => null);
-        if (unsubFn && typeof unsubFn === 'function') {
-          await unsubFn();
-        }
-      } catch {
-        // Keep teardown resilient; stale subscriptions should never block refresh.
-      }
-    }
-
-    this._templateSubscriptions.delete(templateKey);
-    this._subscriptionSignatures.delete(templateKey);
-    // Invalidate in-flight async responses for this key.
-    this._nextTemplateGeneration(templateKey);
-    this._invalidateTemplateCaches(templateKey);
-  }
-
-  /**
-   * Clear cached template values for one key (sync-safe).
-   * Used both during async unsubscribe and immediately before awaiting teardown.
-   */
-  private _invalidateTemplateCaches(templateKey: string): void {
-    this._templateResults.delete(templateKey);
-    this._previousStringResults.delete(templateKey);
-    this._evaluationCache.delete(templateKey);
-    if (this.hass?.__uvc_template_strings) {
-      delete this.hass.__uvc_template_strings[templateKey];
     }
   }
 
@@ -309,45 +196,29 @@ export class TemplateService {
   public parseTemplateResult(result: any, templateKey?: string): boolean {
     // Check if this is a unified template (which should not be interpreted as boolean)
     if (templateKey && templateKey.startsWith('unified_')) {
-      // Unified templates return JSON or strings that are parsed by the module
-      // The original string value is stored in __uvc_template_strings
-      // Return true to indicate the template was successfully processed
       return true;
     }
 
-    // Check if this is an info entity template (which should not be interpreted as boolean)
     if (templateKey && templateKey.startsWith('info_entity_')) {
-      // Info entity templates should preserve their actual values
-      // The original string value is stored in __uvc_template_strings
-      // Return true to indicate the template was successfully processed
       return true;
     }
 
-    // Check if this is a state text template (which should not be interpreted as boolean)
     if (templateKey && templateKey.startsWith('state_text_')) {
-      // For state
-      // text templates, we don't parse the result as boolean
-      // The original string value is stored separately in __uvc_template_strings
-      // Return true to indicate the template was successfully processed
       return true;
     }
 
-    // For active/inactive state templates, interpret the result as a boolean
     if (result === undefined || result === null) {
       return false;
     }
 
-    // Direct boolean value
     if (typeof result === 'boolean') {
       return result;
     }
 
-    // Number values
     if (typeof result === 'number') {
       return result !== 0;
     }
 
-    // String values (case-insensitive)
     if (typeof result === 'string') {
       const lowerResult = result.toLowerCase().trim();
       return (
@@ -359,7 +230,6 @@ export class TemplateService {
         lowerResult === '1' ||
         lowerResult === 'open' ||
         lowerResult === 'unlocked' ||
-        // Treat strings with content that aren't known false values as true
         (lowerResult !== 'false' &&
           lowerResult !== 'off' &&
           lowerResult !== 'no' &&
@@ -375,9 +245,8 @@ export class TemplateService {
       );
     }
 
-    // If it's something else (object, function, etc.), it's probably an error, so log it
     console.warn(
-      `[UltraVehicleCard] Template evaluated to ambiguous type '${typeof result}', interpreting as false.`
+      `[UltraCard] Template evaluated to ambiguous type '${typeof result}', interpreting as false.`
     );
     return false;
   }
@@ -392,7 +261,24 @@ export class TemplateService {
       if (key.startsWith(prefix)) toRemove.push(key);
     }
     for (const key of toRemove) {
-      await this._unsubscribeTemplateKey(key);
+      const subPromise = this._templateSubscriptions.get(key);
+      if (subPromise) {
+        try {
+          const unsubFn = await Promise.resolve(subPromise).catch(() => null);
+          if (unsubFn && typeof unsubFn === 'function') {
+            try {
+              await unsubFn();
+            } catch {}
+          }
+        } catch {}
+      }
+      this._templateSubscriptions.delete(key);
+      this._templateResults.delete(key);
+      this._previousStringResults.delete(key);
+      this._evaluationCache.delete(key);
+      if (this.hass?.__uvc_template_strings) {
+        delete this.hass.__uvc_template_strings[key];
+      }
     }
   }
 
@@ -400,51 +286,34 @@ export class TemplateService {
    * Unsubscribe from all template subscriptions
    */
   public async unsubscribeAllTemplates(): Promise<void> {
-    for (const [key, subPromise] of this._templateSubscriptions.entries()) {
+    for (const [, subPromise] of this._templateSubscriptions.entries()) {
       try {
-        // Check if promise exists and is not already settled with an error
         if (subPromise) {
-          // Use Promise.resolve().catch to safely handle the promise without throwing
-          const unsubFn = await Promise.resolve(subPromise).catch(err => {
-            // Silently handle promise rejection and return null
-            return null;
-          });
-
-          // Only try to call the unsubscribe function if it exists
+          const unsubFn = await Promise.resolve(subPromise).catch(() => null);
           if (unsubFn && typeof unsubFn === 'function') {
             try {
               await unsubFn();
-            } catch (unsubErr) {
-              // Silently catch errors from calling unsubscribe function
-              // Don't log to console to avoid cluttering the console
-            }
+            } catch {}
           }
         }
-      } catch (err) {
-        // Silently catch any remaining errors in the outer try/catch
-        // Don't log to console to avoid cluttering the console
-      }
+      } catch {}
     }
 
-    // Clear subscriptions and results regardless of any errors
     this._templateSubscriptions.clear();
-    this._subscriptionSignatures.clear();
-    this._templateGenerations.clear();
     this._templateResults.clear();
-    this._evaluationCache.clear(); // Also clear the cache
-    this._previousStringResults.clear(); // Clear string comparison cache
+    this._evaluationCache.clear();
+    this._previousStringResults.clear();
   }
 
   /**
    * Update the Home Assistant reference.
    *
-   * HA replaces the hass object on every entity state change (any entity, not
-   * just the watched one).  Subscription callbacks write template results to
-   * `this.hass.__uvc_template_strings`, so when the object changes the results
-   * are lost and the next synchronous render reads `undefined`.  To prevent
-   * this, we carry over `__uvc_template_strings` from the outgoing object to
-   * the incoming one.  Subscription callbacks will continue to overwrite with
-   * fresh values as they arrive.
+   * HA replaces the hass object on every entity state change.  Subscription
+   * callbacks write template results to `this.hass.__uvc_template_strings`, so
+   * when the object changes the results are lost and the next synchronous
+   * render reads `undefined`.  We carry over `__uvc_template_strings` from the
+   * outgoing object to the incoming one so already-resolved values remain
+   * available until new callbacks fire.
    */
   public updateHass(hass: HomeAssistant): void {
     if (this.hass && hass !== this.hass) {
