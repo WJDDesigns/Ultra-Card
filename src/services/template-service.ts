@@ -37,66 +37,56 @@ function isStringBasedTemplate(templateKey: string): boolean {
   );
 }
 
+const STATIC_SIG = '__STATIC__';
+
 /**
  * Service class for handling template evaluation and subscription in Ultra Card.
  *
- * Design note (v3.3.0-beta14+):
+ * Design note (v3.3.0-beta15+):
  * ----------------------------
- * Starting with beta14 we subscribe to a template exactly ONCE per unique key and
- * never refresh the subscription.  Home Assistant's `render_template` websocket
- * auto-tracks entities referenced via `states('...')`, `state_attr(...)`, etc.
- * To make this work with user templates that use `{{ state }}`, each call site
- * runs the template through `injectEntityContextIntoTemplate()` first, which
- * prepends `{% set state = states('<entity>').state %}` and friends.  HA then
- * sees live entity references and re-evaluates + re-pushes on every state change.
- *
- * This matches the 3.2.1 model (which was stable for users) and eliminates the
- * race conditions that made beta releases flaky.
+ * Home Assistant's `render_template` websocket does **not** refresh the `variables`
+ * object when entity state changes — and templates that only reference `{{ state }}`
+ * from variables often register **no** entity listeners.  Ultra Card therefore
+ * passes live entity context via `variables` (see `buildEntityContext`) and passes
+ * an `entitySignature` string that changes whenever that snapshot changes.  When the
+ * signature changes we unsubscribe and subscribe again so HA re-evaluates with fresh
+ * variables.  A per-key monotonic generation counter drops late callbacks from dead
+ * subscriptions (race safety).  The first websocket message after each subscribe
+ * always persists to `hass.__uvc_template_strings` and fires `onResultChanged` so the
+ * UI never "misses" an update waiting on string equality.
  */
 export class TemplateService {
   private _templateSubscriptions: Map<string, Promise<() => Promise<void>>> = new Map();
   private _templateResults: Map<string, boolean> = new Map();
-  // Store previous string values for string-based templates (unified, info_entity, state_text)
-  // These need string comparison for change detection, not boolean comparison
   private _previousStringResults: Map<string, string> = new Map();
-
-  // Add cache for template evaluation results
   private _evaluationCache: Map<string, CacheEntry> = new Map();
-  private readonly CACHE_TTL = 1000; // 1 second cache TTL
+  private readonly CACHE_TTL = 1000;
+
+  /** Last entity snapshot signature passed per template key (for resubscribe decisions). */
+  private _entitySignatures: Map<string, string> = new Map();
+  /** Latest generation for a key; subscription callbacks with older gen are ignored. */
+  private _liveGenByKey: Map<string, number> = new Map();
+  /** Serialize subscribe/unsubscribe per key to avoid overlapping WS operations. */
+  private _subscribeChains: Map<string, Promise<void>> = new Map();
 
   constructor(private hass: HomeAssistant) {}
 
-  /**
-   * Get a specific template result
-   */
   public getTemplateResult(templateKey: string): boolean | undefined {
-    // Check cache first
     const cached = this._evaluationCache.get(templateKey);
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
       return cached.value;
     }
-
     return this._templateResults.get(templateKey);
   }
 
-  /**
-   * Check if a template subscription already exists for the given key.
-   */
   public hasTemplateSubscription(templateKey: string): boolean {
     return this._templateSubscriptions.has(templateKey);
   }
 
-  /**
-   * Get all template results as a map
-   */
   public getAllTemplateResults(): Map<string, boolean> {
     return this._templateResults;
   }
 
-  /**
-   * Expose the current hass reference so modules can update their own cached
-   * template result maps from subscription callbacks.
-   */
   public getHass(): HomeAssistant {
     return this.hass;
   }
@@ -104,41 +94,109 @@ export class TemplateService {
   /**
    * Subscribe to a template and store results for later use.
    *
-   * Call sites should inject entity context into the template BEFORE calling this
-   * (via `injectEntityContextIntoTemplate()`), so HA can auto-track the underlying
-   * entities and re-push on every state change without us needing to resubscribe.
-   *
-   * @param template Fully-processed template string to subscribe to (after `$variable`
-   *   and entity context injection — this is exactly what's sent to HA).
-   * @param templateKey Unique key identifying this subscription.
-   * @param onResultChanged Optional callback when the rendered result changes.
-   * @param variables Optional static context variables (name, icon config, etc. — do
-   *   NOT include state/attributes since those should be injected into the template).
-   * @param cardConfig Optional card config for card-specific variable resolution.
+   * @param entitySignature When provided, re-subscribes whenever this string changes
+   *   (typically `computeEntitySignature(entityId, hass)`). When omitted, subscribes
+   *   once and never refreshes the subscription (layout templates, logic conditions, etc.).
    */
-  public async subscribeToTemplate(
+  public subscribeToTemplate(
     template: string,
     templateKey: string,
     onResultChanged?: () => void,
     variables?: Record<string, any>,
-    cardConfig?: UltraCardConfig
+    cardConfig?: UltraCardConfig,
+    entitySignature?: string
+  ): void {
+    const key = templateKey;
+    const prev = this._subscribeChains.get(key) ?? Promise.resolve();
+    const next = prev
+      .then(() =>
+        this._subscribeToTemplateInner(
+          template,
+          templateKey,
+          onResultChanged,
+          variables,
+          cardConfig,
+          entitySignature
+        )
+      )
+      .catch(err =>
+        console.error(`[UltraCard] Template subscribe chain error [${templateKey}]:`, err)
+      );
+    this._subscribeChains.set(key, next);
+  }
+
+  private async _unsubscribeKey(templateKey: string): Promise<void> {
+    const subPromise = this._templateSubscriptions.get(templateKey);
+    if (subPromise) {
+      try {
+        const unsubFn = await Promise.resolve(subPromise).catch(() => null);
+        if (unsubFn && typeof unsubFn === 'function') {
+          try {
+            await unsubFn();
+          } catch {}
+        }
+      } catch {}
+    }
+    this._templateSubscriptions.delete(templateKey);
+  }
+
+  private async _subscribeToTemplateInner(
+    template: string,
+    templateKey: string,
+    onResultChanged?: () => void,
+    variables?: Record<string, any>,
+    cardConfig?: UltraCardConfig,
+    entitySignature?: string
   ): Promise<void> {
     if (!template || !this.hass) {
       return;
     }
 
-    // Subscribe-once model: if a subscription already exists for this key, keep it.
-    if (this._templateSubscriptions.has(templateKey)) {
-      return;
+    const trackEntity = entitySignature !== undefined;
+    const prevSig = this._entitySignatures.get(templateKey);
+    const hadSub = this._templateSubscriptions.has(templateKey);
+
+    if (hadSub) {
+      if (!trackEntity) {
+        return;
+      }
+      if (entitySignature === prevSig) {
+        return;
+      }
+      const preserved = this.hass.__uvc_template_strings?.[templateKey];
+      await this._unsubscribeKey(templateKey);
+      if (!this.hass.__uvc_template_strings) {
+        this.hass.__uvc_template_strings = {};
+      }
+      if (preserved !== undefined) {
+        this.hass.__uvc_template_strings[templateKey] = preserved;
+      }
+    } else if (trackEntity) {
+      // first subscription with tracking
+    } else {
+      // first static subscription
     }
 
-    // Preprocess `$variable_name` references (card-local and global variables).
-    // Entity context (state/attributes/etc.) should already be injected by the caller.
     const processedTemplate = preprocessTemplateVariables(template, this.hass, cardConfig);
+
+    const myGen = (this._liveGenByKey.get(templateKey) || 0) + 1;
+    this._liveGenByKey.set(templateKey, myGen);
+
+    if (trackEntity) {
+      this._entitySignatures.set(templateKey, entitySignature!);
+    } else {
+      this._entitySignatures.set(templateKey, STATIC_SIG);
+    }
+
+    let isFirstMessage = true;
 
     try {
       const unsubFunc = this.hass.connection.subscribeMessage(
         (message: any) => {
+          if (this._liveGenByKey.get(templateKey) !== myGen) {
+            return;
+          }
+
           const renderedResult = message.result;
           const renderedString =
             renderedResult !== null && typeof renderedResult === 'object'
@@ -152,15 +210,25 @@ export class TemplateService {
 
           let hasChanged = false;
           if (isStringBasedTemplate(templateKey)) {
-            const previousString = this._previousStringResults.get(templateKey);
-            hasChanged = previousString !== renderedString;
+            if (isFirstMessage) {
+              hasChanged = true;
+            } else {
+              const previousString = this._previousStringResults.get(templateKey);
+              hasChanged = previousString !== renderedString;
+            }
             this._previousStringResults.set(templateKey, renderedString);
           } else {
             const newValue = this.parseTemplateResult(renderedResult, templateKey);
-            const oldValue = this._templateResults.get(templateKey);
-            hasChanged = newValue !== oldValue;
+            if (isFirstMessage) {
+              hasChanged = true;
+            } else {
+              const oldValue = this._templateResults.get(templateKey);
+              hasChanged = newValue !== oldValue;
+            }
             this._templateResults.set(templateKey, newValue);
           }
+
+          isFirstMessage = false;
 
           if (hasChanged && onResultChanged) {
             onResultChanged();
@@ -187,38 +255,25 @@ export class TemplateService {
     }
   }
 
-  /**
-   * Helper method to parse template results consistently
-   * @param result The raw result from the template evaluation
-   * @param templateKey Optional template key for context
-   * @returns Boolean interpretation of the template result
-   */
   public parseTemplateResult(result: any, templateKey?: string): boolean {
-    // Check if this is a unified template (which should not be interpreted as boolean)
     if (templateKey && templateKey.startsWith('unified_')) {
       return true;
     }
-
     if (templateKey && templateKey.startsWith('info_entity_')) {
       return true;
     }
-
     if (templateKey && templateKey.startsWith('state_text_')) {
       return true;
     }
-
     if (result === undefined || result === null) {
       return false;
     }
-
     if (typeof result === 'boolean') {
       return result;
     }
-
     if (typeof result === 'number') {
       return result !== 0;
     }
-
     if (typeof result === 'string') {
       const lowerResult = result.toLowerCase().trim();
       return (
@@ -244,77 +299,44 @@ export class TemplateService {
           lowerResult !== '')
       );
     }
-
     console.warn(
       `[UltraCard] Template evaluated to ambiguous type '${typeof result}', interpreting as false.`
     );
     return false;
   }
 
-  /**
-   * Unsubscribe from template subscriptions whose key starts with the given prefix.
-   * Used to clear layout_* subscriptions when config.layout changes.
-   */
   public async unsubscribeTemplatesByPrefix(prefix: string): Promise<void> {
     const toRemove: string[] = [];
     for (const key of this._templateSubscriptions.keys()) {
       if (key.startsWith(prefix)) toRemove.push(key);
     }
     for (const key of toRemove) {
-      const subPromise = this._templateSubscriptions.get(key);
-      if (subPromise) {
-        try {
-          const unsubFn = await Promise.resolve(subPromise).catch(() => null);
-          if (unsubFn && typeof unsubFn === 'function') {
-            try {
-              await unsubFn();
-            } catch {}
-          }
-        } catch {}
-      }
-      this._templateSubscriptions.delete(key);
+      await this._unsubscribeKey(key);
       this._templateResults.delete(key);
       this._previousStringResults.delete(key);
       this._evaluationCache.delete(key);
+      this._entitySignatures.delete(key);
+      this._liveGenByKey.delete(key);
+      this._subscribeChains.delete(key);
       if (this.hass?.__uvc_template_strings) {
         delete this.hass.__uvc_template_strings[key];
       }
     }
   }
 
-  /**
-   * Unsubscribe from all template subscriptions
-   */
   public async unsubscribeAllTemplates(): Promise<void> {
-    for (const [, subPromise] of this._templateSubscriptions.entries()) {
-      try {
-        if (subPromise) {
-          const unsubFn = await Promise.resolve(subPromise).catch(() => null);
-          if (unsubFn && typeof unsubFn === 'function') {
-            try {
-              await unsubFn();
-            } catch {}
-          }
-        }
-      } catch {}
+    for (const key of [...this._templateSubscriptions.keys()]) {
+      await this._unsubscribeKey(key);
     }
-
     this._templateSubscriptions.clear();
     this._templateResults.clear();
     this._evaluationCache.clear();
     this._previousStringResults.clear();
+    this._entitySignatures.clear();
+    this._liveGenByKey.clear();
+    this._subscribeChains.clear();
   }
 
-  /**
-   * Update the Home Assistant reference.
-   *
-   * HA replaces the hass object on every entity state change.  Subscription
-   * callbacks write template results to `this.hass.__uvc_template_strings`, so
-   * when the object changes the results are lost and the next synchronous
-   * render reads `undefined`.  We carry over `__uvc_template_strings` from the
-   * outgoing object to the incoming one so already-resolved values remain
-   * available until new callbacks fire.
-   */
   public updateHass(hass: HomeAssistant): void {
     if (this.hass && hass !== this.hass) {
       if (this.hass.__uvc_template_strings) {

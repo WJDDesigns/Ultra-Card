@@ -1,6 +1,58 @@
 import { HomeAssistant } from 'custom-card-helpers';
 
 /**
+ * Deterministic hash for a small set of entity attributes (used for template
+ * re-subscription signatures — avoids churn from unrelated attribute keys).
+ */
+function hashEntityAttrSlice(attrs: Record<string, any> | undefined): string {
+  if (!attrs || typeof attrs !== 'object') return '';
+  const slice = {
+    uom: attrs.unit_of_measurement ?? '',
+    dc: attrs.device_class ?? '',
+    fn: attrs.friendly_name ?? '',
+    icon: attrs.icon ?? '',
+    rgb: Array.isArray(attrs.rgb_color) ? attrs.rgb_color.join(',') : '',
+  };
+  const s = `${slice.uom}|${slice.dc}|${slice.fn}|${slice.icon}|${slice.rgb}`;
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h).toString(36);
+}
+
+/**
+ * Stable signature for when the entity snapshot passed as `variables` to
+ * `render_template` has changed. Used to tear down and re-subscribe so Jinja
+ * sees fresh `state` / `attributes` (HA does not push variable updates).
+ */
+export function computeEntitySignature(
+  entityId: string | undefined | null,
+  hass: HomeAssistant
+): string {
+  if (!entityId || typeof entityId !== 'string' || entityId.trim() === '') {
+    return '';
+  }
+  const id = entityId.trim();
+  const st = hass?.states?.[id];
+  if (!st) {
+    return `${id}|unavailable|`;
+  }
+  return `${id}|${st.state}|${hashEntityAttrSlice(st.attributes)}`;
+}
+
+/** Join signatures for multiple entities (e.g. dynamic list todo sources). */
+export function computeMultiEntitySignature(
+  entityIds: (string | undefined | null)[],
+  hass: HomeAssistant
+): string {
+  const ids = [...new Set(entityIds.filter((x): x is string => !!x && String(x).trim() !== ''))].sort();
+  if (ids.length === 0) return '';
+  return ids.map(id => computeEntitySignature(id, hass)).join('||');
+}
+
+/**
  * Builds entity context variables for unified templates
  * Provides access to entity data, attributes, and helper functions
  * Similar to Mushroom Card's template system

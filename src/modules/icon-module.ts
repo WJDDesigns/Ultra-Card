@@ -17,17 +17,14 @@ import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
-import { buildEntityContext } from '../utils/template-context';
+import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import {
   parseUnifiedTemplate,
   hasTemplateError,
   getTemplateError,
   unifiedTemplateIcon,
 } from '../utils/template-parser';
-import {
-  preprocessTemplateVariables,
-  injectEntityContextIntoTemplate,
-} from '../utils/uc-template-processor';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { parseLocaleNumber } from '../utils/parse-locale-number';
 
 type IconAnimation = NonNullable<IconConfig['active_icon_animation']>;
@@ -47,6 +44,8 @@ export class UltraIconModule extends BaseUltraModule {
 
   private _previewCollapsed = false;
   private _templateService?: TemplateService;
+  /** Last good unified-template icon color per key (anti-flash across WS re-subscribe). */
+  private _lastUnifiedIconDisplayColorByKey = new Map<string, string>();
   private _attributeCache = new Map<string, { value: string; label: string }[]>();
   private _updateTimeout?: NodeJS.Timeout;
   private _processingAttributes = new Set<string>();
@@ -2497,7 +2496,7 @@ export class UltraIconModule extends BaseUltraModule {
         }
 
         const processedUnifiedTemplate = preprocessTemplateVariables(
-          injectEntityContextIntoTemplate(icon.unified_template, icon.entity),
+          icon.unified_template,
           hass,
           config
         );
@@ -2513,9 +2512,9 @@ export class UltraIconModule extends BaseUltraModule {
           hass.__uvc_template_strings = {};
         }
 
-        // Subscribe to template if not already subscribed (needed for template evaluation)
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-          const context = { entity: icon.entity, id: icon.id };
+        if (this._templateService) {
+          const context = this._getEntityContext(icon, hass);
+          const entitySig = computeEntitySignature(icon.entity, hass);
           this._templateService.subscribeToTemplate(
             processedUnifiedTemplate,
             templateKey,
@@ -2523,7 +2522,8 @@ export class UltraIconModule extends BaseUltraModule {
               this.triggerPreviewUpdate();
             },
             context,
-            config // Pass config for card-specific variable resolution
+            config,
+            entitySig
           );
         }
 
@@ -2750,7 +2750,7 @@ export class UltraIconModule extends BaseUltraModule {
                 }
 
                 const processedUnifiedTemplate = preprocessTemplateVariables(
-                  injectEntityContextIntoTemplate(icon.unified_template, icon.entity),
+                  icon.unified_template,
                   hass,
                   config
                 );
@@ -2766,11 +2766,9 @@ export class UltraIconModule extends BaseUltraModule {
                   hass.__uvc_template_strings = {};
                 }
 
-                if (
-                  this._templateService &&
-                  !this._templateService.hasTemplateSubscription(templateKey)
-                ) {
-                  const context = { entity: icon.entity, id: icon.id };
+                if (this._templateService) {
+                  const context = this._getEntityContext(icon, hass);
+                  const entitySig = computeEntitySignature(icon.entity, hass);
                   this._templateService.subscribeToTemplate(
                     processedUnifiedTemplate,
                     templateKey,
@@ -2778,17 +2776,23 @@ export class UltraIconModule extends BaseUltraModule {
                       this.triggerPreviewUpdate();
                     },
                     context,
-                    config
+                    config,
+                    entitySig
                   );
                 }
 
                 const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
+                let appliedUnifiedIconColor = false;
                 if (unifiedResult && String(unifiedResult).trim() !== '') {
                   const parsed = parseUnifiedTemplate(unifiedResult);
                   if (!hasTemplateError(parsed)) {
                     const uIcon = unifiedTemplateIcon(parsed);
                     if (uIcon) displayIcon = uIcon;
-                    if (parsed.icon_color) displayColor = parsed.icon_color;
+                    if (parsed.icon_color) {
+                      displayColor = parsed.icon_color;
+                      this._lastUnifiedIconDisplayColorByKey.set(templateKey, parsed.icon_color);
+                      appliedUnifiedIconColor = true;
+                    }
                     if (parsed.name) tmplName = String(parsed.name);
                     if (parsed.state_text !== undefined) {
                       tmplStateText = String(parsed.state_text);
@@ -2801,6 +2805,10 @@ export class UltraIconModule extends BaseUltraModule {
                       templateContainerBgColor = parsed.container_background_color;
                     }
                   }
+                }
+                if (!appliedUnifiedIconColor) {
+                  const heldColor = this._lastUnifiedIconDisplayColorByKey.get(templateKey);
+                  if (heldColor) displayColor = heldColor;
                 }
               } else if (entityState?.attributes?.icon && !displayIcon) {
                 displayIcon = entityState.attributes.icon;
@@ -3463,14 +3471,11 @@ export class UltraIconModule extends BaseUltraModule {
       // the entity and re-evaluates on state change.  For the inactive editor preview,
       // we skip injection and instead pass a literal state override via `variables`
       // (so the preview displays the "inactive state" styling regardless of live state).
-      const processedUnifiedTemplate =
-        previewStateOverride !== null
-          ? preprocessTemplateVariables(icon.unified_template, hass, cardConfig)
-          : preprocessTemplateVariables(
-              injectEntityContextIntoTemplate(icon.unified_template, icon.entity),
-              hass,
-              cardConfig
-            );
+      const processedUnifiedTemplate = preprocessTemplateVariables(
+        icon.unified_template,
+        hass,
+        cardConfig
+      );
 
       const templateKeySuffix = previewStateOverride !== null ? `_inactive_preview` : '';
       const templateKey = this._buildUnifiedIconTemplateKey(
@@ -3486,16 +3491,20 @@ export class UltraIconModule extends BaseUltraModule {
         hass.__uvc_template_strings = {};
       }
 
-      if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+      if (this._templateService) {
+        const baseContext = this._getEntityContext(icon, hass);
         const context =
           previewStateOverride !== null
             ? {
-                entity: icon.entity,
-                id: icon.id,
+                ...baseContext,
                 state: previewStateOverride,
                 state_number: parseLocaleNumber(previewStateOverride),
               }
-            : { entity: icon.entity, id: icon.id };
+            : baseContext;
+        const entitySig =
+          previewStateOverride !== null
+            ? `${icon.entity}|inactive_preview=${previewStateOverride}`
+            : computeEntitySignature(icon.entity, hass);
         this._templateService.subscribeToTemplate(
           processedUnifiedTemplate,
           templateKey,
@@ -3503,17 +3512,23 @@ export class UltraIconModule extends BaseUltraModule {
             this.triggerPreviewUpdate();
           },
           context,
-          cardConfig
+          cardConfig,
+          entitySig
         );
       }
 
       const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
+      let appliedSplitPreviewColor = false;
       if (unifiedResult && String(unifiedResult).trim() !== '') {
         const parsed = parseUnifiedTemplate(unifiedResult);
         if (!hasTemplateError(parsed)) {
           const uIcon = unifiedTemplateIcon(parsed);
           if (uIcon) displayIcon = uIcon;
-          if (parsed.icon_color) displayColor = parsed.icon_color;
+          if (parsed.icon_color) {
+            displayColor = parsed.icon_color;
+            this._lastUnifiedIconDisplayColorByKey.set(templateKey, parsed.icon_color);
+            appliedSplitPreviewColor = true;
+          }
           if (parsed.name) tmplName = String(parsed.name);
           if (parsed.state_text !== undefined) {
             tmplStateText = String(parsed.state_text);
@@ -3526,6 +3541,10 @@ export class UltraIconModule extends BaseUltraModule {
             templateContainerBgColor = parsed.container_background_color;
           }
         }
+      }
+      if (!appliedSplitPreviewColor) {
+        const heldSplit = this._lastUnifiedIconDisplayColorByKey.get(templateKey);
+        if (heldSplit) displayColor = heldSplit;
       }
     } else if (entityState?.attributes?.icon && !displayIcon) {
       displayIcon = entityState.attributes.icon;
@@ -3957,7 +3976,7 @@ export class UltraIconModule extends BaseUltraModule {
             }
 
             const processedUnifiedTemplate = preprocessTemplateVariables(
-              injectEntityContextIntoTemplate(icon.unified_template, icon.entity),
+              icon.unified_template,
               hass,
               undefined
             );
@@ -3973,29 +3992,34 @@ export class UltraIconModule extends BaseUltraModule {
               hass.__uvc_template_strings = {};
             }
 
-            if (
-              this._templateService &&
-              !this._templateService.hasTemplateSubscription(templateKey)
-            ) {
-              const context = { entity: icon.entity, id: icon.id };
+            if (this._templateService) {
+              const context = this._getEntityContext(icon, hass);
+              const entitySig = computeEntitySignature(icon.entity, hass);
               this._templateService.subscribeToTemplate(
                 processedUnifiedTemplate,
                 templateKey,
                 () => {
                   this.triggerPreviewUpdate();
                 },
-                context
+                context,
+                undefined,
+                entitySig
               );
             }
 
             const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
+            let appliedGridTplColor = false;
             if (unifiedResult && String(unifiedResult).trim() !== '') {
               const parsed = parseUnifiedTemplate(unifiedResult);
               if (!hasTemplateError(parsed)) {
                 const uIcon = unifiedTemplateIcon(parsed);
                 if (uIcon) tmplIcon = uIcon;
                 else if (parsed.icon) tmplIcon = String(parsed.icon);
-                if (parsed.icon_color) tmplIconColor = String(parsed.icon_color);
+                if (parsed.icon_color) {
+                  tmplIconColor = String(parsed.icon_color);
+                  this._lastUnifiedIconDisplayColorByKey.set(templateKey, tmplIconColor);
+                  appliedGridTplColor = true;
+                }
                 if (parsed.name) tmplName = String(parsed.name);
                 if (parsed.state_text !== undefined) tmplStateText = String(parsed.state_text);
                 if (parsed.name_color) tmplNameColor = String(parsed.name_color);
@@ -4004,6 +4028,10 @@ export class UltraIconModule extends BaseUltraModule {
                   templateContainerBgColor = parsed.container_background_color;
                 }
               }
+            }
+            if (!appliedGridTplColor) {
+              const heldGrid = this._lastUnifiedIconDisplayColorByKey.get(templateKey);
+              if (heldGrid) tmplIconColor = heldGrid;
             }
           }
 
@@ -4754,7 +4782,7 @@ export class UltraIconModule extends BaseUltraModule {
       }
 
       const processedUnifiedTemplate = preprocessTemplateVariables(
-        injectEntityContextIntoTemplate(icon.unified_template, icon.entity),
+        icon.unified_template,
         hass,
         undefined
       );
@@ -4769,15 +4797,18 @@ export class UltraIconModule extends BaseUltraModule {
       }
 
       // Note: cardConfig not available in _evaluateIconState - only global variables will work here
-      if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-        const context = { entity: icon.entity, id: icon.id };
+      if (this._templateService) {
+        const context = this._getEntityContext(icon, hass);
+        const entitySig = computeEntitySignature(icon.entity, hass);
         this._templateService.subscribeToTemplate(
           processedUnifiedTemplate,
           templateKey,
           () => {
             this.triggerPreviewUpdate();
           },
-          context
+          context,
+          undefined,
+          entitySig
         );
       }
 
@@ -4916,12 +4947,9 @@ export class UltraIconModule extends BaseUltraModule {
   }
 
   /**
-   * Build entity context for unified templates
-   * Provides access to entity data, attributes, and helper functions.
-   *
-   * As of v3.3.0-beta14+ entity state/attributes are injected directly into the
-   * template via `injectEntityContextIntoTemplate`, so this helper is retained
-   * only for legacy callers (active/inactive evaluation, preview overrides).
+   * Build entity context for unified templates (`variables` passed to HA
+   * `render_template`). Refreshed on every render; `TemplateService` re-subscribes
+   * when `computeEntitySignature` changes so Jinja sees up-to-date `state`.
    */
   private _getEntityContext(icon: IconConfig, hass: HomeAssistant): Record<string, any> {
     return buildEntityContext(icon.entity, hass, {

@@ -7,6 +7,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { TemplateService } from '../services/template-service';
 import { UltraCardTodoService, TodoItem } from '../services/uc-todo-service';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import { computeMultiEntitySignature } from '../utils/template-context';
 import { getModuleRegistry } from './module-registry';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
@@ -1918,12 +1919,17 @@ export class UltraDynamicListModule extends BaseUltraModule {
       if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
 
       const processedTpl = preprocessTemplateVariables(prefixedTemplate, hass, config);
-      const tHash = this._hashString(processedTpl);
-      const tKey = `layout_mods_dynlist_todotpl_${dynModule.id}_${tHash}`;
+      const tKey = `layout_mods_dynlist_todotpl_${dynModule.id}`;
+      const entitySig = `${computeMultiEntitySignature(entityIds, hass)}|n:${allItems.length}|j:${this._hashString(itemsJson)}`;
 
-      if (!this._templateService.hasTemplateSubscription(tKey)) {
-        this._templateService.subscribeToTemplate(processedTpl, tKey, onUpdate, {}, config);
-      }
+      this._templateService.subscribeToTemplate(
+        processedTpl,
+        tKey,
+        onUpdate,
+        {},
+        config,
+        entitySig
+      );
       const rawTodo = hass.__uvc_template_strings?.[tKey];
       if (!rawTodo) {
         return html`
@@ -2031,12 +2037,18 @@ export class UltraDynamicListModule extends BaseUltraModule {
       if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
 
       const processedTpl = preprocessTemplateVariables(prefixedTemplate, hass, config);
-      const tHash = this._hashString(processedTpl);
-      const tKey = `layout_mods_dynlist_action_${dynModule.id}_${tHash}`;
+      const tKey = `layout_mods_dynlist_action_${dynModule.id}`;
+      const watchList = actCfg.watch_entities || [];
+      const entitySig = `${computeMultiEntitySignature(watchList, hass)}|r:${this._hashString(responseJson)}`;
 
-      if (!this._templateService.hasTemplateSubscription(tKey)) {
-        this._templateService.subscribeToTemplate(processedTpl, tKey, onUpdate, {}, config);
-      }
+      this._templateService.subscribeToTemplate(
+        processedTpl,
+        tKey,
+        onUpdate,
+        {},
+        config,
+        entitySig
+      );
       const rawAction = hass.__uvc_template_strings?.[tKey];
       if (!rawAction) {
         return html`
@@ -2082,17 +2094,15 @@ export class UltraDynamicListModule extends BaseUltraModule {
       const templateHash = this._hashString(processedTemplate);
       const templateKey = `layout_mods_dynlist_${dynModule.id}_${templateHash}`;
 
-      if (!this._templateService.hasTemplateSubscription(templateKey)) {
-        this._templateService.subscribeToTemplate(
-          processedTemplate,
-          templateKey,
-          () => {
-            this.triggerPreviewUpdate();
-          },
-          {},
-          config
-        );
-      }
+      this._templateService.subscribeToTemplate(
+        processedTemplate,
+        templateKey,
+        () => {
+          this.triggerPreviewUpdate();
+        },
+        {},
+        config
+      );
 
       const raw = hass.__uvc_template_strings?.[templateKey];
 

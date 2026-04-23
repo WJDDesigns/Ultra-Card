@@ -9,7 +9,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { TemplateService } from '../services/template-service';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { localize } from '../localize/localize';
-import { buildEntityContext } from '../utils/template-context';
+import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
@@ -571,7 +571,7 @@ export class UltraTextModule extends BaseUltraModule {
         const templateHash = this._hashString(processedUnifiedTemplate);
         const templateKey = `unified_text_${textModule.id}_${templateHash}`;
 
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+        if (this._templateService) {
           const context = buildEntityContext('', hass, {
             text: textModule.text,
           });
@@ -582,7 +582,8 @@ export class UltraTextModule extends BaseUltraModule {
               this.triggerPreviewUpdate();
             },
             context,
-            config
+            config,
+            computeEntitySignature('', hass)
           );
         }
 
@@ -721,7 +722,7 @@ export class UltraTextModule extends BaseUltraModule {
         const templateKey = `unified_text_${textModule.id}_${templateHash}`;
 
         // Subscribe to template if not already subscribed (needed for template evaluation)
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+        if (this._templateService) {
           const context = buildEntityContext('', hass, {
             text: textModule.text,
           });
@@ -734,7 +735,8 @@ export class UltraTextModule extends BaseUltraModule {
               }
             },
             context,
-            config // Pass config for card-specific variable resolution
+            config,
+            computeEntitySignature('', hass)
           );
         }
 

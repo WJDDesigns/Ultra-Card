@@ -12,11 +12,8 @@ import {
   hasTemplateError,
   isStringResult,
 } from '../utils/template-parser';
-import {
-  preprocessTemplateVariables,
-  injectEntityContextIntoTemplate,
-} from '../utils/uc-template-processor';
-import { buildEntityContext } from '../utils/template-context';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import { safeGetItem, safeSetItem } from '../utils/safe-storage';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
@@ -1785,10 +1782,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       }
 
       const processedUnifiedTemplate = preprocessTemplateVariables(
-        injectEntityContextIntoTemplate(
-          dropdownModule.unified_template!,
-          dropdownModule.source_entity
-        ),
+        dropdownModule.unified_template!,
         hass,
         config
       );
@@ -1799,13 +1793,11 @@ export class UltraDropdownModule extends BaseUltraModule {
         hass.__uvc_template_strings = {};
       }
 
-      if (
-        this._templateService &&
-        !this._templateService.hasTemplateSubscription(templateKey)
-      ) {
+      if (this._templateService) {
         const context = buildEntityContext(dropdownModule.source_entity || '', hass, {
           entity: dropdownModule.source_entity,
         });
+        const entitySig = computeEntitySignature(dropdownModule.source_entity || '', hass);
         // Subscribe to template for updates
         this._templateService.subscribeToTemplate(
           processedUnifiedTemplate,
@@ -1816,7 +1808,8 @@ export class UltraDropdownModule extends BaseUltraModule {
             }
           },
           context,
-          config
+          config,
+          entitySig
         );
         
         // Try initial evaluation via API for immediate result
@@ -3097,10 +3090,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     } else if (isUnifiedTemplateMode) {
       // Unified template mode: get options from template
       const processedUnifiedTemplate = preprocessTemplateVariables(
-        injectEntityContextIntoTemplate(
-          dropdownModule.unified_template!,
-          dropdownModule.source_entity
-        ),
+        dropdownModule.unified_template!,
         hass,
         config
       );

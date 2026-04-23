@@ -13,7 +13,7 @@ import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { TemplateService } from '../services/template-service';
-import { buildEntityContext } from '../utils/template-context';
+import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import {
   parseUnifiedTemplate,
   hasTemplateError,
@@ -904,11 +904,12 @@ export class UltraCameraModule extends BaseUltraModule {
         const templateHash = this._hashString(processed);
         const templateKey = `unified_camera_${cameraModule.id}_${templateHash}`;
 
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+        if (this._templateService) {
           const context = buildEntityContext(cameraModule.entity || '', hass, {
             camera_name: cameraModule.camera_name,
             live_view: cameraModule.live_view,
           });
+          const entitySig = computeEntitySignature(cameraModule.entity || '', hass);
 
           this._templateService.subscribeToTemplate(
             processed,
@@ -919,7 +920,8 @@ export class UltraCameraModule extends BaseUltraModule {
               }
             },
             context,
-            config // Pass config for card-specific variable resolution
+            config,
+            entitySig
           );
         }
 

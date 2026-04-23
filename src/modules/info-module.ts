@@ -20,10 +20,8 @@ import {
   getTemplateError,
   unifiedTemplateIcon,
 } from '../utils/template-parser';
-import {
-  preprocessTemplateVariables,
-  injectEntityContextIntoTemplate,
-} from '../utils/uc-template-processor';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 
 export class UltraInfoModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -39,6 +37,8 @@ export class UltraInfoModule extends BaseUltraModule {
 
   private _templateService?: TemplateService;
   private _templateInputDebounce: any = null;
+  /** Last good unified-template icon color per key (anti-flash across WS re-subscribe). */
+  private _lastUnifiedInfoIconColorByKey = new Map<string, string>();
 
   createDefault(id?: string, hass?: HomeAssistant): InfoModule {
     return {
@@ -1595,10 +1595,10 @@ export class UltraInfoModule extends BaseUltraModule {
           this._templateService.updateHass(hass);
         }
 
-        // IMPORTANT: Must use the PROCESSED template (after variable substitution AND entity
-        // context injection) for the hash to match the key used when subscribing to the template.
+        // IMPORTANT: Must use the same PROCESSED template string as the entity row subscribe
+        // path so templateKey hashes match.
         const processedTemplate = preprocessTemplateVariables(
-          injectEntityContextIntoTemplate(entity.unified_template, entity.entity),
+          entity.unified_template,
           hass,
           config
         );
@@ -1766,11 +1766,8 @@ export class UltraInfoModule extends BaseUltraModule {
                   this._templateService.updateHass(hass);
                 }
 
-                // Inject entity context (state/attributes/etc.) into the template as
-                // `{% set %}` statements so HA auto-tracks the entity and re-evaluates
-                // on state change. This lets us subscribe ONCE and never resubscribe.
                 const processedUnifiedTemplate = preprocessTemplateVariables(
-                  injectEntityContextIntoTemplate(entity.unified_template, entity.entity),
+                  entity.unified_template,
                   hass,
                   config
                 );
@@ -1787,17 +1784,12 @@ export class UltraInfoModule extends BaseUltraModule {
                   hass.__uvc_template_strings = {};
                 }
 
-                if (
-                  this._templateService &&
-                  !this._templateService.hasTemplateSubscription(templateKey)
-                ) {
-                  // Static context only — state/attributes/etc. are now injected into
-                  // the template itself via `{% set %}`.
-                  const context = {
+                if (this._templateService) {
+                  const context = buildEntityContext(entity.entity, hass, {
                     name: entity.name,
                     icon: entity.icon,
-                    entity: entity.entity,
-                  };
+                  });
+                  const entitySig = computeEntitySignature(entity.entity, hass);
                   this._templateService.subscribeToTemplate(
                     processedUnifiedTemplate,
                     templateKey,
@@ -1805,17 +1797,23 @@ export class UltraInfoModule extends BaseUltraModule {
                       this.triggerPreviewUpdate();
                     },
                     context,
-                    config
+                    config,
+                    entitySig
                   );
                 }
 
                 const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
+                let appliedInfoTplIconColor = false;
                 if (unifiedResult && String(unifiedResult).trim() !== '') {
                   const parsed = parseUnifiedTemplate(unifiedResult);
                   if (!hasTemplateError(parsed)) {
                     const uIcon = unifiedTemplateIcon(parsed);
                     if (uIcon) displayIcon = uIcon;
-                    if (parsed.icon_color) displayIconColor = parsed.icon_color;
+                    if (parsed.icon_color) {
+                      displayIconColor = parsed.icon_color;
+                      this._lastUnifiedInfoIconColorByKey.set(templateKey, parsed.icon_color);
+                      appliedInfoTplIconColor = true;
+                    }
                     if (parsed.name) tmplName = String(parsed.name);
                     if (parsed.state_text !== undefined) {
                       tmplStateText = String(parsed.state_text);
@@ -1825,6 +1823,10 @@ export class UltraInfoModule extends BaseUltraModule {
                     if (parsed.name_color) tmplNameColor = String(parsed.name_color);
                     if (parsed.state_color) tmplStateColor = String(parsed.state_color);
                   }
+                }
+                if (!appliedInfoTplIconColor) {
+                  const heldInfo = this._lastUnifiedInfoIconColorByKey.get(templateKey);
+                  if (heldInfo) displayIconColor = heldInfo;
                 }
               }
 

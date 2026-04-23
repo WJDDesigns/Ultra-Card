@@ -1,5 +1,27 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta15
+
+### 🐛 Critical Fix: Unified template colors update again (reverts beta14 injection approach)
+
+**TL;DR:** In Developer Tools → Template, a template that only pulled entity state via prepended `{% set _uc_state_obj = states('sensor.x') %}` did **not** register entity listeners — HA never re-pushed `render_template` results. Beta14 relied on that for “subscribe once” behavior, so unified `icon_color` / JSON templates evaluated **once** and froze. **Beta15** removes the injection, restores `**buildEntityContext` → `variables`**, and `**TemplateService` re-subscribes** whenever `computeEntitySignature(entity, hass)` changes (state + key attributes), with a **per-key generation counter** so stale websocket callbacks are ignored.
+
+**What changed:**
+
+- `**injectEntityContextIntoTemplate` is no longer used** in icon, info, bar, gauge, spinbox, toggle, dropdown, text, markdown, camera, graphs, status-summary, or dynamic-list paths (helper remains in `uc-template-processor.ts` for compatibility).
+- `**subscribeToTemplate(..., entitySignature?)`** — when `entitySignature` is passed, Ultra Card unsubscribes and opens a fresh `render_template` subscription whenever the signature changes so HA always receives up-to-date `variables` (`state`, `attributes`, `unit`, etc.). When omitted (layout columns, logic conditions, etc.), behavior stays “subscribe once”.
+- **Race safety:** monotonic `_liveGenByKey`; callbacks from superseded subscriptions are dropped. **First WS message** after each subscribe always writes `hass.__uvc_template_strings` and fires `onResultChanged` (no “unchanged string” skip on first push).
+- **Anti-flash:** `_lastUnifiedIconDisplayColorByKey` / `_lastUnifiedInfoIconColorByKey` restored for the brief window around re-subscribe.
+- **Dynamic list (todo-template / action):** stable subscription keys per module + signatures derived from todo entities + item payload / watch entities + response JSON so list templates refresh without leaking one subscription per items hash.
+
+### ⚠️ Testing Focus
+
+- **Rainbow `icon_color` on `input_number` / sensor** — should track live without refresh (same JSON template users reported stuck on beta14).
+- Info + icon unified templates using `{{ state }}`, `state_number`, `attributes.*`.
+- Dynamic list todo-template and action sources after edits / todo changes.
+
+---
+
 ## Version 3.3.0-beta14
 
 ### 🐛 Critical Fix: Reverted template engine to the proven 3.2.1 model + entity context auto-tracking
@@ -10,7 +32,7 @@ After several betas of patching around edge cases, beta14 takes a different appr
 
 - **Entity context is now injected directly into the Jinja template** before it's sent to Home Assistant. Your `{{ state }}`, `{{ attributes.foo }}`, `{{ state_number }}`, etc. are automatically prepended with `{% set state = states('sensor.xxx').state %}` etc. HA's `render_template` websocket sees these `states(...)` calls, auto-tracks the referenced entity, and re-evaluates + re-pushes the template on every state change — no resubscription required.
 - **Template service reverted to a "subscribe once, never refresh" model** matching 3.2.1. No more signature comparison, generation tokens, synchronous cache invalidations, or hold-cache workarounds. The websocket is the single source of truth; whatever it pushes becomes the current value.
-- **`updateHass` carries over `__uvc_template_strings`** from the outgoing hass object to the new one, so results don't get lost when HA creates a new hass object on every entity state change.
+- `**updateHass` carries over `__uvc_template_strings`** from the outgoing hass object to the new one, so results don't get lost when HA creates a new hass object on every entity state change.
 
 **What this fixes:**
 
@@ -144,7 +166,7 @@ This beta replaces every floating settings popup in the editor with a clean slid
 
 - **Border rendering for all modules** — `getBorderCSS()` now reads both the legacy flat properties (`border_width`, `border_color`, `border_style`) and the current nested `border` object (`border.width`, `border.color`, `border.style`). Borders set via the Design tab now render correctly on horizontal, vertical, and all other layout modules.
 - **Entity picker variable display** — `renderEntityPickerWithVariables` resolves `$variable` references before passing the value to `ha-form`, so the picker shows the entity's friendly name and icon instead of the raw variable token.
-- **`ha-form` field labels** — The default `computeLabel` now prefers `schema.label` over `schema.name`, fixing fields that were showing their internal key name instead of the configured display label.
+- `**ha-form` field labels** — The default `computeLabel` now prefers `schema.label` over `schema.name`, fixing fields that were showing their internal key name instead of the configured display label.
 - **Logic condition operator labels** — "contains", "not_contains", "has_value", and "no_value" condition operators are now properly title-cased ("Contains", "Not Contains", "Has Value", "No Value") across accordion, bar, popup, grid, dynamic list, info, and all other modules that use logic conditions.
 - **Clipboard export** — The multi-step read-back verification and `execCommand` fallback are removed in favour of a simpler contract: if `navigator.clipboard.writeText` resolves without throwing, the write succeeded. If it throws (HTTP context, permission denied, mobile WebView), the shortcode dialog is shown immediately instead of a silent false-success.
 - **Entity field descriptions** — Several module entity pickers now include a description below the field explaining what to select: Bar (source entity and limit entity), Slider Control, Gauge, Calendar, Animated Weather, and Background (entity source mode).
@@ -550,15 +572,18 @@ Early access to the **3.1** line. This beta focuses on the Hub sidebar, sharing 
 ## Version 3.0.0
 
 ### 🔗 Ultra Card Connect
+
 - **Integration renamed to Ultra Card Connect** — The companion integration is now called "Ultra Card Connect" and is **required for all users** (free and Pro) to access the sidebar Hub
 - **Updated Pro tab install instructions** — The Pro tab now directs users to search for "Ultra Card Connect" in HACS with clear messaging that it's needed by everyone, not just Pro subscribers
 - **Updated integration status text** — Sidebar Pro tab now shows "Connected via Ultra Card Connect" when authenticated
 
 ### 🚀 New Features
+
 - **Dashboard tab scans all dashboards** — The Hub Dashboard tab now counts Ultra Cards and views across all your dashboards (not just the current one), giving accurate totals for your entire Home Assistant setup
 - **Bar template support** — Template service now supports `bar_left_` and `bar_right_` template prefixes for bar module customization
 
 ### 🐛 Bug Fixes
+
 - **Fixed entity tracking for nested module arrays** — `shouldUpdate()` now correctly detects entity changes inside nested arrays (`icons`, `info_entities`, `data_items`, `data_items_compact`, `data_items_banner`, and more). Cards using these module types will now re-render properly when their entities change state
 
 ---
@@ -1198,6 +1223,7 @@ Say hello to the **Dynamic Weather Module**, a gorgeous new way to visualize wea
 
 **🔘 Toggle Module**
 A sleek new toggle for quick on/off controls! Perfect for lights, switches, and automations.
+
 - Customizable styling and colors
 - Match state templating for dynamic icons based on entity state
 - Just add a Toggle module, select your entity, and tap away!
@@ -1207,23 +1233,27 @@ Display entity status information with enhanced visual feedback. Great for showi
 
 **🏀 Sports Score Module**
 Live sports scores on your dashboard? Yes, please! 
+
 - Display real-time game scores and information
 - **New in 2.2.0:** Extended text color customization options
 - Keep your eye on the game while managing your smart home
 
 **📅 Pro Calendar Module** *(Pro Feature)*
 A beautiful calendar module with customizable views and event display. 
+
 - Drag-and-drop list for reordering items when clipped
 - Height display option for compact list view
 - Perfect for keeping track of your schedule at a glance
 
 **📐 Grid Module**
 Create flexible grid-based layouts with ease!
+
 - **Image icons for entities** — use custom images instead of standard icons
 - Perfect for photo galleries, device grids, or custom dashboards
 
 **🎹 Accordion Module**
 Collapsible sections for organized content!
+
 - Comprehensive styling, colors, and behavior settings
 - Keep your dashboard tidy while packing in more information
 
@@ -1233,12 +1263,14 @@ Collapsible sections for organized content!
 
 **Google Fonts Integration** 
 Access **30+ beautiful font families** directly from Google Fonts! No more boring Arial — pick from:
+
 - Space Grotesk, Poppins, Montserrat, Playfair Display, and many more
 - Fonts load dynamically from Google CDN when selected
 - Apply different fonts across your entire card or per-module
 
 **Enhanced Card Mod Support**
 All design properties now generate CSS custom properties that you can override with card-mod:
+
 ```yaml
 style: |
   :host {
@@ -1252,6 +1284,7 @@ style: |
 ### 🎴 Cards Tab — Native Meets 3rd Party
 
 The **3rd Party tab** has evolved into the **Cards tab**! Now you can add:
+
 - **Native Home Assistant cards** (button, entity, gauge, etc.)
 - **3rd party custom cards** (Mushroom, Mini Graph, etc.)
 - **YAML cards** — perfect for WebRTC or other YAML-based configurations
@@ -1263,6 +1296,7 @@ All cards live together harmoniously in one unified interface. Simply click to a
 ### 📷 Camera Module — Hollywood Upgrade
 
 Your camera feeds just got a serious upgrade:
+
 - **Parity with HA** — layout and controls now mirror native Home Assistant behavior
 - **Playback mode selector** — choose how your camera streams
 - **Fixed audio reliability** — no more lingering audio issues
@@ -1275,6 +1309,7 @@ Your camera feeds just got a serious upgrade:
 **Entity-Triggered Popups** — Automate your popup displays!
 
 **How to use:**
+
 1. Create a popup module with your desired content
 2. In popup settings, select an entity as the trigger
 3. Configure the trigger condition (state equals "on", numeric threshold, etc.)
@@ -1288,18 +1323,22 @@ Perfect for alerts, notifications, or context-sensitive information!
 ### 📊 Charts & Gauges — More Control, Better Visuals
 
 **Graph Module Enhancements:**
+
 - **Min/Max values** — set custom ranges for better data visualization
 - No more auto-scaling surprises!
 
 **Bar Module Improvements:**
+
 - **Min/Max values** — constrain your bars to meaningful ranges
 - Horizontal flip for arc and speedometer styles
 
 **Chart Module:**
+
 - Now displays bar count correctly
 - Apex Chart display improvements
 
 **Dropdown Module:**
+
 - Specify visible items count
 - Header customization with configurable icon and title
 - Only one dropdown open at a time — no more UI conflicts
@@ -1309,25 +1348,31 @@ Perfect for alerts, notifications, or context-sensitive information!
 ### 🎛️ Module Improvements — The Little Things Matter
 
 **Icon Module:**
+
 - Choose between **static icon** or **entity-based** icons
 - Background padding slider for perfect spacing
 
 **Info Module:**
+
 - New **distribution options** for layout control
 - Change layout direction even without an icon
 
 **Button Module:**
+
 - **Icon size configuration** — make those icons as big or small as you want
 
 **Slider Module:**
+
 - **Settable slider direction** — horizontal or vertical, your choice!
 - Reduced lag in climate module sliders
 
 **Climate Module:**
+
 - Improved interaction handling and responsiveness
 - Removed the extra "custom name" field that was causing confusion
 
 **Spinbox Module:**
+
 - Fixed mobile button deselection issues
 - No more focus retention problems on mobile
 
@@ -1349,6 +1394,7 @@ Unicode characters, zero-width spaces, and special glyphs are now preserved duri
 ### 🐛 Bug Fixes — Squashed 'Em All!
 
 **Layout & Display:**
+
 - Fixed transform origin issues causing incorrect scaling in responsive cards
 - Fixed border placement and background colors based on entity state
 - Fixed text color issues in text module
@@ -1359,6 +1405,7 @@ Unicode characters, zero-width spaces, and special glyphs are now preserved duri
 - Fixed nested layout rendering issues
 
 **Module-Specific:**
+
 - Fixed toggle module functionality and state change sensing
 - Fixed info module templating issues
 - Fixed popup modules nesting and z-index conflicts
@@ -1369,21 +1416,25 @@ Unicode characters, zero-width spaces, and special glyphs are now preserved duri
 - Fixed chart module bar count display
 
 **Mobile & Touch:**
+
 - Fixed mobile button deselection in spinbox module
 - Fixed dropdown not closing when swiping on mobile
 - Fixed spinbox focus retention on mobile
 - Improved iPad user interface issues
 
 **3rd Party Integration:**
+
 - Possible fix for mushroom template issues as 3rd party module
 - Fixed WebRTC camera card compatibility
 - Improved 3rd party card stability
 
 **Camera:**
+
 - Fixed audio playback issues
 - Fixed WebRTC initial play problems
 
 **Dropdown:**
+
 - Fixed duplicate dropdown conflicts
 - Improved synchronization across editor and rendered cards
 
@@ -1424,7 +1475,7 @@ New to Ultra Card? Check out [ultracard.io](https://ultracard.io) to get started
 
 ---
 
-_Ultra Card 2.2.0 — Because your smart home deserves a smarter dashboard._
+*Ultra Card 2.2.0 — Because your smart home deserves a smarter dashboard.*
 
 ---
 
@@ -1589,6 +1640,7 @@ _Ultra Card 2.2.0 — Because your smart home deserves a smarter dashboard._
 ## 🚀 Major Features
 
 ### Unified Template System
+
 - **Revolutionary new template system** - Replaces multiple template boxes with one powerful unified template
   - Control multiple properties from a single template (icon, color, name, state text, and their colors)
   - Uses entity context variables (state, entity, attributes, name) for seamless entity remapping
@@ -1598,11 +1650,13 @@ _Ultra Card 2.2.0 — Because your smart home deserves a smarter dashboard._
   - See UNIFIED_TEMPLATES.md for complete documentation and examples
 
 ### New Modules
+
 - **Map Module** - Interactive map functionality for visualizing locations
 - **Climate Module** (Pro) - New Climate Module added for Ultra Card Pro members
 - **Slider Control Module** - Powerful new module for controlling numeric values with sliders, offering flexible configuration and real-time updates
 
 ### Enhanced Module Features
+
 - **Gauge Module Enhancements**
   - Added color templating and value templating support
   - Added Icon Pointers for Gauge Module - Icons can now be used as pointers inside the track
@@ -1615,12 +1669,14 @@ _Ultra Card 2.2.0 — Because your smart home deserves a smarter dashboard._
 ## 🐛 Bug Fixes
 
 ### Critical Fixes
+
 - **Fixed Migration Quote Bug** - Migration now properly wraps template code in quotes for valid JSON
 - **Fixed Migration Whitespace** - Normalized whitespace to prevent parsing errors from newlines and tabs
 - **Fixed Template Object Parsing** - Fixed critical bug where Home Assistant returned templates as objects instead of strings
 - **Fixed Template Boolean Parsing** - Templates are no longer incorrectly interpreted as boolean values
 
 ### Module-Specific Fixes
+
 - **Fixed icon templates conflicting with animations** - Resolved conflicts between icon templates and animation systems
 - **Fixed separator CSS spacing** - Resolved separator spacing issues across various alignment configurations
 - **Fixed dropdown module issues in slider** - Resolved issues with dropdown module functionality when used within slider modules
@@ -1634,6 +1690,7 @@ _Ultra Card 2.2.0 — Because your smart home deserves a smarter dashboard._
 - **Fixed nowrap in modules** - Fixed potential issues with nowrap functionality in modules
 
 ### UI & Display Fixes
+
 - **Fixed gradient opacity issues in bar module**
 - **Fixed clock visibility on smaller displays**
 - **Fixed field cursor jump issues**
@@ -1644,12 +1701,14 @@ _Ultra Card 2.2.0 — Because your smart home deserves a smarter dashboard._
 - **Fixed clipboard issue on some browsers** - Fixed clipboard functionality issues on certain browsers
 
 ### Editor & Configuration Fixes
+
 - **Fixed modules without entities** - Added entity selection capability to action tab for modules without entities
 - **Improved module config error handling** - Enhanced error handling for module configuration issues
 
 ## 🚀 Improvements
 
 ### Template System
+
 - **Improved template migration to unified template mode** - Enhanced template migration process with cleaner output
 - **Improved template mode input box recognition** - Enhanced template mode input box recognition for better user experience
 - **Improved template mode field** - Enhanced template mode field functionality
@@ -1657,6 +1716,7 @@ _Ultra Card 2.2.0 — Because your smart home deserves a smarter dashboard._
 - **Cleaner Migration Output** - Single-line JSON format for better readability and reliability
 
 ### CSS & Layout Improvements
+
 - **Improved CSS standardized CSS** - Enhanced and standardized CSS across the card
 - **Improved CSS for nested layouts** - Enhanced CSS handling for nested layout structures
 - **Improved nested layout logic** - Enhanced nested layout system with automatic scaling and better layout handling for complex card structures
@@ -1664,6 +1724,7 @@ _Ultra Card 2.2.0 — Because your smart home deserves a smarter dashboard._
 - **Improved word wrap** - Enhanced word wrap functionality and added individual reset controls for text items in the design tab
 
 ### Module Improvements
+
 - **Improved Slider Module based on swiper** - Enhanced slider module with better performance and features using Swiper library (Note: vertical slider is still not complete)
 - **Improved dropdown module** - Enhanced dropdown module with automatic up/down detection, arrow click behavior, and padding conflict resolution
 - **Improved whitespace for modules** - Better whitespace handling across modules
@@ -1672,15 +1733,18 @@ _Ultra Card 2.2.0 — Because your smart home deserves a smarter dashboard._
 - **Added alignments to column** - New alignment options for column modules
 
 ### Design Tab Enhancements
+
 - **Added white space to design tab** - White space controls added to design tab (works with some modules)
 - **Added separate reset values to text items** - Individual reset controls for text items in the design tab
 - **Adjusted z-index and spacing** - Improved z-index handling and spacing adjustments across modules
 
 ### Light Module Enhancements
+
 - **Enhanced light module** - New features and functionality added
 - **Improved light module navigation** - Enhanced navigation and user experience within the light module
 
 ### Performance & Developer Experience
+
 - **Reduced flooding of console warnings** - Reduced excessive console warning messages
 - **Removed debug logging** - Cleaned up console output for production use
 - **Removed Smart Scaling** - Removed smart scaling feature as it wasn't working as expected
@@ -2245,4 +2309,4 @@ Ultra Card 2.0 is available now with both free and Pro tiers. Pro users get acce
 
 ---
 
-_Ultra Card 2.0 - Redefining what's possible with Home Assistant dashboards._
+*Ultra Card 2.0 - Redefining what's possible with Home Assistant dashboards.*

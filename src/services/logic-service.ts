@@ -509,25 +509,23 @@ export class LogicService {
     }
     const templateHash = this._hashString(templateStr);
     const templateKey = `unified_${keyMiddle}_${templateHash}`;
-    if (!this.templateService.hasTemplateSubscription(templateKey)) {
-      void this.templateService.subscribeToTemplate(
-        templateStr,
-        templateKey,
-        () => {
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(
-              new CustomEvent('ultra-card-template-update', {
-                bubbles: true,
-                composed: true,
-                detail: { moduleType: 'layout_unified' },
-              })
-            );
-          }
-        },
-        {},
-        cardConfig
-      );
-    }
+    void this.templateService.subscribeToTemplate(
+      templateStr,
+      templateKey,
+      () => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('ultra-card-template-update', {
+              bubbles: true,
+              composed: true,
+              detail: { moduleType: 'layout_unified' },
+            })
+          );
+        }
+      },
+      {},
+      cardConfig
+    );
     const raw = this.hass.__uvc_template_strings?.[templateKey];
     if (raw === undefined || raw === null) {
       return false;
@@ -555,19 +553,17 @@ export class LogicService {
       const templateHash = this._hashString(condition.template);
       const templateKey = `logic_condition_${templateHash}`;
 
-      if (!this.templateService.hasTemplateSubscription(templateKey)) {
-        void this.templateService.subscribeToTemplate(condition.template, templateKey, () => {
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(
-              new CustomEvent('ultra-card-template-update', {
-                bubbles: true,
-                composed: true,
-                detail: { moduleType: 'logic_template' },
-              })
-            );
-          }
-        });
-      }
+      void this.templateService.subscribeToTemplate(condition.template, templateKey, () => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('ultra-card-template-update', {
+              bubbles: true,
+              composed: true,
+              detail: { moduleType: 'logic_template' },
+            })
+          );
+        }
+      });
 
       const cachedResult = this.templateService.getTemplateResult(templateKey);
       if (cachedResult !== undefined) {

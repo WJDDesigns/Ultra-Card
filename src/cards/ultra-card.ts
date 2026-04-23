@@ -2007,11 +2007,7 @@ export class UltraCard extends LitElement {
 
     const templateKey = `layout_mods_${columnId}`;
     // Lazy subscription for dynamic columns (from columns_template result) not pre-registered
-    if (
-      this._layoutTemplateService &&
-      this.hass &&
-      !this._layoutTemplateService.hasTemplateSubscription(templateKey)
-    ) {
+    if (this._layoutTemplateService && this.hass) {
       this._layoutTemplateService.subscribeToTemplate(
         column.modules_template,
         templateKey,

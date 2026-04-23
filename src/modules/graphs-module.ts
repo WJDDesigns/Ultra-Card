@@ -3,7 +3,12 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, GraphsModule, GraphEntityConfig, UltraCardConfig } from '../types';
 import { TemplateService } from '../services/template-service';
-import { buildEntityContext, buildMultiEntityContext } from '../utils/template-context';
+import {
+  buildEntityContext,
+  buildMultiEntityContext,
+  computeEntitySignature,
+  computeMultiEntitySignature,
+} from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import '../components/ultra-template-editor';
@@ -2066,7 +2071,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         const templateHash = this._hashString(processed);
         const templateKey = `unified_graphs_${graphsModule.id}_${templateHash}`;
 
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+        if (this._templateService) {
           // Build context with primary entity or multi-entity context
           const primaryEntity =
             graphsModule.entities?.find(e => e.is_primary && e.entity)?.entity ||
@@ -2092,6 +2097,11 @@ export class UltraGraphsModule extends BaseUltraModule {
                   chart_type: graphsModule.chart_type,
                 });
 
+          const entitySig =
+            entityIds.length > 1
+              ? computeMultiEntitySignature(entityIds, hass)
+              : computeEntitySignature(primaryEntity, hass);
+
           this._templateService.subscribeToTemplate(
             processed,
             templateKey,
@@ -2099,7 +2109,8 @@ export class UltraGraphsModule extends BaseUltraModule {
               this.triggerPreviewUpdate();
             },
             context,
-            config // Pass config for card-specific variable resolution
+            config,
+            entitySig
           );
         }
 

@@ -14,12 +14,9 @@ import '../components/bar-side-actions';
 import { formatEntityState } from '../utils/number-format';
 import { TemplateService } from '../services/template-service';
 import { localize } from '../localize/localize';
-import { buildEntityContext } from '../utils/template-context';
+import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
-import {
-  preprocessTemplateVariables,
-  injectEntityContextIntoTemplate,
-} from '../utils/uc-template-processor';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { parseLocaleNumber, parseCustomTickValues } from '../utils/parse-locale-number';
 import {
   GradientStop,
@@ -3030,17 +3027,18 @@ export class UltraBarModule extends BaseUltraModule {
       if (hass) {
         if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
         const processedUnifiedTemplate = preprocessTemplateVariables(
-          injectEntityContextIntoTemplate(barModule.unified_template, barModule.entity),
+          barModule.unified_template,
           hass,
           config
         );
         const templateHash = this._hashString(processedUnifiedTemplate);
         const templateKey = `unified_bar_${barModule.id}_${templateHash}`;
 
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+        if (this._templateService) {
           const context = buildEntityContext(barModule.entity, hass, {
             entity: barModule.entity,
           });
+          const entitySig = computeEntitySignature(barModule.entity, hass);
           this._templateService.subscribeToTemplate(
             processedUnifiedTemplate,
             templateKey,
@@ -3050,7 +3048,8 @@ export class UltraBarModule extends BaseUltraModule {
               }
             },
             context,
-            config // Pass config for card-specific variable resolution
+            config,
+            entitySig
           );
         }
 

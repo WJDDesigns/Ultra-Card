@@ -7,16 +7,13 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import { TemplateService } from '../services/template-service';
-import { buildEntityContext } from '../utils/template-context';
+import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import {
   parseUnifiedTemplate,
   hasTemplateError,
   unifiedTemplateNumericValue,
 } from '../utils/template-parser';
-import {
-  preprocessTemplateVariables,
-  injectEntityContextIntoTemplate,
-} from '../utils/uc-template-processor';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 import { getImageUrl } from '../utils/image-upload';
@@ -636,22 +633,20 @@ export class UltraSpinboxModule extends BaseUltraModule {
           hass.__uvc_template_strings = {};
         }
         const processed = preprocessTemplateVariables(
-          injectEntityContextIntoTemplate(spinboxModule.unified_template, spinboxModule.entity),
+          spinboxModule.unified_template,
           hass,
           config
         );
         const templateHash = this._hashString(processed);
         const templateKey = `unified_spinbox_${spinboxModule.id}_${templateHash}`;
 
-        if (
-          this._templateService &&
-          !this._templateService.hasTemplateSubscription(templateKey)
-        ) {
+        if (this._templateService) {
           const context = buildEntityContext(spinboxModule.entity || '', hass, {
             value: spinboxModule.value,
             min_value: spinboxModule.min_value,
             max_value: spinboxModule.max_value,
           });
+          const entitySig = computeEntitySignature(spinboxModule.entity || '', hass);
 
           this._templateService.subscribeToTemplate(
             processed,
@@ -662,7 +657,8 @@ export class UltraSpinboxModule extends BaseUltraModule {
               }
             },
             context,
-            config // Pass config for card-specific variable resolution
+            config,
+            entitySig
           );
         }
 

@@ -8,7 +8,7 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import { getImageUrl } from '../utils/image-upload';
 import { localize } from '../localize/localize';
 import { TemplateService } from '../services/template-service';
-import { buildEntityContext } from '../utils/template-context';
+import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { sanitizeMarkdownHtml } from '../utils/html-sanitizer';
@@ -444,7 +444,7 @@ All standard markdown features are automatically enabled!`,
         const templateKey = `unified_markdown_${markdownModule.id}_${templateHash}`;
 
         // Subscribe to template if not already subscribed (needed for template evaluation)
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+        if (this._templateService) {
           const context = buildEntityContext('', hass, {
             markdown_content: markdownModule.markdown_content,
           });
@@ -458,7 +458,8 @@ All standard markdown features are automatically enabled!`,
               }
             },
             context,
-            config // Pass config for card-specific variable resolution
+            config,
+            computeEntitySignature('', hass)
           );
         }
 
@@ -659,21 +660,19 @@ All standard markdown features are automatically enabled!`,
         const templateKey = `state_text_markdown_${markdownModule.id}_${templateHash}`;
 
         // Subscribe to template if needed
-        if (!this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(
-            templateContent,
-            templateKey,
-            () => {
-              this._clearMarkdownCache(markdownModule.id);
-              if (typeof window !== 'undefined') {
-                // Use global debounced update
-                this.triggerPreviewUpdate();
-              }
-            },
-            undefined, // No context variables
-            config // Pass config for card-specific variable resolution
-          );
-        }
+        this._templateService.subscribeToTemplate(
+          templateContent,
+          templateKey,
+          () => {
+            this._clearMarkdownCache(markdownModule.id);
+            if (typeof window !== 'undefined') {
+              // Use global debounced update
+              this.triggerPreviewUpdate();
+            }
+          },
+          undefined, // No context variables
+          config // Pass config for card-specific variable resolution
+        );
 
         // Use latest rendered string if available from WebSocket subscription
         const rendered = hass.__uvc_template_strings?.[templateKey];
@@ -723,7 +722,7 @@ All standard markdown features are automatically enabled!`,
         const templateHash = this._hashString(processedUnifiedTemplate);
         const templateKey = `unified_markdown_${markdownModule.id}_${templateHash}`;
 
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+        if (this._templateService) {
           const context = buildEntityContext('', hass, {
             markdown_content: markdownModule.markdown_content,
           });
@@ -737,7 +736,8 @@ All standard markdown features are automatically enabled!`,
               }
             },
             context,
-            config // Pass config for card-specific variable resolution
+            config,
+            computeEntitySignature('', hass)
           );
         }
 

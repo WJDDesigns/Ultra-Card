@@ -18,11 +18,8 @@ import {
   hasTemplateError,
   unifiedTemplateNumericValue,
 } from '../utils/template-parser';
-import {
-  preprocessTemplateVariables,
-  injectEntityContextIntoTemplate,
-} from '../utils/uc-template-processor';
-import { buildEntityContext } from '../utils/template-context';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 
 export class UltraGaugeModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -1779,17 +1776,18 @@ export class UltraGaugeModule extends BaseUltraModule {
       if (hass) {
         if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
         const processedUnifiedTemplate = preprocessTemplateVariables(
-          injectEntityContextIntoTemplate(gaugeModule.unified_template, gaugeModule.entity),
+          gaugeModule.unified_template,
           hass,
           config
         );
         const templateHash = this._hashString(processedUnifiedTemplate);
         const templateKey = `unified_gauge_${gaugeModule.id}_${templateHash}`;
 
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+        if (this._templateService) {
           const context = buildEntityContext(gaugeModule.entity || '', hass, {
             entity: gaugeModule.entity,
           });
+          const entitySig = computeEntitySignature(gaugeModule.entity || '', hass);
           this._templateService.subscribeToTemplate(
             processedUnifiedTemplate,
             templateKey,
@@ -1799,7 +1797,8 @@ export class UltraGaugeModule extends BaseUltraModule {
               }
             },
             context,
-            config
+            config,
+            entitySig
           );
         }
 
@@ -3906,7 +3905,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       }
       if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
       const processedUnifiedTemplate = preprocessTemplateVariables(
-        injectEntityContextIntoTemplate(gaugeModule.unified_template, gaugeModule.entity),
+        gaugeModule.unified_template,
         hass,
         config
       );

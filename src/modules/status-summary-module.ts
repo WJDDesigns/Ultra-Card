@@ -9,7 +9,7 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import { parseTemplateColorResult } from '../utils/uc-template-color-result';
 import { TemplateService } from '../services/template-service';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
-import { buildEntityContext } from '../utils/template-context';
+import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { localize } from '../localize/localize';
 import '../components/ultra-color-picker';
@@ -2395,15 +2395,13 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
     if (summaryModule.global_color_mode === 'custom' && globalTpl) {
       const processed = preprocessTemplateVariables(globalTpl, hass, config);
       const key = `unified_status_summary_global_${summaryModule.id}_${this._hashString(processed)}`;
-      if (!this._templateService.hasTemplateSubscription(key)) {
-        this._templateService.subscribeToTemplate(
-          processed,
-          key,
-          dispatchStatusSummaryTemplateUpdate,
-          {},
-          config
-        );
-      }
+      this._templateService.subscribeToTemplate(
+        processed,
+        key,
+        dispatchStatusSummaryTemplateUpdate,
+        {},
+        config
+      );
     }
 
     for (const ent of summaryModule.entities || []) {
@@ -2414,16 +2412,16 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
       if (ent.color_mode === 'custom' && entTpl) {
         const processed = preprocessTemplateVariables(entTpl, hass, config);
         const key = `unified_status_summary_entity_${summaryModule.id}_${ent.id}_${this._hashString(processed)}`;
-        if (!this._templateService.hasTemplateSubscription(key)) {
-          const vars = buildEntityContext(ent.entity, hass, { name: ent.label });
-          this._templateService.subscribeToTemplate(
-            processed,
-            key,
-            dispatchStatusSummaryTemplateUpdate,
-            vars,
-            config
-          );
-        }
+        const vars = buildEntityContext(ent.entity, hass, { name: ent.label });
+        const entitySig = computeEntitySignature(ent.entity, hass);
+        this._templateService.subscribeToTemplate(
+          processed,
+          key,
+          dispatchStatusSummaryTemplateUpdate,
+          vars,
+          config,
+          entitySig
+        );
       }
     }
   }

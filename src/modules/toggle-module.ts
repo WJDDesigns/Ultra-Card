@@ -9,10 +9,8 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import { localize } from '../localize/localize';
 import { TemplateService } from '../services/template-service';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
-import {
-  preprocessTemplateVariables,
-  injectEntityContextIntoTemplate,
-} from '../utils/uc-template-processor';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
@@ -1566,20 +1564,21 @@ export class UltraToggleModule extends BaseUltraModule {
       const ut = point.unified_template;
       if (point.unified_template_mode && ut) {
         const trackedEntity = point.match_entity || module.tracking_entity || '';
-        const processed = preprocessTemplateVariables(
-          injectEntityContextIntoTemplate(ut, trackedEntity),
-          hass,
-          undefined
-        );
+        const processed = preprocessTemplateVariables(ut, hass, undefined);
         const templateHash = this._hashString(processed);
         const templateKey = `unified_toggle_${module.id}_${point.id}_${templateHash}`;
+        const context = buildEntityContext(trackedEntity, hass, {});
+        const entitySig = computeEntitySignature(trackedEntity, hass);
 
         this._templateService.subscribeToTemplate(
           processed,
           templateKey,
           () => {
             this.triggerPreviewUpdate();
-          }
+          },
+          context,
+          undefined,
+          entitySig
         );
       }
     }
@@ -1608,11 +1607,7 @@ export class UltraToggleModule extends BaseUltraModule {
       const ut = point.unified_template;
       if (point.unified_template_mode && ut) {
         const trackedEntity = point.match_entity || module.tracking_entity || '';
-        const processed = preprocessTemplateVariables(
-          injectEntityContextIntoTemplate(ut, trackedEntity),
-          hass,
-          undefined
-        );
+        const processed = preprocessTemplateVariables(ut, hass, undefined);
         const templateHash = this._hashString(processed);
         const templateKey = `unified_toggle_${module.id}_${point.id}_${templateHash}`;
 
