@@ -1,5 +1,18 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta19
+
+### 🔧 Improvements
+
+- **Improved Bar scale label rendering to avoid edge text cutoff while preserving visual alignment.** - Improved text rendering and styling capabilities
+
+### 🐛 Bug Fixes
+
+- **Fixed Bar tick and percentage label alignment so labels center with start/end ticks.** - Enhanced bar visualization and progress display
+- **Fixed Bar module wrapper clipping by preventing automatic overflow:hidden on bar wrappers unless explicitly configured.** - Resolved content overflow and clipping issues
+
+---
+
 ## Version 3.3.0-beta18
 
 ### 🔧 Improvements
