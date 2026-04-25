@@ -361,6 +361,15 @@ function applyUnifiedMigration(
   };
 }
 
+function withStableChildId(config: any, prefix: string, parentId: string | undefined, index: number): any {
+  if (!config || String(config.id || '').trim()) return config;
+  const parentScope = parentId && String(parentId).trim() ? String(parentId).trim() : 'module';
+  return {
+    ...config,
+    id: `${prefix}-${parentScope}-${index}`,
+  };
+}
+
 /** Migrate a single config slice (icon, entity, bar module, etc.) */
 export function autoMigrateConfigSlice(config: any, kind: LegacyMigrationKind): any {
   if (!config) return config;
@@ -392,7 +401,9 @@ export function autoMigrateCardModule(module: CardModule): CardModule {
       if (m.icons?.length) {
         return {
           ...m,
-          icons: m.icons.map((icon: any) => autoMigrateConfigSlice(icon, 'icon')),
+          icons: m.icons.map((icon: any, index: number) =>
+            autoMigrateConfigSlice(withStableChildId(icon, 'icon-item', m.id, index), 'icon')
+          ),
         };
       }
       return m;
@@ -405,13 +416,17 @@ export function autoMigrateCardModule(module: CardModule): CardModule {
           ...m,
           ...(m.info_entities?.length
             ? {
-                info_entities: m.info_entities.map((e: any) =>
-                  autoMigrateConfigSlice(e, 'infoEntity')
+                info_entities: m.info_entities.map((e: any, index: number) =>
+                  autoMigrateConfigSlice(withStableChildId(e, 'info-entity', m.id, index), 'infoEntity')
                 ),
               }
             : {}),
           ...(m.entities?.length
-            ? { entities: m.entities.map((e: any) => autoMigrateConfigSlice(e, 'infoEntity')) }
+            ? {
+                entities: m.entities.map((e: any, index: number) =>
+                  autoMigrateConfigSlice(withStableChildId(e, 'info-entity', m.id, index), 'infoEntity')
+                ),
+              }
             : {}),
         };
       }
@@ -433,7 +448,9 @@ export function autoMigrateCardModule(module: CardModule): CardModule {
       if (m.toggle_points?.length) {
         return {
           ...m,
-          toggle_points: m.toggle_points.map((p: any) => autoMigrateConfigSlice(p, 'togglePoint')),
+          toggle_points: m.toggle_points.map((p: any, index: number) =>
+            autoMigrateConfigSlice(withStableChildId(p, 'toggle-point', m.id, index), 'togglePoint')
+          ),
         };
       }
       return m;
@@ -444,7 +461,9 @@ export function autoMigrateCardModule(module: CardModule): CardModule {
       if (m.entities?.length) {
         next = {
           ...next,
-          entities: m.entities.map((e: any) => autoMigrateConfigSlice(e, 'statusEntity')),
+          entities: m.entities.map((e: any, index: number) =>
+            autoMigrateConfigSlice(withStableChildId(e, 'status-entity', m.id, index), 'statusEntity')
+          ),
         };
       }
       return autoMigrateConfigSlice(next, 'statusModule') as CardModule;

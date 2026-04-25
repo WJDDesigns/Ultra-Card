@@ -73,4 +73,27 @@ describe('autoMigrateCardModule info', () => {
     expect(entity.dynamic_color_template_mode).toBe(false);
     expect(entity.dynamic_color_template).toBe('');
   });
+
+  it('adds a stable id to already-unified info_entities that were pasted without ids', () => {
+    const module = {
+      id: 'info-pasted-yaml',
+      type: 'info',
+      info_entities: [
+        {
+          entity: 'input_number.test_nummer',
+          name: 'Test Nummer',
+          icon: 'mdi:numeric',
+          unified_template_mode: true,
+          unified_template: '{ "icon_color": "{{ state }}" }',
+        },
+      ],
+    } as any;
+
+    const migrated = autoMigrateCardModule(module) as any;
+    const entity = migrated.info_entities[0];
+
+    expect(entity.id).toBe('info-entity-info-pasted-yaml-0');
+    expect(entity.unified_template_mode).toBe(true);
+    expect(entity.unified_template).toContain('icon_color');
+  });
 });

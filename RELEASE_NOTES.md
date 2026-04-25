@@ -1,5 +1,29 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta18
+
+### 🐛 Critical Fix: Stable IDs for Pasted YAML Info/Icon Template Items
+
+**TL;DR:** The tester sample revealed why direct YAML paste could keep the top Info item blue while a duplicated/imported card worked. The pasted YAML's first `info_entities` item had no child `id`, while the duplicated item had one. Missing child IDs can make template cache keys unstable between render/setup paths, so the template result is written under one key while the render reads another and falls back to blue. Beta18 automatically assigns stable deterministic child IDs during normalization.
+
+**What changed:**
+
+- Automatically assigns stable IDs to child template items that are missing them:
+  - `info_entities`
+  - `icons`
+  - `toggle_points`
+  - status summary `entities`
+- This is fully automatic. No migration button, no user action, no card duplication required.
+- Added regression coverage for already-unified `info_entities` pasted without IDs.
+- Built from a clean scope for this template/ID fix; unrelated local bar-module work was left out.
+
+### ⚠️ Testing Focus
+
+- Paste the tester YAML directly into a dashboard. The top Info item should color correctly without importing through Ultra Card and without duplication.
+- Regression-check duplicated/imported Info modules and Icon modules.
+
+---
+
 ## Version 3.3.0-beta17
 
 ### 🐛 Critical Fix: Automatic Self-Heal for Half-Migrated Template Configs
