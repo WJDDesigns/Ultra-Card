@@ -1,5 +1,25 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta16
+
+### 🐛 Critical Fix: Existing Info Modules Auto-Migrate Correctly
+
+**TL;DR:** Beta15 fixed live template color updates, but some existing saved **Info** modules still needed to be duplicated before colors started working. Duplicating created a freshly normalized module config. Beta16 makes the existing saved config self-heal automatically.
+
+**What changed:**
+
+- Fixed the legacy template auto-migration path for Info modules: current configs store rows in `info_entities`, but the migration helper only checked the older/intermediate `entities` shape.
+- Existing Info modules with legacy template fields such as `dynamic_color_template` now migrate to unified templates during render, the same way duplicated modules did.
+- Icon modules were already covered by the migration path; this release closes the Info-module gap so users should not need to duplicate cards/modules.
+- Added a regression test proving `info_entities` legacy dynamic color templates become unified `icon_color` templates automatically.
+
+### ⚠️ Testing Focus
+
+- Upgrade, hard-refresh the dashboard, and confirm existing Info modules with template-driven icon colors start working without duplicating.
+- Regression-check Icon modules with template-driven icon colors; they should continue working from beta15.
+
+---
+
 ## Version 3.3.0-beta15
 
 ### 🐛 Critical Fix: Unified template colors update again (reverts beta14 injection approach)

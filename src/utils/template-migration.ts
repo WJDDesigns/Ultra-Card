@@ -389,10 +389,22 @@ export function autoMigrateCardModule(module: CardModule): CardModule {
       }
       return m;
     case 'info':
-      if (m.entities?.length) {
+      // Info modules use `info_entities`; older/intermediate configs may still
+      // carry `entities`. Migrate both so existing saved cards self-heal without
+      // requiring users to duplicate the module/card.
+      if (m.info_entities?.length || m.entities?.length) {
         return {
           ...m,
-          entities: m.entities.map((e: any) => autoMigrateConfigSlice(e, 'infoEntity')),
+          ...(m.info_entities?.length
+            ? {
+                info_entities: m.info_entities.map((e: any) =>
+                  autoMigrateConfigSlice(e, 'infoEntity')
+                ),
+              }
+            : {}),
+          ...(m.entities?.length
+            ? { entities: m.entities.map((e: any) => autoMigrateConfigSlice(e, 'infoEntity')) }
+            : {}),
         };
       }
       return m;
