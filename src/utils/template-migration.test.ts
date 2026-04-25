@@ -47,4 +47,30 @@ describe('autoMigrateCardModule info', () => {
     expect(entity.dynamic_color_template_mode).toBe(false);
     expect(entity.dynamic_color_template).toBe('');
   });
+
+  it('repairs half-migrated info_entities with unified mode enabled but empty template', () => {
+    const module = {
+      id: 'info-half-migrated',
+      type: 'info',
+      info_entities: [
+        {
+          id: 'fuel',
+          entity: 'sensor.fuel_level',
+          unified_template_mode: true,
+          unified_template: '',
+          dynamic_color_template_mode: true,
+          dynamic_color_template: '{% if state|float(0) > 50 %}#00ff00{% else %}#ff0000{% endif %}',
+        },
+      ],
+    } as any;
+
+    const migrated = autoMigrateCardModule(module) as any;
+    const entity = migrated.info_entities[0];
+
+    expect(entity.unified_template_mode).toBe(true);
+    expect(entity.unified_template).toContain('"icon_color"');
+    expect(entity.unified_template).toContain('#00ff00');
+    expect(entity.dynamic_color_template_mode).toBe(false);
+    expect(entity.dynamic_color_template).toBe('');
+  });
 });

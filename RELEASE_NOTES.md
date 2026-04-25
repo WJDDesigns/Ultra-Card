@@ -1,5 +1,26 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta17
+
+### 🐛 Critical Fix: Automatic Self-Heal for Half-Migrated Template Configs
+
+**TL;DR:** Some existing cards still stayed blue after beta16 because they were already in a half-migrated state: `unified_template_mode` was enabled, but `unified_template` was empty while legacy fields like `dynamic_color_template` still existed. The migrator saw unified mode and skipped them. Beta17 repairs those configs automatically during card load.
+
+**What changed:**
+
+- No migration button was added. Migration remains fully automatic.
+- `autoMigrateConfigSlice()` now only skips migration when there is a usable, non-empty `unified_template`.
+- Half-migrated Info/Icon entries are repaired from legacy fields such as `dynamic_color_template`.
+- Template migration now runs recursively during config validation (`setConfig`) so existing saved cards are normalized before rendering, not only when a duplicate/editor path happens to re-render a module.
+- Added regression coverage for half-migrated `info_entities` where unified mode is enabled but the unified template is blank.
+
+### ⚠️ Testing Focus
+
+- Existing Info modules that stayed blue should self-heal after installing and hard-refreshing, without duplicating cards/modules.
+- Duplicated Info modules and Icon modules should keep working as they did in beta15/beta16.
+
+---
+
 ## Version 3.3.0-beta16
 
 ### 🐛 Critical Fix: Existing Info Modules Auto-Migrate Correctly

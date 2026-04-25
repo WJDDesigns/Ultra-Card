@@ -1,6 +1,10 @@
 import { UltraCardConfig, CardModule, CardRow, CardColumn, isResponsiveDesign, ResponsiveDesignProperties, SharedDesignProperties } from '../types';
 import { getModuleRegistry } from '../modules/module-registry';
-import { migrateLayoutVisibilityTemplates, migrateModuleDefaultMargins } from '../utils/template-migration';
+import {
+  autoMigrateCardModuleTree,
+  migrateLayoutVisibilityTemplates,
+  migrateModuleDefaultMargins,
+} from '../utils/template-migration';
 
 export interface ValidationResult {
   valid: boolean;
@@ -237,14 +241,15 @@ export class ConfigValidationService {
     await registry.ensureModuleLoaded(module.type);
     const moduleHandler = registry.getModule(module.type);
     if (moduleHandler) {
-      const validationResult = moduleHandler.validate(module);
+      const migratedModule = autoMigrateCardModuleTree(module as CardModule);
+      const validationResult = moduleHandler.validate(migratedModule);
       if (!validationResult.valid) {
         errors.push(...validationResult.errors.map(err => `Module ${module.id}: ${err}`));
         return { valid: false, errors, warnings };
       }
 
       const defaultModule = moduleHandler.createDefault(module.id);
-      const correctedModule = this.mergeWithDefaults(module, defaultModule);
+      const correctedModule = this.mergeWithDefaults(migratedModule, defaultModule);
 
       return {
         valid: true,

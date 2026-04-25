@@ -363,7 +363,15 @@ function applyUnifiedMigration(
 
 /** Migrate a single config slice (icon, entity, bar module, etc.) */
 export function autoMigrateConfigSlice(config: any, kind: LegacyMigrationKind): any {
-  if (!config || config.unified_template_mode) return config;
+  if (!config) return config;
+  // If unified mode is enabled but the actual unified template is empty, repair it
+  // from legacy fields. Some existing saved cards reached this half-migrated state;
+  // duplicating the module rebuilt a clean config, but the original stayed on static
+  // colors (usually primary blue).
+  const hasUsableUnifiedTemplate = Boolean(
+    config.unified_template_mode && String(config.unified_template || '').trim()
+  );
+  if (hasUsableUnifiedTemplate) return config;
   if (!hasLegacyTemplatesForKind(config, kind)) return config;
   const migration = migrateToUnified(config, kind);
   if (!migration.unified_template_mode) return config;
@@ -444,6 +452,32 @@ export function autoMigrateCardModule(module: CardModule): CardModule {
     default:
       return m;
   }
+}
+
+/** Auto-migrate a module and any nested child modules. */
+export function autoMigrateCardModuleTree(module: CardModule): CardModule {
+  const migrated = autoMigrateCardModule(module) as any;
+
+  if (Array.isArray(migrated.modules)) {
+    return {
+      ...migrated,
+      modules: migrated.modules.map((child: CardModule) => autoMigrateCardModuleTree(child)),
+    } as CardModule;
+  }
+
+  if (Array.isArray(migrated.sections)) {
+    return {
+      ...migrated,
+      sections: migrated.sections.map((section: any) => ({
+        ...section,
+        modules: Array.isArray(section.modules)
+          ? section.modules.map((child: CardModule) => autoMigrateCardModuleTree(child))
+          : section.modules,
+      })),
+    } as CardModule;
+  }
+
+  return migrated as CardModule;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
