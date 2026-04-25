@@ -1,0 +1,3 @@
+Fixed bar tick and percentage label alignment so labels center with start/end ticks.
+Fixed bar module wrapper clipping by preventing automatic overflow:hidden on bar wrappers unless explicitly configured.
+Improved bar scale label rendering to avoid edge text cutoff while preserving visual alignment.

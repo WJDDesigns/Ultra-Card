@@ -2,6 +2,19 @@
 
 ## Version 3.3.0-beta18
 
+### 🔧 Improvements
+
+- **Improved Bar scale label rendering to avoid edge text cutoff while preserving visual alignment.** - Improved text rendering and styling capabilities
+
+### 🐛 Bug Fixes
+
+- **Fixed Bar tick and percentage label alignment so labels center with start/end ticks.** - Enhanced bar visualization and progress display
+- **Fixed Bar module wrapper clipping by preventing automatic overflow:hidden on bar wrappers unless explicitly configured.** - Resolved content overflow and clipping issues
+
+---
+
+## Version 3.3.0-beta18
+
 ### 🐛 Critical Fix: Stable IDs for Pasted YAML Info/Icon Template Items
 
 **TL;DR:** The tester sample revealed why direct YAML paste could keep the top Info item blue while a duplicated/imported card worked. The pasted YAML's first `info_entities` item had no child `id`, while the duplicated item had one. Missing child IDs can make template cache keys unstable between render/setup paths, so the template result is written under one key while the render reads another and falls back to blue. Beta18 automatically assigns stable deterministic child IDs during normalization.

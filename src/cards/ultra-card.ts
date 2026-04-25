@@ -2272,6 +2272,9 @@ export class UltraCard extends LitElement {
       (module as any).design?.border_radius ||
       (module as any).border_radius ||
       (module as any).border?.radius;
+    // Some modules (e.g. bar scale labels/ticks) intentionally render slightly
+    // outside their wrapper. Do not auto-clip those unless user explicitly sets overflow.
+    const allowOverflowOutsideWrapper = module.type === 'bar';
 
     // Create a design object for the wrapper that excludes background properties
     // The wrapper only needs border-radius and overflow for proper corner clipping
@@ -2314,7 +2317,8 @@ export class UltraCard extends LitElement {
         (effectiveBorderRadius &&
         effectiveBorderRadius !== '0' &&
         effectiveBorderRadius !== '0px' &&
-        effectiveBorderRadius !== 0
+        effectiveBorderRadius !== 0 &&
+        !allowOverflowOutsideWrapper
           ? 'hidden'
           : undefined),
     };
@@ -2488,7 +2492,8 @@ export class UltraCard extends LitElement {
       normalizedBorderRadius &&
       normalizedBorderRadius !== '0' &&
       normalizedBorderRadius !== '0px' &&
-      (!explicitOverflow || explicitOverflow === 'visible');
+      (!explicitOverflow || explicitOverflow === 'visible') &&
+      !allowOverflowOutsideWrapper;
     const overflowStyle =
       explicitOverflow && explicitOverflow !== 'visible'
         ? explicitOverflow

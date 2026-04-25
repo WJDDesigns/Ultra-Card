@@ -4494,6 +4494,7 @@ export class UltraBarModule extends BaseUltraModule {
             height: ${scaleHeight};
             margin-top: 0;
             margin-bottom: 0;
+            overflow: visible;
             align-self: ${barModule.bar_alignment === 'left'
               ? 'flex-start'
               : barModule.bar_alignment === 'right'
@@ -4504,10 +4505,10 @@ export class UltraBarModule extends BaseUltraModule {
           ${ticks.map(
             tick => {
               const labelTransform = tick.position <= 0.5
-                ? 'translateX(0)'
+                ? 'translateX(2px)'
                 : tick.position >= 99.5
-                  ? 'translateX(-100%)'
-                  : 'translateX(-50%)';
+                  ? 'translateX(-2px)'
+                  : 'translateX(0)';
 
               return html`
                 <div
