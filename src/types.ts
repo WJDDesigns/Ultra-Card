@@ -146,6 +146,7 @@ export interface BaseModule {
     | 'counter_input'
     | 'color_input'
     | 'activity_feed'
+    | 'area_summary'
     | 'virtual_pet';
   name?: string;
   // Display conditions - when to show/hide this module
@@ -4650,6 +4651,7 @@ export type CardModule =
   | CounterInputModule
   | ColorInputModule
   | ActivityFeedModule
+  | AreaSummaryModule
   | VirtualPetModule;
 
 // Activity Feed Module - Pro module for displaying entity state change history
@@ -4710,6 +4712,97 @@ export interface ActivityFeedModule extends BaseModule {
   double_tap_action?: ModuleActionConfig;
 
   // Logic
+  display_mode?: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
+// Area / Room Summary — free module: area-scoped smart room tiles
+export type AreaSummaryStylePreset =
+  | 'iconic_soft'
+  | 'graph_glow'
+  | 'compact_controls'
+  | 'photo_overlay';
+
+export type AreaSummaryDiscoveryKey =
+  | 'lights'
+  | 'climate'
+  | 'temperature'
+  | 'humidity'
+  | 'motion'
+  | 'doors_windows'
+  | 'media'
+  | 'presence'
+  | 'covers'
+  | 'fans'
+  | 'locks'
+  | 'switches';
+
+export interface AreaSummaryDiscoveryToggles {
+  lights?: boolean;
+  climate?: boolean;
+  temperature?: boolean;
+  humidity?: boolean;
+  motion?: boolean;
+  doors_windows?: boolean;
+  media?: boolean;
+  presence?: boolean;
+  covers?: boolean;
+  fans?: boolean;
+  locks?: boolean;
+  switches?: boolean;
+}
+
+export interface AreaSummaryModule extends BaseModule {
+  type: 'area_summary';
+
+  /** Home Assistant area_id from area registry */
+  area_id: string;
+
+  /** Optional title override (defaults to area name) */
+  title?: string;
+
+  /** mdi icon for the room hero */
+  room_icon?: string;
+
+  /** Accent color for presets (CSS color) */
+  accent_color?: string;
+
+  /** Show friendly names under quick-action badges */
+  show_quick_entity_names?: boolean;
+
+  style_preset?: AreaSummaryStylePreset;
+
+  /** Max number of quick-action bubbles (remaining entities still affect subtitle aggregates) */
+  max_quick_actions?: number;
+
+  /** Per-category inclusion for auto-discovery */
+  discovery?: AreaSummaryDiscoveryToggles;
+
+  /** Entity ids to exclude from quick actions and aggregates */
+  hidden_entities?: string[];
+
+  /** Entity ids shown first in the quick-action row when present in the area */
+  pinned_entities?: string[];
+
+  /** @deprecated Use room_background_type + room_background_image. Kept for older configs. */
+  room_background_url?: string;
+
+  /** Background for Photo overlay preset */
+  room_background_type?: 'none' | 'upload' | 'entity' | 'url';
+
+  /** Image path (upload) or URL when type is upload or url */
+  room_background_image?: string;
+
+  /** Entity whose entity_picture is used when type is entity */
+  room_background_image_entity?: string;
+
+  /** 0–100 overlay darkness for background photo */
+  room_background_overlay?: number;
+
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
   display_mode?: 'always' | 'every' | 'any';
   display_conditions?: DisplayCondition[];
 }

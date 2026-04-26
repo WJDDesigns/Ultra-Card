@@ -77,11 +77,12 @@ Visit **[UltraCard.io](https://ultracard.io)** for cloud sync, automated backups
 | Category | Modules |
 |----------|--------|
 | **Content** | Text, Icon, Info, Image, Markdown, Bar, Graphs, Camera |
+| **Areas** | Area / Room Summary |
 | **Controls** | Button, Slider, Spinbox, Dropdown, Light, Gauge |
 | **Layout** | Horizontal, Vertical, Tabs, Separator |
 | **Pro** | Animated Clock, Animated Weather, Animated Forecast, Video Background |
 
-Module docs: [Text](docs/modules/text.md), [Icon](docs/modules/icon.md), [Info](docs/modules/info.md), [Image](docs/modules/image.md), [Markdown](docs/modules/markdown.md), [Bar](docs/modules/bar.md), [Graphs](docs/modules/graphs.md), [Camera](docs/modules/camera.md), [Button](docs/modules/button.md), [Horizontal](docs/modules/horizontal.md), [Vertical](docs/modules/vertical.md), [Separator](docs/modules/separator.md).
+Module docs: [Text](docs/modules/text.md), [Icon](docs/modules/icon.md), [Info](docs/modules/info.md), [Image](docs/modules/image.md), [Markdown](docs/modules/markdown.md), [Bar](docs/modules/bar.md), [Graphs](docs/modules/graphs.md), [Camera](docs/modules/camera.md), [Area / Room Summary](docs/modules/area-summary.md), [Button](docs/modules/button.md), [Horizontal](docs/modules/horizontal.md), [Vertical](docs/modules/vertical.md), [Separator](docs/modules/separator.md).
 
 **Card integration** — Use unlimited native Home Assistant cards inside Ultra Card. Add Bubble Card, Mushroom Cards, ApexCharts, and other custom cards—unlimited for all users.
 

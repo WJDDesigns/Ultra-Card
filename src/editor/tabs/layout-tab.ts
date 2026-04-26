@@ -13231,7 +13231,15 @@ export class LayoutTab extends LitElement {
 
     // Key by module identity + entity + breakpoint so Live Preview DOM is recreated when the
     // user binds an entity (or changes breakpoint). Avoids stale nested preview subtrees.
-    const previewKey = `${module.id}:${(module as any).entity ?? ''}:${this._previewBreakpoint}`;
+    let previewKey = `${module.id}:${(module as any).entity ?? ''}:${this._previewBreakpoint}`;
+    // Area Summary preview depends on pin/hide lists; include them so the preview
+    // remounts deterministically after changes (prevents bouncing between old/new models).
+    if (module.type === 'area_summary') {
+      const a = module as any;
+      const pin = [...(a.pinned_entities || [])].map(String).sort().join(',');
+      const hid = [...(a.hidden_entities || [])].map(String).sort().join(',');
+      previewKey += `:pin:${pin}:hid:${hid}`;
+    }
 
     return html`
       <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
