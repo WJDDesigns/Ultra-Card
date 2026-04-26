@@ -24,10 +24,13 @@ Renders a **room tile** for one Home Assistant **area**. It loads the area, devi
 |--------|-------------|
 | **Area** | Required. Drives discovery. |
 | **Title override** | Optional; defaults to the area name. |
+| **Temperature entity override** | Optional. Forces the temperature summary source instead of auto-discovery. |
+| **Humidity entity override** | Optional. Forces the humidity summary source instead of auto-discovery. |
 | **Room icon** | Large MDI icon on the tile. |
 | **Accent color** | Highlights and active quick actions (Ultra Card color picker). |
 | **Style preset** | Visual layout (see above). |
 | **Max quick actions** | 1–12 circular shortcuts. |
+| **Tile border radius** | Adjusts room tile corner roundness (0–48px). |
 | **Show entity names** | When on, shows each shortcut’s friendly name next to its icon. |
 | **Photo background** | For *Photo overlay*: none, **upload**, **entity image** (e.g. `entity_picture`), or **image URL**. |
 | **Background overlay %** | Darkens the photo for readability. |

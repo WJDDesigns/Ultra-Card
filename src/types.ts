@@ -146,6 +146,7 @@ export interface BaseModule {
     | 'counter_input'
     | 'color_input'
     | 'activity_feed'
+    | 'alert_center'
     | 'area_summary'
     | 'virtual_pet';
   name?: string;
@@ -4651,6 +4652,7 @@ export type CardModule =
   | CounterInputModule
   | ColorInputModule
   | ActivityFeedModule
+  | AlertCenterModule
   | AreaSummaryModule
   | VirtualPetModule;
 
@@ -4716,6 +4718,38 @@ export interface ActivityFeedModule extends BaseModule {
   display_conditions?: DisplayCondition[];
 }
 
+// Alert Center Module - Active issues/alerts rollup
+export interface AlertCenterModule extends BaseModule {
+  type: 'alert_center';
+
+  title?: string;
+  show_title?: boolean;
+  max_alerts?: number;
+  show_all_clear?: boolean;
+  show_state?: boolean;
+
+  // Auto-monitor domain toggles
+  include_alert_domain?: boolean;
+  include_binary_sensors?: boolean;
+  include_lock_alerts?: boolean;
+  include_alarm_panel_alerts?: boolean;
+
+  // Manual include/exclude
+  include_entities?: string[];
+  hidden_entities?: string[];
+
+  // Style
+  accent_color?: string;
+  tile_border_radius?: number;
+
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
+  display_mode?: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
 // Area / Room Summary — free module: area-scoped smart room tiles
 export type AreaSummaryStylePreset =
   | 'iconic_soft'
@@ -4760,6 +4794,15 @@ export interface AreaSummaryModule extends BaseModule {
 
   /** Optional title override (defaults to area name) */
   title?: string;
+
+  /** Optional override for temperature summary source entity */
+  temperature_entity?: string;
+
+  /** Optional override for humidity summary source entity */
+  humidity_entity?: string;
+
+  /** Optional border radius (px) for the room tile container */
+  tile_border_radius?: number;
 
   /** mdi icon for the room hero */
   room_icon?: string;

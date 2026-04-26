@@ -56,6 +56,9 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       type: 'area_summary',
       area_id: '',
       title: '',
+      temperature_entity: '',
+      humidity_entity: '',
+      tile_border_radius: 20,
       room_icon: '',
       accent_color: '',
       show_quick_entity_names: false,
@@ -95,6 +98,8 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
     return [
       m.area_id?.trim() || '',
       String(m.max_quick_actions ?? 6),
+      (m.temperature_entity || '').trim(),
+      (m.humidity_entity || '').trim(),
       (m.hidden_entities || []).slice().sort().join(','),
       (m.pinned_entities || []).slice().sort().join(','),
       JSON.stringify(m.discovery || {}),
@@ -496,6 +501,46 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
                 this.triggerPreviewUpdate();
               },
             },
+            {
+              title: localize('editor.area_summary.temperature_entity', lang, 'Temperature entity override'),
+              description: localize(
+                'editor.area_summary.temperature_entity_desc',
+                lang,
+                'Optional. Use this entity for temperature instead of auto-discovery.'
+              ),
+              hass,
+              data: { temperature_entity: m.temperature_entity || '' },
+              schema: [
+                {
+                  name: 'temperature_entity',
+                  selector: { entity: { domain: ['sensor', 'climate', 'weather'] } },
+                },
+              ],
+              onChange: (e: CustomEvent) => {
+                updateModule({ temperature_entity: e.detail.value?.temperature_entity ?? '' });
+                this.triggerPreviewUpdate();
+              },
+            },
+            {
+              title: localize('editor.area_summary.humidity_entity', lang, 'Humidity entity override'),
+              description: localize(
+                'editor.area_summary.humidity_entity_desc',
+                lang,
+                'Optional. Use this entity for humidity instead of auto-discovery.'
+              ),
+              hass,
+              data: { humidity_entity: m.humidity_entity || '' },
+              schema: [
+                {
+                  name: 'humidity_entity',
+                  selector: { entity: { domain: ['sensor', 'climate', 'weather'] } },
+                },
+              ],
+              onChange: (e: CustomEvent) => {
+                updateModule({ humidity_entity: e.detail.value?.humidity_entity ?? '' });
+                this.triggerPreviewUpdate();
+              },
+            },
           ]
         )}
         <div
@@ -576,6 +621,22 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
             },
           ]
         )}
+        <div class="settings-section" style="margin-bottom: 24px;">
+          ${this.renderSliderField(
+            localize('editor.area_summary.tile_radius', lang, 'Tile border radius'),
+            localize('editor.area_summary.tile_radius_desc', lang, 'Adjust corner roundness for the room tile.'),
+            m.tile_border_radius ?? 20,
+            20,
+            0,
+            48,
+            1,
+            (v: number) => {
+              updateModule({ tile_border_radius: v });
+              this.triggerPreviewUpdate();
+            },
+            'px'
+          )}
+        </div>
         ${isPhotoStyle
           ? html`
               <div
@@ -993,6 +1054,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
     const title = this.roomTitle(m, model, lang);
     const heroIcon = this.roomHeroIcon(m);
     const accent = this.accent(m);
+    const radius = Math.max(0, Math.min(48, m.tile_border_radius ?? 20));
     const stat = this.statLine(model, lang);
     const primary = m.tap_action?.entity?.trim()
       ? m.tap_action.entity.trim()
@@ -1096,7 +1158,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
 
     if (preset === 'graph_glow') {
       inner = html`
-        <div class="uc-ar uc-ar--graph" style="--uc-ar-accent: ${accent}">
+        <div class="uc-ar uc-ar--graph" style="--uc-ar-accent: ${accent}; --uc-ar-radius: ${radius}px;">
           <svg class="uc-ar-wave" viewBox="0 0 400 80" preserveAspectRatio="none" aria-hidden="true">
             <path
               d="M0,45 C60,10 120,70 180,40 S300,5 400,50 L400,80 L0,80 Z"
@@ -1129,7 +1191,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       `;
     } else if (preset === 'compact_controls') {
       inner = html`
-        <div class="uc-ar uc-ar--compact" style="--uc-ar-accent: ${accent}">
+        <div class="uc-ar uc-ar--compact" style="--uc-ar-accent: ${accent}; --uc-ar-radius: ${radius}px;">
           <div class="uc-ar-compact-grid">
             <div class="uc-ar-compact-left">
               <div class="uc-ar-compact-icon">
@@ -1161,7 +1223,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       inner = html`
         <div
           class="uc-ar uc-ar--photo"
-          style="--uc-ar-accent: ${accent}; ${bg
+          style="--uc-ar-accent: ${accent}; --uc-ar-radius: ${radius}px; ${bg
             ? `background-image: linear-gradient(to bottom, rgba(0,0,0,${gradTop.toFixed(
                 3
               )}), rgba(0,0,0,${gradBot.toFixed(3)})), url(${JSON.stringify(bg)}); background-size: cover; background-position: center;`
@@ -1181,7 +1243,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       `;
     } else {
       inner = html`
-        <div class="uc-ar uc-ar--iconic" style="--uc-ar-accent: ${accent}">
+        <div class="uc-ar uc-ar--iconic" style="--uc-ar-accent: ${accent}; --uc-ar-radius: ${radius}px;">
           <div class="uc-ar-iconic-top">
             <div class="uc-ar-name">${title}</div>
             <div class="uc-ar-sub">${stat}</div>
@@ -1225,7 +1287,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       .uc-ar-host { display:block; width:100%; }
       .uc-ar {
         position: relative;
-        border-radius: 20px;
+        border-radius: var(--uc-ar-radius, 20px);
         overflow: hidden;
         min-height: 132px;
         color: var(--primary-text-color);

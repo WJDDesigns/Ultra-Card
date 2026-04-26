@@ -65,6 +65,7 @@ export const coreLoaders: Record<string, ModuleLoader> = {
   counter_input: () => import(/* webpackMode: "eager" */ './counter-input-module').then(m => new m.UltraCounterInputModule()),
   color_input: () => import(/* webpackMode: "eager" */ './color-input-module').then(m => new m.UltraColorInputModule()),
   activity_feed: () => import(/* webpackMode: "eager" */ './activity-feed-module').then(m => new m.UltraActivityFeedModule()),
+  alert_center: () => import(/* webpackMode: "eager" */ './alert-center-module').then(m => new m.UltraAlertCenterModule()),
   area_summary: () => import(/* webpackMode: "eager" */ './area-summary-module').then(m => new m.UltraAreaSummaryModule()),
   virtual_pet: () => import(/* webpackMode: "eager" */ './virtual-pet-module').then(m => new m.UltraVirtualPetModule()),
 };

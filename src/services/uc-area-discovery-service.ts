@@ -285,6 +285,8 @@ class UcAreaDiscoveryService {
     const toggles = togglesEffective(module.discovery);
     const hidden = new Set((module.hidden_entities || []).map(x => x.trim()).filter(Boolean));
     const pinned = (module.pinned_entities || []).map(x => x.trim()).filter(Boolean);
+    const manualTemperatureEntity = (module.temperature_entity || '').trim();
+    const manualHumidityEntity = (module.humidity_entity || '').trim();
 
     if (!areaId) {
       return {
@@ -327,18 +329,26 @@ class UcAreaDiscoveryService {
     }
 
     let temperature_entity_id: string | undefined;
-    for (const r of roles) {
-      if (r.role === 'temperature') {
-        temperature_entity_id = r.entity_id;
-        break;
+    if (manualTemperatureEntity && hass.states[manualTemperatureEntity]) {
+      temperature_entity_id = manualTemperatureEntity;
+    } else {
+      for (const r of roles) {
+        if (r.role === 'temperature') {
+          temperature_entity_id = r.entity_id;
+          break;
+        }
       }
     }
 
     let humidity_entity_id: string | undefined;
-    for (const r of roles) {
-      if (r.role === 'humidity') {
-        humidity_entity_id = r.entity_id;
-        break;
+    if (manualHumidityEntity && hass.states[manualHumidityEntity]) {
+      humidity_entity_id = manualHumidityEntity;
+    } else {
+      for (const r of roles) {
+        if (r.role === 'humidity') {
+          humidity_entity_id = r.entity_id;
+          break;
+        }
       }
     }
 
@@ -346,27 +356,37 @@ class UcAreaDiscoveryService {
     const cAttr = (climateState?.attributes || {}) as Record<string, unknown>;
 
     let temperature_label: string | undefined;
-    if (climateState && typeof cAttr.current_temperature === 'number') {
-      temperature_label = `${cAttr.current_temperature}°`;
-    } else if (temperature_entity_id && hass.states[temperature_entity_id]) {
-      temperature_label = String(hass.states[temperature_entity_id].state);
-      const tAttrs = (hass.states[temperature_entity_id].attributes || {}) as Record<string, unknown>;
-      const unit = tAttrs.unit_of_measurement;
-      if (unit && !temperature_label.includes(String(unit))) {
-        temperature_label = `${temperature_label} ${unit}`;
+    if (temperature_entity_id && hass.states[temperature_entity_id]) {
+      const tState = hass.states[temperature_entity_id];
+      const tAttrs = (tState.attributes || {}) as Record<string, unknown>;
+      if (typeof tAttrs.current_temperature === 'number') {
+        temperature_label = `${tAttrs.current_temperature}°`;
+      } else {
+        temperature_label = String(tState.state);
+        const unit = tAttrs.unit_of_measurement;
+        if (unit && !temperature_label.includes(String(unit))) {
+          temperature_label = `${temperature_label} ${unit}`;
+        }
       }
+    } else if (climateState && typeof cAttr.current_temperature === 'number') {
+      temperature_label = `${cAttr.current_temperature}°`;
     }
 
     let humidity_label: string | undefined;
-    if (climateState && typeof cAttr.current_humidity === 'number') {
-      humidity_label = `${cAttr.current_humidity}%`;
-    } else if (humidity_entity_id && hass.states[humidity_entity_id]) {
-      humidity_label = String(hass.states[humidity_entity_id].state);
-      const hAttrs = (hass.states[humidity_entity_id].attributes || {}) as Record<string, unknown>;
-      const unit = hAttrs.unit_of_measurement;
-      if (unit && !humidity_label.includes(String(unit))) {
-        humidity_label = `${humidity_label} ${unit}`;
+    if (humidity_entity_id && hass.states[humidity_entity_id]) {
+      const hState = hass.states[humidity_entity_id];
+      const hAttrs = (hState.attributes || {}) as Record<string, unknown>;
+      if (typeof hAttrs.current_humidity === 'number') {
+        humidity_label = `${hAttrs.current_humidity}%`;
+      } else {
+        humidity_label = String(hState.state);
+        const unit = hAttrs.unit_of_measurement;
+        if (unit && !humidity_label.includes(String(unit))) {
+          humidity_label = `${humidity_label} ${unit}`;
+        }
       }
+    } else if (climateState && typeof cAttr.current_humidity === 'number') {
+      humidity_label = `${cAttr.current_humidity}%`;
     }
 
     let lights_on = 0;

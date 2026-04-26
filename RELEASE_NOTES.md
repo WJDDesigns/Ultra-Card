@@ -1,5 +1,24 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta21
+
+### 🚀 New Features
+
+- **Added Alert Center module with active alert rollup, severity-based sorting, manual include/hidden entity pickers, accent styling, and tile radius controls** - Enhanced module functionality for better user experience
+- **Added Alert Center module wiring across type definitions, core loader registry, module manifest metadata, translations, and dedicated documentation** - Enhanced module functionality for better user experience
+- **Added Manual temperature and humidity entity overrides for Area / Room Summary to avoid incorrect auto-discovery sources** - Better entity state handling and real-time display
+
+### 🔧 Improvements
+
+- **Improved Area / Room Summary editor with accent color picker integration, entity name toggle, photo overlay source options (upload/url/entity), and configurable tile border radius** - Improved toggle state handling and reliability
+
+### 🐛 Bug Fixes
+
+- **Fixed Area / Room Summary preview stability by isolating resolve cache per render context and reducing unnecessary immediate refresh triggers** - Test your changes directly in the editor preview
+- **Fixed Pinned entity behavior so pinned entities are always surfaced in quick actions (unless hidden), with improved pinned/hidden chip picker UX and alignment refinements** - Enhanced action handling and user interaction response
+
+---
+
 ## Version 3.3.0-beta19
 
 ### 🔧 Improvements
