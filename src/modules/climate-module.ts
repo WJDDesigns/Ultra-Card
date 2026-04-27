@@ -33,10 +33,10 @@ export class UltraClimateModule extends BaseUltraModule {
     tags: ['climate', 'thermostat', 'temperature', 'hvac', 'heating', 'cooling', 'pro'],
   };
 
-  private _liveTargetValue?: number;
-  private _liveTargetLow?: number;
-  private _liveTargetHigh?: number;
-  private _lastRenderedEntity?: string;
+  private _liveTargetValue: number | undefined;
+  private _liveTargetLow: number | undefined;
+  private _liveTargetHigh: number | undefined;
+  private _lastRenderedEntity: string | undefined;
 
   createDefault(id?: string, hass?: HomeAssistant): CardModule {
     return {
@@ -1206,7 +1206,7 @@ export class UltraClimateModule extends BaseUltraModule {
                   <div class="climate-mode-popup">
                     <div class="climate-mode-popup-content">
                       ${hvacModes.map(
-                        mode => html`
+                        (mode: string) => html`
                           <button
                             class="climate-mode-popup-btn ${mode === hvacMode ? 'active' : ''}"
                             @click=${(e: Event) => {
@@ -1332,7 +1332,7 @@ export class UltraClimateModule extends BaseUltraModule {
     `, module, hass);
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const climateModule = module as ClimateModule;
     const errors = [...baseValidation.errors];

@@ -2,6 +2,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { EntityReference, EntityMapping } from '../types';
 import { entityMapper } from '../services/uc-entity-mapper';
 import { inferEntityDomainFromReference } from '../utils/uc-preset-wizard-auto';
+import { escapeHtml } from '../utils/html-sanitizer';
 
 const _UC_DEBUG = !!(window as any).__UC_DEBUG;
 
@@ -10,8 +11,8 @@ interface MappingState {
   mapped: string;
   suggestions: string[];
   domain: string;
-  context?: string;
-  moduleType?: string;
+  context?: string | undefined;
+  moduleType?: string | undefined;
   location: string; // The specific location path to distinguish duplicates
 }
 
@@ -19,8 +20,8 @@ export class UcSimpleEntityMapper {
   private hass!: HomeAssistant;
   private container: HTMLDivElement | null = null;
   private mappings: Map<string, MappingState> = new Map();
-  private onApplyCallback?: (mappings: EntityMapping[]) => void;
-  private onCancelCallback?: () => void;
+  private onApplyCallback: ((mappings: EntityMapping[]) => void) | undefined;
+  private onCancelCallback: (() => void) | undefined;
 
   constructor() {
   }
@@ -224,14 +225,18 @@ export class UcSimpleEntityMapper {
       const keepLabel = this.rowNeedsUserPick(state.original)
         ? `Keep placeholder (invalid until mapped): ${state.original}`
         : `Keep original: ${state.original}`;
-      const options = [`<option value="${state.original}">${keepLabel}</option>`];
+      const options = [
+        `<option value="${escapeHtml(state.original)}">${escapeHtml(keepLabel)}</option>`,
+      ];
 
       // Add suggestions first (top matches)
       if (state.suggestions.length > 0) {
         options.push(`<optgroup label="Suggested matches">`);
         state.suggestions.forEach(suggestion => {
           const selected = state.mapped === suggestion ? 'selected' : '';
-          options.push(`<option value="${suggestion}" ${selected}>${suggestion}</option>`);
+          options.push(
+            `<option value="${escapeHtml(suggestion)}" ${selected}>${escapeHtml(suggestion)}</option>`
+          );
         });
         options.push(`</optgroup>`);
       }
@@ -248,10 +253,12 @@ export class UcSimpleEntityMapper {
       if (domainEntities.length > 0) {
         const label =
           state.domain.charAt(0).toUpperCase() + state.domain.slice(1).replace(/_/g, ' ');
-        options.push(`<optgroup label="All ${label} entities">`);
+        options.push(`<optgroup label="All ${escapeHtml(label)} entities">`);
         domainEntities.forEach(entity => {
           const selected = state.mapped === entity ? 'selected' : '';
-          options.push(`<option value="${entity}" ${selected}>${entity}</option>`);
+          options.push(
+            `<option value="${escapeHtml(entity)}" ${selected}>${escapeHtml(entity)}</option>`
+          );
         });
         options.push(`</optgroup>`);
       } else if (!state.domain) {
@@ -264,7 +271,9 @@ export class UcSimpleEntityMapper {
           options.push(`<optgroup label="All entities (search in list)">`);
           rest.forEach(entity => {
             const selected = state.mapped === entity ? 'selected' : '';
-            options.push(`<option value="${entity}" ${selected}>${entity}</option>`);
+            options.push(
+              `<option value="${escapeHtml(entity)}" ${selected}>${escapeHtml(entity)}</option>`
+            );
           });
           options.push(`</optgroup>`);
         }
@@ -273,15 +282,19 @@ export class UcSimpleEntityMapper {
       entityRows += `
         <div class="entity-row">
           <div class="entity-info">
-            <div class="entity-original">${state.original}</div>
-            ${state.context ? `<div class="entity-context">${state.context}</div>` : ''}
+            <div class="entity-original">${escapeHtml(state.original)}</div>
+            ${state.context ? `<div class="entity-context">${escapeHtml(state.context)}</div>` : ''}
             <div class="entity-tags">
-              <span class="entity-domain">${state.domain}</span>
-              ${state.moduleType ? `<span class="entity-module-type">${state.moduleType}</span>` : ''}
+              <span class="entity-domain">${escapeHtml(state.domain)}</span>
+              ${
+                state.moduleType
+                  ? `<span class="entity-module-type">${escapeHtml(state.moduleType)}</span>`
+                  : ''
+              }
             </div>
           </div>
           <div class="entity-picker">
-            <select class="entity-select" data-unique-key="${uniqueKey}" data-original="${state.original}">
+            <select class="entity-select" data-unique-key="${escapeHtml(uniqueKey)}" data-original="${escapeHtml(state.original)}">
               ${options.join('')}
             </select>
           </div>
@@ -293,7 +306,7 @@ export class UcSimpleEntityMapper {
       <div class="dialog-backdrop">
         <div class="dialog-container">
           <div class="dialog-header">
-            <h2>${title}</h2>
+            <h2>${escapeHtml(title)}</h2>
             <p>${summary.total} entities detected</p>
           </div>
           

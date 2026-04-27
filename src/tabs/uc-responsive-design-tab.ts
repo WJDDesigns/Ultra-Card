@@ -23,7 +23,7 @@ export class UcResponsiveDesignTab extends LitElement {
 
   @state() private _selectedDevice: DeviceBreakpoint | 'base' = 'base';
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
     }
@@ -278,10 +278,10 @@ export class UcResponsiveDesignTab extends LitElement {
     
     // Explicitly set the device key to undefined so it gets properly removed
     // during any merge operations in parent components
-    const newDesign = {
+    const newDesign: DesignConfig = {
       ...clearedDesign,
-      [deviceToReset]: undefined
-    };
+      [deviceToReset]: undefined,
+    } as DesignConfig;
     
     // Update the module with cleared design
     this.updateModule({ design: newDesign } as any);
@@ -331,7 +331,7 @@ export class UcResponsiveDesignTab extends LitElement {
     }
   }
 
-  render(): TemplateResult {
+  override render(): TemplateResult {
     const d = this._getCurrentDesign();
     const responsiveDesign = this._getResponsiveDesign();
     const hasOverrides = this._selectedDevice !== 'base' && 
@@ -760,8 +760,7 @@ export class UcResponsiveDesignTab extends LitElement {
   private _renderDesignExtensions(): TemplateResult {
     try {
       const fn = (this.module as any).renderDesignExtensions as
-        | ((h: HomeAssistant, update: (updates: Record<string, any>) => void) => TemplateResult)
-        | undefined;
+        | ((h: HomeAssistant, update: (updates: Record<string, any>) => void) => TemplateResult) | undefined;
       if (typeof fn === 'function') {
         return fn(this.hass, (updates: Record<string, any>) => this._updateDesign(updates));
       }

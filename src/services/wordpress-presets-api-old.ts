@@ -13,18 +13,18 @@ export interface WordPressPreset {
   category: string;
   tags: string[];
   author: string;
-  author_avatar?: string;
-  featured_image?: string;
-  gallery?: string[];
+  author_avatar?: string | undefined;
+  featured_image?: string | undefined;
+  gallery?: string[] | undefined;
   downloads: number;
   rating: number;
   reviews_count: number;
   created: string;
-  updated?: string;
+  updated?: string | undefined;
   is_featured: boolean;
-  difficulty?: string;
-  compatibility?: string[];
-  preset_url?: string; // Link to preset page on ultracard.io
+  difficulty?: string | undefined;
+  compatibility?: string[] | undefined;
+  preset_url?: string | undefined; // Link to preset page on ultracard.io
 }
 
 export interface WordPressPresetsResponse {

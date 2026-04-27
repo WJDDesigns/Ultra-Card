@@ -13,7 +13,7 @@ export class UcFavoriteDialog extends LitElement {
   @state() private _description = '';
   @state() private _tags = '';
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     if (!this.open) return html``;
 
     return html`
@@ -114,7 +114,7 @@ export class UcFavoriteDialog extends LitElement {
     this._tags = '';
   }
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: contents;
     }

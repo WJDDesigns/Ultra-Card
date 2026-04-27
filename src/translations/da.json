@@ -761,7 +761,18 @@
         "add_first_entity": "Tilføj din første entitet for at oprette et diagram",
         "no_entities": "Ingen entiteter tilføjet"
       },
-      "entity": "Entitet",
+      "entity": {
+        "label": "Entity",
+        "desc": "Select an entity to plot.",
+        "display_name_placeholder": "Display name (optional)",
+        "use_as_card_info": "Use as card info",
+        "attribute": "Attribute",
+        "attribute_desc": "Use entity state or select a specific attribute to track.",
+        "state_default": "State (default)",
+        "forecast_attr": "Forecast Attribute",
+        "forecast_attr_desc": "Which forecast value to plot on the graph",
+        "expand_options": "Expand Options"
+      },
       "entity_desc": "Vælg en entitet der skal plottes.",
       "display_name_optional": "Visningsnavn (valgfrit)",
       "use_as_card_info": "Brug som kortinfo",

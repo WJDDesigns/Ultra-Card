@@ -25,20 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Type check
-        run: npx tsc --noEmit
-
-      - name: Lint
-        continue-on-error: true
-        run: npm run lint
-
-      - name: Run tests
-        run: npm run test:run
-
-      - name: Build project
-        run: |
-          npm run prebuild
-          npm run build
+      # Same gates as local `npm run release:check` and CI (typecheck, lint, tests, translations, build)
+      - name: Release checks and production build
+        run: npm run release:check
 
       - name: Verify build files
         run: |

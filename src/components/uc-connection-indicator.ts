@@ -19,7 +19,7 @@ export class UcConnectionIndicator extends LitElement {
 
   @state() private _showSuccess = false;
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: inline-block;
       --indicator-primary: var(--primary-color, #03a9f4);
@@ -186,7 +186,7 @@ export class UcConnectionIndicator extends LitElement {
     }
   `;
 
-  protected updated(changedProperties: PropertyValues): void {
+  protected override updated(changedProperties: PropertyValues): void {
     if (changedProperties.has('status') && this.status === 'connected') {
       this._showSuccess = true;
       setTimeout(() => {
@@ -195,7 +195,7 @@ export class UcConnectionIndicator extends LitElement {
     }
   }
 
-  render(): TemplateResult {
+  override render(): TemplateResult {
     return html`
       <div class="indicator-container ${this.compact ? 'compact' : ''}">
         ${this._renderIcon('ha')} ${this._renderConnection()} ${this._renderIcon('cloud')}

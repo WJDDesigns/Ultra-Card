@@ -20,7 +20,7 @@ type DesignConfig = SharedDesignProperties | ResponsiveDesignProperties;
 export class ResponsiveDesignService {
   private static instance: ResponsiveDesignService;
   private currentBreakpoint: DeviceBreakpoint = 'desktop';
-  private resizeObserver?: ResizeObserver;
+  private resizeObserver: ResizeObserver | undefined;
   private breakpointListeners: Set<(breakpoint: DeviceBreakpoint) => void> = new Set();
 
   private constructor() {

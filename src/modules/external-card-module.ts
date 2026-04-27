@@ -313,8 +313,10 @@ export class UltraExternalCardModule extends BaseUltraModule {
         };
         for (const el of candidates) {
           if (isVisible(el)) return false;
-          const host = el.closest('ha-dialog, mwc-dialog') as Element | null;
-          if (host && isVisible(host)) return false;
+          const dialogEl = el.closest('ha-dialog, mwc-dialog');
+          if (dialogEl != null) {
+            if (isVisible(dialogEl as Element)) return false;
+          }
         }
       } catch {}
 
@@ -367,8 +369,8 @@ export class UltraExternalCardModule extends BaseUltraModule {
           return index >= 5;
         }
       }
-      const isAllowed = allowedExternalCardIdsCache.has(module.id);
-      return !isAllowed;
+      // Module-level cache can be cleared asynchronously; optional chain keeps this branch safe.
+      return !(allowedExternalCardIdsCache?.has(module.id) ?? false);
     }
   }
 
@@ -1446,12 +1448,6 @@ export class UltraExternalCardModule extends BaseUltraModule {
           }
 
           if (imageUrl) {
-            // Handle Home Assistant local paths
-            if (imageUrl.startsWith('/local/') || imageUrl.startsWith('/media/')) {
-              imageUrl = imageUrl;
-            } else if (imageUrl.startsWith('/')) {
-              imageUrl = imageUrl;
-            }
             return `url("${imageUrl}")`;
           }
         }

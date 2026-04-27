@@ -24,14 +24,14 @@ export class UcSnapshotSettingsDialog extends LitElement {
   @state() private _saving = false;
   @state() private _error: string | null = null;
 
-  connectedCallback() {
+  override connectedCallback() {
     super.connectedCallback();
     if (this.open) {
       this._loadSettings();
     }
   }
 
-  updated(changedProps: Map<string, any>) {
+  override updated(changedProps: Map<string, any>) {
     if (changedProps.has('open') && this.open) {
       this._loadSettings();
     }
@@ -130,7 +130,7 @@ export class UcSnapshotSettingsDialog extends LitElement {
     return `${isToday ? 'Today' : 'Tomorrow'} at ${timeString}`;
   }
 
-  render() {
+  override render() {
     if (!this.open) return html``;
 
     return html`
@@ -280,7 +280,7 @@ export class UcSnapshotSettingsDialog extends LitElement {
     `;
   }
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
     }

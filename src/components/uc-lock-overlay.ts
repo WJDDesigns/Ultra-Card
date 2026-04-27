@@ -5,7 +5,7 @@ import { customElement, property } from 'lit/decorators.js';
 export class UcLockOverlay extends LitElement {
   @property({ type: String }) message: string = 'Pro Feature';
 
-  static styles = css`
+  static override styles = css`
     :host {
       position: absolute;
       inset: 0;
@@ -36,7 +36,7 @@ export class UcLockOverlay extends LitElement {
     }
   `;
 
-  render() {
+  override render() {
     return html`
       <div class="msg">
         <ha-icon icon="mdi:lock"></ha-icon>

@@ -14,7 +14,7 @@ export class UcEntityReplaceDialog extends LitElement {
   @state() private _findEntity = '';
   @state() private _replaceEntity = '';
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
     }
@@ -254,7 +254,7 @@ export class UcEntityReplaceDialog extends LitElement {
     }
   `;
 
-  updated(changed: Map<string, unknown>): void {
+  override updated(changed: Map<string, unknown>): void {
     if (changed.has('open') && this.open) {
       this._findEntity = '';
       this._replaceEntity = '';
@@ -345,7 +345,7 @@ export class UcEntityReplaceDialog extends LitElement {
     `;
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     if (!this.open) return html``;
 
     const canApply =

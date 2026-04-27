@@ -20,7 +20,7 @@ interface FeedEvent {
   color: string;
   domain: string;
   newState: string;
-  oldState?: string;
+  oldState?: string | undefined;
   timestamp: Date;
   relativeTime: string;
   absoluteTime: string;
@@ -88,7 +88,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
     };
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const feedModule = module as ActivityFeedModule;
     const errors = [...baseValidation.errors];
@@ -105,7 +105,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
     return { valid: errors.length === 0, errors };
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -116,7 +116,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
     );
   }
 
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,

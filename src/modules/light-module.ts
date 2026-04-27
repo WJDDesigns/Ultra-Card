@@ -26,37 +26,37 @@ export type LightColorMode =
 export interface LightPreset {
   id: string;
   name: string; // Display name/label for the preset
-  action?: 'turn_on' | 'turn_off' | 'toggle'; // Action type for this preset
-  icon?: string; // Optional icon for button/icon display
+  action?: 'turn_on' | 'turn_off' | 'toggle' | undefined; // Action type for this preset
+  icon?: string | undefined; // Optional icon for button/icon display
   entities: string[]; // Entities this preset applies to
-  brightness?: number; // 0-255
-  color_temp?: number; // Mired value
-  rgb_color?: number[]; // [r, g, b]
-  hs_color?: number[]; // [hue, saturation]
-  xy_color?: number[]; // [x, y]
-  rgbw_color?: number[]; // [r, g, b, w]
-  rgbww_color?: number[]; // [r, g, b, ww, cw]
-  white?: number; // White value 0-255
-  effect?: string; // Effect name
-  effect_speed?: number; // Effect speed (WLED: 0-255)
-  effect_intensity?: number; // Effect intensity (WLED: 0-255)
-  effect_reverse?: boolean; // Reverse effect direction (WLED)
-  transition_time?: number; // Override transition time for this preset
+  brightness?: number | undefined; // 0-255
+  color_temp?: number | undefined; // Mired value
+  rgb_color?: number[] | undefined; // [r, g, b]
+  hs_color?: number[] | undefined; // [hue, saturation]
+  xy_color?: number[] | undefined; // [x, y]
+  rgbw_color?: number[] | undefined; // [r, g, b, w]
+  rgbww_color?: number[] | undefined; // [r, g, b, ww, cw]
+  white?: number | undefined; // White value 0-255
+  effect?: string | undefined; // Effect name
+  effect_speed?: number | undefined; // Effect speed (WLED: 0-255)
+  effect_intensity?: number | undefined; // Effect intensity (WLED: 0-255)
+  effect_reverse?: boolean | undefined; // Reverse effect direction (WLED)
+  transition_time?: number | undefined; // Override transition time for this preset
   // Visual customization
-  text_color?: string; // Custom text color
-  icon_color?: string; // Custom icon color
-  button_color?: string; // Custom button background color
-  use_light_color_for_icon?: boolean; // Use current light color for icon
-  use_light_color_for_button?: boolean; // Use current light color for button
-  use_icon_color_for_text?: boolean; // Use icon color for text
-  smart_color?: boolean; // Auto-contrast text based on button background
+  text_color?: string | undefined; // Custom text color
+  icon_color?: string | undefined; // Custom icon color
+  button_color?: string | undefined; // Custom button background color
+  use_light_color_for_icon?: boolean | undefined; // Use current light color for icon
+  use_light_color_for_button?: boolean | undefined; // Use current light color for button
+  use_icon_color_for_text?: boolean | undefined; // Use icon color for text
+  smart_color?: boolean | undefined; // Auto-contrast text based on button background
   // Per-preset styling
-  button_style?: 'filled' | 'outlined' | 'text'; // Button visual style for this preset
-  show_label?: boolean; // Show preset name for this preset
-  border_radius?: number; // Button border radius (0-50)
+  button_style?: 'filled' | 'outlined' | 'text' | undefined; // Button visual style for this preset
+  show_label?: boolean | undefined; // Show preset name for this preset
+  border_radius?: number | undefined; // Button border radius (0-50)
   // Color control toggles
-  enable_color?: boolean; // Controls whether color values (RGB/HS/XY) are sent (default: true)
-  enable_color_temp?: boolean; // Controls whether color_temp (MIRED) is sent (default: true)
+  enable_color?: boolean | undefined; // Controls whether color values (RGB/HS/XY) are sent (default: true)
+  enable_color_temp?: boolean | undefined; // Controls whether color_temp (MIRED) is sent (default: true)
 }
 
 // Color conversion utilities
@@ -748,7 +748,7 @@ export class UltraLightModule extends BaseUltraModule {
     `;
   }
 
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -2640,7 +2640,7 @@ export class UltraLightModule extends BaseUltraModule {
     return errors;
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const lightModule = module as LightModule;
     const errors = [...baseValidation.errors];

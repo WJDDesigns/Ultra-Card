@@ -118,6 +118,7 @@ class UcPresetsService {
    */
   private _reversePresetMappings(preset: PresetDefinition): PresetDefinition {
     // Import dynamically to avoid circular dependencies
+    // eslint-disable-next-line @typescript-eslint/no-var-requires -- runtime require breaks circular import with uc-entity-mapper
     const { entityMapper } = require('./uc-entity-mapper');
     const reversedMappings = entityMapper.reverseMappings(preset.metadata.entityMappings!);
 

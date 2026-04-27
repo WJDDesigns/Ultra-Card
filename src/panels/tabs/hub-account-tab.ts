@@ -39,9 +39,9 @@ export class HubAccountTab extends LitElement {
   @state() private _syncStatus: SyncStatus | null = null;
   @state() private _syncCounts: SyncCounts = { colors: 0, variables: 0, presets: 0, favorites: 0 };
 
-  private _syncListener?: (status: SyncStatus) => void;
+  private _syncListener: ((status: SyncStatus) => void) | undefined;
 
-  static styles = [
+  static override styles = [
     panelStyles,
     css`
       :host {
@@ -563,7 +563,7 @@ export class HubAccountTab extends LitElement {
     `,
   ];
 
-  connectedCallback() {
+  override connectedCallback() {
     super.connectedCallback();
     this._syncStatus = ucCloudSyncService.getSyncStatus();
     this._refreshCounts();
@@ -574,7 +574,7 @@ export class HubAccountTab extends LitElement {
     ucCloudSyncService.addListener(this._syncListener);
   }
 
-  disconnectedCallback() {
+  override disconnectedCallback() {
     super.disconnectedCallback();
     if (this._syncListener) ucCloudSyncService.removeListener(this._syncListener);
   }
@@ -676,7 +676,7 @@ export class HubAccountTab extends LitElement {
     await ucCloudAuthService.logoutViaHass(this.hass);
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     const user = this._effectiveUser;
 
     if (user) {

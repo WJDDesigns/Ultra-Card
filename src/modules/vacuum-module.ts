@@ -11,7 +11,7 @@ interface HassEntity {
   attributes: Record<string, any>;
   last_changed: string;
   last_updated: string;
-  context: { id: string; parent_id?: string; user_id?: string };
+  context: { id: string; parent_id?: string | null; user_id?: string | null };
 }
 import '../components/ultra-color-picker';
 
@@ -1531,11 +1531,21 @@ export class UltraVacuumModule extends BaseUltraModule {
               const newStyle = select.value as 'single_column' | 'double_column';
               // When switching to single column, clear column assignments
               if (newStyle === 'single_column') {
-                const updatedSections = sections.map(s => ({ ...s, column: undefined }));
+                const updatedSections = sections.map(
+                  (s: VacuumDisplaySection): VacuumDisplaySection => ({
+                    ...s,
+                    column: undefined,
+                  })
+                );
                 updateModule({ card_layout_style: newStyle, display_sections: updatedSections });
               } else {
                 // When switching to double column, assign all to left by default
-                const updatedSections = sections.map(s => ({ ...s, column: 'left' as const }));
+                const updatedSections = sections.map(
+                  (s: VacuumDisplaySection): VacuumDisplaySection => ({
+                    ...s,
+                    column: 'left',
+                  })
+                );
                 updateModule({ card_layout_style: newStyle, display_sections: updatedSections });
               }
               setTimeout(() => this.triggerPreviewUpdate(), 50);
@@ -2848,7 +2858,7 @@ export class UltraVacuumModule extends BaseUltraModule {
   private formatDuration(value: number | undefined, unit: 'seconds' | 'minutes' = 'minutes'): string {
     if (value === undefined || value === null) return '--';
     
-    let totalMinutes = unit === 'seconds' ? Math.floor(value / 60) : value;
+    const totalMinutes = unit === 'seconds' ? Math.floor(value / 60) : value;
     
     if (totalMinutes < 60) {
       return `${totalMinutes}m`;
@@ -4143,7 +4153,7 @@ export class UltraVacuumModule extends BaseUltraModule {
     `;
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const vacuumModule = module as VacuumModule;
     const errors = [...baseValidation.errors];

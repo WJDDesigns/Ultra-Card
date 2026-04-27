@@ -5,6 +5,7 @@ import { CardModule, UltraCardConfig, AccordionModule } from '../types';
 import { getModuleRegistry } from './module-registry';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
+import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { localize } from '../localize/localize';
 import { autoMigrateCardModule } from '../utils/template-migration';
 
@@ -46,7 +47,7 @@ export class UltraAccordionModule extends BaseUltraModule {
     };
   }
 
-  renderDesignTab(
+  override renderDesignTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -1509,7 +1510,7 @@ export class UltraAccordionModule extends BaseUltraModule {
             ? accordionModule.modules.map(childModule => {
                 const childModuleHandler = registry.getModule(childModule.type);
                 if (!childModuleHandler) {
-                  return html`<div>Unknown module type: ${childModule.type}</div>`;
+                  return ucModulePreviewService.renderModuleLoadingState(childModule);
                 }
 
                 // Check visibility
@@ -1572,7 +1573,7 @@ export class UltraAccordionModule extends BaseUltraModule {
     `, module, hass);
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const accordionModule = module as AccordionModule;
     const errors = [...baseValidation.errors];

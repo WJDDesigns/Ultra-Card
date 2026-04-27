@@ -10,16 +10,16 @@ import { CloudUser } from './uc-cloud-auth-service';
 
 interface SessionResponse {
   success: boolean;
-  session_id?: string;
+  session_id?: string | undefined;
   session?: {
     session_id: string;
     user: CloudUser;
     created_at: number;
     last_validated: number;
   };
-  user?: CloudUser;
-  valid?: boolean;
-  message?: string;
+  user?: CloudUser | undefined;
+  valid?: boolean | undefined;
+  message?: string | undefined;
 }
 
 class UcSessionSyncService {
@@ -28,7 +28,7 @@ class UcSessionSyncService {
   private static readonly POLL_INTERVAL = 30000; // 30 seconds
   private static readonly DEVICE_ID_KEY = 'ultra-card-device-id';
 
-  private _pollTimer?: number;
+  private _pollTimer: number | undefined;
   private _sessionId: string | null = null;
   private _deviceId: string;
   private _isEnabled = false; // Will be true once backend API is implemented

@@ -1,6 +1,5 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { UltraCardConfig, HoverEffectConfig, CustomVariable, DeviceBreakpoint } from '../types';
 import { configValidationService } from '../services/config-validation-service';
@@ -42,10 +41,10 @@ type EditorTab = 'layout' | 'settings';
 
 @customElement('ultra-card-editor')
 export class UltraCardEditor extends LitElement {
-  @property({ attribute: false }) public hass?: HomeAssistant;
+  @property({ attribute: false }) public hass: HomeAssistant | undefined;
   @property({ attribute: false }) public config!: UltraCardConfig;
   @state() private _activeTab: EditorTab = 'layout';
-  @state() private _configDebounceTimeout?: number;
+  @state() private _configDebounceTimeout: number | undefined;
   @state() private _isFullScreen: boolean = false;
   @state() private _moduleSettingsOpen: boolean = false;
   @state() private _isMobile: boolean = false;
@@ -83,11 +82,14 @@ export class UltraCardEditor extends LitElement {
   /** (unused — kept for reference; activation now uses HA native navigation) */
   @state() private _connectActivating = false;
 
-  /** Flag to ensure module CSS for animations is injected once */
-  private _moduleStylesInjected = false;
+  /** Aggregated lazy-module CSS; updated when implementations finish loading. */
+  private _moduleStylesElement: HTMLStyleElement | null = null;
+  private _moduleStylesRefreshTimer: number | null = null;
+  private static readonly MODULE_STYLES_REFRESH_DEBOUNCE_MS = 100;
 
-  private _qrDataReadyListener?: () => void;
-  private _moduleUpdateListener?: () => void;
+  private _qrDataReadyListener: (() => void) | undefined;
+  private _moduleUpdateListener: (() => void) | undefined;
+  private _moduleLoadForStylesListener: ((e: Event) => void) | undefined;
 
   private static readonly HUB_BANNER_DISMISSED_KEY = 'ultra-card-hub-banner-dismissed';
 
@@ -98,7 +100,7 @@ export class UltraCardEditor extends LitElement {
     };
   }
 
-  protected willUpdate(changedProperties: Map<string, any>): void {
+  protected override willUpdate(changedProperties: Map<string, any>): void {
     super.willUpdate(changedProperties);
 
     // Check for integration auth when hass updates
@@ -167,7 +169,7 @@ export class UltraCardEditor extends LitElement {
     window.location.href = '/config/integrations';
   }
 
-  connectedCallback() {
+  override connectedCallback() {
     super.connectedCallback();
 
     // Initialize Pro settings from localStorage
@@ -196,12 +198,22 @@ export class UltraCardEditor extends LitElement {
     this._checkMobileDevice();
 
     // Listen for resize events to update mobile detection
-    this._resizeListener = this._checkMobileDevice.bind(this);
-    window.addEventListener('resize', this._resizeListener);
+    const resizeListener = this._checkMobileDevice.bind(this);
+    this._resizeListener = resizeListener;
+    window.addEventListener('resize', resizeListener);
 
     // Inject module-level CSS so previews inside the editor show correct
     // animations (e.g. icon spin, pulse, etc.).
     this._injectModuleStyles();
+
+    this._moduleLoadForStylesListener = (e: Event) => {
+      const d = (e as CustomEvent<{ state?: string }>).detail;
+      if (d?.state === 'loaded') {
+        // Do not filter by layout: config can lag module preload: same race as ultra-card.
+        this._scheduleModuleStylesRefresh();
+      }
+    };
+    window.addEventListener('uc-module-load-state-changed', this._moduleLoadForStylesListener);
 
     // Inject hover effect styles into editor's shadow root
     UcHoverEffectsService.injectHoverEffectStyles(this.shadowRoot!);
@@ -254,10 +266,10 @@ export class UltraCardEditor extends LitElement {
     });
   }
 
-  private _favoriteColorsUnsubscribe?: () => void;
-  private _resizeListener?: () => void;
+  private _favoriteColorsUnsubscribe: (() => void) | undefined;
+  private _resizeListener: (() => void) | undefined;
 
-  disconnectedCallback() {
+  override disconnectedCallback() {
     super.disconnectedCallback();
     try {
       (window as any).__UC_PREVIEW_SUPPRESS_LOCKS = false;
@@ -285,6 +297,15 @@ export class UltraCardEditor extends LitElement {
 
     if (this._moduleUpdateListener) {
       window.removeEventListener('ultra-card-module-update', this._moduleUpdateListener);
+    }
+
+    if (this._moduleLoadForStylesListener) {
+      window.removeEventListener('uc-module-load-state-changed', this._moduleLoadForStylesListener);
+      this._moduleLoadForStylesListener = undefined;
+    }
+    if (this._moduleStylesRefreshTimer != null) {
+      clearTimeout(this._moduleStylesRefreshTimer);
+      this._moduleStylesRefreshTimer = null;
     }
 
     // Clean up full screen class and dialog styles if still applied
@@ -696,7 +717,7 @@ export class UltraCardEditor extends LitElement {
     this.requestUpdate();
   }
 
-  protected render() {
+  protected override render() {
     if (!this.hass || !this.config) {
       return html`
         <div class="editor-loading">
@@ -1790,19 +1811,34 @@ export class UltraCardEditor extends LitElement {
    * ModuleRegistry so that module previews benefit from their specific styles
    * (especially animations) while editing.
    */
-  private _injectModuleStyles(): void {
-    if (this._moduleStylesInjected || !this.shadowRoot) return;
-
-    const css = getModuleRegistry().getAllModuleStyles();
-    if (css.trim().length) {
-      const styleEl = document.createElement('style');
-      styleEl.textContent = css;
-      this.shadowRoot.appendChild(styleEl);
+  private _scheduleModuleStylesRefresh(): void {
+    if (this._moduleStylesRefreshTimer != null) {
+      clearTimeout(this._moduleStylesRefreshTimer);
     }
-    this._moduleStylesInjected = true;
+    this._moduleStylesRefreshTimer = window.setTimeout(() => {
+      this._moduleStylesRefreshTimer = null;
+      this._injectModuleStyles();
+    }, UltraCardEditor.MODULE_STYLES_REFRESH_DEBOUNCE_MS);
   }
 
-  static get styles() {
+  private _injectModuleStyles(): void {
+    if (!this.shadowRoot) return;
+
+    const css = getModuleRegistry().getAllModuleStyles();
+    if (!css.trim()) return;
+
+    if (this._moduleStylesElement?.isConnected) {
+      this._moduleStylesElement.textContent = css;
+      return;
+    }
+
+    const styleEl = document.createElement('style');
+    styleEl.textContent = css;
+    this.shadowRoot.appendChild(styleEl);
+    this._moduleStylesElement = styleEl;
+  }
+
+  static override get styles() {
     return css`
       .editor-loading {
         display: flex;
@@ -4369,9 +4405,9 @@ export class UltraCardEditor extends LitElement {
 
   // Cloud Sync Methods
 
-  private _authListener?: (user: CloudUser | null) => void;
-  private _syncListener?: (status: SyncStatus) => void;
-  private _backupListener?: (status: BackupStatus) => void;
+  private _authListener: ((user: CloudUser | null) => void) | undefined;
+  private _syncListener: ((status: SyncStatus) => void) | undefined;
+  private _backupListener: ((status: BackupStatus) => void) | undefined;
   private _hasInitializedAuth = false; // Track if we've initialized auth for this instance
   private _hasRegisteredListeners = false; // Track if cloud listeners are registered
 

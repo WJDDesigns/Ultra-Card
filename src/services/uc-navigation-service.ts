@@ -18,6 +18,9 @@ import { ucActionService } from './uc-action-service';
 import { responsiveDesignService } from './uc-responsive-design-service';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { getImageUrl } from '../utils/image-upload';
+import { navigationJsTemplatesAllowedForConfig } from './uc-navigation-js-gating';
+
+export { navigationJsTemplatesAllowedForConfig } from './uc-navigation-js-gating';
 
 interface RegisteredModule {
   cardId: string;
@@ -33,19 +36,19 @@ interface ViewNavLayer {
   viewContainer: HTMLElement;
   navLayer: HTMLElement;
   viewId: string;
-  activeModuleKey?: string;
-  activeModule?: RegisteredModule;
-  mediaPlayerExpanded?: boolean;
-  activeStackId?: string;
+  activeModuleKey?: string | undefined;
+  activeModule?: RegisteredModule | undefined;
+  mediaPlayerExpanded?: boolean | undefined;
+  activeStackId?: string | undefined;
   /** Viewport rect of the active stack button — used to position the popup outside .navbar-card */
-  _stackButtonRect?: DOMRect;
+  _stackButtonRect?: DOMRect | undefined;
   /** Shared hover-close timer for stack open_mode:'hover' */
-  _stackHoverTimer?: ReturnType<typeof setTimeout>;
+  _stackHoverTimer?: ReturnType<typeof setTimeout> | undefined;
   /** Auto-hide state */
-  autohideHidden?: boolean;
-  autohideTimer?: ReturnType<typeof setTimeout>;
+  autohideHidden?: boolean | undefined;
+  autohideTimer?: ReturnType<typeof setTimeout> | undefined;
   /** In edit mode: when true, show full dock temporarily so user can preview it */
-  editModePreviewExpanded?: boolean;
+  editModePreviewExpanded?: boolean | undefined;
 }
 
 interface NavGestureState {
@@ -54,7 +57,7 @@ interface NavGestureState {
   isHolding: boolean;
   clickCount: number;
   lastClickTime: number;
-  lastTarget?: HTMLElement | null;
+  lastTarget?: HTMLElement | null | undefined;
 }
 
 // Use window storage for preview overrides to ensure singleton behavior across module boundaries
@@ -64,7 +67,7 @@ declare global {
       string,
       { module: NavigationModule; config: UltraCardConfig; updatedAt: number }
     >;
-    __ucNavigationPreviewListenerAdded?: boolean;
+    __ucNavigationPreviewListenerAdded?: boolean | undefined;
   }
 }
 
@@ -2649,8 +2652,7 @@ class UcNavigationService {
   }
 
   private shouldAllowJsTemplateExecution(config?: UltraCardConfig): boolean {
-    const origin = config?._contentOrigin;
-    return origin !== 'imported' && origin !== 'preset_community';
+    return navigationJsTemplatesAllowedForConfig(config);
   }
 
   private resolveJsTemplate(

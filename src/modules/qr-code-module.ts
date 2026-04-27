@@ -214,7 +214,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
     };
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -225,7 +225,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
     );
   }
 
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -827,7 +827,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
     // --- End logo resolution ---
 
     const key = cacheKey(qrModule, content, hass);
-    let dataUrl = qrDataUrlCache.get(key);
+    const dataUrl = qrDataUrlCache.get(key);
 
     if (!content && !unifiedPending) {
       return html`
@@ -848,7 +848,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
         margin,
         // Pass the pre-fetched data URL (same-origin) so canvas is never tainted.
         // If still pending or failed, skip the logo entirely.
-        image: resolvedLogoDataUrl || undefined,
+        ...(resolvedLogoDataUrl ? { image: resolvedLogoDataUrl } : {}),
         qrOptions: { errorCorrectionLevel: ec },
         dotsOptions: { type: (qrModule.dot_style || 'square') as any, color: fg },
         cornersSquareOptions: { type: (qrModule.corner_square_style || 'square') as any, color: fg },
@@ -1009,7 +1009,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
     }
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const base = super.validate(module);
     const qr = module as QrCodeModule;
     const errors = [...base.errors];

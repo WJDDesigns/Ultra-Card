@@ -451,7 +451,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
     }
 
     // If still no forecast, try fetching via service (HA 2024.3+)
-    if (forecast.length === 0 && module.weather_entity && hass?.callWS) {
+    if (forecast.length === 0 && module.weather_entity && hass) {
       this._fetchForecastData(hass, module);
     }
 
@@ -608,7 +608,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
     `;
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     const forecastModule = module as AnimatedForecastModule;
 

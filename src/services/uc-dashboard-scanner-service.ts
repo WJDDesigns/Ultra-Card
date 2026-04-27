@@ -15,9 +15,9 @@ export interface DashboardView {
   id: string;
   title: string;
   path: string;
-  icon?: string;
-  panel?: boolean;
-  theme?: string;
+  icon?: string | undefined;
+  panel?: boolean | undefined;
+  theme?: string | undefined;
 }
 
 export interface DashboardCard {
@@ -26,9 +26,9 @@ export interface DashboardCard {
   view_id: string;
   view_title: string;
   view_path: string;
-  card_name?: string;
-  section_index?: number; // For sections views
-  card_index_in_section?: number; // Position within section
+  card_name?: string | undefined;
+  section_index?: number | undefined; // For sections views
+  card_index_in_section?: number | undefined; // Position within section
 }
 
 export interface DashboardSnapshot {
@@ -36,7 +36,7 @@ export interface DashboardSnapshot {
   views: DashboardView[];
   scanned_at: string;
   card_count: number;
-  dashboard_path?: string;
+  dashboard_path?: string | undefined;
 }
 
 class UcDashboardScannerService {
@@ -86,7 +86,8 @@ class UcDashboardScannerService {
       };
     } catch (error) {
       console.error('❌ Dashboard scan failed:', error);
-      throw new Error(`Failed to scan dashboard: ${error.message}`);
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to scan dashboard: ${msg}`);
     }
   }
 
@@ -163,7 +164,8 @@ class UcDashboardScannerService {
       };
     } catch (error) {
       console.error('❌ Global dashboard scan failed:', error);
-      throw new Error(`Failed to scan all dashboards: ${error.message}`);
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to scan all dashboards: ${msg}`);
     }
   }
 

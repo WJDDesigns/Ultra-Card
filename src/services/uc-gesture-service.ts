@@ -6,11 +6,11 @@ import { CardModule, UltraCardConfig } from '../types';
  * Configuration for gesture handler
  */
 export interface GestureConfig {
-  tap_action?: TapActionConfig;
-  hold_action?: TapActionConfig;
-  double_tap_action?: TapActionConfig;
-  entity?: string;
-  module?: CardModule;
+  tap_action?: TapActionConfig | undefined;
+  hold_action?: TapActionConfig | undefined;
+  double_tap_action?: TapActionConfig | undefined;
+  entity?: string | undefined;
+  module?: CardModule | undefined;
 }
 
 /**

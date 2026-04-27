@@ -7,7 +7,7 @@ export class UcPreviewContainer extends LitElement {
   @property({ type: Number }) minHeight: number = 160;
   @property({ type: Number }) height: number = 200;
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
       width: 100%;
@@ -50,7 +50,7 @@ export class UcPreviewContainer extends LitElement {
     }
   }
 
-  render() {
+  override render() {
     const style = `height:${Math.max(this.height, this.minHeight)}px;`;
     const justify = this.getJustify();
     return html`

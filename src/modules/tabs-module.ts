@@ -5,6 +5,7 @@ import { CardModule, UltraCardConfig, TabsModule, TabSection } from '../types';
 import { getModuleRegistry } from './module-registry';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
+import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { localize } from '../localize/localize';
 import { autoMigrateCardModule } from '../utils/template-migration';
 
@@ -966,7 +967,7 @@ export class UltraTabsModule extends BaseUltraModule {
     setTimeout(() => this.triggerPreviewUpdate(), 50);
   }
 
-  renderDesignTab(
+  override renderDesignTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -1608,7 +1609,7 @@ export class UltraTabsModule extends BaseUltraModule {
       ${section.modules.map(childModule => {
         const childModuleHandler = registry.getModule(childModule.type);
         if (!childModuleHandler) {
-          return html`<div>Unknown module type: ${childModule.type}</div>`;
+          return ucModulePreviewService.renderModuleLoadingState(childModule);
         }
 
         // Check visibility
@@ -1951,7 +1952,7 @@ export class UltraTabsModule extends BaseUltraModule {
     `;
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const tabsModule = module as TabsModule;
     const errors = [...baseValidation.errors];

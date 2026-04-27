@@ -4,8 +4,8 @@ export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 interface ToastOptions {
   message: string;
-  type?: ToastType;
-  duration?: number;
+  type?: ToastType | undefined;
+  duration?: number | undefined;
 }
 
 const TOAST_CONTAINER_ID = 'uc-toast-live-region';

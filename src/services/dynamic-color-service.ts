@@ -6,7 +6,7 @@ import { parseTemplateColorResult } from '../utils/uc-template-color-result';
  */
 declare module 'custom-card-helpers' {
   interface HomeAssistant {
-    __uvc_dynamic_colors?: { [key: string]: string };
+    __uvc_dynamic_colors?: { [key: string]: string } | undefined;
   }
 }
 
@@ -147,9 +147,7 @@ export class DynamicColorService {
     for (const [key, subPromise] of this._colorSubscriptions.entries()) {
       try {
         if (subPromise) {
-          const unsubFn = await Promise.resolve(subPromise).catch(err => {
-            return null;
-          });
+          const unsubFn = await Promise.resolve(subPromise).catch((): null => null);
 
           if (unsubFn && typeof unsubFn === 'function') {
             try {

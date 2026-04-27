@@ -25,7 +25,7 @@ import '../components/ultra-color-picker';
  * - Fully customizable styling
  */
 export class UltraPeopleModule extends BaseUltraModule {
-  handlesOwnDesignStyles = true;
+  override handlesOwnDesignStyles = true;
 
   metadata: ModuleMetadata = {
     type: 'people',
@@ -2584,7 +2584,7 @@ export class UltraPeopleModule extends BaseUltraModule {
   // VALIDATION
   // ============================================
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     const peopleModule = module as PeopleModule;
 

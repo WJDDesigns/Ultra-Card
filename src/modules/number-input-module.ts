@@ -168,14 +168,14 @@ export class UltraNumberInputModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule, hass: HomeAssistant, config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     return GlobalActionsTab.render(module, hass, updates => updateModule(updates));
   }
 
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule, hass: HomeAssistant, config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {

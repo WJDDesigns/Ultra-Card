@@ -27,9 +27,9 @@ export interface CardBackup {
 export interface FullCardBackup extends CardBackup {
   config: UltraCardConfig;
   view_info?: {
-    view_id?: string;
-    view_title?: string;
-    card_index?: number;
+    view_id?: string | undefined;
+    view_title?: string | undefined;
+    card_index?: number | undefined;
   };
 }
 
@@ -50,7 +50,7 @@ class UcCardBackupService {
   async createBackup(
     config: UltraCardConfig,
     name?: string,
-    viewInfo?: { view_id?: string; view_title?: string; card_index?: number }
+    viewInfo?: { view_id?: string | undefined; view_title?: string; card_index?: number }
   ): Promise<CardBackup> {
     if (!ucCloudAuthService.isAuthenticated()) {
       throw new Error('Must be logged in to create backups');

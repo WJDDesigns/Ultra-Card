@@ -28,12 +28,12 @@ export class UltraToggleModule extends BaseUltraModule {
 
   private _expandedTogglePoints: Set<string> = new Set();
   private _draggedItem: TogglePoint | null = null;
-  private _hass?: HomeAssistant;
-  private _activeTogglePointId?: string;
+  private _hass: HomeAssistant | undefined;
+  private _activeTogglePointId: string | undefined;
   private _actionFormChangeGuard: boolean = false;
   private _templateService: TemplateService | null = null;
   private _templateMatchCache: Map<string, boolean> = new Map();
-  private _quickSetupEntity?: string;
+  private _quickSetupEntity: string | undefined;
 
   createDefault(id?: string, hass?: HomeAssistant): ToggleModule {
     // Create two default toggle points
@@ -85,7 +85,7 @@ export class UltraToggleModule extends BaseUltraModule {
     };
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const toggleModule = module as ToggleModule;
     const errors = [...baseValidation.errors];
@@ -117,7 +117,7 @@ export class UltraToggleModule extends BaseUltraModule {
     return { valid: errors.length === 0, errors };
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,

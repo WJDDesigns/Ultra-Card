@@ -130,7 +130,7 @@ function qualityToDpr(quality: string | undefined, devicePixelRatio: number): nu
 
 @customElement('uc-living-canvas')
 export class UcLivingCanvas extends LitElement {
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
       width: 100%;
@@ -177,20 +177,20 @@ export class UcLivingCanvas extends LitElement {
   @property({ type: Number })
   public driver1 = 0;
 
-  private _container?: HTMLDivElement;
-  private _renderer?: THREE.WebGLRenderer;
-  private _scene?: THREE.Scene;
-  private _camera?: THREE.OrthographicCamera;
-  private _mesh?: THREE.Mesh;
-  private _material?: THREE.ShaderMaterial;
+  private _container: HTMLDivElement | undefined;
+  private _renderer: THREE.WebGLRenderer | undefined;
+  private _scene: THREE.Scene | undefined;
+  private _camera: THREE.OrthographicCamera | undefined;
+  private _mesh: THREE.Mesh | undefined;
+  private _material: THREE.ShaderMaterial | undefined;
   private _raf = 0;
-  private _resizeObserver?: ResizeObserver;
+  private _resizeObserver: ResizeObserver | undefined;
   private _frozenTime = 0;
-  private _hiddenListener?: () => void;
-  private _reducedMql?: MediaQueryList;
-  private _reducedListener?: () => void;
+  private _hiddenListener: (() => void) | undefined;
+  private _reducedMql: MediaQueryList | undefined;
+  private _reducedListener: (() => void) | undefined;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     void this.updateComplete.then(() => {
       if (this.isConnected && !this._renderer && this.module) {
@@ -199,12 +199,12 @@ export class UcLivingCanvas extends LitElement {
     });
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     this._teardown();
   }
 
-  protected updated(changed: PropertyValues): void {
+  protected override updated(changed: PropertyValues): void {
     super.updated(changed);
     if (this._material && (changed.has('module') || changed.has('hass'))) {
       this._syncAllUniforms(this.module);
@@ -222,7 +222,7 @@ export class UcLivingCanvas extends LitElement {
     }
   }
 
-  render() {
+  override render() {
     return html`<div class="uc-lc-host"></div>`;
   }
 

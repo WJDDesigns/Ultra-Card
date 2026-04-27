@@ -8,13 +8,13 @@ import { ucSnapshotSchedulerService } from '../../services/uc-snapshot-scheduler
 
 export interface ProAuthData {
   authenticated: boolean;
-  user_id?: number;
-  username?: string;
-  email?: string;
-  display_name?: string;
-  subscription_tier?: string;
-  subscription_status?: string;
-  subscription_expires?: number;
+  user_id?: number | undefined;
+  username?: string | undefined;
+  email?: string | undefined;
+  display_name?: string | undefined;
+  subscription_tier?: string | undefined;
+  subscription_status?: string | undefined;
+  subscription_expires?: number | undefined;
 }
 
 const ULTRA_CARD_PRO_URL = 'https://ultracard.io/product/ultra-card-pro/';
@@ -38,9 +38,9 @@ export class HubProTab extends LitElement {
   @state() private _snapshotsLoading = false;
   @state() private _creatingSnapshot = false;
   private _snapshotsSummaryLoaded = false;
-  private _toastTimer?: ReturnType<typeof setTimeout>;
+  private _toastTimer: ReturnType<typeof setTimeout> | undefined;
 
-  static styles = [
+  static override styles = [
     panelStyles,
     css`
       :host {
@@ -1128,7 +1128,7 @@ export class HubProTab extends LitElement {
     `,
   ];
 
-  updated(changed: Map<string, unknown>): void {
+  override updated(changed: Map<string, unknown>): void {
     if (changed.has('hass') && this.hass) {
       const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
       this._cloudUser = integrationUser;
@@ -1171,7 +1171,7 @@ export class HubProTab extends LitElement {
     }
   }
 
-  render() {
+  override render() {
     const auth = this.auth;
     const isIntegrationInstalled = auth != null;
     // Treat as logged in if sensor auth OR direct cloud login is present

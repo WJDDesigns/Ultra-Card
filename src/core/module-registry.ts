@@ -4,8 +4,8 @@ import type { BaseUltraModule } from '../modules/base-module';
 export interface ModuleDefinition {
   id: string; // unique, e.g., "bar"
   title: string;
-  version?: string;
-  minSdk?: string;
+  version?: string | undefined;
+  minSdk?: string | undefined;
   factory: () => BaseUltraModule;
 }
 

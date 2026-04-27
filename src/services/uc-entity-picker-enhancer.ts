@@ -1,4 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
+import { escapeHtml } from '../utils/html-sanitizer';
 import { ucCustomVariablesService } from './uc-custom-variables-service';
 import { UltraCardConfig, CustomVariable } from '../types';
 
@@ -243,7 +244,7 @@ class UcEntityPickerEnhancer {
    */
   private _replaceErrorText(shadowRoot: ShadowRoot, varName: string, resolvedEntity: string, isGlobal: boolean): void {
     const scopeIcon = isGlobal ? '🌐' : '📋';
-    const replacement = `<span class="uc-var-indicator"><span class="scope">${scopeIcon}</span> Variable → ${resolvedEntity}</span>`;
+    const replacement = `<span class="uc-var-indicator"><span class="scope">${scopeIcon}</span> Variable → ${escapeHtml(resolvedEntity)}</span>`;
 
     // Look for the supporting-text element with various selectors
     const selectors = [
@@ -581,18 +582,19 @@ class UcEntityPickerEnhancer {
       const isGlobal = v.isGlobal !== false;
       const resolvedValue = this._getResolvedValue(v);
       const tooltip = `${isGlobal ? '🌐 Global' : '📋 Card'}: $${v.name} → ${v.entity}${resolvedValue ? ` (${resolvedValue})` : ''}`;
-      
+
       // Store both the variable name (what we'll set) and the entity (for reference)
+      const varToken = escapeHtml(`$${v.name}`);
       return `
         <button 
           type="button" 
           class="uc-var-chip"
-          data-variable="\$${v.name}"
-          data-entity="${v.entity}"
-          title="${tooltip}"
+          data-variable="${varToken}"
+          data-entity="${escapeHtml(v.entity)}"
+          title="${escapeHtml(tooltip)}"
         >
           <span class="uc-var-chip-scope">${isGlobal ? '🌐' : '📋'}</span>
-          <span class="uc-var-chip-name">$${v.name}</span>
+          <span class="uc-var-chip-name">${varToken}</span>
         </button>
       `;
     }).join('');

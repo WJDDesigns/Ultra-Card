@@ -66,7 +66,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
   private _expandedCoreSections = new Set<string>();
   private _expandedDeviceIds = new Set<string>();
 
-  handlesOwnDesignStyles = true;
+  override handlesOwnDesignStyles = true;
 
   metadata: ModuleMetadata = {
     type: 'energy_display',
@@ -114,7 +114,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     };
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const base = super.validate(module);
     const ed = module as EnergyDisplayModule;
     const errors = [...base.errors];
@@ -197,10 +197,6 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
         offset-distance: 0%;
         animation: energy-flow-dot var(--flow-duration) linear infinite;
         will-change: offset-distance;
-      }
-      .energy-display-module .energy-flow-dot[style*="0s"] {
-        animation: none;
-        will-change: auto;
       }
       @keyframes energy-flow-dot {
         to { offset-distance: 100%; }
@@ -396,7 +392,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     updateModule: (u: Partial<EnergyDisplayModule>) => void
   ): void {
     const core = this._getCoreNodes(ed);
-    let devices = [...this._getDeviceNodes(ed)];
+    const devices = [...this._getDeviceNodes(ed)];
     const [removed] = devices.splice(fromIndex, 1);
     devices.splice(toIndex, 0, removed);
     this._setNodes(ed, updateModule, core, devices);
@@ -720,7 +716,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -729,7 +725,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
     return GlobalActionsTab.render(module as EnergyDisplayModule, hass, (u) => updateModule(u));
   }
 
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,

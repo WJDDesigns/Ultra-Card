@@ -8,12 +8,12 @@ import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 @customElement('uc-entity-picker')
 export class UcEntityPicker extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ type: String }) public value?: string;
-  @property({ type: String }) public domain?: string;
+  @property({ type: String }) public value: string | undefined;
+  @property({ type: String }) public domain: string | undefined;
   @property({ type: Boolean }) public disabled = false;
   @property({ type: String }) public label = 'Entity';
 
-  static get styles() {
+  static override get styles() {
     return css`
       :host {
         display: block;
@@ -32,7 +32,7 @@ export class UcEntityPicker extends LitElement {
     `;
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     return html`
       <ha-entity-picker
         .hass="${this.hass}"

@@ -36,7 +36,7 @@ export class UltraBarModule extends BaseUltraModule {
     tags: ['bar', 'progress', 'chart', 'value', 'sensor'],
   };
 
-  private _templateService?: TemplateService;
+  private _templateService: TemplateService | undefined;
   private _templateInputDebounce: any = null;
   private _timeProgressInterval: any = null;
   private _timeProgressCleanup: (() => void) | null = null;
@@ -284,7 +284,7 @@ export class UltraBarModule extends BaseUltraModule {
       let score = 0;
 
       // High score for battery device class
-      if (batteryDeviceClasses.includes(deviceClass)) {
+      if (deviceClass !== undefined && batteryDeviceClasses.includes(deviceClass)) {
         score += 100;
       }
 
@@ -2924,7 +2924,7 @@ export class UltraBarModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -5566,7 +5566,7 @@ export class UltraBarModule extends BaseUltraModule {
     }
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const barModule = module as BarModule;
     const errors = [...baseValidation.errors];

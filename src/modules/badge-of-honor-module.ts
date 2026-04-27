@@ -92,7 +92,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
     };
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -103,7 +103,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
     );
   }
 
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -938,7 +938,7 @@ export class UltraBadgeOfHonorModule extends BaseUltraModule {
     `, module, hass);
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const badgeModule = module as BadgeOfHonorModule;
     const errors = [...baseValidation.errors];

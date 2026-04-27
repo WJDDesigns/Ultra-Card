@@ -2,10 +2,10 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { TapActionConfig } from '../components/ultra-link';
 
 export interface ConfirmationDialogOptions {
-  showConfirmButton?: boolean;
-  showCancelButton?: boolean;
-  confirmText?: string;
-  cancelText?: string;
+  showConfirmButton?: boolean | undefined;
+  showCancelButton?: boolean | undefined;
+  confirmText?: string | undefined;
+  cancelText?: string | undefined;
 }
 
 /**

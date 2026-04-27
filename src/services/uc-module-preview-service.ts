@@ -1,7 +1,7 @@
 import { html, TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { CardModule, UltraCardConfig, DeviceBreakpoint } from '../types';
-import { getModuleRegistry } from '../modules/module-registry';
+import { getModuleRegistry, ModuleManifest } from '../modules/module-registry';
 import { BaseUltraModule } from '../modules/base-module';
 import { logicService } from './logic-service';
 import { UcHoverEffectsService } from './uc-hover-effects-service';
@@ -95,8 +95,8 @@ class UcModulePreviewService {
     hass: HomeAssistant,
     config: UltraCardConfig,
     options?: {
-      showLogicOverlay?: boolean; // Show "Hidden by Logic" overlay if logic conditions not met
-      onModuleEnsureRequested?: () => void; // Called after ensureModuleLoaded resolves so caller can re-render
+      showLogicOverlay?: boolean | undefined; // Show "Hidden by Logic" overlay if logic conditions not met
+      onModuleEnsureRequested?: (() => void) | undefined; // Called after ensureModuleLoaded resolves so caller can re-render
     }
   ): TemplateResult {
     const showLogicOverlay = options?.showLogicOverlay ?? true;
@@ -187,16 +187,16 @@ class UcModulePreviewService {
     hass: HomeAssistant,
     config: UltraCardConfig,
     options?: {
-      animationClass?: string; // Animation class to apply (calculated by caller)
-      animationDuration?: string;
-      animationDelay?: string;
-      animationTiming?: string;
-      introAnimation?: string;
-      outroAnimation?: string;
-      shouldTriggerStateAnimation?: boolean;
-      isHaPreview?: boolean; // Explicitly mark as HA Preview rendering (not dashboard)
-      isDashboardEditMode?: boolean; // Dashboard is in edit mode (show placeholders for invisible modules)
-      onModuleEnsureRequested?: () => void; // Called after ensureModuleLoaded resolves so caller can re-render
+      animationClass?: string | undefined; // Animation class to apply (calculated by caller)
+      animationDuration?: string | undefined;
+      animationDelay?: string | undefined;
+      animationTiming?: string | undefined;
+      introAnimation?: string | undefined;
+      outroAnimation?: string | undefined;
+      shouldTriggerStateAnimation?: boolean | undefined;
+      isHaPreview?: boolean | undefined; // Explicitly mark as HA Preview rendering (not dashboard)
+      isDashboardEditMode?: boolean | undefined; // Dashboard is in edit mode (show placeholders for invisible modules)
+      onModuleEnsureRequested?: (() => void) | undefined; // Called after ensureModuleLoaded resolves so caller can re-render
     }
   ): TemplateResult {
     const moduleWithDesign = module as any;
@@ -257,6 +257,52 @@ class UcModulePreviewService {
     return moduleContent;
   }
 
+  renderModuleLoadingState(
+    module: CardModule,
+    onModuleEnsureRequested?: () => void
+  ): TemplateResult {
+    const registry = getModuleRegistry();
+    const metadata = registry.getModuleMetadata(module.type);
+    const loadError = registry.getModuleLoadError(module.type);
+    const canLoad = registry.canLoadModule(module.type);
+
+    if (!loadError && canLoad) {
+      registry
+        .ensureModuleLoaded(module.type)
+        .then(() => onModuleEnsureRequested?.())
+        .catch(() => {
+          onModuleEnsureRequested?.();
+        });
+
+      return this._renderSkeleton(module.type, metadata);
+    }
+
+    return html`
+      <div class="unknown-module" role="status">
+        <span>
+          ${loadError
+            ? `Module failed to load: ${metadata?.title || module.type}`
+            : `Unknown Module: ${module.type}`}
+        </span>
+        ${loadError && canLoad
+          ? html`
+              <button
+                type="button"
+                class="uc-module-retry-load"
+                style="margin-top:8px;cursor:pointer;"
+                @click=${() => {
+                  registry.clearModuleLoadError(module.type);
+                  onModuleEnsureRequested?.();
+                }}
+              >
+                Retry load
+              </button>
+            `
+          : ''}
+      </div>
+    `;
+  }
+
   /**
    * Get module content by calling the module's renderPreview method
    * 
@@ -285,14 +331,7 @@ class UcModulePreviewService {
     const moduleHandler = registry.getModule(module.type);
 
     if (!moduleHandler) {
-      if (onModuleEnsureRequested) {
-        registry.ensureModuleLoaded(module.type).then(() => onModuleEnsureRequested());
-      }
-      return html`
-        <div class="unknown-module">
-          <span>Unknown Module: ${module.type}</span>
-        </div>
-      `;
+      return this.renderModuleLoadingState(module, onModuleEnsureRequested);
     }
 
     // Step 1: Resolve all variable references in the module
@@ -310,6 +349,195 @@ class UcModulePreviewService {
     }
 
     return content;
+  }
+
+  private _renderSkeleton(
+    moduleType: string,
+    metadata?: ModuleManifest
+  ): TemplateResult {
+    const category = metadata?.category || 'content';
+    const title = metadata?.title || moduleType;
+    const icon = metadata?.icon || 'mdi:puzzle-outline';
+    const variant =
+      category === 'media'
+        ? 'media'
+        : category === 'data'
+          ? 'data'
+          : category === 'interactive' || category === 'input'
+            ? 'control'
+            : category === 'layout'
+              ? 'layout'
+              : 'content';
+
+    return html`
+      <style>
+        .uc-module-skeleton {
+          --uc-skeleton-base: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+          --uc-skeleton-highlight: color-mix(in srgb, var(--primary-text-color) 18%, transparent);
+          --uc-skeleton-accent: color-mix(in srgb, var(--primary-color) 16%, transparent);
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          width: 100%;
+          min-height: 72px;
+          padding: 14px;
+          box-sizing: border-box;
+          border-radius: 14px;
+          overflow: hidden;
+          background:
+            linear-gradient(135deg, var(--uc-skeleton-accent), transparent 42%),
+            color-mix(in srgb, var(--card-background-color, var(--ha-card-background, white)) 88%, var(--primary-text-color) 12%);
+          border: 1px solid color-mix(in srgb, var(--divider-color) 70%, transparent);
+        }
+
+        .uc-module-skeleton::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          transform: translateX(-100%);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            color-mix(in srgb, var(--primary-text-color) 10%, transparent),
+            transparent
+          );
+          animation: ucSkeletonShimmer 1.45s ease-in-out infinite;
+          pointer-events: none;
+        }
+
+        .uc-skeleton-header,
+        .uc-skeleton-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+
+        .uc-skeleton-icon,
+        .uc-skeleton-pill,
+        .uc-skeleton-line,
+        .uc-skeleton-block,
+        .uc-skeleton-button {
+          background: linear-gradient(90deg, var(--uc-skeleton-base), var(--uc-skeleton-highlight), var(--uc-skeleton-base));
+          background-size: 220% 100%;
+          border-radius: 999px;
+          animation: ucSkeletonPulse 1.45s ease-in-out infinite;
+        }
+
+        .uc-skeleton-icon {
+          display: grid;
+          place-items: center;
+          width: 32px;
+          height: 32px;
+          flex: 0 0 32px;
+          color: color-mix(in srgb, var(--primary-color) 52%, var(--secondary-text-color));
+        }
+
+        .uc-skeleton-title {
+          width: min(180px, 58%);
+          height: 12px;
+        }
+
+        .uc-skeleton-pill {
+          width: 46px;
+          height: 22px;
+          margin-left: auto;
+        }
+
+        .uc-skeleton-line {
+          height: 10px;
+        }
+
+        .uc-skeleton-line.short { width: 34%; }
+        .uc-skeleton-line.medium { width: 58%; }
+        .uc-skeleton-line.long { width: 82%; }
+
+        .uc-skeleton-block {
+          height: 86px;
+          border-radius: 12px;
+        }
+
+        .uc-skeleton-button {
+          width: 74px;
+          height: 30px;
+          margin-left: auto;
+        }
+
+        .uc-module-skeleton[data-variant='media'] {
+          min-height: 142px;
+        }
+
+        .uc-module-skeleton[data-variant='layout'] .uc-skeleton-row {
+          gap: 8px;
+        }
+
+        @keyframes ucSkeletonShimmer {
+          100% { transform: translateX(100%); }
+        }
+
+        @keyframes ucSkeletonPulse {
+          0%, 100% { background-position: 0% 50%; opacity: 0.76; }
+          50% { background-position: 100% 50%; opacity: 1; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .uc-module-skeleton::after,
+          .uc-skeleton-icon,
+          .uc-skeleton-pill,
+          .uc-skeleton-line,
+          .uc-skeleton-block,
+          .uc-skeleton-button {
+            animation: none;
+          }
+        }
+      </style>
+      <div
+        class="uc-module-skeleton"
+        data-variant="${variant}"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading ${title}"
+      >
+        <div class="uc-skeleton-header">
+          <div class="uc-skeleton-icon"><ha-icon icon="${icon}"></ha-icon></div>
+          <div class="uc-skeleton-line uc-skeleton-title"></div>
+          ${variant === 'data' || variant === 'control'
+            ? html`<div class="uc-skeleton-pill"></div>`
+            : ''}
+        </div>
+        ${variant === 'media'
+          ? html`
+              <div class="uc-skeleton-block"></div>
+              <div class="uc-skeleton-line medium"></div>
+            `
+          : variant === 'data'
+            ? html`
+                <div class="uc-skeleton-line long"></div>
+                <div class="uc-skeleton-line medium"></div>
+                <div class="uc-skeleton-line short"></div>
+              `
+            : variant === 'control'
+              ? html`
+                  <div class="uc-skeleton-row">
+                    <div class="uc-skeleton-line long"></div>
+                    <div class="uc-skeleton-button"></div>
+                  </div>
+                `
+              : variant === 'layout'
+                ? html`
+                    <div class="uc-skeleton-row">
+                      <div class="uc-skeleton-line medium"></div>
+                      <div class="uc-skeleton-line medium"></div>
+                    </div>
+                    <div class="uc-skeleton-line long"></div>
+                  `
+                : html`
+                    <div class="uc-skeleton-line long"></div>
+                    <div class="uc-skeleton-line medium"></div>
+                  `}
+      </div>
+    `;
   }
 
   /**

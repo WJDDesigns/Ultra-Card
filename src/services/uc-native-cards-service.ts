@@ -6,7 +6,7 @@
 export interface NativeCardInfo {
   type: string; // e.g., 'hui-entities-card'
   name: string; // e.g., 'Entities'
-  description?: string;
+  description?: string | undefined;
 }
 
 class UcNativeCardsService {
@@ -58,7 +58,7 @@ class UcNativeCardsService {
    * Check if a card type is a native HA card
    */
   isNativeCard(cardType: string): boolean {
-    return cardType && cardType.startsWith('hui-');
+    return !!cardType && cardType.startsWith('hui-');
   }
 
   /**

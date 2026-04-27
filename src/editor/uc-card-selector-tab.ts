@@ -15,8 +15,8 @@ import {
 export interface ThirdPartyCardEntry {
   type: string;
   name: string;
-  description?: string;
-  version?: string;
+  description?: string | undefined;
+  version?: string | undefined;
 }
 
 @customElement('uc-card-selector-tab')
@@ -31,7 +31,7 @@ export class UcCardSelectorTab extends LitElement {
   @state() private _cachedAvailableCards: ThirdPartyCardEntry[] = [];
   private _cachedCardsByType = new Map<string, ThirdPartyCardEntry>();
 
-  static styles = css`
+  static override styles = css`
     .cards-tab-container {
       padding: 20px;
     }
@@ -448,7 +448,7 @@ export class UcCardSelectorTab extends LitElement {
     }
   `;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     this._refreshCardsCache();
   }
@@ -474,9 +474,9 @@ export class UcCardSelectorTab extends LitElement {
   }
 
   private _filterCardsBySearch(
-    cards: Array<{ type: string; name: string; icon?: string; description?: string }>,
+    cards: Array<{ type: string; name: string; icon?: string | undefined; description?: string | undefined }>,
     query: string
-  ): Array<{ type: string; name: string; icon?: string; description?: string }> {
+  ): Array<{ type: string; name: string; icon?: string | undefined; description?: string | undefined }> {
     if (!query || !query.trim()) return cards;
     const searchLower = query.toLowerCase().trim();
     return cards.filter(
@@ -538,7 +538,7 @@ export class UcCardSelectorTab extends LitElement {
 
   private _renderSearchResults(
     filteredNative: NativeCardEntry[],
-    filteredThirdParty: Array<{ type: string; name: string; description?: string }>
+    filteredThirdParty: Array<{ type: string; name: string; description?: string | undefined }>
   ): TemplateResult {
     const totalResults = filteredNative.length + filteredThirdParty.length;
 
@@ -627,7 +627,7 @@ export class UcCardSelectorTab extends LitElement {
     `;
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     const nativeCards = NATIVE_HA_CARDS;
     const availableCards = this._cachedAvailableCards;
     const hasSearchQuery = this._cardSearchQuery.trim() !== '';

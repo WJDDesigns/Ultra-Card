@@ -32,7 +32,7 @@ export class UcModuleSelectorShell extends LitElement {
   private _boundResizeMove = (e: MouseEvent) => this._onResizeMove(e);
   private _boundResizeEnd = () => this._onResizeEnd();
 
-  static styles = css`
+  static override styles = css`
     .module-selector-popup {
       position: fixed;
       inset: 0;
@@ -244,7 +244,7 @@ export class UcModuleSelectorShell extends LitElement {
     document.removeEventListener('mouseup', this._boundResizeEnd);
   }
 
-  render() {
+  override render() {
     return html`
       <div class="module-selector-popup">
         <div

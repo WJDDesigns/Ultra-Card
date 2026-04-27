@@ -12,8 +12,8 @@ export interface FontOption {
 export interface NativeCardEntry {
   type: string;
   name: string;
-  icon?: string;
-  description?: string;
+  icon?: string | undefined;
+  description?: string | undefined;
 }
 
 // Typography and font definitions matching the professional interface

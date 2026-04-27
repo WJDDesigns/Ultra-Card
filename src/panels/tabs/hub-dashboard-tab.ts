@@ -26,7 +26,7 @@ export class HubDashboardTab extends LitElement {
   @state() private _changelogError = '';
   @state() private _changelogTitle = '';
 
-  static styles = [
+  static override styles = [
     panelStyles,
     css`
       :host {
@@ -201,7 +201,7 @@ export class HubDashboardTab extends LitElement {
     `,
   ];
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     this._loadStats();
     this._loadChangelog();
@@ -278,7 +278,7 @@ export class HubDashboardTab extends LitElement {
     }
   }
 
-  render() {
+  override render() {
     return html`
       <div class="welcome-hero">
         <h2>Welcome to Ultra Card</h2>

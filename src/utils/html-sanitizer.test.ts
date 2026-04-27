@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { sanitizeMarkdownHtml, sanitizePresetHtml } from './html-sanitizer';
+import { escapeHtml, sanitizeMarkdownHtml, sanitizePresetHtml } from './html-sanitizer';
 
 describe('html-sanitizer', () => {
   it('removes active content from markdown html', () => {
@@ -40,5 +40,9 @@ describe('html-sanitizer', () => {
 
     expect(sanitized).toContain('href="https://example.com"');
     expect(sanitized).not.toContain('onclick=');
+  });
+
+  it('escapeHtml neutralizes angle brackets and quotes', () => {
+    expect(escapeHtml(`a"b'c<d>e&f`)).toBe('a&quot;b&#39;c&lt;d&gt;e&amp;f');
   });
 });

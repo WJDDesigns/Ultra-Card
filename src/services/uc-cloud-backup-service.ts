@@ -16,28 +16,28 @@ export interface CloudBackup {
   id: number;
   type: 'auto' | 'snapshot';
   version_number: number;
-  snapshot_name?: string;
-  snapshot_description?: string;
+  snapshot_name?: string | undefined;
+  snapshot_description?: string | undefined;
   config: UltraCardConfig;
   config_hash: string;
   card_stats: CardStats;
   created: string;
   device_info: string;
   user_id: number;
-  restore_count?: number;
+  restore_count?: number | undefined;
 }
 
 export interface BackupListItem {
   id: number;
   type: 'auto' | 'snapshot';
   version_number: number;
-  snapshot_name?: string;
-  snapshot_description?: string;
+  snapshot_name?: string | undefined;
+  snapshot_description?: string | undefined;
   created: string;
   size_kb: number;
   card_stats: CardStats;
   device_info: string;
-  restore_count?: number;
+  restore_count?: number | undefined;
 }
 
 export interface BackupListResponse {
@@ -95,8 +95,8 @@ export class UcCloudBackupService {
   };
 
   private _listeners: Set<(status: BackupStatus) => void> = new Set();
-  private _autoSaveTimer?: number;
-  private _pendingConfig?: UltraCardConfig;
+  private _autoSaveTimer: number | undefined;
+  private _pendingConfig: UltraCardConfig | undefined;
 
   constructor() {
     this._loadLastBackupTime();

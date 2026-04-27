@@ -110,7 +110,7 @@ export class UcCreateSnapshotDialog extends LitElement {
     }
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     if (!this.open) return html``;
 
     const stats = this._calculateStats();
@@ -124,7 +124,9 @@ export class UcCreateSnapshotDialog extends LitElement {
                 <ha-alert
                   alert-type="error"
                   dismissable
-                  @alert-dismissed-clicked="${() => (this._error = null)}"
+                  @alert-dismissed-clicked="${() => {
+                    this._error = null;
+                  }}"
                 >
                   ${this._error}
                 </ha-alert>
@@ -205,7 +207,7 @@ export class UcCreateSnapshotDialog extends LitElement {
     `;
   }
 
-  static get styles() {
+  static override get styles() {
     return css`
       :host {
         --dialog-max-width: 500px;

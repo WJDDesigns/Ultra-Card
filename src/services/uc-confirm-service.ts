@@ -2,9 +2,9 @@ import { Z_INDEX } from '../utils/uc-z-index';
 
 interface ConfirmOptions {
   /** Highlight confirm button in --error-color for destructive actions */
-  destructive?: boolean;
-  confirmText?: string;
-  cancelText?: string;
+  destructive?: boolean | undefined;
+  confirmText?: string | undefined;
+  cancelText?: string | undefined;
 }
 
 class UcConfirmService {

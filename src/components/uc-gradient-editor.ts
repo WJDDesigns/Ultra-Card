@@ -96,7 +96,7 @@ export class UCGradientEditor extends LitElement {
   @state() private _colorPickerStopId: string | null = null;
   @state() private _colorPickerCurrentColor: string = '#000000';
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
       width: 100%;
@@ -411,7 +411,7 @@ export class UCGradientEditor extends LitElement {
     }
   `;
 
-  render(): TemplateResult {
+  override render(): TemplateResult {
     const sortedStops = [...this.stops].sort((a, b) => a.position - b.position);
 
     return html`

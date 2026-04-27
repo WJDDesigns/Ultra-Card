@@ -437,7 +437,7 @@ export class UltraTimerModule extends BaseUltraModule {
     `, module, hass);
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     if (!module.id) errors.push('Module ID is required');
     if (!module.type || module.type !== 'timer') errors.push('Module type must be timer');

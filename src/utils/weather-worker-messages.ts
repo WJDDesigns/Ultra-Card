@@ -10,8 +10,8 @@ export interface SnowAccumulationSurface {
 }
 
 export interface WeatherWorkerEffectOptions {
-  snowAccumulation?: boolean;
-  matrixRainColor?: string;
+  snowAccumulation?: boolean | undefined;
+  matrixRainColor?: string | undefined;
 }
 
 export type WeatherWorkerMessage =
@@ -29,7 +29,7 @@ export type WeatherWorkerMessage =
       type: 'START';
       effect: WeatherEffectType;
       opacity: number;
-      options?: WeatherWorkerEffectOptions;
+      options?: WeatherWorkerEffectOptions | undefined;
     }
   | {
       type: 'SET_OPACITY';

@@ -41,3 +41,13 @@ export function sanitizeRichTextHtml(html: string): string {
     ],
   });
 }
+
+/** Escape dynamic strings for HTML text nodes and double-quoted attribute values. */
+export function escapeHtml(text: string): string {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}

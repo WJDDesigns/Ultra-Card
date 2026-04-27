@@ -10,6 +10,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import type { PresetDefinition } from '../types';
 import { ucPresetsService } from '../services/uc-presets-service';
 import { ucCloudSyncService } from '../services/uc-cloud-sync-service';
+import { sanitizePresetHtml } from '../utils/html-sanitizer';
 
 @customElement('uc-presets-selector-tab')
 export class UcPresetsSelectorTab extends LitElement {
@@ -24,17 +25,17 @@ export class UcPresetsSelectorTab extends LitElement {
   @state() private _builderExpandedId: string | null = null;
   @state() private _builderReadMoreId: string | null = null;
 
-  private _presetsUnsub?: () => void;
-  private _statusUnsub?: () => void;
+  private _presetsUnsub: (() => void) | undefined;
+  private _statusUnsub: (() => void) | undefined;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     ucPresetsService.ensureWordPressLoaded();
     this._presetsUnsub = ucPresetsService.subscribe(() => this.requestUpdate());
     this._statusUnsub = ucPresetsService.subscribeToStatus(() => this.requestUpdate());
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     this._presetsUnsub?.();
     this._statusUnsub?.();
@@ -237,7 +238,7 @@ export class UcPresetsSelectorTab extends LitElement {
     dots.forEach((d, i) => d.classList.toggle('active', i === target));
   }
 
-  static styles = css`
+  static override styles = css`
     .presets-container {
       padding: 16px;
     }
@@ -736,7 +737,7 @@ export class UcPresetsSelectorTab extends LitElement {
     }
   `;
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     const sources = ['all', 'standard', 'community'] as const;
     let allPresets = ucPresetsService.getPresetsByCategory('all');
     const wpStatus = ucPresetsService.getWordPressStatus();
@@ -950,7 +951,7 @@ export class UcPresetsSelectorTab extends LitElement {
                     </div>
                     <div class="preset-preview">${this._renderPresetImages(preset, wpPreset)}</div>
                     <div class="preset-content">
-                      <div class="preset-description">${unsafeHTML(preset.description)}</div>
+                      <div class="preset-description">${unsafeHTML(sanitizePresetHtml(preset.description || ''))}</div>
                       ${wpPreset.description_full && wpPreset.description_full !== preset.description
                         ? html`
                             <button
@@ -1051,7 +1052,7 @@ export class UcPresetsSelectorTab extends LitElement {
                     ${this._builderReadMoreId === preset.id && wpPreset.description_full
                       ? html`
                           <div class="preset-details">
-                            ${unsafeHTML(wpPreset.description_full)}
+                            ${unsafeHTML(sanitizePresetHtml(wpPreset.description_full || ''))}
                           </div>
                         `
                       : ''}

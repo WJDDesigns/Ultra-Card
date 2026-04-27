@@ -304,7 +304,7 @@ export class UltraTextInputModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -313,7 +313,7 @@ export class UltraTextInputModule extends BaseUltraModule {
     return GlobalActionsTab.render(module, hass, updates => updateModule(updates));
   }
 
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,

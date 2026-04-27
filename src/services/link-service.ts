@@ -11,45 +11,46 @@ export interface LinkAction {
     | 'perform_action'
     | 'show_map'
     | 'voice_assistant'
-    | 'trigger';
+    | 'trigger'
+    | undefined;
 
   // Basic navigation
-  navigation_path?: string;
-  url?: string;
-  url_path?: string;
+  navigation_path?: string | undefined;
+  url?: string | undefined;
+  url_path?: string | undefined;
 
   // Service calls
-  service?: string;
-  service_data?: Record<string, any>;
+  service?: string | undefined;
+  service_data?: Record<string, any> | undefined;
   target?: {
-    entity_id?: string | string[];
-    device_id?: string | string[];
-    area_id?: string | string[];
+    entity_id?: string | string[] | undefined;
+    device_id?: string | string[] | undefined;
+    area_id?: string | string[] | undefined;
   };
 
   // Entity actions
-  entity?: string;
+  entity?: string | undefined;
 
   // Map coordinates
-  latitude?: number;
-  longitude?: number;
+  latitude?: number | undefined;
+  longitude?: number | undefined;
 
   // Voice assistant
-  start_listening?: boolean;
+  start_listening?: boolean | undefined;
 
   // Custom action configuration for more complex actions
-  custom_action?: ActionConfig;
+  custom_action?: ActionConfig | undefined;
 
   // Confirmation dialog
   confirmation?: {
-    text?: string;
-    exemptions?: { user: string }[];
+    text?: string | undefined;
+    exemptions?: { user: string }[] | undefined;
   };
 }
 
 export class LinkService {
   private static instance: LinkService;
-  private hass?: HomeAssistant;
+  private hass: HomeAssistant | undefined;
 
   static getInstance(): LinkService {
     if (!LinkService.instance) {
@@ -117,7 +118,14 @@ export class LinkService {
           if (action.service) {
             const [domain, service] = action.service.split('.');
             if (domain && service) {
-              await this.hass.callService(domain, service, action.service_data, action.target);
+              const target = action.target
+                ? {
+                    ...(action.target.entity_id !== undefined ? { entity_id: action.target.entity_id } : {}),
+                    ...(action.target.device_id !== undefined ? { device_id: action.target.device_id } : {}),
+                    ...(action.target.area_id !== undefined ? { area_id: action.target.area_id } : {}),
+                  }
+                : undefined;
+              await this.hass.callService(domain, service, action.service_data, target);
             }
           }
           break;

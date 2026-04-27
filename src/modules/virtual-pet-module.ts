@@ -313,9 +313,9 @@ interface FaceCoords {
   eyeL: [number, number];
   eyeR: [number, number];
   mouth: [number, number];
-  nosePos?: [number, number];
-  noseW?: number;
-  noseColor?: string;
+  nosePos?: [number, number] | undefined;
+  noseW?: number | undefined;
+  noseColor?: string | undefined;
 }
 
 const FACE_COORDS: Record<PetSpecies, FaceCoords> = {
@@ -827,7 +827,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
     };
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const petModule = module as VirtualPetModule;
     const errors = [...baseValidation.errors];
@@ -837,7 +837,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
     return { valid: errors.length === 0, errors };
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -848,7 +848,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
     );
   }
 
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,

@@ -13,8 +13,8 @@ import {
 
 export interface SubmitPresetDialogPayload {
   shortcode: string;
-  card_settings?: Record<string, unknown>;
-  custom_variables?: unknown[];
+  card_settings?: Record<string, unknown> | undefined;
+  custom_variables?: unknown[] | undefined;
 }
 
 const MAX_PHOTOS = 5;
@@ -23,8 +23,8 @@ const MAX_PHOTO_BYTES = 256 * 1024 * 1024; // 256 MB
 type PhotoUploadState = {
   file: File;
   status: 'pending' | 'uploading' | 'done' | 'error';
-  id?: number;
-  error?: string;
+  id?: number | undefined;
+  error?: string | undefined;
 };
 
 export class UcHubSubmitPresetDialog extends LitElement {
@@ -49,7 +49,7 @@ export class UcHubSubmitPresetDialog extends LitElement {
   /** Current submission step label for the button */
   @state() private _submitStep: '' | 'photos' | 'preset' = '';
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: contents;
     }
@@ -589,7 +589,7 @@ export class UcHubSubmitPresetDialog extends LitElement {
     }
   `;
 
-  connectedCallback() {
+  override connectedCallback() {
     super.connectedCallback();
     if (this.payload?.shortcode) {
       this._code = this.payload.shortcode;
@@ -601,7 +601,7 @@ export class UcHubSubmitPresetDialog extends LitElement {
     });
   }
 
-  updated(changed: Map<string, unknown>) {
+  override updated(changed: Map<string, unknown>) {
     if (changed.has('payload') && this.payload?.shortcode) {
       this._code = this.payload.shortcode;
     }
@@ -765,7 +765,7 @@ export class UcHubSubmitPresetDialog extends LitElement {
     }
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     return html`
       <ha-dialog
         open

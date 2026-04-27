@@ -358,7 +358,10 @@ export class UltraNativeCardModule extends BaseUltraModule {
                   if (result && !(result instanceof HTMLUnknownElement)) {
                     editorElement = result;
                     isDirectEditor = true;
-                    console.log('[UC Native Card] Got direct editor from getConfigElement:', editorElement.tagName);
+                    console.log(
+                      '[UC Native Card] Got direct editor from getConfigElement:',
+                      result.tagName
+                    );
                   } else {
                     console.log('[UC Native Card] getConfigElement returned invalid result:', result);
                   }
@@ -398,12 +401,12 @@ export class UltraNativeCardModule extends BaseUltraModule {
           let configUpdateTimer: number | undefined;
           let pendingConfig: any = null; // Track pending config for debounced updates
           
-          editor.addEventListener('config-changed', (e: CustomEvent) => {
+          editor.addEventListener('config-changed', (e: Event) => {
             e.stopPropagation();
             e.stopImmediatePropagation();
-            
-            if (e.detail && e.detail.config) {
-              const normalizedConfig = { ...e.detail.config };
+            const ce = e as CustomEvent<{ config?: Record<string, unknown> }>;
+            if (ce.detail && ce.detail.config) {
+              const normalizedConfig = { ...ce.detail.config };
               if (!normalizedConfig.type && module.card_type) {
                 normalizedConfig.type = ucNativeCardsService.elementNameToConfigType(module.card_type);
               }
@@ -538,10 +541,12 @@ export class UltraNativeCardModule extends BaseUltraModule {
               // For wrapper, check if the editor loaded properly after a delay
               setTimeout(() => {
                 // If the editor still shows YAML mode, try setting value again
-                const hasVisualEditor = editor.querySelector(':not(ha-code-editor)');
+                const ed = editor;
+                if (!ed) return;
+                const hasVisualEditor = ed.querySelector(':not(ha-code-editor)');
                 if (!hasVisualEditor) {
                   console.log('[UC Native Card] Editor may be in YAML mode, retrying...');
-                  (editor as any).value = { ...wrapperConfig };
+                  (ed as any).value = { ...wrapperConfig };
                 }
               }, 200);
             }
@@ -588,7 +593,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
         }
         })(); // End of async IIFE
         return; // Return from setupEditor - async IIFE handles the rest
-      } else if (editorNotMounted) {
+      } else if (editorNotMounted && editor) {
         // Editor exists in cache but was detached from DOM (tab switch) - re-mount it
         container.innerHTML = '';
         container.appendChild(editor);
@@ -605,7 +610,9 @@ export class UltraNativeCardModule extends BaseUltraModule {
       }
 
       // Update properties on cached editor (for cached/remounted editors)
-      setupEditorProperties(editor, container);
+      if (editor) {
+        setupEditorProperties(editor, container);
+      }
     };
 
     return html`
@@ -822,7 +829,7 @@ export class UltraNativeCardModule extends BaseUltraModule {
             <div style="padding: 16px; text-align: center; color: var(--error-color);">
               <ha-icon icon="mdi:alert-circle"></ha-icon>
               <p>Card configuration error</p>
-              <small>${configError?.message || 'Unknown error'}</small>
+              <small>${configError instanceof Error ? configError.message : 'Unknown error'}</small>
             </div>
           `;
           return;

@@ -127,10 +127,10 @@ export class UltraCounterInputModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult {
+  override renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult {
     return GlobalActionsTab.render(module, hass, u => updateModule(u));
   }
-  renderOtherTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult {
+  override renderOtherTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult {
     return GlobalLogicTab.render(module, hass, u => updateModule(u));
   }
   getStyles(): string { return BaseUltraModule.getSliderStyles(); }

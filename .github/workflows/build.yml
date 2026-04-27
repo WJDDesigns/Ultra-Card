@@ -1,3 +1,5 @@
+# Kept for branch protection / legacy "Build" checks on main.
+# Parity with ci.yml: typecheck, lint, tests, translations, production build.
 name: Build
 
 on:
@@ -6,38 +8,32 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [20.x]
-
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '20'
           cache: 'npm'
-      - run: npm ci
-      - run: npm run prebuild
-      - run: npm run build --if-present
 
-  lint:
-    runs-on: ubuntu-latest
+      - name: Install dependencies
+        run: npm ci
 
-    strategy:
-      matrix:
-        node-version: [20.x]
+      - name: Release checks and production build
+        run: npm run release:check
 
-    steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run lint --if-present
+      - name: Bundle size check
+        run: |
+          SIZE=$(stat -c%s dist/ultra-card.js)
+          echo "Bundle size: $SIZE bytes"
+          if [ "$SIZE" -gt 8388608 ]; then
+            echo "::warning::Bundle size ($SIZE bytes) exceeds 8MB. Consider lazy-loading more modules."
+          fi

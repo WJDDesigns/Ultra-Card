@@ -32,7 +32,7 @@ export class UltraTextModule extends BaseUltraModule {
   };
 
   private clickTimeout: any = null;
-  private _templateService?: TemplateService;
+  private _templateService: TemplateService | undefined;
   private _templateInputDebounce: any = null;
 
   createDefault(id?: string, hass?: HomeAssistant): TextModule {
@@ -485,7 +485,7 @@ export class UltraTextModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -849,7 +849,7 @@ export class UltraTextModule extends BaseUltraModule {
     return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const textModule = module as TextModule;
     const errors = [...baseValidation.errors];
@@ -920,7 +920,7 @@ export class UltraTextModule extends BaseUltraModule {
       textModule.double_tap_action.action !== 'default' &&
       textModule.double_tap_action.action !== 'nothing';
 
-    return hasLegacyLink || hasTapAction || hasHoldAction || hasDoubleAction;
+    return !!(hasLegacyLink || hasTapAction || hasHoldAction || hasDoubleAction);
   }
 
   private validateAction(action: any): string[] {

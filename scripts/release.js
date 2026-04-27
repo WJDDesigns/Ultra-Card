@@ -15,6 +15,9 @@
  * Usage:
  *   npm run build:release      - Creates a stable release
  *   npm run build:prerelease   - Creates a pre-release (beta/alpha/rc)
+ *
+ * Before tagging, the script runs `npm run release:check` (unless --skip-build):
+ * typecheck, lint, tests, translation validation, prebuild, production build.
  */
 
 const fs = require('fs');
@@ -602,17 +605,16 @@ function tagExistsOnRemote(tag) {
 }
 
 /**
- * Build the project
+ * Full release gate: same as CI / tag workflow (`npm run release:check`).
  */
-function buildProject() {
-  log.step('Building project...');
+function runReleaseCheck() {
+  log.step('Running release checks (typecheck, lint, tests, translations, build)...');
 
   try {
-    run('npm run prebuild');
-    run('npm run build');
-    log.success('Build completed successfully');
+    run('npm run release:check');
+    log.success('Release checks completed successfully');
   } catch (error) {
-    log.error('Build failed');
+    log.error('Release checks failed');
     throw error;
   }
 }
@@ -816,11 +818,11 @@ async function main() {
     }
   }
 
-  // Build project
+  // Release gates + production build (same as CI and GitHub tag workflow)
   if (!skipBuild) {
-    buildProject();
+    runReleaseCheck();
   } else {
-    log.warn('Skipping build (--skip-build flag)');
+    log.warn('Skipping release checks and build (--skip-build flag)');
   }
 
   // Update RELEASE_NOTES.md (skip when using existing section)

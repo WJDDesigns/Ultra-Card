@@ -6,9 +6,9 @@ import { ucActionConfirmationService } from '../services/uc-action-confirmation-
 import { getPopupForModule, openPopupById } from '../services/popup-trigger-registry';
 
 export interface UltraLinkConfig {
-  tap_action?: TapActionConfig;
-  hold_action?: TapActionConfig;
-  double_tap_action?: TapActionConfig;
+  tap_action?: TapActionConfig | undefined;
+  hold_action?: TapActionConfig | undefined;
+  double_tap_action?: TapActionConfig | undefined;
 }
 
 export interface TapActionConfig {
@@ -22,16 +22,16 @@ export interface TapActionConfig {
     | 'assist'
     | 'nothing'
     | 'none'; // Legacy/alternative for 'nothing'
-  entity?: string;
-  navigation_path?: string;
-  url_path?: string;
+  entity?: string | undefined;
+  navigation_path?: string | undefined;
+  url_path?: string | undefined;
   // Modern perform-action property (preferred)
-  perform_action?: string;
+  perform_action?: string | undefined;
   // Legacy service property (for backward compatibility)
-  service?: string;
-  target?: Record<string, any>; // Home Assistant action target
-  data?: Record<string, any>; // Modern data property for perform-action
-  service_data?: Record<string, any>; // Legacy service data property
+  service?: string | undefined;
+  target?: Record<string, any> | undefined; // Home Assistant action target
+  data?: Record<string, any> | undefined; // Modern data property for perform-action
+  service_data?: Record<string, any> | undefined; // Legacy service data property
   [key: string]: any; // Allow additional HA action properties
 }
 
@@ -166,7 +166,11 @@ export class UltraLinkComponent {
             hass,
             config.tap_action || { action: 'nothing' },
             updates => {
-              const newTapAction = { ...config.tap_action, ...updates };
+              const merged = { ...config.tap_action, ...updates };
+              const newTapAction: TapActionConfig = {
+                ...merged,
+                action: merged.action ?? 'nothing',
+              };
               updateConfig({ tap_action: newTapAction });
             }
           )}
@@ -218,7 +222,11 @@ export class UltraLinkComponent {
             hass,
             config.hold_action || { action: 'nothing' },
             updates => {
-              const newHoldAction = { ...config.hold_action, ...updates };
+              const merged = { ...config.hold_action, ...updates };
+              const newHoldAction: TapActionConfig = {
+                ...merged,
+                action: merged.action ?? 'nothing',
+              };
               updateConfig({ hold_action: newHoldAction });
             }
           )}
@@ -273,7 +281,11 @@ export class UltraLinkComponent {
             hass,
             config.double_tap_action || { action: 'nothing' },
             updates => {
-              const newDoubleAction = { ...config.double_tap_action, ...updates };
+              const merged = { ...config.double_tap_action, ...updates };
+              const newDoubleAction: TapActionConfig = {
+                ...merged,
+                action: merged.action ?? 'nothing',
+              };
               updateConfig({ double_tap_action: newDoubleAction });
             }
           )}
@@ -311,7 +323,7 @@ export class UltraLinkComponent {
     switch (action.action) {
       case 'default':
         // No-op; default platform behavior or nothing
-        break;
+        return html``;
       case 'more-info':
       case 'toggle':
         return html`

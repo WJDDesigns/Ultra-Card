@@ -1,5 +1,4 @@
 import { TemplateResult, html } from 'lit';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { formatEntityState } from '../utils/number-format';
@@ -43,11 +42,11 @@ export class UltraIconModule extends BaseUltraModule {
   };
 
   private _previewCollapsed = false;
-  private _templateService?: TemplateService;
+  private _templateService: TemplateService | undefined;
   /** Last good unified-template icon color per key (anti-flash across WS re-subscribe). */
   private _lastUnifiedIconDisplayColorByKey = new Map<string, string>();
-  private _attributeCache = new Map<string, { value: string; label: string }[]>();
-  private _updateTimeout?: NodeJS.Timeout;
+  private _attributeCache = new Map<string, { value: string | undefined; label: string }[]>();
+  private _updateTimeout: NodeJS.Timeout | undefined;
   private _processingAttributes = new Set<string>();
 
   // Ensure animation/keyframe CSS is globally available (outside editor shadow DOM)
@@ -2356,7 +2355,7 @@ export class UltraIconModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -2377,7 +2376,7 @@ export class UltraIconModule extends BaseUltraModule {
 
   // Note: Icon-specific display and spacing settings were moved to General tab for consistency
   // This method is kept for backward compatibility but only renders logic
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -3741,6 +3740,7 @@ export class UltraIconModule extends BaseUltraModule {
         })}
         @click=${(e: Event) => {
           e.preventDefault();
+          if (!iconModule) return;
           // Handle undefined actions with smart defaults
           if (!iconModule.tap_action || iconModule.tap_action.action !== 'nothing') {
             const action = iconModule.tap_action || { action: 'default', entity: icon.entity };
@@ -4386,7 +4386,7 @@ export class UltraIconModule extends BaseUltraModule {
     `;
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const iconModule = module as IconModule;
     const errors = [...baseValidation.errors];
@@ -4488,7 +4488,7 @@ export class UltraIconModule extends BaseUltraModule {
   private _getEntityAttributes(
     entityId: string,
     hass: HomeAssistant
-  ): { value: string; label: string }[] {
+  ): { value: string | undefined; label: string }[] {
     const options = [{ value: '', label: 'None (Use State)' }];
 
     try {
@@ -6366,7 +6366,7 @@ export class UltraIconModule extends BaseUltraModule {
     value: any,
     fieldType: 'icon' | 'color' | 'select' | 'text' | 'toggle',
     hass: HomeAssistant,
-    selectOptions?: { value: string; label: string }[]
+    selectOptions?: { value: string | undefined; label: string }[]
   ): TemplateResult {
     const icon = iconModule.icons[index];
     const isLocked = icon[lockProperty as keyof typeof icon] !== false;

@@ -25,8 +25,8 @@ interface EffectInstance {
 }
 
 export interface WeatherEffectExtras {
-  snowAccumulation?: boolean;
-  matrixRainColor?: string;
+  snowAccumulation?: boolean | undefined;
+  matrixRainColor?: string | undefined;
 }
 
 interface EffectBuildContext {
@@ -39,7 +39,7 @@ interface EffectBuildContext {
   opacity: number;
   snowAccumulation: boolean;
   snowSurfaces: SnowAccumulationSurface[];
-  matrixRainColor?: string;
+  matrixRainColor?: string | undefined;
 }
 
 export interface WeatherEffectsCoreOptions {
@@ -1083,7 +1083,7 @@ function createCloudEffect(ctx: EffectBuildContext): EffectInstance | null {
   const group = new THREE.Group();
   // Create a plane that covers the top portion of the screen (approx 50-60%)
   const heightRatio = 0.6;
-  let geometry = new THREE.PlaneGeometry(ctx.viewWidth, ctx.viewHeight * heightRatio);
+  const geometry = new THREE.PlaneGeometry(ctx.viewWidth, ctx.viewHeight * heightRatio);
 
   const uniforms = {
     uTime: { value: 0 },

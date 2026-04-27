@@ -6,10 +6,13 @@
     "lib": ["es2017", "dom", "dom.iterable"],
     "noEmit": false,
     "noUnusedParameters": false,
-    "noImplicitReturns": false,
+    "noImplicitReturns": true,
+    "useUnknownInCatchVariables": true,
+    "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
-    "strict": false,
-    "noImplicitAny": false,
+    "strict": true,
+    "noImplicitAny": true,
+    "exactOptionalPropertyTypes": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "experimentalDecorators": true,
@@ -19,5 +22,6 @@
     "outDir": "./dist",
     "rootDir": "./src"
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/modules/_module-template.ts"]
 }

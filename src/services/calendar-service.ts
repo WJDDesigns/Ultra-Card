@@ -143,7 +143,7 @@ export class CalendarService {
   /**
    * Parse event date from various formats
    */
-  private parseEventDate(dateValue: string | { dateTime?: string; date?: string }): Date {
+  private parseEventDate(dateValue: string | { dateTime?: string | undefined; date?: string | undefined }): Date {
     if (typeof dateValue === 'string') {
       return new Date(dateValue);
     }

@@ -297,7 +297,7 @@ All standard markdown features are automatically enabled!`,
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -695,7 +695,7 @@ All standard markdown features are automatically enabled!`,
 
       try {
         // Use marked.js to process the markdown (synchronous version)
-        let html = marked(processedContent, markedOptions) as string;
+        const html = marked(processedContent, markedOptions) as string;
         return sanitizeMarkdownHtml(html, !!markdownModule.enable_html);
       } catch (error) {
         console.warn('Ultra Card: Failed to process markdown:', error);
@@ -783,8 +783,11 @@ All standard markdown features are automatically enabled!`,
         renderedContent = result;
       } catch (error) {
         console.warn('Ultra Card: Failed to render markdown:', error);
-        // Use original content as fallback
-        renderedContent = sourceContent;
+        // Sanitized fallback — avoid assigning raw markdown/HTML to .innerHTML on error paths
+        renderedContent = sanitizeMarkdownHtml(
+          String(sourceContent),
+          !!markdownModule.enable_html
+        );
       }
     } else {
       // For template content, always use the latest rendered result from template subscription
@@ -852,7 +855,7 @@ All standard markdown features are automatically enabled!`,
     return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const markdownModule = module as MarkdownModule;
     const errors = [...baseValidation.errors];

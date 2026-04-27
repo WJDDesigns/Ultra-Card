@@ -382,9 +382,9 @@ class UcCustomVariablesService {
    */
   getVariableInfo(value: string | undefined, cardConfig?: UltraCardConfig): {
     isVariable: boolean;
-    variableName?: string;
-    resolvedEntity?: string;
-    variable?: CustomVariable;
+    variableName?: string | undefined;
+    resolvedEntity?: string | undefined;
+    variable?: CustomVariable | undefined;
   } {
     if (!value || !value.startsWith('$')) {
       return { isVariable: false };

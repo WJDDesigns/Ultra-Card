@@ -203,7 +203,7 @@ export class UltraCalendarModule extends BaseUltraModule {
     } as CalendarModule;
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const calendarModule = module as CalendarModule;
     const errors = [...baseValidation.errors];
@@ -224,7 +224,7 @@ export class UltraCalendarModule extends BaseUltraModule {
     return { valid: errors.length === 0, errors };
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -233,7 +233,7 @@ export class UltraCalendarModule extends BaseUltraModule {
     return GlobalActionsTab.render(module as CalendarModule, hass, updates => updateModule(updates));
   }
 
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,

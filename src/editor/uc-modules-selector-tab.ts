@@ -19,7 +19,7 @@ export class UcModulesSelectorTab extends LitElement {
   @state() private _moduleSearchQuery = '';
   @state() private _activeModuleCategoryTab: 'standard' | 'pro' = 'standard';
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
   }
 
@@ -60,7 +60,7 @@ export class UcModulesSelectorTab extends LitElement {
     );
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     const hasSearchQuery = this._moduleSearchQuery.trim() !== '';
     const standardModules = this.allModules.filter(m => !m.tags?.includes('pro'));
     const proModules = this.allModules.filter(m => m.tags?.includes('pro'));
@@ -317,7 +317,7 @@ export class UcModulesSelectorTab extends LitElement {
     `;
   }
 
-  static styles = css`
+  static override styles = css`
     .modules-tab-container {
       padding: 20px;
     }

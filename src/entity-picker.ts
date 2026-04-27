@@ -2,15 +2,17 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 
+type EntityPickerFilter = (entityId: string) => boolean;
+
 @customElement('ultra-card-entity-picker')
 export class UltraEntityPicker extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property() public label!: string;
-  @property() public value?: string;
-  @property() public entityFilter?: (entityId: string) => boolean;
+  @property() public value: string | undefined;
+  @property() public entityFilter: EntityPickerFilter | undefined;
 
   // Add CSS to improve visibility
-  static get styles() {
+  static override get styles() {
     return css`
       ha-entity-picker {
         width: 100%;
@@ -19,7 +21,7 @@ export class UltraEntityPicker extends LitElement {
     `;
   }
 
-  protected render() {
+  protected override render() {
     return html`
       <ha-entity-picker
         .hass=${this.hass}
@@ -32,7 +34,7 @@ export class UltraEntityPicker extends LitElement {
     `;
   }
 
-  private _valueChanged(ev) {
+  private _valueChanged(ev: CustomEvent<{ value: string }>) {
     ev.stopPropagation();
     const value = ev.detail.value;
     if (value !== this.value) {

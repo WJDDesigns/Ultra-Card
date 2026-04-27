@@ -5,11 +5,7 @@ import {
   WeatherEffectsCoreOptions,
   WeatherEffectsCoreResizeOptions,
 } from '../utils/weather-effects-core';
-import {
-  WeatherWorkerEffectOptions,
-  WeatherWorkerMessage,
-  WeatherWorkerResponse,
-} from '../utils/weather-worker-messages';
+import { WeatherWorkerMessage, WeatherWorkerResponse } from '../utils/weather-worker-messages';
 
 declare const self: DedicatedWorkerGlobalScope;
 export {};

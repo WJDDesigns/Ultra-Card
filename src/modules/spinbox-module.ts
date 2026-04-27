@@ -19,7 +19,7 @@ import '../components/ultra-template-editor';
 import { getImageUrl } from '../utils/image-upload';
 
 export class UltraSpinboxModule extends BaseUltraModule {
-  private _templateService?: TemplateService;
+  private _templateService: TemplateService | undefined;
   private _templateInputDebounce: any = null;
   private _lastTouchTime: number = 0;
 
@@ -588,7 +588,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,

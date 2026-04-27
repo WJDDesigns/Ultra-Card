@@ -14,10 +14,10 @@ import {
 } from './weather-worker-messages';
 
 interface WeatherEffectOptions {
-  opacity?: number;
-  respectReducedMotion?: boolean;
-  snowAccumulation?: boolean;
-  matrixRainColor?: string;
+  opacity?: number | undefined;
+  respectReducedMotion?: boolean | undefined;
+  snowAccumulation?: boolean | undefined;
+  matrixRainColor?: string | undefined;
 }
 
 type WorkerState = 'idle' | 'pending' | 'ready' | 'failed';
@@ -31,7 +31,7 @@ export class WeatherEffectsEngine {
   private canvas: HTMLCanvasElement;
   private readonly resizeHandler = () => this.handleResize();
 
-  private worker?: Worker;
+  private worker: Worker | undefined = undefined;
   private workerState: WorkerState = 'idle';
   private workerQueue: WeatherWorkerMessage[] = [];
 

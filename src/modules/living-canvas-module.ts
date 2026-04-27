@@ -49,7 +49,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
     };
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const base = super.validate(module);
     const lc = module as LivingCanvasModule;
     const errors = [...base.errors];
@@ -72,7 +72,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
     return { valid: errors.length === 0, errors };
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -81,7 +81,7 @@ export class UltraLivingCanvasModule extends BaseUltraModule {
     return GlobalActionsTab.render(module as LivingCanvasModule, hass, u => updateModule(u));
   }
 
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,

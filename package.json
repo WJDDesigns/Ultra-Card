@@ -1,6 +1,6 @@
 {
   "name": "ultra-card",
-  "version": "3.3.0-beta21",
+  "version": "3.3.0-beta22",
   "description": "Ultra Card - A modular card builder for Home Assistant",
   "main": "dist/ultra-card.js",
   "scripts": {
@@ -19,6 +19,7 @@
     "start": "webpack serve --mode development --open",
     "dev": "webpack serve --mode development --open",
     "typecheck": "tsc --noEmit",
+    "release:check": "npm run typecheck && npm run lint && npm run test:run && npm run validate:translations && npm run prebuild && npm run build",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "validate:translations": "node scripts/validate-translations.js",
@@ -79,9 +80,12 @@
     "three": "0.181.1"
   },
   "devDependencies": {
+    "@types/js-yaml": "4.0.9",
     "@types/node": "^20.11.0",
+    "@types/pako": "2.0.4",
     "@typescript-eslint/eslint-plugin": "7.4.0",
     "@typescript-eslint/parser": "7.4.0",
+    "@vitest/coverage-v8": "4.0.18",
     "copy-webpack-plugin": "^13.0.0",
     "css-loader": "^7.1.2",
     "eslint": "8.57.0",

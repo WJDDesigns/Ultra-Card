@@ -34,7 +34,7 @@ export class UltraWysiwygEditor extends LitElement {
   private _isUpdating = false;
   private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-  static get styles() {
+  static override get styles() {
     return css`
       :host {
         display: block;
@@ -282,12 +282,12 @@ export class UltraWysiwygEditor extends LitElement {
     '#D9EAD3', '#D0E0E3', '#C9DAF8', '#CFE2F3', '#D9D2E9', '#EAD1DC',
   ];
 
-  protected firstUpdated(_changedProperties: PropertyValues): void {
+  protected override firstUpdated(_changedProperties: PropertyValues): void {
     super.firstUpdated(_changedProperties);
     this._initEditor();
   }
 
-  protected updated(changedProperties: PropertyValues): void {
+  protected override updated(changedProperties: PropertyValues): void {
     super.updated(changedProperties);
 
     if (this._isUpdating) return;
@@ -303,7 +303,7 @@ export class UltraWysiwygEditor extends LitElement {
     }
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     this._destroyEditor();
   }
@@ -490,7 +490,7 @@ export class UltraWysiwygEditor extends LitElement {
     e.stopImmediatePropagation();
   }
 
-  render() {
+  override render() {
     return html`
       <div
         class="wysiwyg-container"

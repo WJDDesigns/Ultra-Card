@@ -7,7 +7,7 @@ export class NavigationPicker extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property() public value = '';
   @property() public label = 'Navigation Target';
-  @property() public helper?: string;
+  @property() public helper: string | undefined;
   @property({ type: Boolean }) public disabled = false;
 
   private _valueChanged(ev: CustomEvent) {
@@ -21,7 +21,7 @@ export class NavigationPicker extends LitElement {
     );
   }
 
-  protected render() {
+  protected override render() {
     // Use Home Assistant's native navigation selector if available
     // This should render exactly like native Home Assistant navigation selector
     return html`
@@ -40,7 +40,7 @@ export class NavigationPicker extends LitElement {
     `;
   }
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
     }

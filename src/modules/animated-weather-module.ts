@@ -1112,7 +1112,7 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
     `;
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     const weatherModule = module as AnimatedWeatherModule;
 

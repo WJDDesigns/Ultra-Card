@@ -6,61 +6,61 @@
 
 export interface UnifiedTemplateResult {
   // Display properties (icon module)
-  icon?: string;
-  icon_color?: string;
-  container_background_color?: string; // Container background color for icon and info modules
+  icon?: string | undefined;
+  icon_color?: string | undefined;
+  container_background_color?: string | undefined; // Container background color for icon and info modules
 
   // Display properties (general)
-  name?: string;
-  name_color?: string;
-  state_text?: string;
-  state_color?: string;
+  name?: string | undefined;
+  name_color?: string | undefined;
+  state_text?: string | undefined;
+  state_color?: string | undefined;
 
   // Display properties (text/content modules)
-  content?: string;
-  color?: string;
+  content?: string | undefined;
+  color?: string | undefined;
 
   // Display properties (bar module)
-  value?: number | string;
-  label?: string;
+  value?: number | string | undefined;
+  label?: string | undefined;
   /** Side labels (legacy left_template / right_template) */
-  left_label?: string;
-  right_label?: string;
+  left_label?: string | undefined;
+  right_label?: string | undefined;
   /** Min/max for percentage bar (legacy percentage_min/max templates) */
-  value_min?: number | string;
-  value_max?: number | string;
+  value_min?: number | string | undefined;
+  value_max?: number | string | undefined;
 
   // Display properties (gauge module)
-  gauge_color?: string; // Gauge color (overrides color_mode when set)
+  gauge_color?: string | undefined; // Gauge color (overrides color_mode when set)
 
   // Display properties (graphs module)
-  colors?: string[]; // Array of colors for per-entity coloring
-  global_color?: string; // Single color applied to all entities
-  fill_area?: boolean; // Control line chart area fill
-  pie_fill?: number | string; // Control pie/donut slice fill percentage
+  colors?: string[] | undefined; // Array of colors for per-entity coloring
+  global_color?: string | undefined; // Single color applied to all entities
+  fill_area?: boolean | undefined; // Control line chart area fill
+  pie_fill?: number | string | undefined; // Control pie/donut slice fill percentage
 
   // Display properties (spinbox module)
-  button_background_color?: string;
-  button_text_color?: string;
-  value_color?: string;
+  button_background_color?: string | undefined;
+  button_text_color?: string | undefined;
+  value_color?: string | undefined;
 
   // Display properties (camera module)
-  entity?: string; // Camera entity ID
-  visible?: boolean; // Visibility control
-  overlay_text?: string; // Overlay text to display
-  overlay_color?: string; // Overlay text color
+  entity?: string | undefined; // Camera entity ID
+  visible?: boolean | undefined; // Visibility control
+  overlay_text?: string | undefined; // Overlay text to display
+  overlay_color?: string | undefined; // Overlay text color
 
   /** Toggle point match (legacy match_template) */
-  match?: boolean | string;
+  match?: boolean | string | undefined;
   /** QR payload (legacy content_template) */
-  qr_content?: string;
+  qr_content?: string | undefined;
   /** Icon active state when using unified JSON (alias: is_active) */
-  active?: boolean;
-  is_active?: boolean;
+  active?: boolean | undefined;
+  is_active?: boolean | undefined;
 
   // Error information
-  _error?: string;
-  _isString?: boolean; // True if result was a simple string (not JSON) — value in `content`, not assumed to be an icon
+  _error?: string | undefined;
+  _isString?: boolean | undefined; // True if result was a simple string (not JSON) — value in `content`, not assumed to be an icon
 }
 
 /**
@@ -113,7 +113,7 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
 
     // Graphs module properties
     if (templateResult.colors !== undefined && Array.isArray(templateResult.colors)) {
-      result.colors = templateResult.colors.map(c => String(c).trim());
+      result.colors = templateResult.colors.map((c: unknown) => String(c).trim());
     }
     if (templateResult.global_color !== undefined)
       result.global_color = String(templateResult.global_color).trim();
@@ -204,7 +204,7 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
 
       // Graphs module properties
       if (parsed.colors !== undefined && Array.isArray(parsed.colors)) {
-        result.colors = parsed.colors.map(c => String(c).trim());
+        result.colors = parsed.colors.map((c: unknown) => String(c).trim());
       }
       if (parsed.global_color !== undefined)
         result.global_color = String(parsed.global_color).trim();

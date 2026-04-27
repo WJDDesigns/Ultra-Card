@@ -215,7 +215,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     };
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -224,7 +224,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     return GlobalActionsTab.render(module as SportsScoreModule, hass, updates => updateModule(updates));
   }
 
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -2283,7 +2283,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     return valueStr;
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const sportsModule = module as SportsScoreModule;
     const errors = [...baseValidation.errors];

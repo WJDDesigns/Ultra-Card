@@ -430,7 +430,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
   /**
    * Validate module configuration
    */
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const weatherModule = module as DynamicWeatherModule;
     const errors: string[] = [];
 

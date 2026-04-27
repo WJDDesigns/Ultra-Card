@@ -9,7 +9,7 @@ import { DEFAULT_VEHICLE_IMAGE, DEFAULT_VEHICLE_IMAGE_FALLBACK } from '../../uti
 export class AboutTab extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  protected render(): TemplateResult | typeof nothing {
+  protected override render(): TemplateResult | typeof nothing {
     const lang = this.hass?.locale?.language || 'en';
     return html`
       <div class="about-tab">
@@ -121,7 +121,7 @@ export class AboutTab extends LitElement {
     `;
   }
 
-  static styles = css`
+  static override styles = css`
     .about-tab {
       display: flex;
       flex-direction: column;

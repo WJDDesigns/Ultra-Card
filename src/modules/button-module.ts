@@ -488,7 +488,7 @@ export class UltraButtonModule extends BaseUltraModule {
     }
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,

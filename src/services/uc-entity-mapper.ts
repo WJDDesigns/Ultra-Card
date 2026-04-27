@@ -212,9 +212,10 @@ class UcEntityMapperService {
         // Generic entity field mapping
         if ('entity' in module && typeof (module as any).entity === 'string') {
           const entity = (module as any).entity;
-          if (mappingMap.has(entity)) {
-            return { ...module, entity: mappingMap.get(entity) };
-          }
+        if (mappingMap.has(entity)) {
+          const mappedEntity = mappingMap.get(entity) ?? entity;
+          return { ...module, entity: mappedEntity } as CardModule;
+        }
         }
         return module;
     }

@@ -7,21 +7,21 @@ import './ultra-color-picker';
 
 @customElement('uc-favorite-colors-manager')
 export class UcFavoriteColorsManager extends LitElement {
-  @property({ attribute: false }) public hass?: HomeAssistant;
+  @property({ attribute: false }) public hass: HomeAssistant | undefined;
 
   @state() private _favoriteColors: FavoriteColor[] = [];
-  @state() private _draggedItem?: FavoriteColor;
-  @state() private _dragOverIndex?: number;
-  @state() private _editingId?: string;
+  @state() private _draggedItem: FavoriteColor | undefined = undefined;
+  @state() private _dragOverIndex: number | undefined = undefined;
+  @state() private _editingId: string | undefined = undefined;
   @state() private _editingName = '';
   @state() private _editingColor = '';
   @state() private _showAddForm = false;
   @state() private _newColorName = '';
   @state() private _newColorValue = '#ffffff';
 
-  private _favoritesUnsubscribe?: () => void;
+  private _favoritesUnsubscribe: (() => void) | undefined;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
 
     // Ensure we have latest from localStorage (sync with other UIs)
@@ -32,7 +32,7 @@ export class UcFavoriteColorsManager extends LitElement {
     });
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
 
     // Unsubscribe from favorite colors
@@ -137,7 +137,7 @@ export class UcFavoriteColorsManager extends LitElement {
     }
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     return html`
       <div class="favorites-manager">
         <div class="manager-header">
@@ -318,7 +318,7 @@ export class UcFavoriteColorsManager extends LitElement {
     `;
   }
 
-  static get styles() {
+  static override get styles() {
     return css`
       .favorites-manager {
         width: 100%;

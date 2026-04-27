@@ -4,15 +4,15 @@
  */
 
 export interface VideoEmbedOptions {
-  autoplay?: boolean;
-  muted?: boolean;
-  loop?: boolean;
-  controls?: boolean;
-  startTime?: number;
-  opacity?: number;
-  blur?: string;
-  brightness?: string;
-  scale?: number;
+  autoplay?: boolean | undefined;
+  muted?: boolean | undefined;
+  loop?: boolean | undefined;
+  controls?: boolean | undefined;
+  startTime?: number | undefined;
+  opacity?: number | undefined;
+  blur?: string | undefined;
+  brightness?: string | undefined;
+  scale?: number | undefined;
 }
 
 /**

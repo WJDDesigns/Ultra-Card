@@ -8,7 +8,7 @@ import { UltraCardConfig } from '../types';
  */
 declare module 'custom-card-helpers' {
   interface HomeAssistant {
-    __uvc_template_strings?: { [key: string]: string };
+    __uvc_template_strings?: { [key: string]: string } | undefined;
   }
 }
 
@@ -18,7 +18,7 @@ declare module 'custom-card-helpers' {
 interface CacheEntry {
   value: boolean;
   timestamp: number;
-  stringValue?: string;
+  stringValue?: string | undefined;
 }
 
 /**
@@ -129,7 +129,7 @@ export class TemplateService {
     const subPromise = this._templateSubscriptions.get(templateKey);
     if (subPromise) {
       try {
-        const unsubFn = await Promise.resolve(subPromise).catch(() => null);
+        const unsubFn = await Promise.resolve(subPromise).catch((): null => null);
         if (unsubFn && typeof unsubFn === 'function') {
           try {
             await unsubFn();

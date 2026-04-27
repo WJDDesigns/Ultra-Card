@@ -35,7 +35,7 @@ export class UltraInfoModule extends BaseUltraModule {
     tags: ['info', 'entity', 'data', 'sensors'],
   };
 
-  private _templateService?: TemplateService;
+  private _templateService: TemplateService | undefined;
   private _templateInputDebounce: any = null;
   /** Last good unified-template icon color per key (anti-flash across WS re-subscribe). */
   private _lastUnifiedInfoIconColorByKey = new Map<string, string>();
@@ -1280,7 +1280,7 @@ export class UltraInfoModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -2118,7 +2118,7 @@ export class UltraInfoModule extends BaseUltraModule {
     `, module, hass);
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const infoModule = module as InfoModule;
     const errors = [...baseValidation.errors];
@@ -2542,7 +2542,7 @@ export class UltraInfoModule extends BaseUltraModule {
       infoModule.double_tap_action.action !== 'default' &&
       infoModule.double_tap_action.action !== 'nothing';
 
-    return hasTapAction || hasHoldAction || hasDoubleAction;
+    return !!(hasTapAction || hasHoldAction || hasDoubleAction);
   }
 
   // Event handlers for info module interactions
@@ -2905,12 +2905,6 @@ export class UltraInfoModule extends BaseUltraModule {
           }
 
           if (imageUrl) {
-            // Handle Home Assistant local paths
-            if (imageUrl.startsWith('/local/') || imageUrl.startsWith('/media/')) {
-              imageUrl = imageUrl;
-            } else if (imageUrl.startsWith('/')) {
-              imageUrl = imageUrl;
-            }
             return `url("${imageUrl}")`;
           }
         }
@@ -2993,11 +2987,12 @@ export class UltraInfoModule extends BaseUltraModule {
         if (!hass.__uvc_template_strings) {
           hass.__uvc_template_strings = {} as any;
         }
+        const uvcStrings = hass.__uvc_template_strings as Record<string, string>;
 
         const templateHash = this._hashString(template);
         // Use only template hash and index for key to prevent subscription leaks when module ID changes
         const templateKey = `info_entity_${entityIndex}_${templateHash}`;
-        hass.__uvc_template_strings[templateKey] = result;
+        uvcStrings[templateKey] = result;
 
         // Trigger UI update for any listeners (editor popup + main card)
         this.triggerPreviewUpdate();

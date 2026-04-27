@@ -28,7 +28,7 @@ export class UltraLockModule extends BaseUltraModule {
   /** Optimistic action until HA state reflects the transition */
   private _lockPending = new Map<string, LockPendingAction>();
 
-  handlesOwnDesignStyles = true;
+  override handlesOwnDesignStyles = true;
 
   metadata: ModuleMetadata = {
     type: 'lock',
@@ -62,7 +62,7 @@ export class UltraLockModule extends BaseUltraModule {
     };
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     const lock = module as LockModuleConfig;
     if (!module.id) errors.push('Module ID is required');

@@ -60,11 +60,11 @@ export class UltraCardPanel extends LitElement {
   /** In-flight load promises so we don't double-load. */
   private _tabLoadPromises = new Map<HubTab, Promise<void>>();
 
-  private _authListener?: (user: CloudUser | null) => void;
-  private _mql?: MediaQueryList;
+  private _authListener: ((user: CloudUser | null) => void) | undefined;
+  private _mql: MediaQueryList | undefined;
   private _onMqlChange = (e: MediaQueryListEvent) => { this._narrow = e.matches; };
 
-  static styles = [
+  static override styles = [
     panelStyles,
     css`
       /* Tab strip */
@@ -200,7 +200,7 @@ export class UltraCardPanel extends LitElement {
     `,
   ];
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     this._mql = window.matchMedia('(max-width: 870px)');
     this._mql.addEventListener('change', this._onMqlChange);
@@ -214,7 +214,7 @@ export class UltraCardPanel extends LitElement {
     this.addEventListener('hub-navigate-tab', this._onNavigateTab as EventListener);
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     this._mql?.removeEventListener('change', this._onMqlChange);
     this._mql = undefined;
@@ -230,7 +230,7 @@ export class UltraCardPanel extends LitElement {
     if (tab) this._activeTab = tab;
   }
 
-  updated(changed: Map<string, unknown>): void {
+  override updated(changed: Map<string, unknown>): void {
     if (changed.has('hass')) {
       this._updateProState();
     }
@@ -321,16 +321,16 @@ export class UltraCardPanel extends LitElement {
     let promise = this._tabLoadPromises.get(tab);
     if (!promise) {
       const loader = TAB_LOADERS[tab];
-      promise = (loader ? loader() : Promise.resolve()).then(() => {
-        this._loadedTabs = new Set(this._loadedTabs);
-        this._loadedTabs.add(tab);
-        this._tabLoadPromises.delete(tab);
-        this.requestUpdate();
-        return undefined;
-      }).catch(() => {
-        this._tabLoadPromises.delete(tab);
-        return undefined;
-      }) as Promise<void>;
+      promise = (loader ? loader() : Promise.resolve())
+        .then((): void => {
+          this._loadedTabs = new Set(this._loadedTabs);
+          this._loadedTabs.add(tab);
+          this._tabLoadPromises.delete(tab);
+          this.requestUpdate();
+        })
+        .catch((): void => {
+          this._tabLoadPromises.delete(tab);
+        }) as Promise<void>;
       this._tabLoadPromises.set(tab, promise);
     }
   }
@@ -377,7 +377,7 @@ export class UltraCardPanel extends LitElement {
     }
   }
 
-  render() {
+  override render() {
     const visibleTabs = TABS;
     const lang = this.hass?.locale?.language ?? 'en';
 

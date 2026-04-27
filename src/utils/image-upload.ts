@@ -4,8 +4,8 @@ export interface ImageUploadResponse {
   path: string;
   file_id: string;
   success: boolean;
-  error?: string;
-  warning?: string;
+  error?: string | undefined;
+  warning?: string | undefined;
 }
 
 /**

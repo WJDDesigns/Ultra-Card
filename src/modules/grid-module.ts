@@ -18,7 +18,7 @@ import {
 import { UcFormUtils } from '../utils/uc-form-utils';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
-import { UltraLinkComponent } from '../components/ultra-link';
+import { UltraLinkComponent, TapActionConfig } from '../components/ultra-link';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
 import '../components/ultra-color-picker';
@@ -375,7 +375,7 @@ export class UltraGridModule extends BaseUltraModule {
   // Track animation start time per module (for unique animation keys on dashboard)
   private _animationStartTimes: Map<string, number> = new Map();
   // Store hass reference
-  private _hass?: HomeAssistant;
+  private _hass: HomeAssistant | undefined;
   // Track entity action states for proper form binding
   private _entityActionStates: Map<string, { tap_action?: any; hold_action?: any; double_tap_action?: any }> = new Map();
   // Track gesture state for each grid item (for hold and double-tap detection)
@@ -488,7 +488,7 @@ export class UltraGridModule extends BaseUltraModule {
     };
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const gridModule = module as GridModule;
     const errors = [...baseValidation.errors];
@@ -951,7 +951,7 @@ export class UltraGridModule extends BaseUltraModule {
   }
 
   // Render Actions Tab
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -963,7 +963,7 @@ export class UltraGridModule extends BaseUltraModule {
   }
 
   // Render Logic Tab
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -3056,9 +3056,9 @@ export class UltraGridModule extends BaseUltraModule {
     const handlers = this.createGestureHandlers(
       `${module.id}_${entity.id}`,
       {
-        tap_action: action,
-        hold_action: holdAction,
-        double_tap_action: doubleTapAction,
+        tap_action: (action ?? undefined) as TapActionConfig | undefined,
+        hold_action: (holdAction ?? undefined) as TapActionConfig | undefined,
+        double_tap_action: (doubleTapAction ?? undefined) as TapActionConfig | undefined,
         entity: entity.entity,
         module: module,
       },

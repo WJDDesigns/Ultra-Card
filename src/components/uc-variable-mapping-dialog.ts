@@ -10,7 +10,7 @@ export interface VariableMapping {
   variableName: string;
   entity: string;
   valueType: 'entity_id' | 'state' | 'attribute';
-  attributeName?: string;
+  attributeName?: string | undefined;
   shouldCreate: boolean;
 }
 
@@ -20,18 +20,18 @@ export interface VariableMapping {
  */
 @customElement('uc-variable-mapping-dialog')
 export class UcVariableMappingDialog extends LitElement {
-  @property({ attribute: false }) public hass?: HomeAssistant;
+  @property({ attribute: false }) public hass: HomeAssistant | undefined;
   @property({ type: Array }) public missingVariables: string[] = [];
   @property({ type: Boolean }) public open = false;
 
   @state() private _mappings: Map<string, VariableMapping> = new Map();
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     this._initializeMappings();
   }
 
-  updated(changedProperties: Map<string, any>): void {
+  override updated(changedProperties: Map<string, any>): void {
     if (changedProperties.has('missingVariables')) {
       this._initializeMappings();
     }
@@ -84,7 +84,7 @@ export class UcVariableMappingDialog extends LitElement {
       name: string;
       entity: string;
       valueType: 'entity_id' | 'state' | 'attribute';
-      attributeName?: string;
+      attributeName?: string | undefined;
     }> = [];
 
     for (const [varName, mapping] of this._mappings) {
@@ -128,7 +128,7 @@ export class UcVariableMappingDialog extends LitElement {
     this.open = false;
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     if (!this.open || this.missingVariables.length === 0) {
       return html``;
     }
@@ -242,7 +242,7 @@ export class UcVariableMappingDialog extends LitElement {
     `;
   }
 
-  static get styles() {
+  static override get styles() {
     return css`
       .dialog-overlay {
         position: fixed;

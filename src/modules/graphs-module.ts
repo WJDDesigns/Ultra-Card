@@ -23,6 +23,7 @@ import { getImageUrl } from '../utils/image-upload';
 import { formatEntityState } from '../utils/number-format';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { escapeHtml } from '../utils/html-sanitizer';
 
 export class UltraGraphsModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -36,7 +37,7 @@ export class UltraGraphsModule extends BaseUltraModule {
     tags: ['charts', 'graphs', 'data', 'visualization', 'statistics', 'analytics'],
   };
 
-  private _templateService?: TemplateService;
+  private _templateService: TemplateService | undefined;
   private _updateInterval: any = null;
   // Cache removed for instant updates
 
@@ -2026,7 +2027,7 @@ export class UltraGraphsModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -3086,7 +3087,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         return {
           ...dataset,
           originalValues: dataset.values,
-          values: dataset.values.map(value => ((value - datasetMin) / datasetRange) * 100),
+          values: dataset.values.map((value: number) => ((value - datasetMin) / datasetRange) * 100),
           normalizedMin: datasetMin,
           normalizedMax: datasetMax,
         };
@@ -3279,7 +3280,7 @@ export class UltraGraphsModule extends BaseUltraModule {
             : ''}
           ${(() => {
             return normalizedDatasets.map(dataset => {
-              const pathPoints = dataset.values.map((value, index) => {
+              const pathPoints = dataset.values.map((value: number, index: number) => {
                 // Calculate x within padded area
                 const x =
                   timePoints.length > 1
@@ -3309,7 +3310,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                 <path d="${pathString}" stroke="${dataset.color}" stroke-width="${dataset.lineWidth ?? 2}" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${dash}" vector-effect="non-scaling-stroke" />
                 ${
                   dataset.showPoints !== false
-                    ? svg`${dataset.values.map((value, index) => {
+                    ? svg`${dataset.values.map((value: number, index: number) => {
                         const x =
                           timePoints.length > 1
                             ? padLeft + (index / (timePoints.length - 1)) * usableWidth
@@ -3538,9 +3539,9 @@ export class UltraGraphsModule extends BaseUltraModule {
       name: string;
       color: string;
       values: number[];
-      unit?: string;
-      entityId?: string;
-      originalValues?: number[];
+      unit?: string | undefined;
+      entityId?: string | undefined;
+      originalValues?: number[] | undefined;
     }> = [];
 
     if (historyData && Array.isArray(historyData.timePoints) && historyData.timePoints.length) {
@@ -3612,7 +3613,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         return {
           ...dataset,
           originalValues: dataset.values,
-          values: dataset.values.map(value => ((value - datasetMin) / datasetRange) * 100),
+          values: dataset.values.map((value: number) => ((value - datasetMin) / datasetRange) * 100),
         };
       });
     }
@@ -3934,11 +3935,11 @@ export class UltraGraphsModule extends BaseUltraModule {
       tooltipContainer.appendChild(tooltip);
     }
 
-    // Create tooltip content
+    // Create tooltip content (entity-derived strings → escape; structure is static)
     tooltip.innerHTML = `
-      <div style="font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;">${seriesName}</div>
-      <div style="color: var(--secondary-text-color); font-size: 12px;">${timePoint}</div>
-      <div style="font-size: 16px; margin-top: 4px; color: var(--primary-color);">${formattedValue}</div>
+      <div style="font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;">${escapeHtml(seriesName)}</div>
+      <div style="color: var(--secondary-text-color); font-size: 12px;">${escapeHtml(timePoint)}</div>
+      <div style="font-size: 16px; margin-top: 4px; color: var(--primary-color);">${escapeHtml(formattedValue)}</div>
     `;
 
     // Get circle position in viewport
@@ -4304,10 +4305,10 @@ export class UltraGraphsModule extends BaseUltraModule {
         // debug removed
 
         let historyData;
-        let wsResult;
+        let wsResult: Record<string, unknown> | undefined;
         try {
           // Use WebSocket API
-          wsResult = await hass.callWS({
+          wsResult = (await hass.callWS({
             type: 'history/history_during_period',
             start_time: startTime.toISOString(),
             end_time: now.toISOString(),
@@ -4315,16 +4316,17 @@ export class UltraGraphsModule extends BaseUltraModule {
             include_start_time_state: true,
             significant_changes_only: false,
             minimal_response: false,
-          });
+          })) as Record<string, unknown>;
 
           // debug removed
 
           // The WebSocket response is an object with entity IDs as keys
           // Convert to array format matching REST API
-          if (wsResult && typeof wsResult === 'object') {
+          const wsData = wsResult;
+          if (wsData && typeof wsData === 'object') {
             historyData = entityIds
               .map(entityId => {
-                const entityHistory = wsResult[entityId] || [];
+                const entityHistory = (wsData[entityId] as unknown[] | undefined) || [];
                 return entityHistory;
               })
               .filter(h => h.length > 0);
@@ -4963,7 +4965,7 @@ export class UltraGraphsModule extends BaseUltraModule {
       module.double_tap_action.action !== 'default' &&
       module.double_tap_action.action !== 'nothing';
 
-    return hasTapAction || hasHoldAction || hasDoubleAction;
+    return !!(hasTapAction || hasHoldAction || hasDoubleAction);
   }
 
   private handleClick(
@@ -5189,7 +5191,7 @@ export class UltraGraphsModule extends BaseUltraModule {
     return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const graphsModule = module as GraphsModule;
     const errors = [...baseValidation.errors];

@@ -133,7 +133,7 @@ Pro subscribers get priority support. You can also [support development](https:/
 
 ## Contributing
 
-Contributions are welcome: translations, presets, code, and documentation. See [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md) for translations and [DEVELOPMENT.md](DEVELOPMENT.md) for local development. Please open pull requests with clear descriptions.
+Contributions are welcome: translations, presets, code, and documentation. See [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md) for translations and [DEVELOPMENT.md](DEVELOPMENT.md) for local development (including **`npm run release:check`**, the same pipeline CI and tagged releases use). Please open pull requests with clear descriptions.
 
 ---
 

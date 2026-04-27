@@ -19,7 +19,7 @@ interface AlertRow {
 }
 
 export class UltraAlertCenterModule extends BaseUltraModule {
-  handlesOwnDesignStyles = true;
+  override handlesOwnDesignStyles = true;
 
   metadata: ModuleMetadata = {
     type: 'alert_center',
@@ -60,7 +60,7 @@ export class UltraAlertCenterModule extends BaseUltraModule {
     };
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const base = super.validate(module);
     return { valid: base.errors.length === 0, errors: base.errors };
   }

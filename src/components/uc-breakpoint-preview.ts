@@ -29,7 +29,7 @@ export const PREVIEW_WIDTHS: Record<DeviceBreakpoint, number | null> = {
 export class UcBreakpointPreview extends LitElement {
   @property({ attribute: false }) public selectedBreakpoint: DeviceBreakpoint = 'desktop';
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: inline-flex;
       align-items: center;
@@ -114,7 +114,7 @@ export class UcBreakpointPreview extends LitElement {
     return width ? `\u2248\u00a0${width}px` : 'Full';
   }
 
-  render(): TemplateResult {
+  override render(): TemplateResult {
     const devices: Array<{ key: DeviceBreakpoint; icon: string }> = [
       { key: 'desktop', icon: DEVICE_BREAKPOINTS.desktop.icon },
       { key: 'laptop', icon: DEVICE_BREAKPOINTS.laptop.icon },

@@ -33,10 +33,10 @@ import { CardModule, UltraCardConfig } from '../types';
 
 export interface TemplateModule extends CardModule {
   entity: string;
-  name?: string;
-  icon?: string;
-  show_name?: boolean;
-  show_state?: boolean;
+  name?: string | undefined;
+  icon?: string | undefined;
+  show_name?: boolean | undefined;
+  show_state?: boolean | undefined;
   // layout?: 'compact' | 'standard';
   // size?: number;
 }

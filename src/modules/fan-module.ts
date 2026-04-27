@@ -69,7 +69,7 @@ export class UltraFanModule extends BaseUltraModule {
    */
   private _fanSpeedOverride = new Map<string, number>();
 
-  handlesOwnDesignStyles = true;
+  override handlesOwnDesignStyles = true;
 
   metadata: ModuleMetadata = {
     type: 'fan',
@@ -108,7 +108,7 @@ export class UltraFanModule extends BaseUltraModule {
     };
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     const fan = module as FanModuleConfig;
     if (!module.id) errors.push('Module ID is required');

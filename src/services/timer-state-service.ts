@@ -8,9 +8,9 @@ export type TimerStatus = 'idle' | 'running' | 'paused' | 'expired';
 export interface TimerState {
   status: TimerStatus;
   remaining_seconds: number;
-  end_time?: number; // timestamp when timer will reach 0 (for running)
-  interval_id?: ReturnType<typeof setInterval>;
-  on_expire?: () => void;
+  end_time?: number | undefined; // timestamp when timer will reach 0 (for running)
+  interval_id?: ReturnType<typeof setInterval> | undefined;
+  on_expire?: (() => void) | undefined;
 }
 
 /** Tracks the last HA entity state we synced from, to avoid redundant re-syncs. */

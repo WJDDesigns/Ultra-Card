@@ -18,7 +18,7 @@ export interface SyncResult {
 export interface CloudFavorite {
   id: string;
   name: string;
-  description?: string;
+  description?: string | undefined;
   row_data: string; // JSON stringified CardRow
   created: string;
   updated: string;
@@ -40,7 +40,7 @@ export interface CloudReview {
   id: string;
   preset_id: string;
   rating: number;
-  comment?: string;
+  comment?: string | undefined;
   created: string;
   updated: string;
   user_id: number;
@@ -51,13 +51,13 @@ export interface SubmitPresetPayload {
   name: string;
   description: string;
   category: string;
-  tags?: string[];
+  tags?: string[] | undefined;
   shortcode: string; // JSON string of layout
-  card_settings?: Record<string, unknown>;
-  custom_variables?: unknown[];
-  featured_image?: string;
-  source?: string;
-  integrations?: string;
+  card_settings?: Record<string, unknown> | undefined;
+  custom_variables?: unknown[] | undefined;
+  featured_image?: string | undefined;
+  source?: string | undefined;
+  integrations?: string | undefined;
 }
 
 export interface SyncConflict<T> {
@@ -548,8 +548,8 @@ class UcCloudSyncService {
     merged: any[];
     conflicts: SyncConflict<any>[];
   }> {
-    const merged = [];
-    const conflicts = [];
+    const merged: any[] = [];
+    const conflicts: SyncConflict<any>[] = [];
 
     // Simple merge strategy: newer wins, detect conflicts by comparing timestamps
     const remoteMap = new Map(remote.map(r => [r.id, r]));
@@ -570,7 +570,7 @@ class UcCloudSyncService {
         if (Math.abs(localTime - remoteTime) > 1000) {
           // 1 second tolerance
           conflicts.push({
-            type: 'favorite',
+            type: 'favorite' as const,
             local: localItem,
             remote: remoteItem,
             field: 'updated',
@@ -700,7 +700,7 @@ class UcCloudSyncService {
     const response = await ucCloudAuthService.authenticatedFetch(targetUrl, { method: 'POST', body });
 
     if (!response.ok) {
-      const err = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+      const err = (await response.json().catch((): null => null)) as Record<string, unknown> | null;
       const dataMsg =
         err?.data && typeof err.data === 'object' && err.data !== null && 'message' in err.data
           ? String((err.data as { message?: unknown }).message)

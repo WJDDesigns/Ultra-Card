@@ -16,10 +16,10 @@ export interface DeviceChangedEvent {
 @customElement('uc-device-selector')
 export class UcDeviceSelector extends LitElement {
   @property({ attribute: false }) public selectedDevice: DeviceBreakpoint = 'desktop';
-  @property({ attribute: false }) public design?: ResponsiveDesignProperties;
+  @property({ attribute: false }) public design: ResponsiveDesignProperties | undefined;
   @property({ type: Boolean }) public showBaseOption = false; // Default to not showing base option
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
       width: 100%;
@@ -159,7 +159,7 @@ export class UcDeviceSelector extends LitElement {
     );
   }
 
-  render(): TemplateResult {
+  override render(): TemplateResult {
     const devices: Array<{ key: DeviceBreakpoint; config: { label: string; icon: string }; isBase?: boolean }> = [
       { key: 'desktop', config: DEVICE_BREAKPOINTS.desktop, isBase: true },
       { key: 'laptop', config: DEVICE_BREAKPOINTS.laptop },

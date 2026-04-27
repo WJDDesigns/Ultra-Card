@@ -10,6 +10,9 @@
 uc-*.js
 uc-*.js.LICENSE.txt
 
+# test coverage (generated)
+/coverage/
+
 # misc
 .DS_Store
 .env.local

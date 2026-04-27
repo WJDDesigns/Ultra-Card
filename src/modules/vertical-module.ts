@@ -9,6 +9,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
+import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { generateCSSVariables } from '../utils/css-variable-utils';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { autoMigrateCardModule } from '../utils/template-migration';
@@ -36,7 +37,7 @@ export class UltraVerticalModule extends BaseUltraModule {
    * shifts the vertical position of the content within the column and breaks
    * column vertical-alignment centering.
    */
-  handlesOwnDesignStyles = true;
+  override handlesOwnDesignStyles = true;
 
   createDefault(id?: string, hass?: HomeAssistant): VerticalModule {
     return {
@@ -561,7 +562,7 @@ export class UltraVerticalModule extends BaseUltraModule {
     const moduleHandler = registry.getModule(moduleToRender.type);
 
     if (!moduleHandler) {
-      return html``;
+      return ucModulePreviewService.renderModuleLoadingState(moduleToRender);
     }
 
     // Check Pro access for child modules
@@ -815,7 +816,7 @@ export class UltraVerticalModule extends BaseUltraModule {
     return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const verticalModule = module as VerticalModule;
     const errors = [...baseValidation.errors];

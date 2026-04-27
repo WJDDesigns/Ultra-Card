@@ -22,6 +22,7 @@ interface RenderContext {
 }
 import { getModuleRegistry } from '../modules';
 import { getImageUrl } from '../utils/image-upload';
+import { collectModuleTypesFromLayout } from '../utils/uc-layout-module-types';
 import { logicService } from '../services/logic-service';
 import { TemplateService } from '../services/template-service';
 import { configValidationService } from '../services/config-validation-service';
@@ -46,12 +47,13 @@ import {
 } from '../pro/third-party-limit-service';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';
+import { UC_ULTRA_CARD_HASS_READY } from '../utils/uc-pro-banner';
 
 import { externalCardContainerService } from '../services/external-card-container-service';
 
 @customElement('ultra-card')
 export class UltraCard extends LitElement {
-  private _hass?: HomeAssistant;
+  private _hass: HomeAssistant | undefined;
 
   @property({ attribute: false })
   public get hass(): HomeAssistant | undefined {
@@ -91,7 +93,7 @@ export class UltraCard extends LitElement {
     // Let Lit handle the property change for other updates
     this.requestUpdate('hass', oldHass);
   }
-  @property({ attribute: false, type: Object }) public config?: UltraCardConfig;
+  @property({ attribute: false, type: Object }) public config: UltraCardConfig | undefined;
 
   @state() private _moduleVisibilityState = new Map<string, boolean>();
   @state() private _animatingModules = new Set<string>();
@@ -105,19 +107,23 @@ export class UltraCard extends LitElement {
   private static readonly CONNECTOR_BANNER_STORAGE_KEY = 'ultra-card-connector-banner-dismissed';
   private static readonly HACS_CONNECTOR_URL =
     'https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-connect&category=integration';
-  private _templateUpdateListener?: (event: Event) => void;
-  private _qrDataReadyListener?: () => void;
-  private _authListener?: (user: CloudUser | null) => void;
-  private _sliderStateHandler?: (e: Event) => void;
-  /**
-   * Flag to ensure module CSS is injected only once per card instance.
-   */
-  private _moduleStylesInjected = false;
+  private _templateUpdateListener: ((event: Event) => void) | undefined;
+  private _qrDataReadyListener: (() => void) | undefined;
+  private _moduleLoadStateListener: ((e: Event) => void) | undefined;
+  private _authListener: ((user: CloudUser | null) => void) | undefined;
+  private _sliderStateHandler: ((e: Event) => void) | undefined;
+  /** Disposer for this card's entry in clockUpdateService multi-listener list */
+  private _removeClockUpdateCallback: (() => void) | undefined;
+  /** Aggregated lazy-module CSS (`getAllModuleStyles`); text updated when new modules register. */
+  private _moduleStylesElement: HTMLStyleElement | null = null;
+  /** Coalesce many `loaded` events after cache clear / preload so we do not rebuild huge CSS strings dozens of times per frame. */
+  private _moduleStylesRefreshTimer: number | null = null;
+  private static readonly MODULE_STYLES_REFRESH_DEBOUNCE_MS = 100;
   private _instanceId: string = '';
   private _layoutTemplateService: TemplateService | null = null;
   /** True after layout columns_template / modules_template subs are registered for this service instance */
   private _layoutTemplatesRegistered = false;
-  private _templateUpdateDebounceTimer?: number;
+  private _templateUpdateDebounceTimer: number | undefined;
   /** Monotonic counter bumped on every config change; used as a cheap cache key instead of JSON.stringify. */
   private _configVersion = 0;
   /** Coalesces multiple requestUpdate calls within the same microtask. */
@@ -132,11 +138,11 @@ export class UltraCard extends LitElement {
   /** Parsed layout template results; invalidated when config.layout or template raw string changes. */
   private _layoutColumnsParsedCache = new Map<string, { raw: string; value: CardColumn[] }>();
   private _layoutModulesParsedCache = new Map<string, { raw: string; value: CardModule[] }>();
-  private _limitUnsub?: () => void;
+  private _limitUnsub: (() => void) | undefined;
   private _isEditorPreviewCard = false;
-  private _globalTransparencyListener?: () => void;
+  private _globalTransparencyListener: (() => void) | undefined;
   private _globalTransparencyApplied = false;
-  private _variablesBackupUnsub?: () => void;
+  private _variablesBackupUnsub: (() => void) | undefined;
   private _variablesBackupVersion = 0;
 
   /** Cached config-derived data; invalidated when _configVersion changes */
@@ -252,8 +258,36 @@ export class UltraCard extends LitElement {
     return this._configCache;
   }
 
-  connectedCallback(): void {
+  /** Only cards that actually use `moduleType` need to re-render on lazy-load events (M3). */
+  private _handleModuleLoadStateChanged(e: Event): void {
+    const detail = (e as CustomEvent<{ type?: string; state?: string }>).detail;
+
+    // MUST run before the M3 early-return: `setConfig` can arrive after a module has already
+    // registered — if we skipped here, this shadow root would never get that module's CSS
+    // (e.g. @keyframes for energy flow dots) until a full reconnect / editor open.
+    if (detail?.state === 'loaded') {
+      this._scheduleModuleStylesRefresh();
+    }
+
+    const moduleType = detail?.type;
+    if (typeof moduleType === 'string' && moduleType.length > 0) {
+      const used = collectModuleTypesFromLayout(this.config?.layout);
+      if (!used.has(moduleType)) {
+        return;
+      }
+    }
+    this._scheduleUpdate();
+  }
+
+  override connectedCallback(): void {
     super.connectedCallback();
+
+    // Register as a shared logic/template consumer so disconnecting this card does not
+    // tear down WebSocket template subscriptions still needed by other ultra-cards.
+    logicService.registerConsumer();
+
+    // Same pattern for animated clock intervals + tick listeners (multi-card safe).
+    clockUpdateService.registerConsumer();
 
     // Listen for global transparency changes
     this._globalTransparencyListener = () => {
@@ -332,9 +366,8 @@ export class UltraCard extends LitElement {
       // ignore
     }
 
-    // Set up clock update service to trigger re-renders for clock modules
-    clockUpdateService.setUpdateCallback(() => {
-      // Only update if we have animated clock modules
+    // Clock tick: each ultra-card registers its own callback; all are invoked on each interval.
+    this._removeClockUpdateCallback = clockUpdateService.addUpdateCallback(() => {
       const hasClockModules = this.config?.layout?.rows?.some(row =>
         row.columns?.some(col => col.modules?.some(mod => mod.type === 'animated_clock'))
       );
@@ -350,20 +383,34 @@ export class UltraCard extends LitElement {
 
     // Listen for template updates from modules
     this._templateUpdateListener = (event: Event) => {
-      // Check if we have any non-3rd party modules
-      const hasNonExternalModules = this.config?.layout?.rows?.some(row =>
-        row.columns?.some(col => col.modules?.some(mod => mod.type !== 'external_card'))
-      );
-
-      // If we only have 3rd party cards, skip all template updates
-      if (!hasNonExternalModules) {
+      // Skip only when the layout definitely contains nothing but external_card modules
+      // (entire tree — accordions nested under horizontal/tabs/etc. are not visible to a shallow row scan).
+      // If config/rows are not ready yet, do NOT skip: accordion toggles and similar use this path
+      // and would otherwise no-op until a full refresh.
+      const moduleTypes = collectModuleTypesFromLayout(this.config?.layout);
+      if (
+        moduleTypes.size > 0 &&
+        [...moduleTypes].every(t => t === 'external_card')
+      ) {
         return;
       }
 
       // Only update if the event is from a non-external module
-      const detail = (event as CustomEvent).detail;
+      const detail = (event as CustomEvent<{ moduleType?: string; immediate?: boolean }>).detail;
       if (detail?.moduleType === 'external_card') {
         return; // Skip updates from external cards
+      }
+
+      // User-driven UI (accordion, tabs, …) uses triggerPreviewUpdate(true): do not reset a
+      // 50ms debounce on every click or rapid taps never paint until the user pauses.
+      if (detail?.immediate) {
+        if (this._templateUpdateDebounceTimer !== undefined) {
+          clearTimeout(this._templateUpdateDebounceTimer);
+          this._templateUpdateDebounceTimer = undefined;
+        }
+        this._scheduleUpdate();
+        this._updateHoverEffectStyles();
+        return;
       }
 
       if (this._templateUpdateDebounceTimer !== undefined) {
@@ -380,6 +427,10 @@ export class UltraCard extends LitElement {
     // Re-render when QR code module finishes generating (async toDataURL)
     this._qrDataReadyListener = () => this._scheduleUpdate();
     window.addEventListener('uc-qr-data-ready', this._qrDataReadyListener);
+
+    // Re-render when lazy-loaded module implementations finish or fail (only if this card uses that type).
+    this._moduleLoadStateListener = e => this._handleModuleLoadStateChanged(e);
+    window.addEventListener('uc-module-load-state-changed', this._moduleLoadStateListener);
 
     // React to preview flag toggles so open editor Save/Done updates unlocks immediately
     const previewListener = (e?: any) => {
@@ -444,8 +495,12 @@ export class UltraCard extends LitElement {
     this._registerNavigationModules();
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
+    if (this._moduleStylesRefreshTimer != null) {
+      clearTimeout(this._moduleStylesRefreshTimer);
+      this._moduleStylesRefreshTimer = null;
+    }
     if (this._limitUnsub) {
       this._limitUnsub();
       this._limitUnsub = undefined;
@@ -454,12 +509,15 @@ export class UltraCard extends LitElement {
     // Clean up hover effect styles
     UcHoverEffectsService.removeHoverEffectStyles(this.shadowRoot!);
 
-    // Clean up clock timers
-    clockUpdateService.clearAll();
+    // Stop only this card's animated_clock intervals, then drop this card's tick listener.
+    this._unregisterAnimatedClockTimersFromConfig();
+    this._removeClockUpdateCallback?.();
+    this._removeClockUpdateCallback = undefined;
+    clockUpdateService.unregisterConsumer();
 
-    // Clean up logic service and all template WebSocket subscriptions
-    // This prevents subscription leaks that cause "Connection lost" errors
-    logicService.cleanup();
+    // Release shared logic/template consumer; full subscription teardown only when
+    // the last ultra-card on the page disconnects (prevents breaking sibling cards).
+    logicService.unregisterConsumer();
 
     // Clean up layout template service
     if (this._templateUpdateDebounceTimer !== undefined) {
@@ -479,6 +537,10 @@ export class UltraCard extends LitElement {
     if (this._qrDataReadyListener) {
       window.removeEventListener('uc-qr-data-ready', this._qrDataReadyListener);
       this._qrDataReadyListener = undefined;
+    }
+    if (this._moduleLoadStateListener) {
+      window.removeEventListener('uc-module-load-state-changed', this._moduleLoadStateListener);
+      this._moduleLoadStateListener = undefined;
     }
 
     // Clean up global transparency listener
@@ -795,7 +857,53 @@ export class UltraCard extends LitElement {
     return ids;
   }
 
-  protected shouldUpdate(changedProps: PropertyValues): boolean {
+  /**
+   * Stop interval timers for animated_clock modules owned by this card only.
+   * Mirrors nested layout shapes used elsewhere (modules, panels, panes, tabs, sections).
+   */
+  private _unregisterAnimatedClockTimersFromConfig(): void {
+    const config = this.config;
+    if (!config?.layout?.rows) return;
+
+    const visit = (modules: any[] | undefined) => {
+      if (!modules) return;
+      for (const mod of modules) {
+        if (mod?.type === 'animated_clock' && mod?.id) {
+          clockUpdateService.unregisterClock(mod.id);
+        }
+        const m = mod as any;
+        if (Array.isArray(m.modules)) visit(m.modules);
+        if (Array.isArray(m.panels)) {
+          for (const panel of m.panels) {
+            if (Array.isArray(panel?.modules)) visit(panel.modules);
+          }
+        }
+        if (Array.isArray(m.panes)) {
+          for (const pane of m.panes) {
+            if (Array.isArray(pane?.modules)) visit(pane.modules);
+          }
+        }
+        if (Array.isArray(m.tabs)) {
+          for (const tab of m.tabs) {
+            if (Array.isArray(tab?.modules)) visit(tab.modules);
+          }
+        }
+        if (Array.isArray(m.sections)) {
+          for (const sec of m.sections) {
+            if (Array.isArray(sec?.modules)) visit(sec.modules);
+          }
+        }
+      }
+    };
+
+    for (const row of config.layout.rows) {
+      for (const col of row.columns || []) {
+        visit(col.modules || []);
+      }
+    }
+  }
+
+  protected override shouldUpdate(changedProps: PropertyValues): boolean {
     if (changedProps.has('config')) return true;
     if (!changedProps.has('hass')) return true;
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
@@ -825,7 +933,7 @@ export class UltraCard extends LitElement {
     return false;
   }
 
-  protected willUpdate(changedProps: PropertyValues): void {
+  protected override willUpdate(changedProps: PropertyValues): void {
     // Check for integration auth when hass updates
     if (changedProps.has('hass') && this.hass) {
       ucFavoriteColorsService.setHass(this.hass);
@@ -1172,7 +1280,7 @@ export class UltraCard extends LitElement {
     };
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     if (!this.config) {
       return html``;
     }
@@ -1262,7 +1370,7 @@ export class UltraCard extends LitElement {
     `;
   }
 
-  updated(changedProperties: Map<string, any>) {
+  override updated(changedProperties: Map<string, any>) {
     super.updated(changedProperties);
 
     // Handle parent element visibility side-effects (moved from render to avoid rAF in render)
@@ -1270,7 +1378,20 @@ export class UltraCard extends LitElement {
       this._syncParentVisibility(this._lastInvisibleState);
     }
 
+    if (changedProperties.has('hass') && this.hass) {
+      const w = window as Window & { __UC_VERSION_BANNER_HASS_EVENT_SENT?: boolean };
+      if (!w.__UC_VERSION_BANNER_HASS_EVENT_SENT) {
+        w.__UC_VERSION_BANNER_HASS_EVENT_SENT = true;
+        window.dispatchEvent(
+          new CustomEvent(UC_ULTRA_CARD_HASS_READY, { bubbles: true, composed: true })
+        );
+      }
+    }
+
     if (changedProperties.has('config')) {
+      // Pick up CSS for any lazy modules that registered before layout was applied.
+      this._scheduleModuleStylesRefresh();
+
       // Hard reset before re-initializing scaling logic
       this._forceResetScale();
       this._setupResponsiveScaling();
@@ -1380,15 +1501,15 @@ export class UltraCard extends LitElement {
     this._scheduleScaleCheck();
   }
 
-  private _resizeObserver?: ResizeObserver;
-  private _scaleDebounceTimer?: number;
+  private _resizeObserver: ResizeObserver | undefined;
+  private _scaleDebounceTimer: number | undefined;
   private _currentScale: number = 1;
   private _lastMeasuredWidth: number = 0;
   private _lastContentWidth: number = 0;
   private _lastContentWidthCheck: number = 0;
   private _lastScaleTime: number = 0;
-  private _visibilityChangeHandler?: () => void;
-  private _windowResizeHandler?: () => void;
+  private _visibilityChangeHandler: (() => void) | undefined;
+  private _windowResizeHandler: (() => void) | undefined;
   private _isScalingInProgress: boolean = false;
 
   private _scheduleScaleCheck() {
@@ -1614,7 +1735,7 @@ export class UltraCard extends LitElement {
   private _getCardStyle(): string {
     if (!this.config) return '';
 
-    const styles = [];
+    const styles: string[] = [];
 
     // Apply background color (supports gradients and solid colors)
     if (this.config.card_background) {
@@ -2907,7 +3028,7 @@ export class UltraCard extends LitElement {
     // Check if background filter is applied - if so, use CSS variables for ::before pseudo-element
     const hasBackgroundFilter = design.background_filter && design.background_filter !== 'none';
 
-    const designStyles: Record<string, string> = {
+    const designStyles: Record<string, string | undefined> = {
       // Padding
       padding:
         design.padding_top || design.padding_bottom || design.padding_left || design.padding_right
@@ -3007,7 +3128,7 @@ export class UltraCard extends LitElement {
     // Filter out undefined values and combine styles
     const allStyles = { ...baseStyles, ...designStyles };
     const filteredStyles = Object.fromEntries(
-      Object.entries(allStyles).filter(([_, value]) => value !== undefined)
+      Object.entries(allStyles).filter((entry): entry is [string, string] => entry[1] !== undefined)
     );
 
     return this._styleObjectToCss(filteredStyles);
@@ -3088,7 +3209,7 @@ export class UltraCard extends LitElement {
     // Check if background filter is applied - if so, use CSS variables for ::before pseudo-element
     const hasBackgroundFilter = design.background_filter && design.background_filter !== 'none';
 
-    const designStyles: Record<string, string> = {
+    const designStyles: Record<string, string | undefined> = {
       // Padding
       padding:
         design.padding_top || design.padding_bottom || design.padding_left || design.padding_right
@@ -3175,7 +3296,7 @@ export class UltraCard extends LitElement {
     // Filter out undefined values and combine styles
     const allStyles = { ...baseStyles, ...designStyles };
     const filteredStyles = Object.fromEntries(
-      Object.entries(allStyles).filter(([_, value]) => value !== undefined)
+      Object.entries(allStyles).filter((entry): entry is [string, string] => entry[1] !== undefined)
     );
 
     return this._styleObjectToCss(filteredStyles);
@@ -3505,22 +3626,34 @@ export class UltraCard extends LitElement {
    * the icon animation classes (e.g. `.icon-animation-pulse`) defined within
    * individual modules to take effect when the card is rendered in Lovelace.
    */
+  private _scheduleModuleStylesRefresh(): void {
+    if (this._moduleStylesRefreshTimer != null) {
+      clearTimeout(this._moduleStylesRefreshTimer);
+    }
+    this._moduleStylesRefreshTimer = window.setTimeout(() => {
+      this._moduleStylesRefreshTimer = null;
+      this._injectModuleStyles();
+    }, UltraCard.MODULE_STYLES_REFRESH_DEBOUNCE_MS);
+  }
+
   private _injectModuleStyles(): void {
-    if (this._moduleStylesInjected || !this.shadowRoot) {
+    if (!this.shadowRoot) return;
+
+    const moduleCss = getModuleRegistry().getAllModuleStyles();
+    if (!moduleCss.trim()) return;
+
+    if (this._moduleStylesElement?.isConnected) {
+      this._moduleStylesElement.textContent = moduleCss;
       return;
     }
 
-    const moduleCss = getModuleRegistry().getAllModuleStyles();
-
-    if (moduleCss.trim().length > 0) {
-      const styleEl = document.createElement('style');
-      styleEl.textContent = moduleCss;
-      this.shadowRoot.appendChild(styleEl);
-      this._moduleStylesInjected = true;
-    }
+    const styleEl = document.createElement('style');
+    styleEl.textContent = moduleCss;
+    this.shadowRoot.appendChild(styleEl);
+    this._moduleStylesElement = styleEl;
   }
 
-  static get styles() {
+  static override get styles() {
     return css`
       :host {
         display: block;

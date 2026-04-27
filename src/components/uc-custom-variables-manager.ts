@@ -9,16 +9,16 @@ import { ucVariableValueTypeHaSelectOptions } from '../utils/uc-variable-value-t
 
 @customElement('uc-custom-variables-manager')
 export class UcCustomVariablesManager extends LitElement {
-  @property({ attribute: false }) public hass?: HomeAssistant;
-  @property({ attribute: false }) public config?: UltraCardConfig;
+  @property({ attribute: false }) public hass: HomeAssistant | undefined;
+  @property({ attribute: false }) public config: UltraCardConfig | undefined;
   /** When true, only card-specific variables are shown and editable. Global variables are managed in the Ultra Card Hub. */
   @property({ type: Boolean }) public cardOnly = false;
 
   @state() private _globalVariables: CustomVariable[] = [];
   @state() private _cardVariables: CustomVariable[] = [];
-  @state() private _draggedItem?: CustomVariable;
-  @state() private _dragOverIndex?: number;
-  @state() private _editingId?: string;
+  @state() private _draggedItem: CustomVariable | undefined = undefined;
+  @state() private _dragOverIndex: number | undefined = undefined;
+  @state() private _editingId: string | undefined = undefined;
   @state() private _editingName = '';
   @state() private _editingEntity = '';
   @state() private _editingValueType: 'entity_id' | 'state' | 'attribute' = 'state';
@@ -32,9 +32,9 @@ export class UcCustomVariablesManager extends LitElement {
   @state() private _newVariableIsGlobal = true;
   @state() private _nameError = '';
 
-  private _variablesUnsubscribe?: () => void;
+  private _variablesUnsubscribe: (() => void) | undefined;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
 
     // Subscribe to global custom variables changes
@@ -43,7 +43,7 @@ export class UcCustomVariablesManager extends LitElement {
     });
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
 
     // Unsubscribe from custom variables
@@ -53,7 +53,7 @@ export class UcCustomVariablesManager extends LitElement {
     }
   }
 
-  updated(changedProps: Map<string, any>): void {
+  override updated(changedProps: Map<string, any>): void {
     super.updated(changedProps);
     // Update card-specific variables when config changes
     if (changedProps.has('config')) {
@@ -445,7 +445,7 @@ export class UcCustomVariablesManager extends LitElement {
     }
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const hasGlobalVariables = !this.cardOnly && this._globalVariables.length > 0;
     const hasCardVariables = this._cardVariables.length > 0;
@@ -894,7 +894,7 @@ export class UcCustomVariablesManager extends LitElement {
     `;
   }
 
-  static get styles() {
+  static override get styles() {
     return css`
       .variables-manager {
         width: 100%;

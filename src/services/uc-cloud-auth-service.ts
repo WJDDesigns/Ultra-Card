@@ -84,7 +84,7 @@ export interface SubscriptionFeatures {
 export interface UserSubscription {
   tier: 'free' | 'pro';
   status: 'active' | 'expired';
-  expires?: number;
+  expires?: number | undefined;
   features: SubscriptionFeatures;
   snapshot_count: number;
   snapshot_limit: number;
@@ -95,11 +95,11 @@ export interface CloudUser {
   username: string;
   email: string;
   displayName: string;
-  avatar?: string;
+  avatar?: string | undefined;
   token: string;
-  refreshToken?: string;
+  refreshToken?: string | undefined;
   expiresAt: number;
-  subscription?: UserSubscription;
+  subscription?: UserSubscription | undefined;
 }
 
 export interface LoginCredentials {
@@ -110,9 +110,9 @@ export interface LoginCredentials {
 export interface RegisterData {
   username: string;
   email: string;
-  password?: string;
-  firstName?: string;
-  lastName?: string;
+  password?: string | undefined;
+  firstName?: string | undefined;
+  lastName?: string | undefined;
 }
 
 export interface AuthResponse {
@@ -121,9 +121,9 @@ export interface AuthResponse {
   user_nicename: string;
   user_display_name: string;
   user_id: number;
-  avatar_url?: string;
-  refresh_token?: string;
-  expires_in?: number;
+  avatar_url?: string | undefined;
+  refresh_token?: string | undefined;
+  expires_in?: number | undefined;
 }
 
 /**
@@ -140,7 +140,7 @@ class UcCloudAuthService {
 
   private _currentUser: CloudUser | null = null;
   private _listeners: Set<(user: CloudUser | null) => void> = new Set();
-  private _refreshTimer?: number;
+  private _refreshTimer: number | undefined;
   /** When using integration auth (no token in frontend), hass is used to call the integration proxy. */
   private _integrationHass: any = null;
 
@@ -467,15 +467,10 @@ class UcCloudAuthService {
    * Returns the CloudUser from the updated sensor.
    */
   async loginViaHass(hass: any, email: string, password: string): Promise<CloudUser> {
-    let result: any;
-    try {
-      result = await hass.callApi('POST', 'ultra_card_pro_cloud/login', {
-        username: email,
-        password,
-      });
-    } catch (err: any) {
-      throw err;
-    }
+    const result: any = await hass.callApi('POST', 'ultra_card_pro_cloud/login', {
+      username: email,
+      password,
+    });
     if (!result?.success || !result?.user) {
       throw new Error(result?.error || 'Authentication failed');
     }
@@ -834,7 +829,7 @@ class UcCloudAuthService {
               'This request includes files and is not supported through Home Assistant integration auth.'
             );
           }
-          let r = await fetch(UC_MEDIA_UPLOAD_PATH, {
+          const r = await fetch(UC_MEDIA_UPLOAD_PATH, {
             method: 'POST',
             body: fd,
             credentials: 'same-origin',

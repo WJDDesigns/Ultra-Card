@@ -19,7 +19,7 @@ interface RegisteredModule {
   element: HTMLElement | null;
   registeredAt: number;
   isEditorPreview: boolean;
-  matrixRainColor?: string; // Track color for change detection
+  matrixRainColor?: string | undefined; // Track color for change detection
 }
 
 interface ViewWeatherLayer {
@@ -414,7 +414,7 @@ class UcDynamicWeatherService {
     const path: string[] = [];
     
     while (element && element !== document.body) {
-      const parent = element.parentElement;
+      const parent: HTMLElement | null = element.parentElement;
       if (parent) {
         const siblings = Array.from(parent.children);
         const index = siblings.indexOf(element);

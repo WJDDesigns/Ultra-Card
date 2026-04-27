@@ -11,19 +11,19 @@ import { ucFavoritesService } from '../services/uc-favorites-service';
 export class UcFavoritesSelectorTab extends LitElement {
   @state() private _favoritesSearchQuery = '';
 
-  private _unsub?: () => void;
+  private _unsub: (() => void) | undefined;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     this._unsub = ucFavoritesService.subscribe(() => this.requestUpdate());
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     this._unsub?.();
   }
 
-  static styles = css`
+  static override styles = css`
     .favorites-container {
       padding: 16px;
     }
@@ -276,7 +276,7 @@ export class UcFavoritesSelectorTab extends LitElement {
     });
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     const favorites = ucFavoritesService.getFavorites();
     const hasSearch = this._favoritesSearchQuery.trim() !== '';
     const filtered = this._filterFavorites(favorites, this._favoritesSearchQuery);

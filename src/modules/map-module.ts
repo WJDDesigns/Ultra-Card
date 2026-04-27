@@ -2010,6 +2010,10 @@ export class UltraMapModule extends BaseUltraModule {
       return null as any;
     }
 
+    if (coords.latitude == null || coords.longitude == null) {
+      return null as any;
+    }
+
     const latlng = L.latLng(coords.latitude, coords.longitude);
     let leafletMarker: L.Marker;
 
@@ -2045,7 +2049,7 @@ export class UltraMapModule extends BaseUltraModule {
         iconAnchor: [containerSize / 2, containerSize],
         popupAnchor: [0, -containerSize],
         className: '',
-        shadowUrl: null,
+        shadowUrl: undefined,
       });
 
       leafletMarker = L.marker(latlng, { icon: customIcon });
@@ -2085,7 +2089,7 @@ export class UltraMapModule extends BaseUltraModule {
           iconAnchor: [containerSize / 2, containerSize],
           popupAnchor: [0, -containerSize],
           className: '',
-          shadowUrl: null,
+          shadowUrl: undefined,
         });
 
         leafletMarker = L.marker(latlng, { icon: entityIcon });
@@ -2449,7 +2453,7 @@ export class UltraMapModule extends BaseUltraModule {
         iconAnchor: [containerSize / 2, anchorY],
         popupAnchor: [0, -anchorY],
         className: '',
-        shadowUrl: null, // Disable shadow to prevent black outlines
+        shadowUrl: undefined, // Disable shadow to prevent black outlines
       });
     }
 
@@ -2502,7 +2506,7 @@ export class UltraMapModule extends BaseUltraModule {
       iconAnchor: [containerSize / 2, anchorY],
       popupAnchor: [0, -anchorY],
       className: '',
-      shadowUrl: null, // Disable shadow to prevent black outlines
+      shadowUrl: undefined, // Disable shadow to prevent black outlines
     });
   }
 
@@ -2532,7 +2536,7 @@ export class UltraMapModule extends BaseUltraModule {
     return Math.ceil(height / 50);
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     const mapModule = module as MapModule;
 

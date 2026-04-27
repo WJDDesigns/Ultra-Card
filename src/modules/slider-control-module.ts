@@ -2054,7 +2054,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     homeAssistant: HomeAssistant,
     config: UltraCardConfig,
@@ -4339,7 +4339,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
     return [clamp(red), clamp(green), clamp(blue)];
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const sliderControl = module as SliderControlModule;
     const errors = [...baseValidation.errors];

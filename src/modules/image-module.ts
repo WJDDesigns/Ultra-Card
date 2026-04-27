@@ -978,7 +978,7 @@ export class UltraImageModule extends BaseUltraModule {
   }
 
   // Explicit Design tab renderer (some editors call this directly)
-  renderDesignTab(
+  override renderDesignTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -987,7 +987,7 @@ export class UltraImageModule extends BaseUltraModule {
     return GlobalDesignTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const imageModule = module as ImageModule;
     const errors = [...baseValidation.errors];
@@ -1090,12 +1090,6 @@ export class UltraImageModule extends BaseUltraModule {
           }
 
           if (imageUrl) {
-            // Handle Home Assistant local paths
-            if (imageUrl.startsWith('/local/') || imageUrl.startsWith('/media/')) {
-              imageUrl = imageUrl;
-            } else if (imageUrl.startsWith('/')) {
-              imageUrl = imageUrl;
-            }
             return `url("${imageUrl}")`;
           }
         }

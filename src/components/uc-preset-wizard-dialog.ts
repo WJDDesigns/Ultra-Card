@@ -81,7 +81,7 @@ export class UcPresetWizardDialog extends LitElement {
   @state() private _sameAs: Record<string, boolean> = {};
   @state() private _skipped: Record<string, boolean> = {};
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
       position: fixed;
@@ -522,7 +522,7 @@ export class UcPresetWizardDialog extends LitElement {
     }
   `;
 
-  willUpdate(changed: Map<string, unknown>): void {
+  override willUpdate(changed: Map<string, unknown>): void {
     if (changed.has('open') && this.open && this.preset?.wizard) {
       this._resetState();
     }
@@ -988,7 +988,7 @@ export class UcPresetWizardDialog extends LitElement {
     `;
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     if (!this.open || !this.preset?.wizard?.steps?.length) return html``;
 
     const w = this.preset.wizard;

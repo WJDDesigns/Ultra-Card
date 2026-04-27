@@ -13,21 +13,21 @@ export interface WordPressPreset {
   shortcode: string;
   category: string;
   tags: string[];
-  integrations?: string[];
+  integrations?: string[] | undefined;
   author: string;
-  author_avatar?: string;
-  featured_image?: string;
-  gallery?: string[];
+  author_avatar?: string | undefined;
+  featured_image?: string | undefined;
+  gallery?: string[] | undefined;
   downloads: number;
   rating: number;
   reviews_count: number;
-  rating_count?: number;
+  rating_count?: number | undefined;
   created: string;
-  updated?: string;
+  updated?: string | undefined;
   is_featured: boolean;
-  difficulty?: string;
-  compatibility?: string[];
-  preset_url?: string; // Link to preset page on ultracard.io
+  difficulty?: string | undefined;
+  compatibility?: string[] | undefined;
+  preset_url?: string | undefined; // Link to preset page on ultracard.io
 }
 
 export interface WordPressPresetsResponse {
@@ -59,11 +59,11 @@ export class DirectoriesProPresetsAPI {
    */
   async fetchPresets(
     params: {
-      page?: number;
-      per_page?: number;
-      category?: string;
-      search?: string;
-      sort?: 'newest' | 'popular' | 'rating' | 'trending';
+      page?: number | undefined;
+      per_page?: number | undefined;
+      category?: string | undefined;
+      search?: string | undefined;
+      sort?: 'newest' | 'popular' | 'rating' | 'trending' | undefined;
     } = {}
   ): Promise<WordPressPresetsResponse> {
     const cacheKey = `presets_${JSON.stringify(params)}`;

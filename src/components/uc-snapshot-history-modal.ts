@@ -34,14 +34,14 @@ export class UcSnapshotHistoryModal extends LitElement {
   @state() private _showRestoreDialog = false;
   @state() private _pendingRestoreSnapshot: SnapshotListItem | null = null;
 
-  connectedCallback() {
+  override connectedCallback() {
     super.connectedCallback();
     if (this.open) {
       this._loadData();
     }
   }
 
-  updated(changedProps: Map<string, any>) {
+  override updated(changedProps: Map<string, any>) {
     if (changedProps.has('open') && this.open) {
       this._loadData();
     }
@@ -681,7 +681,7 @@ export class UcSnapshotHistoryModal extends LitElement {
     return this._formatDate(new Date(timestamp * 1000).toISOString());
   }
 
-  render() {
+  override render() {
     if (!this.open) return html``;
 
     return html`
@@ -880,7 +880,7 @@ export class UcSnapshotHistoryModal extends LitElement {
     `;
   }
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
     }

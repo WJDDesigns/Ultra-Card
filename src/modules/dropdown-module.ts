@@ -15,6 +15,7 @@ import {
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import { safeGetItem, safeSetItem } from '../utils/safe-storage';
+import { escapeHtml } from '../utils/html-sanitizer';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
@@ -42,9 +43,9 @@ export class UltraDropdownModule extends BaseUltraModule {
   private activeScrollHandlers: Set<string> = new Set(); // Track which instances have active scroll handlers
   private moduleContexts: Map<
     string,
-    { module: DropdownModule; hass: HomeAssistant; config?: UltraCardConfig }
+    { module: DropdownModule; hass: HomeAssistant; config?: UltraCardConfig | undefined }
   > = new Map(); // Store module contexts for event handling
-  private _templateService?: TemplateService;
+  private _templateService: TemplateService | undefined;
   private chevronClickHandling: Set<string> = new Set(); // Track modules currently handling chevron clicks
 
   // Trigger preview update for reactive UI
@@ -1149,7 +1150,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             transform: rotate(2deg);
           ">
             <ha-icon icon="mdi:drag" style="color: white; font-size: 16px;"></ha-icon>
-            <span>${optionLabel}</span>
+            <span>${escapeHtml(optionLabel)}</span>
           </div>
         `;
 
@@ -1549,7 +1550,7 @@ export class UltraDropdownModule extends BaseUltraModule {
   }
 
   // No Actions tab for dropdown module - actions are configured per option
-  renderActionsTab(): TemplateResult {
+  override renderActionsTab(): TemplateResult {
     return html`
       <div style="text-align: center; padding: 40px; color: var(--secondary-text-color);">
         <ha-icon
@@ -1725,14 +1726,14 @@ export class UltraDropdownModule extends BaseUltraModule {
     // Get options based on mode
     let availableOptions: Array<{
       label: string;
-      icon?: string;
-      icon_color?: string;
-      use_state_color?: boolean;
-      mode?: string; // Store mode/value for action mapping
-      value?: string; // Preserve raw entity option for syncing across modules
+      icon?: string | undefined;
+      icon_color?: string | undefined;
+      use_state_color?: boolean | undefined;
+      mode?: string | undefined; // Store mode/value for action mapping
+      value?: string | undefined; // Preserve raw entity option for syncing across modules
     }> = [];
     let currentSelectedLabel: string | undefined;
-    let entityModeDisplay: { label?: string; icon?: string; icon_color?: string } | null = null;
+    let entityModeDisplay: { label?: string | undefined; icon?: string | undefined; icon_color?: string | undefined } | null = null;
     
     // Display properties from unified template (if display key is present)
     let displayIcon: string | undefined = undefined;
@@ -2381,7 +2382,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
   // Helper to get icon color for options (handles both manual and entity mode)
   private getOptionIconColor(
-    option: { label: string; icon?: string; icon_color?: string; use_state_color?: boolean },
+    option: { label: string; icon?: string | undefined; icon_color?: string | undefined; use_state_color?: boolean | undefined },
     hass: HomeAssistant,
     module: DropdownModule
   ): string {
@@ -2562,7 +2563,8 @@ export class UltraDropdownModule extends BaseUltraModule {
               document.body.appendChild(portaledDropdown);
               this.portaledDropdowns.set(instanceId, portaledDropdown);
             } else {
-              // Update the cloned dropdown's content from the original
+              // Sync portaled clone with the live HA-backed picker DOM (entity names, state text).
+              // Trust boundary: same subtree as `dropdownElement` (HA creates this markup); not arbitrary user HTML.
               portaledDropdown.innerHTML = dropdownElement.innerHTML;
             }
 
@@ -2834,7 +2836,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     // Also listen to scroll on parent containers for this specific instance
     const trigger = this.portaledDropdownTriggers.get(instanceId);
     const parentElements: HTMLElement[] = [];
-    if (trigger && this.scrollHandler) {
+    if (trigger) {
       let parent: HTMLElement | null = trigger.parentElement;
       let depth = 0;
       while (parent && depth < 5) {
@@ -3070,7 +3072,9 @@ export class UltraDropdownModule extends BaseUltraModule {
           if (optionValue) {
             console.log('Entity option clicked:', optionValue);
             // Format the label for display/storage
-            const entityStateObj = hass.states[dropdownModule.source_entity];
+            const srcEntity = dropdownModule.source_entity;
+            if (!srcEntity) return;
+            const entityStateObj = hass.states[srcEntity];
             const formattedLabel = this.formatOptionLabel(optionValue, entityStateObj, hass);
             this.updateEntitySelection(dropdownModule, optionValue, hass);
             // Persist formatted label for last_chosen mode (for display)
@@ -3353,7 +3357,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     return Math.abs(hash);
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const dropdownModule = module as DropdownModule;
     const errors = [...baseValidation.errors];

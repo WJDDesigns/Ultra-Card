@@ -10,6 +10,12 @@ export class LogicService {
   private static instance: LogicService;
   private hass: HomeAssistant | null = null;
   private templateService: TemplateService | null = null;
+  /**
+   * Number of mounted `ultra-card` instances (and any future explicit consumers).
+   * Shared template WebSocket subscriptions must only be torn down when the last
+   * consumer disconnects; otherwise removing one card breaks template logic on others.
+   */
+  private consumerRefCount = 0;
   // Removed API fallback tracking - relying entirely on WebSocket subscriptions
   // Track logged entity errors to prevent console flooding
   private loggedEntityErrors: Set<string> = new Set();
@@ -47,21 +53,52 @@ export class LogicService {
     }
     // Note: We do NOT clear logged errors here because setHass is called frequently
     // on every hass state update. Clearing would reset throttling and cause console flooding.
-    // Errors are only cleared on cleanup() when the service is fully reset.
+    // Errors are only cleared when subscriptions are fully reset (last consumer unmounts or cleanup()).
+  }
+
+  /** How many live Ultra Card (or other) instances have called registerConsumer without unregisterConsumer. */
+  get activeConsumerCount(): number {
+    return this.consumerRefCount;
   }
 
   /**
-   * Clean up all active subscriptions
+   * Call once when an `ultra-card` (or equivalent) mounts. Pair with unregisterConsumer on disconnect.
+   * Backward compatible: existing dashboards behave the same with a single card (count 1 → cleanup on disconnect).
    */
-  public cleanup(): void {
+  public registerConsumer(): void {
+    this.consumerRefCount += 1;
+  }
+
+  /**
+   * Call once when a consumer unmounts. Full template teardown runs only when the last consumer unmounts.
+   */
+  public unregisterConsumer(): void {
+    if (this.consumerRefCount <= 0) {
+      return;
+    }
+    this.consumerRefCount -= 1;
+    if (this.consumerRefCount === 0) {
+      this.cleanupSubscriptions();
+    }
+  }
+
+  private cleanupSubscriptions(): void {
     if (this.templateService) {
       this.templateService.unsubscribeAllTemplates();
       this.templateService = null;
     }
     this.hass = null;
-    // Clear logged errors on cleanup
     this.loggedEntityErrors.clear();
     this.loggedAttributeErrors.clear();
+  }
+
+  /**
+   * Force full teardown (resets consumer count). Prefer unregisterConsumer from runtime code.
+   * Tests and hard-reset paths may call this explicitly.
+   */
+  public cleanup(): void {
+    this.consumerRefCount = 0;
+    this.cleanupSubscriptions();
   }
 
   /**
@@ -598,10 +635,10 @@ export class LogicService {
    * Evaluate logic properties from the global design tab
    */
   public evaluateLogicProperties(properties: {
-    logic_entity?: string;
-    logic_attribute?: string;
-    logic_operator?: string;
-    logic_value?: string;
+    logic_entity?: string | undefined;
+    logic_attribute?: string | undefined;
+    logic_operator?: string | undefined;
+    logic_value?: string | undefined;
   }): boolean {
     if (!properties.logic_entity || !this.hass) {
       return true;

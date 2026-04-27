@@ -91,7 +91,7 @@ import type { SubmitPresetDialogPayload } from '../../panels/components/uc-hub-s
 export class LayoutTab extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public config!: UltraCardConfig;
-  @property({ attribute: false }) public cloudUser?: any | null;
+  @property({ attribute: false }) public cloudUser: any | null | undefined;
   @property({ type: Boolean }) public isFullScreen = false;
 
   @state() private _showModuleSelector = false;
@@ -130,11 +130,11 @@ export class LayoutTab extends LitElement {
     columnIndex: number;
     moduleIndex: number;
     sectionIndex: number;
-    childIndex?: number; // For direct tabs section children
-    layoutChildIndex?: number; // For nested layout children
-    nestedChildIndex?: number; // For nested layout children
-    deepNestedChildIndex?: number; // For deeply nested layout children (3 levels deep)
-    parentLayoutChildIndex?: number;
+    childIndex?: number | undefined; // For direct tabs section children
+    layoutChildIndex?: number | undefined; // For nested layout children
+    nestedChildIndex?: number | undefined; // For nested layout children
+    deepNestedChildIndex?: number | undefined; // For deeply nested layout children (3 levels deep)
+    parentLayoutChildIndex?: number | undefined;
     isNested: boolean;
   } | null = null;
   @state() private _activeTabsChildTab = 'general';
@@ -229,14 +229,14 @@ export class LayoutTab extends LitElement {
   private _isUndoRedoAction = false; // Flag to prevent saving undo states during undo/redo
 
   /** Listen for template updates from modules to refresh live previews */
-  private _templateUpdateListener?: () => void;
-  private _tabSwitchListener?: (e: CustomEvent) => void;
-  private _documentClickListener?: (e: Event) => void;
-  private _keydownListener?: (e: KeyboardEvent) => void;
-  private _optimizeCardSettingsListener?: (e: Event) => void;
+  private _templateUpdateListener: (() => void) | undefined;
+  private _tabSwitchListener: ((e: Event) => void) | undefined;
+  private _documentClickListener: ((e: Event) => void) | undefined;
+  private _keydownListener: ((e: KeyboardEvent) => void) | undefined;
+  private _optimizeCardSettingsListener: ((e: Event) => void) | undefined;
 
   // Debouncing for template updates to prevent animation loops
-  private _templateUpdateTimer?: number;
+  private _templateUpdateTimer: number | undefined;
   private _lastTemplateUpdate = 0;
 
   // Scroll position preservation for mobile
@@ -252,17 +252,17 @@ export class LayoutTab extends LitElement {
   @state() private _breadcrumbPath: {
     type: 'row' | 'column' | 'module' | 'layout-child' | 'section';
     rowIndex: number;
-    columnIndex?: number;
-    moduleIndex?: number;
-    layoutChildIndex?: number;
-    sectionIndex?: number;
+    columnIndex?: number | undefined;
+    moduleIndex?: number | undefined;
+    layoutChildIndex?: number | undefined;
+    sectionIndex?: number | undefined;
     name: string;
   }[] = [];
 
   // Overflow menu state - tracks which menu is currently open
   @state() private _openOverflowMenuKey: string | null = null;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     this._templateUpdateListener = () => {
       // Debounce: only update once every 100ms to prevent animation loops
@@ -283,8 +283,9 @@ export class LayoutTab extends LitElement {
     window.addEventListener('ultra-card-slider-update', this._templateUpdateListener);
 
     // Listen for tab switch events from modules
-    this._tabSwitchListener = (e: CustomEvent) => {
-      if (e.detail?.tab === 'actions') {
+    this._tabSwitchListener = (e: Event) => {
+      const ce = e as CustomEvent<{ tab?: string }>;
+      if (ce.detail?.tab === 'actions') {
         this._activeModuleTab = 'actions';
         this.requestUpdate();
         // Scroll to top of the popup content to show the actions section
@@ -430,7 +431,9 @@ export class LayoutTab extends LitElement {
 
   private _handleWindowResize(): void {
     // Debounce resize events to avoid excessive repositioning
-    clearTimeout(this._resizeTimeout);
+    if (this._resizeTimeout != null) {
+      clearTimeout(this._resizeTimeout);
+    }
     this._resizeTimeout = setTimeout(() => {
       // Reposition all visible popups to stay centered and within viewport
       const popups = document.querySelectorAll('.draggable-popup');
@@ -1388,8 +1391,8 @@ export class LayoutTab extends LitElement {
       icon: string;
       label: string;
       action: () => void;
-      destructive?: boolean;
-      disabled?: boolean;
+      destructive?: boolean | undefined;
+      disabled?: boolean | undefined;
     }[] = [
       {
         icon: 'mdi:pencil',
@@ -1468,8 +1471,8 @@ export class LayoutTab extends LitElement {
       icon: string;
       label: string;
       action: () => void;
-      destructive?: boolean;
-      disabled?: boolean;
+      destructive?: boolean | undefined;
+      disabled?: boolean | undefined;
     }[] = [
       {
         icon: 'mdi:pencil',
@@ -6072,14 +6075,14 @@ export class LayoutTab extends LitElement {
       | 'deep-nested-child'
       | 'path-child';
     rowIndex: number;
-    columnIndex?: number;
-    moduleIndex?: number;
+    columnIndex?: number | undefined;
+    moduleIndex?: number | undefined;
     data: any;
-    layoutChildIndex?: number;
-    nestedChildIndex?: number;
-    deepNestedChildIndex?: number;
-    parentPath?: number[];
-    pathChildIndex?: number;
+    layoutChildIndex?: number | undefined;
+    nestedChildIndex?: number | undefined;
+    deepNestedChildIndex?: number | undefined;
+    parentPath?: number[] | undefined;
+    pathChildIndex?: number | undefined;
   } | null = null;
   @state() private _dropTarget: {
     type:
@@ -6092,13 +6095,13 @@ export class LayoutTab extends LitElement {
       | 'deep-nested-layout'
       | 'path-child-target';
     rowIndex: number;
-    columnIndex?: number;
-    moduleIndex?: number;
-    childIndex?: number;
-    nestedChildIndex?: number;
-    parentPath?: number[];
+    columnIndex?: number | undefined;
+    moduleIndex?: number | undefined;
+    childIndex?: number | undefined;
+    nestedChildIndex?: number | undefined;
+    parentPath?: number[] | undefined;
     /** When set, show insertion line at this edge; only highlight item when 'inside'. */
-    insertEdge?: 'before' | 'after' | 'inside';
+    insertEdge?: 'before' | 'after' | 'inside' | undefined;
   } | null = null;
   /** DOM element currently under the drag for positioning the drop indicator line. */
   private _dropTargetElement: HTMLElement | null = null;
@@ -6174,7 +6177,7 @@ export class LayoutTab extends LitElement {
   private _resizeTimeout: ReturnType<typeof setTimeout> | null = null;
   private _visibilityChangeListener: (() => void) | null = null;
   private _windowFocusListener: (() => void) | null = null;
-  private _authChangeListener: ((user: any) => void) | undefined = undefined;
+  private _authChangeListener: (((user: any) => void) ) | undefined = undefined;
 
   /**
    * Temporarily patch the HA dialog's CSS to allow popups to escape containment.
@@ -6244,7 +6247,7 @@ export class LayoutTab extends LitElement {
   }
 
   // Component lifecycle
-  disconnectedCallback() {
+  override disconnectedCallback() {
     super.disconnectedCallback();
     // Restore HA dialog styles if patched
     this._patchDialogContainment(false);
@@ -7222,7 +7225,7 @@ export class LayoutTab extends LitElement {
       const allModules: CardModule[] = [];
 
       // Collect all modules from all columns
-      targetRow.columns.forEach(column => {
+      targetRow.columns.forEach((column: CardColumn) => {
         if (column.modules && column.modules.length > 0) {
           allModules.push(...column.modules);
         }
@@ -8056,8 +8059,8 @@ export class LayoutTab extends LitElement {
     preset: PresetDefinition,
     mappings: EntityMapping[],
     options?: {
-      preprocessedLayout?: LayoutConfig;
-      additionalConfig?: Partial<UltraCardConfig>;
+      preprocessedLayout?: LayoutConfig | undefined;
+      additionalConfig?: Partial<UltraCardConfig> | undefined;
     }
   ): void {
     try {
@@ -8086,14 +8089,9 @@ export class LayoutTab extends LitElement {
       const newRows = [...currentLayout.rows];
 
       // Add all rows from the mapped preset at the end
-      mappedLayout.rows.forEach((presetRow, index) => {
-        try {
-          // Clone the row with new IDs
-          const newRow = this._cloneRowWithNewIds(presetRow);
-          newRows.push(newRow);
-        } catch (cloneError) {
-          throw cloneError;
-        }
+      mappedLayout.rows.forEach(presetRow => {
+        const newRow = this._cloneRowWithNewIds(presetRow);
+        newRows.push(newRow);
       });
 
       // Create completely new layout object
@@ -8290,6 +8288,7 @@ export class LayoutTab extends LitElement {
         return;
       }
 
+      const now = new Date().toISOString();
       const fakePreset: PresetDefinition = {
         id: '__remap_card__',
         name: 'Remap Card Entities',
@@ -8301,6 +8300,7 @@ export class LayoutTab extends LitElement {
         tags: [],
         layout: currentLayout,
         wizard,
+        metadata: { created: now, updated: now },
       };
 
       this._entityMappingOpen = true;
@@ -8520,8 +8520,12 @@ export class LayoutTab extends LitElement {
       // Add the pasted row after the current row (duplicate behavior)
       newLayout.rows.splice(rowIndex + 1, 0, clonedRow);
 
-      // Update the layout (includes undo/redo state management)
-      this._updateLayout(newLayout);
+      // Clipboard row/layout fragment is untrusted — same origin as full card import (H4 / navigation JS gating)
+      if (!this._isUndoRedoAction) {
+        this._saveStateToUndoStack();
+        this._redoStack = [];
+      }
+      this._updateConfig({ layout: newLayout, _contentOrigin: 'imported' });
 
       // Force immediate re-render
       this.requestUpdate();
@@ -11726,10 +11730,10 @@ export class LayoutTab extends LitElement {
   }
 
   private _getDropIndices(el: HTMLElement): {
-    rowIndex?: number;
-    columnIndex?: number;
-    moduleIndex?: number;
-    childIndex?: number;
+    rowIndex?: number | undefined;
+    columnIndex?: number | undefined;
+    moduleIndex?: number | undefined;
+    childIndex?: number | undefined;
   } {
     return {
       rowIndex: el.dataset.rowIndex != null ? parseInt(el.dataset.rowIndex, 10) : undefined,
@@ -12600,9 +12604,9 @@ export class LayoutTab extends LitElement {
     target: {
       rowIndex: number;
       columnIndex: number;
-      moduleIndex?: number;
-      childIndex?: number;
-      type?: string;
+      moduleIndex?: number | undefined;
+      childIndex?: number | undefined;
+      type?: string | undefined;
     },
     moduleToMove: CardModule,
     sourceRemoved: boolean,
@@ -12982,7 +12986,7 @@ export class LayoutTab extends LitElement {
     if (target.type === 'path-child-target' && target.parentPath) {
       const samePath =
         path.length === target.parentPath.length &&
-        path.every((v, i) => v === target.parentPath![i]);
+        path.every((v: string, i: number) => v === target.parentPath![i]);
       if (samePath) {
         const sourceIdx = source.pathChildIndex;
         let targetIdx = target.childIndex ?? sourceIdx;
@@ -13637,9 +13641,9 @@ export class LayoutTab extends LitElement {
           "
           @dragover=${this._onDragOver}
           @dragenter=${(e: DragEvent) =>
-            this._onDragEnter(e, 'layout', rowIndex, columnIndex, moduleIndex)}
+            this._onDragEnter(e, 'layout', rowIndex!, columnIndex!, moduleIndex!)}
           @dragleave=${this._onDragLeave}
-          @drop=${(e: DragEvent) => this._onDrop(e, 'layout', rowIndex, columnIndex, moduleIndex)}
+          @drop=${(e: DragEvent) => this._onDrop(e, 'layout', rowIndex!, columnIndex!, moduleIndex!)}
         >
           ${hasChildren
             ? layoutModule.modules.map(
@@ -14303,8 +14307,8 @@ export class LayoutTab extends LitElement {
               ) {
                 // From deep nested layout child (4th level - e.g., icon inside popup inside horizontal inside slider)
                 const sourceTopLayout = newLayout.rows[this._draggedItem.rowIndex].columns[
-                  this._draggedItem.columnIndex
-                ].modules[this._draggedItem.moduleIndex] as any;
+                  this._draggedItem.columnIndex!
+                ].modules[this._draggedItem.moduleIndex!] as any;
                 const sourceNestedLayout = sourceTopLayout.modules[
                   this._draggedItem.layoutChildIndex!
                 ] as any;
@@ -14318,8 +14322,8 @@ export class LayoutTab extends LitElement {
               } else if (this._draggedItem.nestedChildIndex !== undefined) {
                 // From nested layout child (3rd level - e.g., image inside vertical inside horizontal)
                 const sourceParentLayout =
-                  newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex]
-                    .modules[this._draggedItem.moduleIndex];
+                  newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex!]
+                    .modules[this._draggedItem.moduleIndex!];
                 const sourceNestedLayout =
                   sourceParentLayout.modules[this._draggedItem.layoutChildIndex!];
                 sourceModule = sourceNestedLayout.modules[this._draggedItem.nestedChildIndex];
@@ -14328,20 +14332,20 @@ export class LayoutTab extends LitElement {
               } else if (this._draggedItem.layoutChildIndex !== undefined) {
                 // From direct layout child (2nd level - e.g., vertical inside horizontal)
                 const sourceParentLayout =
-                  newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex]
-                    .modules[this._draggedItem.moduleIndex];
+                  newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex!]
+                    .modules[this._draggedItem.moduleIndex!];
                 sourceModule = sourceParentLayout.modules[this._draggedItem.layoutChildIndex];
                 // Remove from source
                 sourceParentLayout.modules.splice(this._draggedItem.layoutChildIndex, 1);
               } else {
                 // From regular module
                 sourceModule =
-                  newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex]
-                    .modules[this._draggedItem.moduleIndex];
+                  newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex!]
+                    .modules[this._draggedItem.moduleIndex!];
                 // Remove from source
                 newLayout.rows[this._draggedItem.rowIndex].columns[
-                  this._draggedItem.columnIndex
-                ].modules.splice(this._draggedItem.moduleIndex, 1);
+                  this._draggedItem.columnIndex!
+                ].modules.splice(this._draggedItem.moduleIndex!, 1);
               }
 
               // Add to nested layout
@@ -14780,12 +14784,12 @@ export class LayoutTab extends LitElement {
               @click=${(e: Event) => {
                 e.stopPropagation();
                 this._openDeepNestedChildSettings(
-                  parentRowIndex,
-                  parentColumnIndex,
-                  parentModuleIndex,
-                  nestedLayoutIndex,
-                  deepNestedIndex,
-                  veryDeepIndex
+                  parentRowIndex!,
+                  parentColumnIndex!,
+                  parentModuleIndex!,
+                  nestedLayoutIndex!,
+                  deepNestedIndex!,
+                  veryDeepIndex!
                 );
               }}
               @mousedown=${(e: Event) => e.stopPropagation()}
@@ -14799,12 +14803,12 @@ export class LayoutTab extends LitElement {
               @click=${(e: Event) => {
                 e.stopPropagation();
                 this._deleteDeepNestedChildModule(
-                  parentRowIndex,
-                  parentColumnIndex,
-                  parentModuleIndex,
-                  nestedLayoutIndex,
-                  deepNestedIndex,
-                  veryDeepIndex
+                  parentRowIndex!,
+                  parentColumnIndex!,
+                  parentModuleIndex!,
+                  nestedLayoutIndex!,
+                  deepNestedIndex!,
+                  veryDeepIndex!
                 );
               }}
               @mousedown=${(e: Event) => e.stopPropagation()}
@@ -17626,44 +17630,44 @@ export class LayoutTab extends LitElement {
 
   // Context storage for tabs section operations
   private _tabsSectionContext: {
-    rowIndex?: number;
-    columnIndex?: number;
-    moduleIndex?: number;
-    sectionIndex?: number;
-    parentLayoutChildIndex?: number;
+    rowIndex?: number | undefined;
+    columnIndex?: number | undefined;
+    moduleIndex?: number | undefined;
+    sectionIndex?: number | undefined;
+    parentLayoutChildIndex?: number | undefined;
     isNested: boolean;
   } | null = null;
 
   // Context storage for nested layout inside tabs section operations
   private _tabsSectionNestedLayoutContext: {
-    rowIndex?: number;
-    columnIndex?: number;
-    moduleIndex?: number;
-    sectionIndex?: number;
-    layoutChildIndex?: number;
-    parentLayoutChildIndex?: number;
+    rowIndex?: number | undefined;
+    columnIndex?: number | undefined;
+    moduleIndex?: number | undefined;
+    sectionIndex?: number | undefined;
+    layoutChildIndex?: number | undefined;
+    parentLayoutChildIndex?: number | undefined;
     isNested: boolean;
   } | null = null;
 
   // Context storage for deeply nested layout inside tabs section operations
   private _tabsSectionDeeplyNestedLayoutContext: {
-    rowIndex?: number;
-    columnIndex?: number;
-    moduleIndex?: number;
-    sectionIndex?: number;
-    layoutChildIndex?: number;
-    nestedChildIndex?: number;
-    parentLayoutChildIndex?: number;
+    rowIndex?: number | undefined;
+    columnIndex?: number | undefined;
+    moduleIndex?: number | undefined;
+    sectionIndex?: number | undefined;
+    layoutChildIndex?: number | undefined;
+    nestedChildIndex?: number | undefined;
+    parentLayoutChildIndex?: number | undefined;
     isNested: boolean;
   } | null = null;
 
   // Context storage for nested tabs section (tabs inside another layout like popup)
   private _nestedTabsSectionContext: {
-    rowIndex?: number;
-    columnIndex?: number;
-    parentModuleIndex?: number;
-    nestedTabsIndex?: number;
-    sectionIndex?: number;
+    rowIndex?: number | undefined;
+    columnIndex?: number | undefined;
+    parentModuleIndex?: number | undefined;
+    nestedTabsIndex?: number | undefined;
+    sectionIndex?: number | undefined;
   } | null = null;
 
   /**
@@ -17892,12 +17896,12 @@ export class LayoutTab extends LitElement {
 
   // Context storage for nested tabs section layout child operations
   private _nestedTabsSectionLayoutChildContext: {
-    rowIndex?: number;
-    columnIndex?: number;
-    parentModuleIndex?: number;
-    nestedTabsIndex?: number;
-    sectionIndex?: number;
-    layoutChildIndex?: number;
+    rowIndex?: number | undefined;
+    columnIndex?: number | undefined;
+    parentModuleIndex?: number | undefined;
+    nestedTabsIndex?: number | undefined;
+    sectionIndex?: number | undefined;
+    layoutChildIndex?: number | undefined;
   } | null = null;
 
   /**
@@ -17996,11 +18000,11 @@ export class LayoutTab extends LitElement {
 
   // Context for deeply nested layout module selectors (for tree view)
   private _deeplyNestedLayoutContext: {
-    rowIndex?: number;
-    columnIndex?: number;
-    parentModuleIndex?: number;
-    nestedLayoutIndex?: number;
-    childIndex?: number;
+    rowIndex?: number | undefined;
+    columnIndex?: number | undefined;
+    parentModuleIndex?: number | undefined;
+    nestedLayoutIndex?: number | undefined;
+    childIndex?: number | undefined;
   } | null = null;
 
   /**
@@ -18070,12 +18074,12 @@ export class LayoutTab extends LitElement {
 
   // Context for level 4 nested layout module selectors
   private _level4NestedLayoutContext: {
-    rowIndex?: number;
-    columnIndex?: number;
-    parentModuleIndex?: number;
-    nestedLayoutIndex?: number;
-    deepLayoutIndex?: number;
-    childIndex?: number;
+    rowIndex?: number | undefined;
+    columnIndex?: number | undefined;
+    parentModuleIndex?: number | undefined;
+    nestedLayoutIndex?: number | undefined;
+    deepLayoutIndex?: number | undefined;
+    childIndex?: number | undefined;
   } | null = null;
 
   /**
@@ -20739,23 +20743,23 @@ export class LayoutTab extends LitElement {
     if (this._draggedItem.type === 'module') {
       // Dragging from a column
       sourceModule =
-        newLayout.rows[this._draggedItem.rowIndex]?.columns[this._draggedItem.columnIndex]?.modules[
-          this._draggedItem.moduleIndex
+        newLayout.rows[this._draggedItem.rowIndex]?.columns[this._draggedItem.columnIndex!]?.modules[
+          this._draggedItem.moduleIndex!
         ];
       if (!sourceModule) return;
 
       // Remove from source column
       newLayout.rows[this._draggedItem.rowIndex].columns[
-        this._draggedItem.columnIndex
-      ].modules.splice(this._draggedItem.moduleIndex, 1);
+        this._draggedItem.columnIndex!
+      ].modules.splice(this._draggedItem.moduleIndex!, 1);
     } else if (
       this._draggedItem.type === 'layout-child' &&
       this._draggedItem.layoutChildIndex !== undefined
     ) {
       // Dragging from a layout module (2nd level)
       const sourceParentLayout = newLayout.rows[this._draggedItem.rowIndex]?.columns[
-        this._draggedItem.columnIndex
-      ]?.modules[this._draggedItem.moduleIndex] as any;
+        this._draggedItem.columnIndex!
+      ]?.modules[this._draggedItem.moduleIndex!] as any;
       if (!sourceParentLayout?.modules) return;
 
       sourceModule = sourceParentLayout.modules[this._draggedItem.layoutChildIndex];
@@ -20769,8 +20773,8 @@ export class LayoutTab extends LitElement {
     ) {
       // Dragging from a nested layout (3rd level)
       const sourceTopLayout = newLayout.rows[this._draggedItem.rowIndex]?.columns[
-        this._draggedItem.columnIndex
-      ]?.modules[this._draggedItem.moduleIndex] as any;
+        this._draggedItem.columnIndex!
+      ]?.modules[this._draggedItem.moduleIndex!] as any;
       if (!sourceTopLayout?.modules?.[this._draggedItem.layoutChildIndex!]) return;
 
       const sourceNestedLayout = sourceTopLayout.modules[
@@ -20789,8 +20793,8 @@ export class LayoutTab extends LitElement {
     ) {
       // Dragging from a deep nested layout (4th level)
       const sourceTopLayout = newLayout.rows[this._draggedItem.rowIndex]?.columns[
-        this._draggedItem.columnIndex
-      ]?.modules[this._draggedItem.moduleIndex] as any;
+        this._draggedItem.columnIndex!
+      ]?.modules[this._draggedItem.moduleIndex!] as any;
       if (!sourceTopLayout?.modules?.[this._draggedItem.layoutChildIndex!]) return;
 
       const sourceNestedLayout = sourceTopLayout.modules[
@@ -21036,8 +21040,8 @@ export class LayoutTab extends LitElement {
 
         if (this._draggedItem.layoutChildIndex !== undefined) {
           const parentLayoutModule = newLayout.rows[this._draggedItem.rowIndex].columns[
-            this._draggedItem.columnIndex
-          ].modules[this._draggedItem.moduleIndex] as any;
+            this._draggedItem.columnIndex!
+          ].modules[this._draggedItem.moduleIndex!] as any;
           moduleRef = parentLayoutModule?.modules?.[this._draggedItem.layoutChildIndex];
 
           if (moduleRef && Array.isArray(parentLayoutModule?.modules)) {
@@ -21046,8 +21050,8 @@ export class LayoutTab extends LitElement {
           }
         } else {
           moduleRef =
-            newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex]
-              .modules[this._draggedItem.moduleIndex];
+            newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex!]
+              .modules[this._draggedItem.moduleIndex!];
         }
 
         if (moduleRef) {
@@ -21092,8 +21096,8 @@ export class LayoutTab extends LitElement {
 
         if (this._draggedItem.layoutChildIndex !== undefined) {
           const parentLayoutModule = newLayout.rows[this._draggedItem.rowIndex].columns[
-            this._draggedItem.columnIndex
-          ].modules[this._draggedItem.moduleIndex] as any;
+            this._draggedItem.columnIndex!
+          ].modules[this._draggedItem.moduleIndex!] as any;
           if (parentLayoutModule?.modules) {
             parentLayoutModule.modules.splice(this._draggedItem.layoutChildIndex, 1);
           }
@@ -22755,8 +22759,10 @@ export class LayoutTab extends LitElement {
       return html`<div>Module does not support general settings</div>`;
     }
 
-    return moduleHandler.renderGeneralTab(module, this.hass!, this.config, (updates: any) =>
-      this._updateTabsSectionChild(updates)
+    return (
+      moduleHandler.renderGeneralTab(module, this.hass!, this.config, (updates: any) =>
+        this._updateTabsSectionChild(updates)
+      ) ?? html``
     );
   }
 
@@ -22784,11 +22790,13 @@ export class LayoutTab extends LitElement {
       return html``;
     }
 
-    return (moduleHandler as any).renderActionsTab(
-      module,
-      this.hass!,
-      this.config,
-      (updates: any) => this._updateTabsSectionChild(updates)
+    return (
+      (moduleHandler as any).renderActionsTab(
+        module,
+        this.hass!,
+        this.config,
+        (updates: any) => this._updateTabsSectionChild(updates)
+      ) ?? html``
     );
   }
 
@@ -22812,8 +22820,10 @@ export class LayoutTab extends LitElement {
       return html`<div>Module does not support design settings</div>`;
     }
 
-    return moduleHandler.renderDesignTab(module, this.hass!, this.config, (updates: any) =>
-      this._updateTabsSectionChild(updates)
+    return (
+      moduleHandler.renderDesignTab(module, this.hass!, this.config, (updates: any) =>
+        this._updateTabsSectionChild(updates)
+      ) ?? html`<div>Module does not support design settings</div>`
     );
   }
 
@@ -23969,8 +23979,8 @@ export class LayoutTab extends LitElement {
         module,
         this.hass,
         this.config,
-        updates => this._updateLayoutChildModule(updates),
-        updates => this._updateConfig(updates)
+        (updates: Partial<CardModule>) => this._updateLayoutChildModule(updates),
+        (updates: Partial<UltraCardConfig>) => this._updateConfig(updates)
       );
     }
 
@@ -23990,8 +24000,11 @@ export class LayoutTab extends LitElement {
     const moduleHandler = registry.getModule(module.type);
 
     if (moduleHandler && typeof (moduleHandler as any).renderYamlTab === 'function') {
-      return (moduleHandler as any).renderYamlTab(module, this.hass, this.config, updates =>
-        this._updateLayoutChildModule(updates)
+      return (moduleHandler as any).renderYamlTab(
+        module,
+        this.hass,
+        this.config,
+        (updates: Partial<CardModule>) => this._updateLayoutChildModule(updates)
       );
     }
 
@@ -24011,8 +24024,11 @@ export class LayoutTab extends LitElement {
     const moduleHandler = registry.getModule(module.type);
 
     if (moduleHandler && typeof (moduleHandler as any).renderOtherTab === 'function') {
-      return (moduleHandler as any).renderOtherTab(module, this.hass, this.config, updates =>
-        this._updateLayoutChildModule(updates)
+      return (moduleHandler as any).renderOtherTab(
+        module,
+        this.hass,
+        this.config,
+        (updates: Partial<CardModule>) => this._updateLayoutChildModule(updates)
       );
     }
 
@@ -25188,9 +25204,9 @@ export class LayoutTab extends LitElement {
 
   private _renderColumnActionsTab(column: CardColumn): TemplateResult {
     const actions = column as any as {
-      tap_action?: any;
-      hold_action?: any;
-      double_tap_action?: any;
+      tap_action?: any | undefined;
+      hold_action?: any | undefined;
+      double_tap_action?: any | undefined;
     };
     const handler = new (class extends (BaseUltraModule as any) {})();
     return (handler as any).renderActionsTab(
@@ -25332,12 +25348,10 @@ export class LayoutTab extends LitElement {
         : '';
 
     if (moduleHandler) {
-      const moduleContent = moduleHandler.renderGeneralTab(
-        module,
-        this.hass,
-        this.config,
-        updates => this._updateModule(updates)
-      );
+      const moduleContent =
+        moduleHandler.renderGeneralTab(module, this.hass, this.config, updates =>
+          this._updateModule(updates)
+        ) ?? html``;
 
       // For external cards, don't show Module Name field
       if (module.type === 'external_card') {
@@ -25374,8 +25388,8 @@ export class LayoutTab extends LitElement {
         module,
         this.hass,
         this.config,
-        updates => this._updateModule(updates),
-        updates => this._updateConfig(updates)
+        (updates: Partial<CardModule>) => this._updateModule(updates),
+        (updates: Partial<UltraCardConfig>) => this._updateConfig(updates)
       );
     }
 
@@ -25395,8 +25409,11 @@ export class LayoutTab extends LitElement {
     const moduleHandler = registry.getModule(module.type);
 
     if (moduleHandler && typeof (moduleHandler as any).renderOtherTab === 'function') {
-      return (moduleHandler as any).renderOtherTab(module, this.hass, this.config, updates =>
-        this._updateModule(updates)
+      return (moduleHandler as any).renderOtherTab(
+        module,
+        this.hass,
+        this.config,
+        (updates: Partial<CardModule>) => this._updateModule(updates)
       );
     }
 
@@ -25416,8 +25433,11 @@ export class LayoutTab extends LitElement {
     const moduleHandler = registry.getModule(module.type);
 
     if (moduleHandler && typeof (moduleHandler as any).renderYamlTab === 'function') {
-      return (moduleHandler as any).renderYamlTab(module, this.hass, this.config, updates =>
-        this._updateModule(updates)
+      return (moduleHandler as any).renderYamlTab(
+        module,
+        this.hass,
+        this.config,
+        (updates: Partial<CardModule>) => this._updateModule(updates)
       );
     }
 
@@ -27118,11 +27138,11 @@ export class LayoutTab extends LitElement {
     `;
   }
 
-  protected firstUpdated(changedProperties: Map<string, any>): void {
+  protected override firstUpdated(changedProperties: Map<string, any>): void {
     super.firstUpdated(changedProperties);
     // Component has finished initial render
   }
-  protected updated(changedProperties: Map<string, any>): void {
+  protected override updated(changedProperties: Map<string, any>): void {
     super.updated(changedProperties);
 
     // Position the drop indicator line (insertion space) when dragging
@@ -27243,7 +27263,7 @@ export class LayoutTab extends LitElement {
     `;
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     const layout = this._ensureLayout();
     const lang = this.hass?.locale?.language || 'en';
 
@@ -28106,7 +28126,9 @@ export class LayoutTab extends LitElement {
                   );
                   this._builderRatingPreset = null;
                 }}
-                @close=${() => (this._builderRatingPreset = null)}
+                @close=${(): void => {
+                  this._builderRatingPreset = null;
+                }}
               ></uc-hub-rate-dialog>
             `
           : ''}
@@ -29005,7 +29027,8 @@ export class LayoutTab extends LitElement {
         await this._add3rdPartyCard(cardType);
       }
     } catch (error) {
-      this._showToast(`Failed to add card: ${error?.message || 'Unknown error'}`, 'error');
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      this._showToast(`Failed to add card: ${msg}`, 'error');
     }
   }
 
@@ -29310,7 +29333,11 @@ export class LayoutTab extends LitElement {
       // Replace entire layout (with confirmation)
       if (confirm('This will replace your entire layout. Are you sure?')) {
         const newLayout = importData.data as { rows: CardRow[] };
-        this._updateLayout(newLayout);
+        if (!this._isUndoRedoAction) {
+          this._saveStateToUndoStack();
+          this._redoStack = [];
+        }
+        this._updateConfig({ layout: newLayout, _contentOrigin: 'imported' });
         this._showToast(`Layout "${importData.metadata.name}" imported successfully!`, 'success');
       }
     } else if (importData.type === 'ultra-card-module') {
@@ -29321,7 +29348,11 @@ export class LayoutTab extends LitElement {
         if (column) {
           const newModule = importData.data as CardModule;
           column.modules.push(newModule);
-          this._updateLayout(layout);
+          if (!this._isUndoRedoAction) {
+            this._saveStateToUndoStack();
+            this._redoStack = [];
+          }
+          this._updateConfig({ layout, _contentOrigin: 'imported' });
           this._showToast(`Module "${importData.metadata.name}" imported successfully!`, 'success');
         }
       } else {
@@ -29742,7 +29773,7 @@ export class LayoutTab extends LitElement {
   private _getBreakpointLayout(
     row: CardRow,
     breakpoint: DeviceBreakpoint
-  ): { layout: string; custom?: string } {
+  ): { layout: string; custom?: string | undefined } {
     if (breakpoint === 'desktop') {
       return {
         layout: row.column_layout || '1-col',
@@ -30152,7 +30183,7 @@ export class LayoutTab extends LitElement {
   private _validateCustomColumnSizingExact(
     value: string,
     exactCount: number
-  ): { valid: boolean; error?: string } {
+  ): { valid: boolean; error?: string | undefined } {
     if (!value.trim()) {
       return { valid: false, error: undefined };
     }
@@ -30189,7 +30220,7 @@ export class LayoutTab extends LitElement {
     value: string,
     desktopColumnCount: number,
     validCounts: number[]
-  ): { valid: boolean; error?: string } {
+  ): { valid: boolean; error?: string | undefined } {
     if (!value.trim()) {
       return { valid: false, error: undefined };
     }
@@ -30278,7 +30309,7 @@ export class LayoutTab extends LitElement {
     this._customSizingValid = false;
     this._customSizingError = '';
   }
-  static get styles() {
+  static override get styles() {
     return css`
       :host {
         display: block;

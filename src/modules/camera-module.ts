@@ -20,6 +20,7 @@ import {
   unifiedTemplateEntityId,
 } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import { escapeHtml } from '../utils/html-sanitizer';
 import '../components/ultra-template-editor';
 
 const CAMERA_PLAYER_SELECTORS = new Set([
@@ -33,13 +34,13 @@ const CAMERA_PLAYER_SELECTORS = new Set([
 
 export class UltraCameraModule extends BaseUltraModule {
   private _templateInputDebounce: any = null;
-  private _templateService?: TemplateService;
+  private _templateService: TemplateService | undefined;
   private _lastRenderedEntity: string | null = null;
   private _renderDebounce: any = null;
   private _webrtcUpdateTimer: any = null;
-  private _pendingCameraProps?: { entity: string; live: boolean };
-  private _lastAppliedEntity?: string;
-  private _lastAppliedLive?: boolean;
+  private _pendingCameraProps: { entity: string | undefined; live: boolean } | undefined;
+  private _lastAppliedEntity: string | undefined;
+  private _lastAppliedLive: boolean | undefined;
   private _huiImageRef: Ref<any> = createRef();
   private _cameraStableKeys: Map<string, string> = new Map(); // Store stable keys by module ID
   private _audioOverrides: Map<string, boolean> = new Map();
@@ -836,7 +837,7 @@ export class UltraCameraModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -1420,7 +1421,7 @@ export class UltraCameraModule extends BaseUltraModule {
     return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const cameraModule = module as CameraModule;
     const errors = [...baseValidation.errors];
@@ -2498,7 +2499,8 @@ export class UltraCameraModule extends BaseUltraModule {
           const stateMatches = evaluatedTemplate.match(/states\(['"]([^'"]+)['"]\)/g);
           if (stateMatches) {
             stateMatches.forEach(match => {
-              const entityId = match.match(/states\(['"]([^'"]+)['"]\)/)[1];
+              const entityId = match.match(/states\(['"]([^'"]+)['"]\)/)?.[1];
+              if (!entityId) return;
               const entity = hass?.states[entityId];
               const value = entity ? entity.state : 'unknown';
               evaluatedTemplate = evaluatedTemplate.replace(match, `'${value}'`);
@@ -2511,9 +2513,9 @@ export class UltraCameraModule extends BaseUltraModule {
           );
           if (isStateMatches) {
             isStateMatches.forEach(match => {
-              const [, entityId, expectedState] = match.match(
-                /is_state\(['"]([^'"]+)['"],\s*['"]([^'"]+)['"]\)/
-              );
+              const m = match.match(/is_state\(['"]([^'"]+)['"],\s*['"]([^'"]+)['"]\)/);
+              if (!m) return;
+              const [, entityId, expectedState] = m;
               const entity = hass?.states[entityId];
               const isMatch = entity && entity.state === expectedState;
               evaluatedTemplate = evaluatedTemplate.replace(match, isMatch ? 'True' : 'False');
@@ -3596,20 +3598,31 @@ export class UltraCameraModule extends BaseUltraModule {
       img.style.display = 'none';
 
       // Try to show an error message with helpful guidance
-      const container = img.closest('.camera-image-container');
+      const container = img.closest('.camera-image-container') as HTMLElement | null;
       if (container) {
         const entityState = module.entity
           ? (document.querySelector('home-assistant') as any)?.hass?.states?.[module.entity]
           : null;
-        const cameraType =
+        const cameraTypeRaw =
           entityState?.attributes?.brand || entityState?.attributes?.model || 'Unknown';
+        const cameraType = escapeHtml(String(cameraTypeRaw));
+        const entityLabel = escapeHtml(String(module.entity ?? ''));
 
-        // Get global design settings
-        const hass = (document.querySelector('home-assistant') as any)?.hass;
         const moduleWithDesign = module as any;
 
         container.innerHTML = `
-          <div style="
+          <style>
+            @keyframes uc-camera-spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+            .uc-camera-error-panel .uc-camera-retry-btn:hover {
+              background: rgba(255, 255, 255, 0.3) !important;
+            }
+          </style>
+          <div
+            class="uc-camera-error-panel"
+            style="
             display: flex;
             align-items: center;
             justify-content: center;
@@ -3625,15 +3638,18 @@ export class UltraCameraModule extends BaseUltraModule {
           ">
             <ha-icon icon="mdi:camera-off" style="font-size: 48px; margin-bottom: 12px; opacity: 0.9;"></ha-icon>
             <span style="font-weight: ${this.getTextWeight(moduleWithDesign)}; font-size: ${this.getTextSize(moduleWithDesign)}; margin-bottom: 8px;">Camera Load Failed</span>
-            <span style="font-size: ${this.getSmallTextSize(moduleWithDesign)}; margin-bottom: 8px; opacity: 0.9;">Entity: ${module.entity}</span>
+            <span style="font-size: ${this.getSmallTextSize(moduleWithDesign)}; margin-bottom: 8px; opacity: 0.9;">Entity: ${entityLabel}</span>
             <span style="font-size: ${this.getSmallTextSize(moduleWithDesign)}; margin-bottom: 12px; opacity: 0.8;">Camera Type: ${cameraType}</span>
             <div style="font-size: ${this.getSmallTextSize(moduleWithDesign)}; opacity: 0.8; line-height: 1.4; margin-bottom: 12px;">
               <div style="margin-bottom: 6px;">• Check camera entity is working in HA</div>
               <div style="margin-bottom: 6px;">• Verify RTSP credentials in HA config</div>
               <div>• Try refreshing the browser</div>
             </div>
-            <button 
-              onclick="window.retryCamera_${module.entity?.replace(/\./g, '_')}"
+            ${
+              module.entity
+                ? `<button
+              type="button"
+              class="uc-camera-retry-btn"
               style="
                 background: rgba(255,255,255,0.2);
                 border: 1px solid rgba(255,255,255,0.3);
@@ -3645,30 +3661,49 @@ export class UltraCameraModule extends BaseUltraModule {
                 font-family: ${this.getTextFont(moduleWithDesign)};
                 transition: all 0.2s ease;
               "
-              onmouseover="this.style.background='rgba(255,255,255,0.3)'"
-              onmouseout="this.style.background='rgba(255,255,255,0.2)'"
             >
               🔄 Retry Camera Load
-            </button>
+            </button>`
+                : ''
+            }
           </div>
         `;
 
-        // Set up the retry function
         if (module.entity) {
-          const retryFunctionName = `retryCamera_${module.entity.replace(/\./g, '_')}`;
-          (window as any)[retryFunctionName] = async () => {
-            // Get fresh hass instance
-            const hass = (document.querySelector('home-assistant') as any)?.hass;
-            if (hass) {
-              try {
-                // Force a new image load with simple URL (same as HA native)
-                const newTimestamp = Date.now();
-                const newUrl = `/api/camera_proxy/${module.entity}?t=${newTimestamp}`;
+          const retryBtn = container.querySelector<HTMLButtonElement>('.uc-camera-retry-btn');
+          if (retryBtn) {
+            retryBtn.addEventListener('click', () => {
+              void this._retryCameraImageLoad(container, module, moduleWithDesign);
+            });
+          }
+        }
+      }
+    }
+  }
 
-                // Create a new image element
-                const newImg = document.createElement('img');
-                newImg.className = 'camera-image';
-                newImg.style.cssText = `
+  /** Replaces inline `onclick` / globals: attach listeners after error `innerHTML`. */
+  private async _retryCameraImageLoad(
+    container: HTMLElement,
+    module: CameraModule,
+    moduleWithDesign: any
+  ): Promise<void> {
+    const entityId = module.entity;
+    if (!entityId) {
+      return;
+    }
+
+    const hass = (document.querySelector('home-assistant') as any)?.hass;
+    if (!hass) {
+      return;
+    }
+
+    try {
+      const newTimestamp = Date.now();
+      const newUrl = `/api/camera_proxy/${entityId}?t=${newTimestamp}`;
+
+      const newImg = document.createElement('img');
+      newImg.className = 'camera-image';
+      newImg.style.cssText = `
                   position: absolute;
                   top: 0;
                   left: 0;
@@ -3678,28 +3713,27 @@ export class UltraCameraModule extends BaseUltraModule {
                   border-radius: inherit;
                 `;
 
-                // Set up new error handler
-                newImg.onerror = (e: Event | string) => {
-                  if (typeof e !== 'string') {
-                    this.handleImageError(e, module);
-                  }
-                };
+      newImg.onerror = (e: Event | string) => {
+        if (typeof e !== 'string') {
+          this.handleImageError(e, module);
+        }
+      };
 
-                // On successful load, replace the container content
-                newImg.onload = () => {
-                  if (container) {
-                    container.innerHTML = '';
-                    container.appendChild(newImg);
-                  }
-                };
+      newImg.onload = () => {
+        container.innerHTML = '';
+        container.appendChild(newImg);
+      };
 
-                // Start loading
-                newImg.src = newUrl;
+      newImg.src = newUrl;
 
-                // Show loading indicator temporarily
-                if (container) {
-                  container.innerHTML = `
-                    <div style="
+      container.innerHTML = `
+                  <style>
+                    @keyframes uc-camera-spin {
+                      0% { transform: rotate(0deg); }
+                      100% { transform: rotate(360deg); }
+                    }
+                  </style>
+                  <div style="
                       display: flex;
                       align-items: center;
                       justify-content: center;
@@ -3718,26 +3752,14 @@ export class UltraCameraModule extends BaseUltraModule {
                         border: 3px solid rgba(255,255,255,0.3);
                         border-top: 3px solid white;
                         border-radius: 50%;
-                        animation: spin 1s linear infinite;
+                        animation: uc-camera-spin 1s linear infinite;
                         margin-bottom: 12px;
                       "></div>
                       <span style="font-weight: ${this.getTextWeight(moduleWithDesign)}; font-size: ${this.getTextSize(moduleWithDesign)};">Retrying Camera Load...</span>
-                      <style>
-                        @keyframes spin {
-                          0% { transform: rotate(0deg); }
-                          100% { transform: rotate(360deg); }
-                        }
-                      </style>
                     </div>
                   `;
-                }
-              } catch (error) {
-                console.error('🎥 Retry failed:', error);
-              }
-            }
-          };
-        }
-      }
+    } catch (error) {
+      console.error('🎥 Retry failed:', error);
     }
   }
 

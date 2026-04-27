@@ -5,7 +5,7 @@ import { HomeAssistant } from 'custom-card-helpers';
  */
 declare module 'custom-card-helpers' {
   interface HomeAssistant {
-    __uvc_todo_cache?: { [entityId: string]: TodoItem[] };
+    __uvc_todo_cache?: { [entityId: string]: TodoItem[] } | undefined;
   }
 }
 
@@ -13,9 +13,9 @@ declare module 'custom-card-helpers' {
 export interface TodoItem {
   summary: string;
   status: 'needs_action' | 'completed';
-  due?: string;
-  description?: string;
-  uid?: string;
+  due?: string | undefined;
+  description?: string | undefined;
+  uid?: string | undefined;
 }
 
 /** Response from todo.get_items when called with return_response. Keyed by entity_id. */

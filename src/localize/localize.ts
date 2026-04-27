@@ -38,7 +38,11 @@ function getTranslatedString(key: string, lang: string): string | undefined {
   try {
     const dict = languages[lang] as Record<string, unknown> | undefined;
     if (!dict) return undefined;
-    return key.split('.').reduce((obj, part) => (obj as any)?.[part], dict) as string | undefined;
+    const value = key.split('.').reduce<unknown>((obj, part) => {
+      if (obj === null || typeof obj !== 'object') return undefined;
+      return (obj as Record<string, unknown>)[part];
+    }, dict);
+    return typeof value === 'string' ? value : undefined;
   } catch {
     return undefined;
   }

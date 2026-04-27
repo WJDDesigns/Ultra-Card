@@ -14,12 +14,12 @@ export class HubFavoritesTab extends LitElement {
   @state() private _cloudUser: CloudUser | null = null;
   @state() private _syncStatus: SyncStatus | null = null;
   @state() private _syncing = false;
-  private _unsub?: () => void;
-  private _authUnsub?: (user: CloudUser | null) => void;
-  private _syncUnsub?: (status: SyncStatus) => void;
-  private _toastTimer?: ReturnType<typeof setTimeout>;
+  private _unsub: (() => void) | undefined;
+  private _authUnsub: ((user: CloudUser | null) => void) | undefined;
+  private _syncUnsub: ((status: SyncStatus) => void) | undefined;
+  private _toastTimer: ReturnType<typeof setTimeout> | undefined;
 
-  static styles = [
+  static override styles = [
     panelStyles,
     css`
       :host {
@@ -329,7 +329,7 @@ export class HubFavoritesTab extends LitElement {
     `,
   ];
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     this._favorites = ucFavoritesService.getFavorites();
     this._unsub = ucFavoritesService.subscribe(list => {
@@ -343,7 +343,7 @@ export class HubFavoritesTab extends LitElement {
     ucCloudSyncService.addListener(this._syncUnsub);
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     this._unsub?.();
     if (this._authUnsub) ucCloudAuthService.removeListener(this._authUnsub);
@@ -459,7 +459,7 @@ export class HubFavoritesTab extends LitElement {
     );
   }
 
-  render() {
+  override render() {
     if (this._favorites.length === 0) {
       return html`
         <div class="hub-tab-blurb">

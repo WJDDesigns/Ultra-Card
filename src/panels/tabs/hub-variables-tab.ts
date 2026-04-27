@@ -27,12 +27,12 @@ export class HubVariablesTab extends LitElement {
   @state() private _cloudUser: CloudUser | null = null;
   @state() private _syncStatus: SyncStatus | null = null;
   @state() private _syncing = false;
-  private _unsub?: () => void;
-  private _authUnsub?: (user: CloudUser | null) => void;
-  private _syncUnsub?: (status: SyncStatus) => void;
-  private _toastTimer?: ReturnType<typeof setTimeout>;
+  private _unsub: (() => void) | undefined;
+  private _authUnsub: ((user: CloudUser | null) => void) | undefined;
+  private _syncUnsub: ((status: SyncStatus) => void) | undefined;
+  private _toastTimer: ReturnType<typeof setTimeout> | undefined;
 
-  static styles = [
+  static override styles = [
     panelStyles,
     css`
       :host {
@@ -565,7 +565,7 @@ export class HubVariablesTab extends LitElement {
     `,
   ];
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     this._variables = ucCustomVariablesService.getVariables();
     this._unsub = ucCustomVariablesService.subscribe(list => {
@@ -579,7 +579,7 @@ export class HubVariablesTab extends LitElement {
     ucCloudSyncService.addListener(this._syncUnsub);
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     this._unsub?.();
     if (this._authUnsub) ucCloudAuthService.removeListener(this._authUnsub);
@@ -758,7 +758,7 @@ export class HubVariablesTab extends LitElement {
     );
   }
 
-  render() {
+  override render() {
     if (this._variables.length === 0 && !this._showAddForm) {
       return html`
         <div class="hub-tab-blurb">

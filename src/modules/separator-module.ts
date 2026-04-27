@@ -620,7 +620,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -933,7 +933,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
     return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const separatorModule = module as SeparatorModule;
     const errors = [...baseValidation.errors];
@@ -1576,12 +1576,6 @@ export class UltraSeparatorModule extends BaseUltraModule {
           }
 
           if (imageUrl) {
-            // Handle Home Assistant local paths
-            if (imageUrl.startsWith('/local/') || imageUrl.startsWith('/media/')) {
-              imageUrl = imageUrl;
-            } else if (imageUrl.startsWith('/')) {
-              imageUrl = imageUrl;
-            }
             return `url("${imageUrl}")`;
           }
         }

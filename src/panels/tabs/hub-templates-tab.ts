@@ -25,7 +25,7 @@ const TEMPLATE_CAPABLE_MODULES: { type: string; title: string }[] = [
 interface CopyableExample {
   title: string;
   code: string;
-  description?: string;
+  description?: string | undefined;
 }
 
 @customElement('hub-templates-tab')
@@ -33,7 +33,7 @@ export class HubTemplatesTab extends LitElement {
   @state() private _copiedId: string | null = null;
   private _copyTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  static styles = [
+  static override styles = [
     panelStyles,
     css`
       :host {
@@ -210,7 +210,7 @@ export class HubTemplatesTab extends LitElement {
     `,
   ];
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     if (this._copyTimeout) clearTimeout(this._copyTimeout);
   }
@@ -247,7 +247,7 @@ export class HubTemplatesTab extends LitElement {
     `;
   }
 
-  render() {
+  override render() {
     const customVarExamples: CopyableExample[] = [
       {
         title: 'Use a variable in text',

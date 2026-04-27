@@ -35,18 +35,18 @@ export interface UltraModule {
    * When true, the centralized UcModulePreviewService will skip the outer design
    * wrapper so that styles are not applied twice.  Default: false (service handles it).
    */
-  handlesOwnDesignStyles?: boolean;
+  handlesOwnDesignStyles?: boolean | undefined;
 
   // Create a default instance of this module
   createDefault(id?: string, hass?: HomeAssistant): CardModule;
 
-  // Render the module's general settings tab
+  // Render the module's general settings tab (`null` = tab not shown)
   renderGeneralTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
-  ): TemplateResult;
+  ): TemplateResult | null;
 
   // Optional: Render the module's actions settings tab
   renderActionsTab?(
@@ -55,7 +55,7 @@ export interface UltraModule {
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void,
     updateConfig?: (updates: Partial<UltraCardConfig>) => void
-  ): TemplateResult;
+  ): TemplateResult | null;
 
   // Optional: Render the module's other settings tab
   renderOtherTab?(
@@ -63,7 +63,7 @@ export interface UltraModule {
     hass: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
-  ): TemplateResult;
+  ): TemplateResult | null;
 
   // Optional: Render the module's design settings tab
   renderDesignTab?(
@@ -71,7 +71,7 @@ export interface UltraModule {
     hass: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
-  ): TemplateResult;
+  ): TemplateResult | null;
 
   // Optional: Render the module's YAML settings tab (for external cards)
   renderYamlTab?(
@@ -79,7 +79,7 @@ export interface UltraModule {
     hass: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
-  ): TemplateResult;
+  ): TemplateResult | null;
 
   // Render the module preview/content
   renderPreview(
@@ -117,7 +117,7 @@ export abstract class BaseUltraModule implements UltraModule {
     hass: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
-  ): TemplateResult;
+  ): TemplateResult | null;
   abstract renderPreview(
     module: CardModule,
     hass: HomeAssistant,
@@ -132,7 +132,7 @@ export abstract class BaseUltraModule implements UltraModule {
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void,
     updateConfig?: (updates: Partial<UltraCardConfig>) => void
-  ): TemplateResult {
+  ): TemplateResult | null {
     return GlobalActionsTab.render(module, hass, updates => updateModule(updates));
   }
 
@@ -142,7 +142,7 @@ export abstract class BaseUltraModule implements UltraModule {
     hass: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
-  ): TemplateResult {
+  ): TemplateResult | null {
     return GlobalLogicTab.render(module, hass, updates => updateModule(updates));
   }
 
@@ -152,7 +152,7 @@ export abstract class BaseUltraModule implements UltraModule {
     hass: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
-  ): TemplateResult {
+  ): TemplateResult | null {
     return GlobalDesignTab.render(module, hass, updates => updateModule(updates));
   }
 
@@ -203,6 +203,7 @@ export abstract class BaseUltraModule implements UltraModule {
     }
 
     // Import dynamically to avoid circular dependencies
+    // eslint-disable-next-line @typescript-eslint/no-var-requires -- runtime require breaks circular import with uc-custom-variables-service
     const { ucCustomVariablesService } = require('../services/uc-custom-variables-service');
     return ucCustomVariablesService.resolveEntityField(entityValue, config);
   }
@@ -406,8 +407,8 @@ export abstract class BaseUltraModule implements UltraModule {
               description: description || '',
             },
           ]}
-          .computeLabel=${schema => schema.label || schema.name}
-          .computeDescription=${schema => schema.description || ''}
+          .computeLabel=${(schema: { label?: string; name?: string }) => schema.label || schema.name}
+          .computeDescription=${(schema: { description?: string }) => schema.description || ''}
           @value-changed=${(e: CustomEvent) => onChange(e.detail.value.entity)}
         ></ha-form>
       `,
@@ -876,6 +877,8 @@ export abstract class BaseUltraModule implements UltraModule {
         detail: {
           timestamp: Date.now(),
           source: 'module-update',
+          /** When true, listeners must not debounce — e.g. accordion/tab toggles need same-frame paint. */
+          immediate,
         },
       });
       window.dispatchEvent(event);

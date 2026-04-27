@@ -8,7 +8,7 @@ import { GlobalCardTransparency } from '../types';
 // Declare global variable for Ultra Cards to access
 declare global {
   interface Window {
-    ultraCardGlobalTransparency?: GlobalCardTransparency | null;
+    ultraCardGlobalTransparency?: GlobalCardTransparency | null | undefined;
   }
 }
 

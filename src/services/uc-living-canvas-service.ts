@@ -317,7 +317,7 @@ class UcLivingCanvasService {
     let element: HTMLElement | null = viewContainer;
     const path: string[] = [];
     while (element && element !== document.body) {
-      const parent = element.parentElement;
+      const parent: HTMLElement | null = element.parentElement;
       if (parent) {
         const idx = Array.from(parent.children).indexOf(element);
         path.unshift(`${element.tagName.toLowerCase()}[${idx}]`);

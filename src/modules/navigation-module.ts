@@ -160,14 +160,14 @@ export class UltraNavigationModule extends BaseUltraModule {
   private buildUnifiedNavItems(navModule: NavigationModule): Array<{
     type: 'route' | 'stack' | 'stack_child' | 'media_player';
     id: string;
-    data?: NavRoute | NavStackItem;
+    data?: NavRoute | NavStackItem | undefined;
     position: number;
-    parentStackId?: string;
+    parentStackId?: string | undefined;
   }> {
     const topItems: Array<{
       type: 'route' | 'stack' | 'media_player';
       id: string;
-      data?: NavRoute | NavStackItem;
+      data?: NavRoute | NavStackItem | undefined;
       position: number;
     }> = [];
 
@@ -203,9 +203,9 @@ export class UltraNavigationModule extends BaseUltraModule {
     const result: Array<{
       type: 'route' | 'stack' | 'stack_child' | 'media_player';
       id: string;
-      data?: NavRoute | NavStackItem;
+      data?: NavRoute | NavStackItem | undefined;
       position: number;
-      parentStackId?: string;
+      parentStackId?: string | undefined;
     }> = [];
 
     topItems.forEach(item => {
@@ -318,8 +318,8 @@ export class UltraNavigationModule extends BaseUltraModule {
                   'media_player',
                   'mdi:music',
                   'Media Player',
-                  hasEntity
-                    ? navModule.nav_media_player?.entity
+                  hasEntity && navModule.nav_media_player?.entity
+                    ? navModule.nav_media_player.entity
                     : '⚠️ Click to select entity (required)',
                   visualIndex,
                   unifiedItems.length,
@@ -1061,7 +1061,7 @@ export class UltraNavigationModule extends BaseUltraModule {
     return html``;
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const navModule = module as NavigationModule;
     const errors: string[] = [];
 
@@ -1143,7 +1143,7 @@ export class UltraNavigationModule extends BaseUltraModule {
     type: 'route' | 'stack' | 'stack_child' | 'media_player';
     id: string;
     visualIndex: number;
-    parentStackId?: string;
+    parentStackId?: string | undefined;
   } | null = null;
 
   // Handle reordering of unified nav items including stack child drag in/out

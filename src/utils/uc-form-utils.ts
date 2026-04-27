@@ -197,7 +197,7 @@ export class UcFormUtils {
     };
   }
 
-  static select(name: string, options: Array<{ value: string; label: string }>): any {
+  static select(name: string, options: Array<{ value: string | undefined; label: string }>): any {
     return {
       name,
       selector: {
@@ -353,9 +353,9 @@ export class UcFormUtils {
     currentValue: string,
     onChange: (value: string) => void,
     options?: {
-      domain?: string[];
-      label?: string;
-      includeNone?: boolean;
+      domain?: string[] | undefined;
+      label?: string | undefined;
+      includeNone?: boolean | undefined;
     }
   ): TemplateResult {
     const varInfo = ucCustomVariablesService.getVariableInfo(currentValue, config);

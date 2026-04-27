@@ -1,4 +1,4 @@
-import { UltraModule, ModuleMetadata } from './base-module';
+import { UltraModule } from './base-module';
 import { CORE_MANIFESTS } from './module-manifest-data';
 import { coreLoaders } from './module-loaders';
 import { CardModule } from '../types';
@@ -13,6 +13,8 @@ export class ModuleRegistry {
   private modules = new Map<string, UltraModule>();
   /** In-flight lazy loads keyed by module type so concurrent callers share one import. */
   private pendingLoads = new Map<string, Promise<void>>();
+  /** Last lazy-load failure keyed by module type, used to avoid endless loading placeholders. */
+  private loadErrors = new Map<string, Error>();
   /** Manifest: type -> metadata. Populated from static manifest; kept in sync when modules are loaded or third-party registered. */
   private manifest = new Map<string, ModuleManifest>();
   /** Category -> type[]. Built from manifest for sync category APIs. */
@@ -56,9 +58,11 @@ export class ModuleRegistry {
     const type = module.metadata.type;
     this.modules.set(type, module);
     this.pendingLoads.delete(type);
+    this.loadErrors.delete(type);
     this.manifest.set(type, module.metadata);
     this._addToCategoryMap(type, module.metadata.category);
     this._stylesCache = null;
+    this._notifyLoadStateChanged(type, 'loaded');
   }
 
   // Unregister a module (manifest entry removed only for non-core types)
@@ -68,6 +72,8 @@ export class ModuleRegistry {
     }
 
     this.modules.delete(type);
+    this.pendingLoads.delete(type);
+    this.loadErrors.delete(type);
     if (!this._coreTypes.has(type)) {
       this.manifest.delete(type);
       this._rebuildCategoryMap();
@@ -89,6 +95,22 @@ export class ModuleRegistry {
     return this.manifest.get(type);
   }
 
+  public isModuleLoaded(type: string): boolean {
+    return this.modules.has(type);
+  }
+
+  public isModuleLoading(type: string): boolean {
+    return this.pendingLoads.has(type);
+  }
+
+  public canLoadModule(type: string): boolean {
+    return !!coreLoaders[type];
+  }
+
+  public getModuleLoadError(type: string): Error | undefined {
+    return this.loadErrors.get(type);
+  }
+
   /**
    * Ensure the module implementation for type is loaded. Resolves when the module is registered.
    * Real implementation boundary: triggers dynamic import and register.
@@ -97,21 +119,55 @@ export class ModuleRegistry {
     if (this.modules.has(type)) return Promise.resolve();
     const pending = this.pendingLoads.get(type);
     if (pending) return pending;
+    const previousError = this.loadErrors.get(type);
+    if (previousError) return Promise.reject(previousError);
 
     const loader = coreLoaders[type];
     if (!loader) {
-      return Promise.reject(new Error(`No loader for module type "${type}"`));
+      const error = new Error(`No loader for module type "${type}"`);
+      this.loadErrors.set(type, error);
+      this._notifyLoadStateChanged(type, 'error');
+      return Promise.reject(error);
     }
 
     const loadPromise = loader()
       .then(module => {
         this.registerModule(module);
       })
+      .catch(error => {
+        const normalizedError =
+          error instanceof Error ? error : new Error(`Failed to load module type "${type}"`);
+        this.loadErrors.set(type, normalizedError);
+        this._notifyLoadStateChanged(type, 'error');
+        throw normalizedError;
+      })
       .finally(() => {
         this.pendingLoads.delete(type);
       });
     this.pendingLoads.set(type, loadPromise);
+    this._notifyLoadStateChanged(type, 'loading');
     return loadPromise;
+  }
+
+  private _notifyLoadStateChanged(
+    type: string,
+    state: 'loading' | 'loaded' | 'error' | 'retry'
+  ): void {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent('uc-module-load-state-changed', {
+        detail: { type, state },
+      })
+    );
+  }
+
+  /**
+   * Clears a sticky lazy-load failure so the next `ensureModuleLoaded` / editor render can retry
+   * (e.g. transient network or chunk load failure).
+   */
+  public clearModuleLoadError(type: string): void {
+    if (!this.loadErrors.delete(type)) return;
+    this._notifyLoadStateChanged(type, 'retry');
   }
 
   // Get all loaded modules

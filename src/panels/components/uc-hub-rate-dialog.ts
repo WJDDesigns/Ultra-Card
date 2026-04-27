@@ -18,7 +18,7 @@ export class UcHubRateDialog extends LitElement {
   @state() private _submitting = false;
   @state() private _error = '';
 
-  static styles = css`
+  static override styles = css`
     /* Full-screen backdrop — position: fixed so it escapes any parent stacking context */
     .overlay {
       position: fixed;
@@ -177,7 +177,7 @@ export class UcHubRateDialog extends LitElement {
     }
   `;
 
-  willUpdate(changed: Map<string, unknown>) {
+  override willUpdate(changed: Map<string, unknown>) {
     if (changed.has('existingRating') || changed.has('presetId')) {
       if (this._selectedRating === 0 && this.existingRating > 0) {
         this._selectedRating = this.existingRating;
@@ -221,7 +221,7 @@ export class UcHubRateDialog extends LitElement {
     }
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     const displayRating = this._displayRating();
 
     return html`

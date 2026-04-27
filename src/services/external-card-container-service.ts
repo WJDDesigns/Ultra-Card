@@ -1,4 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
+import { escapeHtml } from '../utils/html-sanitizer';
 import { ucExternalCardsService } from './uc-external-cards-service';
 
 interface ContainerInfo {
@@ -16,7 +17,7 @@ interface ContainerInfo {
 class ExternalCardContainerService {
   private static instance: ExternalCardContainerService;
   private containers = new Map<string, ContainerInfo>();
-  private currentHass?: HomeAssistant;
+  private currentHass: HomeAssistant | undefined;
   private pendingHassSetup = new Set<string>(); // Track cards waiting for hass
 
   private constructor() {}
@@ -269,10 +270,11 @@ class ExternalCardContainerService {
 
       // Create error placeholder
       const displayName = cardType.startsWith('custom:') ? cardType : `custom:${cardType}`;
+      const safeName = escapeHtml(displayName);
       container.innerHTML = `
         <div style="padding: 16px; text-align: center; color: var(--error-color);">
           <ha-icon icon="mdi:alert-circle" style="font-size: 48px;"></ha-icon>
-          <p>Failed to load ${displayName}</p>
+          <p>Failed to load ${safeName}</p>
         </div>
       `;
 

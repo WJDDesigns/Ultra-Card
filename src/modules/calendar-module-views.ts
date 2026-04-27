@@ -27,10 +27,10 @@ export interface CalendarViewContext {
   formatTime: (date: Date) => string;
   formatDate: (date: Date) => string;
   // Scroll navigation for hidden overflow mode
-  scrollState?: ScrollState;
-  onScrollUp?: () => void;
-  onScrollDown?: () => void;
-  scrollContainerId?: string; // Unique ID for this module's scroll container
+  scrollState?: ScrollState | undefined;
+  onScrollUp?: (() => void) | undefined;
+  onScrollDown?: (() => void) | undefined;
+  scrollContainerId?: string | undefined; // Unique ID for this module's scroll container
 }
 
 // ==========================================

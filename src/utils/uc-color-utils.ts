@@ -7,30 +7,30 @@ const GRADIENT_FUNCTION_REGEX =
 
 export interface ComputeBackgroundStylesParams {
   /** Primary color or gradient string selected by the user */
-  color?: string;
+  color?: string | undefined;
   /** Optional fallback when no color is provided */
-  fallback?: string;
+  fallback?: string | undefined;
   /** Resolved background image string (e.g. url("...")) */
-  image?: string;
+  image?: string | undefined;
   /** Size applied to the background image layer */
-  imageSize?: string;
+  imageSize?: string | undefined;
   /** Position applied to the background image layer */
-  imagePosition?: string;
+  imagePosition?: string | undefined;
   /** Repeat behaviour applied to the background image layer */
-  imageRepeat?: string;
+  imageRepeat?: string | undefined;
   /** Optional overrides for the gradient layer */
-  gradientSize?: string;
-  gradientPosition?: string;
-  gradientRepeat?: string;
+  gradientSize?: string | undefined;
+  gradientPosition?: string | undefined;
+  gradientRepeat?: string | undefined;
   /** Whether to include the resolved base color as background-color (defaults to true) */
-  includeBaseColor?: boolean;
+  includeBaseColor?: boolean | undefined;
 }
 
 export interface ComputeBackgroundStylesResult {
   styles: Record<string, string>;
   isGradient: boolean;
   hasImageLayer: boolean;
-  resolvedColor?: string;
+  resolvedColor?: string | undefined;
 }
 
 const DEFAULT_FALLBACK_COLOR = 'transparent';

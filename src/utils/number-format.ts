@@ -9,7 +9,7 @@ import { computeStateDisplay } from 'custom-card-helpers';
 export const formatEntityState = (
   hass: HomeAssistant,
   entityId: string,
-  options?: { state?: string | number; includeUnit?: boolean }
+  options?: { state?: string | number | undefined; includeUnit?: boolean }
 ): string => {
   const includeUnit = options?.includeUnit !== false;
   const stateObj = hass?.states?.[entityId];

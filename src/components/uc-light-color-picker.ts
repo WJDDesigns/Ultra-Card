@@ -6,16 +6,16 @@ import { Z_INDEX } from '../utils/uc-z-index';
 
 export interface LightColorChangedEvent {
   detail: {
-    rgb_color?: number[];
-    hs_color?: number[];
-    xy_color?: number[];
-    color_temp?: number;
-    effect?: string;
-    effect_speed?: number;
-    effect_intensity?: number;
-    effect_reverse?: boolean;
+    rgb_color?: number[] | undefined;
+    hs_color?: number[] | undefined;
+    xy_color?: number[] | undefined;
+    color_temp?: number | undefined;
+    effect?: string | undefined;
+    effect_speed?: number | undefined;
+    effect_intensity?: number | undefined;
+    effect_reverse?: boolean | undefined;
     mode: 'rgb' | 'hs' | 'xy' | 'color_temp' | 'effect' | 'rgbww';
-    rgbww_mode?: boolean;
+    rgbww_mode?: boolean | undefined;
   };
 }
 
@@ -238,16 +238,16 @@ class LightColorUtils {
 
 @customElement('uc-light-color-picker')
 export class UcLightColorPicker extends LitElement {
-  @property({ attribute: false }) public hass?: HomeAssistant;
-  @property() public rgb_color?: number[];
-  @property() public hs_color?: number[];
-  @property() public xy_color?: number[];
-  @property() public color_temp?: number;
-  @property() public effect?: string;
-  @property() public effect_speed?: number; // WLED effect speed (0-255)
-  @property() public effect_intensity?: number; // WLED effect intensity (0-255)
-  @property() public effect_reverse?: boolean; // WLED effect direction
-  @property() public effect_list?: string[]; // Available effects for the selected entities
+  @property({ attribute: false }) public hass: HomeAssistant | undefined;
+  @property() public rgb_color: number[] | undefined;
+  @property() public hs_color: number[] | undefined;
+  @property() public xy_color: number[] | undefined;
+  @property() public color_temp: number | undefined;
+  @property() public effect: string | undefined;
+  @property() public effect_speed: number | undefined; // WLED effect speed (0-255)
+  @property() public effect_intensity: number | undefined; // WLED effect intensity (0-255)
+  @property() public effect_reverse: boolean | undefined; // WLED effect direction
+  @property() public effect_list: string[] | undefined; // Available effects for the selected entities
   @property() public mode: 'rgb' | 'hs' | 'xy' | 'color_temp' | 'effect' | 'rgbww' = 'hs';
   @property() public min_mireds = 153; // ~6500K
   @property() public max_mireds = 500; // ~2000K
@@ -269,14 +269,14 @@ export class UcLightColorPicker extends LitElement {
   @state() private _focusedInput: string | null = null; // Track which input is focused to prevent value resets
   @state() private _lastChangedMode: 'rgb' | 'hs' | 'xy' | null = null; // Track which mode was last changed to prevent drift
 
-  protected firstUpdated(): void {
+  protected override firstUpdated(): void {
     this.updateCurrentValues();
 
     // Add click outside handler to close dropdown
     document.addEventListener('click', this.handleClickOutside);
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     document.removeEventListener('click', this.handleClickOutside);
   }
@@ -293,7 +293,7 @@ export class UcLightColorPicker extends LitElement {
     }
   };
 
-  protected updated(changedProperties: Map<string, any>): void {
+  protected override updated(changedProperties: Map<string, any>): void {
     if (
       changedProperties.has('rgb_color') ||
       changedProperties.has('hs_color') ||
@@ -834,7 +834,7 @@ export class UcLightColorPicker extends LitElement {
     };
   }
 
-  render(): TemplateResult {
+  override render(): TemplateResult {
     const pickerPos = this.getColorWheelPickerPosition();
     const currentHex = LightColorUtils.rgbToHex(
       this._currentRgb[0],
@@ -2002,7 +2002,7 @@ export class UcLightColorPicker extends LitElement {
     `;
   }
 
-  static get styles() {
+  static override get styles() {
     return css`
       :host {
         display: block;

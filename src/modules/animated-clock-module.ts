@@ -779,9 +779,9 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
     const s1 = toBinary(Math.floor(seconds / 10), 4);
     const s2 = toBinary(seconds % 10, 4);
 
-    const columns = [];
-    const labels = [];
-    const types = []; // 'hours', 'minutes', or 'seconds'
+    const columns: string[][] = [];
+    const labels: string[] = [];
+    const types: ('hours' | 'minutes' | 'seconds')[] = [];
 
     if (showHours) {
       columns.push(h1, h2);
@@ -2041,7 +2041,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
     `;
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     // Basic validation - clock module doesn't require any entities
     return {

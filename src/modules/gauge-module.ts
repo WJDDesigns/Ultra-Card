@@ -34,7 +34,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     tags: ['gauge', 'sensor', 'value', 'indicator', 'speedometer', 'meter'],
   };
 
-  private _templateService?: TemplateService;
+  private _templateService: TemplateService | undefined;
 
   createDefault(id?: string, hass?: HomeAssistant): GaugeModule {
     const suitableEntity = this.findSuitableSensor(hass);
@@ -1562,7 +1562,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -1571,7 +1571,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     return GlobalActionsTab.render(module as GaugeModule, hass, updates => updateModule(updates));
   }
 
-  renderDesignTab(
+  override renderDesignTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -4297,7 +4297,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       startAngle !== undefined &&
       endAngle !== undefined
     ) {
-      let gradientStartAngle = startAngle;
+      const gradientStartAngle = startAngle;
       let gradientEndAngle = endAngle;
       let stopsToUse = sortedStops;
 
@@ -4750,7 +4750,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     return styles.join('; ');
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const gaugeModule = module as GaugeModule;
     const errors = [...baseValidation.errors];

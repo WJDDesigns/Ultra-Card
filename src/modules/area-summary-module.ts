@@ -14,7 +14,7 @@ import '../components/ultra-color-picker';
  * Area / Room Summary — smart room tiles scoped to a Home Assistant area.
  */
 export class UltraAreaSummaryModule extends BaseUltraModule {
-  handlesOwnDesignStyles = true;
+  override handlesOwnDesignStyles = true;
 
   metadata: ModuleMetadata = {
     type: 'area_summary',
@@ -36,8 +36,8 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       context: 'live' | 'ha-preview' | 'dashboard';
       areaId: string;
       /** Last known-good model. Kept while refreshing to prevent skeleton flashing. */
-      model?: RoomSummaryModel;
-      error?: string;
+      model?: RoomSummaryModel | undefined;
+      error?: string | undefined;
       updatedAt: number;
     }
   >();
@@ -79,7 +79,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
     };
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const base = super.validate(module);
     const m = module as AreaSummaryModule;
     const errors = [...base.errors];
@@ -1083,7 +1083,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
     const showNames = m.show_quick_entity_names === true;
     const badges = (
       align: 'column' | 'row',
-      opts?: { iconicInlineNames?: boolean; rowSpread?: boolean }
+      opts?: { iconicInlineNames?: boolean | undefined; rowSpread?: boolean }
     ) => {
       const iconicInline = !!opts?.iconicInlineNames && showNames;
       const rowSpread = !!opts?.rowSpread;

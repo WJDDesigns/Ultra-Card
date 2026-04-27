@@ -6,6 +6,7 @@ import { CardModule, UltraCardConfig, PopupModule, NavigationModule, NavRoute } 
 import { getModuleRegistry } from './module-registry';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
+import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { getImageUrl } from '../utils/image-upload';
@@ -165,7 +166,7 @@ export class UltraPopupModule extends BaseUltraModule {
     };
   }
 
-  renderDesignTab(
+  override renderDesignTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -2740,8 +2741,8 @@ export class UltraPopupModule extends BaseUltraModule {
       isOpen = true;
     }
 
-    // Forward declaration - will be assigned later
-    // This allows handleTriggerClick to call renderPopupToPortal
+    // Forward declaration - assigned below before any listener fires
+    // eslint-disable-next-line prefer-const -- single assignment later in this render; not hoistable as const
     let renderPopupToPortal: (initialInvisibleRender?: boolean) => void;
 
     // Register external popup open listener (for module triggers)
@@ -3549,7 +3550,7 @@ export class UltraPopupModule extends BaseUltraModule {
                 ? popupModule.modules.map(childModule => {
                     const childModuleHandler = registry.getModule(childModule.type);
                     if (!childModuleHandler) {
-                      return html`<div>Unknown module type: ${childModule.type}</div>`;
+                      return ucModulePreviewService.renderModuleLoadingState(childModule);
                     }
 
                     // Check visibility
@@ -3741,7 +3742,7 @@ export class UltraPopupModule extends BaseUltraModule {
     return this.wrapWithAnimation(html`<div class="${hoverClass}" style="${designStyles}">${renderTrigger()}</div>`, module, hass);
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const popupModule = module as PopupModule;
     const errors = [...baseValidation.errors];

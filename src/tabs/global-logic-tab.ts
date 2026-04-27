@@ -129,7 +129,9 @@ export class GlobalLogicTab {
                           .minHeight=${120}
                           .maxHeight=${360}
                           @value-changed=${(e: CustomEvent) =>
-                            updateModule({ unified_template: e.detail.value } as Partial<M>)}
+                            updateModule({
+                              unified_template: e.detail.value,
+                            } as unknown as Partial<M>)}
                         ></ultra-template-editor>
                       </div>
                     `

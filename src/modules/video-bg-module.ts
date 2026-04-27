@@ -444,7 +444,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
       embedUrl = `https://player.vimeo.com/video/${videoId}?muted=1&controls=1&background=0`;
     }
 
-    const filterStyles = [];
+    const filterStyles: string[] = [];
     if (blur && blur !== '0px') filterStyles.push(`blur(${blur})`);
     if (brightness && brightness !== '100%') filterStyles.push(`brightness(${brightness})`);
     const filterCss = filterStyles.length > 0 ? `filter: ${filterStyles.join(' ')};` : '';
@@ -666,7 +666,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
   /**
    * Render Logic tab (uses standard GlobalLogicTab for conditional rules)
    */
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -678,14 +678,25 @@ export class UltraVideoBgModule extends BaseUltraModule {
   /**
    * Design tab not applicable for video background
    */
-  renderDesignTab(): TemplateResult | null {
+  override renderDesignTab(
+    _module: CardModule,
+    _hass: HomeAssistant,
+    _config: UltraCardConfig,
+    _updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult | null {
     return null;
   }
 
   /**
    * Actions tab not applicable for video background
    */
-  renderActionsTab(): TemplateResult | null {
+  override renderActionsTab(
+    _module: CardModule,
+    _hass: HomeAssistant,
+    _config: UltraCardConfig,
+    _updateModule: (updates: Partial<CardModule>) => void,
+    _updateConfig?: (updates: Partial<UltraCardConfig>) => void
+  ): TemplateResult | null {
     return null;
   }
 
@@ -833,7 +844,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
   /**
    * Validate module configuration
    */
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const videoBgModule = module as VideoBackgroundModule;
     const errors: string[] = [...baseValidation.errors];

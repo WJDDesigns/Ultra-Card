@@ -68,7 +68,7 @@ export class UltraPageBreakModule extends BaseUltraModule {
     return html``;
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     return baseValidation;
   }

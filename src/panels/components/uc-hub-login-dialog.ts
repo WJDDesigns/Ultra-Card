@@ -8,7 +8,7 @@ import '../../services/uc-cloud-auth-service';
 
 export class UcHubLoginDialog extends LitElement {
 
-  static styles = css`
+  static override styles = css`
     .login-dialog-content {
       padding: 8px 0;
       display: flex;
@@ -96,7 +96,7 @@ export class UcHubLoginDialog extends LitElement {
     );
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     return html`
       <ha-dialog open @closed=${this._close} .heading=${'Sign in to Ultra Card'}>
         <div class="login-dialog-content">

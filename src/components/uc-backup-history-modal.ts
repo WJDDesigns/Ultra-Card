@@ -30,14 +30,14 @@ export class UcBackupHistoryModal extends LitElement {
   @state() private _totalPages = 1;
   @state() private _total = 0;
 
-  connectedCallback() {
+  override connectedCallback() {
     super.connectedCallback();
     if (this.open) {
       this._loadBackups();
     }
   }
 
-  updated(changedProps: Map<string, any>) {
+  override updated(changedProps: Map<string, any>) {
     if (changedProps.has('open') && this.open) {
       this._loadBackups();
     }
@@ -375,7 +375,7 @@ export class UcBackupHistoryModal extends LitElement {
     `;
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     if (!this.open) return html``;
 
     return html`
@@ -386,7 +386,7 @@ export class UcBackupHistoryModal extends LitElement {
     `;
   }
 
-  static get styles() {
+  static override get styles() {
     return css`
       :host {
         --dialog-max-width: 800px;

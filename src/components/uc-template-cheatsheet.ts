@@ -349,14 +349,14 @@ export class UcTemplateCheatsheet extends LitElement {
     this.open = true;
   };
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     if (!this.pane) {
       document.addEventListener(UC_OPEN_CHEATSHEET, this._openCheatsheetHandler);
     }
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     if (!this.pane) {
       document.removeEventListener(UC_OPEN_CHEATSHEET, this._openCheatsheetHandler);
     }
@@ -364,7 +364,7 @@ export class UcTemplateCheatsheet extends LitElement {
     super.disconnectedCallback();
   }
 
-  protected updated(changed: Map<string, unknown>): void {
+  protected override updated(changed: Map<string, unknown>): void {
     if (changed.has('open')) {
       if (this.open) {
         window.addEventListener('keydown', this._escapeKeyHandler, true);
@@ -378,7 +378,7 @@ export class UcTemplateCheatsheet extends LitElement {
     }
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     if (!this.open) return html``;
 
     const filteredProperties = RETURN_PROPERTIES.filter(
@@ -628,7 +628,7 @@ export class UcTemplateCheatsheet extends LitElement {
     );
   }
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: contents;
     }

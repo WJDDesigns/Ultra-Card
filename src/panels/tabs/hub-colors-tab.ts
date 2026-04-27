@@ -21,12 +21,12 @@ export class HubColorsTab extends LitElement {
   @state() private _cloudUser: CloudUser | null = null;
   @state() private _syncStatus: SyncStatus | null = null;
   @state() private _syncing = false;
-  private _unsub?: () => void;
-  private _authUnsub?: (user: CloudUser | null) => void;
-  private _syncUnsub?: (status: SyncStatus) => void;
-  private _toastTimer?: ReturnType<typeof setTimeout>;
+  private _unsub: (() => void) | undefined;
+  private _authUnsub: ((user: CloudUser | null) => void) | undefined;
+  private _syncUnsub: ((status: SyncStatus) => void) | undefined;
+  private _toastTimer: ReturnType<typeof setTimeout> | undefined;
 
-  static styles = [
+  static override styles = [
     panelStyles,
     css`
       :host {
@@ -434,7 +434,7 @@ export class HubColorsTab extends LitElement {
     `,
   ];
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     // Ensure we have latest from localStorage (sync with favorites added in card settings)
     ucFavoriteColorsService.refreshFromStorage();
@@ -451,13 +451,13 @@ export class HubColorsTab extends LitElement {
     ucCloudSyncService.addListener(this._syncUnsub);
   }
 
-  updated(changed: Map<string, unknown>): void {
+  override updated(changed: Map<string, unknown>): void {
     if (changed.has('hass') && this.hass) {
       ucFavoriteColorsService.setHass(this.hass);
     }
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     this._unsub?.();
     if (this._authUnsub) ucCloudAuthService.removeListener(this._authUnsub);
@@ -598,7 +598,7 @@ export class HubColorsTab extends LitElement {
     }
   }
 
-  render() {
+  override render() {
     if (this._colors.length === 0 && !this._showAddForm) {
       return html`
         <div class="hub-tab-blurb">

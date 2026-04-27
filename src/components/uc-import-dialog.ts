@@ -14,7 +14,7 @@ export class UcImportDialog extends LitElement {
   @state() private _previewData: ExportData | null = null;
   @state() private _showAndroidTip = false;
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     if (!this.open) return html``;
 
     return html`
@@ -300,7 +300,7 @@ export class UcImportDialog extends LitElement {
     }
   }
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: contents;
     }

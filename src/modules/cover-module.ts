@@ -23,7 +23,7 @@ const COVER_SUPPORT_SET_TILT_POSITION = 128;
  * Advanced: tilt, multiple entities, layout options.
  */
 export class UltraCoverModule extends BaseUltraModule {
-  handlesOwnDesignStyles = true;
+  override handlesOwnDesignStyles = true;
 
   metadata: ModuleMetadata = {
     type: 'cover',
@@ -61,7 +61,7 @@ export class UltraCoverModule extends BaseUltraModule {
     };
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     const coverModule = module as CoverModule;
 
@@ -78,7 +78,9 @@ export class UltraCoverModule extends BaseUltraModule {
     return { valid: errors.length === 0, errors };
   }
 
-  private getLayoutOptions(lang: string): Array<{ value: CoverModule['layout']; label: string }> {
+  private getLayoutOptions(
+    lang: string
+  ): Array<{ value: NonNullable<CoverModule['layout']>; label: string }> {
     return [
       { value: 'compact', label: localize('editor.cover.layout_compact', lang, 'Compact') },
       { value: 'standard', label: localize('editor.cover.layout_standard', lang, 'Standard') },

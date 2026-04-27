@@ -1,5 +1,20 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta22
+
+### What’s in this build
+
+This beta is mostly a **wide reliability and polish pass** across the card, editor, and modules—things should feel a bit more predictable when you tweak settings, use nested layouts, or work with colors and backups.
+
+- **Editor & layout** — Smoother day‑to‑day use when building cards, searching for cards to add, and working with rows, tabs, accordions, sliders, popups, and similar layout pieces.
+- **Modules & controls** — Many small fixes and cleanups so individual modules behave more consistently with your configuration.
+- **Colors & visuals** — Tweaks to color pickers, gradients, and related UI so choices line up better with what you see on the dashboard.
+- **Backups, snapshots, and optional cloud flows** — Continued hardening so those tools stay dependable next to your normal editing workflow.
+
+**Heads up:** There are no intentional breaking changes to existing cards. If anything looks odd after updating, try a browser refresh; if it persists, re‑save the card once and let us know.
+
+---
+
 ## Version 3.3.0-beta21
 
 ### 🚀 New Features

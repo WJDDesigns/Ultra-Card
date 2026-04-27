@@ -16,17 +16,17 @@ import { Z_INDEX } from '../utils/uc-z-index';
  */
 @customElement('ultra-template-editor')
 export class UltraTemplateEditor extends LitElement {
-  @property({ attribute: false }) public hass?: HomeAssistant;
+  @property({ attribute: false }) public hass: HomeAssistant | undefined;
   @property({ type: String }) public value = '';
   @property({ type: String }) public placeholder = '';
   @property({ type: Number }) public minHeight = 100;
   @property({ type: Number }) public maxHeight = 400;
 
-  @state() private _editor?: EditorView;
+  @state() private _editor: EditorView | undefined;
   private _isUpdating = false;
   private _userIsTyping = false;
 
-  static get styles() {
+  static override get styles() {
     return css`
       :host {
         display: block;
@@ -225,12 +225,12 @@ export class UltraTemplateEditor extends LitElement {
     `;
   }
 
-  protected firstUpdated(_changedProperties: PropertyValues): void {
+  protected override firstUpdated(_changedProperties: PropertyValues): void {
     super.firstUpdated(_changedProperties);
     this._initializeEditor();
   }
 
-  protected updated(changedProperties: PropertyValues): void {
+  protected override updated(changedProperties: PropertyValues): void {
     super.updated(changedProperties);
 
     // Prevent updates while editor is being used or while we're already updating
@@ -294,7 +294,7 @@ export class UltraTemplateEditor extends LitElement {
     }
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     this._destroyEditor();
   }
@@ -444,7 +444,7 @@ export class UltraTemplateEditor extends LitElement {
     this._editor.focus();
   }
 
-  public focus(): void {
+  public override focus(): void {
     if (this._editor) {
       // Prevent scroll-into-view behavior when focusing
       const scrollContainer = this._findScrollContainer();
@@ -462,17 +462,24 @@ export class UltraTemplateEditor extends LitElement {
   }
 
   private _findScrollContainer(): HTMLElement | null {
-    // Find the nearest scrollable parent container
-    let element: HTMLElement | null = this;
+    return UltraTemplateEditor._findScrollableAncestor(this);
+  }
+
+  /** Static helper avoids `this` aliasing to a local (no-this-alias). */
+  private static _findScrollableAncestor(start: HTMLElement | null): HTMLElement | null {
+    let element: HTMLElement | null = start;
     while (element) {
       const style = window.getComputedStyle(element);
-      if (style.overflowY === 'auto' || style.overflowY === 'scroll' || 
-          style.overflow === 'auto' || style.overflow === 'scroll') {
+      if (
+        style.overflowY === 'auto' ||
+        style.overflowY === 'scroll' ||
+        style.overflow === 'auto' ||
+        style.overflow === 'scroll'
+      ) {
         return element;
       }
       element = element.parentElement;
     }
-    // Fallback to window/document scrolling
     return document.documentElement;
   }
 
@@ -489,7 +496,7 @@ export class UltraTemplateEditor extends LitElement {
     e.stopImmediatePropagation();
   }
 
-  render() {
+  override render() {
     return html`
       <div
         class="editor-container"

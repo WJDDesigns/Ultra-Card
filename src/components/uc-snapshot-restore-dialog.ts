@@ -47,7 +47,7 @@ export class UcSnapshotRestoreDialog extends LitElement {
     );
   }
 
-  render(): TemplateResult {
+  override render(): TemplateResult {
     if (!this.open) return html``;
 
     return html`
@@ -153,7 +153,7 @@ export class UcSnapshotRestoreDialog extends LitElement {
     `;
   }
 
-  static styles = css`
+  static override styles = css`
     :host {
       --primary: #667eea;
       --primary-dark: #5568d3;

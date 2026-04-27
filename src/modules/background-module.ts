@@ -311,7 +311,7 @@ export class UltraBackgroundModule extends BaseUltraModule {
   /**
    * Validate module configuration
    */
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const backgroundModule = module as BackgroundModule;
     const errors: string[] = [];
 

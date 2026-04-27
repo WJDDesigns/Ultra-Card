@@ -63,6 +63,8 @@ Home Assistant aggressively caches frontend resources. To see your changes immed
 
 | Script                 | Description                                            |
 | ---------------------- | ------------------------------------------------------ |
+| `npm run release:check` | **Before a release** — runs `typecheck`, `lint`, `test:run`, `validate:translations`, `prebuild`, and production `build` (same pipeline as CI and the GitHub tag workflow). |
+| `npm run test:coverage` | Vitest with **v8** coverage — HTML report under `./coverage/` (directory is gitignored). |
 | `npm run watch:ha`     | **Recommended** - Watch mode with auto-deploy to HA    |
 | `npm run dev:ha`       | Alias for `watch:ha`                                   |
 | `npm run watch`        | Watch mode (also auto-deploys if HA volume is mounted) |

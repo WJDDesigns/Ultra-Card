@@ -28,10 +28,10 @@ export class HubPresetsTab extends LitElement {
   @state() private _pendingRateAfterLogin: { id: string; name: string } | null = null;
   @state() private _userReviews: Map<string, number> = new Map();
   @state() private _readMoreId: string | null = null;
-  private _unsub?: () => void;
-  private _statusUnsub?: () => void;
-  private _authListener?: (user: CloudUser | null) => void;
-  private _toastTimer?: ReturnType<typeof setTimeout>;
+  private _unsub: (() => void) | undefined;
+  private _statusUnsub: (() => void) | undefined;
+  private _authListener: ((user: CloudUser | null) => void) | undefined;
+  private _toastTimer: ReturnType<typeof setTimeout> | undefined;
 
   private _getSanitizedPresetDescription(preset: PresetDefinition): string {
     const rawDescription =
@@ -41,7 +41,7 @@ export class HubPresetsTab extends LitElement {
     return sanitizePresetHtml(rawDescription || '');
   }
 
-  static styles = [
+  static override styles = [
     panelStyles,
     css`
       :host {
@@ -579,7 +579,7 @@ export class HubPresetsTab extends LitElement {
     `,
   ];
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     this._cloudUser = ucCloudAuthService.getCurrentUser();
     this._authListener = (user: CloudUser | null) => {
@@ -603,7 +603,7 @@ export class HubPresetsTab extends LitElement {
     });
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     this._unsub?.();
     this._statusUnsub?.();
@@ -780,7 +780,7 @@ export class HubPresetsTab extends LitElement {
     this._showToast('Thanks for your rating!');
   }
 
-  render() {
+  override render() {
     const filtered = this._getFilteredPresets();
     const categories: { key: PresetCategory; label: string; icon: string }[] = [
       { key: 'all', label: 'All', icon: 'mdi:view-grid' },
@@ -808,7 +808,9 @@ export class HubPresetsTab extends LitElement {
               .presetName=${this._ratingPreset.name}
               .existingRating=${this._userReviews.get(this._ratingPreset.id) ?? ucCloudSyncService.getUserReview(this._ratingPreset.id)?.rating ?? 0}
               @rating-submitted=${this._handleRatingSubmitted}
-              @close=${() => (this._ratingPreset = null)}
+              @close=${(): void => {
+                this._ratingPreset = null;
+              }}
             ></uc-hub-rate-dialog>
           `
         : ''}

@@ -11,7 +11,7 @@ import '../components/ultra-color-picker';
 export class GlobalActionsTab extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public module!: CardModule;
-  @property({ attribute: false }) public tabTitle?: string;
+  @property({ attribute: false }) public tabTitle: string | undefined;
 
   @state() private _config: any = {};
 
@@ -104,7 +104,7 @@ export class GlobalActionsTab extends LitElement {
     return false;
   }
 
-  protected willUpdate(changedProps: PropertyValues) {
+  protected override willUpdate(changedProps: PropertyValues) {
     if (changedProps.has('module')) {
       // Sync internal state when module changes
       this._config = {
@@ -207,7 +207,7 @@ export class GlobalActionsTab extends LitElement {
     }, 50);
   }
 
-  protected render() {
+  protected override render() {
     if (!this.hass || !this.module) {
       return html``;
     }
@@ -957,7 +957,7 @@ export class GlobalActionsTab extends LitElement {
     `;
   }
 
-  static get styles() {
+  static override get styles() {
     return css`
       :host {
         display: block;

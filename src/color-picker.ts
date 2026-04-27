@@ -3,8 +3,8 @@ import { customElement, property } from 'lit/decorators.js';
 
 @customElement('ultra-legacy-color-picker')
 export class UltraVehicleColorPicker extends LitElement {
-  @property({ type: String, reflect: true }) public value?: string;
-  @property() public label?: string;
+  @property({ type: String, reflect: true }) public value: string | undefined;
+  @property() public label: string | undefined;
 
   // Convert CSS variables to displayable colors
   private _getDisplayColor(value?: string): string {
@@ -39,7 +39,7 @@ export class UltraVehicleColorPicker extends LitElement {
     this.dispatchEvent(new CustomEvent('value-changed', { detail: { value } }));
   }
 
-  render() {
+  override render() {
     const displayColor = this._getDisplayColor(this.value);
 
     return html`
@@ -56,7 +56,7 @@ export class UltraVehicleColorPicker extends LitElement {
     `;
   }
 
-  static get styles() {
+  static override get styles() {
     return css`
       :host {
         display: flex;

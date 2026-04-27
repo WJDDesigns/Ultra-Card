@@ -58,30 +58,30 @@ export interface TreeNodeData {
   /** The *target* type used for drop-validation and _performMove. */
   targetType: DropTargetType;
   rowIndex: number;
-  columnIndex?: number;
-  moduleIndex?: number;
-  layoutChildIndex?: number;
-  nestedChildIndex?: number;
-  deepNestedChildIndex?: number;
-  parentPath?: number[];
-  pathChildIndex?: number;
+  columnIndex?: number | undefined;
+  moduleIndex?: number | undefined;
+  layoutChildIndex?: number | undefined;
+  nestedChildIndex?: number | undefined;
+  deepNestedChildIndex?: number | undefined;
+  parentPath?: number[] | undefined;
+  pathChildIndex?: number | undefined;
   /** Serialised module data carried along for the move. */
-  data?: unknown;
+  data?: unknown | undefined;
   /** When true this target represents "insert inside this layout". */
-  isInsideTarget?: boolean;
+  isInsideTarget?: boolean | undefined;
   /** Nested layout index (used for nested-layout inside targets). */
-  nestedLayoutIndex?: number;
+  nestedLayoutIndex?: number | undefined;
 }
 
 export interface TreeDndNodeOptions {
   /** Make the element draggable (default true). */
-  isDraggable?: boolean;
+  isDraggable?: boolean | undefined;
   /** Make the element a drop target (default true). */
-  isDropTarget?: boolean;
+  isDropTarget?: boolean | undefined;
   /** For layout headers – the target represents "insert inside". */
-  isInsideTarget?: boolean;
+  isInsideTarget?: boolean | undefined;
   /** Allowed closest-edge sides (default ['top','bottom']). */
-  allowedEdges?: Edge[];
+  allowedEdges?: Edge[] | undefined;
 }
 
 /** Resolved result the monitor passes back to the host. */

@@ -36,16 +36,16 @@ export interface RoomQuickEntity {
 export interface RoomSummaryModel {
   area_id: string;
   area_name: string;
-  climate_entity_id?: string;
-  temperature_entity_id?: string;
-  humidity_entity_id?: string;
-  temperature_label?: string;
-  humidity_label?: string;
+  climate_entity_id?: string | undefined;
+  temperature_entity_id?: string | undefined;
+  humidity_entity_id?: string | undefined;
+  temperature_label?: string | undefined;
+  humidity_label?: string | undefined;
   lights_on: number;
   lights_total: number;
   quick_entities: RoomQuickEntity[];
   /** Default entity for tile tap → more-info */
-  primary_entity_id?: string;
+  primary_entity_id?: string | undefined;
 }
 
 interface AreaRegistryRow {
@@ -55,15 +55,15 @@ interface AreaRegistryRow {
 
 interface DeviceRegistryRow {
   id: string;
-  area_id?: string | null;
+  area_id?: string | null | undefined;
 }
 
 interface EntityRegistryRow {
   entity_id: string;
-  device_id?: string | null;
-  area_id?: string | null;
-  disabled_by?: string | null;
-  hidden_by?: string | null;
+  device_id?: string | null | undefined;
+  area_id?: string | null | undefined;
+  disabled_by?: string | null | undefined;
+  hidden_by?: string | null | undefined;
 }
 
 const DEFAULT_TOGGLES: Required<AreaSummaryDiscoveryToggles> = {

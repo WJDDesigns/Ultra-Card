@@ -8,7 +8,7 @@ import { UltraCardConfig } from '../types';
 
 @customElement('uc-manual-backup-dialog')
 export class UcManualBackupDialog extends LitElement {
-  @property({ attribute: false }) public hass?: HomeAssistant;
+  @property({ attribute: false }) public hass: HomeAssistant | undefined;
   @property({ attribute: false }) public config!: UltraCardConfig;
   @property({ type: Boolean }) public open = false;
 
@@ -16,7 +16,7 @@ export class UcManualBackupDialog extends LitElement {
   @state() private _isCreating = false;
   @state() private _error = '';
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
     }
@@ -211,7 +211,7 @@ export class UcManualBackupDialog extends LitElement {
     }
   `;
 
-  render() {
+  override render() {
     if (!this.open) return html``;
 
     const lang = this.hass?.locale?.language || 'en';

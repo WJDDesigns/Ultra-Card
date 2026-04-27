@@ -128,28 +128,26 @@ const GRADIENT_PRESETS = [
 
 @customElement('ultra-color-picker')
 export class UltraColorPicker extends LitElement {
-  @property({ attribute: false }) public hass?: HomeAssistant;
-  @property() public value?: string;
-  @property() public label?: string;
-  @property() public defaultValue?: string;
+  @property({ attribute: false }) public hass: HomeAssistant | undefined;
+  @property() public value: string | undefined;
+  @property() public label: string | undefined;
+  @property() public defaultValue: string | undefined;
   @property({ type: Boolean }) public disabled = false;
 
-  @state() private _currentValue?: string;
+  @state() private _currentValue: string | undefined = undefined;
   @state() private _showPalette = false;
-  @state() private _textInputValue?: string;
+  @state() private _textInputValue: string | undefined = undefined;
   @state() private _favoriteColors: FavoriteColor[] = [];
   @state() private _transparency = 100; // 0-100, where 100 is fully opaque
-  private _documentClickHandler?: (e: Event) => void;
-  private _favoritesUnsubscribe?: () => void;
+  private _documentClickHandler: ((e: Event) => void) | undefined;
+  private _favoritesUnsubscribe: (() => void) | undefined;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
 
     // Simple click outside handler for accordion
-    if (!this._documentClickHandler) {
-      this._documentClickHandler = this._handleDocumentClick.bind(this);
-    }
-    document.addEventListener('click', this._documentClickHandler, true);
+    const docClick = (this._documentClickHandler ??= this._handleDocumentClick.bind(this));
+    document.addEventListener('click', docClick, true);
 
     // Ensure we have latest from localStorage (sync with favorites added in panel Colors tab)
     ucFavoriteColorsService.refreshFromStorage();
@@ -161,14 +159,14 @@ export class UltraColorPicker extends LitElement {
     });
   }
 
-  protected firstUpdated(): void {
+  protected override firstUpdated(): void {
     this._currentValue = this.value;
     this._textInputValue = this.value;
     // Extract initial transparency from the value
     this._transparency = this._extractTransparency(this.value);
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     if (this._documentClickHandler) {
       document.removeEventListener('click', this._documentClickHandler, true);
@@ -200,7 +198,7 @@ export class UltraColorPicker extends LitElement {
     this._showPalette = false;
   }
 
-  protected updated(changedProps: Map<string, any>): void {
+  protected override updated(changedProps: Map<string, any>): void {
     if (changedProps.has('hass') && this.hass) {
       ucFavoriteColorsService.setHass(this.hass);
     }
@@ -969,7 +967,7 @@ export class UltraColorPicker extends LitElement {
     this.requestUpdate();
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     const displayValue = this._getDisplayValue();
     const nativeInputColor = this._getColorForNativeInput();
     const gradientActive = isGradient(displayValue);
@@ -1215,7 +1213,7 @@ export class UltraColorPicker extends LitElement {
     `;
   }
 
-  static get styles() {
+  static override get styles() {
     return css`
       .ultra-color-picker-container {
         display: flex;

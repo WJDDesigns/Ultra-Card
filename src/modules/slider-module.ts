@@ -11,6 +11,7 @@ import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
 import { autoMigrateCardModule } from '../utils/template-migration';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
+import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import '../components/ultra-color-picker';
 import Swiper from 'swiper';
 import {
@@ -823,7 +824,7 @@ export class UltraSliderModule extends BaseUltraModule {
     return GlobalLogicTab.render(module, hass, updateModule);
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
@@ -876,7 +877,7 @@ export class UltraSliderModule extends BaseUltraModule {
   // Split preview for module settings popup - same as regular preview
   renderSplitPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
     // Use the same config object structure
-    const config = { layout: { rows: [] } } as UltraCardConfig;
+    const config = { type: 'ultra-card', layout: { rows: [] } } as UltraCardConfig;
     return this.renderPreview(module, hass, config, 'live');
   }
 
@@ -1028,7 +1029,7 @@ export class UltraSliderModule extends BaseUltraModule {
           
           // For Live Preview, ensure we're measuring the correct container
           let containerWidth = swiperElement.offsetWidth;
-          let containerHeight = swiperElement.offsetHeight;
+          const containerHeight = swiperElement.offsetHeight;
           
           // CRITICAL FIX: If container width is absurdly large (likely measuring wrong element in Live Preview),
           // try to get the correct width from parent container or use a reasonable default
@@ -2736,7 +2737,7 @@ export class UltraSliderModule extends BaseUltraModule {
                     ${pageModules.map(childModule => {
                       const childModuleHandler = registry.getModule(childModule.type);
                       if (!childModuleHandler) {
-                        return html`<div>Unknown module type: ${childModule.type}</div>`;
+                        return ucModulePreviewService.renderModuleLoadingState(childModule);
                       }
 
                       // Check visibility
@@ -3052,7 +3053,7 @@ export class UltraSliderModule extends BaseUltraModule {
     return swiperConfig;
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const sliderModule = module as SliderModule;
     const errors = [...baseValidation.errors];

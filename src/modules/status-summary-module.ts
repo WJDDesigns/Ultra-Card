@@ -36,7 +36,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
 
   private _expandedEntities: Set<string> = new Set();
   private _draggedItem: StatusSummaryEntity | null = null;
-  private _hass?: HomeAssistant;
+  private _hass: HomeAssistant | undefined;
   private _templateService: TemplateService | null = null;
 
   createDefault(id?: string, hass?: HomeAssistant): StatusSummaryModule {
@@ -110,7 +110,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
     };
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const summaryModule = module as StatusSummaryModule;
     const errors = [...baseValidation.errors];
@@ -157,7 +157,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
     return { valid: errors.length === 0, errors };
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,

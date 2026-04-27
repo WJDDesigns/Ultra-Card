@@ -9,6 +9,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
+import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { generateCSSVariables } from '../utils/css-variable-utils';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { autoMigrateCardModule } from '../utils/template-migration';
@@ -33,7 +34,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
    * design-tab styles in containerStyles / renderPreview so we skip the outer
    * uc-module-design-wrapper to prevent double application of margin/padding.
    */
-  handlesOwnDesignStyles = true;
+  override handlesOwnDesignStyles = true;
 
   createDefault(id?: string, hass?: HomeAssistant): HorizontalModule {
     return {
@@ -629,7 +630,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
     const moduleHandler = registry.getModule(moduleToRender.type);
 
     if (!moduleHandler) {
-      return html``;
+      return ucModulePreviewService.renderModuleLoadingState(moduleToRender);
     }
 
     // Check Pro access for child modules
@@ -880,7 +881,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
     return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const horizontalModule = module as HorizontalModule;
     const errors = [...baseValidation.errors];

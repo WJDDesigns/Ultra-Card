@@ -11,6 +11,7 @@ import { computeMultiEntitySignature } from '../utils/template-context';
 import { getModuleRegistry } from './module-registry';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
+import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { localize } from '../localize/localize';
 import { autoMigrateCardModule } from '../utils/template-migration';
 
@@ -1546,7 +1547,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
     `;
   }
 
-  renderActionsTab(
+  override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     _config: UltraCardConfig,
@@ -1555,7 +1556,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
     return GlobalActionsTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  renderOtherTab(
+  override renderOtherTab(
     module: CardModule,
     hass: HomeAssistant,
     _config: UltraCardConfig,
@@ -2266,7 +2267,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
 
       const moduleHandler = registry.getModule(childModule.type);
       if (!moduleHandler) {
-        return html`<div style="font-size:11px; color: var(--warning-color); padding: 4px;">Unknown module type: ${childModule.type}</div>`;
+        return ucModulePreviewService.renderModuleLoadingState(childModule);
       }
 
       // Check Pro access for generated child modules
@@ -2331,7 +2332,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
     `, module, hass);
   }
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const dynModule = module as DynamicListModule;
     const errors: string[] = [];
     const src = String(dynModule.source_type || 'template').toLowerCase();

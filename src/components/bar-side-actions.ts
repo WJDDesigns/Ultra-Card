@@ -20,7 +20,7 @@ export class BarSideActions extends LitElement {
   @state() private _holdAction: any = { action: 'nothing' };
   @state() private _doubleTapAction: any = { action: 'nothing' };
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
       margin-top: 16px;
@@ -50,7 +50,7 @@ export class BarSideActions extends LitElement {
     }
   `;
 
-  protected willUpdate(changedProps: Map<string, unknown>): void {
+  protected override willUpdate(changedProps: Map<string, unknown>): void {
     // Sync internal state when props change from parent
     if (changedProps.has('tapAction')) {
       this._tapAction = this.tapAction || { action: 'nothing' };
@@ -100,7 +100,7 @@ export class BarSideActions extends LitElement {
     this._fireUpdate({ [`${this.side}_double_tap_action`]: newAction });
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     if (!this.hass) {
       return html``;
     }

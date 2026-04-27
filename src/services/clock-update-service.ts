@@ -2,7 +2,8 @@
  * Clock Update Service
  *
  * Manages interval timers for animated clock modules to ensure they update at the configured frequency.
- * This service maintains a registry of active clocks and their update intervals.
+ * Multiple ultra-card instances may be mounted; disconnecting one must not clear timers or callbacks
+ * needed by sibling cards.
  */
 
 interface ClockTimer {
@@ -12,13 +13,40 @@ interface ClockTimer {
 
 class ClockUpdateService {
   private timers: Map<string, ClockTimer> = new Map();
-  private updateCallback?: () => void;
+  private updateCallbacks: Array<() => void> = [];
+  /** Mounted `ultra-card` count; full teardown only when the last card disconnects. */
+  private consumerRefCount = 0;
+
+  get activeConsumerCount(): number {
+    return this.consumerRefCount;
+  }
+
+  public registerConsumer(): void {
+    this.consumerRefCount += 1;
+  }
+
+  public unregisterConsumer(): void {
+    if (this.consumerRefCount <= 0) {
+      return;
+    }
+    this.consumerRefCount -= 1;
+    if (this.consumerRefCount === 0) {
+      this.clearAllInternal();
+    }
+  }
 
   /**
-   * Register a callback function that will be called when any clock needs to update
+   * Register a callback invoked on each clock tick (per registered clock interval).
+   * Returns a disposer; call it when the owning ultra-card disconnects.
    */
-  setUpdateCallback(callback: () => void): void {
-    this.updateCallback = callback;
+  public addUpdateCallback(callback: () => void): () => void {
+    this.updateCallbacks.push(callback);
+    return () => {
+      const idx = this.updateCallbacks.indexOf(callback);
+      if (idx >= 0) {
+        this.updateCallbacks.splice(idx, 1);
+      }
+    };
   }
 
   /**
@@ -41,8 +69,13 @@ class ClockUpdateService {
     // Create new interval timer
     const intervalMs = frequency * 1000;
     const intervalId = window.setInterval(() => {
-      if (this.updateCallback) {
-        this.updateCallback();
+      const listeners = [...this.updateCallbacks];
+      for (const fn of listeners) {
+        try {
+          fn();
+        } catch {
+          // ignore per-card errors
+        }
       }
     }, intervalMs);
 
@@ -57,8 +90,8 @@ class ClockUpdateService {
     const timer = this.timers.get(moduleId);
     if (timer) {
       clearInterval(timer.intervalId);
-      this.timers.delete(moduleId);
     }
+    this.timers.delete(moduleId);
   }
 
   /**
@@ -69,13 +102,18 @@ class ClockUpdateService {
     return this.timers.has(moduleId);
   }
 
-  /**
-   * Clear all timers (cleanup)
-   */
-  clearAll(): void {
+  private clearAllInternal(): void {
     this.timers.forEach(timer => clearInterval(timer.intervalId));
     this.timers.clear();
-    this.updateCallback = undefined;
+    this.updateCallbacks = [];
+  }
+
+  /**
+   * Force full teardown (resets consumer count). Tests and hard-reset paths.
+   */
+  clearAll(): void {
+    this.consumerRefCount = 0;
+    this.clearAllInternal();
   }
 
   /**

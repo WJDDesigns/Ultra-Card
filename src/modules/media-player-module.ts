@@ -1562,7 +1562,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
   // VALIDATION
   // ============================
 
-  validate(module: CardModule): { valid: boolean; errors: string[] } {
+  override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const mp = module as MediaPlayerModule;
     const errors = [...baseValidation.errors];

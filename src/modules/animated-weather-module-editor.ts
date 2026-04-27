@@ -153,8 +153,8 @@ export function renderAnimatedWeatherModuleEditor(
     _drag.item = null;
 
     const { itemId, fromColumn, fromIndex } = ds;
-    let newLeft = [...leftOrder];
-    let newRight = [...rightOrder];
+    const newLeft = [...leftOrder];
+    const newRight = [...rightOrder];
 
     // Remove from source column
     if (fromColumn === 'left') newLeft.splice(fromIndex, 1);

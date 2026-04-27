@@ -5,9 +5,9 @@ import { CardModule, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
 
 export interface GlobalActionsConfig {
-  tap_action?: ActionConfig;
-  hold_action?: ActionConfig;
-  double_tap_action?: ActionConfig;
+  tap_action?: ActionConfig | undefined;
+  hold_action?: ActionConfig | undefined;
+  double_tap_action?: ActionConfig | undefined;
 }
 
 export interface ActionConfig {
@@ -20,16 +20,16 @@ export interface ActionConfig {
     | 'perform-action'
     | 'assist'
     | 'nothing';
-  entity?: string;
-  navigation_path?: string;
-  url_path?: string;
+  entity?: string | undefined;
+  navigation_path?: string | undefined;
+  url_path?: string | undefined;
   // Modern perform-action property (preferred)
-  perform_action?: string;
+  perform_action?: string | undefined;
   // Legacy service property (for backward compatibility)
-  service?: string;
-  target?: Record<string, any> | string;
-  service_data?: Record<string, any>;
-  data?: Record<string, any>; // Modern data property for perform-action
+  service?: string | undefined;
+  target?: Record<string, any> | string | undefined;
+  service_data?: Record<string, any> | undefined;
+  data?: Record<string, any> | undefined; // Modern data property for perform-action
   [key: string]: any; // Allow additional properties for HA action config
 }
 

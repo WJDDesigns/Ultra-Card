@@ -5,7 +5,7 @@ import { HomeAssistant } from 'custom-card-helpers';
  */
 declare module 'custom-card-helpers' {
   interface HomeAssistant {
-    __uvc_dynamic_icons?: { [key: string]: string };
+    __uvc_dynamic_icons?: { [key: string]: string } | undefined;
   }
 }
 
@@ -271,9 +271,7 @@ export class DynamicIconService {
     for (const [key, subPromise] of this._iconSubscriptions.entries()) {
       try {
         if (subPromise) {
-          const unsubFn = await Promise.resolve(subPromise).catch(err => {
-            return null;
-          });
+          const unsubFn = await Promise.resolve(subPromise).catch((): null => null);
 
           if (unsubFn && typeof unsubFn === 'function') {
             try {

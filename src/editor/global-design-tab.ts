@@ -126,21 +126,21 @@ const GOOGLE_FONTS = [
 ];
 
 export interface DesignProperties {
-  color?: string;
-  text_align?: 'left' | 'center' | 'right' | 'justify';
-  font_size?: string;
-  line_height?: string;
-  letter_spacing?: string;
-  font_family?: string;
-  font_weight?: string;
-  text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
-  font_style?: 'normal' | 'italic' | 'oblique';
-  white_space?: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line';
-  background_color?: string;
-  background_image?: string;
-  background_image_type?: 'none' | 'upload' | 'entity' | 'url';
-  background_image_entity?: string;
-  background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
+  color?: string | undefined;
+  text_align?: 'left' | 'center' | 'right' | 'justify' | undefined;
+  font_size?: string | undefined;
+  line_height?: string | undefined;
+  letter_spacing?: string | undefined;
+  font_family?: string | undefined;
+  font_weight?: string | undefined;
+  text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize' | undefined;
+  font_style?: 'normal' | 'italic' | 'oblique' | undefined;
+  white_space?: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line' | undefined;
+  background_color?: string | undefined;
+  background_image?: string | undefined;
+  background_image_type?: 'none' | 'upload' | 'entity' | 'url' | undefined;
+  background_image_entity?: string | undefined;
+  background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat' | undefined;
   background_position?:
     | 'left top'
     | 'left center'
@@ -150,45 +150,46 @@ export interface DesignProperties {
     | 'center bottom'
     | 'right top'
     | 'right center'
-    | 'right bottom';
-  background_size?: 'cover' | 'contain' | 'auto' | string;
-  backdrop_filter?: string;
-  background_filter?: string;
-  width?: string;
-  height?: string;
-  max_width?: string;
-  max_height?: string;
-  min_width?: string;
-  min_height?: string;
-  margin_top?: string;
-  margin_bottom?: string;
-  margin_left?: string;
-  margin_right?: string;
-  padding_top?: string;
-  padding_bottom?: string;
-  padding_left?: string;
-  padding_right?: string;
-  border_radius?: string;
-  border_style?: 'none' | 'solid' | 'dashed' | 'dotted' | 'double';
-  border_width?: string;
-  border_color?: string;
-  position?: 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
-  top?: string;
-  bottom?: string;
-  left?: string;
-  right?: string;
-  z_index?: string;
-  text_shadow_h?: string;
-  text_shadow_v?: string;
-  text_shadow_blur?: string;
-  text_shadow_color?: string;
-  box_shadow_h?: string;
-  box_shadow_v?: string;
-  box_shadow_blur?: string;
-  box_shadow_spread?: string;
-  box_shadow_color?: string;
-  overflow?: 'visible' | 'hidden' | 'scroll' | 'auto';
-  clip_path?: string;
+    | 'right bottom'
+    | undefined;
+  background_size?: 'cover' | 'contain' | 'auto' | string | undefined;
+  backdrop_filter?: string | undefined;
+  background_filter?: string | undefined;
+  width?: string | undefined;
+  height?: string | undefined;
+  max_width?: string | undefined;
+  max_height?: string | undefined;
+  min_width?: string | undefined;
+  min_height?: string | undefined;
+  margin_top?: string | undefined;
+  margin_bottom?: string | undefined;
+  margin_left?: string | undefined;
+  margin_right?: string | undefined;
+  padding_top?: string | undefined;
+  padding_bottom?: string | undefined;
+  padding_left?: string | undefined;
+  padding_right?: string | undefined;
+  border_radius?: string | undefined;
+  border_style?: 'none' | 'solid' | 'dashed' | 'dotted' | 'double' | undefined;
+  border_width?: string | undefined;
+  border_color?: string | undefined;
+  position?: 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky' | undefined;
+  top?: string | undefined;
+  bottom?: string | undefined;
+  left?: string | undefined;
+  right?: string | undefined;
+  z_index?: string | undefined;
+  text_shadow_h?: string | undefined;
+  text_shadow_v?: string | undefined;
+  text_shadow_blur?: string | undefined;
+  text_shadow_color?: string | undefined;
+  box_shadow_h?: string | undefined;
+  box_shadow_v?: string | undefined;
+  box_shadow_blur?: string | undefined;
+  box_shadow_spread?: string | undefined;
+  box_shadow_color?: string | undefined;
+  overflow?: 'visible' | 'hidden' | 'scroll' | 'auto' | undefined;
+  clip_path?: string | undefined;
   animation_type?:
     | 'none'
     | 'pulse'
@@ -200,11 +201,12 @@ export interface DesignProperties {
     | 'scale'
     | 'bounce'
     | 'shake'
-    | 'tada';
-  animation_entity?: string;
-  animation_trigger_type?: 'state' | 'attribute';
-  animation_attribute?: string;
-  animation_state?: string;
+    | 'tada'
+    | undefined;
+  animation_entity?: string | undefined;
+  animation_trigger_type?: 'state' | 'attribute' | undefined;
+  animation_attribute?: string | undefined;
+  animation_state?: string | undefined;
   // Intro/Outro Animations
   intro_animation?:
     | 'none'
@@ -217,7 +219,8 @@ export interface DesignProperties {
     | 'bounceIn'
     | 'flipInX'
     | 'flipInY'
-    | 'rotateIn';
+    | 'rotateIn'
+    | undefined;
   outro_animation?:
     | 'none'
     | 'fadeOut'
@@ -229,39 +232,44 @@ export interface DesignProperties {
     | 'bounceOut'
     | 'flipOutX'
     | 'flipOutY'
-    | 'rotateOut';
+    | 'rotateOut'
+    | undefined;
   // Continuous animation timing
-  animation_duration?: string;
-  animation_delay?: string;
+  animation_duration?: string | undefined;
+  animation_delay?: string | undefined;
   animation_timing?:
     | 'ease'
     | 'linear'
     | 'ease-in'
     | 'ease-out'
     | 'ease-in-out'
-    | 'cubic-bezier(0.25,0.1,0.25,1)';
+    | 'cubic-bezier(0.25,0.1,0.25,1)'
+    | undefined;
   // Intro/outro animation timing (separate from continuous animation)
-  intro_animation_duration?: string;
-  intro_animation_delay?: string;
+  intro_animation_duration?: string | undefined;
+  intro_animation_delay?: string | undefined;
   intro_animation_timing?:
     | 'ease'
     | 'linear'
     | 'ease-in'
     | 'ease-out'
     | 'ease-in-out'
-    | 'cubic-bezier(0.25,0.1,0.25,1)';
-  extra_class?: string;
-  element_id?: string;
-  css_variable_prefix?: string;
+    | 'cubic-bezier(0.25,0.1,0.25,1)'
+    | undefined;
+  extra_class?: string | undefined;
+  element_id?: string | undefined;
+  css_variable_prefix?: string | undefined;
 }
+
+type GlobalDesignOnUpdate = (properties: Partial<DesignProperties>) => void;
 
 @customElement('ultra-global-design-tab')
 export class GlobalDesignTab extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public designProperties: DesignProperties = {};
-  @property({ type: Function }) public onUpdate?: (properties: Partial<DesignProperties>) => void;
+  @property({ type: Function }) public onUpdate: GlobalDesignOnUpdate | undefined;
   // Optional: Pass responsive design data for device-specific editing
-  @property({ attribute: false }) public responsiveDesign?: ResponsiveDesignProperties;
+  @property({ attribute: false }) public responsiveDesign: ResponsiveDesignProperties | undefined;
 
   @state() private _expandedSections: Set<string> = new Set();
   @state() private _marginLocked: boolean = false;
@@ -276,7 +284,7 @@ export class GlobalDesignTab extends LitElement {
   // Static property to track animation trigger type across renders
   private static _lastAnimationTriggerType: 'state' | 'attribute' | null = null;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
 
     // Ensure lock states are always false by default (prevent auto-fill behavior)
@@ -290,14 +298,15 @@ export class GlobalDesignTab extends LitElement {
     this._loadClipboardFromStorage();
 
     // Listen for storage events to sync clipboard across different card instances
-    this._storageEventListener = this._handleStorageEvent.bind(this);
-    window.addEventListener('storage', this._storageEventListener);
+    const storageListener = this._handleStorageEvent.bind(this);
+    this._storageEventListener = storageListener;
+    window.addEventListener('storage', storageListener);
 
     // Auto-enable responsive toggle if there are existing device overrides
     this._checkAndEnableResponsiveMode();
   }
 
-  updated(changedProperties: Map<string, unknown>): void {
+  override updated(changedProperties: Map<string, unknown>): void {
     super.updated(changedProperties);
 
     // When responsiveDesign property changes, check if we should auto-enable responsive mode
@@ -321,7 +330,7 @@ export class GlobalDesignTab extends LitElement {
     }
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     // Clean up storage event listener
     if (this._storageEventListener) {
@@ -337,7 +346,7 @@ export class GlobalDesignTab extends LitElement {
     // }
   }
 
-  private _storageEventListener?: (event: StorageEvent) => void;
+  private _storageEventListener: ((event: StorageEvent) => void) | undefined;
 
   private _handleStorageEvent(event: StorageEvent): void {
     // Only react to changes to our specific clipboard key
@@ -1184,11 +1193,11 @@ export class GlobalDesignTab extends LitElement {
     // IMPORTANT: The parent handler merges by iterating Object.entries(incomingDesign).
     // If the device key is simply missing, it won't be removed from existing design.
     // We must explicitly set the device key to undefined so the parent deletes it.
-    const designUpdate = {
+    const designUpdate: { design: ResponsiveDesignProperties } = {
       design: {
         ...clearedDesign,
-        [this._selectedDevice]: undefined, // Explicitly mark for deletion
-      },
+        [this._selectedDevice]: undefined,
+      } as ResponsiveDesignProperties,
     };
 
     // OPTIMISTIC UPDATE: Update local responsiveDesign immediately so the
@@ -1652,7 +1661,7 @@ export class GlobalDesignTab extends LitElement {
     `;
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
     const hasAnyDeviceOverrides =
       this.responsiveDesign &&
@@ -4214,7 +4223,7 @@ export class GlobalDesignTab extends LitElement {
     `;
   }
 
-  static get styles() {
+  static override get styles() {
     return css`
       .global-design-tab {
         display: flex;

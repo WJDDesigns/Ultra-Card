@@ -246,7 +246,7 @@ class UcPrivacyService {
     }
 
     const categories = [...new Set(scanResult.found.map(f => f.category))];
-    const categoryNames = {
+    const categoryNames: Record<string, string> = {
       ip: 'IP addresses',
       personal: 'Personal names',
       location: 'Location info',
@@ -254,7 +254,7 @@ class UcPrivacyService {
       network: 'Network info',
     };
 
-    const foundCategories = categories.map(cat => categoryNames[cat]).join(', ');
+    const foundCategories = categories.map(cat => categoryNames[cat] ?? cat).join(', ');
     const itemCount = scanResult.found.length;
 
     return `🔒 Privacy Protection: Found ${itemCount} sensitive item${itemCount > 1 ? 's' : ''} (${foundCategories}) that will be replaced with generic placeholders.`;

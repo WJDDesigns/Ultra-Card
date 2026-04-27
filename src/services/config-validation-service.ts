@@ -10,13 +10,13 @@ export interface ValidationResult {
   valid: boolean;
   errors: string[];
   warnings: string[];
-  correctedConfig?: UltraCardConfig;
+  correctedConfig?: UltraCardConfig | undefined;
 }
 
 export interface ModuleValidationResult {
   valid: boolean;
   errors: string[];
-  correctedModule?: CardModule;
+  correctedModule?: CardModule | undefined;
 }
 
 export class ConfigValidationService {
