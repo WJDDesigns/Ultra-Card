@@ -88,7 +88,7 @@
     "@vitest/coverage-v8": "4.0.18",
     "copy-webpack-plugin": "^13.0.0",
     "css-loader": "^7.1.2",
-    "eslint": "8.57.0",
+    "eslint": "10.2.1",
     "eslint-config-prettier": "^10.1.1",
     "file-loader": "^6.2.0",
     "jsdom": "28.1.0",
