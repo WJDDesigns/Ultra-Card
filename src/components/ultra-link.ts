@@ -704,6 +704,50 @@ export class UltraLinkComponent {
     }
   }
 
+  private static resolveDefaultEntity(
+    moduleEntity?: string,
+    module?: CardModule
+  ): string | undefined {
+    if (moduleEntity) {
+      return moduleEntity;
+    }
+
+    const moduleRecord = module as Record<string, unknown> | undefined;
+    if (!moduleRecord) {
+      return undefined;
+    }
+
+    if (typeof moduleRecord.entity === 'string') {
+      return moduleRecord.entity;
+    }
+
+    if (moduleRecord.type === 'info' && Array.isArray(moduleRecord.info_entities)) {
+      const firstInfoEntity = moduleRecord.info_entities.find(
+        item => item && typeof item === 'object' && typeof (item as Record<string, unknown>).entity === 'string'
+      ) as Record<string, unknown> | undefined;
+      if (firstInfoEntity && typeof firstInfoEntity.entity === 'string') {
+        return firstInfoEntity.entity;
+      }
+    }
+
+    if (moduleRecord.type === 'image') {
+      if (typeof moduleRecord.entity === 'string') return moduleRecord.entity;
+      if (typeof moduleRecord.image_entity === 'string') return moduleRecord.image_entity;
+      if (typeof moduleRecord.single_entity === 'string') return moduleRecord.single_entity;
+    }
+
+    if (moduleRecord.type === 'icon' && Array.isArray(moduleRecord.icons)) {
+      const firstIconEntity = moduleRecord.icons.find(
+        item => item && typeof item === 'object' && typeof (item as Record<string, unknown>).entity === 'string'
+      ) as Record<string, unknown> | undefined;
+      if (firstIconEntity && typeof firstIconEntity.entity === 'string') {
+        return firstIconEntity.entity;
+      }
+    }
+
+    return undefined;
+  }
+
   static async handleAction(
     action: TapActionConfig | undefined,
     hass: HomeAssistant,
@@ -727,9 +771,11 @@ export class UltraLinkComponent {
 
     if (!action || !action.action || action.action === 'default') {
       // For undefined actions, create a default action with the module's entity
-      const defaultAction = action || { action: 'default' };
-      if (!defaultAction.entity && moduleEntity) {
-        defaultAction.entity = moduleEntity;
+      const defaultAction: TapActionConfig = { ...(action || { action: 'default' }) };
+      const defaultEntity = this.resolveDefaultEntity(moduleEntity, module);
+      if (defaultEntity) {
+        // Explicit default actions should track the module's primary entity.
+        defaultAction.entity = defaultEntity;
       }
       resolvedAction = this.resolveDefaultAction(defaultAction, hass);
     } else {
