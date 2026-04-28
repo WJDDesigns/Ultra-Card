@@ -1,0 +1,2 @@
+Fixed import behavior so default actions inherit module entity resolution at runtime
+Improved import wizard by hiding duplicate default-action entity mappings

@@ -1,5 +1,17 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta27
+
+### 🔧 Improvements
+
+- **Improved Import wizard by hiding duplicate default-action entity mappings** - Enhanced action handling and user interaction response
+
+### 🐛 Bug Fixes
+
+- **Fixed Import behavior so default actions inherit module entity resolution at runtime** - Enhanced module functionality for better user experience
+
+---
+
 ## Version 3.3.0-beta26
 
 ### 🔧 Improvements
