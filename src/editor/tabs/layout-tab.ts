@@ -906,6 +906,15 @@ export class LayoutTab extends LitElement {
           label: localize('editor.layout.copy', lang, 'Copy'),
           action: () => this._copyModule(rowIndex, columnIndex, moduleIndex),
         },
+        ...(this._hasModuleClipboard
+          ? [
+              {
+                icon: 'mdi:clipboard-arrow-down',
+                label: localize('editor.layout.paste', lang, 'Paste'),
+                action: () => this._pasteModule(rowIndex, columnIndex, moduleIndex + 1),
+              },
+            ]
+          : []),
         {
           icon: 'mdi:delete',
           label: localize('editor.layout.delete', lang, 'Delete'),
@@ -914,6 +923,10 @@ export class LayoutTab extends LitElement {
         },
       ];
     } else if (type === 'layout-module' && columnIndex !== undefined && moduleIndex !== undefined) {
+      const layoutModule = this.config.layout?.rows?.[rowIndex]?.columns?.[columnIndex]?.modules?.[
+        moduleIndex
+      ] as any;
+      const canPasteIntoLayoutModule = this._hasModuleClipboard && layoutModule?.type !== 'tabs';
       menuItems = [
         {
           icon: 'mdi:pencil',
@@ -935,6 +948,15 @@ export class LayoutTab extends LitElement {
           label: localize('editor.layout.copy', lang, 'Copy'),
           action: () => this._copyModule(rowIndex, columnIndex, moduleIndex),
         },
+        ...(canPasteIntoLayoutModule
+          ? [
+              {
+                icon: 'mdi:clipboard-arrow-down',
+                label: localize('editor.layout.paste', lang, 'Paste'),
+                action: () => this._pasteModuleToLayoutModule(rowIndex, columnIndex, moduleIndex),
+              },
+            ]
+          : []),
         {
           icon: 'mdi:delete',
           label: localize('editor.layout.delete', lang, 'Delete'),
@@ -1014,6 +1036,21 @@ export class LayoutTab extends LitElement {
           action: () =>
             this._copyLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex),
         },
+        ...(this._hasModuleClipboard
+          ? [
+              {
+                icon: 'mdi:clipboard-arrow-down',
+                label: localize('editor.layout.paste', lang, 'Paste'),
+                action: () =>
+                  this._pasteLayoutChildModule(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    childIndex
+                  ),
+              },
+            ]
+          : []),
         {
           icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
@@ -1029,6 +1066,11 @@ export class LayoutTab extends LitElement {
         },
       ];
     } else if (type === 'nested-layout') {
+      const nestedLayoutModule = this.config.layout?.rows?.[rowIndex]?.columns?.[columnIndex]?.modules?.[
+        parentModuleIndex
+      ]?.modules?.[childIndex] as any;
+      const canPasteIntoNestedLayout = this._hasModuleClipboard && nestedLayoutModule?.type !== 'tabs';
+
       // Nested layout (layout inside another layout)
       menuItems = [
         {
@@ -1054,6 +1096,21 @@ export class LayoutTab extends LitElement {
           action: () =>
             this._copyLayoutChildModule(rowIndex, columnIndex, parentModuleIndex, childIndex),
         },
+        ...(canPasteIntoNestedLayout
+          ? [
+              {
+                icon: 'mdi:clipboard-arrow-down',
+                label: localize('editor.layout.paste', lang, 'Paste'),
+                action: () =>
+                  this._pasteModuleToNestedLayoutModule(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    childIndex
+                  ),
+              },
+            ]
+          : []),
         {
           icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
@@ -1095,6 +1152,22 @@ export class LayoutTab extends LitElement {
               childIndex
             ),
         },
+        ...(this._hasModuleClipboard
+          ? [
+              {
+                icon: 'mdi:clipboard-arrow-down',
+                label: localize('editor.layout.paste', lang, 'Paste'),
+                action: () =>
+                  this._pasteNestedChildModule(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    nestedLayoutIndex,
+                    childIndex
+                  ),
+              },
+            ]
+          : []),
         {
           icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
@@ -1199,6 +1272,23 @@ export class LayoutTab extends LitElement {
               childIndex
             ),
         },
+        ...(this._hasModuleClipboard
+          ? [
+              {
+                icon: 'mdi:clipboard-arrow-down',
+                label: localize('editor.layout.paste', lang, 'Paste'),
+                action: () =>
+                  this._pasteLevel4Child(
+                    rowIndex,
+                    columnIndex,
+                    parentModuleIndex,
+                    nestedLayoutIndex,
+                    deepLayoutIndex,
+                    childIndex
+                  ),
+              },
+            ]
+          : []),
         {
           icon: 'mdi:content-duplicate',
           label: localize('editor.layout.duplicate', lang, 'Duplicate'),
@@ -1321,6 +1411,24 @@ export class LayoutTab extends LitElement {
               isNested
             ),
         },
+        ...(this._hasModuleClipboard
+          ? [
+              {
+                icon: 'mdi:clipboard-arrow-down',
+                label: localize('editor.layout.paste', lang, 'Paste'),
+                action: () =>
+                  this._pasteTabsSectionChild(
+                    rowIndex,
+                    columnIndex,
+                    moduleIndex,
+                    sectionIndex,
+                    childIndex,
+                    parentLayoutChildIndex,
+                    isNested
+                  ),
+              },
+            ]
+          : []),
         {
           icon: 'mdi:delete',
           label: localize('editor.layout.delete', lang, 'Delete'),
@@ -9088,6 +9196,210 @@ export class LayoutTab extends LitElement {
         localize('editor.layout.paste_failed', lang, 'Failed to paste module'),
         'error'
       );
+    }
+  }
+
+  private _pasteLayoutChildModule(
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    childIndex: number
+  ): void {
+    const lang = this.hass?.locale?.language || 'en';
+
+    try {
+      const module = ucExportImportService.getModuleFromLocalStorage();
+      if (!module) {
+        this._showToast(
+          localize('editor.layout.no_module_to_paste', lang, 'No module to paste'),
+          'error'
+        );
+        return;
+      }
+
+      const layout = this._ensureLayout();
+      const newLayout = JSON.parse(JSON.stringify(layout));
+      const parentModule = newLayout.rows?.[rowIndex]?.columns?.[columnIndex]?.modules?.[
+        parentModuleIndex
+      ] as any;
+
+      if (!parentModule?.modules?.[childIndex]) {
+        this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+        return;
+      }
+
+      this._saveStateToUndoStack();
+      parentModule.modules.splice(childIndex + 1, 0, module);
+      this._updateLayout(newLayout);
+
+      ucExportImportService.clearModuleClipboard();
+      this._hasModuleClipboard = false;
+
+      this._showToast(
+        localize('editor.layout.module_pasted', lang, 'Module pasted successfully'),
+        'success'
+      );
+    } catch (error) {
+      this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+    }
+  }
+
+  private _pasteNestedChildModule(
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    childIndex: number
+  ): void {
+    const lang = this.hass?.locale?.language || 'en';
+
+    try {
+      const module = ucExportImportService.getModuleFromLocalStorage();
+      if (!module) {
+        this._showToast(
+          localize('editor.layout.no_module_to_paste', lang, 'No module to paste'),
+          'error'
+        );
+        return;
+      }
+
+      const layout = this._ensureLayout();
+      const newLayout = JSON.parse(JSON.stringify(layout));
+      const nestedLayout = newLayout.rows?.[rowIndex]?.columns?.[columnIndex]?.modules?.[
+        parentModuleIndex
+      ]?.modules?.[nestedLayoutIndex] as any;
+
+      if (!nestedLayout?.modules?.[childIndex]) {
+        this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+        return;
+      }
+
+      this._saveStateToUndoStack();
+      nestedLayout.modules.splice(childIndex + 1, 0, module);
+      this._updateLayout(newLayout);
+
+      ucExportImportService.clearModuleClipboard();
+      this._hasModuleClipboard = false;
+
+      this._showToast(
+        localize('editor.layout.module_pasted', lang, 'Module pasted successfully'),
+        'success'
+      );
+    } catch (error) {
+      this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+    }
+  }
+
+  private _pasteLevel4Child(
+    rowIndex: number,
+    columnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    deepLayoutIndex: number,
+    childIndex: number
+  ): void {
+    const lang = this.hass?.locale?.language || 'en';
+
+    try {
+      const module = ucExportImportService.getModuleFromLocalStorage();
+      if (!module) {
+        this._showToast(
+          localize('editor.layout.no_module_to_paste', lang, 'No module to paste'),
+          'error'
+        );
+        return;
+      }
+
+      const layout = this._ensureLayout();
+      const newLayout = JSON.parse(JSON.stringify(layout));
+      const deepLayout = newLayout.rows?.[rowIndex]?.columns?.[columnIndex]?.modules?.[
+        parentModuleIndex
+      ]?.modules?.[nestedLayoutIndex]?.modules?.[deepLayoutIndex] as any;
+
+      if (!deepLayout?.modules?.[childIndex]) {
+        this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+        return;
+      }
+
+      this._saveStateToUndoStack();
+      deepLayout.modules.splice(childIndex + 1, 0, module);
+      this._updateLayout(newLayout);
+
+      ucExportImportService.clearModuleClipboard();
+      this._hasModuleClipboard = false;
+
+      this._showToast(
+        localize('editor.layout.module_pasted', lang, 'Module pasted successfully'),
+        'success'
+      );
+    } catch (error) {
+      this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+    }
+  }
+
+  private _pasteTabsSectionChild(
+    rowIndex?: number,
+    columnIndex?: number,
+    moduleIndex?: number,
+    sectionIndex?: number,
+    childIndex?: number,
+    parentLayoutChildIndex?: number,
+    isNested: boolean = false
+  ): void {
+    const lang = this.hass?.locale?.language || 'en';
+
+    if (
+      rowIndex === undefined ||
+      columnIndex === undefined ||
+      moduleIndex === undefined ||
+      sectionIndex === undefined ||
+      childIndex === undefined
+    ) {
+      this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+      return;
+    }
+
+    try {
+      const module = ucExportImportService.getModuleFromLocalStorage();
+      if (!module) {
+        this._showToast(
+          localize('editor.layout.no_module_to_paste', lang, 'No module to paste'),
+          'error'
+        );
+        return;
+      }
+
+      const layout = this._ensureLayout();
+      const newLayout = JSON.parse(JSON.stringify(layout));
+
+      let tabsModule: any;
+      if (isNested && parentLayoutChildIndex !== undefined) {
+        const parentLayout = newLayout.rows?.[rowIndex]?.columns?.[columnIndex]?.modules?.[
+          moduleIndex
+        ] as any;
+        tabsModule = parentLayout?.modules?.[parentLayoutChildIndex];
+      } else {
+        tabsModule = newLayout.rows?.[rowIndex]?.columns?.[columnIndex]?.modules?.[moduleIndex];
+      }
+
+      if (!tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex]) {
+        this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
+        return;
+      }
+
+      this._saveStateToUndoStack();
+      tabsModule.sections[sectionIndex].modules.splice(childIndex + 1, 0, module);
+      this._updateLayout(newLayout);
+
+      ucExportImportService.clearModuleClipboard();
+      this._hasModuleClipboard = false;
+
+      this._showToast(
+        localize('editor.layout.module_pasted', lang, 'Module pasted successfully'),
+        'success'
+      );
+    } catch (error) {
+      this._showToast(localize('editor.layout.paste_failed', lang, 'Failed to paste module'), 'error');
     }
   }
 
@@ -29065,6 +29377,7 @@ export class LayoutTab extends LitElement {
 
     return html`
       <uc-favorite-dialog
+        .hass=${this.hass}
         .row=${this._favoriteRowToSave}
         .open=${this._showFavoriteDialog}
         @close=${() => {
@@ -29140,6 +29453,7 @@ export class LayoutTab extends LitElement {
   private _renderImportDialog(): TemplateResult {
     return html`
       <uc-import-dialog
+        .hass=${this.hass}
         .open=${this._showImportDialog}
         @close=${() => (this._showImportDialog = false)}
         @import=${this._handleImport}

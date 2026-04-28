@@ -16,7 +16,7 @@
 
 **Visual-first** — Every feature and setting is available through the UI. No YAML required.
 
-**Modular layout engine** — Dozens of module types, drag-and-drop columns, and unlimited nesting so you can build any dashboard layout you imagine.
+**Modular layout engine** — 19+ module types, drag-and-drop columns, and unlimited nesting so you can build any dashboard layout you imagine.
 
 **Built for performance** — TypeScript, smart caching, and responsive design so cards run smoothly from phones to large displays.
 
@@ -115,7 +115,7 @@ Browse and install community presets from inside the editor: **Presets** tab →
 
 ## Translations
 
-Supported languages: Catalan, English, British English, German, French, Spanish, Italian, Dutch, Norwegian, Danish, Czech, Polish, Swedish, Portuguese, Russian.
+Supported languages: Catalan, English, British English, German, French, Spanish, Italian, Dutch, Norwegian, Danish, Czech, Polish, Swedish.
 
 To contribute translations, see [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md). You can edit files in `src/translations/` on GitHub and open a pull request.
 

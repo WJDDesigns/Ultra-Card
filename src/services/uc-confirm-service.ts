@@ -49,8 +49,28 @@ class UcConfirmService {
       };
 
       const handleKey = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') { e.preventDefault(); finalize(false); }
-        if (e.key === 'Enter') { e.preventDefault(); finalize(true); }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          finalize(false);
+          return;
+        }
+        if (e.key === 'Enter') {
+          const activeEl = document.activeElement;
+          if (activeEl === cancelBtn) {
+            e.preventDefault();
+            finalize(false);
+            return;
+          }
+          if (activeEl === confirmBtn) {
+            e.preventDefault();
+            finalize(true);
+            return;
+          }
+          // For destructive dialogs, require explicit focus on confirm to avoid accidental Enter confirms.
+          if (destructive) return;
+          e.preventDefault();
+          finalize(true);
+        }
       };
 
       overlay.querySelector('.uc-cd-backdrop')!.addEventListener('click', () => finalize(false));
@@ -59,7 +79,7 @@ class UcConfirmService {
 
       document.body.appendChild(overlay);
       document.addEventListener('keydown', handleKey);
-      requestAnimationFrame(() => confirmBtn.focus());
+      requestAnimationFrame(() => (destructive ? cancelBtn : confirmBtn).focus());
     });
   }
 

@@ -1,11 +1,14 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { HomeAssistant } from 'custom-card-helpers';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { ucExportImportService } from '../services/uc-export-import-service';
 import { ExportData } from '../types';
+import { localize } from '../localize/localize';
 
 @customElement('uc-import-dialog')
 export class UcImportDialog extends LitElement {
+  @property({ attribute: false }) public hass: HomeAssistant | undefined;
   @property({ type: Boolean }) public open = false;
 
   @state() private _importText = '';
@@ -13,53 +16,86 @@ export class UcImportDialog extends LitElement {
   @state() private _error = '';
   @state() private _previewData: ExportData | null = null;
   @state() private _showAndroidTip = false;
+  private _previouslyFocusedElement: HTMLElement | null = null;
+
+  override updated(changedProperties: Map<string, unknown>): void {
+    if (!changedProperties.has('open')) return;
+    if (this.open) {
+      this._previouslyFocusedElement = document.activeElement as HTMLElement | null;
+      requestAnimationFrame(() => this._focusInitialControl());
+    } else if (this._previouslyFocusedElement) {
+      this._previouslyFocusedElement.focus();
+      this._previouslyFocusedElement = null;
+    }
+  }
 
   protected override render(): TemplateResult {
     if (!this.open) return html``;
 
     return html`
       <div class="dialog-overlay" @click=${this._handleOverlayClick}>
-        <div class="dialog-content" @click=${(e: Event) => e.stopPropagation()}>
+        <div
+          class="dialog-content"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="uc-import-dialog-title"
+          @keydown=${this._handleKeyDown}
+          @click=${(e: Event) => e.stopPropagation()}
+        >
           <div class="dialog-header">
-            <h3>Import Ultra Card Configuration</h3>
-            <button class="close-btn" @click=${this._close}>
+            <h3 id="uc-import-dialog-title">
+              ${this._t('editor.import_dialog.title', 'Import Ultra Card Configuration')}
+            </h3>
+            <button
+              class="close-btn"
+              type="button"
+              aria-label="${this._t('editor.import_dialog.close', 'Close')}"
+              @click=${this._close}
+            >
               <ha-icon icon="mdi:close"></ha-icon>
             </button>
           </div>
 
           <div class="dialog-body">
             <div class="import-methods">
-              <h4>Import Methods</h4>
+              <h4>${this._t('editor.import_dialog.methods', 'Import Methods')}</h4>
               <div class="method-buttons">
-                <button class="method-btn method-btn--primary" @click=${this._importFromClipboard}>
+                <button
+                  class="method-btn method-btn--primary"
+                  type="button"
+                  @click=${this._importFromClipboard}
+                >
                   <ha-icon icon="mdi:clipboard-text"></ha-icon>
-                  <span>From Clipboard</span>
-                  <small class="method-btn__hint">Recommended</small>
+                  <span>${this._t('editor.import_dialog.from_clipboard', 'From Clipboard')}</span>
+                  <small class="method-btn__hint"
+                    >${this._t('editor.import_dialog.recommended', 'Recommended')}</small
+                  >
                 </button>
-                <button class="method-btn" @click=${this._triggerFileInput}>
+                <button class="method-btn" type="button" @click=${this._triggerFileInput}>
                   <ha-icon icon="mdi:file-upload"></ha-icon>
-                  <span>From File</span>
+                  <span>${this._t('editor.import_dialog.from_file', 'From File')}</span>
                 </button>
               </div>
             </div>
 
             <div class="manual-input">
-              <label>Or paste shortcode manually:</label>
+              <label>${this._t('editor.import_dialog.paste_label', 'Or paste shortcode manually:')}</label>
               <textarea
                 .value=${this._importText}
                 @input=${this._handleTextInput}
                 @paste=${this._handlePaste}
-                placeholder="Paste your Ultra Card shortcode here: [ultra_card]...[/ultra_card]"
+                placeholder="${this._t('editor.import_dialog.paste_placeholder', 'Paste your Ultra Card shortcode here: [ultra_card]...[/ultra_card]')}"
                 rows="6"
               ></textarea>
               ${this._showAndroidTip
                 ? html`
-                    <div class="android-tip">
+                    <div class="android-tip" role="note">
                       <ha-icon icon="mdi:information-outline"></ha-icon>
                       <span>
-                        The pasted text appears incomplete. This is a known Android/mobile
-                        clipboard limitation. Use the <strong>From Clipboard</strong> button
-                        above for a reliable import.
+                        ${this._t(
+                          'editor.import_dialog.android_clipboard_tip',
+                          'The pasted text appears incomplete. This is a known Android/mobile clipboard limitation. Use the From Clipboard button above for a reliable import.'
+                        )}
                       </span>
                     </div>
                   `
@@ -68,7 +104,7 @@ export class UcImportDialog extends LitElement {
 
             ${this._error
               ? html`
-                  <div class="error-message">
+                  <div class="error-message" role="alert">
                     <ha-icon icon="mdi:alert-circle"></ha-icon>
                     <span>${this._error}</span>
                   </div>
@@ -77,16 +113,27 @@ export class UcImportDialog extends LitElement {
             ${this._previewData
               ? html`
                   <div class="preview-section">
-                    <h4>Preview</h4>
+                    <h4>${this._t('editor.import_dialog.preview', 'Preview')}</h4>
                     <div class="preview-card">
                       <div class="preview-header">
                         <ha-icon icon="${this._getTypeIcon(this._previewData.type)}"></ha-icon>
                         <div class="preview-info">
                           <strong
-                            >${this._previewData.metadata.name || 'Imported Configuration'}</strong
+                            >${this._previewData.metadata.name ||
+                            this._t(
+                              'editor.import_dialog.imported_configuration',
+                              'Imported Configuration'
+                            )}</strong
                           >
-                          <small>Type: ${this._formatType(this._previewData.type)}</small>
-                          <small>Version: ${this._previewData.version}</small>
+                          <small
+                            >${this._t('editor.import_dialog.type', 'Type')}: ${this._formatType(
+                              this._previewData.type
+                            )}</small
+                          >
+                          <small
+                            >${this._t('editor.import_dialog.version', 'Version')}: ${this
+                              ._previewData.version}</small
+                          >
                         </div>
                       </div>
                       ${this._previewData.metadata.description
@@ -103,13 +150,18 @@ export class UcImportDialog extends LitElement {
           </div>
 
           <div class="dialog-footer">
-            <button class="cancel-btn" @click=${this._close}>Cancel</button>
+            <button class="cancel-btn" type="button" @click=${this._close}>
+              ${this._t('editor.common.cancel', 'Cancel')}
+            </button>
             <button
               class="import-btn"
+              type="button"
               @click=${this._confirmImport}
               ?disabled=${!this._previewData || this._isProcessing}
             >
-              ${this._isProcessing ? 'Processing...' : 'Import'}
+              ${this._isProcessing
+                ? this._t('editor.import_dialog.processing', 'Processing...')
+                : this._t('editor.layout.import_card', 'Import')}
             </button>
           </div>
 
@@ -128,6 +180,29 @@ export class UcImportDialog extends LitElement {
   private _handleOverlayClick(e: Event): void {
     if (e.target === e.currentTarget) {
       this._close();
+    }
+  }
+
+  private _handleKeyDown(e: KeyboardEvent): void {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      this._close();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    const focusable = this._getFocusableElements();
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = this.shadowRoot?.activeElement as HTMLElement | null;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+      return;
+    }
+    if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
     }
   }
 
@@ -206,10 +281,15 @@ export class UcImportDialog extends LitElement {
         this._previewData = data;
         this._error = '';
       } else {
-        this._error = 'Invalid shortcode format. Please check your input.';
+        this._error = this._t(
+          'editor.import_dialog.invalid_shortcode',
+          'Invalid shortcode format. Please check your input.'
+        );
       }
     } catch (error) {
-      this._error = `Import error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      this._error = `${this._t('editor.import_dialog.import_error', 'Import error')}: ${
+        error instanceof Error ? error.message : this._t('editor.import_dialog.unknown_error', 'Unknown error')
+      }`;
       this._previewData = null;
     }
   }
@@ -224,10 +304,17 @@ export class UcImportDialog extends LitElement {
         this._previewData = data;
         this._importText = ''; // Clear manual input since we got from clipboard
       } else {
-        this._error = 'No valid Ultra Card shortcode found in clipboard.';
+        this._error = this._t(
+          'editor.import_dialog.no_valid_shortcode',
+          'No valid Ultra Card shortcode found in clipboard.'
+        );
       }
     } catch (error) {
-      this._error = `Clipboard error: ${error instanceof Error ? error.message : 'Failed to read clipboard'}`;
+      this._error = `${this._t('editor.import_dialog.clipboard_error', 'Clipboard error')}: ${
+        error instanceof Error
+          ? error.message
+          : this._t('editor.import_dialog.clipboard_read_failed', 'Failed to read clipboard')
+      }`;
     } finally {
       this._isProcessing = false;
     }
@@ -252,10 +339,17 @@ export class UcImportDialog extends LitElement {
         this._previewData = data;
         this._importText = ''; // Clear manual input since we got from file
       } else {
-        this._error = 'Invalid file format. Please select a valid Ultra Card export file.';
+        this._error = this._t(
+          'editor.import_dialog.invalid_file',
+          'Invalid file format. Please select a valid Ultra Card export file.'
+        );
       }
     } catch (error) {
-      this._error = `File import error: ${error instanceof Error ? error.message : 'Failed to read file'}`;
+      this._error = `${this._t('editor.import_dialog.file_import_error', 'File import error')}: ${
+        error instanceof Error
+          ? error.message
+          : this._t('editor.import_dialog.file_read_failed', 'Failed to read file')
+      }`;
     } finally {
       this._isProcessing = false;
       input.value = ''; // Reset file input
@@ -298,6 +392,29 @@ export class UcImportDialog extends LitElement {
       default:
         return 'Unknown';
     }
+  }
+
+  private _focusInitialControl(): void {
+    const focusable = this._getFocusableElements();
+    focusable[0]?.focus();
+  }
+
+  private _getFocusableElements(): HTMLElement[] {
+    const root = this.shadowRoot;
+    if (!root) return [];
+    const selector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    return Array.from(root.querySelectorAll<HTMLElement>(selector)).filter(el => {
+      if (el.hasAttribute('disabled')) return false;
+      if (el.getAttribute('aria-hidden') === 'true') return false;
+      if (el.tabIndex < 0) return false;
+      const style = window.getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') return false;
+      return true;
+    });
+  }
+
+  private _t(key: string, fallback: string): string {
+    return localize(key, this.hass?.locale?.language || 'en', fallback);
   }
 
   static override styles = css`

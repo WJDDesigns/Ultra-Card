@@ -19,6 +19,12 @@ export class UcSnapshotRestoreDialog extends LitElement {
 
   @state() private _selectedMethod: 'smart' | 'clean' | null = null;
 
+  override updated(changedProperties: Map<string, unknown>): void {
+    if (changedProperties.has('open') && this.open) {
+      this._selectedMethod = 'smart';
+    }
+  }
+
   private _handleMethodSelect(method: 'smart' | 'clean') {
     this._selectedMethod = method;
   }
@@ -39,6 +45,7 @@ export class UcSnapshotRestoreDialog extends LitElement {
   }
 
   private _close() {
+    this._selectedMethod = null;
     this.dispatchEvent(
       new CustomEvent('dialog-closed', {
         bubbles: true,
@@ -52,7 +59,13 @@ export class UcSnapshotRestoreDialog extends LitElement {
 
     return html`
       <div class="backdrop" @click="${this._close}">
-        <div class="dialog" @click="${(e: Event) => e.stopPropagation()}">
+        <div
+          class="dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Restore Dashboard Snapshot"
+          @click="${(e: Event) => e.stopPropagation()}"
+        >
           <!-- Header -->
           <div class="header">
             <div class="header-icon">📸</div>
@@ -90,10 +103,10 @@ export class UcSnapshotRestoreDialog extends LitElement {
                 without creating duplicates.
               </p>
               <ul class="method-features">
-                <li>✅ Safe - no duplicates</li>
-                <li>✅ Works with named or unnamed cards</li>
-                <li>✅ Preserves non-matching cards</li>
-                <li>✅ Can run multiple times</li>
+                <li>Safe - no duplicates</li>
+                <li>Works with named or unnamed cards</li>
+                <li>Preserves non-matching cards</li>
+                <li>Can run multiple times</li>
               </ul>
             </div>
 
@@ -120,10 +133,10 @@ export class UcSnapshotRestoreDialog extends LitElement {
                 positions and order.
               </p>
               <ul class="method-features">
-                <li>✅ Fixes duplicated cards</li>
-                <li>✅ Exact snapshot state</li>
-                <li>✅ Perfect for messed up dashboards</li>
-                <li>⚠️ Deletes all Ultra Cards first</li>
+                <li>Fixes duplicated cards</li>
+                <li>Exact snapshot state</li>
+                <li>Best for heavily broken dashboards</li>
+                <li>Caution: deletes all Ultra Cards first</li>
               </ul>
             </div>
           </div>
@@ -155,17 +168,17 @@ export class UcSnapshotRestoreDialog extends LitElement {
 
   static override styles = css`
     :host {
-      --primary: #667eea;
-      --primary-dark: #5568d3;
-      --secondary: #764ba2;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --text-primary: #1a1a1a;
-      --text-secondary: #666;
-      --bg-primary: #fff;
-      --bg-secondary: #f9fafb;
-      --border: #e5e7eb;
+      --primary: var(--primary-color, #667eea);
+      --primary-dark: var(--primary-color, #5568d3);
+      --secondary: var(--accent-color, #764ba2);
+      --success: var(--success-color, #10b981);
+      --warning: var(--warning-color, #f59e0b);
+      --danger: var(--error-color, #ef4444);
+      --text-primary: var(--primary-text-color, #1a1a1a);
+      --text-secondary: var(--secondary-text-color, #666);
+      --bg-primary: var(--card-background-color, #fff);
+      --bg-secondary: var(--secondary-background-color, #f9fafb);
+      --border: var(--divider-color, #e5e7eb);
       --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
 

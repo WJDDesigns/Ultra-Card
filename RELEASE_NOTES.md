@@ -1,5 +1,20 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta23
+
+### What’s in this build
+
+This beta focuses on editor productivity, safer interactions, and better accessibility/localization in the import/favorites flow.
+
+- **Paste actions in overflow menus** — Added missing `Paste` options to three-dot menus across regular modules, layout modules, nested layouts, deep-nested layout children, and tabs section children. Paste now appears contextually when clipboard content exists.
+- **Favorite and import dialog upgrades** — Added localization hooks, proper dialog semantics (`role="dialog"` / `aria-modal`), keyboard support (`Esc` close + tab trapping), and focus restoration for a cleaner, more accessible workflow.
+- **Snapshot restore polish** — Restore method now defaults to Smart on open, selected method resets on close, and dialog styling now respects Home Assistant theme tokens for better visual consistency.
+- **Safer confirm behavior** — Destructive confirms now default focus to Cancel and require explicit Confirm focus when pressing Enter, reducing accidental destructive actions.
+- **Config validation feedback** — Added deduplicated validation toasts in the editor so invalid config issues surface clearly without repeated spam.
+- **Documentation refresh** — Updated development path guidance (`HA_DEPLOY_PATH`) and refreshed README copy for module count and supported languages.
+
+---
+
 ## Version 3.3.0-beta22
 
 ### What’s in this build

@@ -90,6 +90,7 @@ export class UltraCardEditor extends LitElement {
   private _qrDataReadyListener: (() => void) | undefined;
   private _moduleUpdateListener: (() => void) | undefined;
   private _moduleLoadForStylesListener: ((e: Event) => void) | undefined;
+  private _lastValidationErrorSignature: string | null = null;
 
   private static readonly HUB_BANNER_DISMISSED_KEY = 'ultra-card-hub-banner-dismissed';
 
@@ -376,6 +377,20 @@ export class UltraCardEditor extends LitElement {
       const validationResult = await configValidationService.validateAndCorrectConfig(newConfig);
 
       if (!validationResult.valid) {
+        const lang = this.hass?.locale?.language || 'en';
+        const topErrors = validationResult.errors.slice(0, 2);
+        const errorSignature = topErrors.join('|');
+        if (errorSignature && errorSignature !== this._lastValidationErrorSignature) {
+          const baseMessage = localize(
+            'editor.layout.config_validation_failed',
+            lang,
+            'Some changes could not be applied because the card configuration is invalid.'
+          );
+          const detailLabel = localize('editor.layout.config_validation_details', lang, 'Details');
+          const details = topErrors.join(' • ');
+          ucToastService.error(details ? `${baseMessage} ${detailLabel}: ${details}` : baseMessage, 6000);
+          this._lastValidationErrorSignature = errorSignature;
+        }
         const event = new CustomEvent('config-changed', {
           detail: { config: newConfig, isInternal: true },
           bubbles: true,
@@ -393,6 +408,7 @@ export class UltraCardEditor extends LitElement {
       if (!uniqueIdCheck.valid) {
         finalConfig = configValidationService.fixDuplicateModuleIds(finalConfig);
       }
+      this._lastValidationErrorSignature = null;
 
       const globalVarsBackup = ucCustomVariablesService.getVariablesForBackup();
       if (globalVarsBackup.variables.length > 0) {
@@ -6334,7 +6350,7 @@ export class UltraCardEditor extends LitElement {
       // Show success notification using HA toast
       const event = new CustomEvent('hass-notification', {
         detail: {
-          message: '✅ Manual dashboard snapshot created successfully!',
+          message: 'Manual dashboard snapshot created successfully.',
           duration: 5000,
         },
         bubbles: true,
@@ -6387,10 +6403,10 @@ export class UltraCardEditor extends LitElement {
           <div class="login-benefits">
             <h5>Benefits of Cloud Sync:</h5>
             <ul>
-              <li>✅ Access your favorites on any device</li>
-              <li>✅ Automatic backup of your custom colors</li>
-              <li>✅ Sync your preset reviews and ratings</li>
-              <li>✅ Never lose your configurations</li>
+              <li>Access your favorites on any device</li>
+              <li>Automatic backup of your custom colors</li>
+              <li>Sync your preset reviews and ratings</li>
+              <li>Keep your configurations safe</li>
             </ul>
           </div>
 

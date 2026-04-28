@@ -9,6 +9,12 @@ This guide covers the fastest workflow for developing and testing Ultra Card wit
 npm run watch:ha
 ```
 
+If your Home Assistant `www/community/Ultra-Card` path is not mounted at the default macOS location, run:
+
+```bash
+HA_DEPLOY_PATH=/path/to/ha/config/www/community/Ultra-Card npm run watch:ha
+```
+
 That's it! Every time you save a file:
 
 1. Webpack automatically rebuilds (~8-10 seconds)
@@ -21,19 +27,21 @@ That's it! Every time you save a file:
 
 ## Setup Requirements
 
-### 1. Mount Your HA Config Volume
+### 1. Configure Your HA Deploy Path
 
-The auto-deploy feature expects your Home Assistant config to be mounted at:
+`watch:ha` works cross-platform when `HA_DEPLOY_PATH` points to your Home Assistant `www/community/Ultra-Card` folder:
+
+```bash
+HA_DEPLOY_PATH=/path/to/ha/config/www/community/Ultra-Card npm run watch:ha
+```
+
+If you do not set it, the default fallback path is:
 
 ```
 /Volumes/config/www/community/Ultra-Card/
 ```
 
-If your path is different, set the `HA_DEPLOY_PATH` environment variable:
-
-```bash
-HA_DEPLOY_PATH=/path/to/ha/www/community/Ultra-Card npm run watch:ha
-```
+On macOS, this fallback commonly works when the HA config volume is mounted at `/Volumes/config`.
 
 ### 2. Browser Cache Settings (One-Time Setup)
 
@@ -111,6 +119,8 @@ Console shows: "✓ Auto-deployed to HA"
     ↓
 Refresh browser to see changes
 ```
+
+(`watch:ha` uses `HA_DEPLOY_PATH` when set; otherwise it uses the default `/Volumes/config/...` fallback.)
 
 ---
 
