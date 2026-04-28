@@ -25,6 +25,7 @@ type PopupStore = {
   manuallyOpened: Set<string>;
   timerEnabled: Map<string, boolean>;
   needsRefresh: Map<string, boolean>; // Track which popups need content refresh for templates
+  lastRenderedHassRef: Map<string, HomeAssistant | undefined>; // Track hass ref used for portal render
 };
 
 const POPUP_STORE_KEY = '__ultraPopupStore__';
@@ -40,6 +41,7 @@ const getPopupStore = (): PopupStore => {
       manuallyOpened: new Set<string>(),
       timerEnabled: new Map<string, boolean>(),
       needsRefresh: new Map<string, boolean>(),
+      lastRenderedHassRef: new Map<string, HomeAssistant | undefined>(),
     } as PopupStore;
   }
   return w[POPUP_STORE_KEY] as PopupStore;
@@ -54,6 +56,7 @@ const {
   manuallyOpened: manuallyOpenedPopups,
   timerEnabled: popupTimerEnabled,
   needsRefresh: popupNeedsRefresh,
+  lastRenderedHassRef: popupLastRenderedHassRef,
 } = getPopupStore();
 
 // Helper to restore HA editor overlays after popup closes
@@ -3278,6 +3281,7 @@ export class UltraPopupModule extends BaseUltraModule {
           restoreHAEditorOverlays();
           portal.remove();
           popupPortals.delete(uniquePopupKey);
+          popupLastRenderedHassRef.delete(uniquePopupKey);
         }
         return;
       }
@@ -3325,19 +3329,21 @@ export class UltraPopupModule extends BaseUltraModule {
 
       // Add mutation observer to watch for inert being added by browser extensions
       // This is critical - some extensions add inert to all fixed elements
-      const observer = new MutationObserver(mutations => {
-        mutations.forEach(mutation => {
-          if (mutation.type === 'attributes' && mutation.attributeName === 'inert') {
-            if (portal.hasAttribute('inert')) {
-              portal.removeAttribute('inert');
+      // Ensure inert watchdog observer exists only once per portal
+      if (!(portal as any)._ultraInertObserver) {
+        const observer = new MutationObserver(mutations => {
+          mutations.forEach(mutation => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'inert') {
+              if (portal.hasAttribute('inert')) {
+                portal.removeAttribute('inert');
+              }
             }
-          }
+          });
         });
-      });
-      observer.observe(portal, { attributes: true, attributeFilter: ['inert'] });
-
-      // Store observer for cleanup
-      (portal as any)._ultraInertObserver = observer;
+        observer.observe(portal, { attributes: true, attributeFilter: ['inert'] });
+        // Store observer for cleanup
+        (portal as any)._ultraInertObserver = observer;
+      }
 
       // Use extremely high z-index in preview contexts to appear above builder interface and HA edit outlines
       const isPreviewContext = previewContext === 'ha-preview' || previewContext === 'live';
@@ -3633,6 +3639,7 @@ export class UltraPopupModule extends BaseUltraModule {
 
       // Render the popup content into the portal
       render(popupContent, portal);
+      popupLastRenderedHassRef.set(uniquePopupKey, hass);
 
       // Add native event listeners as fallback for portal rendering
       // This ensures clicks work even if lit-html event binding has issues with portals
@@ -3667,25 +3674,25 @@ export class UltraPopupModule extends BaseUltraModule {
         }
 
         if (overlay) {
-          overlay.addEventListener('click', (e: Event) => {
+          overlay.onclick = (e: Event) => {
             // Only close if clicking directly on overlay, not on popup content
             if (e.target === overlay) {
               handleClose(e);
             }
-          });
+          };
         }
 
         if (closeBtn) {
-          closeBtn.addEventListener('click', (e: Event) => {
+          closeBtn.onclick = (e: Event) => {
             e.stopPropagation();
             handleClose(e);
-          });
+          };
         }
 
         if (container) {
-          container.addEventListener('click', (e: Event) => {
+          container.onclick = (e: Event) => {
             e.stopPropagation();
-          });
+          };
         }
       });
     };
@@ -3695,15 +3702,18 @@ export class UltraPopupModule extends BaseUltraModule {
     const portalExists = popupPortals.has(uniquePopupKey);
     const isManuallyOpen = manuallyOpenedPopups.has(uniquePopupKey);
     const needsRefresh = popupNeedsRefresh.get(uniquePopupKey) === true;
-
     // Determine if popup should be open
     const shouldBeOpen = currentState || isManuallyOpen;
+    const hassRefChangedWhileOpen =
+      shouldBeOpen &&
+      portalExists &&
+      popupLastRenderedHassRef.get(uniquePopupKey) !== hass;
 
     // Only render portal if:
     // 1. Popup should be open AND portal doesn't exist yet (first creation)
     // 2. OR popup should be open AND refresh is needed (template update)
     // This prevents constant re-rendering on every card update
-    if (shouldBeOpen && (!portalExists || needsRefresh)) {
+    if (shouldBeOpen && (!portalExists || needsRefresh || hassRefChangedWhileOpen)) {
       renderPopupToPortal(false);
     } else if (!shouldBeOpen && portalExists) {
       // Close the portal if it exists but shouldn't be open
@@ -3716,6 +3726,7 @@ export class UltraPopupModule extends BaseUltraModule {
         restoreHAEditorOverlays();
         portal.remove();
         popupPortals.delete(uniquePopupKey);
+        popupLastRenderedHassRef.delete(uniquePopupKey);
       }
     }
 

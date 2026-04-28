@@ -256,6 +256,7 @@ export class UltraIconModule extends BaseUltraModule {
           show_name_when_active: true,
           show_state_when_active: true,
           show_icon_when_active: true,
+          show_entity_picture: true,
 
           // Legacy (backward compatibility)
           show_state: true,
@@ -721,6 +722,29 @@ export class UltraIconModule extends BaseUltraModule {
                         (e: CustomEvent) => {
                           const enabled = e.detail.value.show_icon_enabled;
                           this._updateIcon(iconModule, index, { show_icon_when_active: enabled, show_icon_when_inactive: enabled }, updateModule);
+                        }
+                      )}
+                      ${this.renderFieldSection(
+                        localize(
+                          'editor.icon.icon_section.show_entity_picture',
+                          lang,
+                          'Show Entity Picture'
+                        ),
+                        localize(
+                          'editor.icon.icon_section.show_entity_picture_desc',
+                          lang,
+                          'When enabled, entity_picture replaces the configured icon when available.'
+                        ),
+                        hass,
+                        { show_entity_picture: icon.show_entity_picture !== false },
+                        [this.booleanField('show_entity_picture')],
+                        (e: CustomEvent) => {
+                          this._updateIcon(
+                            iconModule,
+                            index,
+                            { show_entity_picture: e.detail.value.show_entity_picture },
+                            updateModule
+                          );
                         }
                       )}
 
@@ -3035,7 +3059,7 @@ export class UltraIconModule extends BaseUltraModule {
                                 : '0px',
                           })}"
                         >
-                          ${this._shouldUseEntityPicture(entityState)
+                          ${this._shouldUseEntityPicture(entityState, icon)
                             ? html`
                                 <img
                                   src="${this._getEntityPicture(entityState, hass)}"
@@ -3767,7 +3791,7 @@ export class UltraIconModule extends BaseUltraModule {
                       : '0px',
                 })}"
               >
-                ${this._shouldUseEntityPicture(entityState)
+                ${this._shouldUseEntityPicture(entityState, icon)
                   ? html`
                       <img
                         src="${this._getEntityPicture(entityState, hass)}"
@@ -4262,7 +4286,7 @@ export class UltraIconModule extends BaseUltraModule {
                             : '0px',
                       })}"
                     >
-                      ${this._shouldUseEntityPicture(entityState)
+                      ${this._shouldUseEntityPicture(entityState, icon)
                         ? html`
                             <img
                               src="${this._getEntityPicture(entityState, hass)}"
@@ -5988,6 +6012,7 @@ export class UltraIconModule extends BaseUltraModule {
       show_name_when_active: true,
       show_state_when_active: true,
       show_icon_when_active: true,
+      show_entity_picture: true,
 
       // Legacy (backward compatibility)
       show_state: true,
@@ -6972,10 +6997,13 @@ export class UltraIconModule extends BaseUltraModule {
   /**
    * Check if an entity should use its picture instead of an icon
    * @param entityState The entity state object
+   * @param iconConfig The icon configuration
    * @returns True if entity picture should be used
    */
-  private _shouldUseEntityPicture(entityState: any): boolean {
+  private _shouldUseEntityPicture(entityState: any, iconConfig?: IconConfig): boolean {
     if (!entityState) return false;
+    if (iconConfig?.icon_mode === 'static') return false;
+    if (iconConfig?.show_entity_picture === false) return false;
 
     const entityId = entityState.entity_id;
     if (!entityId) return false;

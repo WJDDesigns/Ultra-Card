@@ -1,5 +1,23 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta25
+
+### 🚀 New Features
+
+- **Added Boolean input option to show or hide entity names independently from labels** - Better entity state handling and real-time display
+- **Added Alignment control (None, Left, Center, Right) for boolean input content row and label** - Enhanced row layout and organization
+
+### 🔧 Improvements
+
+- **Improved Boolean input state text placement to flow beside the toggle and after optional entity names** - Improved toggle state handling and reliability
+- **Improved Boolean input editor by showing entity-name toggle only for switch and checkbox styles** - Improved toggle state handling and reliability
+
+### 🐛 Bug Fixes
+
+- **Fixed Boolean input label behavior so custom labels no longer force entity names in switch and checkbox modes** - Better entity state handling and real-time display
+
+---
+
 ## Version 3.3.0-beta24
 
 ### What's in this build

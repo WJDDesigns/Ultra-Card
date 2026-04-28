@@ -24,8 +24,10 @@ export class UltraBooleanInputModule extends BaseUltraModule {
       id: id || this.generateId('boolean_input'),
       type: 'boolean_input',
       toggle_style: 'switch',
+      content_alignment: 'none',
       show_label: true,
       label: '',
+      show_entity_name: false,
       show_state_text: true,
       on_text: '',
       off_text: '',
@@ -46,6 +48,15 @@ export class UltraBooleanInputModule extends BaseUltraModule {
       { value: 'switch', label: localize('editor.boolean_input.style_options.switch', lang, 'Switch') },
       { value: 'checkbox', label: localize('editor.boolean_input.style_options.checkbox', lang, 'Checkbox') },
       { value: 'pill', label: localize('editor.boolean_input.style_options.pill', lang, 'Pill Toggle') },
+    ];
+  }
+
+  private getAlignmentOptions(lang: string): Array<{ value: string; label: string }> {
+    return [
+      { value: 'none', label: localize('editor.common.none', lang, 'None') },
+      { value: 'left', label: localize('editor.common.left', lang, 'Left') },
+      { value: 'center', label: localize('editor.common.center', lang, 'Center') },
+      { value: 'right', label: localize('editor.common.right', lang, 'Right') },
     ];
   }
 
@@ -88,6 +99,13 @@ export class UltraBooleanInputModule extends BaseUltraModule {
               (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); }
             )}
           </div>
+          ${this.renderFieldSection(
+            localize('editor.boolean_input.content_alignment', lang, 'Alignment'),
+            localize('editor.boolean_input.content_alignment_desc', lang, 'Align the control row inside the module'),
+            hass, { content_alignment: boolMod.content_alignment || 'none' },
+            [this.selectField('content_alignment', this.getAlignmentOptions(lang))],
+            (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); }
+          )}
 
           ${this.renderFieldSection(
             localize('editor.boolean_input.label', lang, 'Label'), localize('editor.boolean_input.label_desc', lang, 'Label displayed beside the toggle'),
@@ -99,6 +117,12 @@ export class UltraBooleanInputModule extends BaseUltraModule {
             hass, { show_label: boolMod.show_label !== false }, [{ name: 'show_label', selector: { boolean: {} } }],
             (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); }
           )}
+          ${(boolMod.toggle_style || 'switch') !== 'pill' ? this.renderFieldSection(
+            localize('editor.boolean_input.show_entity_name', lang, 'Show Entity Name'),
+            localize('editor.boolean_input.show_entity_name_desc', lang, 'Display the entity name beside the control (switch/checkbox)'),
+            hass, { show_entity_name: boolMod.show_entity_name === true }, [{ name: 'show_entity_name', selector: { boolean: {} } }],
+            (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); }
+          ) : ''}
           ${this.renderFieldSection(
             localize('editor.boolean_input.show_state_text', lang, 'Show State Text'),
             localize('editor.boolean_input.show_state_text_desc', lang, 'Display On/Off text beside the toggle'),
@@ -175,10 +199,25 @@ export class UltraBooleanInputModule extends BaseUltraModule {
     const onColor = boolMod.on_color || 'var(--primary-color)';
     const offColor = boolMod.off_color || 'var(--disabled-color, #bdbdbd)';
     const style = boolMod.toggle_style || 'switch';
+    const contentAlignment = boolMod.content_alignment || 'none';
     const showLabel = boolMod.show_label !== false && !!boolMod.label;
+    const showEntityName = boolMod.show_entity_name === true;
     const showStateText = boolMod.show_state_text !== false;
     const onText = boolMod.on_text || 'On';
     const offText = boolMod.off_text || 'Off';
+    const rowJustify =
+      contentAlignment === 'center'
+        ? 'center'
+        : contentAlignment === 'right'
+          ? 'flex-end'
+          : 'flex-start';
+    const rowAlignmentStyle = contentAlignment === 'none' ? '' : `justify-content:${rowJustify};width:100%;`;
+    const topLabelStyle =
+      contentAlignment === 'center'
+        ? 'text-align:center;'
+        : contentAlignment === 'right'
+          ? 'text-align:right;'
+          : '';
     const containerStyles = this._buildContainerStyles(designProperties);
     const hoverEffectClass = this.getHoverEffectClass(module);
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
@@ -200,15 +239,15 @@ export class UltraBooleanInputModule extends BaseUltraModule {
             display:flex; align-items:center; justify-content:center; transition:all .2s; flex-shrink:0;
             background:${isOn ? currentColor : 'transparent'}; }
           .bool-cb-box-${mid} ha-icon { --mdc-icon-size:16px; color:#fff; opacity:${isOn ? '1' : '0'}; transition:opacity .2s; }
-          .bool-cb-label { font-size:${fontSize}px; color:${textColor}; }
-          .bool-state-text { font-size:${Math.max(11, fontSize - 2)}px; color:var(--secondary-text-color); margin-left:auto; }
+          .bool-cb-name { font-size:${fontSize}px; color:${textColor}; }
+          .bool-state-text { font-size:${Math.max(11, fontSize - 2)}px; color:var(--secondary-text-color); }
           .bool-top-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
         </style>
         <div class="${hoverEffectClass}" style="${designStyles}">
-          ${showLabel ? html`<div class="bool-top-label">${boolMod.label}</div>` : ''}
-          <div class="bool-cb-row-${mid}" @click=${toggle}>
+          ${showLabel ? html`<div class="bool-top-label" style="${topLabelStyle}">${boolMod.label}</div>` : ''}
+          <div class="bool-cb-row-${mid}" style="${rowAlignmentStyle}" @click=${toggle}>
             <div class="bool-cb-box-${mid}"><ha-icon icon="mdi:check"></ha-icon></div>
-            ${showLabel ? html`<span class="bool-cb-label">${entityState.attributes?.friendly_name || boolMod.entity}</span>` : ''}
+            ${showEntityName ? html`<span class="bool-cb-name">${entityState.attributes?.friendly_name || boolMod.entity}</span>` : ''}
             ${showStateText ? html`<span class="bool-state-text">${isOn ? onText : offText}</span>` : ''}
           </div>
         </div>
@@ -228,8 +267,8 @@ export class UltraBooleanInputModule extends BaseUltraModule {
           .bool-top-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
         </style>
         <div class="${hoverEffectClass}" style="${designStyles}">
-          ${showLabel ? html`<div class="bool-top-label">${boolMod.label}</div>` : ''}
-          <div class="bool-pill-row-${mid}">
+          ${showLabel ? html`<div class="bool-top-label" style="${topLabelStyle}">${boolMod.label}</div>` : ''}
+          <div class="bool-pill-row-${mid}" style="${rowAlignmentStyle}">
             <div class="bool-pill-${mid}">
               <button class="bool-pill-btn-${mid} ${!isOn ? 'active' : ''}" @click=${() => { if (isOn) toggle(); }}>${offText}</button>
               <button class="bool-pill-btn-${mid} ${isOn ? 'active' : ''}" @click=${() => { if (!isOn) toggle(); }}>${onText}</button>
@@ -248,15 +287,15 @@ export class UltraBooleanInputModule extends BaseUltraModule {
         .bool-sw-thumb-${mid} { width:22px; height:22px; border-radius:50%; background:#fff;
           position:absolute; top:2px; left:${isOn ? '24px' : '2px'}; transition:left .3s;
           box-shadow:0 1px 3px rgba(0,0,0,.3); }
-        .bool-sw-label { font-size:${fontSize}px; color:${textColor}; flex:1; }
+        .bool-sw-name { font-size:${fontSize}px; color:${textColor}; }
         .bool-state-text { font-size:${Math.max(11, fontSize - 2)}px; color:var(--secondary-text-color); }
         .bool-top-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
       </style>
       <div class="${hoverEffectClass}" style="${designStyles}">
-        ${showLabel ? html`<div class="bool-top-label">${boolMod.label}</div>` : ''}
-        <div class="bool-sw-row-${mid}" @click=${toggle}>
+        ${showLabel ? html`<div class="bool-top-label" style="${topLabelStyle}">${boolMod.label}</div>` : ''}
+        <div class="bool-sw-row-${mid}" style="${rowAlignmentStyle}" @click=${toggle}>
           <div class="bool-sw-track-${mid}"><div class="bool-sw-thumb-${mid}"></div></div>
-          ${showLabel ? html`<span class="bool-sw-label">${entityState.attributes?.friendly_name || boolMod.entity}</span>` : ''}
+          ${showEntityName ? html`<span class="bool-sw-name">${entityState.attributes?.friendly_name || boolMod.entity}</span>` : ''}
           ${showStateText ? html`<span class="bool-state-text">${isOn ? onText : offText}</span>` : ''}
         </div>
       </div>

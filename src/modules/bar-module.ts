@@ -56,6 +56,103 @@ export class UltraBarModule extends BaseUltraModule {
   }
 
   /**
+   * Clamp first/last scale labels only when they actually overflow.
+   * This avoids unnecessary shifts on wider layouts.
+   */
+  private applyScaleEdgeLabelClamping(root: Element): void {
+    const scales = Array.from(
+      root.querySelectorAll('.bar-scale[data-clamp-edge-labels="true"]')
+    ) as HTMLElement[];
+
+    const overlaps = (a: DOMRect, b: DOMRect): boolean => a.left < b.right && a.right > b.left;
+
+    const setTransformShift = (el: HTMLElement, shiftPx: number): void => {
+      el.style.transform = shiftPx === 0 ? 'translateX(0)' : `translateX(${Math.round(shiftPx)}px)`;
+    };
+
+    const getRectWithShift = (el: HTMLElement, shiftPx: number): DOMRect => {
+      setTransformShift(el, shiftPx);
+      return el.getBoundingClientRect();
+    };
+
+    scales.forEach(scale => {
+      const scaleRect = scale.getBoundingClientRect();
+      if (!scaleRect.width) return;
+
+      const allLabels = Array.from(scale.querySelectorAll('.scale-label')) as HTMLElement[];
+      allLabels.forEach(label => {
+        label.style.display = '';
+        label.style.transform = 'translateX(0)';
+      });
+
+      const edgeLabels = Array.from(
+        scale.querySelectorAll('.scale-label.edge-start, .scale-label.edge-end')
+      ) as HTMLElement[];
+
+      edgeLabels.forEach(label => {
+        // Reset first; then apply only if overflow is detected.
+        setTransformShift(label, 0);
+        const labelRect = label.getBoundingClientRect();
+
+        const overflowLeft = scaleRect.left - labelRect.left;
+        const overflowRight = labelRect.right - scaleRect.right;
+        let shift = 0;
+
+        if (overflowLeft > 0) shift += overflowLeft + 1;
+        if (overflowRight > 0) shift -= overflowRight + 1;
+
+        if (Math.abs(shift) >= 0.5) {
+          setTransformShift(label, shift);
+        }
+      });
+
+      // Collision guard: edge labels have priority, adjacent labels may be hidden.
+      const startEdge = scale.querySelector('.scale-label.edge-start') as HTMLElement | null;
+      const endEdge = scale.querySelector('.scale-label.edge-end') as HTMLElement | null;
+      const getLabelByIndex = (idx: number): HTMLElement | null =>
+        (scale.querySelector(`.scale-label[data-scale-index="${idx}"]`) as HTMLElement | null);
+
+      if (startEdge) {
+        const startIdx = Number(startEdge.dataset.scaleIndex || '0');
+        const nextLabel = getLabelByIndex(startIdx + 1);
+        if (nextLabel && nextLabel.style.display !== 'none') {
+          const baseStartRect = getRectWithShift(startEdge, 0);
+          const nextRect = nextLabel.getBoundingClientRect();
+          const currentStartRect = startEdge.getBoundingClientRect();
+
+          if (overlaps(currentStartRect, nextRect)) {
+            // Reduce shift to maximum that avoids overlap.
+            const maxShift = Math.max(0, nextRect.left - baseStartRect.right - 1);
+            const adjustedRect = getRectWithShift(startEdge, maxShift);
+            if (overlaps(adjustedRect, nextRect)) {
+              nextLabel.style.display = 'none';
+            }
+          }
+        }
+      }
+
+      if (endEdge) {
+        const endIdx = Number(endEdge.dataset.scaleIndex || '0');
+        const prevLabel = getLabelByIndex(endIdx - 1);
+        if (prevLabel && prevLabel.style.display !== 'none') {
+          const baseEndRect = getRectWithShift(endEdge, 0);
+          const prevRect = prevLabel.getBoundingClientRect();
+          const currentEndRect = endEdge.getBoundingClientRect();
+
+          if (overlaps(currentEndRect, prevRect)) {
+            // Reduce shift to maximum that avoids overlap (negative for left shift).
+            const maxLeftShift = Math.min(0, prevRect.right - baseEndRect.left + 1);
+            const adjustedRect = getRectWithShift(endEdge, maxLeftShift);
+            if (overlaps(adjustedRect, prevRect)) {
+              prevLabel.style.display = 'none';
+            }
+          }
+        }
+      }
+    });
+  }
+
+  /**
    * Shorten numeric tick labels for narrow mobile layouts.
    * - Preserves % suffix
    * - Drops non-% units (e.g. "700 km" -> "700") to save width
@@ -4607,7 +4704,6 @@ export class UltraBarModule extends BaseUltraModule {
         (barModule as any).scale_label_color || 'var(--secondary-text-color)';
       const scaleTickColor = (barModule as any).scale_tick_color || 'var(--divider-color)';
       const scalePosition = (barModule as any).scale_position || 'below';
-      const edgeClampOffsetPx = Math.max(2, Math.round(scaleLabelSize * 0.35));
       const clampEdgeLabels = this.normalizeBoolean(
         (barModule as any).scale_clamp_edge_labels,
         true
@@ -4699,6 +4795,7 @@ export class UltraBarModule extends BaseUltraModule {
       return html`
         <div
           class="bar-scale"
+          data-clamp-edge-labels="${clampEdgeLabels ? 'true' : 'false'}"
           style="
             position: relative;
             display: block;
@@ -4716,13 +4813,8 @@ export class UltraBarModule extends BaseUltraModule {
         >
           ${ticks.map(
             (tick, index) => {
-              const labelTransform = !clampEdgeLabels
-                ? 'translateX(0)'
-                : tick.position <= 0.5
-                  ? `translateX(${edgeClampOffsetPx}px)`
-                  : tick.position >= 99.5
-                    ? `translateX(-${edgeClampOffsetPx}px)`
-                    : 'translateX(0)';
+              const isEdgeStart = index === 0;
+              const isEdgeEnd = index === ticks.length - 1;
               const hideForDensity =
                 mobileReduceDensity &&
                 index !== 0 &&
@@ -4760,13 +4852,15 @@ export class UltraBarModule extends BaseUltraModule {
                   ${scaleShowLabels && displayLabel !== null && !hideForDensity
                     ? html`
                         <span
+                          class="scale-label ${isEdgeStart ? 'edge-start' : ''} ${isEdgeEnd ? 'edge-end' : ''}"
+                          data-scale-index="${index}"
                           style="
                             font-size: ${scaleLabelSize}px;
                             color: ${scaleLabelColor};
                             margin-top: ${scalePosition === 'below' ? '2px' : '0'};
                             margin-bottom: ${scalePosition === 'above' ? '2px' : '0'};
                             white-space: nowrap;
-                            transform: ${labelTransform};
+                            transform: translateX(0);
                           "
                         >
                           ${displayLabel}
@@ -4794,7 +4888,8 @@ export class UltraBarModule extends BaseUltraModule {
 
           // After render, check if parent wrapper has flex constraint
           // If constrained, ensure bar uses 100% to fill the constrained wrapper
-          setTimeout(() => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
             const parent = el.parentElement;
             const isFlexConstrained = parent?.getAttribute('data-flex-constrained') === 'true';
 
@@ -4806,7 +4901,11 @@ export class UltraBarModule extends BaseUltraModule {
                 barContainer.style.width = '100%';
               }
             }
-          }, 0);
+
+              // Apply edge clamp after layout settles and widths are final.
+              this.applyScaleEdgeLabelClamping(el);
+            });
+          });
         })}
       >
         <!-- Bar Container -->

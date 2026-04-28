@@ -1139,6 +1139,7 @@ export interface IconConfig {
   show_name_when_inactive?: boolean | undefined;
   show_state_when_inactive?: boolean | undefined;
   show_icon_when_inactive?: boolean | undefined;
+  show_entity_picture?: boolean | undefined;
 
   // Display toggles for active state
   show_name_when_active?: boolean | undefined;
@@ -4574,6 +4575,8 @@ export interface BooleanInputModule extends BaseModule {
   type: 'boolean_input';
   entity?: string | undefined;
   toggle_style?: 'switch' | 'checkbox' | 'pill' | undefined;
+  content_alignment?: 'none' | 'left' | 'center' | 'right' | undefined;
+  show_entity_name?: boolean | undefined;
   show_state_text?: boolean | undefined;
   on_text?: string | undefined;
   off_text?: string | undefined;
