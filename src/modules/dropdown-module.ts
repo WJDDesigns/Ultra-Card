@@ -16,6 +16,8 @@ import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import { safeGetItem, safeSetItem } from '../utils/safe-storage';
 import { escapeHtml } from '../utils/html-sanitizer';
+import { Z_INDEX } from '../utils/uc-z-index';
+import { resolveOverlayLayer } from '../utils/uc-overlay-host';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
@@ -2209,7 +2211,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
               <div
                 class="dropdown-options"
-                style="position: ${previewContext === 'live' || previewContext === 'ha-preview' ? 'fixed' : 'fixed'} !important; top: auto; left: auto; right: auto; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: ${previewContext === 'live' || previewContext === 'ha-preview' ? '999999' : '10001'} !important; display: none; pointer-events: none; visibility: hidden; max-height: ${optionsMaxHeight}px; overflow-y: auto; overflow-x: hidden; color: ${textColor}; font-size: ${this.addPixelUnit(
+                style="position: fixed !important; top: auto; left: auto; right: auto; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: ${Z_INDEX.DROPDOWN_MENU} !important; display: none; pointer-events: none; visibility: hidden; max-height: ${optionsMaxHeight}px; overflow-y: auto; overflow-x: hidden; color: ${textColor}; font-size: ${this.addPixelUnit(
                   fontSize.toString()
                 )}; font-family: ${fontFamily}; font-weight: ${fontWeight};"
                 @scroll=${(e: Event) => {
@@ -2533,6 +2535,10 @@ export class UltraDropdownModule extends BaseUltraModule {
           // In preview contexts, use fixed positioning to escape container stacking context
           if (isPreviewContext) {
             const rect = selectedElement.getBoundingClientRect();
+            const { zIndex: overlayZIndex } = resolveOverlayLayer(
+              selectedElement,
+              Z_INDEX.DROPDOWN_MENU
+            );
             dropdownElement.style.display = 'block';
             dropdownElement.style.pointerEvents = 'auto';
             dropdownElement.style.visibility = 'visible';
@@ -2541,7 +2547,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             dropdownElement.style.left = `${rect.left}px`;
             dropdownElement.style.width = `${rect.width}px`;
             dropdownElement.style.right = 'auto';
-            dropdownElement.style.zIndex = '999999'; // Extremely high z-index to appear above live preview container
+            dropdownElement.style.zIndex = overlayZIndex.toString();
             
             // Ensure click-outside closes dropdown in preview contexts too
             this.setupClickOutsideHandler(dropdownElement, selectedElement, instanceId);
@@ -2551,16 +2557,27 @@ export class UltraDropdownModule extends BaseUltraModule {
           } else {
             // Dashboard context - use portaled dropdown with scroll handlers
             const rect = selectedElement.getBoundingClientRect();
+            const { host: overlayHost, zIndex: overlayZIndex } = resolveOverlayLayer(
+              selectedElement,
+              Z_INDEX.DROPDOWN_MENU
+            );
 
             // Create or reuse portaled dropdown
             let portaledDropdown = this.portaledDropdowns.get(instanceId);
+
+            // Re-parent to the correct host if context changed (e.g., opened inside popup portal)
+            if (portaledDropdown && portaledDropdown.parentElement !== overlayHost) {
+              portaledDropdown.remove();
+              this.portaledDropdowns.delete(instanceId);
+              portaledDropdown = undefined;
+            }
 
             if (!portaledDropdown) {
               // Clone the dropdown element for portaling
               portaledDropdown = dropdownElement.cloneNode(true) as HTMLElement;
               portaledDropdown.id = `portaled-dropdown-${instanceId}`;
               portaledDropdown.dataset.instanceId = instanceId;
-              document.body.appendChild(portaledDropdown);
+              overlayHost.appendChild(portaledDropdown);
               this.portaledDropdowns.set(instanceId, portaledDropdown);
             } else {
               // Sync portaled clone with the live HA-backed picker DOM (entity names, state text).
@@ -2602,7 +2619,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             portaledDropdown.style.display = 'block';
             portaledDropdown.style.pointerEvents = 'auto';
             portaledDropdown.style.visibility = 'visible';
-            portaledDropdown.style.zIndex = '10001';
+            portaledDropdown.style.zIndex = overlayZIndex.toString();
             portaledDropdown.style.maxHeight = `${portaledDropdownMaxHeight}px`;
             
             // Ensure scrollbar is interactive
@@ -3513,7 +3530,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
       .dropdown-options {
         position: fixed !important;
-        z-index: 10001 !important;
+        z-index: ${Z_INDEX.DROPDOWN_MENU} !important;
         background: var(--card-background-color) !important;
         border: 1px solid var(--divider-color) !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
@@ -3536,7 +3553,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       .dropdown-module-container[data-preview-context="live"] .dropdown-options,
       .dropdown-module-container[data-preview-context="ha-preview"] .dropdown-options {
         position: fixed !important;
-        z-index: 999999 !important; /* Extremely high to appear above all popup content */
+        z-index: ${Z_INDEX.GRAPH_TOOLTIP} !important;
       }
 
       .dropdown-options[style*="display: block"] {

@@ -246,8 +246,7 @@ class UcEntityMapperService {
     }
 
     // Action configs can carry their own entity references. Remap those too.
-    const withMappedActions = this._mapActionEntitiesInObject(mappedModule, mappingMap);
-    return this._syncDefaultActionEntities(withMappedActions);
+    return this._mapActionEntitiesInObject(mappedModule, mappingMap);
   }
 
   /**
@@ -435,58 +434,6 @@ class UcEntityMapperService {
     }
 
     return mappedAction;
-  }
-
-  private _syncDefaultActionEntities(module: CardModule): CardModule {
-    const primaryEntity = this._getPrimaryEntity(module);
-    if (!primaryEntity) {
-      return module;
-    }
-
-    const moduleRecord = module as unknown as Record<string, unknown>;
-    const updated: Record<string, unknown> = { ...moduleRecord };
-    let changed = false;
-
-    for (const actionKey of this._actionKeys) {
-      const rawAction = moduleRecord[actionKey];
-      if (!rawAction || typeof rawAction !== 'object' || Array.isArray(rawAction)) {
-        continue;
-      }
-
-      const actionRecord = rawAction as Record<string, unknown>;
-      if (actionRecord.action !== 'default') {
-        continue;
-      }
-
-      if (actionRecord.entity !== primaryEntity) {
-        updated[actionKey] = { ...actionRecord, entity: primaryEntity };
-        changed = true;
-      }
-    }
-
-    return (changed ? (updated as CardModule) : module);
-  }
-
-  private _getPrimaryEntity(module: CardModule): string | undefined {
-    if ((module as InfoModule).type === 'info') {
-      return (module as InfoModule).info_entities?.find(item => !!item.entity)?.entity;
-    }
-
-    const moduleEntity = (module as { entity?: unknown }).entity;
-    if (typeof moduleEntity === 'string') {
-      return moduleEntity;
-    }
-
-    if ((module as ImageModule).type === 'image') {
-      const imageModule = module as ImageModule;
-      return imageModule.entity || imageModule.image_entity || imageModule.single_entity;
-    }
-
-    if ((module as IconModule).type === 'icon') {
-      return (module as IconModule).icons?.find(icon => !!icon.entity)?.entity;
-    }
-
-    return undefined;
   }
 
   /**

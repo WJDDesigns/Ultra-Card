@@ -1,0 +1,3 @@
+Fixed overlay host resolution so dropdowns, graph tooltips, and camera fullscreen modals render above popup content
+Improved dropdown portal re-parenting to the active overlay container when context changes
+Fixed action entity detection and mapping to stop inheriting or forcing primary entities on default actions

@@ -21,6 +21,7 @@ import {
 } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { escapeHtml } from '../utils/html-sanitizer';
+import { resolveOverlayLayer } from '../utils/uc-overlay-host';
 import '../components/ultra-template-editor';
 
 const CAMERA_PLAYER_SELECTORS = new Set([
@@ -1631,14 +1632,21 @@ export class UltraCameraModule extends BaseUltraModule {
       });
     }
 
-    this.createFullscreenModal(module);
+    const anchor = (event.currentTarget as HTMLElement) || (event.target as HTMLElement);
+    this.createFullscreenModal(module, anchor);
   }
 
   // Create a bulletproof fullscreen modal
-  private createFullscreenModal(module: CameraModule): void {
+  private createFullscreenModal(module: CameraModule, anchor?: HTMLElement): void {
     // Remove any existing fullscreen modals first
     const existingModals = document.querySelectorAll('[id^="ultra-camera-fullscreen-"]');
     existingModals.forEach(modal => modal.remove());
+    const { host: overlayHost, zIndex: overlayZIndex } = resolveOverlayLayer(
+      anchor,
+      Z_INDEX.CAMERA_FULLSCREEN_OVERLAY
+    );
+    const closeButtonZIndex =
+      overlayZIndex >= Z_INDEX.GRAPH_TOOLTIP ? overlayZIndex : overlayZIndex + 1;
 
     // Get camera entity
     let cameraEntity = module.entity;
@@ -1673,7 +1681,7 @@ export class UltraCameraModule extends BaseUltraModule {
       width: 100vw !important;
       height: 100vh !important;
       background: rgba(0,0,0,0.95) !important;
-      z-index: ${Z_INDEX.CAMERA_FULLSCREEN_OVERLAY} !important;
+      z-index: ${overlayZIndex} !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
@@ -1724,7 +1732,7 @@ export class UltraCameraModule extends BaseUltraModule {
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
+      z-index: ${closeButtonZIndex} !important;
       backdrop-filter: blur(4px) !important;
       box-shadow: 0 4px 12px rgba(0,0,0,0.6) !important;
       font-family: Arial, sans-serif !important;
@@ -1758,7 +1766,7 @@ export class UltraCameraModule extends BaseUltraModule {
     cameraWrapper.appendChild(cameraContainer);
     cameraWrapper.appendChild(closeButton);
     modal.appendChild(cameraWrapper);
-    document.body.appendChild(modal);
+    overlayHost.appendChild(modal);
 
     // Add event handlers and prevent inert attribute
     const closeModal = () => {

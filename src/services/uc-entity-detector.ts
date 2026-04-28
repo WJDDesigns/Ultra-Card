@@ -433,8 +433,7 @@ class UcEntityDetectorService {
     moduleType: string
   ): EntityReference[] {
     const references: EntityReference[] = [];
-    const primaryEntity = this._getPrimaryEntity(module);
-    this._scanActionEntitiesRecursive(module as unknown, basePath, moduleType, references, primaryEntity);
+    this._scanActionEntitiesRecursive(module as unknown, basePath, moduleType, references);
     return references;
   }
 
@@ -442,18 +441,11 @@ class UcEntityDetectorService {
     value: unknown,
     currentPath: string,
     moduleType: string,
-    references: EntityReference[],
-    primaryEntity?: string
+    references: EntityReference[]
   ): void {
     if (Array.isArray(value)) {
       value.forEach((item, index) =>
-        this._scanActionEntitiesRecursive(
-          item,
-          `${currentPath}[${index}]`,
-          moduleType,
-          references,
-          primaryEntity
-        )
+        this._scanActionEntitiesRecursive(item, `${currentPath}[${index}]`, moduleType, references)
       );
       return;
     }
@@ -477,29 +469,21 @@ class UcEntityDetectorService {
           ...this._extractActionEntityReferences(
             fieldValue as Record<string, unknown>,
             fieldPath,
-            moduleType,
-            primaryEntity
+            moduleType
           )
         );
       }
 
-      this._scanActionEntitiesRecursive(fieldValue, fieldPath, moduleType, references, primaryEntity);
+      this._scanActionEntitiesRecursive(fieldValue, fieldPath, moduleType, references);
     }
   }
 
   private _extractActionEntityReferences(
     action: Record<string, unknown>,
     actionPath: string,
-    moduleType: string,
-    primaryEntity?: string
+    moduleType: string
   ): EntityReference[] {
     const references: EntityReference[] = [];
-    const isDefaultAction = action.action === 'default';
-    const shouldInheritPrimaryEntity = isDefaultAction && !!primaryEntity;
-
-    if (shouldInheritPrimaryEntity) {
-      return references;
-    }
 
     if (typeof action.entity === 'string') {
       references.push(
@@ -537,28 +521,6 @@ class UcEntityDetectorService {
     }
 
     return references;
-  }
-
-  private _getPrimaryEntity(module: CardModule): string | undefined {
-    if ((module as InfoModule).type === 'info') {
-      return (module as InfoModule).info_entities?.find(item => !!item.entity)?.entity;
-    }
-
-    const moduleEntity = (module as { entity?: unknown }).entity;
-    if (typeof moduleEntity === 'string') {
-      return moduleEntity;
-    }
-
-    if ((module as ImageModule).type === 'image') {
-      const imageModule = module as ImageModule;
-      return imageModule.entity || imageModule.image_entity || imageModule.single_entity;
-    }
-
-    if ((module as IconModule).type === 'icon') {
-      return (module as IconModule).icons?.find(icon => !!icon.entity)?.entity;
-    }
-
-    return undefined;
   }
 
   /**

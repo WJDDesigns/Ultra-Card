@@ -1,5 +1,18 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta26
+
+### 🔧 Improvements
+
+- **Improved Dropdown portal re-parenting to the active overlay container when context changes** - Enhanced dropdown functionality and responsiveness
+
+### 🐛 Bug Fixes
+
+- **Fixed Overlay host resolution so dropdowns, graph tooltips, and camera fullscreen modals render above popup content** - Enhanced dropdown functionality and responsiveness
+- **Fixed Action entity detection and mapping to stop inheriting or forcing primary entities on default actions** - Enhanced action handling and user interaction response
+
+---
+
 ## Version 3.3.0-beta25
 
 ### 🚀 New Features

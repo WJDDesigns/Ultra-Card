@@ -24,6 +24,7 @@ import { formatEntityState } from '../utils/number-format';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { escapeHtml } from '../utils/html-sanitizer';
+import { resolveOverlayLayer } from '../utils/uc-overlay-host';
 
 export class UltraGraphsModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -3901,9 +3902,11 @@ export class UltraGraphsModule extends BaseUltraModule {
     // Get the circle element
     const circle = event.target as SVGCircleElement;
 
-    // Find if we're inside a popup portal (to append tooltip there for proper z-index stacking)
-    const popupPortal = circle.closest('.ultra-popup-portal');
-    const tooltipContainer = popupPortal || document.body;
+    // Route overlays into popup portals when present so they stay above popup content.
+    const { host: tooltipContainer, zIndex: tooltipZIndex } = resolveOverlayLayer(
+      circle,
+      Z_INDEX.GRAPH_TOOLTIP
+    );
 
     // Find or create tooltip element in the appropriate container
     let tooltip = document.getElementById(`graph-tooltip-${moduleId}`) as HTMLElement;
@@ -3929,7 +3932,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         color: var(--primary-text-color);
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         pointer-events: none;
-        z-index: ${Z_INDEX.GRAPH_TOOLTIP};
+        z-index: ${tooltipZIndex};
         white-space: nowrap;
       `;
       tooltipContainer.appendChild(tooltip);
