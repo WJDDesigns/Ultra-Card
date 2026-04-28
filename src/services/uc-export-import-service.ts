@@ -814,16 +814,16 @@ class UcExportImportService {
     const dataString = JSON.stringify(clipboardData);
 
     // Try localStorage first
-    try {
-      // Clear any existing clipboard data first to free space
-      safeRemoveItem(this.CLIPBOARD_KEY);
-      safeSetItem(this.CLIPBOARD_KEY, dataString);
+    // Clear any existing clipboard data first to free space
+    safeRemoveItem(this.CLIPBOARD_KEY);
+    const localStored = safeSetItem(this.CLIPBOARD_KEY, dataString);
+    if (localStored) {
       this._memoryClipboard = null; // Clear memory fallback
       return;
-    } catch (e) {
-      // localStorage quota exceeded or not available
-      console.warn('localStorage quota exceeded, trying sessionStorage...');
     }
+
+    // localStorage quota exceeded or not available
+    console.warn('localStorage unavailable for module clipboard, trying sessionStorage...');
 
     // Try sessionStorage as fallback
     try {
@@ -1020,14 +1020,14 @@ class UcExportImportService {
 
     const dataString = JSON.stringify(clipboardData);
 
-    try {
-      safeRemoveItem(this.COLUMN_CLIPBOARD_KEY);
-      safeSetItem(this.COLUMN_CLIPBOARD_KEY, dataString);
+    safeRemoveItem(this.COLUMN_CLIPBOARD_KEY);
+    const localStored = safeSetItem(this.COLUMN_CLIPBOARD_KEY, dataString);
+    if (localStored) {
       this._memoryColumnClipboard = null;
       return;
-    } catch (e) {
-      console.warn('localStorage quota exceeded for column, trying sessionStorage...');
     }
+
+    console.warn('localStorage unavailable for column clipboard, trying sessionStorage...');
 
     try {
       sessionStorage.removeItem(this.COLUMN_CLIPBOARD_KEY);

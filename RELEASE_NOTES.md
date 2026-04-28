@@ -1,5 +1,19 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta24
+
+### What's in this build
+
+This beta improves Bar scale readability on smaller screens, makes import mapping catch action entities more reliably, and hardens migration/clipboard behavior in the editor flow.
+
+- **Bar scale readability controls** — Added `Clamp Edge Labels Inward` plus optional mobile-only scale settings for breakpoint targeting, reduced label density, and numeric label abbreviation (for example `1200 -> 1.2k`) to prevent overlap on tight layouts.
+- **Action entity import mapping** — Entity detector and mapper now scan/remap entities inside action configs (`tap_action`, `hold_action`, `double_tap_action`, side actions, and `target.entity_id` arrays), so imported cards preserve action targets more consistently.
+- **Template migration parity in editor** — Opening a card in the visual editor now auto-migrates legacy template fields at config level and emits an internal config update when migration changed data, helping repaired configs persist without extra manual steps.
+- **Clipboard storage fallback reliability** — Export/import clipboard writes now correctly check storage helper return values before falling back, improving behavior when localStorage is unavailable or quota-limited.
+- **Regression coverage updates** — Added migration tests for full-config auto-migration paths to reduce risk of template regressions between runtime and editor.
+
+---
+
 ## Version 3.3.0-beta23
 
 ### What’s in this build

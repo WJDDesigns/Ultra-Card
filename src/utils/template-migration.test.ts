@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { autoMigrateCardModule, migrateToUnified } from './template-migration';
+import {
+  autoMigrateCardModule,
+  autoMigrateTemplatesInConfig,
+  migrateToUnified,
+} from './template-migration';
 
 describe('migrateToUnified bar', () => {
   it('does not map percentage_template to unified value in difference mode', () => {
@@ -95,5 +99,43 @@ describe('autoMigrateCardModule info', () => {
     expect(entity.id).toBe('info-entity-info-pasted-yaml-0');
     expect(entity.unified_template_mode).toBe(true);
     expect(entity.unified_template).toContain('icon_color');
+  });
+});
+
+describe('autoMigrateTemplatesInConfig', () => {
+  it('migrates legacy text module template fields for editor/runtime parity', () => {
+    const cfg = {
+      type: 'custom:ultra-card',
+      layout: {
+        rows: [
+          {
+            id: 'row-1',
+            columns: [
+              {
+                id: 'col-1',
+                modules: [
+                  {
+                    id: 'text-1',
+                    type: 'text',
+                    text: 'Example',
+                    template_mode: true,
+                    template: "{{ now() | as_timestamp | timestamp_custom('%H') }}",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    } as any;
+
+    const migrated = autoMigrateTemplatesInConfig(cfg);
+    const text = migrated.layout.rows[0].columns[0].modules[0] as any;
+
+    expect(text.unified_template_mode).toBe(true);
+    expect(text.unified_template).toContain('"content"');
+    expect(text.unified_template).toContain('timestamp_custom');
+    expect(text.template_mode).toBe(false);
+    expect(text.template).toBe('');
   });
 });

@@ -787,6 +787,11 @@ export interface BarModule extends BaseModule {
   scale_position?: 'above' | 'below' | undefined; // Position relative to bar
   scale_custom_ticks?: string | undefined; // Comma-separated real-world values for custom tick positions (e.g. "10,20,30,40")
   scale_custom_labels?: string | undefined; // Comma-separated labels matching custom ticks (e.g. "Reserve,1/4,1/2,3/4")
+  scale_clamp_edge_labels?: boolean | undefined; // Nudge first/last labels inward to avoid clipping
+  scale_mobile_options_enabled?: boolean | undefined; // Enable mobile-specific scale label behavior
+  scale_mobile_breakpoint?: number | undefined; // Viewport width threshold (px) for mobile options
+  scale_mobile_reduce_label_density?: boolean | undefined; // Hide every second label on mobile
+  scale_mobile_abbreviate_labels?: boolean | undefined; // Shorten numeric labels on mobile
 
   // Animation & Templates
   animation?: boolean | undefined;

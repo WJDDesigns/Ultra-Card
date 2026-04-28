@@ -499,6 +499,38 @@ export function autoMigrateCardModuleTree(module: CardModule): CardModule {
   return migrated as CardModule;
 }
 
+/**
+ * Apply legacy template auto-migration to an entire card config.
+ * Returns a deep-cloned config so callers can safely compare and emit updates.
+ */
+export function autoMigrateTemplatesInConfig(config: UltraCardConfig): UltraCardConfig {
+  if (!config || typeof config !== 'object') return config;
+
+  const migratedConfig = JSON.parse(JSON.stringify(config)) as UltraCardConfig;
+  migrateLayoutVisibilityTemplates(migratedConfig);
+
+  const rows = migratedConfig.layout?.rows;
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return migratedConfig;
+  }
+
+  migratedConfig.layout.rows = rows.map(row => {
+    const rowColumns = Array.isArray(row.columns) ? row.columns : [];
+    return {
+      ...row,
+      columns: rowColumns.map(column => {
+        const columnModules = Array.isArray(column.modules) ? column.modules : [];
+        return {
+          ...column,
+          modules: columnModules.map(module => autoMigrateCardModuleTree(module as CardModule)),
+        };
+      }),
+    };
+  });
+
+  return migratedConfig;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Module default-margin migration (v1 → v2)
 // ─────────────────────────────────────────────────────────────────────────────

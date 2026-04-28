@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { UltraCardConfig, HoverEffectConfig, CustomVariable, DeviceBreakpoint } from '../types';
 import { configValidationService } from '../services/config-validation-service';
+import { autoMigrateTemplatesInConfig } from '../utils/template-migration';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
 import { ucCloudSyncService, SyncStatus } from '../services/uc-cloud-sync-service';
@@ -95,10 +96,34 @@ export class UltraCardEditor extends LitElement {
   private static readonly HUB_BANNER_DISMISSED_KEY = 'ultra-card-hub-banner-dismissed';
 
   public setConfig(config: UltraCardConfig): void {
-    this.config = config || {
-      type: 'custom:ultra-card',
-      layout: { rows: [] },
-    };
+    const incomingConfig =
+      config || {
+        type: 'custom:ultra-card',
+        layout: { rows: [] },
+      };
+
+    const migratedConfig = autoMigrateTemplatesInConfig(incomingConfig);
+    this.config = migratedConfig;
+
+    // Persist auto-migration so legacy template fields are repaired even if the user
+    // only opens/saves the visual editor.
+    if (this._configsDiffer(incomingConfig, migratedConfig)) {
+      this.dispatchEvent(
+        new CustomEvent('config-changed', {
+          detail: { config: migratedConfig, isInternal: true },
+          bubbles: true,
+          composed: true,
+        })
+      );
+    }
+  }
+
+  private _configsDiffer(left: UltraCardConfig, right: UltraCardConfig): boolean {
+    try {
+      return JSON.stringify(left) !== JSON.stringify(right);
+    } catch {
+      return true;
+    }
   }
 
   protected override willUpdate(changedProperties: Map<string, any>): void {

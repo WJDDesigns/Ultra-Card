@@ -26,6 +26,19 @@ const _UC_DEBUG = !!(window as any).__UC_DEBUG;
  * Recursively scans all module types and nested structures
  */
 class UcEntityDetectorService {
+  private readonly _actionKeys = new Set([
+    'tap_action',
+    'hold_action',
+    'double_tap_action',
+    'left_tap_action',
+    'left_hold_action',
+    'left_double_tap_action',
+    'right_tap_action',
+    'right_hold_action',
+    'right_double_tap_action',
+    'inactive_tap_action',
+  ]);
+
   /**
    * If preset wizard maps an entity id to a field, use that label + description as mapper context.
    */
@@ -176,6 +189,9 @@ class UcEntityDetectorService {
           );
         }
     }
+
+    // Include entities nested inside action configs (tap/hold/double/etc).
+    references.push(...this._scanActionEntities(module, basePath, module.type));
 
     return references;
   }
@@ -406,6 +422,102 @@ class UcEntityDetectorService {
         const nestedRefs = this._scanModule(nestedModule, `${basePath}.modules[${index}]`);
         references.push(...nestedRefs);
       });
+    }
+
+    return references;
+  }
+
+  private _scanActionEntities(
+    module: CardModule,
+    basePath: string,
+    moduleType: string
+  ): EntityReference[] {
+    const references: EntityReference[] = [];
+    this._scanActionEntitiesRecursive(module as unknown, basePath, moduleType, references);
+    return references;
+  }
+
+  private _scanActionEntitiesRecursive(
+    value: unknown,
+    currentPath: string,
+    moduleType: string,
+    references: EntityReference[]
+  ): void {
+    if (Array.isArray(value)) {
+      value.forEach((item, index) =>
+        this._scanActionEntitiesRecursive(item, `${currentPath}[${index}]`, moduleType, references)
+      );
+      return;
+    }
+
+    if (!value || typeof value !== 'object') {
+      return;
+    }
+
+    const record = value as Record<string, unknown>;
+
+    for (const [key, fieldValue] of Object.entries(record)) {
+      const fieldPath = `${currentPath}.${key}`;
+
+      // Nested modules are scanned separately by module-specific scanners.
+      if (key === 'modules' && Array.isArray(fieldValue)) {
+        continue;
+      }
+
+      if (this._actionKeys.has(key) && fieldValue && typeof fieldValue === 'object') {
+        references.push(
+          ...this._extractActionEntityReferences(
+            fieldValue as Record<string, unknown>,
+            fieldPath,
+            moduleType
+          )
+        );
+      }
+
+      this._scanActionEntitiesRecursive(fieldValue, fieldPath, moduleType, references);
+    }
+  }
+
+  private _extractActionEntityReferences(
+    action: Record<string, unknown>,
+    actionPath: string,
+    moduleType: string
+  ): EntityReference[] {
+    const references: EntityReference[] = [];
+
+    if (typeof action.entity === 'string') {
+      references.push(
+        this._createReference(action.entity, `${actionPath}.entity`, moduleType, 'Action Entity')
+      );
+    }
+
+    const target = action.target;
+    if (target && typeof target === 'object' && !Array.isArray(target)) {
+      const entityId = (target as Record<string, unknown>).entity_id;
+
+      if (typeof entityId === 'string') {
+        references.push(
+          this._createReference(
+            entityId,
+            `${actionPath}.target.entity_id`,
+            moduleType,
+            'Action Target Entity'
+          )
+        );
+      } else if (Array.isArray(entityId)) {
+        entityId.forEach((id, index) => {
+          if (typeof id === 'string') {
+            references.push(
+              this._createReference(
+                id,
+                `${actionPath}.target.entity_id[${index}]`,
+                moduleType,
+                'Action Target Entity'
+              )
+            );
+          }
+        });
+      }
     }
 
     return references;

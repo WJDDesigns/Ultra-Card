@@ -20,6 +20,19 @@ import {
  * Service for applying entity mappings to Ultra Card layouts and fuzzy matching
  */
 class UcEntityMapperService {
+  private readonly _actionKeys = new Set([
+    'tap_action',
+    'hold_action',
+    'double_tap_action',
+    'left_tap_action',
+    'left_hold_action',
+    'left_double_tap_action',
+    'right_tap_action',
+    'right_hold_action',
+    'right_double_tap_action',
+    'inactive_tap_action',
+  ]);
+
   /**
    * Apply entity mappings to a layout configuration
    * Returns a new layout with mapped entities
@@ -187,38 +200,53 @@ class UcEntityMapperService {
       return module;
     }
 
+    let mappedModule: CardModule = module;
+
     switch (module.type) {
       case 'icon':
-        return this._mapIconModule(module as IconModule, mappingMap);
+        mappedModule = this._mapIconModule(module as IconModule, mappingMap);
+        break;
       case 'info':
-        return this._mapInfoModule(module as InfoModule, mappingMap);
+        mappedModule = this._mapInfoModule(module as InfoModule, mappingMap);
+        break;
       case 'bar':
-        return this._mapBarModule(module as BarModule, mappingMap);
+        mappedModule = this._mapBarModule(module as BarModule, mappingMap);
+        break;
       case 'camera':
-        return this._mapCameraModule(module as CameraModule, mappingMap);
+        mappedModule = this._mapCameraModule(module as CameraModule, mappingMap);
+        break;
       case 'light':
-        return this._mapLightModule(module as LightModule, mappingMap);
+        mappedModule = this._mapLightModule(module as LightModule, mappingMap);
+        break;
       case 'horizontal':
-        return this._mapHorizontalModule(module as HorizontalModule, mappingMap);
+        mappedModule = this._mapHorizontalModule(module as HorizontalModule, mappingMap);
+        break;
       case 'vertical':
-        return this._mapVerticalModule(module as VerticalModule, mappingMap);
+        mappedModule = this._mapVerticalModule(module as VerticalModule, mappingMap);
+        break;
       case 'map':
-        return this._mapMapModule(module as MapModule, mappingMap);
+        mappedModule = this._mapMapModule(module as MapModule, mappingMap);
+        break;
       case 'slider':
-        return this._mapSliderModule(module as SliderModule, mappingMap);
+        mappedModule = this._mapSliderModule(module as SliderModule, mappingMap);
+        break;
       case 'image':
-        return this._mapImageModule(module as ImageModule, mappingMap);
+        mappedModule = this._mapImageModule(module as ImageModule, mappingMap);
+        break;
       default:
         // Generic entity field mapping
         if ('entity' in module && typeof (module as any).entity === 'string') {
           const entity = (module as any).entity;
-        if (mappingMap.has(entity)) {
-          const mappedEntity = mappingMap.get(entity) ?? entity;
-          return { ...module, entity: mappedEntity } as CardModule;
+          if (mappingMap.has(entity)) {
+            const mappedEntity = mappingMap.get(entity) ?? entity;
+            mappedModule = { ...module, entity: mappedEntity } as CardModule;
+          }
         }
-        }
-        return module;
+        break;
     }
+
+    // Action configs can carry their own entity references. Remap those too.
+    return this._mapActionEntitiesInObject(mappedModule, mappingMap);
   }
 
   /**
@@ -351,6 +379,61 @@ class UcEntityMapperService {
       ...module,
       modules: module.modules?.map(nested => this._mapModule(nested, mappingMap)),
     };
+  }
+
+  private _mapActionEntitiesInObject<T>(value: T, mappingMap: Map<string, string>): T {
+    if (Array.isArray(value)) {
+      return value.map(item => this._mapActionEntitiesInObject(item, mappingMap)) as T;
+    }
+
+    if (!value || typeof value !== 'object') {
+      return value;
+    }
+
+    const record = value as Record<string, unknown>;
+    const mappedRecord: Record<string, unknown> = { ...record };
+
+    for (const [key, rawValue] of Object.entries(record)) {
+      if (this._actionKeys.has(key) && rawValue && typeof rawValue === 'object') {
+        mappedRecord[key] = this._mapActionConfig(rawValue as Record<string, unknown>, mappingMap);
+        continue;
+      }
+
+      mappedRecord[key] = this._mapActionEntitiesInObject(rawValue as unknown, mappingMap);
+    }
+
+    return mappedRecord as T;
+  }
+
+  private _mapActionConfig(
+    actionConfig: Record<string, unknown>,
+    mappingMap: Map<string, string>
+  ): Record<string, unknown> {
+    const mappedAction: Record<string, unknown> = {
+      ...actionConfig,
+    };
+
+    if (typeof mappedAction.entity === 'string') {
+      mappedAction.entity = mappingMap.get(mappedAction.entity) || mappedAction.entity;
+    }
+
+    const target = mappedAction.target;
+    if (target && typeof target === 'object' && !Array.isArray(target)) {
+      const mappedTarget: Record<string, unknown> = { ...(target as Record<string, unknown>) };
+      const entityId = mappedTarget.entity_id;
+
+      if (typeof entityId === 'string') {
+        mappedTarget.entity_id = mappingMap.get(entityId) || entityId;
+      } else if (Array.isArray(entityId)) {
+        mappedTarget.entity_id = entityId.map(id =>
+          typeof id === 'string' ? mappingMap.get(id) || id : id
+        );
+      }
+
+      mappedAction.target = mappedTarget;
+    }
+
+    return mappedAction;
   }
 
   /**

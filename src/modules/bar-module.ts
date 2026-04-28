@@ -55,6 +55,41 @@ export class UltraBarModule extends BaseUltraModule {
     return Boolean(value);
   }
 
+  /**
+   * Shorten numeric tick labels for narrow mobile layouts.
+   * - Preserves % suffix
+   * - Drops non-% units (e.g. "700 km" -> "700") to save width
+   * - Compacts large numbers (e.g. 1200 -> 1.2k)
+   */
+  private formatMobileScaleLabel(label: string): string {
+    const trimmed = String(label || '').trim();
+    if (!trimmed) return trimmed;
+
+    const match = trimmed.match(/^(-?\d+(?:[.,]\d+)?)\s*(.*)$/);
+    if (!match) return trimmed;
+
+    const parsed = parseFloat(match[1].replace(',', '.'));
+    if (Number.isNaN(parsed)) return trimmed;
+    const unit = (match[2] || '').trim();
+    const abs = Math.abs(parsed);
+
+    const compactValue = (() => {
+      const sign = parsed < 0 ? '-' : '';
+      if (abs >= 1_000_000) {
+        return `${sign}${(abs / 1_000_000).toFixed(abs >= 10_000_000 ? 0 : 1)}M`;
+      }
+      if (abs >= 1_000) {
+        return `${sign}${(abs / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}k`;
+      }
+      if (Number.isInteger(parsed)) return `${parsed}`;
+      return `${Math.round(parsed * 10) / 10}`;
+    })();
+
+    if (unit === '%') return `${compactValue}%`;
+    if (unit) return compactValue;
+    return compactValue;
+  }
+
   createDefault(id?: string, hass?: HomeAssistant): BarModule {
     // Auto-detect suitable battery sensor
     const autoEntity = this.findSuitableBatterySensor(hass);
@@ -185,6 +220,11 @@ export class UltraBarModule extends BaseUltraModule {
       scale_position: 'below',
       scale_custom_ticks: '',
       scale_custom_labels: '',
+      scale_clamp_edge_labels: true,
+      scale_mobile_options_enabled: false,
+      scale_mobile_breakpoint: 420,
+      scale_mobile_reduce_label_density: false,
+      scale_mobile_abbreviate_labels: false,
 
       // Animation & Templates
       animation: true,
@@ -1365,6 +1405,154 @@ export class UltraBarModule extends BaseUltraModule {
                               updateModule({ scale_label_color: e.detail.value })}
                           ></ultra-color-picker>
                         </div>
+                      `
+                    : ''}
+
+                  ${this.renderFieldSection(
+                    localize('editor.bar.scale.clamp_edge_labels', lang, 'Clamp Edge Labels Inward'),
+                    localize(
+                      'editor.bar.scale.clamp_edge_labels_desc',
+                      lang,
+                      'Slightly nudge the first and last labels inward to reduce clipping on tight layouts.'
+                    ),
+                    hass,
+                    {
+                      scale_clamp_edge_labels:
+                        this.normalizeBoolean(
+                          (barModule as any).scale_clamp_edge_labels,
+                          true
+                        ),
+                    },
+                    [this.booleanField('scale_clamp_edge_labels')],
+                    (e: CustomEvent) =>
+                      updateModule({
+                        scale_clamp_edge_labels: this.normalizeBoolean(
+                          e.detail.value.scale_clamp_edge_labels,
+                          true
+                        ),
+                      })
+                  )}
+
+                  ${this.renderFieldSection(
+                    localize('editor.bar.scale.mobile_options_enabled', lang, 'Enable Mobile Label Options'),
+                    localize(
+                      'editor.bar.scale.mobile_options_enabled_desc',
+                      lang,
+                      'Apply mobile-specific label behavior below the configured viewport width.'
+                    ),
+                    hass,
+                    {
+                      scale_mobile_options_enabled:
+                        this.normalizeBoolean(
+                          (barModule as any).scale_mobile_options_enabled,
+                          false
+                        ),
+                    },
+                    [this.booleanField('scale_mobile_options_enabled')],
+                    (e: CustomEvent) =>
+                      updateModule({
+                        scale_mobile_options_enabled: this.normalizeBoolean(
+                          e.detail.value.scale_mobile_options_enabled,
+                          false
+                        ),
+                      })
+                  )}
+
+                  ${this.normalizeBoolean((barModule as any).scale_mobile_options_enabled, false)
+                    ? html`
+                        <div class="field-group" style="margin-bottom: 16px;">
+                          <div
+                            class="field-title"
+                            style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                          >
+                            ${localize('editor.bar.scale.mobile_breakpoint', lang, 'Mobile Breakpoint')}
+                          </div>
+                          <div
+                            class="field-description"
+                            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
+                          >
+                            ${localize(
+                              'editor.bar.scale.mobile_breakpoint_desc',
+                              lang,
+                              'Apply mobile label options when viewport width is at or below this value.'
+                            )}
+                          </div>
+                          <div style="display: flex; align-items: center; gap: 12px;">
+                            <ha-slider
+                              style="flex: 1;"
+                              .min=${320}
+                              .max=${640}
+                              .step=${10}
+                              .value=${(barModule as any).scale_mobile_breakpoint || 420}
+                              @change=${(e: Event) =>
+                                updateModule({
+                                  scale_mobile_breakpoint: parseInt(
+                                    (e.target as any).value,
+                                    10
+                                  ),
+                                })}
+                            ></ha-slider>
+                            <span style="min-width: 52px; text-align: center; font-weight: 600;">
+                              ${(barModule as any).scale_mobile_breakpoint || 420}px
+                            </span>
+                          </div>
+                        </div>
+
+                        ${this.renderFieldSection(
+                          localize(
+                            'editor.bar.scale.mobile_reduce_density',
+                            lang,
+                            'Reduce Label Density on Mobile'
+                          ),
+                          localize(
+                            'editor.bar.scale.mobile_reduce_density_desc',
+                            lang,
+                            'Hide every second label on mobile to prevent overlap while keeping all ticks.'
+                          ),
+                          hass,
+                          {
+                            scale_mobile_reduce_label_density: this.normalizeBoolean(
+                              (barModule as any).scale_mobile_reduce_label_density,
+                              false
+                            ),
+                          },
+                          [this.booleanField('scale_mobile_reduce_label_density')],
+                          (e: CustomEvent) =>
+                            updateModule({
+                              scale_mobile_reduce_label_density: this.normalizeBoolean(
+                                e.detail.value.scale_mobile_reduce_label_density,
+                                false
+                              ),
+                            })
+                        )}
+
+                        ${this.renderFieldSection(
+                          localize(
+                            'editor.bar.scale.mobile_abbreviate_labels',
+                            lang,
+                            'Abbreviate Labels on Mobile'
+                          ),
+                          localize(
+                            'editor.bar.scale.mobile_abbreviate_labels_desc',
+                            lang,
+                            'Shorten numeric labels on mobile (e.g. 1200 -> 1.2k, 700 km -> 700).'
+                          ),
+                          hass,
+                          {
+                            scale_mobile_abbreviate_labels: this.normalizeBoolean(
+                              (barModule as any).scale_mobile_abbreviate_labels,
+                              false
+                            ),
+                          },
+                          [this.booleanField('scale_mobile_abbreviate_labels')],
+                          (e: CustomEvent) =>
+                            updateModule({
+                              scale_mobile_abbreviate_labels: this.normalizeBoolean(
+                                e.detail.value.scale_mobile_abbreviate_labels,
+                                false
+                              ),
+                            })
+                        )}
                       `
                     : ''}
 
@@ -4419,6 +4607,30 @@ export class UltraBarModule extends BaseUltraModule {
         (barModule as any).scale_label_color || 'var(--secondary-text-color)';
       const scaleTickColor = (barModule as any).scale_tick_color || 'var(--divider-color)';
       const scalePosition = (barModule as any).scale_position || 'below';
+      const edgeClampOffsetPx = Math.max(2, Math.round(scaleLabelSize * 0.35));
+      const clampEdgeLabels = this.normalizeBoolean(
+        (barModule as any).scale_clamp_edge_labels,
+        true
+      );
+      const mobileOptionsEnabled = this.normalizeBoolean(
+        (barModule as any).scale_mobile_options_enabled,
+        false
+      );
+      const mobileBreakpoint = Math.max(
+        320,
+        Math.min(640, Number((barModule as any).scale_mobile_breakpoint || 420))
+      );
+      const isMobileScale =
+        mobileOptionsEnabled &&
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia(`(max-width: ${mobileBreakpoint}px)`).matches;
+      const mobileReduceDensity =
+        isMobileScale &&
+        this.normalizeBoolean((barModule as any).scale_mobile_reduce_label_density, false);
+      const mobileAbbreviate =
+        isMobileScale &&
+        this.normalizeBoolean((barModule as any).scale_mobile_abbreviate_labels, false);
       const scaleRange = scaleMax - scaleMin;
 
       const pctTypeTicksRaw = (barModule as any).percentage_type || 'entity';
@@ -4503,12 +4715,24 @@ export class UltraBarModule extends BaseUltraModule {
           "
         >
           ${ticks.map(
-            tick => {
-              const labelTransform = tick.position <= 0.5
-                ? 'translateX(2px)'
-                : tick.position >= 99.5
-                  ? 'translateX(-2px)'
-                  : 'translateX(0)';
+            (tick, index) => {
+              const labelTransform = !clampEdgeLabels
+                ? 'translateX(0)'
+                : tick.position <= 0.5
+                  ? `translateX(${edgeClampOffsetPx}px)`
+                  : tick.position >= 99.5
+                    ? `translateX(-${edgeClampOffsetPx}px)`
+                    : 'translateX(0)';
+              const hideForDensity =
+                mobileReduceDensity &&
+                index !== 0 &&
+                index !== ticks.length - 1 &&
+                index % 2 === 1;
+              const rawLabel = tick.label;
+              const displayLabel =
+                mobileAbbreviate && typeof rawLabel === 'string'
+                  ? this.formatMobileScaleLabel(rawLabel)
+                  : rawLabel;
 
               return html`
                 <div
@@ -4533,7 +4757,7 @@ export class UltraBarModule extends BaseUltraModule {
                       flex-shrink: 0;
                     "
                   ></div>
-                  ${scaleShowLabels && tick.label !== null
+                  ${scaleShowLabels && displayLabel !== null && !hideForDensity
                     ? html`
                         <span
                           style="
@@ -4545,7 +4769,7 @@ export class UltraBarModule extends BaseUltraModule {
                             transform: ${labelTransform};
                           "
                         >
-                          ${tick.label}
+                          ${displayLabel}
                         </span>
                       `
                     : ''}

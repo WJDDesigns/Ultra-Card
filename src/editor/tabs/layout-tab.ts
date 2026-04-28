@@ -1066,9 +1066,11 @@ export class LayoutTab extends LitElement {
         },
       ];
     } else if (type === 'nested-layout') {
-      const nestedLayoutModule = this.config.layout?.rows?.[rowIndex]?.columns?.[columnIndex]?.modules?.[
-        parentModuleIndex
-      ]?.modules?.[childIndex] as any;
+      const nestedLayoutModule = (
+        this.config.layout?.rows?.[rowIndex]?.columns?.[columnIndex]?.modules?.[
+          parentModuleIndex
+        ] as any
+      )?.modules?.[childIndex] as any;
       const canPasteIntoNestedLayout = this._hasModuleClipboard && nestedLayoutModule?.type !== 'tabs';
 
       // Nested layout (layout inside another layout)
