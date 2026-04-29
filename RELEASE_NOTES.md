@@ -1,5 +1,19 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta28
+
+### 🔧 Improvements
+
+- **Improved Bar scale edge-label clamping behavior with explicit per-bar control.** - Enhanced bar visualization and progress display
+- **Improved live editor responsiveness for Bar scale labels during width changes.** - Test your changes directly in the editor preview
+
+### 🐛 Bug Fixes
+
+- **Fixed Bar edge clamping regressions so edge labels no longer reset or misalign during real-time resize.** - Resolved content overflow and clipping issues
+- **Fixed Bar clamp overlap handling by prioritizing edge labels and hiding conflicting adjacent ticks only when needed.** - Improved text rendering and styling capabilities
+
+---
+
 ## Version 3.3.0-beta27
 
 ### 🔧 Improvements

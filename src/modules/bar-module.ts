@@ -40,6 +40,8 @@ export class UltraBarModule extends BaseUltraModule {
   private _templateInputDebounce: any = null;
   private _timeProgressInterval: any = null;
   private _timeProgressCleanup: (() => void) | null = null;
+  private _scaleClampObservers = new WeakMap<Element, ResizeObserver>();
+  private _scaleClampTimers = new WeakMap<Element, number>();
 
   /**
    * Normalize booleans coming from editor/YAML, including string values.
@@ -56,8 +58,8 @@ export class UltraBarModule extends BaseUltraModule {
   }
 
   /**
-   * Clamp first/last scale labels only when they actually overflow.
-   * This avoids unnecessary shifts on wider layouts.
+   * Clamp first/last scale labels inward when enabled.
+   * This gives an explicit per-bar on/off behavior.
    */
   private applyScaleEdgeLabelClamping(root: Element): void {
     const scales = Array.from(
@@ -65,6 +67,13 @@ export class UltraBarModule extends BaseUltraModule {
     ) as HTMLElement[];
 
     const overlaps = (a: DOMRect, b: DOMRect): boolean => a.left < b.right && a.right > b.left;
+
+    const parseCurrentShift = (el: HTMLElement): number => {
+      const t = (el.style.transform || '').match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
+      if (!t) return 0;
+      const parsed = parseFloat(t[1]);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    };
 
     const setTransformShift = (el: HTMLElement, shiftPx: number): void => {
       el.style.transform = shiftPx === 0 ? 'translateX(0)' : `translateX(${Math.round(shiftPx)}px)`;
@@ -75,10 +84,55 @@ export class UltraBarModule extends BaseUltraModule {
       return el.getBoundingClientRect();
     };
 
+    const intersectRect = (a: DOMRect, b: DOMRect): DOMRect => {
+      const left = Math.max(a.left, b.left);
+      const top = Math.max(a.top, b.top);
+      const right = Math.min(a.right, b.right);
+      const bottom = Math.min(a.bottom, b.bottom);
+      if (right <= left || bottom <= top) return a;
+      return {
+        ...a,
+        left,
+        top,
+        right,
+        bottom,
+        width: right - left,
+        height: bottom - top,
+        x: left,
+        y: top,
+        toJSON: a.toJSON.bind(a),
+      } as DOMRect;
+    };
+
     scales.forEach(scale => {
       const scaleRect = scale.getBoundingClientRect();
       if (!scaleRect.width) return;
 
+      // Clamp against the effective clipping area, not just the scale itself.
+      // This handles cases where an ancestor wrapper applies overflow:hidden.
+      let clipRect = scaleRect;
+      let node: Node | null = scale.parentNode;
+      let depth = 0;
+      while (node && depth < 24) {
+        if (node instanceof HTMLElement) {
+          const cs = window.getComputedStyle(node);
+          const ox = cs.overflowX || cs.overflow;
+          const oy = cs.overflowY || cs.overflow;
+          const clips =
+            ['hidden', 'clip', 'auto', 'scroll'].includes(ox) ||
+            ['hidden', 'clip', 'auto', 'scroll'].includes(oy);
+          if (clips) {
+            clipRect = intersectRect(clipRect, node.getBoundingClientRect());
+          }
+          if (node.classList.contains('uc-module-wrap')) break;
+          node = node.parentNode;
+        } else if (node instanceof ShadowRoot) {
+          node = node.host;
+        } else {
+          node = node.parentNode;
+        }
+        depth += 1;
+      }
       const allLabels = Array.from(scale.querySelectorAll('.scale-label')) as HTMLElement[];
       allLabels.forEach(label => {
         label.style.display = '';
@@ -94,8 +148,8 @@ export class UltraBarModule extends BaseUltraModule {
         setTransformShift(label, 0);
         const labelRect = label.getBoundingClientRect();
 
-        const overflowLeft = scaleRect.left - labelRect.left;
-        const overflowRight = labelRect.right - scaleRect.right;
+        const overflowLeft = clipRect.left - labelRect.left;
+        const overflowRight = labelRect.right - clipRect.right;
         let shift = 0;
 
         if (overflowLeft > 0) shift += overflowLeft + 1;
@@ -116,17 +170,13 @@ export class UltraBarModule extends BaseUltraModule {
         const startIdx = Number(startEdge.dataset.scaleIndex || '0');
         const nextLabel = getLabelByIndex(startIdx + 1);
         if (nextLabel && nextLabel.style.display !== 'none') {
-          const baseStartRect = getRectWithShift(startEdge, 0);
           const nextRect = nextLabel.getBoundingClientRect();
-          const currentStartRect = startEdge.getBoundingClientRect();
+          const currentShift = parseCurrentShift(startEdge);
+          const currentStartRect = getRectWithShift(startEdge, currentShift);
 
           if (overlaps(currentStartRect, nextRect)) {
-            // Reduce shift to maximum that avoids overlap.
-            const maxShift = Math.max(0, nextRect.left - baseStartRect.right - 1);
-            const adjustedRect = getRectWithShift(startEdge, maxShift);
-            if (overlaps(adjustedRect, nextRect)) {
-              nextLabel.style.display = 'none';
-            }
+            // Edge labels have priority: preserve clamp shift and hide neighbor.
+            nextLabel.style.display = 'none';
           }
         }
       }
@@ -135,21 +185,122 @@ export class UltraBarModule extends BaseUltraModule {
         const endIdx = Number(endEdge.dataset.scaleIndex || '0');
         const prevLabel = getLabelByIndex(endIdx - 1);
         if (prevLabel && prevLabel.style.display !== 'none') {
-          const baseEndRect = getRectWithShift(endEdge, 0);
           const prevRect = prevLabel.getBoundingClientRect();
-          const currentEndRect = endEdge.getBoundingClientRect();
+          const currentShift = parseCurrentShift(endEdge);
+          const currentEndRect = getRectWithShift(endEdge, currentShift);
 
           if (overlaps(currentEndRect, prevRect)) {
-            // Reduce shift to maximum that avoids overlap (negative for left shift).
-            const maxLeftShift = Math.min(0, prevRect.right - baseEndRect.left + 1);
-            const adjustedRect = getRectWithShift(endEdge, maxLeftShift);
-            if (overlaps(adjustedRect, prevRect)) {
-              prevLabel.style.display = 'none';
-            }
+            // Edge labels have priority: preserve clamp shift and hide neighbor.
+            prevLabel.style.display = 'none';
           }
         }
       }
+
     });
+  }
+
+  /**
+   * During live editor updates, the element passed to callbacks can become stale.
+   * Resolve to a currently active scope that still contains bar-scale nodes.
+   */
+  private resolveActiveClampRoot(root: Element): Element {
+    const selector = '.bar-scale[data-clamp-edge-labels="true"]';
+    const hasScales = (target: Element | ShadowRoot | null): target is Element | ShadowRoot =>
+      !!target && typeof (target as any).querySelectorAll === 'function' &&
+      (target as any).querySelectorAll(selector).length > 0;
+
+    if (hasScales(root)) return root;
+
+    let node: Node | null = root;
+    let depth = 0;
+    while (node && depth < 24) {
+      if (node instanceof ShadowRoot) {
+        if (hasScales(node)) return node.host;
+        node = node.host;
+      } else if (node instanceof HTMLElement) {
+        if (hasScales(node)) return node;
+        node = node.parentNode;
+      } else {
+        node = node.parentNode;
+      }
+      depth += 1;
+    }
+
+    const rootNode = root.getRootNode();
+    if (rootNode instanceof ShadowRoot && hasScales(rootNode)) return rootNode.host;
+
+    return root;
+  }
+
+  /**
+   * Schedule clamp pass after layout settles.
+   * Re-runs shortly after to catch animated width transitions.
+   */
+  private scheduleScaleEdgeLabelClamping(root: Element): void {
+    const previous = this._scaleClampTimers.get(root);
+    if (previous !== undefined) {
+      window.clearTimeout(previous);
+    }
+
+    const activeRoot = this.resolveActiveClampRoot(root);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.applyScaleEdgeLabelClamping(activeRoot);
+      });
+    });
+
+    const timer = window.setTimeout(() => {
+      this.applyScaleEdgeLabelClamping(activeRoot);
+      this._scaleClampTimers.delete(root);
+    }, 360);
+    this._scaleClampTimers.set(root, timer);
+  }
+
+  /**
+   * Keep clamp behavior responsive when widths change without full re-render.
+   */
+  private ensureScaleClampObserver(root: Element): void {
+    if (typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    // Rebind on each render: bar-scale nodes can be recreated during live edits.
+    const existing = this._scaleClampObservers.get(root);
+    if (existing) {
+      existing.disconnect();
+      this._scaleClampObservers.delete(root);
+    }
+
+    const observer = new ResizeObserver(() => {
+      this.scheduleScaleEdgeLabelClamping(root);
+    });
+
+    observer.observe(root as HTMLElement);
+    const scales = Array.from(root.querySelectorAll('.bar-scale')) as HTMLElement[];
+    scales.forEach(scale => observer.observe(scale));
+
+    // Also observe ancestor containers across shadow boundaries, because width changes
+    // may happen on wrapper/grid elements outside this module's shadow tree.
+    const seen = new Set<HTMLElement>();
+    let node: Node | null = (root as HTMLElement).parentNode;
+    let depth = 0;
+    while (node && depth < 24) {
+      if (node instanceof HTMLElement) {
+        if (!seen.has(node)) {
+          observer.observe(node);
+          seen.add(node);
+        }
+        node = node.parentNode;
+      } else if (node instanceof ShadowRoot) {
+        node = node.host;
+      } else {
+        node = node.parentNode;
+      }
+      depth += 1;
+    }
+
+    this._scaleClampObservers.set(root, observer);
   }
 
   /**
@@ -490,6 +641,13 @@ export class UltraBarModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
     const showPercentageText = this.normalizeBoolean(barModule.show_percentage, true);
     const showValueInstead = this.normalizeBoolean(barModule.show_value, false);
+    const hasUnavailableDifferenceFallbackEntity =
+      barModule.percentage_type === 'difference' &&
+      !!barModule.entity &&
+      !hass?.states?.[barModule.entity];
+    const differenceFallbackEntityValue = hasUnavailableDifferenceFallbackEntity
+      ? ''
+      : barModule.entity || '';
 
     // Stable schema for percentage type select (memoized by language)
     const percentageTypeSchema = [
@@ -545,6 +703,12 @@ export class UltraBarModule extends BaseUltraModule {
               const update: Record<string, any> = { percentage_type: next };
               if (next !== 'entity' && next !== 'template') {
                 update.percentage_template = '';
+              }
+              // Difference mode doesn't require the fallback `entity`. If the current
+              // fallback points to an unavailable entity, clear it during mode switch
+              // so the visual editor won't stay stuck on an invalid selection.
+              if (next === 'difference' && barModule.entity && !hass?.states?.[barModule.entity]) {
+                update.entity = '';
               }
               updateModule(update);
             }
@@ -934,7 +1098,7 @@ export class UltraBarModule extends BaseUltraModule {
                       hass,
                       config,
                       'entity',
-                      barModule.entity || '',
+                      differenceFallbackEntityValue,
                       (value: string) => updateModule({ entity: value }),
                       ['sensor', 'input_number'],
                       barModule.percentage_type === 'difference'
@@ -4903,7 +5067,8 @@ export class UltraBarModule extends BaseUltraModule {
             }
 
               // Apply edge clamp after layout settles and widths are final.
-              this.applyScaleEdgeLabelClamping(el);
+              this.scheduleScaleEdgeLabelClamping(el);
+              this.ensureScaleClampObserver(el);
             });
           });
         })}

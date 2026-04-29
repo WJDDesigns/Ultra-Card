@@ -7,4 +7,4 @@
 * Build timestamp: 2026-04-27
  */
 
-export const VERSION = '3.3.0-beta27';
+export const VERSION = '3.3.0-beta28';
