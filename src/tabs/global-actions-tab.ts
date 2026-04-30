@@ -269,6 +269,7 @@ export class GlobalActionsTab extends LitElement {
               this._triggerPreviewUpdate();
             }}
           ></ha-form>
+          ${this._renderTemplatesHint(tapAction)}
           ${this._renderEntitySelectors('tap_action', tapAction, moduleHasEntity, lang)}
         </div>
 
@@ -304,6 +305,7 @@ export class GlobalActionsTab extends LitElement {
               this._triggerPreviewUpdate();
             }}
           ></ha-form>
+          ${this._renderTemplatesHint(holdAction)}
           ${this._renderEntitySelectors('hold_action', holdAction, moduleHasEntity, lang)}
         </div>
 
@@ -339,6 +341,7 @@ export class GlobalActionsTab extends LitElement {
               this._triggerPreviewUpdate();
             }}
           ></ha-form>
+          ${this._renderTemplatesHint(doubleTapAction)}
           ${this._renderEntitySelectors(
             'double_tap_action',
             doubleTapAction,
@@ -557,6 +560,62 @@ export class GlobalActionsTab extends LitElement {
 
       <!-- Hover Effects Section -->
       ${this._renderHoverEffectsSection()}
+    `;
+  }
+
+  /**
+   * Inline "Supports Jinja templates" hint shown under tap/hold/double-tap
+   * actions whose fields accept template strings (URL, navigate, perform-action).
+   * Clicking "Examples" opens the template cheatsheet with the actions samples.
+   */
+  private _renderTemplatesHint(action: any): TemplateResult {
+    const type = action?.action;
+    // Only show for actions with user-typeable text fields where templating is
+    // useful. More-info / toggle use entity pickers (no text input).
+    const showHint =
+      type === 'url' ||
+      type === 'navigate' ||
+      type === 'perform-action' ||
+      type === 'call-service';
+    if (!showHint) return html``;
+
+    return html`
+      <div
+        class="ultra-actions-template-hint"
+        style="display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 12px;background:rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);border:1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.25);border-radius:6px;font-size:12px;color:var(--primary-text-color);"
+      >
+        <ha-icon
+          icon="mdi:code-tags"
+          style="--mdc-icon-size:16px;color:var(--primary-color);flex-shrink:0;"
+        ></ha-icon>
+        <span style="flex:1;line-height:1.4;">
+          Supports Jinja templates &mdash;
+          <code style="background:rgba(0,0,0,0.18);padding:1px 4px;border-radius:3px;font-size:11px;">{{ states('sensor.foo') }}</code>
+          renders at tap time.
+        </span>
+        <button
+          type="button"
+          style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--primary-color);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:500;flex-shrink:0;"
+          title="View template examples for actions"
+          @click=${(e: Event) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.dispatchEvent(
+              new CustomEvent('uc-open-template-cheatsheet', {
+                detail: { module: 'actions' },
+                bubbles: true,
+                composed: true,
+              })
+            );
+          }}
+        >
+          <ha-icon
+            icon="mdi:help-circle"
+            style="--mdc-icon-size:14px;width:14px;height:14px;"
+          ></ha-icon>
+          Examples
+        </button>
+      </div>
     `;
   }
 

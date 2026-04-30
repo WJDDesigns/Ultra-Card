@@ -49,6 +49,15 @@ const RETURN_PROPERTIES: CheatsheetEntry[] = [
   },
   { key: 'value', type: 'number | string', description: 'Bar value', snippet: '"value": {{ state_number }}', modules: ['bar'] },
   { key: 'label', type: 'string', description: 'Bar label text', snippet: '"label": "{{ name }}"', modules: ['bar'] },
+  {
+    key: 'ticks',
+    type: '[{position, label?, color?}]',
+    description:
+      'Per-tick scale customization. Position is in entity units; color applies to both the tick mark and its label. Overrides static custom ticks/labels when provided. Use "-" as a label to hide it.',
+    snippet:
+      '"ticks": [{"position": 20, "label": "Low", "color": "#f44336"}, {"position": 80, "label": "High", "color": "#4caf50"}]',
+    modules: ['bar'],
+  },
   { key: 'gauge_color', type: 'string', description: 'Gauge color', snippet: '"gauge_color": "red"', modules: ['gauge'] },
   { key: 'colors', type: 'string[]', description: 'Array of colors for graphs', snippet: '"colors": ["red","green"]', modules: ['graphs'] },
   { key: 'global_color', type: 'string', description: 'Single color for all graph entities', snippet: '"global_color": "blue"', modules: ['graphs'] },
@@ -179,6 +188,52 @@ const EXAMPLE_TEMPLATES: Record<string, { label: string; code: string }[]> = {
   "value": {{ used }},
   "label": "{{ friendly_name }}: {{ used | round(1) }}%",
   "color": "{% if used > 90 %}#FF0000{% elif used > 70 %}#FF8800{% else %}#4CAF50{% endif %}"
+}`,
+    },
+    {
+      label: 'Battery 20–80% range highlight',
+      code: `{% set lvl = state | float %}
+{
+  "value": {{ lvl }},
+  "ticks": [
+    {"position": 0,   "label": "0%",   "color": "var(--secondary-text-color)"},
+    {"position": 20,  "label": "20%",  "color": "#4caf50"},
+    {"position": 50,  "label": "-"},
+    {"position": 80,  "label": "80%",  "color": "#4caf50"},
+    {"position": 100, "label": "100%", "color": "var(--secondary-text-color)"}
+  ]
+}`,
+    },
+    {
+      label: 'Fuel gauge with reserve mark',
+      code: `{% set lvl = state | float %}
+{
+  "value": {{ lvl }},
+  "value_min": 0,
+  "value_max": 60,
+  "ticks": [
+    {"position": 0,  "label": "E",       "color": "#f44336"},
+    {"position": 8,  "label": "Reserve", "color": "#f44336"},
+    {"position": 30, "label": "1/2"},
+    {"position": 60, "label": "F",       "color": "#4caf50"}
+  ]
+}`,
+    },
+    {
+      label: 'Dynamic colors via Jinja loop',
+      code: `{% set lvl = state | float %}
+{% set marks = [0, 25, 50, 75, 100] %}
+{
+  "value": {{ lvl }},
+  "ticks": [
+    {% for m in marks %}
+    {
+      "position": {{ m }},
+      "label": "{{ m }}%",
+      "color": "{% if m == (lvl // 25 * 25) | int %}#2196f3{% else %}var(--secondary-text-color){% endif %}"
+    }{{ "," if not loop.last }}
+    {% endfor %}
+  ]
 }`,
     },
   ],
@@ -322,7 +377,8 @@ export class UcTemplateCheatsheet extends LitElement {
     | 'toggle'
     | 'qr'
     | 'status_summary'
-    | 'layout' = 'info';
+    | 'layout'
+    | 'actions' = 'info';
   @property({ type: Boolean }) public open = false;
 
   /**
@@ -385,12 +441,36 @@ export class UcTemplateCheatsheet extends LitElement {
       p => p.modules.includes(this.module)
     );
     const examples = EXAMPLE_TEMPLATES[this.module] || [];
+    // Action templates render to a single string (URL, path, entity id, service
+    // data) rather than a JSON object — so the "Return Properties" tab has
+    // nothing to show. Hide it for the actions module type.
+    const showPropertiesTab = this.module !== 'actions';
+    // If we're on the properties tab but it shouldn't render, fall back to
+    // context. (Defensive — set early so the body renders consistently.)
+    if (this._activeTab === 'properties' && !showPropertiesTab) {
+      this._activeTab = 'context';
+    }
+
+    const isActions = this.module === 'actions';
 
     const body = html`
       ${this._activeTab === 'context'
         ? html`
             <p class="section-desc">
-              Use these variables inside <code>{{ }}</code> or <code>{% %}</code> in your template.
+              ${isActions
+                ? html`
+                    Action fields like <code>URL</code>, <code>Navigation Path</code>, <code>Entity</code>,
+                    and <code>Service Data</code> support Jinja templates. The rendered string is used as
+                    the field value when the action fires. Use these variables inside <code>{{ }}</code>
+                    or <code>{% %}</code> — the entity context is taken from the action's selected entity
+                    (falling back to the module's primary entity).
+                    <br />
+                    <strong>Tip:</strong> Click <em>Copy</em> on any snippet below, then paste it
+                    directly into the action's URL / Path / Service Data field.
+                  `
+                : html`
+                    Use these variables inside <code>{{ }}</code> or <code>{% %}</code> in your template.
+                  `}
             </p>
             <div class="entries">
               ${CONTEXT_VARIABLES.map(
@@ -411,14 +491,18 @@ export class UcTemplateCheatsheet extends LitElement {
                             <span class="action-btn-icon"><ha-icon icon="mdi:content-copy"></ha-icon></span>
                             <span class="action-btn-text">${this._copiedKey === v.key ? 'Copied!' : 'Copy'}</span>
                           </button>
-                          <button
-                            class="action-btn insert-btn"
-                            @click=${() => this._insertSnippet(v.snippet)}
-                            title="Insert into active field"
-                          >
-                            <span class="action-btn-icon"><ha-icon icon="mdi:arrow-expand-down"></ha-icon></span>
-                            <span class="action-btn-text">Insert</span>
-                          </button>
+                          ${!isActions
+                            ? html`
+                                <button
+                                  class="action-btn insert-btn"
+                                  @click=${() => this._insertSnippet(v.snippet)}
+                                  title="Insert into active field"
+                                >
+                                  <span class="action-btn-icon"><ha-icon icon="mdi:arrow-expand-down"></ha-icon></span>
+                                  <span class="action-btn-text">Insert</span>
+                                </button>
+                              `
+                            : ''}
                         </div>
                       </div>
                       <div class="entry-desc">${v.description}</div>
@@ -488,13 +572,17 @@ export class UcTemplateCheatsheet extends LitElement {
                             <span class="action-btn-icon"><ha-icon icon="mdi:content-copy"></ha-icon></span>
                             <span>${this._copiedKey === `example-${ex.label}` ? 'Copied!' : 'Copy'}</span>
                           </button>
-                          <button
-                            class="copy-full-btn insert-full-btn"
-                            @click=${() => this._insertSnippet(ex.code)}
-                          >
-                            <span class="action-btn-icon"><ha-icon icon="mdi:arrow-expand-down"></ha-icon></span>
-                            <span>Insert</span>
-                          </button>
+                          ${!isActions
+                            ? html`
+                                <button
+                                  class="copy-full-btn insert-full-btn"
+                                  @click=${() => this._insertSnippet(ex.code)}
+                                >
+                                  <span class="action-btn-icon"><ha-icon icon="mdi:arrow-expand-down"></ha-icon></span>
+                                  <span>Insert</span>
+                                </button>
+                              `
+                            : ''}
                         </div>
                       </div>
                     </div>
@@ -522,12 +610,16 @@ export class UcTemplateCheatsheet extends LitElement {
             >
               Context Variables
             </button>
-            <button
-              class="tab ${this._activeTab === 'properties' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'properties')}
-            >
-              Return Properties
-            </button>
+            ${showPropertiesTab
+              ? html`
+                  <button
+                    class="tab ${this._activeTab === 'properties' ? 'active' : ''}"
+                    @click=${() => (this._activeTab = 'properties')}
+                  >
+                    Return Properties
+                  </button>
+                `
+              : ''}
           </div>
 
           <div class="pane-body">
@@ -554,12 +646,16 @@ export class UcTemplateCheatsheet extends LitElement {
             >
               Context Variables
             </button>
-            <button
-              class="tab ${this._activeTab === 'properties' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'properties')}
-            >
-              Return Properties
-            </button>
+            ${showPropertiesTab
+              ? html`
+                  <button
+                    class="tab ${this._activeTab === 'properties' ? 'active' : ''}"
+                    @click=${() => (this._activeTab = 'properties')}
+                  >
+                    Return Properties
+                  </button>
+                `
+              : ''}
           </div>
 
           <div class="dialog-body">

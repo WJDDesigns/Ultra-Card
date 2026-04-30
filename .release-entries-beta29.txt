@@ -1,0 +1,8 @@
+Added support for Jinja templates in tap, hold, and double-tap actions — URL, Navigation Path, Entity, and Service Data fields now render at tap time
+Added a dedicated Actions section to the Template Cheatsheet with copy-ready examples for URL, navigate, and perform-action templates
+Added inline "Supports Jinja templates" hint with a one-click Examples button under tap, hold, and double-tap action editors
+Added per-tick Bar scale customization via unified templates — return a ticks array of position, label, and per-tick color
+Added cheatsheet examples for Bar ticks templates (battery range highlight, fuel gauge with reserve mark, dynamic colors via Jinja loop)
+Improved Bar edge label clamping by accounting for first and last character anchor offset so edge labels no longer drift inward unnecessarily
+Improved Bar custom-labels editor copy with a clearer placeholder and an explicit tip about the dash hide token
+Improved Bar tick label hide tokens — now dash, underscore, none, {none}, and hide are all accepted in both static custom labels and unified-template ticks

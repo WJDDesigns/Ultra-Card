@@ -29,6 +29,21 @@ export interface UnifiedTemplateResult {
   /** Min/max for percentage bar (legacy percentage_min/max templates) */
   value_min?: number | string | undefined;
   value_max?: number | string | undefined;
+  /**
+   * Per-tick scale customization (bar module).
+   * When provided in the unified template, overrides the static
+   * `scale_custom_ticks` / `scale_custom_labels` configuration.
+   * Each entry: { position (entity units), label?, color? }.
+   * `color` is applied to both the tick mark and its label.
+   * `label` accepts the same hide tokens as static labels: -, _, none, {none}, hide.
+   */
+  ticks?:
+    | Array<{
+        position: number;
+        label?: string | undefined;
+        color?: string | undefined;
+      }>
+    | undefined;
 
   // Display properties (gauge module)
   gauge_color?: string | undefined; // Gauge color (overrides color_mode when set)
@@ -61,6 +76,35 @@ export interface UnifiedTemplateResult {
   // Error information
   _error?: string | undefined;
   _isString?: boolean | undefined; // True if result was a simple string (not JSON) — value in `content`, not assumed to be an icon
+}
+
+/**
+ * Parse a `ticks` array from a unified template result.
+ * Accepts an array of `{ position, label?, color? }` entries; tolerates string
+ * positions returned by Jinja by coercing to a finite number. Entries without
+ * a finite position are dropped.
+ */
+function parseTicksArray(raw: unknown): UnifiedTemplateResult['ticks'] {
+  if (!Array.isArray(raw)) return undefined;
+  const out: NonNullable<UnifiedTemplateResult['ticks']> = [];
+  for (const item of raw) {
+    if (item == null || typeof item !== 'object' || Array.isArray(item)) continue;
+    const rec = item as Record<string, unknown>;
+    const posRaw = rec.position;
+    const pos =
+      typeof posRaw === 'number' ? posRaw : parseFloat(String(posRaw ?? '').replace(',', '.'));
+    if (!isFinite(pos)) continue;
+    const tick: { position: number; label?: string; color?: string } = { position: pos };
+    if (rec.label !== undefined && rec.label !== null) {
+      tick.label = String(rec.label).trim();
+    }
+    if (rec.color !== undefined && rec.color !== null) {
+      const c = String(rec.color).trim();
+      if (c !== '') tick.color = c;
+    }
+    out.push(tick);
+  }
+  return out.length ? out : undefined;
 }
 
 /**
@@ -106,6 +150,10 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
       result.right_label = String(templateResult.right_label).trim();
     if (templateResult.value_min !== undefined) result.value_min = templateResult.value_min;
     if (templateResult.value_max !== undefined) result.value_max = templateResult.value_max;
+    if (templateResult.ticks !== undefined) {
+      const parsedTicks = parseTicksArray(templateResult.ticks);
+      if (parsedTicks) result.ticks = parsedTicks;
+    }
 
     // Gauge module properties
     if (templateResult.gauge_color !== undefined)
@@ -197,6 +245,10 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
       if (parsed.right_label !== undefined) result.right_label = String(parsed.right_label).trim();
       if (parsed.value_min !== undefined) result.value_min = parsed.value_min;
       if (parsed.value_max !== undefined) result.value_max = parsed.value_max;
+      if (parsed.ticks !== undefined) {
+        const parsedTicks = parseTicksArray(parsed.ticks);
+        if (parsedTicks) result.ticks = parsedTicks;
+      }
 
       // Gauge module properties
       if (parsed.gauge_color !== undefined)

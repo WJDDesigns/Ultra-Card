@@ -1,5 +1,23 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.3.0-beta29
+
+### 🚀 New Features
+
+- **Added support for Jinja templates in tap, hold, and double-tap actions** - URL, Navigation Path, Entity, and Service Data fields now render at tap time
+- **Added A dedicated Actions section to the Template Cheatsheet with copy-ready examples for URL, navigate, and perform-action templates** - Enhanced template processing and dynamic content evaluation
+- **Added Inline "Supports Jinja templates" hint with a one-click Examples button under tap, hold, and double-tap action editors** - Enhanced template processing and dynamic content evaluation
+- **Added per-tick Bar scale customization via unified templates** - Return a ticks array of position, label, and per-tick color
+- **Added Cheatsheet examples for Bar ticks templates (battery range highlight, fuel gauge with reserve mark, dynamic colors via Jinja loop)** - Enhanced template processing and dynamic content evaluation
+
+### 🔧 Improvements
+
+- **Improved Bar edge label clamping by accounting for first and last character anchor offset so edge labels no longer drift inward unnecessarily** - Enhanced bar visualization and progress display
+- **Improved Bar custom-labels editor copy with a clearer placeholder and an explicit tip about the dash hide token** - Enhanced bar visualization and progress display
+- **Improved Bar tick label hide tokens** - Now dash, underscore, none, {none}, and hide are all accepted in both static custom labels and unified-template ticks
+
+---
+
 ## Version 3.3.0-beta28
 
 ### 🔧 Improvements

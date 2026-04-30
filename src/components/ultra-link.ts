@@ -4,6 +4,11 @@ import { localize } from '../localize/localize';
 import { UltraCardConfig, CardModule } from '../types';
 import { ucActionConfirmationService } from '../services/uc-action-confirmation-service';
 import { getPopupForModule, openPopupById } from '../services/popup-trigger-registry';
+import {
+  containsTemplate,
+  renderActionTemplate,
+  renderTemplateValues,
+} from '../utils/uc-action-template-renderer';
 
 export interface UltraLinkConfig {
   tap_action?: TapActionConfig | undefined;
@@ -315,6 +320,51 @@ export class UltraLinkComponent {
     `;
   }
 
+  /**
+   * Inline "Supports templates" hint with a help-circle button that opens the
+   * Template Cheatsheet pre-filtered to the action examples.
+   */
+  private static renderTemplatesHint(): TemplateResult {
+    return html`
+      <div
+        class="ultra-link-template-hint"
+        style="display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 10px;background:rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);border:1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.25);border-radius:6px;font-size:12px;color:var(--primary-text-color);"
+      >
+        <ha-icon
+          icon="mdi:code-tags"
+          style="--mdc-icon-size:16px;color:var(--primary-color);"
+        ></ha-icon>
+        <span style="flex:1;line-height:1.4;">
+          Supports Jinja templates &mdash;
+          <code style="background:rgba(0,0,0,0.08);padding:1px 4px;border-radius:3px;font-size:11px;">{{ states('sensor.foo') }}</code>
+          renders at tap time.
+        </span>
+        <button
+          type="button"
+          class="ultra-link-template-help-btn"
+          style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:var(--primary-color);color:var(--text-primary-color, white);border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:500;"
+          title="View template examples for actions"
+          @click=${(e: Event) => {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).dispatchEvent(
+              new CustomEvent('uc-open-template-cheatsheet', {
+                detail: { module: 'actions' },
+                bubbles: true,
+                composed: true,
+              })
+            );
+          }}
+        >
+          <ha-icon
+            icon="mdi:help-circle"
+            style="--mdc-icon-size:14px;width:14px;height:14px;"
+          ></ha-icon>
+          Examples
+        </button>
+      </div>
+    `;
+  }
+
   private static renderActionFields(
     hass: HomeAssistant,
     action: TapActionConfig,
@@ -368,6 +418,7 @@ export class UltraLinkComponent {
             ${UltraLinkComponent.renderNavigationPicker(hass, action.navigation_path || '', path =>
               updateAction({ navigation_path: path })
             )}
+            ${UltraLinkComponent.renderTemplatesHint()}
           </div>
         `;
 
@@ -394,6 +445,7 @@ export class UltraLinkComponent {
               ],
               (e: CustomEvent) => updateAction({ url_path: e.detail.value.url_path })
             )}
+            ${UltraLinkComponent.renderTemplatesHint()}
           </div>
         `;
 
@@ -748,6 +800,100 @@ export class UltraLinkComponent {
     return undefined;
   }
 
+  /**
+   * Render any Jinja templates embedded in the action config. Returns a fresh
+   * action object — never mutates the original. Entity context is taken from
+   * the action's `entity` (preferred, may also be a template), falling back to
+   * the module's primary entity.
+   */
+  private static async renderActionTemplates(
+    action: TapActionConfig,
+    hass: HomeAssistant,
+    moduleEntity?: string,
+    module?: CardModule,
+    cardConfig?: UltraCardConfig
+  ): Promise<TapActionConfig> {
+    if (!hass) return action;
+
+    // Quick bail-out: skip if no field looks templated.
+    const objHasTemplate = (v: unknown): boolean => {
+      if (v && typeof v === 'object') {
+        try {
+          const s = JSON.stringify(v);
+          return s.includes('{{') || s.includes('{%');
+        } catch {
+          return false;
+        }
+      }
+      return false;
+    };
+    const hasAnyTemplate =
+      containsTemplate(action.entity) ||
+      containsTemplate(action.url_path) ||
+      containsTemplate(action.navigation_path) ||
+      objHasTemplate(action.data) ||
+      objHasTemplate(action.service_data) ||
+      objHasTemplate(action.target);
+    if (!hasAnyTemplate) return action;
+
+    const resolved: TapActionConfig = { ...action };
+
+    // Render `entity` first — it influences the context for the rest.
+    if (containsTemplate(resolved.entity)) {
+      const rendered = await renderActionTemplate(
+        resolved.entity,
+        hass,
+        this.resolveDefaultEntity(moduleEntity, module),
+        cardConfig
+      );
+      resolved.entity = rendered ? rendered.trim() : resolved.entity;
+    }
+
+    const contextEntity = resolved.entity || this.resolveDefaultEntity(moduleEntity, module);
+
+    if (containsTemplate(resolved.url_path)) {
+      resolved.url_path = await renderActionTemplate(
+        resolved.url_path,
+        hass,
+        contextEntity,
+        cardConfig
+      );
+    }
+
+    if (containsTemplate(resolved.navigation_path)) {
+      resolved.navigation_path = await renderActionTemplate(
+        resolved.navigation_path,
+        hass,
+        contextEntity,
+        cardConfig
+      );
+    }
+
+    if (resolved.data && typeof resolved.data === 'object') {
+      resolved.data = await renderTemplateValues(resolved.data, hass, contextEntity, cardConfig);
+    }
+
+    if (resolved.service_data && typeof resolved.service_data === 'object') {
+      resolved.service_data = await renderTemplateValues(
+        resolved.service_data,
+        hass,
+        contextEntity,
+        cardConfig
+      );
+    }
+
+    if (resolved.target && typeof resolved.target === 'object') {
+      resolved.target = await renderTemplateValues(
+        resolved.target,
+        hass,
+        contextEntity,
+        cardConfig
+      );
+    }
+
+    return resolved;
+  }
+
   static async handleAction(
     action: TapActionConfig | undefined,
     hass: HomeAssistant,
@@ -786,6 +932,18 @@ export class UltraLinkComponent {
     if (resolvedAction.action === 'nothing' || resolvedAction.action === 'none') {
       return;
     }
+
+    // Resolve any Jinja templates inside the action config (url_path,
+    // navigation_path, entity, and string values inside data/service_data/target).
+    // Done as a one-shot render at fire time so live entity values flow into
+    // the action.
+    resolvedAction = await this.renderActionTemplates(
+      resolvedAction,
+      hass,
+      moduleEntity,
+      module,
+      config
+    );
 
     // Check if confirmation is required
     const confirmAction = module?.confirm_action === true;

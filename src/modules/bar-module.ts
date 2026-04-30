@@ -67,12 +67,29 @@ export class UltraBarModule extends BaseUltraModule {
     ) as HTMLElement[];
 
     const overlaps = (a: DOMRect, b: DOMRect): boolean => a.left < b.right && a.right > b.left;
+    const textMeasureCtx = document.createElement('canvas').getContext('2d');
 
     const parseCurrentShift = (el: HTMLElement): number => {
       const t = (el.style.transform || '').match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
       if (!t) return 0;
       const parsed = parseFloat(t[1]);
       return Number.isNaN(parsed) ? 0 : parsed;
+    };
+
+    const getEdgeAnchorAllowance = (label: HTMLElement, edge: 'start' | 'end'): number => {
+      const text = (label.textContent || '').trim();
+      if (!text || !textMeasureCtx) return 0;
+
+      const edgeChar = edge === 'start' ? text.charAt(0) : text.charAt(text.length - 1);
+      if (!edgeChar) return 0;
+
+      const cs = window.getComputedStyle(label);
+      textMeasureCtx.font =
+        `${cs.fontStyle} ${cs.fontVariant} ${cs.fontWeight} ` +
+        `${cs.fontSize}/${cs.lineHeight} ${cs.fontFamily}`;
+
+      const charWidth = textMeasureCtx.measureText(edgeChar).width;
+      return Number.isFinite(charWidth) && charWidth > 0 ? charWidth / 2 : 0;
     };
 
     const setTransformShift = (el: HTMLElement, shiftPx: number): void => {
@@ -151,9 +168,21 @@ export class UltraBarModule extends BaseUltraModule {
         const overflowLeft = clipRect.left - labelRect.left;
         const overflowRight = labelRect.right - clipRect.right;
         let shift = 0;
+        const leftAllowance = label.classList.contains('edge-start')
+          ? getEdgeAnchorAllowance(label, 'start')
+          : 0;
+        const rightAllowance = label.classList.contains('edge-end')
+          ? getEdgeAnchorAllowance(label, 'end')
+          : 0;
 
-        if (overflowLeft > 0) shift += overflowLeft + 1;
-        if (overflowRight > 0) shift -= overflowRight + 1;
+        if (overflowLeft > 0) {
+          const effectiveOverflowLeft = overflowLeft - leftAllowance;
+          if (effectiveOverflowLeft > 0) shift += effectiveOverflowLeft + 0.5;
+        }
+        if (overflowRight > 0) {
+          const effectiveOverflowRight = overflowRight - rightAllowance;
+          if (effectiveOverflowRight > 0) shift -= effectiveOverflowRight + 0.5;
+        }
 
         if (Math.abs(shift) >= 0.5) {
           setTransformShift(label, shift);
@@ -205,13 +234,18 @@ export class UltraBarModule extends BaseUltraModule {
    */
   private resolveActiveClampRoot(root: Element): Element {
     const selector = '.bar-scale[data-clamp-edge-labels="true"]';
-    const hasScales = (target: Element | ShadowRoot | null): target is Element | ShadowRoot =>
-      !!target && typeof (target as any).querySelectorAll === 'function' &&
-      (target as any).querySelectorAll(selector).length > 0;
+    // Plain boolean (not a type predicate) so `node` doesn't get narrowed to
+    // `never` after the implicit-else path of the type guard.
+    const hasScales = (target: any): boolean =>
+      !!target && typeof target.querySelectorAll === 'function' &&
+      target.querySelectorAll(selector).length > 0;
 
     if (hasScales(root)) return root;
 
-    let node: Node | null = root;
+    // Walk up through host shadow roots and parent nodes. Typed as `any` so
+    // TS doesn't narrow to `never` across the multi-branch reassignments —
+    // each step is runtime-checked with `instanceof`.
+    let node: any = root;
     let depth = 0;
     while (node && depth < 24) {
       if (node instanceof ShadowRoot) {
@@ -1878,18 +1912,27 @@ export class UltraBarModule extends BaseUltraModule {
                             ${localize(
                               'editor.bar.scale.custom_labels_desc',
                               lang,
-                              'Optional comma-separated labels matching each custom tick (e.g. Reserve,1/4,1/2,3/4,Full). Leave blank to show numeric values. Use "-" (or "{none}") for a specific tick to hide that label.'
+                              'Optional comma-separated labels matching each custom tick (e.g. Reserve,1/4,1/2,3/4,Full). Leave a slot empty to show that tick\u2019s numeric value, or enter "-" (a single dash) to hide that tick\u2019s label while keeping its tick mark.'
                             )}
                           </div>
                           <ha-textfield
                             style="width: 100%;"
                             .value=${(barModule as any).scale_custom_labels || ''}
-                            .placeholder=${'e.g. Reserve,1/4,1/2,3/4,Full'}
+                            .placeholder=${'e.g. Reserve,-,1/2,-,Full'}
                             @change=${(e: Event) =>
                               updateModule({
                                 scale_custom_labels: (e.target as HTMLInputElement).value,
                               })}
                           ></ha-textfield>
+                          <div
+                            style="font-size: 12px; font-style: italic; color: var(--secondary-text-color); margin-top: 6px; line-height: 1.4;"
+                          >
+                            ${localize(
+                              'editor.bar.scale.custom_labels_hint',
+                              lang,
+                              'Tip: use "-" in any slot to hide that tick\u2019s label. Accepted hide tokens: -, _, none, {none}, hide.'
+                            )}
+                          </div>
                         </div>
                       `
                     : ''}
@@ -3465,6 +3508,9 @@ export class UltraBarModule extends BaseUltraModule {
     let unifiedBarRightLabel = '';
     let unifiedBarValueMin: number | undefined;
     let unifiedBarValueMax: number | undefined;
+    let unifiedBarTicks:
+      | Array<{ position: number; label?: string | undefined; color?: string | undefined }>
+      | undefined;
 
     // PRIORITY 1: Unified template (if enabled)
     if (barModule.unified_template_mode && barModule.unified_template) {
@@ -3539,6 +3585,9 @@ export class UltraBarModule extends BaseUltraModule {
                   ? parsed.value_max
                   : parseLocaleNumber(String(parsed.value_max));
               if (!isNaN(n)) unifiedBarValueMax = n;
+            }
+            if (parsed.ticks && parsed.ticks.length > 0) {
+              unifiedBarTicks = parsed.ticks;
             }
           }
         }
@@ -4911,9 +4960,45 @@ export class UltraBarModule extends BaseUltraModule {
 
       const customTicksRaw: string = (barModule as any).scale_custom_ticks || '';
       const customLabelsRaw: string = (barModule as any).scale_custom_labels || '';
-      let ticks: { position: number; label: string | null }[];
+      let ticks: { position: number; label: string | null; color?: string | undefined }[];
 
-      if (customTicksRaw.trim()) {
+      const isHideLabelToken = (raw: string | undefined): boolean => {
+        const normalized = (raw || '').toLowerCase();
+        return (
+          normalized === '-' ||
+          normalized === '_' ||
+          normalized === 'none' ||
+          normalized === '{none}' ||
+          normalized === '{{none}}' ||
+          normalized === 'hide'
+        );
+      };
+
+      if (unifiedBarTicks && unifiedBarTicks.length > 0) {
+        // Unified template ticks override editor-side custom ticks/labels for this render.
+        // Positions are interpreted in entity units; same hide tokens apply to labels.
+        ticks = unifiedBarTicks.map(t => {
+          const position =
+            scaleRange > 0
+              ? Math.min(100, Math.max(0, ((t.position - scaleMin) / scaleRange) * 100))
+              : 0;
+          const rawLabel = t.label;
+          const hasCustomLabel = rawLabel !== undefined && rawLabel !== '';
+          if (hasCustomLabel && isHideLabelToken(rawLabel)) {
+            return { position, label: null, color: t.color };
+          }
+          const baseLabel = hasCustomLabel
+            ? (rawLabel as string)
+            : Number.isInteger(t.position)
+              ? String(t.position)
+              : t.position.toFixed(1);
+          const label =
+            hasCustomLabel || !scaleTickPercentSuffix || String(baseLabel).includes('%')
+              ? baseLabel
+              : `${baseLabel}${scaleTickPercentSuffix}`;
+          return { position, label, color: t.color };
+        });
+      } else if (customTicksRaw.trim()) {
         const customValues = parseCustomTickValues(customTicksRaw);
         const customLabels = customLabelsRaw.split(',').map(s => s.trim());
         ticks = customValues.map((val, i) => {
@@ -4921,15 +5006,8 @@ export class UltraBarModule extends BaseUltraModule {
             scaleRange > 0 ? Math.min(100, Math.max(0, ((val - scaleMin) / scaleRange) * 100)) : 0;
           const rawLabel = customLabels[i];
           const hasCustomLabel = rawLabel !== undefined && rawLabel !== '';
-          const normalizedLabel = (rawLabel || '').toLowerCase();
-          const hideLabel =
-            normalizedLabel === '-' ||
-            normalizedLabel === 'none' ||
-            normalizedLabel === '{none}' ||
-            normalizedLabel === '{{none}}' ||
-            normalizedLabel === 'hide';
 
-          if (hideLabel) {
+          if (isHideLabelToken(rawLabel)) {
             return { position, label: null };
           }
 
@@ -4989,6 +5067,9 @@ export class UltraBarModule extends BaseUltraModule {
                 mobileAbbreviate && typeof rawLabel === 'string'
                   ? this.formatMobileScaleLabel(rawLabel)
                   : rawLabel;
+              // Per-tick color from unified template; falls back to global tick/label colors.
+              const tickLineColor = tick.color || scaleTickColor;
+              const tickLabelColor = tick.color || scaleLabelColor;
 
               return html`
                 <div
@@ -5009,7 +5090,7 @@ export class UltraBarModule extends BaseUltraModule {
                     style="
                       width: 1px;
                       height: 6px;
-                      background: ${scaleTickColor};
+                      background: ${tickLineColor};
                       flex-shrink: 0;
                     "
                   ></div>
@@ -5020,7 +5101,7 @@ export class UltraBarModule extends BaseUltraModule {
                           data-scale-index="${index}"
                           style="
                             font-size: ${scaleLabelSize}px;
-                            color: ${scaleLabelColor};
+                            color: ${tickLabelColor};
                             margin-top: ${scalePosition === 'below' ? '2px' : '0'};
                             margin-bottom: ${scalePosition === 'above' ? '2px' : '0'};
                             white-space: nowrap;
