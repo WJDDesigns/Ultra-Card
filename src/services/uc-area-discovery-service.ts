@@ -43,6 +43,8 @@ export interface RoomSummaryModel {
   humidity_label?: string | undefined;
   lights_on: number;
   lights_total: number;
+  /** All light entity IDs in the area (unsliced). Used to recompute live counts at render time. */
+  light_entity_ids: readonly string[];
   quick_entities: RoomQuickEntity[];
   /** Default entity for tile tap → more-info */
   primary_entity_id?: string | undefined;
@@ -161,7 +163,7 @@ function mdiForRole(role: RoomEntityRole, entityId: string, hass: HomeAssistant)
   }
 }
 
-function isActive(entityId: string, role: RoomEntityRole, hass: HomeAssistant): boolean {
+export function isEntityActive(entityId: string, role: RoomEntityRole, hass: HomeAssistant): boolean {
   const st = hass.states[entityId];
   if (!st) return false;
   const s = String(st.state).toLowerCase();
@@ -294,6 +296,7 @@ class UcAreaDiscoveryService {
         area_name: '',
         lights_on: 0,
         lights_total: 0,
+        light_entity_ids: [],
         quick_entities: [],
       };
     }
@@ -391,15 +394,17 @@ class UcAreaDiscoveryService {
 
     let lights_on = 0;
     let lights_total = 0;
+    const light_entity_ids: string[] = [];
     for (const r of roles) {
       if (r.role !== 'lights') continue;
+      light_entity_ids.push(r.entity_id);
       lights_total += 1;
-      if (isActive(r.entity_id, 'lights', hass)) lights_on += 1;
+      if (isEntityActive(r.entity_id, 'lights', hass)) lights_on += 1;
     }
 
     const quickById = new Map<string, RoomQuickEntity>();
     for (const r of roles) {
-      const active = isActive(r.entity_id, r.role, hass);
+      const active = isEntityActive(r.entity_id, r.role, hass);
       quickById.set(r.entity_id, {
         entity_id: r.entity_id,
         role: r.role,
@@ -416,7 +421,7 @@ class UcAreaDiscoveryService {
       if (quickById.has(id)) continue;
       if (!hass.states[id]) continue;
       const role = inferRole(id, hass);
-      const active = isActive(id, role, hass);
+      const active = isEntityActive(id, role, hass);
       quickById.set(id, {
         entity_id: id,
         role,
@@ -459,6 +464,7 @@ class UcAreaDiscoveryService {
       humidity_label,
       lights_on,
       lights_total,
+      light_entity_ids,
       quick_entities,
       primary_entity_id,
     };

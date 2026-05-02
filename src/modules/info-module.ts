@@ -364,6 +364,31 @@ export class UltraInfoModule extends BaseUltraModule {
                   ></ha-form>
                 </div>
 
+                ${this.renderFieldSection(
+                  localize(
+                    'editor.info.icon_section.show_entity_picture',
+                    lang,
+                    'Show Entity Picture'
+                  ),
+                  localize(
+                    'editor.info.icon_section.show_entity_picture_desc',
+                    lang,
+                    'When enabled, entity_picture replaces the configured icon when available.'
+                  ),
+                  hass,
+                  { show_entity_picture: entity.show_entity_picture !== false },
+                  [this.booleanField('show_entity_picture')],
+                  (e: CustomEvent) => {
+                    this._updateEntity(
+                      infoModule,
+                      0,
+                      { show_entity_picture: e.detail.value.show_entity_picture },
+                      updateModule
+                    );
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }
+                )}
+
                 <div style="margin-bottom: 16px;">
                   <div
                     class="field-title"
@@ -1862,7 +1887,7 @@ export class UltraInfoModule extends BaseUltraModule {
 
               const iconElement =
                 entity.show_icon !== false
-                  ? this._shouldUseEntityPicture(entityState)
+                  ? this._shouldUseEntityPicture(entityState, entity)
                     ? html`
                         <img
                           src="${this._getEntityPicture(entityState, hass)}"
@@ -3056,8 +3081,10 @@ export class UltraInfoModule extends BaseUltraModule {
    * @param entityState The entity state object
    * @returns True if entity picture should be used
    */
-  private _shouldUseEntityPicture(entityState: any): boolean {
+  private _shouldUseEntityPicture(entityState: any, entityConfig?: InfoEntityConfig): boolean {
     if (!entityState) return false;
+
+    if (entityConfig?.show_entity_picture === false) return false;
 
     const entityId = entityState.entity_id;
     if (!entityId) return false;

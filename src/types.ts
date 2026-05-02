@@ -528,6 +528,7 @@ export interface InfoEntityConfig {
   name?: string | undefined;
   icon?: string | undefined;
   show_icon?: boolean | undefined;
+  show_entity_picture?: boolean | undefined;
   show_name?: boolean | undefined;
   show_state?: boolean | undefined;
   show_units?: boolean | undefined;

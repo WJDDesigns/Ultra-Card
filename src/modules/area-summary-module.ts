@@ -4,7 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, AreaSummaryModule, AreaSummaryStylePreset, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
-import { ucAreaDiscoveryService, RoomSummaryModel } from '../services/uc-area-discovery-service';
+import { ucAreaDiscoveryService, RoomSummaryModel, isEntityActive } from '../services/uc-area-discovery-service';
 import type { TapActionConfig } from '../components/ultra-link';
 import { getImageUrl, uploadImage } from '../utils/image-upload';
 import { ucToastService } from '../services/uc-toast-service';
@@ -300,7 +300,8 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
   private onLightsPillClick(ev: Event, hass: HomeAssistant, module: AreaSummaryModule, model: RoomSummaryModel): void {
     ev.stopPropagation();
     if (!module.area_id?.trim()) return;
-    const service = model.lights_on > 0 ? 'turn_off' : 'turn_on';
+    const liveOn = model.light_entity_ids.filter(id => isEntityActive(id, 'lights', hass)).length;
+    const service = liveOn > 0 ? 'turn_off' : 'turn_on';
     void hass.callService('light', service, {}, { area_id: module.area_id });
   }
 
@@ -1051,6 +1052,8 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       `;
     }
     const model = state.model;
+    const liveLightsOn = model.light_entity_ids.filter(id => isEntityActive(id, 'lights', hass)).length;
+    const liveLightsTotal = model.light_entity_ids.length;
     const title = this.roomTitle(m, model, lang);
     const heroIcon = this.roomHeroIcon(m);
     const accent = this.accent(m);
@@ -1096,6 +1099,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
         >
           ${model.quick_entities.map(q => {
             const label = this.entityShortName(hass, q.entity_id);
+            const liveActive = isEntityActive(q.entity_id, q.role, hass);
             return html`
               <div class="uc-ar-badge-cell ${iconicInline ? 'uc-ar-badge-cell--iconic-inline' : ''}">
                 ${iconicInline
@@ -1103,7 +1107,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
                   : nothing}
                 <button
                   type="button"
-                  class="uc-ar-badge ${q.active ? 'is-active' : ''}"
+                  class="uc-ar-badge ${liveActive ? 'is-active' : ''}"
                   title=${hass.states[q.entity_id]?.attributes?.friendly_name || q.entity_id}
                   aria-label=${label}
                   @click=${(e: Event) => this.onBadgeClick(e, hass, config, m, q.entity_id)}
@@ -1122,17 +1126,17 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       preset === 'compact_controls'
         ? html`
             <div class="uc-ar-pills" @pointerdown=${(e: Event) => e.stopPropagation()}>
-              ${model.lights_total > 0
+              ${liveLightsTotal > 0
                 ? html`
                     <button
                       type="button"
-                      class="uc-ar-pill ${model.lights_on > 0 ? 'is-active' : ''}"
+                      class="uc-ar-pill ${liveLightsOn > 0 ? 'is-active' : ''}"
                       @click=${(e: Event) => this.onLightsPillClick(e, hass, m, model)}
                     >
                       <ha-icon icon="mdi:lightbulb-group-outline"></ha-icon>
                       <span
                         >${localize('editor.area_summary.pill_lights', lang, 'Lights')}
-                        ${model.lights_on}/${model.lights_total}</span
+                        ${liveLightsOn}/${liveLightsTotal}</span
                       >
                     </button>
                   `
@@ -1201,10 +1205,10 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
                 <div class="uc-ar-name">${title}</div>
                 <div class="uc-ar-sub">${stat}</div>
                 <div class="uc-ar-micro">
-                  ${model.lights_total
+                  ${liveLightsTotal
                     ? localize('editor.area_summary.lights_line', lang, '{on} of {total} lights on')
-                        .replace('{on}', String(model.lights_on))
-                        .replace('{total}', String(model.lights_total))
+                        .replace('{on}', String(liveLightsOn))
+                        .replace('{total}', String(liveLightsTotal))
                     : ''}
                 </div>
               </div>
