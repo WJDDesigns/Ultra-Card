@@ -68,4 +68,7 @@ export const coreLoaders: Record<string, ModuleLoader> = {
   alert_center: () => import(/* webpackMode: "eager" */ './alert-center-module').then(m => new m.UltraAlertCenterModule()),
   area_summary: () => import(/* webpackMode: "eager" */ './area-summary-module').then(m => new m.UltraAreaSummaryModule()),
   virtual_pet: () => import(/* webpackMode: "eager" */ './virtual-pet-module').then(m => new m.UltraVirtualPetModule()),
+  alarm_panel: () => import(/* webpackMode: "eager" */ './alarm-panel-module').then(m => new m.UltraAlarmPanelModule()),
+  solar_analytics: () => import(/* webpackMode: "eager" */ './solar-analytics-module').then(m => new m.UltraSolarAnalyticsModule()),
+  screensaver: () => import(/* webpackMode: "eager" */ './screensaver-module').then(m => new m.UltraScreensaverModule()),
 };

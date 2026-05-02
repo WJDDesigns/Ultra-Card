@@ -1,5 +1,25 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.4.0-beta1
+
+### 🚀 New Pro Modules
+
+- **Alarm Panel** — Full `alarm_control_panel` control with three layouts (Hero, Standard, Compact), a 3×4 PIN keypad, arm-mode buttons auto-detected from `supported_features`, triggered-state pulsing ring animation, and optimistic state management
+- **Solar Analytics** — Live solar power, grid import/export balance, battery SoC ring gauges, self-sufficiency %, and today's energy totals (kWh produced / imported / exported) in Full and Compact layouts
+- **Screensaver** — Kiosk-grade full-screen overlay with 10 visual styles (Classic, Minimal, Neon, Retro, Frosted Glass, Photo Corner, Sunrise, Dark Luxe, Split, Ambient), configurable idle timeout, image slideshow, weather display, and binary sensor activation
+
+### ✨ Screensaver Highlights
+
+- **10 distinct styles** — each with its own background, typography, and animation treatment (animated gradients, CRT scanlines, neon glow, backdrop-filter glass, floating orbs, gold editorial)
+- **Body portal rendering** — the full-screen overlay is appended directly to `document.body`, completely escaping HA card shadow-DOM and CSS `transform` containment so `position:fixed` truly covers 100vw × 100vh
+- **Reliable dismiss** — all `@click` / `@keydown` handlers on a single outer wrapper div; Lit `TemplateResult` spreading in element-attribute position is avoided
+- **Smart re-activation guard** — after a manual tap-dismiss, idle-timer re-activation is blocked for one full `idle_timeout` period; entity-triggered re-activation uses a separate short `trigger_buffer` (default 5 s)
+- **Entity transition detection** — fires on OFF→ON state transitions only, not on every hass render tick; entity-driven dismiss does not stamp the manual-dismiss guard
+- **Editor style preview** — 180 px inline preview box with live clock visible only in `ha-preview` context; invisible on the dashboard (`:host { display:none }` when sole module in card)
+- **Configurable trigger buffer** — 0–60 s slider controls how long after a manual dismiss the activation entity can re-trigger
+
+---
+
 ## Version 3.3.0-beta29
 
 ### 🚀 New Features

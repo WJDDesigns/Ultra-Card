@@ -154,7 +154,10 @@ export interface BaseModule {
     | 'activity_feed'
     | 'alert_center'
     | 'area_summary'
-    | 'virtual_pet';
+    | 'virtual_pet'
+    | 'alarm_panel'
+    | 'solar_analytics'
+    | 'screensaver';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | undefined;
@@ -4640,6 +4643,122 @@ export interface ColorInputModule extends BaseModule {
   double_tap_action?: ModuleActionConfig | undefined;
 }
 
+// ─── Alarm Panel Module ───────────────────────────────────────────────────────
+export interface AlarmPanelModule extends BaseModule {
+  type: 'alarm_panel';
+
+  /** alarm_control_panel entity */
+  entity: string;
+  name?: string | undefined;
+  icon?: string | undefined;
+
+  layout?: 'hero' | 'standard' | 'compact' | undefined;
+  alignment?: 'left' | 'center' | 'right' | undefined;
+
+  show_title?: boolean | undefined;
+  show_icon?: boolean | undefined;
+  show_state?: boolean | undefined;
+  /** Always show the keypad even when no code is required */
+  show_keypad?: boolean | undefined;
+  /** Show arm-home button (auto-detected from supported_features when undefined) */
+  show_arm_home?: boolean | undefined;
+  /** Show arm-away button */
+  show_arm_away?: boolean | undefined;
+  /** Show arm-night button */
+  show_arm_night?: boolean | undefined;
+  /** Show arm-vacation button */
+  show_arm_vacation?: boolean | undefined;
+  /** Show arm-custom-bypass button */
+  show_arm_custom?: boolean | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+
+  display_mode?: 'always' | 'every' | 'any' | undefined;
+  display_conditions?: DisplayCondition[] | undefined;
+}
+
+// ─── Solar Analytics Module ───────────────────────────────────────────────────
+export interface SolarAnalyticsModule extends BaseModule {
+  type: 'solar_analytics';
+
+  /** Current solar power sensor (W or kW) */
+  solar_entity?: string | undefined;
+  /** Current grid power sensor (positive = import, negative = export) */
+  grid_entity?: string | undefined;
+  /** Battery state of charge sensor (%) */
+  battery_entity?: string | undefined;
+  /** Current home consumption sensor (W or kW) */
+  home_entity?: string | undefined;
+
+  /** Daily solar energy production sensor (kWh) */
+  solar_energy_entity?: string | undefined;
+  /** Daily grid energy import sensor (kWh) */
+  grid_import_entity?: string | undefined;
+  /** Daily grid energy export sensor (kWh) */
+  grid_export_entity?: string | undefined;
+
+  layout?: 'full' | 'compact' | undefined;
+  show_battery?: boolean | undefined;
+  show_grid?: boolean | undefined;
+  show_self_sufficiency?: boolean | undefined;
+  show_today_totals?: boolean | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+
+  display_mode?: 'always' | 'every' | 'any' | undefined;
+  display_conditions?: DisplayCondition[] | undefined;
+}
+
+// ─── Screensaver Module ───────────────────────────────────────────────────────
+export interface ScreensaverModule extends BaseModule {
+  type: 'screensaver';
+
+  /** Seconds of inactivity before the screensaver activates (default: 60) */
+  idle_timeout?: number | undefined;
+
+  show_clock?: boolean | undefined;
+  clock_style?: 'digital' | 'minimal' | undefined;
+  clock_24h?: boolean | undefined;
+
+  show_date?: boolean | undefined;
+
+  show_weather?: boolean | undefined;
+  weather_entity?: string | undefined;
+
+  /** Optional image URLs / HA media paths to cycle as background */
+  image_urls?: string[] | undefined;
+  /** Seconds between image transitions (default: 10) */
+  image_interval?: number | undefined;
+
+  /** Optional binary_sensor — when 'on', force-activate the screensaver */
+  activation_entity?: string | undefined;
+  /**
+   * Seconds to wait after a manual tap-dismiss before the activation_entity
+   * can trigger the screensaver again (default: 5).
+   */
+  trigger_buffer?: number | undefined;
+  /**
+   * Visual style of the screensaver overlay.
+   * classic | minimal | neon | retro | frosted | photo_corner | sunrise | dark_luxe | split | ambient
+   */
+  overlay_style?: 'classic' | 'minimal' | 'neon' | 'retro' | 'frosted' | 'photo_corner' | 'sunrise' | 'dark_luxe' | 'split' | 'ambient' | undefined;
+
+  /** Background overlay opacity 0–100 (default: 85) */
+  overlay_opacity?: number | undefined;
+  overlay_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+
+  display_mode?: 'always' | 'every' | 'any' | undefined;
+  display_conditions?: DisplayCondition[] | undefined;
+}
+
 // Union type for all module types
 export type CardModule =
   | TextModule
@@ -4704,7 +4823,10 @@ export type CardModule =
   | ActivityFeedModule
   | AlertCenterModule
   | AreaSummaryModule
-  | VirtualPetModule;
+  | VirtualPetModule
+  | AlarmPanelModule
+  | SolarAnalyticsModule
+  | ScreensaverModule;
 
 // Activity Feed Module - Pro module for displaying entity state change history
 export interface ActivityFeedEntity {
