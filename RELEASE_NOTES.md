@@ -1,5 +1,27 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.4.0-beta2
+
+### 🐛 Bug Fixes
+
+- **Mobile scroll suppression** — Tapping a button, icon, navbar route, row, column, or any module while scrolling on a phone no longer accidentally fires the action. All gesture handlers now track pointer movement and treat the gesture as a scroll/drag (instead of a tap) once the pointer travels past a 10 px threshold, mirroring the browser's own native click-suppression behavior. Removed `preventDefault()` on `pointerdown`/`pointerup` so native scrolling is no longer blocked.
+- **Spinbox rapid-click stacking** — Successive +/- presses on entity-linked spinboxes (climate, number, input_number) now correctly stack with optimistic state, instead of collapsing onto the same value while waiting for the entity round-trip. A per-module optimistic value is held for ~1.5 s of inactivity so each tap operates on the freshest user-facing number, then yields back to entity state.
+- **Image module media-source URIs** — Images picked from the Home Assistant media browser (`media-source://...` URIs) now resolve via the WebSocket call `media_source/resolve_media` and display correctly. Falls back to the legacy `/local/` rewrite when the media_source integration is unavailable, so existing setups with files in `/config/www/` keep working.
+- **Default-margin migration repair pass (v2 → v3)** — Cards saved under v3.4.0-beta1 / earlier 3.3.x betas could lose their top/bottom 8 px defaults on modules that had at least one explicit margin direction set (e.g. `margin_left: -10px`). A v3 repair pass now restores the missing legacy 8 px top/bottom defaults, mirrors them to **both** the flat key (`margin_top`) and the design key (`design.margin_top`) so all module render paths agree, and also covers modules nested inside vertical/horizontal containers.
+- **`$variable` entity picker overwrite** — Entity pickers bound to a `$variable` no longer silently overwrite the variable reference with the resolved entity ID on autocomplete hydration, focus/blur, or parent re-render events. Regression introduced in 3.3.0-beta2 when these pickers started displaying the resolved entity instead of the raw variable.
+
+### 🔧 Improvements
+
+- **Area Summary live re-sort** — Quick-action badge ordering and visibility now react to live entity state (e.g. a light turning on bumps it up the list, locks pin to the top when active) without requiring a full discovery cache re-resolve. Pinned-entity order is preserved across the live re-sort.
+- **Documentation links** — README points to the new wiki for module documentation and the documentation home page.
+
+### 🧪 Testing
+
+- Added `media-resolver.test.ts` and `image-upload.test.ts` covering media-source resolution, caching, fallback behavior, and `getImageUrl` paths.
+- Expanded `template-migration.test.ts` with full coverage of the v1/v2 → v3 module-default-margin migration (zero-explicit, partial-explicit, container-nested, and idempotency cases).
+
+---
+
 ## Version 3.4.0-beta1
 
 ### 🚀 New Pro Modules

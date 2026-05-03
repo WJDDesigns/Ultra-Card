@@ -1748,6 +1748,7 @@ export class UltraPeopleModule extends BaseUltraModule {
           designStyles
         )}"
         @pointerdown=${handlers.onPointerDown}
+        @pointermove=${handlers.onPointerMove}
         @pointerup=${handlers.onPointerUp}
         @pointerleave=${handlers.onPointerLeave}
         @pointercancel=${handlers.onPointerCancel}
@@ -1790,6 +1791,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         class="people-module people-module--banner ${hoverClass}"
         style="border-radius: ${borderRadiusStyle}; ${this.buildStyleString(designStyles)}"
         @pointerdown=${handlers.onPointerDown}
+        @pointermove=${handlers.onPointerMove}
         @pointerup=${handlers.onPointerUp}
         @pointerleave=${handlers.onPointerLeave}
         @pointercancel=${handlers.onPointerCancel}
@@ -1851,6 +1853,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         class="people-module people-module--horizontal-compact ${hoverClass}"
         style="gap: ${module.gap}px; ${this.buildStyleString(designStyles)}"
         @pointerdown=${handlers.onPointerDown}
+        @pointermove=${handlers.onPointerMove}
         @pointerup=${handlers.onPointerUp}
         @pointerleave=${handlers.onPointerLeave}
         @pointercancel=${handlers.onPointerCancel}
@@ -1887,6 +1890,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         class="people-module people-module--horizontal-detailed ${hoverClass}"
         style="gap: ${module.gap}px; ${this.buildStyleString(designStyles)}"
         @pointerdown=${handlers.onPointerDown}
+        @pointermove=${handlers.onPointerMove}
         @pointerup=${handlers.onPointerUp}
         @pointerleave=${handlers.onPointerLeave}
         @pointercancel=${handlers.onPointerCancel}
@@ -1932,6 +1936,7 @@ export class UltraPeopleModule extends BaseUltraModule {
         class="people-module people-module--header ${hoverClass}"
         style="${this.buildStyleString(designStyles)}"
         @pointerdown=${handlers.onPointerDown}
+        @pointermove=${handlers.onPointerMove}
         @pointerup=${handlers.onPointerUp}
         @pointerleave=${handlers.onPointerLeave}
         @pointercancel=${handlers.onPointerCancel}
@@ -1990,6 +1995,7 @@ export class UltraPeopleModule extends BaseUltraModule {
           : ''} ${hoverClass}"
         style="${this.buildStyleString(designStyles)}"
         @pointerdown=${handlers.onPointerDown}
+        @pointermove=${handlers.onPointerMove}
         @pointerup=${handlers.onPointerUp}
         @pointerleave=${handlers.onPointerLeave}
         @pointercancel=${handlers.onPointerCancel}

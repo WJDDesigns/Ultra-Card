@@ -2022,6 +2022,7 @@ export class UltraCard extends LitElement {
           : ''}"
         style="${rowStyles}${hasRowActions ? '; cursor: pointer; pointer-events: auto;' : ''}"
         @pointerdown=${hasRowActions ? rowHandlers.onPointerDown : null}
+        @pointermove=${hasRowActions ? rowHandlers.onPointerMove : null}
         @pointerup=${hasRowActions ? rowHandlers.onPointerUp : null}
         @pointercancel=${hasRowActions ? rowHandlers.onPointerCancel : null}
         @pointerleave=${hasRowActions ? rowHandlers.onPointerLeave : null}
@@ -2319,6 +2320,7 @@ export class UltraCard extends LitElement {
           : ''}"
         style="${columnStyles}${hasColumnActions ? '; cursor: pointer; pointer-events: auto;' : ''}"
         @pointerdown=${hasColumnActions ? columnHandlers.onPointerDown : null}
+        @pointermove=${hasColumnActions ? columnHandlers.onPointerMove : null}
         @pointerup=${hasColumnActions ? columnHandlers.onPointerUp : null}
         @pointercancel=${hasColumnActions ? columnHandlers.onPointerCancel : null}
         @pointerleave=${hasColumnActions ? columnHandlers.onPointerLeave : null}

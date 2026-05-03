@@ -1706,6 +1706,7 @@ export class UltraGaugeModule extends BaseUltraModule {
         class="uc-gauge-container ${hoverClass}"
         style="${designStyles}; ${containerStyleStr}; touch-action: manipulation; cursor: pointer;"
         @pointerdown=${gestureHandlers.onPointerDown}
+        @pointermove=${gestureHandlers.onPointerMove}
         @pointerup=${gestureHandlers.onPointerUp}
         @pointerleave=${gestureHandlers.onPointerLeave}
         @pointercancel=${gestureHandlers.onPointerCancel}

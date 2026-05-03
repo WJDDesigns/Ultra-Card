@@ -766,6 +766,7 @@ export class UltraEnergyDisplayModule extends BaseUltraModule {
       <div
         class="energy-display-preview-wrapper"
         @pointerdown=${handlers.onPointerDown}
+        @pointermove=${handlers.onPointerMove}
         @pointerup=${handlers.onPointerUp}
         @pointerleave=${handlers.onPointerLeave}
         @pointercancel=${handlers.onPointerCancel}

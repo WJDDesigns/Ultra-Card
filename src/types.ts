@@ -5633,6 +5633,8 @@ export interface UltraCardConfig {
   // Schema version — bumped when defaults change and a migration is needed.
   // v1 (or undefined): modules rely on implicit 8px top/bottom margin default
   // v2: default margin removed; modules carry explicit design.margin_* if they need spacing
+  // v3: repair pass for v2 partial-margin migration edge case (fills missing top/bottom defaults
+  //     only when a module already has at least one explicit margin direction)
   _config_version?: number | undefined;
   /** Trust/origin for navigation `[[[...]]]` JS and similar gates. @see docs/navigation-js-templates.md */
   _contentOrigin?: 'local' | 'imported' | 'preset_standard' | 'preset_community' | undefined;

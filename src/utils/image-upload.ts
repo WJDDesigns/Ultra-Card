@@ -1,4 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
+import { getResolvedMediaUrlSync, isMediaSourceUri } from './media-resolver';
 
 export interface ImageUploadResponse {
   path: string;
@@ -116,6 +117,15 @@ export function getImageUrl(hass: HomeAssistant, path: string): string {
     return '';
   }
 
+  // Resolve Home Assistant media-source URIs (e.g. images picked from the
+  // /media browser). These cannot be string-rewritten because the `local`
+  // media source ID points to /media — not /config/www. We dispatch an
+  // async WS call (`media_source/resolve_media`) and re-render the card
+  // when the signed URL is ready.
+  if (isMediaSourceUri(path)) {
+    return getResolvedMediaUrlSync(hass, path);
+  }
+
   // Return absolute URLs as-is
   if (path.startsWith('http')) {
     return path;
@@ -142,14 +152,12 @@ export function getImageUrl(hass: HomeAssistant, path: string): string {
     path.startsWith('/media/local/') ||
     path.startsWith('media/local/') ||
     path.startsWith('local/') ||
-    path.includes('/local/') ||
-    path.startsWith('media-source://')
+    path.includes('/local/')
   ) {
     const relativePath = path
       .replace(/^\/media\/local\//, '')
       .replace(/^media\/local\//, '')
-      .replace(/^\/?local\//, '')
-      .replace(/^media-source:\/\/media_source\/local\//, '');
+      .replace(/^\/?local\//, '');
 
     try {
       const baseUrl = (hass as any).hassUrl ? (hass as any).hassUrl() : '';

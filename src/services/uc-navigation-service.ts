@@ -58,7 +58,20 @@ interface NavGestureState {
   clickCount: number;
   lastClickTime: number;
   lastTarget?: HTMLElement | null | undefined;
+  // Movement tracking — when the pointer travels too far we treat the
+  // interaction as a scroll/drag and suppress the tap action so navbar
+  // items don't fire while the user is just trying to scroll the page.
+  startX: number;
+  startY: number;
+  startPointerId: number | null;
+  hasMoved: boolean;
 }
+
+/**
+ * Pixel distance (CSS px) the pointer can travel before we treat the gesture
+ * as a scroll/drag instead of a tap (mirrors browser native click thresholds).
+ */
+const NAV_SCROLL_CANCEL_THRESHOLD_PX = 10;
 
 // Use window storage for preview overrides to ensure singleton behavior across module boundaries
 declare global {
@@ -1059,6 +1072,7 @@ class UcNavigationService {
       <div
         class="route ${isSelected ? 'active' : ''} ${isTextOnly ? 'text-only' : ''}"
         @pointerdown=${handlers.onPointerDown}
+        @pointermove=${handlers.onPointerMove}
         @pointerup=${handlers.onPointerUp}
         @pointerleave=${handlers.onPointerLeave}
         @pointercancel=${handlers.onPointerCancel}
@@ -1795,6 +1809,7 @@ class UcNavigationService {
         @mouseenter=${handleMouseEnter}
         @mouseleave=${handleMouseLeave}
         @pointerdown=${displayMode === 'icon_click' ? null : handlers.onPointerDown}
+        @pointermove=${displayMode === 'icon_click' ? null : handlers.onPointerMove}
         @pointerup=${displayMode === 'icon_click' ? null : handlers.onPointerUp}
         @pointerleave=${handlers.onPointerLeave}
         @pointercancel=${handlers.onPointerCancel}
@@ -1929,6 +1944,7 @@ class UcNavigationService {
         <div
           class="media-player-content"
           @pointerdown=${handlers.onPointerDown}
+          @pointermove=${handlers.onPointerMove}
           @pointerup=${handlers.onPointerUp}
           @pointerleave=${handlers.onPointerLeave}
           @pointercancel=${handlers.onPointerCancel}
@@ -2032,6 +2048,7 @@ class UcNavigationService {
         <div
           class="media-player-content"
           @pointerdown=${handlers.onPointerDown}
+          @pointermove=${handlers.onPointerMove}
           @pointerup=${handlers.onPointerUp}
           @pointerleave=${handlers.onPointerLeave}
           @pointercancel=${handlers.onPointerCancel}
@@ -2109,28 +2126,51 @@ class UcNavigationService {
         if (shouldExcludeTarget(target)) {
           return;
         }
-        e.preventDefault();
+        // Stop bubbling but do NOT preventDefault on pointerdown — that can
+        // break native scrolling on touch devices.
         e.stopPropagation();
 
         state.isHolding = false;
         state.lastTarget = e.currentTarget as HTMLElement;
+        state.startPointerId = e.pointerId;
+        state.startX = e.clientX;
+        state.startY = e.clientY;
+        state.hasMoved = false;
 
         if (!item.hold_action || item.hold_action.action === 'nothing') {
           return;
         }
 
         state.holdTimeout = setTimeout(async () => {
+          // Skip hold if the user has started scrolling/dragging
+          if (state.hasMoved) return;
           state.isHolding = true;
           await executeAction(item.hold_action, 'hold');
           this.clearGestureState(elementId);
         }, 500);
+      },
+      onPointerMove: (e: PointerEvent) => {
+        if (state.startPointerId === null || e.pointerId !== state.startPointerId) {
+          return;
+        }
+        if (state.hasMoved) return;
+        const dx = e.clientX - state.startX;
+        const dy = e.clientY - state.startY;
+        if (Math.hypot(dx, dy) > NAV_SCROLL_CANCEL_THRESHOLD_PX) {
+          // User is scrolling/dragging — cancel any pending hold and mark
+          // the gesture so the upcoming pointerup won't fire a tap.
+          state.hasMoved = true;
+          if (state.holdTimeout) {
+            clearTimeout(state.holdTimeout);
+            state.holdTimeout = null;
+          }
+        }
       },
       onPointerUp: (e: PointerEvent) => {
         const target = e.target as HTMLElement;
         if (shouldExcludeTarget(target)) {
           return;
         }
-        e.preventDefault();
         e.stopPropagation();
 
         state.lastTarget = e.currentTarget as HTMLElement;
@@ -2138,6 +2178,13 @@ class UcNavigationService {
         if (state.holdTimeout) {
           clearTimeout(state.holdTimeout);
           state.holdTimeout = null;
+        }
+
+        // If the user moved past the scroll threshold, treat as scroll and
+        // suppress the tap (fixes mobile scrolling triggering nav routes).
+        if (state.hasMoved) {
+          this.clearGestureState(elementId);
+          return;
         }
 
         if (state.isHolding) {
@@ -2182,6 +2229,8 @@ class UcNavigationService {
             s.holdTimeout = null;
           }
           s.isHolding = false;
+          s.startPointerId = null;
+          s.hasMoved = false;
         }
       },
       onPointerCancel: () => {
@@ -2337,6 +2386,10 @@ class UcNavigationService {
         isHolding: false,
         clickCount: 0,
         lastClickTime: 0,
+        startX: 0,
+        startY: 0,
+        startPointerId: null,
+        hasMoved: false,
       });
     }
     return this.gestureStates.get(elementId)!;
@@ -2356,6 +2409,8 @@ class UcNavigationService {
     }
     state.isHolding = false;
     state.clickCount = 0;
+    state.startPointerId = null;
+    state.hasMoved = false;
   }
 
   // ── Auto-hide: macOS-style dock behavior ──────────────────────────

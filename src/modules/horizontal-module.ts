@@ -492,6 +492,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
             : 'default'}; ${hasActions ? 'pointer-events: auto;' : ''}"
           data-wrap=${horizontalModule.wrap ? 'true' : 'false'}
           @pointerdown=${hasActions ? handlers.onPointerDown : null}
+          @pointermove=${hasActions ? handlers.onPointerMove : null}
           @pointerup=${hasActions ? handlers.onPointerUp : null}
           @pointercancel=${hasActions ? handlers.onPointerCancel : null}
           @pointerleave=${hasActions ? handlers.onPointerLeave : null}

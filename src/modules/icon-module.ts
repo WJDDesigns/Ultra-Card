@@ -3044,8 +3044,10 @@ export class UltraIconModule extends BaseUltraModule {
                     margin: '0 auto',
                   })}
                   @pointerdown=${handleGestures.onPointerDown}
+                  @pointermove=${handleGestures.onPointerMove}
                   @pointerup=${handleGestures.onPointerUp}
                   @pointerleave=${handleGestures.onPointerLeave}
+                  @pointercancel=${handleGestures.onPointerCancel}
                 >
                   ${shouldShowIcon
                     ? html`

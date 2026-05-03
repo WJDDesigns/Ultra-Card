@@ -348,8 +348,10 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         class="${hoverClass}"
         style="${designStyles}; ${clockLayoutStyles}"
         @pointerdown=${handlers.onPointerDown}
+        @pointermove=${handlers.onPointerMove}
         @pointerup=${handlers.onPointerUp}
         @pointerleave=${handlers.onPointerLeave}
+        @pointercancel=${handlers.onPointerCancel}
       >
         <div
           class="animated-clock-module-container"

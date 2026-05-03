@@ -835,8 +835,10 @@ All standard markdown features are automatically enabled!`,
           ? 'pointer'
           : 'default'};"
         @pointerdown=${handlers.onPointerDown}
+        @pointermove=${handlers.onPointerMove}
         @pointerup=${handlers.onPointerUp}
         @pointerleave=${handlers.onPointerLeave}
+        @pointercancel=${handlers.onPointerCancel}
       >
         <div class="markdown-module-preview" style=${this.styleObjectToCss(contentStyles)}>
           ${element}

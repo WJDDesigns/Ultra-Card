@@ -35,6 +35,13 @@ function isExplicitNothingAction(action: TapActionConfig | undefined | null): bo
 }
 
 /**
+ * Pixel distance (CSS px) the pointer can travel before we treat the gesture
+ * as a scroll/drag instead of a tap. Matches the threshold browsers use to
+ * suppress synthetic click events on touch.
+ */
+const SCROLL_CANCEL_THRESHOLD_PX = 10;
+
+/**
  * Gesture state for tracking multi-touch interactions
  */
 interface GestureState {
@@ -43,6 +50,14 @@ interface GestureState {
   isHolding: boolean;
   clickCount: number;
   lastClickTime: number;
+  // Movement tracking: when the pointer travels too far between pointerdown
+  // and pointerup we treat the interaction as a scroll/drag and suppress
+  // the tap action. This mirrors the native browser behavior that the info
+  // module benefits from by using plain @click.
+  startX: number;
+  startY: number;
+  startPointerId: number | null;
+  hasMoved: boolean;
 }
 
 /**
@@ -76,13 +91,20 @@ interface GestureState {
  * return html`
  *   <div
  *     @pointerdown=${handlers.onPointerDown}
+ *     @pointermove=${handlers.onPointerMove}
  *     @pointerup=${handlers.onPointerUp}
  *     @pointerleave=${handlers.onPointerLeave}
+ *     @pointercancel=${handlers.onPointerCancel}
  *   >
  *     Content here
  *   </div>
  * `;
  * ```
+ *
+ * Bind `@pointermove` so the service can detect scroll/drag gestures and
+ * suppress the tap action when the user is just trying to scroll the page
+ * (a common issue on mobile where small finger movements still triggered
+ * a tap before this was added).
  */
 export class UcGestureService {
   private static instance: UcGestureService;
@@ -108,6 +130,10 @@ export class UcGestureService {
         isHolding: false,
         clickCount: 0,
         lastClickTime: 0,
+        startX: 0,
+        startY: 0,
+        startPointerId: null,
+        hasMoved: false,
       });
     }
     return this.gestureStates.get(elementId)!;
@@ -129,6 +155,8 @@ export class UcGestureService {
       }
       state.isHolding = false;
       state.clickCount = 0;
+      state.startPointerId = null;
+      state.hasMoved = false;
     }
   }
 
@@ -187,12 +215,21 @@ export class UcGestureService {
           return;
         }
 
-        // CRITICAL: Prevent default and stop propagation to avoid double-firing
-        e.preventDefault();
+        // CRITICAL: Stop propagation to avoid double-firing on parent gesture
+        // handlers. We deliberately do NOT call preventDefault() here for
+        // touch pointers, because that can interfere with the browser's
+        // native scroll detection. Letting the browser still fire native
+        // scroll/cancel events keeps mobile scrolling fluid; tap actions
+        // are still routed exclusively through our pointerup handler.
         e.stopPropagation();
         e.stopImmediatePropagation();
 
+        // Reset movement tracking for this new gesture
         state.isHolding = false;
+        state.startPointerId = e.pointerId;
+        state.startX = e.clientX;
+        state.startY = e.clientY;
+        state.hasMoved = false;
 
         // Start hold timer if hold action is configured and not "nothing"
         // Skip hold timer entirely if hold action is explicitly nothing/none
@@ -203,6 +240,8 @@ export class UcGestureService {
 
         // Start hold timer for configured actions or Default (undefined)
         state.holdTimeout = setTimeout(() => {
+          // Suppress hold action if the user has started scrolling/dragging
+          if (state.hasMoved) return;
           state.isHolding = true;
           UltraLinkComponent.handleAction(
             hold_action || ({ action: 'default', entity } as any),
@@ -215,6 +254,28 @@ export class UcGestureService {
         }, 500); // 500ms hold threshold
       },
 
+      onPointerMove: (e: PointerEvent) => {
+        // Only track the original pointer for this gesture
+        if (state.startPointerId === null || e.pointerId !== state.startPointerId) {
+          return;
+        }
+
+        // Already flagged as scrolling, no need to recompute
+        if (state.hasMoved) return;
+
+        const dx = e.clientX - state.startX;
+        const dy = e.clientY - state.startY;
+        if (Math.hypot(dx, dy) > SCROLL_CANCEL_THRESHOLD_PX) {
+          // User is scrolling/dragging — cancel the pending hold and mark
+          // the gesture so the upcoming pointerup will not fire a tap.
+          state.hasMoved = true;
+          if (state.holdTimeout) {
+            clearTimeout(state.holdTimeout);
+            state.holdTimeout = null;
+          }
+        }
+      },
+
       onPointerUp: (e: PointerEvent) => {
         const target = e.target as HTMLElement;
 
@@ -223,8 +284,8 @@ export class UcGestureService {
           return;
         }
 
-        // CRITICAL: Prevent default and stop propagation to avoid double-firing
-        e.preventDefault();
+        // Stop propagation to avoid double-firing on parent gesture handlers.
+        // See onPointerDown for why preventDefault() is intentionally omitted.
         e.stopPropagation();
         e.stopImmediatePropagation();
 
@@ -234,11 +295,24 @@ export class UcGestureService {
           state.holdTimeout = null;
         }
 
+        // If the user moved past the scroll threshold, treat this as a
+        // scroll gesture and suppress the tap entirely. This is the fix
+        // for mobile scrolling accidentally triggering buttons/icons.
+        if (state.hasMoved) {
+          state.hasMoved = false;
+          state.isHolding = false;
+          state.startPointerId = null;
+          return;
+        }
+
         // If this was a hold gesture, don't process as click
         if (state.isHolding) {
           state.isHolding = false;
+          state.startPointerId = null;
           return;
         }
+
+        state.startPointerId = null;
 
         const now = Date.now();
         const timeSinceLastClick = now - state.lastClickTime;
@@ -314,10 +388,15 @@ export class UcGestureService {
           state.holdTimeout = null;
         }
         state.isHolding = false;
+        // Treat leave as a cancellation of the in-flight gesture so a stray
+        // pointerup elsewhere won't fire a tap.
+        state.startPointerId = null;
+        state.hasMoved = false;
       },
 
       onPointerCancel: () => {
-        // Handle pointer cancel (e.g., system gesture interruption)
+        // Handle pointer cancel (e.g., system gesture interruption,
+        // browser scroll takeover). Reset all in-flight gesture state.
         this.clearGestureState(elementId);
       },
     };

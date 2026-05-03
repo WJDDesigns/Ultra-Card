@@ -454,6 +454,7 @@ export class UltraVerticalModule extends BaseUltraModule {
             ? 'pointer'
             : 'default'}; ${hasActions ? 'pointer-events: auto;' : ''}"
           @pointerdown=${hasActions ? handlers.onPointerDown : null}
+          @pointermove=${hasActions ? handlers.onPointerMove : null}
           @pointerup=${hasActions ? handlers.onPointerUp : null}
           @pointercancel=${hasActions ? handlers.onPointerCancel : null}
           @pointerleave=${hasActions ? handlers.onPointerLeave : null}

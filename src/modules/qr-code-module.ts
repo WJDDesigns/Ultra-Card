@@ -973,6 +973,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
       <div
         class="qr-code-module-preview ${hoverClass}"
         @pointerdown="${handlers.onPointerDown}"
+        @pointermove="${handlers.onPointerMove}"
         @pointerup="${handlers.onPointerUp}"
         @pointerleave="${handlers.onPointerLeave}"
         @pointercancel="${handlers.onPointerCancel}"

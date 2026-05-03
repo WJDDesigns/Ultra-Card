@@ -877,8 +877,10 @@ export class UltraImageModule extends BaseUltraModule {
                     class="${hoverEffectClass}"
                     data-hover-style="${hoverEffectStyle}"
                     @pointerdown=${handlers.onPointerDown}
+                    @pointermove=${handlers.onPointerMove}
                     @pointerup=${handlers.onPointerUp}
                     @pointerleave=${handlers.onPointerLeave}
+                    @pointercancel=${handlers.onPointerCancel}
                   />
                 `
               : html`

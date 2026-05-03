@@ -23,6 +23,20 @@ export class UltraSpinboxModule extends BaseUltraModule {
   private _templateInputDebounce: any = null;
   private _lastTouchTime: number = 0;
 
+  // Per-module optimistic value state. When the user rapidly clicks +/- on a
+  // spinbox linked to an entity (especially slow-to-update entities like
+  // climate/thermostat), we must not re-read the stale entity state between
+  // clicks — otherwise all clicks collapse onto the same value. We keep a
+  // local "optimistic" value that is updated synchronously on each click and
+  // used as the source of truth for the display and next increment. After
+  // OPTIMISTIC_TIMEOUT_MS of inactivity we clear it so the entity state
+  // resumes driving the display.
+  private _optimisticValues: Map<
+    string,
+    { value: number; timer: ReturnType<typeof setTimeout> | null }
+  > = new Map();
+  private static readonly OPTIMISTIC_TIMEOUT_MS = 1500;
+
   metadata: ModuleMetadata = {
     type: 'spinbox',
     title: 'Spinbox',
@@ -732,6 +746,16 @@ export class UltraSpinboxModule extends BaseUltraModule {
       }
     }
 
+    // While the user is rapidly clicking +/- on an entity-linked spinbox, we
+    // display the optimistic value instead of the (stale) entity state so
+    // successive clicks stack correctly. See comment on _optimisticValues.
+    if (spinboxModule.entity) {
+      const optimistic = this._optimisticValues.get(spinboxModule.id);
+      if (optimistic !== undefined) {
+        currentValue = optimistic.value;
+      }
+    }
+
     // Ensure value is within bounds
     currentValue = Math.max(
       spinboxModule.min_value,
@@ -861,10 +885,22 @@ export class UltraSpinboxModule extends BaseUltraModule {
       'box-sizing': 'border-box',
     } as Record<string, string>;
 
+    // Compute the freshest base value at click time. We must NOT rely on the
+    // `currentValue` closed over at render time, because rapid clicks fire
+    // before a re-render has happened. Prefer optimistic value (a recent
+    // click), then entity state, then the configured default.
+    const getBaseValue = (): number => {
+      const opt = this._optimisticValues.get(spinboxModule.id);
+      if (opt !== undefined) return opt.value;
+      const entityVal = this._getEntityNumericValue(spinboxModule, hass);
+      if (entityVal !== undefined) return entityVal;
+      return spinboxModule.value ?? 50;
+    };
+
     // Handle increment/decrement
     const handleIncrement = (e: Event) => {
       e.stopPropagation();
-      
+
       // Prevent double-firing on touch devices (touchend followed by synthetic click)
       if (e.type === 'click' && e.timeStamp - (this._lastTouchTime || 0) < 500) {
         return;
@@ -873,16 +909,26 @@ export class UltraSpinboxModule extends BaseUltraModule {
         this._lastTouchTime = e.timeStamp;
         e.preventDefault(); // Prevent synthetic click
       }
-      
+
       const target = e.target as HTMLElement;
       const button = target.closest('.spinbox-button') as HTMLButtonElement;
-      
+
       if (spinboxModule.entity && hass) {
-        // Call service to update entity
-        const newValue = Math.min(spinboxModule.max_value, currentValue + spinboxModule.step);
-        this.callEntityService(spinboxModule.entity, newValue, hass, entityDomain);
+        const base = Math.max(
+          spinboxModule.min_value,
+          Math.min(spinboxModule.max_value, getBaseValue())
+        );
+        const newValue = Math.min(spinboxModule.max_value, base + spinboxModule.step);
+        if (newValue !== base) {
+          // Update optimistic value FIRST so a follow-up click within the
+          // round-trip window computes off this value, not the stale entity.
+          this._setOptimisticValue(spinboxModule.id, newValue);
+          this.callEntityService(spinboxModule.entity, newValue, hass, entityDomain);
+          // Force immediate re-render so the display reflects the new value.
+          this.triggerPreviewUpdate(true);
+        }
       }
-      
+
       // Blur immediately to remove focus state
       if (button) {
         button.blur();
@@ -895,7 +941,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
 
     const handleDecrement = (e: Event) => {
       e.stopPropagation();
-      
+
       // Prevent double-firing on touch devices (touchend followed by synthetic click)
       if (e.type === 'click' && e.timeStamp - (this._lastTouchTime || 0) < 500) {
         return;
@@ -904,16 +950,23 @@ export class UltraSpinboxModule extends BaseUltraModule {
         this._lastTouchTime = e.timeStamp;
         e.preventDefault(); // Prevent synthetic click
       }
-      
+
       const target = e.target as HTMLElement;
       const button = target.closest('.spinbox-button') as HTMLButtonElement;
-      
+
       if (spinboxModule.entity && hass) {
-        // Call service to update entity
-        const newValue = Math.max(spinboxModule.min_value, currentValue - spinboxModule.step);
-        this.callEntityService(spinboxModule.entity, newValue, hass, entityDomain);
+        const base = Math.max(
+          spinboxModule.min_value,
+          Math.min(spinboxModule.max_value, getBaseValue())
+        );
+        const newValue = Math.max(spinboxModule.min_value, base - spinboxModule.step);
+        if (newValue !== base) {
+          this._setOptimisticValue(spinboxModule.id, newValue);
+          this.callEntityService(spinboxModule.entity, newValue, hass, entityDomain);
+          this.triggerPreviewUpdate(true);
+        }
       }
-      
+
       // Blur immediately to remove focus state
       if (button) {
         button.blur();
@@ -1226,6 +1279,43 @@ export class UltraSpinboxModule extends BaseUltraModule {
       console.error(`[Spinbox] Failed to call service for ${entity}:`, error);
       console.error('[Spinbox] Service data was:', serviceData);
     }
+  }
+
+  /**
+   * Read the current numeric value from the linked entity. Mirrors the
+   * precedence used when rendering (climate.temperature > entity.state).
+   * Returns undefined if no entity is linked or state can't be parsed.
+   */
+  private _getEntityNumericValue(
+    module: SpinboxModule,
+    hass: HomeAssistant | undefined
+  ): number | undefined {
+    if (!module.entity || !hass) return undefined;
+    const entityState = hass.states[module.entity];
+    if (!entityState) return undefined;
+    const entityDomain = module.entity.split('.')[0];
+    if (entityDomain === 'climate' && entityState.attributes?.temperature !== undefined) {
+      const v = parseFloat(String(entityState.attributes.temperature));
+      if (!isNaN(v)) return v;
+    }
+    const stateValue = parseFloat(entityState.state);
+    return isNaN(stateValue) ? undefined : stateValue;
+  }
+
+  /**
+   * Set (or refresh) the optimistic value for a module. Each call resets the
+   * timeout so that a burst of clicks keeps the optimistic value alive; once
+   * the user stops clicking, the value is cleared and the entity state takes
+   * over again.
+   */
+  private _setOptimisticValue(moduleId: string, value: number): void {
+    const existing = this._optimisticValues.get(moduleId);
+    if (existing?.timer) clearTimeout(existing.timer);
+    const timer = setTimeout(() => {
+      this._optimisticValues.delete(moduleId);
+      this.triggerPreviewUpdate();
+    }, UltraSpinboxModule.OPTIMISTIC_TIMEOUT_MS);
+    this._optimisticValues.set(moduleId, { value, timer });
   }
 
   private getDecimalPlaces(step: number): number {

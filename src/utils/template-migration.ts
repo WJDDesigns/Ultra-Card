@@ -532,10 +532,10 @@ export function autoMigrateTemplatesInConfig(config: UltraCardConfig): UltraCard
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Module default-margin migration (v1 → v2)
+// Module default-margin migration (v1/v2 → v3)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CURRENT_CONFIG_VERSION = 2;
+const CURRENT_CONFIG_VERSION = 3;
 
 const MODULES_WITH_LEGACY_8PX_MARGIN: ReadonlySet<string> = new Set([
   'animated_clock',
@@ -563,71 +563,119 @@ const MODULES_WITH_LEGACY_8PX_MARGIN: ReadonlySet<string> = new Set([
   'text_input',
 ]);
 
-function moduleHasExplicitMargin(mod: any): boolean {
-  if (
-    mod.margin_top !== undefined ||
-    mod.margin_bottom !== undefined ||
-    mod.margin_left !== undefined ||
-    mod.margin_right !== undefined
-  ) {
-    return true;
+type MarginDir = 'top' | 'bottom' | 'left' | 'right';
+const MARGIN_DIRS: readonly MarginDir[] = ['top', 'bottom', 'left', 'right'] as const;
+
+/**
+ * Return the set of margin directions the user has explicitly set on a module,
+ * checking every form the editor / YAML may use:
+ *   1. flat:           mod.margin_top
+ *   2. flat-in-design: mod.design.margin_top
+ *   3. nested:         mod.margin.top                (legacy BaseModule.margin)
+ *   4. nested-design:  mod.design.margin.top         (legacy nested-in-design)
+ */
+function getExplicitMarginDirs(mod: any): Set<MarginDir> {
+  const explicit = new Set<MarginDir>();
+  const design = mod?.design;
+  for (const dir of MARGIN_DIRS) {
+    const flatKey = `margin_${dir}` as const;
+    if (
+      mod?.[flatKey] !== undefined ||
+      design?.[flatKey] !== undefined ||
+      mod?.margin?.[dir] !== undefined ||
+      design?.margin?.[dir] !== undefined
+    ) {
+      explicit.add(dir);
+    }
   }
-  const d = mod.design;
-  if (
-    d &&
-    (d.margin_top !== undefined ||
-      d.margin_bottom !== undefined ||
-      d.margin_left !== undefined ||
-      d.margin_right !== undefined)
-  ) {
-    return true;
-  }
-  return false;
+  return explicit;
 }
 
-function stampDefaultMargin(mod: any): void {
-  if (!mod.design) {
-    mod.design = {};
+/**
+ * v1 default margin was `'8px 0'`, i.e. per-direction:
+ *   top:    8px
+ *   bottom: 8px
+ *   left:   0   (matches new v2 default — nothing to do)
+ *   right:  0   (matches new v2 default — nothing to do)
+ *
+ * Stamp `'8px'` for any top/bottom direction the user did NOT explicitly set,
+ * so a partial override (e.g. only `margin_left: -10px`) keeps the v1 8px
+ * top/bottom defaults the user implicitly relied on.
+ *
+ * Mirrors to BOTH `module.margin_top` AND `module.design.margin_top` because
+ * legacy module render code is split:
+ *   - dropdown / button / image / horizontal / icon (and others) read ONLY
+ *     `module.margin_top` directly;
+ *   - info / spinbox / bar / gauge (and others) read `designProperties.margin_top`
+ *     which comes from `module.design.margin_top`.
+ * The editor itself mirrors both forms on every save (see layout-tab.ts), so
+ * this matches existing on-disk shape.
+ */
+function stampMissingV1MarginDefaults(mod: any): void {
+  const explicit = getExplicitMarginDirs(mod);
+  const needsTop = !explicit.has('top');
+  const needsBottom = !explicit.has('bottom');
+  if (!needsTop && !needsBottom) return;
+  if (!mod.design) mod.design = {};
+  if (needsTop) {
+    mod.margin_top = '8px';
+    mod.design.margin_top = '8px';
   }
-  mod.design.margin_top = '8px';
-  mod.design.margin_bottom = '8px';
+  if (needsBottom) {
+    mod.margin_bottom = '8px';
+    mod.design.margin_bottom = '8px';
+  }
 }
 
 /**
  * For column-level modules that previously relied on the implicit `margin: 8px 0`
- * default, inject explicit `design.margin_top/bottom = '8px'`.
+ * default, inject explicit `margin_top/bottom = '8px'` for any direction
+ * the user did not override.
  *
- * Modules nested inside vertical / horizontal containers are skipped — those
- * parents already zeroed child margins via `applyLayoutDesignToChild`, so their
- * children never visually had the 8px default.
+ * IMPORTANT: This also applies to modules nested inside vertical/horizontal
+ * containers. Starting in 3.3.0-beta3, those containers zero child margins when
+ * no explicit margin exists. Legacy cards (no _config_version) rendered nested
+ * children with the old implicit 8px top/bottom defaults, so we must stamp them
+ * explicitly before container zeroing runs.
  */
-function migrateModulesInList(modules: any[] | undefined, isInsideContainer: boolean): void {
+function migrateModulesInList(
+  modules: any[] | undefined,
+  mode: 'full' | 'partial-only' = 'full'
+): void {
   if (!modules?.length) return;
   for (const mod of modules) {
     if (!mod?.type) continue;
 
     const isContainer = mod.type === 'vertical' || mod.type === 'horizontal';
 
-    if (!isInsideContainer && MODULES_WITH_LEGACY_8PX_MARGIN.has(mod.type)) {
-      if (!moduleHasExplicitMargin(mod)) {
-        stampDefaultMargin(mod);
+    if (MODULES_WITH_LEGACY_8PX_MARGIN.has(mod.type)) {
+      const explicit = getExplicitMarginDirs(mod);
+      const hasAnyExplicit = explicit.size > 0;
+      if (mode === 'full' || hasAnyExplicit) {
+        // Full mode (legacy v1/undefined): stamp all missing legacy defaults.
+        // Partial-only mode (repair saved v2): only patch modules that already
+        // have at least one explicit margin, which is where the old v2 migration
+        // bug left defaults missing.
+        stampMissingV1MarginDefaults(mod);
       }
     }
 
     if (isContainer && Array.isArray(mod.modules)) {
-      migrateModulesInList(mod.modules, true);
+      migrateModulesInList(mod.modules, mode);
     }
   }
 }
 
 /**
- * Migrate configs created before the default-margin removal.
- * Walks the full layout tree and stamps explicit 8px margins on column-level
- * modules that previously relied on the `margin: '8px 0'` fallback.
+ * Migrate/repair module default margins across schema versions:
+ * - v1/undefined -> v3: full migration of legacy implicit `8px 0` defaults.
+ * - v2          -> v3: repair pass for the old partial-margin bug; only modules
+ *                   with at least one explicit margin are patched.
  * Mutates config in place (same deep-copy object used by validation).
  */
 export function migrateModuleDefaultMargins(config: UltraCardConfig): void {
-  if ((config as any)._config_version && (config as any)._config_version >= CURRENT_CONFIG_VERSION) {
+  const schemaVersion = Number((config as any)._config_version || 0);
+  if (schemaVersion >= CURRENT_CONFIG_VERSION) {
     return;
   }
   const rows = config.layout?.rows;
@@ -635,11 +683,12 @@ export function migrateModuleDefaultMargins(config: UltraCardConfig): void {
     (config as any)._config_version = CURRENT_CONFIG_VERSION;
     return;
   }
+  const mode: 'full' | 'partial-only' = schemaVersion >= 2 ? 'partial-only' : 'full';
   for (const row of rows) {
     const cols = (row as any)?.columns;
     if (!cols?.length) continue;
     for (const col of cols) {
-      migrateModulesInList((col as any)?.modules, false);
+      migrateModulesInList((col as any)?.modules, mode);
     }
   }
   (config as any)._config_version = CURRENT_CONFIG_VERSION;

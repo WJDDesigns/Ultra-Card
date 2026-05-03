@@ -894,8 +894,10 @@ export class UltraButtonModule extends BaseUltraModule {
             style="${this.buildStyleString(mergedButtonStyle)}"
             aria-label="${(buttonModule.label || 'Button').trim() || 'Button'}"
             @pointerdown=${handlers.onPointerDown}
+            @pointermove=${handlers.onPointerMove}
             @pointerup=${handlers.onPointerUp}
             @pointerleave=${handlers.onPointerLeave}
+            @pointercancel=${handlers.onPointerCancel}
           >
             ${buttonModule.show_icon && buttonModule.icon && buttonModule.icon_position === 'before'
               ? html`<ha-icon

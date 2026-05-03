@@ -4,7 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, AreaSummaryModule, AreaSummaryStylePreset, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
-import { ucAreaDiscoveryService, RoomSummaryModel, isEntityActive } from '../services/uc-area-discovery-service';
+import { ucAreaDiscoveryService, RoomSummaryModel, RoomQuickEntity, isEntityActive, sortBucket } from '../services/uc-area-discovery-service';
 import type { TapActionConfig } from '../components/ultra-link';
 import { getImageUrl, uploadImage } from '../utils/image-upload';
 import { ucToastService } from '../services/uc-toast-service';
@@ -315,6 +315,32 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
     ev.stopPropagation();
     if (!climateId) return;
     void this.handleModuleAction({ action: 'more-info', entity: climateId }, hass, ev.currentTarget as HTMLElement, config, climateId, module);
+  }
+
+  /**
+   * Re-sorts and re-slices all_quick_entities using live hass state so that
+   * badge visibility and ordering react to external state changes without needing
+   * a full cache re-resolve.
+   */
+  private liveQuickEntities(model: RoomSummaryModel, hass: HomeAssistant, max: number): RoomQuickEntity[] {
+    const pinIndex = new Map<string, number>();
+    model.pinned_entity_ids.forEach((id, i) => pinIndex.set(id, i));
+
+    const live = model.all_quick_entities.map(q => {
+      const active = isEntityActive(q.entity_id, q.role, hass);
+      return { ...q, active, sort_bucket: sortBucket(q.role, active) };
+    });
+
+    live.sort((a, b) => {
+      const pa = pinIndex.get(a.entity_id) ?? 999;
+      const pb = pinIndex.get(b.entity_id) ?? 999;
+      if (pa !== pb) return pa - pb;
+      if (a.sort_bucket !== b.sort_bucket) return a.sort_bucket - b.sort_bucket;
+      if (a.active !== b.active) return a.active ? -1 : 1;
+      return a.entity_id.localeCompare(b.entity_id);
+    });
+
+    return live.slice(0, Math.max(1, Math.min(12, max)));
   }
 
   private statLine(model: RoomSummaryModel, lang: string): string {
@@ -1054,6 +1080,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
     const model = state.model;
     const liveLightsOn = model.light_entity_ids.filter(id => isEntityActive(id, 'lights', hass)).length;
     const liveLightsTotal = model.light_entity_ids.length;
+    const liveEntities = this.liveQuickEntities(model, hass, m.max_quick_actions ?? 6);
     const title = this.roomTitle(m, model, lang);
     const heroIcon = this.roomHeroIcon(m);
     const accent = this.accent(m);
@@ -1097,7 +1124,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
             : ''} ${rowSpread ? 'uc-ar-badges--row-spread' : ''}"
           @pointerdown=${(e: Event) => e.stopPropagation()}
         >
-          ${model.quick_entities.map(q => {
+          ${liveEntities.map(q => {
             const label = this.entityShortName(hass, q.entity_id);
             const liveActive = isEntityActive(q.entity_id, q.role, hass);
             return html`
@@ -1270,6 +1297,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       <div
         class="uc-ar-host"
         @pointerdown=${gestures.onPointerDown}
+        @pointermove=${gestures.onPointerMove}
         @pointerup=${gestures.onPointerUp}
         @pointerleave=${gestures.onPointerLeave}
         @pointercancel=${gestures.onPointerCancel}

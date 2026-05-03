@@ -556,7 +556,17 @@ export class UcFormUtils {
           if (newValue?.startsWith('$')) {
             newValue = ucCustomVariablesService.resolveEntityField(newValue, config) ?? newValue;
           }
-          if (newValue !== currentValue) {
+          // IMPORTANT: compare against the value the form was actually given
+          // (`resolvedDisplay`), NOT the raw `currentValue`. When the field is bound
+          // to a $variable, `currentValue` is e.g. "$climate1" while the picker
+          // holds the resolved entity (e.g. "climate.thermostat"). HA's entity
+          // picker re-emits `value-changed` whenever it re-affirms its current
+          // value (autocomplete hydration, focus/blur, parent re-renders, etc.).
+          // Comparing against `currentValue` made every such re-affirmation look
+          // like a real change and silently overwrote the $variable reference
+          // with the resolved entity ID on the next save (regression introduced
+          // in 3.3.0-beta2 when this picker started showing the resolved entity).
+          if (newValue !== resolvedDisplay && newValue !== currentValue) {
             onChange(newValue);
           }
         },

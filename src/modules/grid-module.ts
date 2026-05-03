@@ -3071,6 +3071,7 @@ export class UltraGridModule extends BaseUltraModule {
         class="uc-grid-item grid-style-${module.grid_style} ${modeClasses} ${hoverClass}"
         style="${itemStyles}${animationStyles}"
         @pointerdown=${handlers.onPointerDown}
+        @pointermove=${handlers.onPointerMove}
         @pointerup=${handlers.onPointerUp}
         @pointercancel=${handlers.onPointerCancel}
         @pointerleave=${handlers.onPointerLeave}

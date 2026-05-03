@@ -8,7 +8,7 @@
 
 [![preview-uc](https://github.com/user-attachments/assets/869c8d8d-e51f-4c30-b626-b820e4dd5fae)](https://github.com/WJDDesigns/Ultra-Card)
 
-**[UltraCard.io](https://ultracard.io)** · **[Discord](https://discord.gg/6xVgHxzzBV)** · **[Documentation](https://github.com/WJDDesigns/Ultra-Card)**
+**[UltraCard.io](https://ultracard.io)** · **[Discord](https://discord.gg/6xVgHxzzBV)** · **[Documentation](https://github.com/WJDDesigns/Ultra-Card/wiki)**
 
 ---
 
@@ -82,7 +82,7 @@ Visit **[UltraCard.io](https://ultracard.io)** for cloud sync, automated backups
 | **Layout** | Horizontal, Vertical, Tabs, Separator |
 | **Pro** | Animated Clock, Animated Weather, Animated Forecast, Video Background |
 
-Module docs: [Text](docs/modules/text.md), [Icon](docs/modules/icon.md), [Info](docs/modules/info.md), [Image](docs/modules/image.md), [Markdown](docs/modules/markdown.md), [Bar](docs/modules/bar.md), [Graphs](docs/modules/graphs.md), [Camera](docs/modules/camera.md), [Area / Room Summary](docs/modules/area-summary.md), [Button](docs/modules/button.md), [Horizontal](docs/modules/horizontal.md), [Vertical](docs/modules/vertical.md), [Separator](docs/modules/separator.md).
+**[Browse every module in the wiki →](https://github.com/WJDDesigns/Ultra-Card/wiki/Modules-Overview)** (74 modules, organized by category, with examples and configuration reference).
 
 **Card integration** — Use unlimited native Home Assistant cards inside Ultra Card. Add Bubble Card, Mushroom Cards, ApexCharts, and other custom cards—unlimited for all users.
 

@@ -45,6 +45,14 @@ export interface RoomSummaryModel {
   lights_total: number;
   /** All light entity IDs in the area (unsliced). Used to recompute live counts at render time. */
   light_entity_ids: readonly string[];
+  /**
+   * Full entity list before the max_quick_actions slice. Contains stable fields (entity_id, role,
+   * icon); active/sort_bucket should be recomputed live at render time.
+   */
+  all_quick_entities: readonly RoomQuickEntity[];
+  /** Ordered pinned entity IDs — preserved so render-time re-sort can honour pin position. */
+  pinned_entity_ids: readonly string[];
+  /** Sliced quick entities (legacy; kept for primary_entity_id derivation). */
   quick_entities: RoomQuickEntity[];
   /** Default entity for tile tap → more-info */
   primary_entity_id?: string | undefined;
@@ -192,7 +200,7 @@ export function isEntityActive(entityId: string, role: RoomEntityRole, hass: Hom
   }
 }
 
-function sortBucket(role: RoomEntityRole, active: boolean): number {
+export function sortBucket(role: RoomEntityRole, active: boolean): number {
   if (!active) return 80;
   if (role === 'doors_windows') return 0;
   if (role === 'locks') return 1;
@@ -297,6 +305,8 @@ class UcAreaDiscoveryService {
         lights_on: 0,
         lights_total: 0,
         light_entity_ids: [],
+        all_quick_entities: [],
+        pinned_entity_ids: [],
         quick_entities: [],
       };
     }
@@ -465,6 +475,8 @@ class UcAreaDiscoveryService {
       lights_on,
       lights_total,
       light_entity_ids,
+      all_quick_entities: quick,
+      pinned_entity_ids: pinned,
       quick_entities,
       primary_entity_id,
     };

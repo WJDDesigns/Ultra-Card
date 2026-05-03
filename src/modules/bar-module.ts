@@ -5187,8 +5187,10 @@ export class UltraBarModule extends BaseUltraModule {
             z-index: 1;
           "
           @pointerdown=${handlers.onPointerDown}
+          @pointermove=${handlers.onPointerMove}
           @pointerup=${handlers.onPointerUp}
           @pointerleave=${handlers.onPointerLeave}
+          @pointercancel=${handlers.onPointerCancel}
         >
             <!-- Bar Fill / Dots Style / Minimal Style -->
             ${
