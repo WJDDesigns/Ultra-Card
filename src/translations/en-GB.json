@@ -313,32 +313,11 @@
       "double_tap_behavior_desc": "Action to perform when the element is double-tapped/clicked.",
       "haptic_feedback": "Haptic Feedback",
       "haptic_feedback_desc": "Provide tactile feedback when buttons are pressed on supported devices",
-      "more_info_entity": "More Info Entity:",
-      "toggle_entity": "Toggle Entity:",
       "more_info_config": "More Info Configuration",
       "toggle_config": "Toggle Configuration",
       "entity": "Entity",
       "entity_more_info_desc": "Select which entity to show more information for",
-      "entity_toggle_desc": "Select which entity to toggle on/off",
-      "default": "Default",
-      "more_info": "More Info",
-      "toggle": "Toggle",
-      "navigate": "Navigate",
-      "url": "URL",
-      "perform_action": "Perform Action",
-      "assist": "Assist",
-      "nothing": "Nothing",
-      "open_popup": "Open Popup",
-      "popup_config": "Popup Configuration",
-      "popup_target": "Target Popup",
-      "popup_target_desc": "Select which popup to open when this action is triggered",
-      "select_popup": "Select a popup...",
-      "no_popups_available": "No popups available in this card. Add a popup module first.",
-      "open_popup_instead": "Open a popup instead of the action above",
-      "select_popup_desc": "Choose which popup to open when this action is triggered",
-      "no_popups": "No popup modules in this card",
-      "confirm_action": "Confirm Action",
-      "confirm_action_desc": "When enabled, a confirmation dialog will appear before executing any action (tap, hold, or double tap)."
+      "entity_toggle_desc": "Select which entity to toggle on/off"
     },
     "icon": {
       "entity_config": {
@@ -483,12 +462,9 @@
       },
       "text_color": "Text Color",
       "text_color_desc": "Choose the color for the text content.",
-      "icon_color_section": "Icon Color Settings",
       "icon_color": "Icon Color",
       "icon_color_desc": "Choose the color for the icon.",
       "hidden_no_link": "Hidden (no link)",
-      "rich_text_mode": "Rich Text Mode",
-      "rich_text_mode_desc": "Enable a WYSIWYG editor for mixed inline formatting (bold, italic, colors per-word).",
       "rich_text_content_section": {
         "title": "Rich Text Content",
         "desc": "Use the toolbar to format your text with bold, italic, colors, links and more."
@@ -1602,14 +1578,6 @@
         "title": "Placeholder",
         "desc": "Text shown when no option is selected."
       },
-      "allow_empty": {
-        "title": "Allow Empty Selection",
-        "desc": "Allow users to deselect all options."
-      },
-      "default_value": {
-        "title": "Default Value",
-        "desc": "Option value to select by default (leave empty for none)."
-      },
       "label_settings": {
         "title": "Label Settings",
         "disabled": "Enable the toggle above to configure label settings"
@@ -1621,13 +1589,8 @@
       "label_positions": {
         "top": "Above Dropdown",
         "left": "Left of Dropdown",
-        "inside": "Inside Dropdown",
         "bottom": "Below Dropdown",
         "right": "Right of Dropdown"
-      },
-      "icon_settings": {
-        "title": "Icon Settings",
-        "disabled": "Enable the toggle above to configure icon settings"
       },
       "icon": {
         "title": "Icon",
@@ -1643,36 +1606,10 @@
       "option": {
         "label": "Label",
         "label_desc": "Display text for this option",
-        "value": "Value",
-        "value_desc": "Internal value for this option",
         "icon": "Icon",
         "icon_desc": "Optional icon for this option (e.g., mdi:lightbulb)",
-        "action_type": "Action Type",
-        "action_type_desc": "What happens when this option is selected",
-        "service": "Service",
-        "service_desc": "Service to call (e.g., light.turn_on)",
-        "service_data": "Service Data",
-        "service_data_desc": "Optional data to pass to the service (JSON format)",
-        "entity": "Entity",
-        "entity_desc": "Entity to interact with",
-        "entity_action": "Entity Action",
-        "entity_action_desc": "Action to perform on the entity",
-        "scene_entity": "Scene",
-        "scene_entity_desc": "Scene to activate",
-        "script_entity": "Script",
-        "script_entity_desc": "Script to run",
-        "automation_entity": "Automation",
-        "automation_entity_desc": "Automation to trigger",
-        "custom_service": "Custom Service",
-        "custom_service_desc": "Custom service to call",
-        "custom_service_data": "Custom Service Data",
-        "custom_service_data_desc": "Data to pass to the custom service (JSON format)",
-        "disabled": "Disabled",
-        "disabled_desc": "Disable this option (greyed out, not selectable)",
         "action": "Action",
         "action_desc": "What happens when this option is selected",
-        "is_default": "Default Option",
-        "is_default_desc": "Make this the default selected option (shows at top, disables placeholder)",
         "icon_color": "Icon Color",
         "use_state_color": "Use State Color",
         "use_state_color_desc": "Use the entity state color for the icon (overrides custom color)",
@@ -1684,66 +1621,11 @@
         "toggle_entity": "Entity",
         "toggle_entity_desc": "Entity to toggle on/off"
       },
-      "action_types": {
-        "service": "Service Call",
-        "scene": "Activate Scene",
-        "entity": "Entity Action",
-        "script": "Run Script",
-        "automation": "Trigger Automation",
-        "custom": "Custom Service"
-      },
-      "entity_actions": {
-        "toggle": "Toggle",
-        "turn_on": "Turn On",
-        "turn_off": "Turn Off",
-        "more_info": "More Info"
-      },
-      "styling": {
-        "title": "Styling",
-        "desc": "Customize the visual appearance of the dropdown."
-      },
-      "width": {
-        "title": "Width",
-        "desc": "Width of the dropdown (e.g., 100%, 200px, auto)"
-      },
-      "font_size": {
-        "title": "Font Size",
-        "desc": "Text size in pixels"
-      },
-      "colors": {
-        "title": "Colors",
-        "text": "Text Color",
-        "background": "Background Color",
-        "border": "Border Color"
-      },
-      "template_mode": {
-        "title": "Template Mode",
-        "enable": "Template Mode",
-        "enable_desc": "Use Home Assistant templating syntax to dynamically set dropdown options",
-        "template": "Options Template",
-        "template_desc": "Template to generate dropdown options using Jinja2 syntax",
-        "examples": "Common Examples:",
-        "example_scenes": "Generate options from all scenes",
-        "example_lights": "Generate options from all lights",
-        "disabled": "Enable template mode to use dynamic content"
-      },
       "drag_option": "Drag to reorder",
       "default_badge": "DEFAULT",
       "label_icon": {
         "title": "Label Icon",
         "disabled": "Enable the toggle above to configure label icon"
-      },
-      "state_tracking": {
-        "title": "Current State Display",
-        "disabled": "Enable to show current entity state as selected option"
-      },
-      "state_entity": {
-        "title": "State Entity",
-        "desc": "Entity to monitor for current state (e.g., input_select.scene_selector)"
-      },
-      "track_state": {
-        "title": "Track Selection State",
-        "desc": "Remember and display the last selected option (recommended for scene selectors)"
       },
       "keep_selection_state": {
         "title": "Keep Selection State",
@@ -1786,17 +1668,9 @@
       "display": {
         "title": "Display Configuration"
       },
-      "layout": {
-        "horizontal": "Horizontal",
-        "vertical": "Vertical"
-      },
       "layout_desc": "Arrangement of buttons and value",
       "show_value": "Show Value",
       "show_value_desc": "Display the current numeric value",
-      "value_position": {
-        "center": "Center (Between Buttons)",
-        "between": "Separate (Above/Below)"
-      },
       "value_position_desc": "Where to display the value relative to buttons",
       "show_unit": "Show Unit",
       "show_unit_desc": "Display a unit label (e.g., °C, %)",
@@ -1844,7 +1718,6 @@
       "value_position_title": "Value Position",
       "value_position_options": {
         "center": "Center (Between Buttons)",
-        "between": "Separate (Above/Below)",
         "top": "Top (Above Both Buttons)",
         "bottom": "Bottom (Below Both Buttons)",
         "left": "Left (Before Buttons)",
@@ -1868,25 +1741,6 @@
         "desc": "JSON with value, button_background_color, button_text_color, value_color — or a plain numeric Jinja result.",
         "toggle": "Template mode",
         "cheatsheet": "Template cheatsheet"
-      }
-    },
-    "cloud_backup": {
-      "title": "Cloud Backup",
-      "description": "Automatically backup your card configuration to the cloud. Never lose your work again!",
-      "auto_save": "Auto-save enabled",
-      "last_backup": "Last backup: {time}",
-      "create_snapshot": "Create Snapshot",
-      "manage_backups": "View Backup History",
-      "upgrade_pro": "Upgrade to Pro",
-      "snapshot_limit": "{current} / {max} snapshots",
-      "saving": "Saving backup...",
-      "saved": "Saved to cloud",
-      "pending": "Changes pending",
-      "sync_notification": {
-        "title": "Newer Backup Available",
-        "description": "A newer backup was found from another device",
-        "load": "Load Newer Version",
-        "dismiss": "Keep Current"
       }
     },
     "ultra_card_pro": {
@@ -1931,29 +1785,6 @@
         "dismiss": "Keep Current"
       }
     },
-    "external_card": {
-      "title": "3rd Party Card",
-      "description": "Embed any custom Home Assistant card into Ultra Card. The card will have full Logic and Design support.",
-      "select_card": "Select Card Type",
-      "select_card_desc": "Choose which custom card to embed. Only cards installed in your Home Assistant are shown.",
-      "no_selection": "-- Select a Card --",
-      "no_cards": "No Custom Cards Detected",
-      "no_cards_desc": "Install custom cards via HACS or manually to use this feature.",
-      "card_not_found": "Card not found",
-      "configure": "Card Configuration",
-      "configure_desc": "Configure the card using its native editor.",
-      "yaml_mode": "YAML Configuration",
-      "yaml_help": "Enter card configuration in JSON format. Refer to the card's documentation for available options.",
-      "preview": "Card Preview",
-      "invalid_config": "Invalid card configuration",
-      "note": "Note: Actions are not supported for 3rd party cards. Use the card's native tap/hold/double-tap actions in its configuration.",
-      "no_card_selected": "No card selected",
-      "select_card_prompt": "Select a 3rd party card to display",
-      "available_cards": "Available 3rd Party Cards",
-      "category_desc": "Embed any custom Home Assistant card into Ultra Card with full Logic and Design support",
-      "upgrade_required": "Upgrade to Pro to embed 3rd party cards",
-      "login_required": "Login with Pro account to embed 3rd party cards"
-    },
     "video_bg": {
       "title": "Video Background (Pro)",
       "description": "Add dynamic, conditional video backgrounds to your dashboard view",
@@ -1995,8 +1826,6 @@
       "card_blur_desc": "Apply backdrop blur to all Ultra Cards",
       "card_color": "Card Background Color Overlay",
       "card_color_desc": "Optional: Add a color tint to all cards",
-      "exclusions": "Exclusions",
-      "exclusions_desc": "Card IDs or CSS selectors to exclude from transparency (comma-separated)",
       "pro_required": "Ultra Card Pro Required",
       "pro_required_desc": "Video Background is a Pro feature. Install and authenticate with the Ultra Card Pro Cloud integration to unlock this module",
       "get_pro": "Get Ultra Card Pro Cloud",
@@ -2221,7 +2050,6 @@
         "section_desc": "Configure the close button position and behavior",
         "position": "Close Button Position",
         "position_desc": "Choose where the close button appears",
-        "outside": "Outside the Popup",
         "inside": "Inside the Popup",
         "none": "None"
       },
@@ -2499,10 +2327,6 @@
       "point_label_desc": "Display text for this toggle point",
       "point_icon": "Icon",
       "point_icon_desc": "Icon to display for this toggle point",
-      "point_entity_matching": "Entity State Matching",
-      "point_entity_matching_desc": "Automatically select this point when conditions are met",
-      "point_use_template": "Use Template",
-      "point_use_template_desc": "Enable advanced template-based matching for ranges and attributes",
       "point_match_template": "Match Template",
       "point_match_template_desc": "Jinja2 template that evaluates to true when this point should be active",
       "template_examples": "Examples",
@@ -2524,7 +2348,6 @@
       "point_auto_select_desc": "Automatically select this toggle point based on entity state or template conditions",
       "point_match_mode": "Match Mode",
       "point_match_mode_desc": "Choose how to determine when this toggle point should be active",
-      "match_mode_none": "None (Manual Only)",
       "match_mode_entity": "Entity State",
       "match_mode_template": "Template (Advanced)",
       "unified_match_desc": "Return JSON with \"match\": true when this point should be active, or a plain true/false string.",
@@ -2542,10 +2365,8 @@
       "value_type": "Value Type",
       "value_type_entity_id": "Entity ID",
       "value_type_state": "State Value",
-      "value_type_full_object": "Full Object",
       "value_type_entity_id_desc": "Entity ID (e.g., sensor.temperature)",
       "value_type_state_desc": "State Value (e.g., 23.5)",
-      "value_type_full_object_desc": "Full Entity Object (JSON)",
       "clear_all": "Clear All",
       "confirm_delete": "Are you sure you want to delete this variable?",
       "confirm_clear_all": "Are you sure you want to delete ALL variables? This cannot be undone.",
@@ -2684,94 +2505,6 @@
       "unavailable": "Unavailable"
     },
     "energy_display": {
-      "style_section": "Display style",
-      "style": "Style",
-      "style_flow_nodes": "Flow nodes",
-      "style_ring": "Ring / cluster",
-      "style_sankey": "Sankey flow",
-      "nodes_section": "Nodes",
-      "drag_to_reorder": "Drag to reorder. Order affects flow and ring layout.",
-      "add_node": "Add node",
-      "add_connection": "Add connection",
-      "connections_section": "Connections",
-      "node_entity": "Entity (power/energy)",
-      "node_entity_desc": "Sensor for power (W) or energy (kWh)",
-      "node_label": "Label",
-      "node_label_desc": "Display name for this node",
-      "node_icon": "Icon",
-      "node_color": "Color",
-      "layout_section": "Layout & positioning",
-      "layout_flow_hint": "Node order defines positions. Drag nodes above to reorder.",
-      "layout_ring_hint": "Node order defines ring positions. Drag nodes to reorder.",
-      "layout_sankey_hint": "Node and connection order define columns and bands. Drag to reorder.",
-      "format_animation": "Format & animation",
-      "value_unit": "Unit",
-      "decimals": "Decimals",
-      "show_direction": "Show direction indicators",
-      "flow_animation": "Flow animation",
-      "respect_reduced_motion": "Respect reduced motion",
-      "pro_description": "Energy Display is a Pro feature that visualizes grid, solar, battery, and device energy flow with multiple styles and smooth animations.",
-      "title": "Energy Display",
-      "description": "Beautiful animated energy flow visualization",
-      "display_style": "Display Style",
-      "display_style_flow": "Flow",
-      "display_style_flow_desc": "Animated node flow diagram",
-      "display_style_grid": "Grid",
-      "display_style_grid_desc": "Card grid with icons",
-      "display_style_minimal": "Minimal",
-      "display_style_minimal_desc": "Compact icon row",
-      "display_style_sankey": "Sankey",
-      "display_style_sankey_desc": "Left to right flow chart",
-      "show_title": "Show Title",
-      "title_text": "Title Text",
-      "card_height": "Card Height (px)",
-      "animation_section": "Animations",
-      "animation_dots": "Flowing Dots",
-      "animation_dash": "Dashes",
-      "animation_pulse": "Pulse Glow",
-      "animation_none": "None",
-      "animation_speed": "Animation Speed",
-      "auto_animate": "Auto-animate on Active Power",
-      "display_opts_section": "Display Options",
-      "show_power_values": "Show Power Values",
-      "show_energy_today": "Show Energy Today",
-      "show_soc": "Show State of Charge",
-      "show_node_labels": "Show Node Labels",
-      "power_unit": "Power Unit",
-      "power_unit_auto": "Auto (W / kW)",
-      "power_unit_w": "Watts (W)",
-      "power_unit_kw": "Kilowatts (kW)",
-      "value_decimals": "Decimal Places",
-      "node_size": "Node Size (px)",
-      "icon_size": "Icon Size (px)",
-      "label_size": "Label Font Size (px)",
-      "colors_section": "Colors",
-      "color_grid": "Grid",
-      "color_solar": "Solar",
-      "color_battery": "Battery",
-      "color_home": "Home",
-      "color_positive": "Positive Flow",
-      "color_negative": "Return to Grid",
-      "node_type": "Node Type",
-      "power_entity": "Power Entity",
-      "energy_entity": "Energy Today Entity",
-      "soc_entity": "State of Charge Entity",
-      "position_x": "X %",
-      "position_y": "Y %",
-      "use_power_template": "Use Power Template",
-      "power_template": "Power Template",
-      "source_node": "Source Node",
-      "target_node": "Target Node",
-      "line_thickness": "Line Thickness",
-      "color_override": "Color Override",
-      "animated": "Animated",
-      "node_type_grid": "Grid",
-      "node_type_solar": "Solar",
-      "node_type_battery": "Battery",
-      "node_type_home": "Home",
-      "node_type_car": "EV Car",
-      "node_type_device": "Device",
-      "node_type_custom": "Custom",
       "error_no_nodes": "Configure energy nodes",
       "error_no_nodes_desc": "Add entities for Solar, Grid, Battery and Home in the General tab."
     },
@@ -2812,7 +2545,6 @@
       "position_fg": "Foreground (above cards)",
       "layer_opacity": "Layer opacity",
       "layer_opacity_desc": "Fade the entire canvas (0–100%) so Lovelace stays readable",
-      "preset_nodes": "Nodes",
       "mobile_section": "Mobile",
       "enable_on_mobile": "Enable on mobile",
       "enable_on_mobile_desc": "When off, the canvas is hidden on small screens to save battery",
@@ -3577,12 +3309,13 @@
       "accent_desc": "Used for highlights and active states.",
       "section_look": "Look & feel",
       "section_look_desc": "Visual preset for the tile. Photo background options appear when you choose the Photo overlay preset.",
-      "preset": "Style preset",
+      "preset": {
+        "iconic_soft": "Iconic soft",
+        "graph_glow": "Graph glow",
+        "compact_controls": "Compact controls",
+        "photo_overlay": "Photo overlay"
+      },
       "preset_desc": "Layout and decoration style for the tile.",
-      "preset.iconic_soft": "Iconic soft",
-      "preset.graph_glow": "Graph glow",
-      "preset.compact_controls": "Compact controls",
-      "preset.photo_overlay": "Photo overlay",
       "max_quick": "Max quick actions",
       "max_quick_desc": "Circular shortcuts for discovered entities.",
       "tile_radius": "Tile border radius",
@@ -3648,7 +3381,8 @@
       "resolve_error": "Could not load area",
       "retry": "Retry",
       "pill_lights": "Lights",
-      "lights_line": "{on} of {total} lights on"
+      "lights_line": "{on} of {total} lights on",
+      "preset_label": "Style preset"
     },
     "alert_center": {
       "default_title": "Alert Center",

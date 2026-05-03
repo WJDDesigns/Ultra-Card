@@ -1,5 +1,27 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.4.0-beta3
+
+### 🚀 New Features
+
+- **Added AI-powered translation pipeline** - New scripts/translate-locale.js uses OpenAI gpt-4o-mini with batched JSON-schema responses to translate locale files at roughly 20x the speed of the previous Google Translate engine, with glossary masking, per-language formality hints, and placeholder preservation.
+- **Added translation tooling** - New translation-coverage.js, prune-stale-translations.js, refreshed translation-stats.js, and per-locale .meta.json files for tracking AI-translated keys and detecting regressions.
+- **Added translation glossary** - New src/translations/_glossary.json defines never-translate technical terms (Home Assistant, entity_id, RGB, etc.) and per-language formality preferences (formal Sie for German, vous for French, etc.).
+
+### 🔧 Improvements
+
+- **Improved translations across all 13 languages** - Filled or refreshed translations in German, French, Spanish, Italian, Dutch, Polish, Swedish, Danish, Norwegian Bokmål, Norwegian, Norwegian Nynorsk, Czech, and Catalan, with the vast majority of UI strings now displaying correctly in the user's language.
+- **Improved translations:fill missing-key detection** - Keys absent entirely from a locale (not just keys that match English) are now picked up automatically, making npm run translations:fill --all a true one-stop command after adding new English strings.
+- **Improved prepare-build.js sync** - Now logs which specific keys were backfilled per locale for easier debugging.
+- **Updated ESLint to v10 with flat config** - Replaced legacy .eslintrc.js with eslint.config.js using the typescript-eslint flat config style.
+
+### 🐛 Bug Fixes
+
+- **Fixed Style preset variant labels showing in English for non-English users** - Migrated editor.area_summary.preset to a clean nested structure with a separate preset_label key, so localize() can resolve variant names (Iconic soft, Graph glow, Compact controls, Photo overlay) in the user's language.
+- **Fixed silent translation corruption from literal-dotted keys** - Hardened scripts/lib/translation-flat.js to throw clearly when a translation key contains a literal dot or produces duplicate flat paths, preventing the structural mismatch that previously caused area_summary.preset issues.
+
+---
+
 ## Version 3.4.0-beta2
 
 ### 🐛 Bug Fixes

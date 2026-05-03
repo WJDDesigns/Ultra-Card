@@ -3,7 +3,12 @@ const fs = require('fs');
 const path = require('path');
 
 const dir = path.join(__dirname, '..', 'src', 'translations');
-const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+const files = fs.readdirSync(dir).filter(f => {
+  if (!f.endsWith('.json')) return false;
+  if (f.startsWith('_')) return false;
+  if (f.endsWith('.meta.json')) return false;
+  return true;
+});
 const enPath = path.join(dir, 'en.json');
 const en = JSON.parse(fs.readFileSync(enPath, 'utf8'));
 

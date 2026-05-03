@@ -13,6 +13,10 @@ uc-*.js.LICENSE.txt
 # test coverage (generated)
 /coverage/
 
+# translation tooling (generated)
+/scripts/.translate-cache-*.json
+/scripts/translation-coverage-report.json
+
 # misc
 .DS_Store
 .env.local

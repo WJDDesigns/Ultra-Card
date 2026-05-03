@@ -3064,12 +3064,7 @@
       "accent_desc": "Used for highlights and active states.",
       "section_look": "Look & feel",
       "section_look_desc": "Visual preset for the tile. Photo background options appear when you choose the Photo overlay preset.",
-      "preset": "Style preset",
       "preset_desc": "Layout and decoration style for the tile.",
-      "preset.iconic_soft": "Iconic soft",
-      "preset.graph_glow": "Graph glow",
-      "preset.compact_controls": "Compact controls",
-      "preset.photo_overlay": "Photo overlay",
       "max_quick": "Max quick actions",
       "max_quick_desc": "Circular shortcuts for discovered entities.",
       "tile_radius": "Tile border radius",
@@ -3135,7 +3130,14 @@
       "resolve_error": "Could not load area",
       "retry": "Retry",
       "pill_lights": "Lights",
-      "lights_line": "{on} of {total} lights on"
+      "lights_line": "{on} of {total} lights on",
+      "preset_label": "Style preset",
+      "preset": {
+        "iconic_soft": "Iconic soft",
+        "graph_glow": "Graph glow",
+        "compact_controls": "Compact controls",
+        "photo_overlay": "Photo overlay"
+      }
     },
     "activity_feed": {
       "error_waiting_ha": "Waiting for Home Assistant",

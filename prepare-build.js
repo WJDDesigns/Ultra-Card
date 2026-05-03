@@ -67,40 +67,53 @@ function syncTranslationFiles() {
     return;
   }
 
-  // Get all translation files
-  const translationFiles = fs
-    .readdirSync(translationsDir)
-    .filter(file => file.endsWith('.json') && file !== 'en.json');
+  // Get all translation files (exclude glossary and per-locale meta sidecars)
+  const translationFiles = fs.readdirSync(translationsDir).filter(file => {
+    if (!file.endsWith('.json')) return false;
+    if (file === 'en.json') return false;
+    if (file.startsWith('_')) return false;
+    if (file.endsWith('.meta.json')) return false;
+    return true;
+  });
 
   if (translationFiles.length === 0) {
     console.log('   No additional translation files found.');
     return;
   }
 
-  // Create a recursive function to ensure all keys from source exist in target
-  function ensureKeysExist(sourceObj, targetObj, path = '') {
+  /**
+   * Ensure all keys from source exist in target; record each added path (English fallback).
+   * @param {Record<string, unknown>} sourceObj
+   * @param {Record<string, unknown>} targetObj
+   * @param {string} pathPrefix
+   * @param {string[]} backfilled
+   * @returns {boolean}
+   */
+  function ensureKeysExist(sourceObj, targetObj, pathPrefix = '', backfilled = []) {
     let modified = false;
 
-    // Process all keys in the source object
     for (const key of Object.keys(sourceObj)) {
-      const newPath = path ? `${path}.${key}` : key;
+      const newPath = pathPrefix ? `${pathPrefix}.${key}` : key;
 
-      // If the key doesn't exist in the target, add it
       if (!(key in targetObj)) {
         targetObj[key] = sourceObj[key];
-        console.log(`   ➕ Added missing key: ${newPath}`);
+        backfilled.push(newPath);
         modified = true;
         continue;
       }
 
-      // If both are objects, recursively ensure keys
       if (
         typeof sourceObj[key] === 'object' &&
         sourceObj[key] !== null &&
         typeof targetObj[key] === 'object' &&
         targetObj[key] !== null
       ) {
-        const subModified = ensureKeysExist(sourceObj[key], targetObj[key], newPath);
+        const subModified = ensureKeysExist(
+          /** @type {Record<string, unknown>} */ (sourceObj[key]),
+          /** @type {Record<string, unknown>} */ (targetObj[key]),
+          newPath,
+          backfilled
+        );
         if (subModified) modified = true;
       }
     }
@@ -108,20 +121,29 @@ function syncTranslationFiles() {
     return modified;
   }
 
-  // Process each translation file
   let totalModified = 0;
   for (const file of translationFiles) {
     const filePath = path.resolve(translationsDir, file);
     try {
       let translations = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      const backfilled = [];
+      const modified = ensureKeysExist(enTranslations, translations, '', backfilled);
 
-      // Ensure all keys from English translation exist
-      const modified = ensureKeysExist(enTranslations, translations);
-
-      // Save the file if it was modified
       if (modified) {
         fs.writeFileSync(filePath, JSON.stringify(translations, null, 2) + '\n');
         totalModified++;
+      }
+
+      if (backfilled.length > 0) {
+        console.log(
+          `   [translations] ${file}: backfilled ${backfilled.length} missing key(s) from en.json (English until translated).`
+        );
+        if (process.env.TRANSLATIONS_VERBOSE === '1') {
+          backfilled.slice(0, 40).forEach(p => console.log(`      + ${p}`));
+          if (backfilled.length > 40) {
+            console.log(`      ... and ${backfilled.length - 40} more (set TRANSLATIONS_VERBOSE=1 already on)`);
+          }
+        }
       }
     } catch (error) {
       console.error(`   ❌ Error processing translation file ${file}:`, error);

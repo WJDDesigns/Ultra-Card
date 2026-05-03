@@ -1,61 +1,80 @@
 /* eslint-disable no-console */
 const fs = require('fs');
 const path = require('path');
+const { flatten } = require('./lib/translation-flat');
 
 const dir = path.join(__dirname, '..', 'src', 'translations');
-const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
-const enPath = path.join(dir, 'en.json');
-const en = JSON.parse(fs.readFileSync(enPath, 'utf8'));
 
-function flatten(obj, prefix = '') {
-  return Object.entries(obj).reduce((acc, [k, v]) => {
-    const key = prefix ? `${prefix}.${k}` : k;
-    if (v && typeof v === 'object') Object.assign(acc, flatten(v, key));
-    else acc[key] = String(v);
-    return acc;
-  }, {});
+/** @returns {string[]} */
+function listLocaleFiles() {
+  return fs.readdirSync(dir).filter(f => {
+    if (!f.endsWith('.json')) return false;
+    if (f.startsWith('_')) return false;
+    if (f.endsWith('.meta.json')) return false;
+    if (f === 'en.json') return false;
+    return true;
+  });
 }
 
+const enPath = path.join(dir, 'en.json');
+const en = JSON.parse(fs.readFileSync(enPath, 'utf8'));
 const enFlat = flatten(en);
-const totalKeys = Object.keys(enFlat).length;
+const totalEnKeys = Object.keys(enFlat).length;
 
-console.log('📊 Ultra Card Translation Statistics\n');
-console.log(`Total translatable strings: ${totalKeys}\n`);
+console.log('Ultra Card Translation Statistics\n');
+console.log(`Source keys (en.json): ${totalEnKeys}\n`);
+console.log(
+  'Locale | File        | Structural | Real trans. | Same-as-en | Extra keys'
+);
+console.log(
+  '-------|-------------|------------|-------------|------------|-----------'
+);
 
 const stats = [];
 
-for (const file of files) {
-  if (file === 'en.json') continue;
-
+for (const file of listLocaleFiles()) {
   const lang = file.replace('.json', '');
   const data = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
   const flat = flatten(data);
 
-  const translated = Object.keys(flat).length;
-  const percentage = Math.round((translated / totalKeys) * 100);
+  const keysInLocale = Object.keys(flat);
+  const structuralPresent = keysInLocale.filter(k => k in enFlat).length;
+  const structuralPct = Math.round((structuralPresent / totalEnKeys) * 100);
+
+  let sameAsEn = 0;
+  let translated = 0;
+  for (const k of Object.keys(enFlat)) {
+    if (!(k in flat)) continue;
+    if (flat[k] === enFlat[k]) sameAsEn++;
+    else translated++;
+  }
+
+  const realPct = Math.round((translated / totalEnKeys) * 100);
+  const extras = keysInLocale.filter(k => !(k in enFlat)).length;
 
   stats.push({
     lang: lang.toUpperCase(),
     file,
+    structuralPresent,
+    structuralPct,
     translated,
-    percentage,
-    missing: totalKeys - translated,
+    realPct,
+    sameAsEn,
+    extras,
   });
 }
 
-// Sort by completion percentage
-stats.sort((a, b) => b.percentage - a.percentage);
+stats.sort((a, b) => b.realPct - a.realPct);
 
-console.log('Language    | File        | Progress | Translated | Missing');
-console.log('------------|-------------|----------|------------|--------');
-
-for (const stat of stats) {
-  const progressBar =
-    '█'.repeat(Math.floor(stat.percentage / 5)) + '░'.repeat(20 - Math.floor(stat.percentage / 5));
+for (const s of stats) {
+  const bar = '█'.repeat(Math.floor(s.realPct / 5)) + '░'.repeat(20 - Math.floor(s.realPct / 5));
   console.log(
-    `${stat.lang.padEnd(11)} | ${stat.file.padEnd(11)} | ${progressBar} ${stat.percentage.toString().padStart(3)}% | ${stat.translated.toString().padStart(10)} | ${stat.missing.toString().padStart(7)}`
+    `${s.lang.padEnd(6)} | ${s.file.padEnd(11)} | ${String(s.structuralPct).padStart(3)}% (${String(s.structuralPresent).padStart(4)}/${totalEnKeys}) | ${bar} ${String(s.realPct).padStart(3)}% | ${String(s.sameAsEn).padStart(10)} | ${String(s.extras).padStart(9)}`
   );
 }
 
-console.log('\n🎯 Help us reach 100% completion in all languages!');
-console.log('📖 See CONTRIBUTING_TRANSLATIONS.md for contribution guidelines');
+console.log('\nStructural: keys present in locale that also exist in en.json.');
+console.log('Real: keys whose value differs from en (actual translation).');
+console.log('Same-as-en: keys still using English fallback text.');
+console.log('Extra: keys in locale file not in en.json (stale; run prune script).');
+console.log('\nSee CONTRIBUTING_TRANSLATIONS.md for contribution guidelines.');

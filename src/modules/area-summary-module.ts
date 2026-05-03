@@ -610,7 +610,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
           ),
           [
             {
-              title: localize('editor.area_summary.preset', lang, 'Style preset'),
+              title: localize('editor.area_summary.preset_label', lang, 'Style preset'),
               description: localize('editor.area_summary.preset_desc', lang, 'Layout and decoration style for the tile.'),
               hass,
               data: { style_preset: stylePreset },
