@@ -236,6 +236,20 @@ class UcExternalCardsService {
       const elementName = strippedForCheck;
       const element = document.createElement(elementName) as any;
 
+      // Defensive: if the custom element class is not yet registered,
+      // document.createElement returns HTMLUnknownElement. Assigning hass/config
+      // to it would create plain own-properties that SHADOW the eventual
+      // prototype setters when the element is later upgraded — permanently
+      // breaking cards that only paint inside `set hass` (e.g. better-moment-card).
+      // Return null so the container service can defer creation via
+      // customElements.whenDefined() and create the element after registration.
+      if (element instanceof HTMLUnknownElement) {
+        console.warn(
+          `[External Card] Custom element <${elementName}> is not registered yet; deferring creation.`
+        );
+        return null;
+      }
+
       // IMPORTANT: Set config FIRST, then hass
       // Some cards (like Bubble Card) try to update when hass is set
       // and expect config to already be there

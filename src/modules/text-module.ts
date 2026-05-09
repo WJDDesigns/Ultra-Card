@@ -35,6 +35,13 @@ export class UltraTextModule extends BaseUltraModule {
   private _templateService: TemplateService | undefined;
   private _templateInputDebounce: any = null;
 
+  // Cache of last successful unified-template parse, keyed by templateKey.
+  // Used to avoid the "flash of default content" (e.g. 'Sample Text') while
+  // an async template subscription is still settling on first paint or re-mount.
+  private _lastTemplateText: Map<string, string> = new Map();
+  private _lastTemplateColor: Map<string, string> = new Map();
+  private _lastTemplateContainerBg: Map<string, string> = new Map();
+
   createDefault(id?: string, hass?: HomeAssistant): TextModule {
     return {
       id: id || this.generateId('text'),
@@ -547,7 +554,15 @@ export class UltraTextModule extends BaseUltraModule {
       justify: 'flex-start', // text-align does the justify; container keeps content at start
     };
 
-    let displayText: string = textModule.text || 'Sample Text';
+    // In unified-template mode we deliberately do NOT fall back to the default
+    // 'Sample Text' or to the user-saved `text` field, because the template
+    // result is fetched asynchronously and would otherwise flash the wrong
+    // content for one frame on first paint / re-mount. We start with an empty
+    // string and let the template result populate it; if a previous result is
+    // cached for this template key we seed from that to avoid any visible gap.
+    let displayText: string = textModule.unified_template_mode
+      ? ''
+      : textModule.text || 'Sample Text';
     let displayColor: string | undefined;
 
     // Unified template (must run before textStyles so color applies)
@@ -587,18 +602,33 @@ export class UltraTextModule extends BaseUltraModule {
           );
         }
 
+        // Seed from last-good cache so re-renders before the new subscription
+        // settles still show the previous resolved value rather than blank.
+        const cachedText = this._lastTemplateText.get(templateKey);
+        if (cachedText !== undefined) displayText = cachedText;
+        const cachedColor = this._lastTemplateColor.get(templateKey);
+        if (cachedColor !== undefined) displayColor = cachedColor;
+
         const unifiedResult = hass.__uvc_template_strings?.[templateKey];
         if (unifiedResult && String(unifiedResult).trim() !== '') {
           const parsed = parseUnifiedTemplate(unifiedResult);
           if (!hasTemplateError(parsed)) {
+            let resolvedText: string | undefined;
             if (parsed.state_text !== undefined && String(parsed.state_text).trim() !== '') {
-              displayText = String(parsed.state_text);
+              resolvedText = String(parsed.state_text);
             } else if (parsed.content !== undefined && String(parsed.content).trim() !== '') {
-              displayText = String(parsed.content);
+              resolvedText = String(parsed.content);
             } else if (parsed._isString && parsed.content !== undefined) {
-              displayText = String(parsed.content).trim();
+              resolvedText = String(parsed.content).trim();
             }
-            if (parsed.color) displayColor = parsed.color;
+            if (resolvedText !== undefined) {
+              displayText = resolvedText;
+              this._lastTemplateText.set(templateKey, resolvedText);
+            }
+            if (parsed.color) {
+              displayColor = parsed.color;
+              this._lastTemplateColor.set(templateKey, parsed.color);
+            }
           }
         }
       }
@@ -670,9 +700,20 @@ export class UltraTextModule extends BaseUltraModule {
         ></ha-icon>`
       : '';
 
-    const textElement = !textModule.unified_template_mode && effectiveContent
-      ? html`<span class="rich-text-content">${unsafeHTML(sanitizeRichTextHtml(effectiveContent))}</span>`
-      : html`<span>${displayText}</span>`;
+    // When in template mode and the template hasn't resolved yet (no cached or
+    // live value), render a non-breaking space so the line keeps its height
+    // and we don't reflow the layout when the real value lands.
+    const textPlaceholder =
+      textModule.unified_template_mode && displayText === ''
+        ? html`<span style="visibility:hidden">&nbsp;</span>`
+        : html`<span>${displayText}</span>`;
+
+    const textElement =
+      !textModule.unified_template_mode && effectiveContent
+        ? html`<span class="rich-text-content"
+            >${unsafeHTML(sanitizeRichTextHtml(effectiveContent))}</span
+          >`
+        : textPlaceholder;
 
     let content;
     if (textModule.icon_position === 'before' || !textModule.icon_position) {
@@ -740,12 +781,18 @@ export class UltraTextModule extends BaseUltraModule {
           );
         }
 
-        // Check if we already have the rendered template result
+        // Seed from last-good container background cache to avoid a flash of
+        // the default container background while the template is still
+        // resolving on first paint / re-mount.
+        const cachedBg = this._lastTemplateContainerBg.get(templateKey);
+        if (cachedBg) templateContainerBg = cachedBg;
+
         const unifiedResult = hass.__uvc_template_strings?.[templateKey];
         if (unifiedResult && String(unifiedResult).trim() !== '') {
           const parsed = parseUnifiedTemplate(unifiedResult);
           if (!hasTemplateError(parsed) && parsed.container_background_color) {
             templateContainerBg = parsed.container_background_color;
+            this._lastTemplateContainerBg.set(templateKey, parsed.container_background_color);
           }
         }
       }

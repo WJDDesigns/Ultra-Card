@@ -223,6 +223,23 @@ class ExternalCardContainerService {
     // ucExternalCardsService expects card type without 'custom:' prefix
     const elementName = cardType.startsWith('custom:') ? cardType.substring(7) : cardType;
 
+    // If the custom element class isn't registered yet (3rd-party card script
+    // still loading), defer creation until customElements.whenDefined resolves.
+    // Otherwise document.createElement would produce an HTMLUnknownElement and
+    // any hass/config we set on it would shadow the prototype setters once the
+    // element gets upgraded — permanently breaking cards like better-moment-card
+    // that only render inside `set hass`.
+    if (elementName.includes('-') && !customElements.get(elementName)) {
+      return this._createDeferredContainer(
+        moduleId,
+        cardType,
+        elementName,
+        config,
+        container,
+        contextHass
+      );
+    }
+
     // Create the card element
     const hassForCreate = contextHass ?? this.currentHass;
 
@@ -286,6 +303,118 @@ class ExternalCardContainerService {
         config,
       };
     }
+  }
+
+  /**
+   * Create a deferred container for a 3rd-party card whose custom element class
+   * has not yet been registered. Shows a lightweight loading placeholder, then
+   * swaps in the real element once `customElements.whenDefined()` resolves.
+   *
+   * This avoids the "upgrade-shadowing" bug where assigning hass/config to an
+   * HTMLUnknownElement would create own-properties that shadow the prototype's
+   * setters when the element is later upgraded — permanently preventing cards
+   * like better-moment-card (which only render inside `set hass`) from painting.
+   */
+  private _createDeferredContainer(
+    moduleId: string,
+    cardType: string,
+    elementName: string,
+    config: any,
+    container: HTMLElement,
+    contextHass: HomeAssistant | undefined
+  ): ContainerInfo {
+    container.setAttribute('data-uc-deferred', elementName);
+
+    const placeholder = document.createElement('div');
+    placeholder.className = 'external-card-loading';
+    placeholder.style.width = '100%';
+    placeholder.style.minHeight = '40px';
+    placeholder.style.padding = '12px 16px';
+    placeholder.style.boxSizing = 'border-box';
+    placeholder.style.textAlign = 'center';
+    placeholder.style.color = 'var(--secondary-text-color, #999)';
+    placeholder.style.opacity = '0.7';
+    placeholder.style.fontSize = '13px';
+    placeholder.textContent = `Loading ${cardType}...`;
+    container.appendChild(placeholder);
+
+    const containerInfo: ContainerInfo = {
+      container,
+      cardElement: placeholder,
+      moduleId,
+      cardType,
+      config,
+    };
+
+    // Track in pending so a later setHass run can find us if needed.
+    this.pendingHassSetup.add(moduleId);
+
+    // Cap the wait so a typo / missing card doesn't show "Loading..." forever.
+    let timedOut = false;
+    const TIMEOUT_MS = 15000;
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      if (
+        this.containers.get(moduleId) === containerInfo &&
+        containerInfo.cardElement === placeholder &&
+        container.contains(placeholder)
+      ) {
+        placeholder.textContent = `Card not loaded: ${cardType}`;
+        placeholder.style.color = 'var(--error-color, #db4437)';
+      }
+    }, TIMEOUT_MS);
+
+    customElements
+      .whenDefined(elementName)
+      .then(() => {
+        window.clearTimeout(timeoutId);
+        if (timedOut) return;
+
+        // Container may have been destroyed or swapped (e.g., card type changed).
+        if (this.containers.get(moduleId) !== containerInfo) return;
+        if (containerInfo.cardElement !== placeholder) return;
+
+        const hassForCreateNow = this.currentHass ?? contextHass;
+        const realElement = ucExternalCardsService.createCardElement(
+          elementName,
+          containerInfo.config,
+          hassForCreateNow ?? null
+        ) as HTMLElement | null;
+
+        if (!realElement) {
+          placeholder.textContent = `Failed to load ${cardType}`;
+          placeholder.style.color = 'var(--error-color, #db4437)';
+          return;
+        }
+
+        realElement.style.width = '100%';
+        realElement.style.minWidth = '0';
+        realElement.style.flex = '1 1 auto';
+        realElement.style.display = 'block';
+
+        if (container.contains(placeholder)) {
+          container.replaceChild(realElement, placeholder);
+        } else {
+          container.appendChild(realElement);
+        }
+
+        containerInfo.cardElement = realElement;
+        container.removeAttribute('data-uc-deferred');
+
+        if (hassForCreateNow) {
+          this._initializeCardHass(containerInfo);
+          this.pendingHassSetup.delete(moduleId);
+        }
+      })
+      .catch(error => {
+        window.clearTimeout(timeoutId);
+        console.error(
+          `[External Card Container] customElements.whenDefined failed for ${elementName}:`,
+          error
+        );
+      });
+
+    return containerInfo;
   }
 
   /**

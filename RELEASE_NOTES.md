@@ -1,5 +1,16 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.4.0-beta4
+
+### 🐛 Bug Fixes
+
+- **Fixed 3rd-party cards breaking when their script loads after the dashboard** - Custom cards whose element class hadn't yet registered (e.g. better-moment-card, some Bubble Card variants) would render as HTMLUnknownElement, and the hass/config we assigned would silently shadow the prototype setters once the element later upgraded — permanently preventing cards that only paint inside `set hass` from rendering. Ultra Card now detects the unregistered class up-front, shows a lightweight "Loading..." placeholder, and uses customElements.whenDefined() to swap in the real element after registration completes (with a 15 s timeout fallback so a typo doesn't show "Loading" forever).
+- **Fixed Module picker being clipped inside Home Assistant's edit-dialog on iPad** - The "Add Module" popup was rendered inside an HA ancestor that established a CSS containing block (transform/filter/contain), so `position: fixed; inset: 0` collapsed against the dialog surface instead of the viewport. The picker is now promoted into the browser's top layer via the Popover API so it always covers the full viewport. Browsers without Popover API support (Safari < 17) silently keep the previous in-flow behavior.
+- **Fixed flash of "Sample Text" in template-mode Text modules on first paint and re-mount** - Unified templates resolve asynchronously, so the module would briefly show the default placeholder (or the user-saved text field) for one frame before the subscription settled. The text module now caches the last successful state_text, color, and container_background_color per template key and seeds re-renders from that cache; when no cached or live value is available it renders an invisible non-breaking space so the line keeps its height without any visible layout shift.
+- **Fixed Area Summary not reacting to live state on auto-discovered entities** - The host card's shouldUpdate filter only saw entity IDs statically present in the module config (pinned/hidden/temperature/humidity), so changes to auto-resolved lights, climate, and quick-action entities (e.g. an ESP32 RGB LED turning on) would not trigger a re-render. Added a new getRuntimeEntityIds() hook on BaseUltraModule; Area Summary now exposes its runtime-resolved entities and the host card recomputes them on every shouldUpdate so external state changes always paint live.
+
+---
+
 ## Version 3.4.0-beta3
 
 ### 🚀 New Features

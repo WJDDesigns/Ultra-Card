@@ -2,7 +2,7 @@
  * Module selector popup shell: overlay, header, tab bar, and slot for body.
  * Lazy-loaded when "Add Module" is opened to reduce initial layout-tab bundle.
  */
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 export type ModuleSelectorTab = 'modules' | 'cards' | 'presets' | 'favorites';
@@ -41,6 +41,25 @@ export class UcModuleSelectorShell extends LitElement {
       align-items: center;
       justify-content: center;
       pointer-events: none;
+      /*
+       * The popup is promoted into the top layer at runtime via the Popover
+       * API (see _enterTopLayer below). Top-layer elements have their
+       * containing block reset to the viewport, which is what makes the
+       * picker render correctly even when an ancestor (e.g. HA's edit
+       * dialog surface) has a transform/filter/contain that would normally
+       * trap position: fixed. The rules below neutralize the UA stylesheet
+       * defaults that get applied once the [popover] attribute is present.
+       */
+      margin: 0;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      width: auto;
+      height: auto;
+      max-width: none;
+      max-height: none;
+      overflow: visible;
     }
     .module-selector-popup > * {
       pointer-events: auto;
@@ -156,6 +175,48 @@ export class UcModuleSelectorShell extends LitElement {
       --mdc-icon-size: 16px;
     }
   `;
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    if (this.hasUpdated) this._enterTopLayer();
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    document.removeEventListener('mousemove', this._boundDragMove);
+    document.removeEventListener('mouseup', this._boundDragEnd);
+    document.removeEventListener('mousemove', this._boundResizeMove);
+    document.removeEventListener('mouseup', this._boundResizeEnd);
+  }
+
+  override firstUpdated(changedProperties: PropertyValues): void {
+    super.firstUpdated(changedProperties);
+    this._enterTopLayer();
+  }
+
+  /**
+   * Promote the popup into the browser's top layer via the Popover API so
+   * `position: fixed; inset: 0;` is resolved against the viewport instead of
+   * any ancestor that has established a containing block (transform, filter,
+   * perspective, will-change, contain). Without this, HA's edit-dialog
+   * surface clips the picker against the form pane on iPad — see
+   * https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block.
+   *
+   * Browsers without Popover API support (Safari < 17) silently fall back
+   * to the previous in-flow rendering, which is no worse than today.
+   */
+  private _enterTopLayer(): void {
+    const popup = this.shadowRoot?.querySelector<HTMLElement>('.module-selector-popup');
+    if (!popup) return;
+    const showPopover = (popup as HTMLElement & { showPopover?: () => void }).showPopover;
+    if (typeof showPopover !== 'function') return;
+    if (!popup.hasAttribute('popover')) popup.setAttribute('popover', 'manual');
+    try {
+      if (!popup.matches(':popover-open')) showPopover.call(popup);
+    } catch {
+      popup.removeAttribute('popover');
+    }
+  }
 
   private _dispatchClose(): void {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));

@@ -858,6 +858,61 @@ export class UltraCard extends LitElement {
   }
 
   /**
+   * Collect entity IDs that modules discover at runtime (e.g. area_summary's
+   * auto-resolved lights/sensors). These are NOT cached with `_configCache`
+   * because they can change after async discovery completes (the registry
+   * resolve in `area-summary-module` lands on a later tick, after the layout
+   * is already cached). Recomputed fresh on each `shouldUpdate` to keep the
+   * filter accurate without a manual invalidation step.
+   */
+  private _getRuntimeEntityIds(): Set<string> {
+    const ids = new Set<string>();
+    const config = this.config;
+    if (!config?.layout?.rows) return ids;
+    const registry = getModuleRegistry();
+
+    const visit = (modules: any[] | undefined) => {
+      if (!modules) return;
+      for (const mod of modules) {
+        if (!mod || typeof mod !== 'object') continue;
+        const handler = mod.type ? registry.getModule(mod.type) : undefined;
+        const fn = handler && (handler as any).getRuntimeEntityIds;
+        if (typeof fn === 'function') {
+          try {
+            const arr = fn.call(handler, mod);
+            if (Array.isArray(arr)) {
+              for (const id of arr) {
+                if (typeof id === 'string' && id.includes('.')) ids.add(id);
+              }
+            }
+          } catch (e) {
+            // Swallow — runtime collection must never break the render path.
+          }
+        }
+        const m = mod as any;
+        if (Array.isArray(m.modules)) visit(m.modules);
+        if (Array.isArray(m.panels)) {
+          for (const panel of m.panels) {
+            if (Array.isArray(panel?.modules)) visit(panel.modules);
+          }
+        }
+        if (Array.isArray(m.tabs)) {
+          for (const tab of m.tabs) {
+            if (Array.isArray(tab?.modules)) visit(tab.modules);
+          }
+        }
+      }
+    };
+
+    for (const row of config.layout.rows) {
+      for (const col of row.columns || []) {
+        visit(col.modules);
+      }
+    }
+    return ids;
+  }
+
+  /**
    * Stop interval timers for animated_clock modules owned by this card only.
    * Mirrors nested layout shapes used elsewhere (modules, panels, panes, tabs, sections).
    */
@@ -914,13 +969,18 @@ export class UltraCard extends LitElement {
       return true;
     }
     const entityIds = cache.relevantEntityIds;
-    if (entityIds.size === 0) {
-      // No entity IDs collected from config fields — we cannot selectively
-      // filter which hass changes are relevant.  Allow the update so that
-      // entity-driven changes (action results, $variable-referenced entities,
-      // template-only cards) are rendered.  Template subscriptions also drive
-      // updates via 'ultra-card-template-update' → requestUpdate() (which
-      // bypasses this branch because changedProps won't contain 'hass').
+    // Runtime-discovered entities (e.g. area_summary's auto-resolved lights /
+    // climate / quick-actions) — recomputed each call because the discovery
+    // resolves async, after `_configCache` is already populated.
+    const runtimeIds = this._getRuntimeEntityIds();
+    if (entityIds.size === 0 && runtimeIds.size === 0) {
+      // No entity IDs collected from config fields or runtime modules — we
+      // cannot selectively filter which hass changes are relevant.  Allow the
+      // update so that entity-driven changes (action results, $variable-
+      // referenced entities, template-only cards) are rendered.  Template
+      // subscriptions also drive updates via 'ultra-card-template-update' →
+      // requestUpdate() (which bypasses this branch because changedProps
+      // won't contain 'hass').
       return true;
     }
     for (const id of entityIds) {
@@ -928,6 +988,12 @@ export class UltraCard extends LitElement {
       const newEntity = newHass.states?.[id];
       // HA creates a new state object on every update (state OR attribute change),
       // so a reference check catches brightness/color/any attribute updates too.
+      if (oldEntity !== newEntity) return true;
+    }
+    for (const id of runtimeIds) {
+      if (entityIds.has(id)) continue;
+      const oldEntity = oldHass?.states?.[id];
+      const newEntity = newHass.states?.[id];
       if (oldEntity !== newEntity) return true;
     }
     return false;

@@ -97,6 +97,17 @@ export interface UltraModule {
 
   // Optional: Module-specific migrations for config updates
   migrate?(module: any, fromVersion: string, toVersion: string): CardModule;
+
+  /**
+   * Optional: Return entity IDs the module renders that are NOT statically present
+   * in its config (i.e. discovered at runtime — area registry joins, template
+   * results, etc.). The host card merges these into its `shouldUpdate` filter so
+   * external state changes on those entities trigger a re-render.
+   *
+   * Returning an empty array (or omitting the method) means: "no runtime entities
+   * to track beyond what's already in this module's config".
+   */
+  getRuntimeEntityIds?(module: CardModule): string[];
 }
 
 // Base abstract class that provides common functionality
@@ -172,6 +183,16 @@ export abstract class BaseUltraModule implements UltraModule {
       valid: errors.length === 0,
       errors,
     };
+  }
+
+  /**
+   * Default: no runtime-discovered entities. Modules that render entities not
+   * stored in their config (e.g. area_summary's auto-discovered lights / sensors)
+   * should override this so the host card's shouldUpdate filter sees external
+   * state changes on those entities.
+   */
+  getRuntimeEntityIds(_module: CardModule): string[] {
+    return [];
   }
 
   // Helper method to generate unique IDs

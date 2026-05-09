@@ -130,6 +130,46 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
     return best?.model;
   }
 
+  /**
+   * Latest cached model for this module id across any context (dashboard / live /
+   * ha-preview). Used by `getRuntimeEntityIds` so the host card's `shouldUpdate`
+   * gate can track auto-discovered entities even though they aren't in the config.
+   */
+  private latestModelForModuleAnyContext(moduleId: string): RoomSummaryModel | undefined {
+    let best: { updatedAt: number; model: RoomSummaryModel } | undefined;
+    const needle = `::${moduleId}::`;
+    for (const [k, v] of this._resolveCache.entries()) {
+      if (!k.includes(needle)) continue;
+      if (!v.model) continue;
+      if (!best || v.updatedAt > best.updatedAt) {
+        best = { updatedAt: v.updatedAt, model: v.model };
+      }
+    }
+    return best?.model;
+  }
+
+  /**
+   * Expose the runtime-discovered entity IDs (lights, climate, sensors, quick
+   * entities) so the host `<ultra-card>` re-renders when their external state
+   * changes. Without this, the parent's `shouldUpdate` only sees entities
+   * referenced in the module's config (pinned/hidden/temperature/humidity), and
+   * ignores hass updates for auto-discovered entities like a stray ESP32 RGB LED.
+   */
+  override getRuntimeEntityIds(module: CardModule): string[] {
+    const m = module as AreaSummaryModule;
+    if (!m?.id) return [];
+    const model = this.latestModelForModuleAnyContext(m.id);
+    if (!model) return [];
+
+    const out = new Set<string>();
+    for (const id of model.light_entity_ids) out.add(id);
+    for (const q of model.all_quick_entities) out.add(q.entity_id);
+    if (model.climate_entity_id) out.add(model.climate_entity_id);
+    if (model.temperature_entity_id) out.add(model.temperature_entity_id);
+    if (model.humidity_entity_id) out.add(model.humidity_entity_id);
+    return [...out];
+  }
+
   /** Force a fresh resolve next time renderPreview runs for this module id. */
   private invalidateResolveCacheForModule(moduleId: string): void {
     if (!moduleId) return;
