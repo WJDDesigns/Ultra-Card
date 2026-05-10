@@ -152,6 +152,7 @@ export interface BaseModule {
     | 'counter_input'
     | 'color_input'
     | 'activity_feed'
+    | 'battery_monitor'
     | 'alert_center'
     | 'area_summary'
     | 'virtual_pet'
@@ -4821,6 +4822,7 @@ export type CardModule =
   | CounterInputModule
   | ColorInputModule
   | ActivityFeedModule
+  | BatteryMonitorModule
   | AlertCenterModule
   | AreaSummaryModule
   | VirtualPetModule
@@ -4835,6 +4837,51 @@ export interface ActivityFeedEntity {
   label?: string | undefined;
   icon?: string | undefined;
   color?: string | undefined;
+}
+
+// Battery Monitor — auto / manual battery entity rollup with multiple styles
+export interface BatteryMonitorEntity {
+  id: string;
+  entity: string;
+  label?: string | undefined;
+  icon?: string | undefined;
+  color?: string | undefined;
+}
+
+export interface BatteryMonitorModule extends BaseModule {
+  type: 'battery_monitor';
+
+  discovery_mode: 'auto' | 'manual' | 'both';
+  entities: BatteryMonitorEntity[];
+  exclude_patterns?: string[] | undefined;
+  hidden_entities?: string[] | undefined;
+  include_battery_level_attribute?: boolean | undefined;
+  include_binary_sensors?: boolean | undefined;
+
+  style: 'list' | 'bars' | 'cards' | 'rings' | 'strip';
+
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  max_items?: number | undefined;
+  show_charging_indicator?: boolean | undefined;
+  show_percentage_value?: boolean | undefined;
+  sort_direction: 'lowest_first' | 'highest_first' | 'name' | 'unchanged';
+
+  critical_threshold?: number | undefined;
+  low_threshold?: number | undefined;
+  show_only_below_threshold?: boolean | undefined;
+
+  critical_color?: string | undefined;
+  low_color?: string | undefined;
+  ok_color?: string | undefined;
+  charging_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
 }
 
 export interface ActivityFeedModule extends BaseModule {

@@ -77,6 +77,7 @@ import {
   NATIVE_HA_CARDS,
   WEB_SAFE_FONTS,
 } from './layout-tab-constants';
+import { patchModuleByIdInLayout } from '../../utils/uc-layout-patch-module';
 import '../uc-module-selector-shell';
 import '../uc-card-selector-tab';
 import '../uc-presets-selector-tab';
@@ -230,6 +231,7 @@ export class LayoutTab extends LitElement {
 
   /** Listen for template updates from modules to refresh live previews */
   private _templateUpdateListener: (() => void) | undefined;
+  private _modulePatchByIdListener: ((e: Event) => void) | undefined;
   private _tabSwitchListener: ((e: Event) => void) | undefined;
   private _documentClickListener: ((e: Event) => void) | undefined;
   private _keydownListener: ((e: KeyboardEvent) => void) | undefined;
@@ -281,6 +283,22 @@ export class LayoutTab extends LitElement {
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
     // Also listen for slider updates
     window.addEventListener('ultra-card-slider-update', this._templateUpdateListener);
+
+    this._modulePatchByIdListener = (e: Event) => {
+      const ce = e as CustomEvent<{ moduleId?: string; updates?: Partial<CardModule> }>;
+      const moduleId = ce.detail?.moduleId;
+      const updates = ce.detail?.updates;
+      if (!moduleId || !updates || !this.config?.layout) return;
+      const { layout: nextLayout, changed } = patchModuleByIdInLayout(
+        this._ensureLayout(),
+        moduleId,
+        updates
+      );
+      if (changed) {
+        this._updateLayout(nextLayout);
+      }
+    };
+    window.addEventListener('uc-module-patch-by-id', this._modulePatchByIdListener);
 
     // Listen for tab switch events from modules
     this._tabSwitchListener = (e: Event) => {
@@ -6369,6 +6387,11 @@ export class LayoutTab extends LitElement {
       window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
       window.removeEventListener('ultra-card-slider-update', this._templateUpdateListener);
       this._templateUpdateListener = undefined;
+    }
+
+    if (this._modulePatchByIdListener) {
+      window.removeEventListener('uc-module-patch-by-id', this._modulePatchByIdListener);
+      this._modulePatchByIdListener = undefined;
     }
 
     // Remove tab switch listener
