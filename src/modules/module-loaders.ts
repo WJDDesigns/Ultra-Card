@@ -72,4 +72,5 @@ export const coreLoaders: Record<string, ModuleLoader> = {
   solar_analytics: () => import(/* webpackMode: "eager" */ './solar-analytics-module').then(m => new m.UltraSolarAnalyticsModule()),
   screensaver: () => import(/* webpackMode: "eager" */ './screensaver-module').then(m => new m.UltraScreensaverModule()),
   battery_monitor: () => import(/* webpackMode: "eager" */ './battery-monitor-module').then(m => new m.UltraBatteryMonitorModule()),
+  auto_entity_list: () => import(/* webpackMode: "eager" */ './auto-entity-list-module').then(m => new m.UltraAutoEntityListModule()),
 };

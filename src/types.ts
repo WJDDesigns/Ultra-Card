@@ -153,6 +153,7 @@ export interface BaseModule {
     | 'color_input'
     | 'activity_feed'
     | 'battery_monitor'
+    | 'auto_entity_list'
     | 'alert_center'
     | 'area_summary'
     | 'virtual_pet'
@@ -4823,6 +4824,7 @@ export type CardModule =
   | ColorInputModule
   | ActivityFeedModule
   | BatteryMonitorModule
+  | AutoEntityListModule
   | AlertCenterModule
   | AreaSummaryModule
   | VirtualPetModule
@@ -4878,6 +4880,75 @@ export interface BatteryMonitorModule extends BaseModule {
   text_color?: string | undefined;
   secondary_text_color?: string | undefined;
   card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// Auto Entities List — dynamic entity discovery via UI-driven filters
+export type AutoEntityListRowStyle = 'compact' | 'detailed' | 'slim' | 'card';
+export type AutoEntityListSortBy = 'name' | 'last_changed' | 'state' | 'domain';
+export type AutoEntityListStateOperator =
+  | 'equals'
+  | 'not_equals'
+  | 'contains'
+  | 'greater_than'
+  | 'less_than';
+
+export interface AutoEntityListPinnedEntity {
+  id: string;
+  entity: string;
+  label?: string | undefined;
+  icon?: string | undefined;
+  color?: string | undefined;
+}
+
+export interface AutoEntityListModule extends BaseModule {
+  type: 'auto_entity_list';
+
+  // Filters
+  include_domains?: string[] | undefined;
+  include_device_classes?: string[] | undefined;
+  include_keywords?: string[] | undefined;
+  exclude_keywords?: string[] | undefined;
+  show_unavailable?: boolean | undefined;
+
+  // State condition
+  state_filter_operator?: AutoEntityListStateOperator | undefined;
+  state_filter_value?: string | undefined;
+
+  // Pinned / hidden
+  pinned_entities: AutoEntityListPinnedEntity[];
+  hidden_entities?: string[] | undefined;
+
+  // Row style
+  row_style: AutoEntityListRowStyle;
+
+  // Display
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  max_items?: number | undefined;
+  show_icon?: boolean | undefined;
+  show_state?: boolean | undefined;
+  show_last_changed?: boolean | undefined;
+  use_entity_color?: boolean | undefined;
+  row_gap?: number | undefined; // spacing between rows in px
+  columns?: number | undefined; // 1-6; >1 wraps rows in a CSS grid
+  sort_by: AutoEntityListSortBy;
+  sort_direction: 'asc' | 'desc';
+
+  // Card style only
+  card_height?: number | undefined; // 0 = auto
+  card_width?: number | undefined; // 0 = full
+
+  // Colors
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+  accent_color?: string | undefined;
+  active_color?: string | undefined;
+  inactive_color?: string | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;

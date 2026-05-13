@@ -41,6 +41,8 @@ export class UltraTextModule extends BaseUltraModule {
   private _lastTemplateText: Map<string, string> = new Map();
   private _lastTemplateColor: Map<string, string> = new Map();
   private _lastTemplateContainerBg: Map<string, string> = new Map();
+  private _lastTemplateIconColor: Map<string, string> = new Map();
+  private _lastTemplateIcon: Map<string, string> = new Map();
 
   createDefault(id?: string, hass?: HomeAssistant): TextModule {
     return {
@@ -564,6 +566,8 @@ export class UltraTextModule extends BaseUltraModule {
       ? ''
       : textModule.text || 'Sample Text';
     let displayColor: string | undefined;
+    let displayIconColor: string | undefined;
+    let displayIcon: string | undefined;
 
     // Unified template (must run before textStyles so color applies)
     if (textModule.unified_template_mode && textModule.unified_template) {
@@ -608,6 +612,10 @@ export class UltraTextModule extends BaseUltraModule {
         if (cachedText !== undefined) displayText = cachedText;
         const cachedColor = this._lastTemplateColor.get(templateKey);
         if (cachedColor !== undefined) displayColor = cachedColor;
+        const cachedIconColor = this._lastTemplateIconColor.get(templateKey);
+        if (cachedIconColor !== undefined) displayIconColor = cachedIconColor;
+        const cachedIcon = this._lastTemplateIcon.get(templateKey);
+        if (cachedIcon !== undefined) displayIcon = cachedIcon;
 
         const unifiedResult = hass.__uvc_template_strings?.[templateKey];
         if (unifiedResult && String(unifiedResult).trim() !== '') {
@@ -628,6 +636,14 @@ export class UltraTextModule extends BaseUltraModule {
             if (parsed.color) {
               displayColor = parsed.color;
               this._lastTemplateColor.set(templateKey, parsed.color);
+            }
+            if (parsed.icon_color) {
+              displayIconColor = parsed.icon_color;
+              this._lastTemplateIconColor.set(templateKey, parsed.icon_color);
+            }
+            if (parsed.icon) {
+              displayIcon = parsed.icon;
+              this._lastTemplateIcon.set(templateKey, parsed.icon);
             }
           }
         }
@@ -693,10 +709,13 @@ export class UltraTextModule extends BaseUltraModule {
       // Note: Sizing and positioning properties are handled by containerStyles for design tab functionality
     } as Record<string, string>;
 
-    const iconElement = textModule.icon
+    const effectiveIcon = displayIcon || textModule.icon;
+    const effectiveIconColor =
+      displayIconColor || textModule.icon_color || 'var(--primary-color)';
+    const iconElement = effectiveIcon
       ? html`<ha-icon
-          icon="${textModule.icon}"
-          style="color: ${textModule.icon_color || 'var(--primary-color)'}; --mdc-icon-size: ${textModule.icon_size || 24}px;"
+          icon="${effectiveIcon}"
+          style="color: ${effectiveIconColor}; --mdc-icon-size: ${textModule.icon_size || 24}px;"
         ></ha-icon>`
       : '';
 

@@ -70,21 +70,34 @@ export class UcModulesSelectorTab extends LitElement {
         ? standardModules
         : proModules;
 
+    const sortByTitle = (a: ModuleManifest, b: ModuleManifest) =>
+      (a.title || '').localeCompare(b.title || '');
+
     const layoutModules = filteredModules
       .filter(m => m.category === 'layout' && m.type !== 'pagebreak')
-      .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      .sort(sortByTitle);
 
-    let contentModules = filteredModules
-      .filter(m => m.category !== 'layout' && m.category !== 'input')
-      .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    const dataModules = filteredModules
+      .filter(m => m.category === 'data')
+      .sort(sortByTitle);
+
+    let contentMediaModules = filteredModules
+      .filter(m => m.category === 'content' || m.category === 'media')
+      .sort(sortByTitle);
+
+    const controlModules = filteredModules
+      .filter(m => m.category === 'interactive')
+      .sort(sortByTitle);
 
     const inputModules = filteredModules
       .filter(m => m.category === 'input')
-      .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      .sort(sortByTitle);
 
+    // When the user is adding a module inside a Slider, surface "Page Break"
+    // at the top of Content & Media (it has no meaning outside that flow).
     if (this.isAddingToLayoutModule && this.parentLayoutType === 'slider') {
       const pageBreakMeta = this.allModules.find(m => m.type === 'pagebreak');
-      if (pageBreakMeta) contentModules = [pageBreakMeta, ...contentModules];
+      if (pageBreakMeta) contentMediaModules = [pageBreakMeta, ...contentMediaModules];
     }
 
     let allowedLayoutModules: ModuleManifest[] = [];
@@ -152,57 +165,77 @@ export class UcModulesSelectorTab extends LitElement {
                           </div>
                         `
                       : ''}
-                    ${contentModules.length > 0
-                      ? html`
-                          <div class="module-category">
-                            <h4 class="category-title">Content Modules</h4>
-                            <p class="category-description">Add content and interactive elements</p>
-                            <div class="module-types content-modules">
-                              ${contentModules.map(meta => html`
-                                <button
-                                  class="module-type-btn content-module"
-                                  @click=${() => this._emitModuleSelected(meta.type)}
-                                  title="${meta.description}"
-                                >
-                                  <ha-icon icon="${meta.icon}"></ha-icon>
-                                  <div class="module-info">
-                                    <span class="module-title">${meta.title}</span>
-                                    <span class="module-description">${meta.description}</span>
-                                  </div>
-                                </button>
-                              `)}
-                            </div>
-                          </div>
-                        `
-                      : ''}
-                    ${inputModules.length > 0
-                      ? html`
-                          <div class="module-category input-modules-category">
-                            <h4 class="category-title">
-                              <ha-icon icon="mdi:form-textbox" style="--mdc-icon-size: 18px; margin-right: 6px; vertical-align: middle; opacity: 0.7;"></ha-icon>
-                              Input Modules
-                            </h4>
-                            <p class="category-description">Link to Home Assistant input helpers for interactive control</p>
-                            <div class="module-types content-modules">
-                              ${inputModules.map(meta => html`
-                                <button
-                                  class="module-type-btn content-module"
-                                  @click=${() => this._emitModuleSelected(meta.type)}
-                                  title="${meta.description}"
-                                >
-                                  <ha-icon icon="${meta.icon}"></ha-icon>
-                                  <div class="module-info">
-                                    <span class="module-title">${meta.title}</span>
-                                    <span class="module-description">${meta.description}</span>
-                                  </div>
-                                </button>
-                              `)}
-                            </div>
-                          </div>
-                        `
-                      : ''}
+                    ${this._renderModuleGroup(
+                      'Data & Lists',
+                      'Entities, sensors, lists, and smart auto-discovered widgets',
+                      'mdi:format-list-bulleted-square',
+                      dataModules
+                    )}
+                    ${this._renderModuleGroup(
+                      'Content & Media',
+                      'Text, images, backgrounds, and visual elements',
+                      'mdi:image-multiple-outline',
+                      contentMediaModules
+                    )}
+                    ${this._renderModuleGroup(
+                      'Controls',
+                      'Buttons, switches, lights, climate, and interactive controls',
+                      'mdi:gesture-tap-button',
+                      controlModules
+                    )}
+                    ${this._renderModuleGroup(
+                      'Input Helpers',
+                      'Link to Home Assistant input helpers for interactive control',
+                      'mdi:form-textbox',
+                      inputModules,
+                      'input-modules-category'
+                    )}
                   `}
             `}
+      </div>
+    `;
+  }
+
+  /**
+   * Render a content-module sub-group inside the selector. Shared by Data &
+   * Lists, Content & Media, Controls, and Input Helpers so the look stays
+   * consistent and the layout is easy to evolve.
+   */
+  private _renderModuleGroup(
+    title: string,
+    description: string,
+    headerIcon: string,
+    modules: ModuleManifest[],
+    extraClass: string = ''
+  ): TemplateResult {
+    if (!modules || modules.length === 0) return html``;
+    return html`
+      <div class="module-category ${extraClass}">
+        <h4 class="category-title">
+          <ha-icon
+            icon="${headerIcon}"
+            style="--mdc-icon-size: 18px; margin-right: 6px; vertical-align: middle; opacity: 0.7;"
+          ></ha-icon>
+          ${title}
+        </h4>
+        <p class="category-description">${description}</p>
+        <div class="module-types content-modules">
+          ${modules.map(
+            meta => html`
+              <button
+                class="module-type-btn content-module"
+                @click=${() => this._emitModuleSelected(meta.type)}
+                title="${meta.description}"
+              >
+                <ha-icon icon="${meta.icon}"></ha-icon>
+                <div class="module-info">
+                  <span class="module-title">${meta.title}</span>
+                  <span class="module-description">${meta.description}</span>
+                </div>
+              </button>
+            `
+          )}
+        </div>
       </div>
     `;
   }

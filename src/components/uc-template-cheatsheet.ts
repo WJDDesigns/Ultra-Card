@@ -32,8 +32,8 @@ const CONTEXT_VARIABLES: Omit<CheatsheetEntry, 'modules'>[] = [
 
 /** Return properties the template can output (from template-parser.ts UnifiedTemplateResult) */
 const RETURN_PROPERTIES: CheatsheetEntry[] = [
-  { key: 'icon', type: 'string', description: 'Icon name (e.g., mdi:fire)', snippet: '"icon": "mdi:fire"', modules: ['icon', 'info'] },
-  { key: 'icon_color', type: 'string', description: 'Icon color (CSS color value)', snippet: '"icon_color": "red"', modules: ['icon', 'info'] },
+  { key: 'icon', type: 'string', description: 'Icon name (e.g., mdi:fire)', snippet: '"icon": "mdi:fire"', modules: ['icon', 'info', 'text'] },
+  { key: 'icon_color', type: 'string', description: 'Icon color (CSS color value)', snippet: '"icon_color": "red"', modules: ['icon', 'info', 'text'] },
   { key: 'container_background_color', type: 'string', description: 'Container background color', snippet: '"container_background_color": "rgba(255,0,0,0.1)"', modules: ['icon', 'info', 'markdown', 'text'] },
   { key: 'name', type: 'string', description: 'Display name text', snippet: '"name": "{{ friendly_name }}"', modules: ['icon', 'info'] },
   { key: 'name_color', type: 'string', description: 'Name text color', snippet: '"name_color": "var(--primary-color)"', modules: ['icon', 'info'] },
@@ -153,6 +153,16 @@ const EXAMPLE_TEMPLATES: Record<string, { label: string; code: string }[]> = {
 {
   "content": "🌡 {{ temp }}° · 💧 {{ hum }}%",
   "color": "{% if temp|float > 30 %}red{% else %}var(--primary-text-color){% endif %}"
+}`,
+    },
+    {
+      label: 'Text with dynamic icon and icon color',
+      code: `{% set t = states('sensor.temperature') | float(0) %}
+{
+  "content": "{{ t }}°",
+  "color": "{% if t > 30 %}#FF4444{% else %}var(--primary-text-color){% endif %}",
+  "icon": "{% if t > 30 %}mdi:fire{% elif t < 10 %}mdi:snowflake{% else %}mdi:thermometer{% endif %}",
+  "icon_color": "{% if t > 30 %}#FF4444{% elif t < 10 %}#2196F3{% else %}var(--primary-color){% endif %}"
 }`,
     },
   ],
