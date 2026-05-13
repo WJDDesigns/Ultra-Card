@@ -1,7 +1,13 @@
 name: Announce GitHub Releases to Discord
 on:
   release:
-    types: [published, prereleased]
+    # IMPORTANT: only `published` — NOT `[published, prereleased]`.
+    # GitHub fires `published` for BOTH stable releases and prereleases, so
+    # listing both event types here causes the workflow to run twice for
+    # every prerelease (which previously produced duplicate Discord posts).
+    # The job below already inspects `prerelease` on the payload and sets
+    # the embed color accordingly, so a single `published` trigger is enough.
+    types: [published]
   workflow_dispatch: {}
 
 jobs:
