@@ -3058,6 +3058,8 @@
       "show_charging_desc": "When a charging binary_sensor is found.",
       "show_pct": "Show percentage",
       "show_pct_desc": "Show numeric % next to each device.",
+      "show_item_border": "Show item border",
+      "show_item_border_desc": "Draw a 1px border around each device tile. Turn off for a borderless look.",
       "max_items": "Max items",
       "max_items_desc": "Maximum devices to show.",
       "sort": "Sort",

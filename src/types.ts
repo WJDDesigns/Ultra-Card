@@ -4951,6 +4951,7 @@ export interface BatteryMonitorModule extends BaseModule {
   max_items?: number | undefined;
   show_charging_indicator?: boolean | undefined;
   show_percentage_value?: boolean | undefined;
+  show_item_border?: boolean | undefined;
   sort_direction: 'lowest_first' | 'highest_first' | 'name' | 'unchanged';
 
   critical_threshold?: number | undefined;

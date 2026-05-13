@@ -55,6 +55,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
       max_items: 25,
       show_charging_indicator: true,
       show_percentage_value: true,
+      show_item_border: true,
       sort_direction: 'lowest_first',
       critical_threshold: 10,
       low_threshold: 25,
@@ -449,6 +450,23 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
               onChange: (e: CustomEvent) => {
                 updateModule({
                   show_percentage_value: e.detail.value.show_percentage_value,
+                } as Partial<CardModule>);
+                this.triggerPreviewUpdate();
+              },
+            },
+            {
+              title: localize('editor.battery_monitor.show_item_border', lang, 'Show item border'),
+              description: localize(
+                'editor.battery_monitor.show_item_border_desc',
+                lang,
+                'Draw a 1px border around each device tile. Turn off for a borderless look.'
+              ),
+              hass,
+              data: { show_item_border: m.show_item_border !== false },
+              schema: [this.booleanField('show_item_border')],
+              onChange: (e: CustomEvent) => {
+                updateModule({
+                  show_item_border: e.detail.value.show_item_border,
                 } as Partial<CardModule>);
                 this.triggerPreviewUpdate();
               },
@@ -1168,6 +1186,8 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
       showDel: boolean;
     }
   ): TemplateResult {
+    const itemBorder =
+      m.show_item_border !== false ? 'border:1px solid var(--divider-color);' : '';
     return html`
       <div class="bm-list" style="display:flex;flex-direction:column;gap:8px;">
         ${readings.map(r => {
@@ -1176,7 +1196,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           const g = this._rowGestures(m, r, hass, config, 'list');
           return html`
             <div
-              style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:${o.cardBg};border:1px solid var(--divider-color);"
+              style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:${o.cardBg};${itemBorder}"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
               @pointerup=${g.onPointerUp}
@@ -1234,6 +1254,8 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
       showDel: boolean;
     }
   ): TemplateResult {
+    const itemBorder =
+      m.show_item_border !== false ? 'border:1px solid var(--divider-color);' : '';
     return html`
       <div style="display:flex;flex-direction:column;gap:14px;">
         ${readings.map(r => {
@@ -1242,7 +1264,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           const g = this._rowGestures(m, r, hass, config, 'bar');
           return html`
             <div
-              style="padding:10px;border-radius:10px;background:${o.cardBg};border:1px solid var(--divider-color);"
+              style="padding:10px;border-radius:10px;background:${o.cardBg};${itemBorder}"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
               @pointerup=${g.onPointerUp}
@@ -1295,15 +1317,17 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
       showDel: boolean;
     }
   ): TemplateResult {
+    const showBorder = m.show_item_border !== false;
     return html`
       <div class="bm-style-grid">
         ${readings.map(r => {
           const col = this._palette(m, r.value, r.charging, o.crit, o.low, o.cCrit, o.cLow, o.cOk, o.cChg);
           const fill = r.manual?.color || col;
           const g = this._rowGestures(m, r, hass, config, 'card');
+          const itemBorder = showBorder ? `border:1px solid ${fill}55;` : '';
           return html`
             <div
-              style="position:relative;padding:14px;border-radius:12px;background:${fill}22;border:1px solid ${fill}55;text-align:center;"
+              style="position:relative;padding:14px;border-radius:12px;background:${fill}22;${itemBorder}text-align:center;"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
               @pointerup=${g.onPointerUp}
@@ -1356,6 +1380,8 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
     const R = 36;
     const stroke = 8;
     const circ = 2 * Math.PI * R;
+    const itemBorder =
+      m.show_item_border !== false ? 'border:1px solid var(--divider-color);' : '';
     return html`
       <div class="bm-style-grid">
         ${readings.map(r => {
@@ -1366,7 +1392,7 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           const g = this._rowGestures(m, r, hass, config, 'ring');
           return html`
             <div
-              style="text-align:center;padding:10px;border-radius:12px;background:${o.cardBg};border:1px solid var(--divider-color);position:relative;"
+              style="text-align:center;padding:10px;border-radius:12px;background:${o.cardBg};${itemBorder}position:relative;"
               @pointerdown=${g.onPointerDown}
               @pointermove=${g.onPointerMove}
               @pointerup=${g.onPointerUp}

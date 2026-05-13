@@ -1,5 +1,13 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.4.0-beta8
+
+### 🚀 New Features
+
+- **Added "Show item border" toggle to the Battery Monitor module** - A new boolean setting in the Display section lets you remove the 1 px outline drawn around each device tile, for a cleaner borderless look on dashboards that already use card backgrounds or dividers. Applies to all four visual styles (List, Bar, Card, Ring) and defaults to on so existing battery-monitor configs render identically.
+
+---
+
 ## Version 3.4.0-beta7
 
 ### 🚀 New Features
