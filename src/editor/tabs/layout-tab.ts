@@ -163,8 +163,8 @@ export class LayoutTab extends LitElement {
   // Track collapsed rows and columns
   @state() private _collapsedRows: Set<number> = new Set();
   @state() private _collapsedColumns: Set<string> = new Set();
-  // Pin state for preview window (unpinned by default)
-  @state() private _isPreviewPinned = true;
+  // Pin state for preview window (unpinned by default — preview scrolls with content)
+  @state() private _isPreviewPinned = false;
   // Drag state for condition reordering
   @state() private _draggingCondition:
     | { scope: 'module'; fromIndex: number }
@@ -2518,6 +2518,8 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (module.type === 'vertical') {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (module.type === 'stack') {
+      layoutTitle = localize('editor.layout.stack_layout', lang, 'Stack Overlay');
     } else if (module.type === 'slider') {
       layoutTitle = localize('editor.layout.slider_layout', lang, 'Slider Layout');
     } else if (module.type === 'tabs') {
@@ -2926,11 +2928,13 @@ export class LayoutTab extends LitElement {
           ? localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout')
           : childModule.type === 'vertical'
             ? localize('editor.layout.vertical_layout', lang, 'Vertical Layout')
-            : childModule.type === 'tabs'
-              ? localize('editor.layout.tabs_layout', lang, 'Tabs Layout')
-              : childModule.type === 'slider'
-                ? localize('editor.layout.slider_module', lang, 'Slider Module')
-                : metadata.title;
+            : childModule.type === 'stack'
+              ? localize('editor.layout.stack_layout', lang, 'Stack Overlay')
+              : childModule.type === 'tabs'
+                ? localize('editor.layout.tabs_layout', lang, 'Tabs Layout')
+                : childModule.type === 'slider'
+                  ? localize('editor.layout.slider_module', lang, 'Slider Module')
+                  : metadata.title;
 
       return html`
         <div
@@ -3380,6 +3384,8 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (module.type === 'vertical') {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (module.type === 'stack') {
+      layoutTitle = localize('editor.layout.stack_layout', lang, 'Stack Overlay');
     } else if (module.type === 'slider') {
       layoutTitle = localize('editor.layout.slider_layout', lang, 'Slider Layout');
     } else if (module.type === 'tabs') {
@@ -4020,6 +4026,8 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (childModule.type === 'vertical') {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (childModule.type === 'stack') {
+      layoutTitle = localize('editor.layout.stack_layout', lang, 'Stack Overlay');
     } else if (childModule.type === 'slider') {
       layoutTitle = localize('editor.layout.slider_layout', lang, 'Slider Layout');
     } else if (childModule.type === 'tabs') {
@@ -4437,6 +4445,8 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (module.type === 'vertical') {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (module.type === 'stack') {
+      layoutTitle = localize('editor.layout.stack_layout', lang, 'Stack Overlay');
     } else if (module.type === 'slider') {
       layoutTitle = localize('editor.layout.slider_layout', lang, 'Slider Layout');
     } else if (module.type === 'tabs') {
@@ -4958,6 +4968,8 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (module.type === 'vertical') {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (module.type === 'stack') {
+      layoutTitle = localize('editor.layout.stack_layout', lang, 'Stack Overlay');
     } else if (module.type === 'slider') {
       layoutTitle = localize('editor.layout.slider_layout', lang, 'Slider Layout');
     } else if (module.type === 'tabs') {
@@ -5361,6 +5373,8 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (module.type === 'vertical') {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (module.type === 'stack') {
+      layoutTitle = localize('editor.layout.stack_layout', lang, 'Stack Overlay');
     } else if (module.type === 'slider') {
       layoutTitle = localize('editor.layout.slider_layout', lang, 'Slider Layout');
     } else if (module.type === 'tabs') {
@@ -5667,6 +5681,8 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (module.type === 'vertical') {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (module.type === 'stack') {
+      layoutTitle = localize('editor.layout.stack_layout', lang, 'Stack Overlay');
     } else if (module.type === 'slider') {
       layoutTitle = localize('editor.layout.slider_layout', lang, 'Slider Layout');
     } else if (module.type === 'tabs') {
@@ -7703,6 +7719,22 @@ export class LayoutTab extends LitElement {
     const row = layout.rows[this._selectedRowIndex];
     const column = row?.columns[this._selectedColumnIndex];
     if (!row || !column) return;
+
+    // If we're dropping into a Stack Overlay layout, give the new layer a
+    // centered default stack_layer so it lands in the middle of the card and
+    // can be offset in any direction. The runtime renderer also defaults to
+    // center, but persisting it here makes the editor controls reflect the
+    // anchor on first selection.
+    const parentLayoutModule = this._getParentStackTarget(layout);
+    if (parentLayoutModule?.type === 'stack' && !(newModule as any).stack_layer) {
+      (newModule as any).stack_layer = {
+        anchor: 'center',
+        offset_x: '0px',
+        offset_y: '0px',
+        width: 'auto',
+        height: 'auto',
+      };
+    }
 
     let newLayout: LayoutConfig;
 
@@ -13827,10 +13859,11 @@ export class LayoutTab extends LitElement {
     metadata?: any
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
-    const layoutModule = module as any; // HorizontalModule, VerticalModule, SliderModule, or TabsModule
+    const layoutModule = module as any; // HorizontalModule, VerticalModule, StackModule, SliderModule, or TabsModule
     const hasChildren = layoutModule.modules && layoutModule.modules.length > 0;
     const isHorizontal = module.type === 'horizontal';
     const isVertical = module.type === 'vertical';
+    const isStack = module.type === 'stack';
     const isSlider = module.type === 'slider';
     const isTabs = module.type === 'tabs';
 
@@ -13840,6 +13873,8 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (isVertical) {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (isStack) {
+      layoutTitle = localize('editor.layout.stack_layout', lang, 'Stack Overlay');
     } else if (isSlider) {
       layoutTitle = localize('editor.layout.slider_layout', lang, 'Slider Layout');
     } else if (isTabs) {
@@ -14114,10 +14149,11 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
 
-    // Check if this child module is itself a layout module (horizontal, vertical, accordion, popup, slider, or tabs)
+    // Check if this child module is itself a layout module (horizontal, vertical, stack, accordion, popup, slider, or tabs)
     const isNestedLayoutModule =
       childModule.type === 'horizontal' ||
       childModule.type === 'vertical' ||
+      childModule.type === 'stack' ||
       childModule.type === 'accordion' ||
       childModule.type === 'popup' ||
       childModule.type === 'slider' ||
@@ -14328,10 +14364,11 @@ export class LayoutTab extends LitElement {
     childIndex?: number
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
-    const nestedLayout = layoutModule as any; // HorizontalModule, VerticalModule, AccordionModule, PopupModule, SliderModule, or TabsModule
+    const nestedLayout = layoutModule as any; // HorizontalModule, VerticalModule, StackModule, AccordionModule, PopupModule, SliderModule, or TabsModule
     const hasChildren = nestedLayout.modules && nestedLayout.modules.length > 0;
     const isHorizontal = layoutModule.type === 'horizontal';
     const isVertical = layoutModule.type === 'vertical';
+    const isStack = layoutModule.type === 'stack';
     const isAccordion = layoutModule.type === 'accordion';
     const isPopup = layoutModule.type === 'popup';
     const isSlider = layoutModule.type === 'slider';
@@ -14351,6 +14388,8 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (isVertical) {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (isStack) {
+      layoutTitle = localize('editor.layout.stack_layout', lang, 'Stack Overlay');
     } else if (isAccordion) {
       layoutTitle = localize('editor.layout.accordion_module', lang, 'Accordion');
     } else if (isPopup) {
@@ -14685,6 +14724,22 @@ export class LayoutTab extends LitElement {
                 ].modules.splice(this._draggedItem.moduleIndex!, 1);
               }
 
+              // When dropping into a Stack Overlay, give the layer a centered
+              // default position so it lands in the middle of the card.
+              if (
+                nestedLayoutModule.type === 'stack' &&
+                sourceModule &&
+                !(sourceModule as any).stack_layer
+              ) {
+                (sourceModule as any).stack_layer = {
+                  anchor: 'center',
+                  offset_x: '0px',
+                  offset_y: '0px',
+                  width: 'auto',
+                  height: 'auto',
+                };
+              }
+
               // Add to nested layout
               nestedLayoutModule.modules.push(sourceModule);
 
@@ -14796,6 +14851,7 @@ export class LayoutTab extends LitElement {
     const hasChildren = deepNestedLayout.modules && deepNestedLayout.modules.length > 0;
     const isHorizontal = layoutModule.type === 'horizontal';
     const isVertical = layoutModule.type === 'vertical';
+    const isStack = layoutModule.type === 'stack';
     const isAccordion = layoutModule.type === 'accordion';
     const isPopup = layoutModule.type === 'popup';
     const isSlider = layoutModule.type === 'slider';
@@ -14814,6 +14870,8 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (isVertical) {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (isStack) {
+      layoutTitle = localize('editor.layout.stack_layout', lang, 'Stack Overlay');
     } else if (isAccordion) {
       layoutTitle = localize('editor.layout.accordion_module', lang, 'Accordion');
     } else if (isPopup) {
@@ -15085,6 +15143,7 @@ export class LayoutTab extends LitElement {
     // Get layout title
     const isHorizontal = layoutModule.type === 'horizontal';
     const isVertical = layoutModule.type === 'vertical';
+    const isStack = layoutModule.type === 'stack';
     const isAccordion = layoutModule.type === 'accordion';
     const isPopup = layoutModule.type === 'popup';
     const isSlider = layoutModule.type === 'slider';
@@ -15095,6 +15154,8 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (isVertical) {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (isStack) {
+      layoutTitle = localize('editor.layout.stack_layout', lang, 'Stack Overlay');
     } else if (isAccordion) {
       layoutTitle = localize('editor.layout.accordion_module', lang, 'Accordion');
     } else if (isPopup) {
@@ -16159,6 +16220,7 @@ export class LayoutTab extends LitElement {
     const isChildLayoutModule =
       childModule.type === 'horizontal' ||
       childModule.type === 'vertical' ||
+      childModule.type === 'stack' ||
       childModule.type === 'accordion' ||
       childModule.type === 'popup' ||
       childModule.type === 'slider' ||
@@ -16349,6 +16411,7 @@ export class LayoutTab extends LitElement {
     let layoutTitle = metadata.title || 'Layout';
     const isHorizontal = layoutModule.type === 'horizontal';
     const isVertical = layoutModule.type === 'vertical';
+    const isStack = layoutModule.type === 'stack';
     const isAccordion = layoutModule.type === 'accordion';
     const isPopup = layoutModule.type === 'popup';
     const isSlider = layoutModule.type === 'slider';
@@ -16358,6 +16421,8 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (isVertical) {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (isStack) {
+      layoutTitle = localize('editor.layout.stack_layout', lang, 'Stack Overlay');
     } else if (isAccordion) {
       layoutTitle = localize('editor.layout.accordion_module', lang, 'Accordion');
     } else if (isPopup) {
@@ -17124,6 +17189,7 @@ export class LayoutTab extends LitElement {
     const isChildLayoutModule =
       childModule.type === 'horizontal' ||
       childModule.type === 'vertical' ||
+      childModule.type === 'stack' ||
       childModule.type === 'accordion' ||
       childModule.type === 'popup' ||
       childModule.type === 'slider' ||
@@ -17296,6 +17362,7 @@ export class LayoutTab extends LitElement {
     let layoutTitle = metadata.title || 'Layout';
     const isHorizontal = layoutModule.type === 'horizontal';
     const isVertical = layoutModule.type === 'vertical';
+    const isStack = layoutModule.type === 'stack';
     const isAccordion = layoutModule.type === 'accordion';
     const isPopup = layoutModule.type === 'popup';
     const isSlider = layoutModule.type === 'slider';
@@ -17305,6 +17372,8 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (isVertical) {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (isStack) {
+      layoutTitle = localize('editor.layout.stack_layout', lang, 'Stack Overlay');
     } else if (isAccordion) {
       layoutTitle = localize('editor.layout.accordion_module', lang, 'Accordion');
     } else if (isPopup) {
@@ -20265,6 +20334,7 @@ export class LayoutTab extends LitElement {
     const isNestedLayoutModule =
       childModule.type === 'horizontal' ||
       childModule.type === 'vertical' ||
+      childModule.type === 'stack' ||
       childModule.type === 'accordion' ||
       childModule.type === 'popup' ||
       childModule.type === 'slider' ||
@@ -22037,8 +22107,10 @@ export class LayoutTab extends LitElement {
     if (
       (module.type === 'horizontal' ||
         module.type === 'vertical' ||
+        module.type === 'stack' ||
         module.type === 'accordion' ||
-        module.type === 'popup') &&
+        module.type === 'popup' ||
+        module.type === 'slider') &&
       module.modules
     ) {
       module.modules.forEach((childModule: any) => {
@@ -30086,8 +30158,32 @@ export class LayoutTab extends LitElement {
   }
 
   private _isLayoutModule(moduleType: string): boolean {
-    const layoutModuleTypes = ['horizontal', 'vertical', 'accordion', 'popup', 'slider', 'tabs'];
+    const layoutModuleTypes = ['horizontal', 'vertical', 'stack', 'accordion', 'popup', 'slider', 'tabs'];
     return layoutModuleTypes.includes(moduleType);
+  }
+
+  /**
+   * Returns the parent layout container that a newly added module would be
+   * dropped into (1st, 2nd, or 3rd nesting level). Used to apply parent-aware
+   * defaults — e.g. `stack_layer: center` when dropping into a Stack Overlay.
+   */
+  private _getParentStackTarget(layout: LayoutConfig): CardModule | null {
+    const row = layout.rows[this._selectedRowIndex];
+    const col = row?.columns[this._selectedColumnIndex];
+    if (!col || this._selectedLayoutModuleIndex < 0) return null;
+
+    const lvl1 = col.modules?.[this._selectedLayoutModuleIndex] as any;
+    if (!lvl1) return null;
+    if (this._selectedNestedNestedChildIndex >= 0 && this._selectedNestedChildIndex >= 0) {
+      const lvl2 = lvl1.modules?.[this._selectedNestedChildIndex];
+      const lvl3 = lvl2?.modules?.[this._selectedNestedNestedChildIndex];
+      return (lvl3 as CardModule) || null;
+    }
+    if (this._selectedNestedChildIndex >= 0) {
+      const lvl2 = lvl1.modules?.[this._selectedNestedChildIndex];
+      return (lvl2 as CardModule) || null;
+    }
+    return lvl1 as CardModule;
   }
 
   private _shouldAutoOpenSettings(moduleType: string): boolean {

@@ -60,9 +60,6 @@ export class UltraCardEditor extends LitElement {
   @state() private _showManualBackup: boolean = false;
   @state() private _showSnapshotSettings: boolean = false;
   @state() private _snapshotSchedulerStatus: SnapshotSchedulerStatus | null = null;
-  @state() private _newerBackupAvailable: any = null;
-  @state() private _showSyncNotification: boolean = false;
-  @state() private _isLoadingNewerBackup: boolean = false;
   @state() private _skipDefaultModules: boolean = false;
   @state() private _isCreatingManualSnapshot: boolean = false;
 
@@ -512,57 +509,6 @@ export class UltraCardEditor extends LitElement {
     }
   }
 
-  private _renderSyncNotificationBanner(): TemplateResult {
-    if (!this._showSyncNotification || !this._newerBackupAvailable) return html``;
-
-    const backup = this._newerBackupAvailable;
-    const savedAt = backup.created
-      ? new Date(backup.created).toLocaleString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      : 'recently';
-    const device = backup.device_info || 'another device';
-    const stats = backup.card_stats;
-
-    return html`
-      <div class="cloud-sync-banner">
-        <div class="cloud-sync-banner-icon">
-          <ha-icon icon="mdi:cloud-sync"></ha-icon>
-        </div>
-        <div class="cloud-sync-banner-body">
-          <span class="cloud-sync-banner-title">Newer version available</span>
-          <span class="cloud-sync-banner-meta">
-            Saved ${savedAt} · ${device}${stats
-              ? html`&nbsp;·&nbsp;${stats.module_count}&nbsp;module${stats.module_count !== 1 ? 's' : ''}`
-              : ''}
-          </span>
-        </div>
-        <div class="cloud-sync-banner-actions">
-          <button
-            class="cloud-sync-btn-update"
-            @click=${this._handleLoadNewerBackup}
-            ?disabled=${this._isLoadingNewerBackup}
-          >
-            ${this._isLoadingNewerBackup
-              ? html`<ha-icon icon="mdi:loading" class="cloud-sync-loading"></ha-icon> Loading…`
-              : html`<ha-icon icon="mdi:cloud-download"></ha-icon> Update Now`}
-          </button>
-          <button
-            class="cloud-sync-btn-dismiss"
-            title="Not now"
-            @click=${this._handleDismissSyncNotification}
-            aria-label="Dismiss sync notification"
-          >
-            <ha-icon icon="mdi:close"></ha-icon>
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
   private _fullscreenRestoreMap: Array<{ el: HTMLElement; prev: string }> = [];
   private _fullscreenAttrRestore: Array<{ el: HTMLElement; attr: string; prev: string | null }> = [];
   private _fullscreenInjectedStyles: HTMLStyleElement[] = [];
@@ -774,7 +720,6 @@ export class UltraCardEditor extends LitElement {
     return html`
       <div class="card-config ${this._isFullScreen ? 'fullscreen' : ''} ${this._moduleSettingsOpen ? 'module-settings-open' : ''}">
         ${showHubBanner ? this._renderHubDiscoveryBanner() : ''}
-        ${this._renderSyncNotificationBanner()}
         <div class="tabs">
           ${this._isFullScreen
             ? html`
@@ -2056,116 +2001,6 @@ export class UltraCardEditor extends LitElement {
       }
 
       .hub-discovery-dismiss ha-icon {
-        --mdc-icon-size: 18px;
-      }
-
-      /* Cloud Sync notification banner */
-      .cloud-sync-banner {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 14px;
-        margin-bottom: 12px;
-        background: rgba(76, 175, 80, 0.08);
-        border: 1px solid rgba(76, 175, 80, 0.3);
-        border-radius: 10px;
-        font-size: 13px;
-        color: var(--primary-text-color);
-        line-height: 1.4;
-      }
-
-      .cloud-sync-banner-icon {
-        --mdc-icon-size: 22px;
-        color: #4caf50;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-      }
-
-      .cloud-sync-banner-body {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        min-width: 0;
-        gap: 2px;
-      }
-
-      .cloud-sync-banner-title {
-        font-weight: 600;
-        color: var(--primary-text-color);
-      }
-
-      .cloud-sync-banner-meta {
-        font-size: 11px;
-        color: var(--secondary-text-color);
-      }
-
-      .cloud-sync-banner-actions {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-shrink: 0;
-      }
-
-      .cloud-sync-btn-update {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        padding: 5px 11px;
-        border: none;
-        border-radius: 6px;
-        background: #4caf50;
-        color: #fff;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        white-space: nowrap;
-        transition: background 0.15s ease;
-      }
-
-      .cloud-sync-btn-update:hover:not(:disabled) {
-        background: #43a047;
-      }
-
-      .cloud-sync-btn-update:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-
-      .cloud-sync-btn-update ha-icon {
-        --mdc-icon-size: 15px;
-      }
-
-      @keyframes uc-spin {
-        to { transform: rotate(360deg); }
-      }
-
-      .cloud-sync-loading {
-        animation: uc-spin 0.8s linear infinite;
-        display: inline-flex;
-      }
-
-      .cloud-sync-btn-dismiss {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 28px;
-        height: 28px;
-        padding: 0;
-        border: none;
-        background: transparent;
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        border-radius: 6px;
-        flex-shrink: 0;
-      }
-
-      .cloud-sync-btn-dismiss:hover {
-        background: rgba(0, 0, 0, 0.06);
-        color: var(--primary-text-color);
-      }
-
-      .cloud-sync-btn-dismiss ha-icon {
         --mdc-icon-size: 18px;
       }
 
@@ -4508,26 +4343,6 @@ export class UltraCardEditor extends LitElement {
       this.requestUpdate();
     };
     ucCloudBackupService.addListener(this._backupListener);
-
-    // Check for newer backups (smart sync)
-    if (this._cloudUser) {
-      this._checkForNewerBackup();
-    }
-  }
-
-  /**
-   * Check for newer backup on server (smart sync)
-   */
-  private async _checkForNewerBackup() {
-    try {
-      const newerBackup = await ucCloudBackupService.checkForUpdates();
-      if (newerBackup) {
-        this._newerBackupAvailable = newerBackup;
-        this._showSyncNotification = true;
-      }
-    } catch (error) {
-      console.error('Failed to check for updates:', error);
-    }
   }
 
   /**
@@ -6389,32 +6204,6 @@ export class UltraCardEditor extends LitElement {
     } finally {
       this._isCreatingManualSnapshot = false;
     }
-  }
-
-  private async _handleLoadNewerBackup() {
-    if (!this._newerBackupAvailable || this._isLoadingNewerBackup) return;
-
-    this._isLoadingNewerBackup = true;
-
-    try {
-      const config = await ucCloudBackupService.restoreBackup(this._newerBackupAvailable.id);
-      this._updateConfig(config);
-      this._showSyncNotification = false;
-      this._newerBackupAvailable = null;
-    } catch (error) {
-      console.error('Failed to load newer backup:', error);
-      // Surface failure back in the banner without a blocking alert
-      this._showSyncNotification = false;
-      this._newerBackupAvailable = null;
-      ucToastService.error(error instanceof Error ? error.message : 'Failed to load backup');
-    } finally {
-      this._isLoadingNewerBackup = false;
-    }
-  }
-
-  private _handleDismissSyncNotification() {
-    this._showSyncNotification = false;
-    this._newerBackupAvailable = null;
   }
 
   /**

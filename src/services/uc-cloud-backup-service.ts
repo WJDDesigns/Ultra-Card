@@ -344,44 +344,6 @@ export class UcCloudBackupService {
   }
 
   /**
-   * Check for newer backup on server (smart sync)
-   */
-  async checkForUpdates(): Promise<CloudBackup | null> {
-    if (!ucCloudAuthService.isAuthenticated()) {
-      return null;
-    }
-
-    try {
-      const response = await this.listBackups(1, 1);
-
-      if (response.backups.length === 0) {
-        return null;
-      }
-
-      const latestRemote = response.backups[0];
-      const lastLocal = this._status.lastBackup;
-
-      if (!lastLocal) {
-        // No local backup time, fetch the latest
-        return this.getBackup(latestRemote.id);
-      }
-
-      const remoteTime = new Date(latestRemote.created).getTime();
-      const localTime = lastLocal.getTime();
-
-      if (remoteTime > localTime) {
-        // Newer backup found
-        return this.getBackup(latestRemote.id);
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Failed to check for updates:', error);
-      return null;
-    }
-  }
-
-  /**
    * Add status listener
    */
   addListener(listener: (status: BackupStatus) => void): void {

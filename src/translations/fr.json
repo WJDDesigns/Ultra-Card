@@ -1777,13 +1777,7 @@
       "last_backup": "Dernière sauvegarde : {time}",
       "saving": "Sauvegarde en cours...",
       "saved": "Sauvegardé dans le cloud",
-      "pending": "Modifications en attente",
-      "sync_notification": {
-        "title": "Nouvelle sauvegarde disponible",
-        "description": "Une nouvelle sauvegarde a été trouvée depuis un autre appareil",
-        "load": "Charger la version plus récente",
-        "dismiss": "Conserver l'actuelle"
-      }
+      "pending": "Modifications en attente"
     },
     "video_bg": {
       "title": "Arrière-plan vidéo (Pro)",

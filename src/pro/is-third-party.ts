@@ -14,6 +14,7 @@ export const FIRST_PARTY_TYPES: Set<string> = new Set([
   'markdown',
   'horizontal',
   'vertical',
+  'stack',
   'slider',
   'pagebreak',
   'camera',

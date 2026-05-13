@@ -646,7 +646,13 @@ function migrateModulesInList(
   for (const mod of modules) {
     if (!mod?.type) continue;
 
-    const isContainer = mod.type === 'vertical' || mod.type === 'horizontal';
+    const isContainer =
+      mod.type === 'vertical' ||
+      mod.type === 'horizontal' ||
+      mod.type === 'stack' ||
+      mod.type === 'accordion' ||
+      mod.type === 'popup' ||
+      mod.type === 'slider';
 
     if (MODULES_WITH_LEGACY_8PX_MARGIN.has(mod.type)) {
       const explicit = getExplicitMarginDirs(mod);

@@ -1777,13 +1777,7 @@
       "last_backup": "Laatste back-up: {time}",
       "saving": "Back-up opslaan...",
       "saved": "Opgeslagen in de cloud",
-      "pending": "Wijzigingen in afwachting",
-      "sync_notification": {
-        "title": "Nieuwere back-up beschikbaar",
-        "description": "Er is een nieuwere back-up gevonden van een ander apparaat",
-        "load": "Laad nieuwere versie",
-        "dismiss": "Houd huidige"
-      }
+      "pending": "Wijzigingen in afwachting"
     },
     "video_bg": {
       "title": "Video Achtergrond (Pro)",

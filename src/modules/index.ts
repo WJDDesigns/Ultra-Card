@@ -3,6 +3,7 @@
 export * from './base-module';
 export * from './module-registry';
 export { getModuleRegistry } from './module-registry';
+export { UltraStackModule } from './stack-module';
 
 // Export new services (used by editor/card)
 export { ucPresetsService } from '../services/uc-presets-service';

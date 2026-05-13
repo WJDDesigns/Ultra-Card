@@ -293,8 +293,8 @@ export class UltraDynamicListModule extends BaseUltraModule {
     author: 'WJD Designs',
     version: '1.0.0',
     icon: 'mdi:code-braces',
-    category: 'layout',
-    tags: ['dynamic', 'template', 'jinja2', 'list', 'loop', 'layout'],
+    category: 'data',
+    tags: ['dynamic', 'template', 'jinja2', 'list', 'loop', 'advanced'],
   };
 
   createDefault(id?: string): DynamicListModule {

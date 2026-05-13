@@ -1777,13 +1777,7 @@
       "last_backup": "Ultimo backup: {time}",
       "saving": "Salvataggio del backup...",
       "saved": "Salvato nel cloud",
-      "pending": "Modifiche in sospeso",
-      "sync_notification": {
-        "title": "Backup più recente disponibile",
-        "description": "È stato trovato un backup più recente da un altro dispositivo",
-        "load": "Carica versione più recente",
-        "dismiss": "Mantieni attuale"
-      }
+      "pending": "Modifiche in sospeso"
     },
     "video_bg": {
       "title": "Sfondo Video (Pro)",

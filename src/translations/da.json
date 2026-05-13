@@ -1777,13 +1777,7 @@
       "last_backup": "Sidste sikkerhedskopi: {time}",
       "saving": "Gemmer sikkerhedskopi...",
       "saved": "Gemmes i skyen",
-      "pending": "Ændringer afventer",
-      "sync_notification": {
-        "title": "Nyere sikkerhedskopi tilgængelig",
-        "description": "En nyere sikkerhedskopi blev fundet fra en anden enhed",
-        "load": "Indlæs nyere version",
-        "dismiss": "Behold nuværende"
-      }
+      "pending": "Ændringer afventer"
     },
     "video_bg": {
       "title": "Video Baggrund (Pro)",

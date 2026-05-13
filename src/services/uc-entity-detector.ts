@@ -169,6 +169,17 @@ class UcEntityDetectorService {
       case 'vertical':
         references.push(...this._scanVerticalModule(module as VerticalModule, basePath));
         break;
+      case 'stack': {
+        const sm = module as any;
+        if (Array.isArray(sm.modules)) {
+          sm.modules.forEach((nestedModule: CardModule, index: number) => {
+            references.push(
+              ...this._scanModule(nestedModule, `${basePath}.modules[${index}]`)
+            );
+          });
+        }
+        break;
+      }
       case 'map':
         references.push(...this._scanMapModule(module as MapModule, basePath));
         break;

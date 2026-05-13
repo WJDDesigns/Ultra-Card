@@ -223,8 +223,14 @@ class ThirdPartyLimitServiceImpl {
       results.push({ key, type: module.type });
 
       // Check if this is a container module and extract nested modules
-      if (module.type === 'horizontal' || module.type === 'vertical') {
-        const containerModule = module as any; // HorizontalModule | VerticalModule
+      if (
+        module.type === 'horizontal' ||
+        module.type === 'vertical' ||
+        module.type === 'stack' ||
+        module.type === 'accordion' ||
+        module.type === 'popup'
+      ) {
+        const containerModule = module as any;
         if (containerModule.modules?.length) {
           results.push(
             ...this._extractModulesRecursive(containerModule.modules, dashboardId, cardId)

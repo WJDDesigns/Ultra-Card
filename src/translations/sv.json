@@ -1777,13 +1777,7 @@
       "last_backup": "Senaste säkerhetskopian: {time}",
       "saving": "Sparar säkerhetskopian...",
       "saved": "Sparad till molnet",
-      "pending": "Ändringar väntar",
-      "sync_notification": {
-        "title": "Nyare säkerhetskopian finns tillgänglig",
-        "description": "En nyare säkerhetskopian hittades från en annan enhet",
-        "load": "Ladda nyare version",
-        "dismiss": "Behåll nuvarande"
-      }
+      "pending": "Ändringar väntar"
     },
     "video_bg": {
       "title": "Videobakgrund (Pro)",

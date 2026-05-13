@@ -1777,13 +1777,7 @@
       "last_backup": "Última copia de seguridad: {time}",
       "saving": "Guardando copia de seguridad...",
       "saved": "Guardado en la nube",
-      "pending": "Cambios pendientes",
-      "sync_notification": {
-        "title": "Copia de seguridad más nueva disponible",
-        "description": "Se encontró una copia de seguridad más nueva de otro dispositivo",
-        "load": "Cargar versión más nueva",
-        "dismiss": "Mantener actual"
-      }
+      "pending": "Cambios pendientes"
     },
     "video_bg": {
       "title": "Fondo de Video (Pro)",

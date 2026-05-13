@@ -1777,13 +1777,7 @@
       "last_backup": "Poslední záloha: {time}",
       "saving": "Ukládám zálohu...",
       "saved": "Uloženo do cloudu",
-      "pending": "Změny čekají",
-      "sync_notification": {
-        "title": "Novější záloha k dispozici",
-        "description": "Byla nalezena novější záloha z jiného zařízení",
-        "load": "Načíst novější verzi",
-        "dismiss": "Udržet aktuální"
-      }
+      "pending": "Změny čekají"
     },
     "video_bg": {
       "title": "Video Pozadí (Pro)",

@@ -1777,13 +1777,7 @@
       "last_backup": "Letztes Backup: {time}",
       "saving": "Backup wird gespeichert...",
       "saved": "In der Cloud gespeichert",
-      "pending": "Änderungen ausstehend",
-      "sync_notification": {
-        "title": "Neuere Backup verfügbar",
-        "description": "Ein neueres Backup wurde von einem anderen Gerät gefunden",
-        "load": "Neuere Version laden",
-        "dismiss": "Aktuell behalten"
-      }
+      "pending": "Änderungen ausstehend"
     },
     "video_bg": {
       "title": "Videohintergrund (Pro)",

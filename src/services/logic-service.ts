@@ -109,10 +109,14 @@ export class LogicService {
    */
   public evaluateDisplayConditions(
     conditions: DisplayCondition[],
-    displayMode: 'always' | 'every' | 'any' = 'always'
+    displayMode: 'always' | 'every' | 'any' | 'never' = 'always'
   ): boolean {
     if (!this._canEvaluateLogic()) {
       return true; // Show by default if hass not available
+    }
+
+    if (displayMode === 'never') {
+      return false;
     }
 
     // Always show if mode is 'always' or no conditions
@@ -145,6 +149,10 @@ export class LogicService {
     }
 
     const displayMode = module.display_mode || 'always';
+
+    if (displayMode === 'never') {
+      return false;
+    }
 
     // If display mode is "always", show the module regardless of template content
     if (displayMode === 'always') {

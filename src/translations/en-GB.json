@@ -1777,13 +1777,7 @@
       "last_backup": "Last backup: {time}",
       "saving": "Saving backup...",
       "saved": "Saved to cloud",
-      "pending": "Changes pending",
-      "sync_notification": {
-        "title": "Newer Backup Available",
-        "description": "A newer backup was found from another device",
-        "load": "Load Newer Version",
-        "dismiss": "Keep Current"
-      }
+      "pending": "Changes pending"
     },
     "video_bg": {
       "title": "Video Background (Pro)",

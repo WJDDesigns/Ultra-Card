@@ -88,6 +88,29 @@ export interface DisplayCondition {
   enabled?: boolean | undefined; // Whether this condition is active
 }
 
+/** Anchor points for Stack Overlay child positioning */
+export type StackAnchor =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'middle-left'
+  | 'center'
+  | 'middle-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right';
+
+/** Per-layer positioning when nested in a `stack` layout module */
+export interface StackLayerConfig {
+  anchor?: StackAnchor | undefined;
+  offset_x?: string | undefined;
+  offset_y?: string | undefined;
+  width?: string | undefined;
+  height?: string | undefined;
+  opacity?: number | undefined;
+  z_index_override?: number | undefined;
+}
+
 // Base module interface that all modules extend
 export interface BaseModule {
   id: string;
@@ -114,6 +137,7 @@ export interface BaseModule {
     | 'light'
     | 'gauge'
     | 'spinbox'
+    | 'stack'
     | 'animated_clock'
     | 'animated_weather'
     | 'animated_forecast'
@@ -162,7 +186,7 @@ export interface BaseModule {
     | 'screensaver';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
-  display_mode?: 'always' | 'every' | 'any' | undefined;
+  display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
   display_conditions?: DisplayCondition[] | undefined;
   // Responsive visibility - hide on specific device breakpoints
   hidden_on_devices?: DeviceBreakpoint[] | undefined;
@@ -245,6 +269,8 @@ export interface BaseModule {
     | undefined;
   // New design properties with priority system
   design?: SharedDesignProperties | undefined;
+  /** When nested inside a Stack Overlay layout — ignored by other containers */
+  stack_layer?: StackLayerConfig | undefined;
   // Action confirmation - when enabled, shows a confirmation dialog before executing actions
   confirm_action?: boolean | undefined;
   // Confirmation dialog customization
@@ -1463,6 +1489,63 @@ export interface VerticalModule extends BaseModule {
   gap?: number | undefined;
   gap_unit?: 'px' | 'rem' | 'em' | '%' | 'vw' | 'vh' | undefined;
   // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string | undefined;
+    navigation_path?: string | undefined;
+    url_path?: string | undefined;
+    service?: string | undefined;
+    service_data?: Record<string, any> | undefined;
+  } | undefined;
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string | undefined;
+    navigation_path?: string | undefined;
+    url_path?: string | undefined;
+    service?: string | undefined;
+    service_data?: Record<string, any> | undefined;
+  } | undefined;
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string | undefined;
+    navigation_path?: string | undefined;
+    url_path?: string | undefined;
+    service?: string | undefined;
+    service_data?: Record<string, any> | undefined;
+  } | undefined;
+}
+
+// Stack Overlay layout — layers children with absolute positioning / anchors
+export interface StackModule extends BaseModule {
+  type: 'stack';
+  modules: CardModule[];
+  aspect_ratio?: '16:9' | '4:3' | '3:2' | '1:1' | '2:3' | 'auto' | undefined;
+  height?: string | undefined;
+  clip_overflow?: boolean | undefined;
   tap_action?: {
     action:
       | 'default'
@@ -4772,6 +4855,7 @@ export type CardModule =
   | IconModule
   | HorizontalModule
   | VerticalModule
+  | StackModule
   | AccordionModule
   | PopupModule
   | SliderModule

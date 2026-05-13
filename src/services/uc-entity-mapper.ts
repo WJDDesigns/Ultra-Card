@@ -224,6 +224,16 @@ class UcEntityMapperService {
       case 'vertical':
         mappedModule = this._mapVerticalModule(module as VerticalModule, mappingMap);
         break;
+      case 'stack': {
+        const sm = module as any;
+        mappedModule = {
+          ...sm,
+          modules: sm.modules?.map((nested: CardModule) =>
+            this._mapModule(nested, mappingMap)
+          ),
+        } as CardModule;
+        break;
+      }
       case 'map':
         mappedModule = this._mapMapModule(module as MapModule, mappingMap);
         break;

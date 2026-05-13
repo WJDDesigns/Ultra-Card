@@ -1777,13 +1777,7 @@
       "last_backup": "Ostatnia kopia zapasowa: {time}",
       "saving": "Zapisuję kopię zapasową...",
       "saved": "Zapisano w chmurze",
-      "pending": "Zmiany oczekujące",
-      "sync_notification": {
-        "title": "Dostępna nowsza kopia zapasowa",
-        "description": "Znaleziono nowszą kopię zapasową z innego urządzenia",
-        "load": "Załaduj nowszą wersję",
-        "dismiss": "Zachowaj bieżącą"
-      }
+      "pending": "Zmiany oczekujące"
     },
     "video_bg": {
       "title": "Tło wideo (Pro)",

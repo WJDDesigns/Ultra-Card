@@ -17,6 +17,7 @@ export const coreLoaders: Record<string, ModuleLoader> = {
   markdown: () => import(/* webpackMode: "eager" */ './markdown-module').then(m => new m.UltraMarkdownModule()),
   horizontal: () => import(/* webpackMode: "eager" */ './horizontal-module').then(m => new m.UltraHorizontalModule()),
   vertical: () => import(/* webpackMode: "eager" */ './vertical-module').then(m => new m.UltraVerticalModule()),
+  stack: () => import(/* webpackMode: "eager" */ './stack-module').then(m => new m.UltraStackModule()),
   accordion: () => import(/* webpackMode: "eager" */ './accordion-module').then(m => new m.UltraAccordionModule()),
   popup: () => import(/* webpackMode: "eager" */ './popup-module').then(m => new m.UltraPopupModule()),
   slider: () => import(/* webpackMode: "eager" */ './slider-module').then(m => new m.UltraSliderModule()),

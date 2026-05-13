@@ -718,8 +718,16 @@ class UcExportImportService {
     // Generate new ID for the module itself
     module.id = `${module.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // If this is a layout module (horizontal/vertical/accordion/popup), regenerate IDs for all nested modules
-    if ((module.type === 'horizontal' || module.type === 'vertical' || module.type === 'accordion' || module.type === 'popup') && module.modules) {
+    // If this is a layout module (horizontal/vertical/stack/accordion/popup/slider), regenerate IDs for all nested modules
+    if (
+      (module.type === 'horizontal' ||
+        module.type === 'vertical' ||
+        module.type === 'stack' ||
+        module.type === 'accordion' ||
+        module.type === 'popup' ||
+        module.type === 'slider') &&
+      module.modules
+    ) {
       module.modules.forEach((childModule: any) => {
         this._regenerateModuleIds(childModule); // Recursive for nested layouts
       });

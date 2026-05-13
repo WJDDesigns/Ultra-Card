@@ -1777,13 +1777,7 @@
       "last_backup": "Siste sikkerhetskopi: {time}",
       "saving": "Lagrer sikkerhetskopi...",
       "saved": "Lagrert til skyen",
-      "pending": "Endringer venter",
-      "sync_notification": {
-        "title": "Nyere sikkerhetskopi tilgjengelig",
-        "description": "En nyere sikkerhetskopi ble funnet fra en annen enhet",
-        "load": "Last inn nyere versjon",
-        "dismiss": "Behold nåværende"
-      }
+      "pending": "Endringer venter"
     },
     "video_bg": {
       "title": "Videobakgrunn (Pro)",
