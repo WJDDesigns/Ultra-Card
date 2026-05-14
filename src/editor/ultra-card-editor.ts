@@ -225,6 +225,11 @@ export class UltraCardEditor extends LitElement {
     this._resizeListener = resizeListener;
     window.addEventListener('resize', resizeListener);
 
+    // On mobile, relocate HA's preview pane to sit between our tabs and the
+    // editor content. Defer one tick so the dialog tree is fully connected
+    // before we walk it.
+    setTimeout(() => this._syncPreviewPosition(), 0);
+
     // Inject module-level CSS so previews inside the editor show correct
     // animations (e.g. icon spin, pulse, etc.).
     this._injectModuleStyles();
@@ -334,6 +339,7 @@ export class UltraCardEditor extends LitElement {
     // Clean up full screen class and dialog styles if still applied
     document.body.classList.remove('ultra-card-fullscreen');
     this._restoreFromFullscreen();
+    this._restorePreviewToDialog();
 
     // Cleanup cloud sync listeners
     this._cleanupCloudSyncListeners();
@@ -358,6 +364,13 @@ export class UltraCardEditor extends LitElement {
     // If we switched to mobile and are in fullscreen, exit fullscreen
     if (this._isMobile && !wasMobile && this._isFullScreen) {
       this._toggleFullScreen();
+    }
+
+    // If the mobile state changed, move HA's preview pane to its appropriate
+    // location so it sits below our tabs on phones / next to the editor on
+    // desktop.
+    if (this._isMobile !== wasMobile) {
+      this._syncPreviewPosition();
     }
   }
 
@@ -514,6 +527,14 @@ export class UltraCardEditor extends LitElement {
   private _fullscreenInjectedStyles: HTMLStyleElement[] = [];
   private static readonly FULLSCREEN_INSET_PX = 24;
 
+  /** State for relocating HA's `.element-preview` div into our editor on mobile.
+   * On phones we project the preview through a slot between the Builder /
+   * Card Settings tabs and the editor's content. On desktop / when the editor
+   * disconnects the preview is moved back to its original parent. */
+  private _haPreviewEl: HTMLElement | null = null;
+  private _haPreviewOriginalParent: HTMLElement | null = null;
+  private _haPreviewOriginalNextSibling: Node | null = null;
+
   private _toggleFullScreen(): void {
     this._isFullScreen = !this._isFullScreen;
 
@@ -554,6 +575,71 @@ export class UltraCardEditor extends LitElement {
       }
     }
     return null;
+  }
+
+  /**
+   * On phones, move HA's `.element-preview` div from the parent
+   * `hui-dialog-edit-card` into our component's light DOM with a slot
+   * attribute. Our shadow-DOM template projects it via a `<slot>` placed
+   * between the Builder/Card Settings tabs and the editor content, so the
+   * card preview appears right under the tabs (where users glance at it
+   * while editing) instead of at the very bottom of the dialog.
+   *
+   * Moving the actual element (rather than cloning) keeps HA's preview-update
+   * machinery intact — `<hui-card-preview>` retains all its references and
+   * receives config updates exactly as before.
+   */
+  private _movePreviewIntoEditor(): void {
+    if (this._haPreviewEl) return;
+
+    const dialog = this._findContainingHaDialog();
+    if (!dialog) return;
+
+    const preview = dialog.querySelector('.element-preview') as HTMLElement | null;
+    if (!preview) return;
+
+    this._haPreviewOriginalParent = preview.parentElement;
+    this._haPreviewOriginalNextSibling = preview.nextSibling;
+
+    preview.setAttribute('slot', 'ha-preview');
+    preview.classList.add('uc-mobile-preview-slotted');
+    this.appendChild(preview);
+    this._haPreviewEl = preview;
+  }
+
+  /**
+   * Move HA's `.element-preview` div back to its original location in the
+   * dialog so HA's normal side-by-side layout works on desktop.
+   */
+  private _restorePreviewToDialog(): void {
+    if (!this._haPreviewEl) return;
+
+    const preview = this._haPreviewEl;
+    preview.removeAttribute('slot');
+    preview.classList.remove('uc-mobile-preview-slotted');
+
+    const originalParent = this._haPreviewOriginalParent;
+    const originalNextSibling = this._haPreviewOriginalNextSibling;
+    if (originalParent && originalParent.isConnected) {
+      if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
+        originalParent.insertBefore(preview, originalNextSibling);
+      } else {
+        originalParent.appendChild(preview);
+      }
+    }
+
+    this._haPreviewEl = null;
+    this._haPreviewOriginalParent = null;
+    this._haPreviewOriginalNextSibling = null;
+  }
+
+  /** Sync the preview position with the current `_isMobile` state. */
+  private _syncPreviewPosition(): void {
+    if (this._isMobile) {
+      this._movePreviewIntoEditor();
+    } else {
+      this._restorePreviewToDialog();
+    }
   }
 
   private _applyFullscreen(): void {
@@ -750,6 +836,12 @@ export class UltraCardEditor extends LitElement {
                 </button>
               `
             : ''}
+        </div>
+
+        <!-- Mobile only: HA's element-preview div is moved into this slot at
+             runtime so the card preview sits between the tabs and the editor. -->
+        <div class="mobile-ha-preview">
+          <slot name="ha-preview"></slot>
         </div>
 
         <div class="tab-content">
@@ -2266,6 +2358,32 @@ export class UltraCardEditor extends LitElement {
       /* Full screen mode tab content */
       .card-config.fullscreen .tab-content {
         min-height: calc(100vh - 120px);
+      }
+
+      /* Mobile-only slot for HA's element-preview div. Empty (and collapsed)
+         on desktop because the preview lives in HA's own pane next to the
+         editor. On phones we move HA's preview element into this slot at
+         runtime. */
+      .mobile-ha-preview {
+        display: contents;
+      }
+
+      .mobile-ha-preview ::slotted(.element-preview) {
+        display: block;
+        margin: 8px 0 12px;
+        padding: 8px;
+        background: var(--card-background-color, var(--primary-background-color));
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* Hide the projected preview while the user is in fullscreen mode —
+         Ultra Card's own preview at the top of the layout tab is the active
+         one in that view. */
+      .card-config.fullscreen .mobile-ha-preview ::slotted(.element-preview) {
+        display: none !important;
       }
 
       .settings-tab,

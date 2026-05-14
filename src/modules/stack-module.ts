@@ -118,7 +118,8 @@ function aspectRatioToPaddingTop(ar: NonNullable<StackModule['aspect_ratio']>): 
  */
 function getStackLayerStyles(
   cfg: StackLayerConfig | undefined,
-  orderZ: number
+  orderZ: number,
+  options?: { allowChildOverflow?: boolean }
 ): { wrapper: string; child: string } {
   const anchor: StackAnchor = cfg?.anchor ?? 'center';
   const ox = cfg?.offset_x ?? '0px';
@@ -186,11 +187,16 @@ function getStackLayerStyles(
     'overflow:visible',
   ].join(';');
 
+  // When the child uses a 3D transform (rotateX/Y/Z), its rotated corners
+  // naturally extend beyond the layer's axis-aligned rectangle. Clipping the
+  // layer would chop the rotated corners off, so we relax overflow when the
+  // caller asks us to.
+  const childOverflow = options?.allowChildOverflow ? 'visible' : 'hidden';
   const child = [
     `width:${w}`,
     `height:${h}`,
-    'max-width:100%',
-    'max-height:100%',
+    options?.allowChildOverflow ? 'max-width:none' : 'max-width:100%',
+    options?.allowChildOverflow ? 'max-height:none' : 'max-height:100%',
     'min-width:0',
     'min-height:0',
     'pointer-events:auto',
@@ -200,7 +206,7 @@ function getStackLayerStyles(
     // (potentially much larger than the layer) and visually overflow into
     // unexpected positions, making the layer appear blank when the parent
     // stack clips with overflow:hidden.
-    'overflow:hidden',
+    `overflow:${childOverflow}`,
     // Children of the inner module rendering use display:flex to ensure
     // the rendered module fills the available space cleanly.
     'display:flex',
@@ -1256,9 +1262,17 @@ export class UltraStackModule extends BaseUltraModule {
                       visibleChildren,
                       cm => cm.id || cm.type,
                       (childModule, index) => {
+                        const childDesign = (childModule as any).design || {};
+                        const has3dTransform = !!(
+                          childDesign.transform_perspective ||
+                          childDesign.transform_rotate_x ||
+                          childDesign.transform_rotate_y ||
+                          childDesign.transform_rotate_z
+                        );
                         const styles = getStackLayerStyles(
                           (childModule as CardModule & { stack_layer?: StackLayerConfig }).stack_layer,
-                          index + 1
+                          index + 1,
+                          { allowChildOverflow: has3dTransform }
                         );
                         return html`
                           <div class="stack-layer-wrapper" style="${styles.wrapper}">

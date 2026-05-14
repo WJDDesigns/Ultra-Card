@@ -41,6 +41,7 @@ import { Z_INDEX } from '../utils/uc-z-index';
 import { dbg3p } from '../utils/uc-debug';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { generateCSSVariables } from '../utils/css-variable-utils';
+import { build3dTransformStyles } from '../utils/transform-3d-utils';
 import {
   ThirdPartyLimitService,
   getCurrentDashboardId,
@@ -3157,6 +3158,8 @@ export class UltraCard extends LitElement {
           ? `${design.box_shadow_h || '0'} ${design.box_shadow_v || '0'} ${design.box_shadow_blur || '0'} ${design.box_shadow_spread || '0'} ${design.box_shadow_color || 'rgba(0,0,0,0.1)'}`
           : 'none',
       boxSizing: 'border-box',
+      // 3D Transform (perspective + rotateX/Y/Z) — empty when no properties set
+      ...build3dTransformStyles(design),
     };
 
     if (hasBackgroundFilter) {
@@ -3325,6 +3328,8 @@ export class UltraCard extends LitElement {
           ? `${design.box_shadow_h || '0'} ${design.box_shadow_v || '0'} ${design.box_shadow_blur || '0'} ${design.box_shadow_spread || '0'} ${design.box_shadow_color || 'rgba(0,0,0,0.1)'}`
           : 'none',
       boxSizing: 'border-box',
+      // 3D Transform (perspective + rotateX/Y/Z) — empty when no properties set
+      ...build3dTransformStyles(design),
     };
 
     if (hasBackgroundFilter) {

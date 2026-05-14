@@ -10,6 +10,7 @@ import { ucGestureService, GestureConfig } from '../services/uc-gesture-service'
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { getImageUrl } from '../utils/image-upload';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
+import { build3dTransformStyles } from '../utils/transform-3d-utils';
 
 // Module metadata interface
 export interface ModuleMetadata {
@@ -1101,6 +1102,7 @@ export abstract class BaseUltraModule implements UltraModule {
     return String(value);
   }
 
+
   /**
    * Get padding CSS string from module design properties
    */
@@ -1368,6 +1370,10 @@ export abstract class BaseUltraModule implements UltraModule {
     if (effective.overflow) {
       styles.overflow = effective.overflow;
     }
+
+    // 3D Transform (perspective + rotateX/Y/Z) — shared util keeps logic identical
+    // across base modules, bar module, and row/column rendering.
+    Object.assign(styles, build3dTransformStyles(effective));
 
     return styles;
   }

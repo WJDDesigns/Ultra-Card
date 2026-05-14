@@ -76,6 +76,9 @@ hacs-submission-instructions.md
 update-for-directories-pro.md
 directories-pro-presets-service-update.ts
 
+# Temp changelog input files used by scripts/release.js --changelog-file
+.release-changelog-*.txt
+
 # Keep essential docs (exceptions to above patterns)
 !README.md
 !CONTRIBUTING_TRANSLATIONS.md

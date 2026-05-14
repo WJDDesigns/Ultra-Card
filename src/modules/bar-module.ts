@@ -23,6 +23,7 @@ import {
   generateGradientString,
   createDefaultGradientStops,
 } from '../components/uc-gradient-editor';
+import { build3dTransformStyles } from '../utils/transform-3d-utils';
 
 export class UltraBarModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -4888,6 +4889,7 @@ export class UltraBarModule extends BaseUltraModule {
             : 'none',
       display: 'flex',
       flexDirection: 'column',
+      ...build3dTransformStyles({ ...moduleWithDesign, ...designProperties }),
     };
 
     // Create gesture handlers using centralized service

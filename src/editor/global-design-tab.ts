@@ -190,6 +190,11 @@ export interface DesignProperties {
   box_shadow_color?: string | undefined;
   overflow?: 'visible' | 'hidden' | 'scroll' | 'auto' | undefined;
   clip_path?: string | undefined;
+  // 3D Transform properties (perspective + rotateX/Y/Z)
+  transform_perspective?: string | undefined;
+  transform_rotate_x?: string | undefined;
+  transform_rotate_y?: string | undefined;
+  transform_rotate_z?: string | undefined;
   animation_type?:
     | 'none'
     | 'pulse'
@@ -934,6 +939,12 @@ export class GlobalDesignTab extends LitElement {
         resetProperties.overflow = undefined;
         resetProperties.clip_path = undefined;
         break;
+      case 'transform-3d':
+        resetProperties.transform_perspective = undefined;
+        resetProperties.transform_rotate_x = undefined;
+        resetProperties.transform_rotate_y = undefined;
+        resetProperties.transform_rotate_z = undefined;
+        break;
       case 'animations':
         resetProperties.animation_type = undefined;
         resetProperties.animation_entity = undefined;
@@ -949,6 +960,11 @@ export class GlobalDesignTab extends LitElement {
         resetProperties.intro_animation_duration = undefined;
         resetProperties.intro_animation_delay = undefined;
         resetProperties.intro_animation_timing = undefined;
+        break;
+      case 'custom_targeting':
+        resetProperties.css_variable_prefix = undefined;
+        resetProperties.extra_class = undefined;
+        resetProperties.element_id = undefined;
         break;
     }
 
@@ -1551,6 +1567,15 @@ export class GlobalDesignTab extends LitElement {
         );
       case 'effects':
         return !!(hasValue(props.overflow) || hasValue(props.clip_path));
+      case 'overflow':
+        return !!(hasValue(props.overflow) || hasValue(props.clip_path));
+      case 'transform-3d':
+        return !!(
+          hasValue(props.transform_perspective) ||
+          hasValue(props.transform_rotate_x) ||
+          hasValue(props.transform_rotate_y) ||
+          hasValue(props.transform_rotate_z)
+        );
       case 'animations':
         return !!(
           hasValue(props.animation_type) ||
@@ -1568,7 +1593,11 @@ export class GlobalDesignTab extends LitElement {
           hasValue(props.intro_animation_timing)
         );
       case 'custom_targeting':
-        return !!hasValue(props.css_variable_prefix);
+        return !!(
+          hasValue(props.css_variable_prefix) ||
+          hasValue(props.extra_class) ||
+          hasValue(props.element_id)
+        );
       default:
         return false;
     }
@@ -3672,6 +3701,179 @@ export class GlobalDesignTab extends LitElement {
           ['overflow', 'clip_path']
         )}
         ${this._renderAccordion(
+          localize('editor.design.transform_3d_section', lang, '3D Transform'),
+          html`
+            <div class="property-hint" style="margin-bottom: 12px;">
+              ${localize(
+                'editor.design.transform_3d_desc',
+                lang,
+                'Tilt or rotate the module in 3D space. Set perspective for depth, then rotate on X (tilt forward/back), Y (turn left/right), or Z (spin).'
+              )}
+            </div>
+
+            <div class="property-group">
+              <label
+                >${localize(
+                  'editor.design.transform_3d_perspective',
+                  lang,
+                  'Perspective'
+                )}:</label
+              >
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${effectiveDesign.transform_perspective || ''}
+                  @input=${this._createRobustInputHandler(
+                    'transform_perspective',
+                    (value: string) => this._updateProperty('transform_perspective', value)
+                  )}
+                  placeholder=${localize(
+                    'editor.design.transform_3d_perspective_placeholder',
+                    lang,
+                    'none, 400px, 1000px'
+                  )}
+                  autocomplete="off"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('transform_perspective', '')}
+                  title="Reset perspective to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
+            </div>
+
+            <div class="property-group">
+              <label
+                >${localize(
+                  'editor.design.transform_3d_rotate_x',
+                  lang,
+                  'Rotate X'
+                )}:</label
+              >
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${effectiveDesign.transform_rotate_x || ''}
+                  @input=${this._createRobustInputHandler(
+                    'transform_rotate_x',
+                    (value: string) => this._updateProperty('transform_rotate_x', value)
+                  )}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(
+                      e,
+                      this.designProperties.transform_rotate_x || '',
+                      value => this._updateProperty('transform_rotate_x', value)
+                    )}
+                  placeholder=${localize(
+                    'editor.design.transform_3d_rotate_placeholder',
+                    lang,
+                    'Degrees (-180 to 180)'
+                  )}
+                  autocomplete="off"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('transform_rotate_x', '')}
+                  title="Reset rotate X to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
+            </div>
+
+            <div class="property-group">
+              <label
+                >${localize(
+                  'editor.design.transform_3d_rotate_y',
+                  lang,
+                  'Rotate Y'
+                )}:</label
+              >
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${effectiveDesign.transform_rotate_y || ''}
+                  @input=${this._createRobustInputHandler(
+                    'transform_rotate_y',
+                    (value: string) => this._updateProperty('transform_rotate_y', value)
+                  )}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(
+                      e,
+                      this.designProperties.transform_rotate_y || '',
+                      value => this._updateProperty('transform_rotate_y', value)
+                    )}
+                  placeholder=${localize(
+                    'editor.design.transform_3d_rotate_placeholder',
+                    lang,
+                    'Degrees (-180 to 180)'
+                  )}
+                  autocomplete="off"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('transform_rotate_y', '')}
+                  title="Reset rotate Y to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
+            </div>
+
+            <div class="property-group">
+              <label
+                >${localize(
+                  'editor.design.transform_3d_rotate_z',
+                  lang,
+                  'Rotate Z'
+                )}:</label
+              >
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${effectiveDesign.transform_rotate_z || ''}
+                  @input=${this._createRobustInputHandler(
+                    'transform_rotate_z',
+                    (value: string) => this._updateProperty('transform_rotate_z', value)
+                  )}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(
+                      e,
+                      this.designProperties.transform_rotate_z || '',
+                      value => this._updateProperty('transform_rotate_z', value)
+                    )}
+                  placeholder=${localize(
+                    'editor.design.transform_3d_rotate_placeholder',
+                    lang,
+                    'Degrees (-180 to 180)'
+                  )}
+                  autocomplete="off"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('transform_rotate_z', '')}
+                  title="Reset rotate Z to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
+            </div>
+          `,
+          'transform-3d',
+          [
+            'transform_perspective',
+            'transform_rotate_x',
+            'transform_rotate_y',
+            'transform_rotate_z',
+          ]
+        )}
+        ${this._renderAccordion(
           localize('editor.design.animations_section', lang, 'Animations'),
           html`
             <!-- State-based Animation -->
@@ -4216,8 +4418,51 @@ export class GlobalDesignTab extends LitElement {
                 )}
               </div>
             </div>
+            <div class="property-group">
+              <label>${localize('editor.design.extra_class', lang, 'Extra CSS classes')}:</label>
+              <input
+                type="text"
+                .value=${effectiveDesign.extra_class || ''}
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  this._updateProperty('extra_class', target.value);
+                }}
+                placeholder="my-class another-class"
+                autocomplete="off"
+                class="property-input"
+              />
+              <div class="field-description">
+                ${localize(
+                  'editor.design.extra_class_desc',
+                  lang,
+                  'Space-separated class names applied to the module container (for card-mod or themes).'
+                )}
+              </div>
+            </div>
+            <div class="property-group">
+              <label>${localize('editor.design.element_id', lang, 'Element ID')}:</label>
+              <input
+                type="text"
+                .value=${effectiveDesign.element_id || ''}
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  this._updateProperty('element_id', target.value);
+                }}
+                placeholder="my-unique-id"
+                autocomplete="off"
+                class="property-input"
+              />
+              <div class="field-description">
+                ${localize(
+                  'editor.design.element_id_desc',
+                  lang,
+                  'Optional HTML id on the module root (use sparingly; must be unique on the page).'
+                )}
+              </div>
+            </div>
           `,
-          'custom_targeting'
+          'custom_targeting',
+          ['css_variable_prefix', 'extra_class', 'element_id']
         )}
       </div>
     `;

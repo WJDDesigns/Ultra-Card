@@ -1,5 +1,19 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.4.0-beta9
+
+### 🚀 New Features
+
+- **Added 3D Transform controls to the Design tab** - Every module, row, and column now gets a new "3D Transform" section in its Design tab with a perspective field plus rotateX, rotateY, and rotateZ fields, so you can tilt cards forward/back, turn them left/right, or spin them in place using one or more transform properties. A shared transform-3d-utils helper keeps the behavior identical for plain modules, the Bar module, and the Stack Overlay container, and Stack layers automatically relax overflow clipping when a child uses a 3D transform so rotated corners no longer get chopped off at the layer boundary.
+
+### 🔧 Improvements
+
+- **Improved mobile editor by docking the live preview directly under the tabs** - On phones, Home Assistant's live card preview was previously pushed to the bottom of the edit dialog where it was easy to miss while scrolling through fields. The editor now relocates HA's .element-preview node into a slot between the Builder / Card Settings tabs and the form content so the preview sits right where you're working. The actual DOM node is moved (not cloned) so HA's preview-update machinery is unaffected, and the element is restored to its original parent when the dialog closes or the viewport widens back to desktop.
+- **Improved Layout tab maintainability by removing dead code** - Dropped a legacy "Other" sub-tab from the Tabs-section child editor (about 30 lines), removed an unreachable _renderLogicTab method (about 108 lines that was superseded by the shared GlobalLogicTab.render path), and cleaned up an out-of-scope isBarModule reference inside row-design rendering. Net effect: layout-tab.ts is 29 lines smaller and easier to reason about, with no behavior change.
+- **Improved Layout tab test coverage and module-audit tooling** - Six new Vitest suites (about 700 lines) cover the tab structure for every module type (modules, rows, columns, layout containers, tabs-section children, plus an all-modules general-tab harness) so future module additions can't accidentally drop or rename a tab. A companion scripts/audit-module-tabs.cjs script walks every module and writes docs/sanity-check/design-area-tabs-audit.md so we can spot-check which Design areas each module surfaces. Test environment switched from node to jsdom (with a shared setup file) so module render paths can be exercised end-to-end.
+
+---
+
 ## Version 3.4.0-beta8
 
 ### 🚀 New Features

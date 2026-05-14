@@ -106,7 +106,6 @@ export class LayoutTab extends LitElement {
     moduleIndex: number;
   } | null = null;
   @state() private _activeModuleTab = 'general';
-  @state() private _activeDesignSubtab = 'text';
 
   // Row settings state
   @state() private _showRowSettings = false;
@@ -10831,6 +10830,23 @@ export class LayoutTab extends LitElement {
     // Other properties
     if (updates.hasOwnProperty('overflow')) moduleUpdates.overflow = updates.overflow;
     if (updates.hasOwnProperty('clip_path')) moduleUpdates.clip_path = updates.clip_path;
+
+    // 3D Transform properties — must be in design object (not top-level) since
+    // buildDesignStyles reads them via `effective = {...mod, ...mod.design}` and
+    // the user can also use them via responsive overrides (which target design.*).
+    const transformKeys = [
+      'transform_perspective',
+      'transform_rotate_x',
+      'transform_rotate_y',
+      'transform_rotate_z',
+    ] as const;
+    for (const key of transformKeys) {
+      if (updates.hasOwnProperty(key)) {
+        const currentModule = this._getModuleForDesignUpdate();
+        if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+        moduleUpdates.design[key] = normalizeValue((updates as any)[key]);
+      }
+    }
 
     // Spacing properties
     if (updates.hasOwnProperty('margin_top')) moduleUpdates.margin_top = updates.margin_top;
@@ -22864,12 +22880,10 @@ export class LayoutTab extends LitElement {
       module.type !== 'external_card' &&
       moduleHandler &&
       typeof (moduleHandler as any).renderActionsTab === 'function';
-    const hasOtherTab = false;
 
     // Ensure active tab is valid for this module
     if (
       (this._activeTabsChildTab === 'actions' && !hasActionsTab) ||
-      (this._activeTabsChildTab === 'other' && !hasOtherTab) ||
       (this._activeTabsChildTab === 'yaml' && module.type !== 'external_card')
     ) {
       this._activeTabsChildTab = 'general';
@@ -22972,16 +22986,6 @@ export class LayoutTab extends LitElement {
                     </button>
                   `
                 : ''}
-            ${hasOtherTab
-              ? html`
-                  <button
-                    class="module-tab ${this._activeTabsChildTab === 'other' ? 'active' : ''}"
-                    @click=${() => (this._activeTabsChildTab = 'other')}
-                  >
-                    ${localize('editor.layout.other_tab', lang, 'Other')}
-                  </button>
-                `
-              : ''}
             <button
               class="module-tab ${this._activeTabsChildTab === 'logic' ? 'active' : ''}"
               @click=${() => (this._activeTabsChildTab = 'logic')}
@@ -23009,9 +23013,6 @@ export class LayoutTab extends LitElement {
               : ''}
             ${this._activeTabsChildTab === 'actions' && hasActionsTab
               ? this._renderTabsSectionChildActionsTab(module)
-              : ''}
-            ${this._activeTabsChildTab === 'other' && hasOtherTab
-              ? this._renderTabsSectionChildOtherTab(module)
               : ''}
             ${this._activeTabsChildTab === 'logic'
               ? this._renderTabsSectionChildLogicTab(module)
@@ -23207,11 +23208,6 @@ export class LayoutTab extends LitElement {
         (updates: any) => this._updateTabsSectionChild(updates)
       ) ?? html``
     );
-  }
-
-  private _renderTabsSectionChildOtherTab(module: any): TemplateResult {
-    // Legacy tab - not used anymore
-    return html``;
   }
 
   private _renderTabsSectionChildLogicTab(module: any): TemplateResult {
@@ -24641,6 +24637,11 @@ export class LayoutTab extends LitElement {
       animation_delay: (module as any).design?.animation_delay || (module as any).animation_delay,
       animation_timing:
         (module as any).design?.animation_timing || (module as any).animation_timing,
+      // 3D Transform properties (design-only)
+      transform_perspective: (module as any).design?.transform_perspective,
+      transform_rotate_x: (module as any).design?.transform_rotate_x,
+      transform_rotate_y: (module as any).design?.transform_rotate_y,
+      transform_rotate_z: (module as any).design?.transform_rotate_z,
     };
 
     const result = html`
@@ -25421,7 +25422,6 @@ export class LayoutTab extends LitElement {
 
   private _renderRowDesignTab(row: CardRow): TemplateResult {
     // Extract current design properties from row
-    const isBarModule = (module as any)?.type === 'bar';
     const designProperties: DesignProperties = {
       ...row.design,
       // Map legacy properties to design properties if they exist
@@ -26583,108 +26583,6 @@ export class LayoutTab extends LitElement {
     `;
   }
 
-  private _renderLogicTab(module: CardModule): TemplateResult {
-    const conditions = module.display_conditions || [];
-    const displayMode = module.display_mode || 'always';
-    const templateMode = false; // Advanced Template Mode removed; use Display Conditions instead
-
-    const lang = this.hass?.locale?.language || 'en';
-    return html`
-      <div class="logic-tab-content">
-        <!-- Basic Conditions Section -->
-        <div class="logic-section">
-          <div class="section-header">
-            <h3>${localize('editor.layout_logic.display_title', lang, 'Display this Element')}</h3>
-          </div>
-
-          <div class="template-description">
-            ${localize(
-              'editor.layout_logic.display_desc',
-              lang,
-              'Control when this element is shown. Choose "Always" to keep it visible. Select "If EVERY condition below is met" or "If ANY condition below is met" to display it only when the conditions you add below evaluate to true.'
-            )}
-          </div>
-
-          <div class="display-mode-selector">
-            <select
-              .value=${displayMode}
-              @change=${(e: Event) => {
-                const value = (e.target as HTMLSelectElement).value as 'always' | 'every' | 'any';
-                this._updateModule({ display_mode: value });
-              }}
-              class="display-mode-dropdown"
-            >
-              <option value="always">
-                ${localize('editor.layout_logic.always', lang, 'Always')}
-              </option>
-              <option value="every">
-                ${localize('editor.layout_logic.every', lang, 'If EVERY condition below is met')}
-              </option>
-              <option value="any">
-                ${localize('editor.layout_logic.any', lang, 'If ANY condition below is met')}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Conditions Section -->
-        ${displayMode !== 'always'
-          ? html`
-              <div class="conditions-section">
-                <div class="conditions-header">
-                  <h4>${localize('editor.layout_logic.conditions', lang, 'Conditions')}</h4>
-                  <button
-                    type="button"
-                    class="add-condition-btn"
-                    @click=${() => this._addCondition(module)}
-                  >
-                    <ha-icon icon="mdi:plus"></ha-icon>
-                    ${localize('editor.layout_logic.add_condition', lang, 'Add Condition')}
-                  </button>
-                </div>
-
-                <div class="conditions-list" @dragover=${this._onConditionDragOver}>
-                  ${conditions.map(
-                    (condition, index) => html`
-                      <div
-                        class="condition-row-dropzone"
-                        @drop=${(e: DragEvent) =>
-                          this._onConditionDrop(
-                            e,
-                            'module',
-                            index,
-                            () => module.display_conditions,
-                            (next: DisplayCondition[]) =>
-                              this._updateModule({ display_conditions: next })
-                          )}
-                      >
-                        ${this._renderCondition(module, condition, index)}
-                      </div>
-                    `
-                  )}
-                </div>
-
-                ${conditions.length === 0
-                  ? html`
-                      <div class="no-conditions">
-                        <p>
-                          ${localize(
-                            'editor.layout_logic.no_conditions',
-                            lang,
-                            'No conditions added yet. Click "Add Condition" to get started.'
-                          )}
-                        </p>
-                      </div>
-                    `
-                  : ''}
-              </div>
-            `
-          : ''}
-
-        <!-- Advanced Template Mode removed; use Template condition type in Conditions -->
-      </div>
-    `;
-  }
   private _renderDesignTab(module: CardModule): TemplateResult {
     const isBarModule = (module as any)?.type === 'bar';
     // Extract current design properties from module
@@ -26780,6 +26678,11 @@ export class LayoutTab extends LitElement {
       // Other properties
       overflow: (module as any).overflow,
       clip_path: (module as any).clip_path,
+      // 3D Transform properties
+      transform_perspective: (module as any).design?.transform_perspective,
+      transform_rotate_x: (module as any).design?.transform_rotate_x,
+      transform_rotate_y: (module as any).design?.transform_rotate_y,
+      transform_rotate_z: (module as any).design?.transform_rotate_z,
       // Animation properties
       animation_type: (module as any).animation_type,
       animation_entity: (module as any).animation_entity,
@@ -27872,7 +27775,7 @@ export class LayoutTab extends LitElement {
                 <ha-icon icon="mdi:keyboard"></ha-icon>
               </button>
               <button
-                class="tb-btn"
+                class="tb-btn tb-btn-fullscreen"
                 @click=${(e: Event) => {
                   e.stopPropagation();
                   this.dispatchEvent(
@@ -32441,6 +32344,7 @@ export class LayoutTab extends LitElement {
         font-size: 12px;
         font-weight: 500;
         white-space: nowrap;
+        flex-shrink: 0;
         transition: background 0.15s, color 0.15s;
       }
 
@@ -32482,9 +32386,76 @@ export class LayoutTab extends LitElement {
         }
       }
 
+      /* Hide the fullscreen toggle on phone-sized viewports (iPhones, small
+         Android phones). The smallest tablet (iPad mini) is ~744px wide so
+         600px is a safe cutoff — iPads in any orientation still see it. */
+      @media (max-width: 600px) {
+        .tb-btn-fullscreen {
+          display: none !important;
+        }
+      }
+
       @media (max-width: 480px) {
         .tb-btn span {
           display: none;
+        }
+
+        /* Tighten the builder toolbar so all icons fit on small phones */
+        .builder-toolbar {
+          padding: 4px 4px;
+        }
+
+        .toolbar-row {
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          overflow-y: hidden;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+
+        .toolbar-row::-webkit-scrollbar {
+          display: none;
+          height: 0;
+          width: 0;
+        }
+
+        .toolbar-group {
+          padding: 0 4px;
+          flex-shrink: 0;
+        }
+
+        .toolbar-group:first-child {
+          padding-left: 2px;
+        }
+
+        .toolbar-group-end {
+          padding-right: 2px;
+        }
+
+        .tb-btn {
+          height: 30px;
+          min-width: 30px;
+          padding: 0 4px;
+        }
+
+        .tb-btn ha-icon {
+          --mdc-icon-size: 17px;
+        }
+      }
+
+      /* Extra-small phones (e.g. iPhone SE width) — squeeze a little more */
+      @media (max-width: 380px) {
+        .toolbar-group {
+          padding: 0 3px;
+        }
+
+        .tb-btn {
+          min-width: 28px;
+          padding: 0 3px;
+        }
+
+        .tb-btn ha-icon {
+          --mdc-icon-size: 16px;
         }
       }
 

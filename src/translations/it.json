@@ -1498,7 +1498,15 @@
       "google_fonts_warning": "Google I font vengono caricati dinamicamente dal CDN di Google e richiedono una connessione a Internet. Non saranno disponibili su installazioni locali/offline.",
       "responsive_overrides": "Sovrascritture Responsive",
       "responsive_hint": "Abilitare per impostare stili diversi per laptop, tablet e dispositivi mobili.",
-      "clear_device_overrides": "Cancella sovrascritture {device}"
+      "clear_device_overrides": "Cancella sovrascritture {device}",
+      "transform_3d_section": "3D Transform",
+      "transform_3d_desc": "Tilt or rotate the module in 3D space. Set perspective for depth, then rotate on X (tilt forward/back), Y (turn left/right), or Z (spin).",
+      "transform_3d_perspective": "Perspective",
+      "transform_3d_perspective_placeholder": "none, 400px, 1000px",
+      "transform_3d_rotate_x": "Rotate X",
+      "transform_3d_rotate_y": "Rotate Y",
+      "transform_3d_rotate_z": "Rotate Z",
+      "transform_3d_rotate_placeholder": "Degrees (-180 to 180)"
     },
     "modules": {
       "text": "Testo",

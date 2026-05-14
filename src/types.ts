@@ -5406,6 +5406,11 @@ export interface SharedDesignProperties {
   // Other properties
   overflow?: 'visible' | 'hidden' | 'scroll' | 'auto' | undefined;
   clip_path?: string | undefined;
+  // 3D Transform properties (perspective + rotateX/Y/Z)
+  transform_perspective?: string | undefined;
+  transform_rotate_x?: string | undefined;
+  transform_rotate_y?: string | undefined;
+  transform_rotate_z?: string | undefined;
   // State-based animation
   animation_type?:
     | 'none'

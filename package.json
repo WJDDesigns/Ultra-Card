@@ -1,6 +1,6 @@
 {
   "name": "ultra-card",
-  "version": "3.4.0-beta8",
+  "version": "3.4.0-beta9",
   "description": "Ultra Card - A modular card builder for Home Assistant",
   "main": "dist/ultra-card.js",
   "scripts": {
@@ -33,7 +33,8 @@
     "sync:panel": "node scripts/sync-panel-to-integration.js",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "audit:module-tabs": "node scripts/audit-module-tabs.cjs"
   },
   "keywords": [
     "home-assistant",
