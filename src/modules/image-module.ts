@@ -8,8 +8,7 @@ import { GlobalDesignTab } from '../tabs/global-design-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { DEFAULT_VEHICLE_IMAGE, DEFAULT_VEHICLE_IMAGE_FALLBACK } from '../utils/constants';
-import { uploadImage, getImageUrl } from '../utils/image-upload';
-import { ucToastService } from '../services/uc-toast-service';
+import { getImageUrl } from '../utils/image-upload';
 
 export class UltraImageModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -98,119 +97,180 @@ export class UltraImageModule extends BaseUltraModule {
     return html`
       ${this.injectUcFormStyles()}
       <div class="module-general-settings">
-        <!-- Image Settings -->
-        ${this.renderSettingsSection(
-          localize('editor.image.settings', lang, 'Image Settings'),
-          '',
-          [
-            {
-              title: localize('editor.image.source_type', lang, 'Image Source Type'),
-              description: localize('editor.image.source_type_desc', lang, 'Choose how you want to specify the image source.'),
-              hass,
-              data: { image_type: imageModule.image_type || 'default' },
-              schema: [
-                this.selectField('image_type', [
-                  { value: 'default', label: localize('editor.image.source.default', lang, 'Default Image') },
-                  { value: 'url', label: localize('editor.image.source.url', lang, 'Image URL') },
-                  { value: 'upload', label: localize('editor.image.source.upload', lang, 'Upload Image') },
-                  { value: 'entity', label: localize('editor.image.source.entity', lang, 'Entity Image') },
-                  { value: 'attribute', label: localize('editor.image.source.attribute', lang, 'Entity Attribute') },
-                ]),
-              ],
-              onChange: (e: CustomEvent) => {
-                const next = e.detail.value.image_type;
-                const prev = imageModule.image_type || 'default';
-                if (next === prev) return;
-                updateModule({ image_type: next });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
+        <!-- Image Settings (source type + type-specific fields in one card) -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px; max-width: 100%; box-sizing: border-box;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--primary-color); letter-spacing: 0.5px;"
+          >
+            ${localize('editor.image.settings', lang, 'Image Settings')}
+          </div>
+          ${this.renderSegmentedField(
+            localize('editor.image.source_type', lang, 'Image Source Type'),
+            localize(
+              'editor.image.source_type_desc',
+              lang,
+              'Choose how you want to specify the image source.'
+            ),
+            imageModule.image_type || 'default',
+            [
+              {
+                value: 'default',
+                label: localize('editor.image.source.default', lang, 'Default Image'),
+                icon: 'mdi:image-outline',
               },
-            },
-          ]
-        )}
-
-        <!-- URL Image Source -->
-        ${imageModule.image_type === 'url'
-          ? this.renderConditionalFieldsGroup(
-              localize('editor.image.url_section.title', lang, 'Image URL Configuration'),
-              html`
-                ${this.renderFieldSection(
-                  localize('editor.image.image_url', lang, 'Image URL'),
-                  localize('editor.image.image_url_desc', lang, 'Enter the direct URL to the image you want to display.'),
-                  hass,
-                  { image_url: imageModule.image_url || '' },
-                  [this.textField('image_url')],
-                  (e: CustomEvent) => updateModule({ image_url: e.detail.value.image_url })
-                )}
-              `
-            )
-          : ''}
-
-        <!-- Upload Image Source -->
-        ${imageModule.image_type === 'upload'
-          ? this.renderConditionalFieldsGroup(
-              localize('editor.image.upload_section.title', lang, 'Upload Image Configuration'),
-              html`
-                <div class="field-title">${localize('editor.image.upload', lang, 'Upload Image')}</div>
-                <div class="field-description">${localize('editor.image.upload_desc', lang, 'Click to upload an image file from your device.')}</div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
-                  @change=${(e: Event) => this.handleFileUpload(e, updateModule, hass)}
-                />
-              `
-            )
-          : ''}
-
-        <!-- Entity Image Source -->
-        ${imageModule.image_type === 'entity'
-          ? this.renderConditionalFieldsGroup(
-              localize('editor.image.entity_section.title', lang, 'Entity Image Configuration'),
-              html`
-                ${this.renderEntityPickerWithVariables(
-                  hass, config, 'image_entity', imageModule.image_entity || '',
-                  (value: string) => {
-                    if (value === imageModule.image_entity) return;
-                    updateModule({ image_entity: value });
-                  },
-                  undefined,
-                  localize('editor.image.entity', lang, 'Entity')
-                )}
-                <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
-                  ${localize('editor.image.entity_desc', lang, 'Select an entity that has an image (e.g., person, camera entities).')}
+              {
+                value: 'url',
+                label: localize('editor.image.source.url', lang, 'Image URL'),
+                icon: 'mdi:link-variant',
+              },
+              {
+                value: 'upload',
+                label: localize('editor.image.source.upload', lang, 'Upload Image'),
+                icon: 'mdi:upload',
+              },
+              {
+                value: 'entity',
+                label: localize('editor.image.source.entity', lang, 'Entity Image'),
+                icon: 'mdi:account-circle',
+              },
+              {
+                value: 'attribute',
+                label: localize('editor.image.source.attribute', lang, 'Entity Attribute'),
+                icon: 'mdi:code-braces',
+              },
+            ],
+            next => {
+              const prev = imageModule.image_type || 'default';
+              if (next === prev) return;
+              updateModule({ image_type: next as ImageModule['image_type'] });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
+          )}
+          ${imageModule.image_type === 'url'
+            ? html`
+                <div style="margin-top: 8px;">
+                  ${this.renderFieldSection(
+                    localize('editor.image.image_url', lang, 'Image URL'),
+                    localize(
+                      'editor.image.image_url_desc',
+                      lang,
+                      'Enter the direct URL to the image you want to display.'
+                    ),
+                    hass,
+                    { image_url: imageModule.image_url || '' },
+                    [this.textField('image_url')],
+                    (e: CustomEvent) => {
+                      updateModule({ image_url: e.detail.value.image_url });
+                      this.triggerPreviewUpdate();
+                    }
+                  )}
                 </div>
               `
-            )
-          : ''}
-
-        <!-- Attribute Image Source -->
-        ${imageModule.image_type === 'attribute'
-          ? this.renderConditionalFieldsGroup(
-              localize('editor.image.attribute_section.title', lang, 'Entity Attribute Configuration'),
-              html`
-                ${this.renderEntityPickerWithVariables(
-                  hass, config, 'image_entity', imageModule.image_entity || '',
-                  (value: string) => {
-                    if (value === imageModule.image_entity) return;
-                    updateModule({ image_entity: value });
-                  },
-                  undefined,
-                  localize('editor.image.entity', lang, 'Entity')
-                )}
-                <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
-                  ${localize('editor.image.attribute_entity_desc', lang, 'Select an entity that contains an image URL in one of its attributes.')}
+            : ''}
+          ${imageModule.image_type === 'upload'
+            ? html`
+                <div style="margin-top: 8px;">
+                  ${this.renderFileField(
+                    localize('editor.image.upload', lang, 'Upload Image'),
+                    localize(
+                      'editor.image.upload_desc',
+                      lang,
+                      'Click to upload an image file from your device.'
+                    ),
+                    hass,
+                    imageModule.image_url || '',
+                    path => {
+                      if (path) {
+                        updateModule({
+                          image_url: path,
+                          image_type: 'upload',
+                        });
+                      } else {
+                        updateModule({ image_url: '' });
+                      }
+                      this.triggerPreviewUpdate();
+                    },
+                    'image/*',
+                    {
+                      chooseFile: localize('editor.image.upload_choose', lang, 'Choose file'),
+                      clear: localize('editor.image.upload_clear', lang, 'Remove file'),
+                    }
+                  )}
                 </div>
-                ${this.renderFieldSection(
-                  localize('editor.image.attribute_name', lang, 'Attribute Name'),
-                  localize('editor.image.attribute_name_desc', lang, 'Enter the attribute path (dot notation supported, e.g., vehicle_data.vehicleDetails.generalDashboard).'),
-                  hass,
-                  { image_attribute: imageModule.image_attribute || '' },
-                  [this.textField('image_attribute')],
-                  (e: CustomEvent) => updateModule({ image_attribute: e.detail.value.image_attribute })
-                )}
               `
-            )
-          : ''}
+            : ''}
+          ${imageModule.image_type === 'entity'
+            ? html`
+                <div style="margin-top: 8px;">
+                  ${this.renderEntityPickerWithVariables(
+                    hass,
+                    config,
+                    'image_entity',
+                    imageModule.image_entity || '',
+                    value => {
+                      if (value === imageModule.image_entity) return;
+                      updateModule({ image_entity: value });
+                      this.triggerPreviewUpdate();
+                    },
+                    undefined,
+                    localize('editor.image.entity', lang, 'Entity')
+                  )}
+                  <div class="field-description">
+                    ${localize(
+                      'editor.image.entity_desc',
+                      lang,
+                      'Select an entity that has an image (e.g., person, camera entities).'
+                    )}
+                  </div>
+                </div>
+              `
+            : ''}
+          ${imageModule.image_type === 'attribute'
+            ? html`
+                <div style="margin-top: 8px;">
+                  ${this.renderEntityPickerWithVariables(
+                    hass,
+                    config,
+                    'image_entity',
+                    imageModule.image_entity || '',
+                    value => {
+                      if (value === imageModule.image_entity) return;
+                      updateModule({ image_entity: value });
+                      this.triggerPreviewUpdate();
+                    },
+                    undefined,
+                    localize('editor.image.entity', lang, 'Entity')
+                  )}
+                  <div class="field-description">
+                    ${localize(
+                      'editor.image.attribute_entity_desc',
+                      lang,
+                      'Select an entity that contains an image URL in one of its attributes.'
+                    )}
+                  </div>
+                  ${this.renderFieldSection(
+                    localize('editor.image.attribute_name', lang, 'Attribute Name'),
+                    localize(
+                      'editor.image.attribute_name_desc',
+                      lang,
+                      'Enter the attribute path (dot notation supported, e.g., vehicle_data.vehicleDetails.generalDashboard).'
+                    ),
+                    hass,
+                    { image_attribute: imageModule.image_attribute || '' },
+                    [this.textField('image_attribute')],
+                    (e: CustomEvent) => {
+                      updateModule({ image_attribute: e.detail.value.image_attribute });
+                      this.triggerPreviewUpdate();
+                    }
+                  )}
+                </div>
+              `
+            : ''}
+        </div>
 
         <!-- Size & Display Settings -->
         ${this.renderSettingsSection(
@@ -944,29 +1004,6 @@ export class UltraImageModule extends BaseUltraModule {
     `;
 
     return this.wrapWithAnimation(content, module, hass);
-  }
-
-  private async handleFileUpload(
-    event: Event,
-    updateModule: (updates: Partial<ImageModule>) => void,
-    hass: HomeAssistant
-  ): Promise<void> {
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
-
-    if (!file) return;
-
-    try {
-      // Use the centralized upload utility
-      const imagePath = await uploadImage(hass, file);
-      updateModule({
-        image_url: imagePath,
-        image_type: 'upload',
-      });
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      ucToastService.error(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
   }
 
   // Explicit Logic tab renderer (some editors call this directly)

@@ -886,33 +886,36 @@ export class GlobalActionsTab extends LitElement {
                   ${localize('editor.hover_effects.animation_settings', lang, 'Animation Settings')}
                 </div>
                 <div class="conditional-fields-content" style="padding: 16px;">
-                  <!-- Duration Field -->
+                  <!-- Duration Field (HA-native slider — matches every other slider in the editor) -->
                   <div class="field-container" style="margin-bottom: 16px;">
                     <div
                       class="field-title"
                       style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
                     >
-                      ${localize('editor.hover_effects.duration', lang, 'Duration')} (${hoverEffect.duration || 300}ms)
+                      ${localize('editor.hover_effects.duration', lang, 'Duration')}
+                      (${hoverEffect.duration || 300}ms)
                     </div>
                     <div
                       class="gap-control-container"
                       style="display: flex; align-items: center; gap: 12px;"
                     >
-                      <input
-                        type="range"
-                        class="gap-slider"
-                        min="100"
-                        max="2000"
-                        step="50"
-                        .value="${String(hoverEffect.duration || 300)}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          updateHoverEffect({ duration: Number(target.value) });
-                          setTimeout(() => {
-                            this._triggerPreviewUpdate();
-                          }, 50);
+                      <ha-slider
+                        class="uc-ha-slider"
+                        style="flex: 1;"
+                        labeled
+                        pin
+                        .min=${100}
+                        .max=${2000}
+                        .step=${50}
+                        .value=${hoverEffect.duration || 300}
+                        @change=${(e: Event) => {
+                          const v = Number((e.target as HTMLInputElement).value);
+                          if (!isNaN(v)) {
+                            updateHoverEffect({ duration: v });
+                            setTimeout(() => this._triggerPreviewUpdate(), 50);
+                          }
                         }}
-                      />
+                      ></ha-slider>
                       <input
                         type="number"
                         class="gap-input"
@@ -925,9 +928,7 @@ export class GlobalActionsTab extends LitElement {
                           const val = Number(target.value);
                           if (!isNaN(val)) {
                             updateHoverEffect({ duration: val });
-                            setTimeout(() => {
-                              this._triggerPreviewUpdate();
-                            }, 50);
+                            setTimeout(() => this._triggerPreviewUpdate(), 50);
                           }
                         }}
                         @keydown=${(e: KeyboardEvent) => {
@@ -936,21 +937,21 @@ export class GlobalActionsTab extends LitElement {
                             const target = e.target as HTMLInputElement;
                             const currentValue = Number(target.value) || 300;
                             const increment = e.key === 'ArrowUp' ? 50 : -50;
-                            const newValue = Math.max(100, Math.min(2000, currentValue + increment));
+                            const newValue = Math.max(
+                              100,
+                              Math.min(2000, currentValue + increment)
+                            );
                             updateHoverEffect({ duration: newValue });
-                            setTimeout(() => {
-                              this._triggerPreviewUpdate();
-                            }, 50);
+                            setTimeout(() => this._triggerPreviewUpdate(), 50);
                           }
                         }}
                       />
                       <button
                         class="reset-btn"
+                        type="button"
                         @click=${() => {
                           updateHoverEffect({ duration: 300 });
-                          setTimeout(() => {
-                            this._triggerPreviewUpdate();
-                          }, 50);
+                          setTimeout(() => this._triggerPreviewUpdate(), 50);
                         }}
                         title="Reset to default (300)"
                       >

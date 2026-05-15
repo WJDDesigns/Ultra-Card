@@ -1540,7 +1540,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                     )}
                     ${(bar.slider_style || sliderControl.slider_style) === 'glass'
                       ? html`
-                          <div class="conditional-fields-group">
+                          <div>
                             ${this.renderSliderField(
                               'Glass Blur Amount',
                               'Backdrop filter blur amount (0-20px)',
@@ -1715,7 +1715,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
                       ${(bar.show_icon ?? sliderControl.show_icon) !== false
                         ? html`
-                            <div class="conditional-fields-group">
+                            <div>
                               ${this.renderFieldSection(
                                 'Icon',
                                 'Icon to display (leave empty for entity icon)',
@@ -1830,7 +1830,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
                       ${(bar.show_name ?? sliderControl.show_name) !== false
                         ? html`
-                            <div class="conditional-fields-group">
+                            <div>
                               ${this.renderSliderField(
                                 'Name Size',
                                 '',
@@ -1925,7 +1925,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
                       ${(bar.show_value ?? sliderControl.show_value) !== false
                         ? html`
-                            <div class="conditional-fields-group">
+                            <div>
                               ${this.renderSliderField(
                                 'Value Size',
                                 '',
@@ -2030,7 +2030,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
           )}
           ${sliderControl.layout_mode === 'split'
             ? html`
-                <div class="conditional-fields-group">
+                <div>
                   <div class="field-description">
                     Configure bar position and ratio inside each bar card below.
                   </div>

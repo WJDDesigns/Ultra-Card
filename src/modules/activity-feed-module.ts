@@ -324,24 +324,16 @@ export class UltraActivityFeedModule extends BaseUltraModule {
         <!-- View Mode -->
         <div class="settings-section">
           <div class="section-title">VIEW MODE</div>
-          <div class="view-mode-switcher">
-            <div
-              class="view-mode-btn ${feedModule.view_mode === 'timeline' ? 'active' : ''}"
-              @click=${() => updateModule({ view_mode: 'timeline' } as any)}
-            >
-              <ha-icon icon="mdi:timeline"></ha-icon>
-              <div class="mode-title">Timeline</div>
-              <div class="mode-desc">Vertical timeline with dots and lines</div>
-            </div>
-            <div
-              class="view-mode-btn ${feedModule.view_mode === 'feed' ? 'active' : ''}"
-              @click=${() => updateModule({ view_mode: 'feed' } as any)}
-            >
-              <ha-icon icon="mdi:card-text-outline"></ha-icon>
-              <div class="mode-title">Social Feed</div>
-              <div class="mode-desc">Card-based like a social media feed</div>
-            </div>
-          </div>
+          ${this.renderSegmentedField(
+            '',
+            '',
+            feedModule.view_mode || 'feed',
+            [
+              { value: 'timeline', label: 'Timeline', icon: 'mdi:timeline' },
+              { value: 'feed', label: 'Social Feed', icon: 'mdi:card-text-outline' },
+            ],
+            next => updateModule({ view_mode: next as 'timeline' | 'feed' } as any)
+          )}
         </div>
 
         <!-- Title & Display -->

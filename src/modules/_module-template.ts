@@ -16,11 +16,16 @@
  *  5. Use this.renderSliderField() for all numeric sliders
  *     — also return BaseUltraModule.getSliderStyles() from getStyles()
  *  6. Use this.renderEntityPickerWithVariables() for entity pickers
- *  7. Use localize() for all visible text — never hardcoded English strings
- *  8. Call this.triggerPreviewUpdate() after changes that affect the live preview
- *  9. Use this.renderConditionalFieldsGroup(header, content) for conditional sub-sections
+ *  7. Use this.renderFileField() for uploads — never raw `<input type="file">`
+ *  8. Use this.renderChipListField() for chip lists (strings or entity ids)
+ *  9. Use this.renderSegmentedField() for mutually exclusive string modes (prefer over raw `<select>`)
+ * 10. Use this.renderIconField() for icons — never raw `<ha-icon-picker>`
+ * 11. Use this.renderColorField() for themed colors (consistent spacing around `<ultra-color-picker>`)
+ * 12. Use localize() for all visible text — never hardcoded English strings
+ * 13. Call this.triggerPreviewUpdate() after changes that affect the live preview
+ * 14. Use this.renderConditionalFieldsGroup(header, content) for conditional sub-sections
  *
- * Reference implementation: src/modules/cover-module.ts
+ * Reference implementation: src/modules/cover-module.ts and src/modules/auto-entity-list-module.ts
  */
 
 import { TemplateResult, html } from 'lit';

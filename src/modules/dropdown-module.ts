@@ -499,62 +499,26 @@ export class UltraDropdownModule extends BaseUltraModule {
                             lang,
                             'Custom Text Configuration'
                           ),
-                          html`
-                            <div class="field-group">
-                              <div
-                                class="field-title"
-                                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-                              >
-                                ${localize('editor.dropdown.closed_title_custom.title', lang, 'Custom Text')}
-                              </div>
-                              <div
-                                class="field-description"
-                                style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-                              >
-                                ${localize(
-                                  'editor.dropdown.closed_title_custom.desc',
-                                  lang,
-                                  'Custom text to display when dropdown is closed.'
-                                )}
-                              </div>
-                              <ha-textfield
-                                .value=${dropdownModule.closed_title_custom || ''}
-                                placeholder="Please select..."
-                                @input=${(e: Event) => {
-                                  const target = e.target as any;
-                                  const input = target.shadowRoot?.querySelector('input') || target;
-                                  const value = target.value;
-                                  const cursorPosition = input.selectionStart;
-                                  const cursorEnd = input.selectionEnd;
-
-                                  updateModule({ closed_title_custom: value });
-
-                                  requestAnimationFrame(() => {
-                                    if (input && typeof cursorPosition === 'number') {
-                                      target.value = value;
-                                      input.value = value;
-                                      input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                                    }
-                                  });
-                                  setTimeout(() => {
-                                    if (input && typeof cursorPosition === 'number') {
-                                      target.value = value;
-                                      input.value = value;
-                                      input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                                    }
-                                  }, 0);
-                                  setTimeout(() => {
-                                    if (input && typeof cursorPosition === 'number') {
-                                      target.value = value;
-                                      input.value = value;
-                                      input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                                    }
-                                  }, 10);
-                                }}
-                                style="width: 100%; --mdc-theme-primary: var(--primary-color);"
-                              ></ha-textfield>
-                            </div>
-                          `
+                          this.renderFieldSection(
+                            localize(
+                              'editor.dropdown.closed_title_custom.title',
+                              lang,
+                              'Custom Text'
+                            ),
+                            localize(
+                              'editor.dropdown.closed_title_custom.desc',
+                              lang,
+                              'Custom text to display when dropdown is closed.'
+                            ),
+                            hass,
+                            { closed_title_custom: dropdownModule.closed_title_custom || '' },
+                            [this.textField('closed_title_custom')],
+                            (e: CustomEvent) => {
+                              updateModule({
+                                closed_title_custom: e.detail.value.closed_title_custom,
+                              });
+                            }
+                          )
                         )}
                       </div>
                     `
@@ -564,67 +528,19 @@ export class UltraDropdownModule extends BaseUltraModule {
                 ${!dropdownModule.track_state
                   ? html`
                       <div style="margin-bottom: 16px;">
-                        <div
-                          class="field-title"
-                          style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-                        >
-                          ${localize('editor.dropdown.placeholder.title', lang, 'Placeholder')}
-                        </div>
-                        <div
-                          class="field-description"
-                          style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-                        >
-                          ${localize(
+                        ${this.renderFieldSection(
+                          localize('editor.dropdown.placeholder.title', lang, 'Placeholder'),
+                          localize(
                             'editor.dropdown.placeholder.desc',
                             lang,
                             'Text shown when no option is selected.'
-                          )}
-                        </div>
-                        <ha-textfield
-                          .value=${dropdownModule.placeholder || ''}
-                          placeholder="Select an option..."
-                          @input=${(e: Event) => {
-                            const target = e.target as any;
-                            const input = target.shadowRoot?.querySelector('input') || target;
-                            const value = target.value;
-                            const cursorPosition = input.selectionStart;
-                            const cursorEnd = input.selectionEnd;
-
-                            updateModule({ placeholder: value });
-
-                            requestAnimationFrame(() => {
-                              if (input && typeof cursorPosition === 'number') {
-                                target.value = value;
-                                input.value = value;
-                                input.setSelectionRange(
-                                  cursorPosition,
-                                  cursorEnd || cursorPosition
-                                );
-                              }
-                            });
-                            setTimeout(() => {
-                              if (input && typeof cursorPosition === 'number') {
-                                target.value = value;
-                                input.value = value;
-                                input.setSelectionRange(
-                                  cursorPosition,
-                                  cursorEnd || cursorPosition
-                                );
-                              }
-                            }, 0);
-                            setTimeout(() => {
-                              if (input && typeof cursorPosition === 'number') {
-                                target.value = value;
-                                input.value = value;
-                                input.setSelectionRange(
-                                  cursorPosition,
-                                  cursorEnd || cursorPosition
-                                );
-                              }
-                            }, 10);
-                          }}
-                          style="width: 100%; --mdc-theme-primary: var(--primary-color);"
-                        ></ha-textfield>
+                          ),
+                          hass,
+                          { placeholder: dropdownModule.placeholder || '' },
+                          [this.textField('placeholder')],
+                          (e: CustomEvent) =>
+                            updateModule({ placeholder: e.detail.value.placeholder })
+                        )}
                       </div>
                     `
                   : ''}
@@ -633,36 +549,45 @@ export class UltraDropdownModule extends BaseUltraModule {
               <!-- Unified Template Section -->
               ${dropdownModule.source_mode === 'manual'
                 ? html`
-                    <div class="template-section" style="margin-bottom: 24px;">
-                      <div class="template-header">
-                        <div class="switch-container">
-                          <label class="switch-label"
-                            >${localize(
-                              'editor.dropdown.unified_template_section.title',
-                              lang,
-                              'Template Mode'
-                            )}</label
-                          >
-                          <label class="switch">
-                            <input
-                              type="checkbox"
-                              .checked=${dropdownModule.unified_template_mode || false}
-                              @change=${(e: Event) => {
-                                const checked = (e.target as HTMLInputElement).checked;
-                                updateModule({ unified_template_mode: checked });
-                              }}
-                            />
-                            <span class="slider round"></span>
-                          </label>
-                        </div>
-                        <div class="template-description">
-                          ${localize(
+                    <div
+                      class="settings-section"
+                      style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+                    >
+                      <div
+                        class="section-title"
+                        style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+                      >
+                        ${localize(
+                          'editor.dropdown.unified_template_section.title',
+                          lang,
+                          'Template Mode'
+                        )}
+                      </div>
+                      ${this.renderSettingsSection('', '', [
+                        {
+                          title: localize(
+                            'editor.dropdown.unified_template_section.enable',
+                            lang,
+                            'Enable Template Mode'
+                          ),
+                          description: localize(
                             'editor.dropdown.unified_template_section.desc',
                             lang,
                             'Use a single Jinja2 template to generate all dropdown options with icons, labels, and colors. Return a JSON array of option objects. When enabled, manual options are replaced by template-generated options.'
-                          )}
-                        </div>
-                      </div>
+                          ),
+                          hass,
+                          data: {
+                            unified_template_mode:
+                              dropdownModule.unified_template_mode || false,
+                          },
+                          schema: [this.booleanField('unified_template_mode')],
+                          onChange: (e: CustomEvent) =>
+                            updateModule({
+                              unified_template_mode:
+                                e.detail.value.unified_template_mode,
+                            }),
+                        },
+                      ])}
 
                       ${dropdownModule.unified_template_mode
                         ? html`
@@ -987,89 +912,45 @@ export class UltraDropdownModule extends BaseUltraModule {
           )}
 
           <div style="margin-top: 24px;">
-            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
-              ${localize('editor.dropdown.control_alignment.mode', lang, 'Alignment Mode')}
-            </div>
-            <div style="display: flex; gap: 8px;">
-              ${[
+            ${this.renderSegmentedField(
+              localize('editor.dropdown.control_alignment.mode', lang, 'Alignment Mode'),
+              '',
+              dropdownModule.control_alignment || 'apart',
+              [
                 {
                   value: 'center',
+                  label: localize('editor.common.center', lang, 'Center'),
                   icon: 'mdi:align-horizontal-center',
-                  title: localize('editor.common.center', lang, 'Center'),
                 },
                 {
                   value: 'apart',
+                  label: localize('editor.common.apart', lang, 'Apart'),
                   icon: 'mdi:arrow-left-right',
-                  title: localize('editor.common.apart', lang, 'Apart'),
                 },
-              ].map(
-                align => html`
-                  <button
-                    class="alignment-btn ${(dropdownModule.control_alignment || 'apart') === align.value
-                      ? 'active'
-                      : ''}"
-                    @click=${() => {
-                      if ((dropdownModule.control_alignment || 'apart') === align.value) {
-                        return;
-                      }
-                      updateModule({ control_alignment: align.value as 'center' | 'apart' });
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }}
-                    title="${align.title}"
-                    style="flex: 1; padding: 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${(dropdownModule.control_alignment || 'apart') === align.value
-                      ? 'var(--primary-color)'
-                      : 'var(--card-background-color)'}; color: ${(dropdownModule.control_alignment || 'apart') === align.value
-                      ? 'white'
-                      : 'var(--primary-text-color)'}; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;"
-                  >
-                    <ha-icon icon="${align.icon}" style="--mdc-icon-size: 24px;"></ha-icon>
-                  </button>
-                `
-              )}
-            </div>
+              ],
+              next => updateModule({ control_alignment: next as 'center' | 'apart' })
+            )}
           </div>
 
           <div style="margin-top: 16px;">
-            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
-              ${localize('editor.dropdown.control_alignment.icon_side', lang, 'Icon Side')}
-            </div>
-            <div style="display: flex; gap: 8px;">
-              ${[
+            ${this.renderSegmentedField(
+              localize('editor.dropdown.control_alignment.icon_side', lang, 'Icon Side'),
+              '',
+              dropdownModule.control_icon_side || 'right',
+              [
                 {
                   value: 'left',
+                  label: localize('editor.common.left', lang, 'Left'),
                   icon: 'mdi:arrow-left',
-                  title: localize('editor.common.left', lang, 'Left'),
                 },
                 {
                   value: 'right',
+                  label: localize('editor.common.right', lang, 'Right'),
                   icon: 'mdi:arrow-right',
-                  title: localize('editor.common.right', lang, 'Right'),
                 },
-              ].map(
-                side => html`
-                  <button
-                    class="alignment-btn ${(dropdownModule.control_icon_side || 'right') === side.value
-                      ? 'active'
-                      : ''}"
-                    @click=${() => {
-                      if ((dropdownModule.control_icon_side || 'right') === side.value) {
-                        return;
-                      }
-                      updateModule({ control_icon_side: side.value as 'left' | 'right' });
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }}
-                    title="${side.title}"
-                    style="flex: 1; padding: 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${(dropdownModule.control_icon_side || 'right') === side.value
-                      ? 'var(--primary-color)'
-                      : 'var(--card-background-color)'}; color: ${(dropdownModule.control_icon_side || 'right') === side.value
-                      ? 'white'
-                      : 'var(--primary-text-color)'}; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;"
-                  >
-                    <ha-icon icon="${side.icon}" style="--mdc-icon-size: 24px;"></ha-icon>
-                  </button>
-                `
-              )}
-            </div>
+              ],
+              next => updateModule({ control_icon_side: next as 'left' | 'right' })
+            )}
           </div>
 
           <!-- Visible Items Configuration -->
@@ -1354,51 +1235,14 @@ export class UltraDropdownModule extends BaseUltraModule {
     return html`
       <!-- Basic Option Settings -->
       <div class="field-group" style="margin-bottom: 12px;">
-        <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-          ${localize('editor.dropdown.option.label', lang, 'Label')}
-        </div>
-        <div
-          class="field-description"
-          style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-        >
-          ${localize('editor.dropdown.option.label_desc', lang, 'Display text for this option')}
-        </div>
-        <ha-textfield
-          .value=${option.label || ''}
-          placeholder="Enter option label"
-          @input=${(e: Event) => {
-            const target = e.target as any;
-            const input = target.shadowRoot?.querySelector('input') || target;
-            const value = target.value;
-            const cursorPosition = input.selectionStart;
-            const cursorEnd = input.selectionEnd;
-
-            updateOption(option.id, { label: value });
-
-            requestAnimationFrame(() => {
-              if (input && typeof cursorPosition === 'number') {
-                target.value = value;
-                input.value = value;
-                input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-              }
-            });
-            setTimeout(() => {
-              if (input && typeof cursorPosition === 'number') {
-                target.value = value;
-                input.value = value;
-                input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-              }
-            }, 0);
-            setTimeout(() => {
-              if (input && typeof cursorPosition === 'number') {
-                target.value = value;
-                input.value = value;
-                input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-              }
-            }, 10);
-          }}
-          style="width: 100%; --mdc-theme-primary: var(--primary-color);"
-        ></ha-textfield>
+        ${this.renderFieldSection(
+          localize('editor.dropdown.option.label', lang, 'Label'),
+          localize('editor.dropdown.option.label_desc', lang, 'Display text for this option'),
+          hass,
+          { label: option.label || '' },
+          [this.textField('label')],
+          (e: CustomEvent) => updateOption(option.id, { label: e.detail.value.label })
+        )}
       </div>
 
       <div class="field-group" style="margin-bottom: 12px;">
@@ -2600,19 +2444,26 @@ export class UltraDropdownModule extends BaseUltraModule {
             // Calculate if we should drop up or down
             const shouldDropUp = spaceBelow < portaledDropdownMaxHeight && spaceAbove > spaceBelow;
             
-            // Position portaled dropdown using fixed positioning
+            // Position portaled dropdown using fixed positioning.
+            // When the overlay host is `document.body`, hostRect is {0,0} and no
+            // correction is needed. When the host is an `.ultra-popup-portal`
+            // (or anything else with a transformed ancestor in the chain), CSS
+            // `position: fixed` becomes positioned relative to that transformed
+            // ancestor instead of the viewport. Subtracting hostRect makes the
+            // dropdown render at the correct viewport coordinates in either case.
+            const hostRect = overlayHost.getBoundingClientRect();
             portaledDropdown.style.position = 'fixed';
-            portaledDropdown.style.left = `${rect.left}px`;
+            portaledDropdown.style.left = `${rect.left - hostRect.left}px`;
             portaledDropdown.style.width = `${rect.width}px`;
             portaledDropdown.style.right = 'auto';
-            
+
             if (shouldDropUp) {
               // Drop up - position above the trigger
-              portaledDropdown.style.bottom = `${viewportHeight - rect.top}px`;
+              portaledDropdown.style.bottom = `${viewportHeight - rect.top + hostRect.top}px`;
               portaledDropdown.style.top = 'auto';
             } else {
               // Drop down - position below the trigger (default)
-              portaledDropdown.style.top = `${rect.bottom}px`;
+              portaledDropdown.style.top = `${rect.bottom - hostRect.top}px`;
               portaledDropdown.style.bottom = 'auto';
             }
             
@@ -2945,7 +2796,7 @@ export class UltraDropdownModule extends BaseUltraModule {
   private updatePortaledDropdownPosition(instanceId: string): void {
     const portaledDropdown = this.portaledDropdowns.get(instanceId);
     const trigger = this.portaledDropdownTriggers.get(instanceId);
-    
+
     if (!portaledDropdown || !trigger) return;
 
     // Check if dropdown is actually open
@@ -2963,16 +2814,21 @@ export class UltraDropdownModule extends BaseUltraModule {
 
       const shouldDropUp = spaceBelow < positionDropdownMaxHeight && spaceAbove > spaceBelow;
 
+      // Same correction as in the open flow: compensate for any transformed
+      // ancestor on the overlay host so fixed positioning reads as viewport-relative.
+      const host = portaledDropdown.parentElement;
+      const hostRect = host ? host.getBoundingClientRect() : { left: 0, top: 0 };
+
       // Update position
-      portaledDropdown.style.left = `${rect.left}px`;
+      portaledDropdown.style.left = `${rect.left - hostRect.left}px`;
       portaledDropdown.style.width = `${rect.width}px`;
       portaledDropdown.style.right = 'auto';
 
       if (shouldDropUp) {
-        portaledDropdown.style.bottom = `${viewportHeight - rect.top}px`;
+        portaledDropdown.style.bottom = `${viewportHeight - rect.top + hostRect.top}px`;
         portaledDropdown.style.top = 'auto';
       } else {
-        portaledDropdown.style.top = `${rect.bottom}px`;
+        portaledDropdown.style.top = `${rect.bottom - hostRect.top}px`;
         portaledDropdown.style.bottom = 'auto';
       }
     } catch (error) {

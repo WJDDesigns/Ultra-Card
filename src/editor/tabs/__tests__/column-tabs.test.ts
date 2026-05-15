@@ -69,8 +69,8 @@ describe('layout-tab: column settings tabs', () => {
     const wait = nextConfigChanged(el);
     const cb = deepQuerySelector(
       el.shadowRoot!,
-      '.uc-global-logic-tab input[type="checkbox"]'
-    ) as HTMLInputElement;
+      '.uc-global-logic-tab ha-checkbox'
+    ) as HTMLElement & { checked?: boolean };
     expect(cb).toBeTruthy();
     cb.checked = true;
     cb.dispatchEvent(new Event('change', { bubbles: true }));

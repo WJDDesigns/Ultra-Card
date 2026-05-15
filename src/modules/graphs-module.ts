@@ -274,6 +274,30 @@ export class UltraGraphsModule extends BaseUltraModule {
     ];
   }
 
+  /**
+   * Inline boolean toggle that visually matches the standard HA boolean field.
+   * Used to replace the bespoke `<label><ha-switch><span>` rows scattered throughout
+   * `renderGeneralTab` so toggles look identical to other modules.
+   */
+  private _renderInlineToggle(
+    hass: HomeAssistant,
+    label: string,
+    checked: boolean,
+    onChange: (next: boolean) => void
+  ): TemplateResult {
+    return html`
+      <div class="uc-graphs-inline-toggle" style="display: flex; align-items: center;">
+        ${this.renderUcForm(
+          hass,
+          { _v: !!checked },
+          [{ name: '_v', label, selector: { boolean: {} } }],
+          (e: CustomEvent) => onChange(!!e.detail.value._v),
+          true
+        )}
+      </div>
+    `;
+  }
+
   renderGeneralTab(
     module: CardModule,
     hass: HomeAssistant,
@@ -369,7 +393,7 @@ export class UltraGraphsModule extends BaseUltraModule {
           )}
           ${graphsModule.data_source === 'forecast'
             ? html`
-                <div class="conditional-fields-group" style="padding: 16px; margin-top: 12px;">
+                <div style="margin-top: 12px;">
                   ${FormUtils.renderField(
                     localize('editor.graphs.forecast_entity', lang, 'Weather Entity'),
                     localize(
@@ -725,29 +749,32 @@ export class UltraGraphsModule extends BaseUltraModule {
                       </div>
 
                       <!-- Primary entity toggle -->
-                      <label
-                        style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px; background: var(--primary-background-color);"
+                      <div
+                        style="padding:8px; border-radius:6px; background: var(--primary-background-color);"
                       >
-                        <ha-switch
-                          .checked=${entity.is_primary === true ||
-                          (index === 0 && !(graphsModule.entities || []).some(en => en.is_primary))}
-                          @change=${(e: Event) => {
-                            const target = e.target as any;
+                        ${this._renderInlineToggle(
+                          hass,
+                          localize(
+                            'editor.graphs.entity.use_as_card_info',
+                            lang,
+                            'Use as card info'
+                          ),
+                          entity.is_primary === true ||
+                            (index === 0 &&
+                              !(graphsModule.entities || []).some(en => en.is_primary)),
+                          checked => {
                             const entities = graphsModule.entities || [];
                             let updated;
-                            if (target.checked) {
-                              // Selecting this one makes it the only primary
+                            if (checked) {
                               updated = entities.map((en, i) => ({
                                 ...en,
                                 is_primary: i === index,
                               }));
                             } else {
-                              // Prevent turning off the last primary
                               const othersHavePrimary = entities.some(
                                 (en, i) => i !== index && en.is_primary
                               );
                               if (!othersHavePrimary) {
-                                // Revert to checked to ensure at least one primary exists
                                 updated = entities.map((en, i) => ({
                                   ...en,
                                   is_primary: i === index,
@@ -759,16 +786,9 @@ export class UltraGraphsModule extends BaseUltraModule {
                               }
                             }
                             updateModule({ entities: updated });
-                          }}
-                        ></ha-switch>
-                        <span style="font-size:13px; color: var(--primary-text-color);"
-                          >${localize(
-                            'editor.graphs.entity.use_as_card_info',
-                            lang,
-                            'Use as card info'
-                          )}</span
-                        >
-                      </label>
+                          }
+                        )}
+                      </div>
                     </div>
 
                     <!-- Advanced Options (Collapsible) -->
@@ -831,53 +851,47 @@ export class UltraGraphsModule extends BaseUltraModule {
                               <div
                                 style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;"
                               >
-                                <label
-                                  style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; border-radius: 6px; background: var(--secondary-background-color);"
+                                <div
+                                  style="padding: 8px; border-radius: 6px; background: var(--secondary-background-color);"
                                 >
-                                  <ha-switch
-                                    .checked=${entity.show_points !== false}
-                                    @change=${(e: Event) => {
-                                      const target = e.target as any;
-                                      this._updateEntity(
-                                        graphsModule,
-                                        index,
-                                        { show_points: target.checked },
-                                        updateModule
-                                      );
-                                    }}
-                                  ></ha-switch>
-                                  <span style="font-size: 13px; color: var(--primary-text-color);"
-                                    >${localize(
+                                  ${this._renderInlineToggle(
+                                    hass,
+                                    localize(
                                       'editor.graphs.line.show_points',
                                       lang,
                                       'Show Points'
-                                    )}</span
-                                  >
-                                </label>
-
-                                <label
-                                  style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; border-radius: 6px; background: var(--secondary-background-color);"
-                                >
-                                  <ha-switch
-                                    .checked=${entity.fill_area === true}
-                                    @change=${(e: Event) => {
-                                      const target = e.target as any;
+                                    ),
+                                    entity.show_points !== false,
+                                    checked =>
                                       this._updateEntity(
                                         graphsModule,
                                         index,
-                                        { fill_area: target.checked },
+                                        { show_points: checked },
                                         updateModule
-                                      );
-                                    }}
-                                  ></ha-switch>
-                                  <span style="font-size: 13px; color: var(--primary-text-color);"
-                                    >${localize(
+                                      )
+                                  )}
+                                </div>
+
+                                <div
+                                  style="padding: 8px; border-radius: 6px; background: var(--secondary-background-color);"
+                                >
+                                  ${this._renderInlineToggle(
+                                    hass,
+                                    localize(
                                       'editor.graphs.line.fill_area',
                                       lang,
                                       'Fill Area'
-                                    )}</span
-                                  >
-                                </label>
+                                    ),
+                                    entity.fill_area === true,
+                                    checked =>
+                                      this._updateEntity(
+                                        graphsModule,
+                                        index,
+                                        { fill_area: checked },
+                                        updateModule
+                                      )
+                                  )}
+                                </div>
                               </div>
 
                               <!-- Line Width and Style -->
@@ -950,52 +964,46 @@ export class UltraGraphsModule extends BaseUltraModule {
                           : ''}
                         ${['pie', 'donut'].includes(graphsModule.chart_type)
                           ? html`
-                              <label
-                                style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; border-radius: 6px; background: var(--secondary-background-color);"
+                              <div
+                                style="padding: 8px; border-radius: 6px; background: var(--secondary-background-color);"
                               >
-                                <ha-switch
-                                  .checked=${entity.label_show_name !== false}
-                                  @change=${(e: Event) => {
-                                    const target = e.target as any;
-                                    this._updateEntity(
-                                      graphsModule,
-                                      index,
-                                      { label_show_name: target.checked },
-                                      updateModule
-                                    );
-                                  }}
-                                ></ha-switch>
-                                <span style="font-size: 13px; color: var(--primary-text-color);"
-                                  >${localize(
+                                ${this._renderInlineToggle(
+                                  hass,
+                                  localize(
                                     'editor.graphs.pie.show_title',
                                     lang,
                                     'Show Title in Slice'
-                                  )}</span
-                                >
-                              </label>
-                              <label
-                                style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; border-radius: 6px; background: var(--secondary-background-color);"
-                              >
-                                <ha-switch
-                                  .checked=${entity.label_show_value !== false}
-                                  @change=${(e: Event) => {
-                                    const target = e.target as any;
+                                  ),
+                                  entity.label_show_name !== false,
+                                  checked =>
                                     this._updateEntity(
                                       graphsModule,
                                       index,
-                                      { label_show_value: target.checked },
+                                      { label_show_name: checked },
                                       updateModule
-                                    );
-                                  }}
-                                ></ha-switch>
-                                <span style="font-size: 13px; color: var(--primary-text-color);"
-                                  >${localize(
+                                    )
+                                )}
+                              </div>
+                              <div
+                                style="padding: 8px; border-radius: 6px; background: var(--secondary-background-color);"
+                              >
+                                ${this._renderInlineToggle(
+                                  hass,
+                                  localize(
                                     'editor.graphs.pie.show_value',
                                     lang,
                                     'Show Value in Slice'
-                                  )}</span
-                                >
-                              </label>
+                                  ),
+                                  entity.label_show_value !== false,
+                                  checked =>
+                                    this._updateEntity(
+                                      graphsModule,
+                                      index,
+                                      { label_show_value: checked },
+                                      updateModule
+                                    )
+                                )}
+                              </div>
                             `
                           : ''}
                       </div>
@@ -1093,32 +1101,20 @@ export class UltraGraphsModule extends BaseUltraModule {
             style="display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; width: 100%; overflow: visible;"
           >
             <!-- Show Graph Title Toggle -->
-            <label
-              style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
-            >
-              <ha-switch
-                .checked=${(graphsModule as any).show_title !== false}
-                @change=${(e: Event) => {
-                  const t = e.target as any;
-                  updateModule({ show_title: t.checked } as any);
-                }}
-              ></ha-switch>
-              <span>${localize('editor.graphs.display.show_title', lang, 'Show Graph Title')}</span>
-            </label>
+            ${this._renderInlineToggle(
+              hass,
+              localize('editor.graphs.display.show_title', lang, 'Show Graph Title'),
+              (graphsModule as any).show_title !== false,
+              checked => updateModule({ show_title: checked } as any)
+            )}
 
             <!-- Show Graph Value Toggle -->
-            <label
-              style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
-            >
-              <ha-switch
-                .checked=${(graphsModule as any).show_entity_value !== false}
-                @change=${(e: Event) => {
-                  const t = e.target as any;
-                  updateModule({ show_entity_value: t.checked } as any);
-                }}
-              ></ha-switch>
-              <span>${localize('editor.graphs.display.show_value', lang, 'Show Graph Value')}</span>
-            </label>
+            ${this._renderInlineToggle(
+              hass,
+              localize('editor.graphs.display.show_value', lang, 'Show Graph Value'),
+              (graphsModule as any).show_entity_value !== false,
+              checked => updateModule({ show_entity_value: checked } as any)
+            )}
 
             <!-- Chart Title -->
             ${(graphsModule as any).show_title !== false
@@ -1341,20 +1337,16 @@ export class UltraGraphsModule extends BaseUltraModule {
             ).length || 0) > 1
               ? html`
                   <div style="margin-bottom: 16px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                      <ha-switch
-                        .checked=${graphsModule.normalize_values || false}
-                        @change=${(e: Event) =>
-                          updateModule({ normalize_values: (e.target as any).checked })}
-                      ></ha-switch>
-                      <span style="font-size: 14px;"
-                        >${localize(
-                          'editor.graphs.display.normalize_values',
-                          lang,
-                          'Normalize values to same scale'
-                        )}</span
-                      >
-                    </label>
+                    ${this._renderInlineToggle(
+                      hass,
+                      localize(
+                        'editor.graphs.display.normalize_values',
+                        lang,
+                        'Normalize values to same scale'
+                      ),
+                      graphsModule.normalize_values || false,
+                      checked => updateModule({ normalize_values: checked })
+                    )}
                     <div
                       style="font-size: 12px; color: var(--secondary-text-color); margin-top: 4px; margin-left: 40px;"
                     >
@@ -1372,25 +1364,20 @@ export class UltraGraphsModule extends BaseUltraModule {
             ${['line', 'bar'].includes(graphsModule.chart_type)
               ? html`
                   <div style="margin-bottom: 16px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                      <ha-switch
-                        .checked=${(graphsModule as any).use_fixed_y_axis || false}
-                        @change=${(e: Event) => {
-                          const checked = (e.target as any).checked;
-                          updateModule({ use_fixed_y_axis: checked } as any);
-                          // Clear cached data to force re-render with new scale
-                          delete this._historyData[graphsModule.id];
-                          setTimeout(() => this.triggerPreviewUpdate(), 50);
-                        }}
-                      ></ha-switch>
-                      <span style="font-size: 14px;"
-                        >${localize(
-                          'editor.graphs.display.use_fixed_y_axis',
-                          lang,
-                          'Use Fixed Y-Axis Scale'
-                        )}</span
-                      >
-                    </label>
+                    ${this._renderInlineToggle(
+                      hass,
+                      localize(
+                        'editor.graphs.display.use_fixed_y_axis',
+                        lang,
+                        'Use Fixed Y-Axis Scale'
+                      ),
+                      (graphsModule as any).use_fixed_y_axis || false,
+                      checked => {
+                        updateModule({ use_fixed_y_axis: checked } as any);
+                        delete this._historyData[graphsModule.id];
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }
+                    )}
                     <div
                       style="font-size: 12px; color: var(--secondary-text-color); margin-top: 4px; margin-left: 40px;"
                     >
@@ -1406,10 +1393,7 @@ export class UltraGraphsModule extends BaseUltraModule {
             ${(graphsModule as any).use_fixed_y_axis &&
             ['line', 'bar'].includes(graphsModule.chart_type)
               ? html`
-                  <div
-                    class="conditional-fields-group"
-                    style="padding: 16px; margin-top: 12px; margin-bottom: 16px;"
-                  >
+                  <div style="margin-top: 12px; margin-bottom: 16px;">
                     <!-- Min Value -->
                     <div style="margin-bottom: 16px;">
                       <label
@@ -1766,71 +1750,57 @@ export class UltraGraphsModule extends BaseUltraModule {
             <div
               style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;"
             >
-              <label
-                style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
-              >
-                <ha-switch
-                  .checked=${graphsModule.show_legend !== false}
-                  @change=${(e: Event) => {
-                    const t = e.target as any;
-                    updateModule({ show_legend: t.checked });
-                  }}
-                ></ha-switch>
-                <span>${localize('editor.graphs.display.show_legend', lang, 'Show Legend')}</span>
-              </label>
+              <div style="padding:8px; border-radius:6px;">
+                ${this._renderInlineToggle(
+                  hass,
+                  localize('editor.graphs.display.show_legend', lang, 'Show Legend'),
+                  graphsModule.show_legend !== false,
+                  checked => updateModule({ show_legend: checked })
+                )}
+              </div>
               ${graphsModule.chart_type === 'line'
-                ? html`<label
-                    style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
-                  >
-                    <ha-switch
-                      .checked=${graphsModule.show_grid !== false}
-                      @change=${(e: Event) => {
-                        const t = e.target as any;
-                        updateModule({ show_grid: t.checked });
-                      }}
-                    ></ha-switch>
-                    <span>${localize('editor.graphs.display.show_grid', lang, 'Show Grid')}</span>
-                  </label>`
+                ? html`
+                    <div style="padding:8px; border-radius:6px;">
+                      ${this._renderInlineToggle(
+                        hass,
+                        localize('editor.graphs.display.show_grid', lang, 'Show Grid'),
+                        graphsModule.show_grid !== false,
+                        checked => updateModule({ show_grid: checked })
+                      )}
+                    </div>
+                  `
                 : ''}
               ${graphsModule.chart_type === 'line' && graphsModule.show_grid !== false
-                ? html`<label
-                    style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
-                  >
-                    <ha-switch
-                      .checked=${(graphsModule as any).show_grid_values !== false}
-                      @change=${(e: Event) => {
-                        const t = e.target as any;
-                        updateModule({ show_grid_values: t.checked } as any);
-                      }}
-                    ></ha-switch>
-                    <span
-                      >${localize(
-                        'editor.graphs.display.show_grid_values',
-                        lang,
-                        'Show Grid Values'
-                      )}</span
-                    >
-                  </label>`
+                ? html`
+                    <div style="padding:8px; border-radius:6px;">
+                      ${this._renderInlineToggle(
+                        hass,
+                        localize(
+                          'editor.graphs.display.show_grid_values',
+                          lang,
+                          'Show Grid Values'
+                        ),
+                        (graphsModule as any).show_grid_values !== false,
+                        checked => updateModule({ show_grid_values: checked } as any)
+                      )}
+                    </div>
+                  `
                 : ''}
               ${graphsModule.chart_type === 'line'
-                ? html`<label
-                    style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
-                  >
-                    <ha-switch
-                      .checked=${(graphsModule as any).show_time_intervals === true}
-                      @change=${(e: Event) => {
-                        const t = e.target as any;
-                        updateModule({ show_time_intervals: t.checked } as any);
-                      }}
-                    ></ha-switch>
-                    <span
-                      >${localize(
-                        'editor.graphs.display.show_time_intervals',
-                        lang,
-                        'Show Time Intervals'
-                      )}</span
-                    >
-                  </label>`
+                ? html`
+                    <div style="padding:8px; border-radius:6px;">
+                      ${this._renderInlineToggle(
+                        hass,
+                        localize(
+                          'editor.graphs.display.show_time_intervals',
+                          lang,
+                          'Show Time Intervals'
+                        ),
+                        (graphsModule as any).show_time_intervals === true,
+                        checked => updateModule({ show_time_intervals: checked } as any)
+                      )}
+                    </div>
+                  `
                 : ''}
               ${graphsModule.chart_type === 'line'
                 ? html`
@@ -1893,14 +1863,16 @@ export class UltraGraphsModule extends BaseUltraModule {
                 : ''}
               ${['pie', 'donut'].includes(graphsModule.chart_type)
                 ? html`
-                    <label
-                      style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
-                    >
-                      <ha-switch
-                        .checked=${Number((graphsModule as any).slice_gap || 0) > 0}
-                        @change=${(e: Event) => {
-                          const t = e.target as any;
-                          // Use a responsive default (approx 2–4 degrees depending on count)
+                    <div style="padding:8px; border-radius:6px;">
+                      ${this._renderInlineToggle(
+                        hass,
+                        localize(
+                          'editor.graphs.display.add_slice_gap',
+                          lang,
+                          'Add Slice Gap'
+                        ),
+                        Number((graphsModule as any).slice_gap || 0) > 0,
+                        checked => {
                           const entitiesCount = (graphsModule.entities || []).filter(
                             en => en?.entity
                           ).length;
@@ -1908,69 +1880,66 @@ export class UltraGraphsModule extends BaseUltraModule {
                             2,
                             Math.min(4, Math.round(360 / Math.max(entitiesCount * 30, 1)))
                           );
-                          updateModule({ slice_gap: t.checked ? computed : 0 } as any);
-                        }}
-                      ></ha-switch>
-                      <span
-                        >${localize(
-                          'editor.graphs.display.add_slice_gap',
-                          lang,
-                          'Add Slice Gap'
-                        )}</span
-                      >
-                    </label>
+                          updateModule({ slice_gap: checked ? computed : 0 } as any);
+                        }
+                      )}
+                    </div>
                   `
                 : ''}
               ${graphsModule.chart_type === 'line'
                 ? html`
-                    <label
-                      style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
-                    >
-                      <ha-switch
-                        .checked=${graphsModule.smooth_curves !== false}
-                        @change=${(e: Event) => {
-                          const t = e.target as any;
-                          updateModule({ smooth_curves: t.checked });
-                        }}
-                      ></ha-switch>
-                      <span
-                        >${localize(
-                          'editor.graphs.display.smooth_lines',
-                          lang,
-                          'Smooth Lines'
-                        )}</span
-                      >
-                    </label>
+                    <div style="padding:8px; border-radius:6px;">
+                      ${this._renderInlineToggle(
+                        hass,
+                        localize('editor.graphs.display.smooth_lines', lang, 'Smooth Lines'),
+                        graphsModule.smooth_curves !== false,
+                        checked => updateModule({ smooth_curves: checked })
+                      )}
+                    </div>
                   `
                 : ''}
               ${graphsModule.chart_type === 'line'
-                ? html`<label
-                    style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
-                  >
-                    <ha-switch
-                      .checked=${graphsModule.show_tooltips !== false}
-                      @change=${(e: Event) => {
-                        const t = e.target as any;
-                        updateModule({ show_tooltips: t.checked });
-                      }}
-                    ></ha-switch>
-                    <span
-                      >${localize(
-                        'editor.graphs.display.show_tooltips',
-                        lang,
-                        'Show Tooltips'
-                      )}</span
-                    >
-                  </label>`
+                ? html`
+                    <div style="padding:8px; border-radius:6px;">
+                      ${this._renderInlineToggle(
+                        hass,
+                        localize(
+                          'editor.graphs.display.show_tooltips',
+                          lang,
+                          'Show Tooltips'
+                        ),
+                        graphsModule.show_tooltips !== false,
+                        checked => updateModule({ show_tooltips: checked })
+                      )}
+                    </div>
+                  `
                 : ''}
             </div>
           </div>
         </div>
 
-        <div style="margin-top: 16px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:16px;font-weight:600;">${localize('editor.graphs.unified_template.toggle', lang, 'Template mode')}</span>
+        <!-- Template Mode (wrapped in a settings-section box so the title,
+             help button, toggle and description sit inside one container — same
+             pattern as bar/spinbox/camera/etc. Title rendered once on the left
+             of the .switch-container row; the toggle's own label is suppressed. -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 16px; margin-bottom: 32px;"
+        >
+          <div
+            class="switch-container"
+            style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;"
+          >
+            <div
+              class="switch-label-row"
+              style="display:flex;align-items:center;gap:8px;"
+            >
+              <span
+                class="switch-label"
+                style="font-size:16px;font-weight:600;white-space:nowrap;"
+              >
+                ${localize('editor.graphs.unified_template.toggle', lang, 'Template mode')}
+              </span>
               <button
                 type="button"
                 class="help-btn"
@@ -1989,10 +1958,15 @@ export class UltraGraphsModule extends BaseUltraModule {
                 <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
               </button>
             </div>
-            <ha-switch
-              .checked=${graphsModule.unified_template_mode || false}
-              @change=${(e: Event) => updateModule({ unified_template_mode: (e.target as any).checked })}
-            ></ha-switch>
+            ${this.renderUcForm(
+              hass,
+              { unified_template_mode: graphsModule.unified_template_mode || false },
+              [this.booleanField('unified_template_mode')],
+              (e: CustomEvent) =>
+                updateModule({
+                  unified_template_mode: e.detail.value.unified_template_mode,
+                })
+            )}
           </div>
           <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; line-height: 1.5;">
             ${localize(

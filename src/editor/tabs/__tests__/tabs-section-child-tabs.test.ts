@@ -46,10 +46,12 @@ describe('layout-tab: tabs section child settings', () => {
   it('general tab updates nested text module', async () => {
     const el = await mountTabsWithTextChild();
     const wait = nextConfigChanged(el);
-    const range = deepQuerySelector(el.shadowRoot!, 'input[type="range"]') as HTMLInputElement;
-    expect(range).toBeTruthy();
-    range.value = '18';
-    range.dispatchEvent(new Event('input', { bubbles: true }));
+    const slider = deepQuerySelector(el.shadowRoot!, 'ha-slider') as HTMLElement & {
+      value?: number;
+    };
+    expect(slider).toBeTruthy();
+    slider.value = 18;
+    slider.dispatchEvent(new Event('change', { bubbles: true }));
     const { config } = await wait;
     const tabsMod = config.layout.rows[0].columns[0].modules[0] as any;
     const child = tabsMod.sections[0].modules[0];
@@ -84,8 +86,8 @@ describe('layout-tab: tabs section child settings', () => {
     const wait = nextConfigChanged(el);
     const cb = deepQuerySelector(
       el.shadowRoot!,
-      '.uc-global-logic-tab input[type="checkbox"]'
-    ) as HTMLInputElement;
+      '.uc-global-logic-tab ha-checkbox'
+    ) as HTMLElement & { checked?: boolean };
     expect(cb).toBeTruthy();
     cb.checked = true;
     cb.dispatchEvent(new Event('change', { bubbles: true }));

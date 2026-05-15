@@ -92,20 +92,42 @@ export class UltraClimateModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const climateModule = module as ClimateModule;
+    const lang = hass?.locale?.language || 'en';
 
     return html`
-      <style>
-        ${this.injectUcFormStyles()}
-      </style>
+      ${this.injectUcFormStyles()}
 
-      <!-- Entity Configuration -->
-      ${this.renderSettingsSection('Entity Configuration', 'Select the climate entity to control', [])}
-      <div style="margin-bottom: 24px;">
+      <!-- Entity Configuration (title + entity picker in a single settings-section box) -->
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+        >
+          ${localize('editor.climate.entity_config_title', lang, 'Entity Configuration')}
+        </div>
+        <div
+          style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+        >
+          ${localize(
+            'editor.climate.entity_config_desc',
+            lang,
+            'Select the climate entity to control'
+          )}
+        </div>
         ${this.renderEntityPickerWithVariables(
-          hass, config, 'entity', climateModule.entity || '',
-          (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+          hass,
+          config,
+          'entity',
+          climateModule.entity || '',
+          (value: string) => {
+            updateModule({ entity: value });
+            this.triggerPreviewUpdate();
+          },
           ['climate'],
-          'Climate Entity'
+          localize('editor.climate.entity', lang, 'Climate Entity')
         )}
       </div>
 

@@ -31,10 +31,12 @@ describe('layout-tab: layout module + layout child', () => {
     anyEl._activeModuleTab = 'general';
     await flushUpdates(el);
     const wait = nextConfigChanged(el);
-    const range = deepQuerySelector(el.shadowRoot!, 'input[type="range"]') as HTMLInputElement;
-    expect(range).toBeTruthy();
-    range.value = '24';
-    range.dispatchEvent(new Event('input', { bubbles: true }));
+    const slider = deepQuerySelector(el.shadowRoot!, 'ha-slider') as HTMLElement & {
+      value?: number;
+    };
+    expect(slider).toBeTruthy();
+    slider.value = 24;
+    slider.dispatchEvent(new Event('change', { bubbles: true }));
     const { config: next } = await wait;
     const mod = next.layout.rows[0].columns[0].modules[0] as any;
     expect(mod.gap).toBe(24);
@@ -63,10 +65,12 @@ describe('layout-tab: layout module + layout child', () => {
     anyEl._activeModuleTab = 'general';
     await flushUpdates(el);
     const wait = nextConfigChanged(el);
-    const range = deepQuerySelector(el.shadowRoot!, 'input[type="range"]') as HTMLInputElement;
-    expect(range).toBeTruthy();
-    range.value = '22';
-    range.dispatchEvent(new Event('input', { bubbles: true }));
+    const slider = deepQuerySelector(el.shadowRoot!, 'ha-slider') as HTMLElement & {
+      value?: number;
+    };
+    expect(slider).toBeTruthy();
+    slider.value = 22;
+    slider.dispatchEvent(new Event('change', { bubbles: true }));
     const { config: next } = await wait;
     const child = (next.layout.rows[0].columns[0].modules[0] as any).modules[0];
     expect(child.text_size).toBe(22);

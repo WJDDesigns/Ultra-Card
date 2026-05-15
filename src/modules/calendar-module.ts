@@ -252,8 +252,8 @@ export class UltraCalendarModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
 
     return html`
+      ${this.injectUcFormStyles()}
       <style>
-        ${this.injectUcFormStyles()}
         ${this.getEditorStyles()}
       </style>
 
@@ -447,8 +447,8 @@ export class UltraCalendarModule extends BaseUltraModule {
 
         ${module.show_title
           ? html`
-              <div class="conditional-fields-group">
-                <div class="conditional-fields-content">
+              <div>
+                
                   ${this.renderFieldSection(
                     'Title Text',
                     'Custom title for the calendar',
@@ -483,7 +483,7 @@ export class UltraCalendarModule extends BaseUltraModule {
                         </div>
                       `
                     : ''}
-                </div>
+                
               </div>
             `
           : ''}
@@ -549,8 +549,8 @@ export class UltraCalendarModule extends BaseUltraModule {
 
         ${module.compact_auto_fit_height
           ? html`
-              <div class="conditional-fields-group">
-                <div class="conditional-fields-content">
+              <div>
+                
                   ${this.renderFieldSection(
                     'Container Height',
                     'Height of the events container (e.g., 300px, 50vh, 100%)',
@@ -588,7 +588,7 @@ export class UltraCalendarModule extends BaseUltraModule {
                         }
                       )
                     : ''}
-                </div>
+                
               </div>
             `
           : this.renderSliderField(
@@ -1107,8 +1107,8 @@ export class UltraCalendarModule extends BaseUltraModule {
 
           ${module.show_month
             ? html`
-                <div class="conditional-fields-group">
-                  <div class="conditional-fields-content">
+                <div>
+                  
                     <div class="color-row">
                       <div class="color-field">
                         <div class="field-title">Month Color</div>
@@ -1121,7 +1121,7 @@ export class UltraCalendarModule extends BaseUltraModule {
                         ></ultra-color-picker>
                       </div>
                     </div>
-                  </div>
+                  
                 </div>
               `
             : ''}
@@ -1248,8 +1248,8 @@ export class UltraCalendarModule extends BaseUltraModule {
 
           ${module.show_day_separator
             ? html`
-                <div class="conditional-fields-group">
-                  <div class="conditional-fields-content">
+                <div>
+                  
                     <div class="separator-row">
                       <div class="separator-field">
                         <div class="field-title">Day Separator Color</div>
@@ -1264,7 +1264,7 @@ export class UltraCalendarModule extends BaseUltraModule {
                         ></ultra-color-picker>
                       </div>
                     </div>
-                  </div>
+                  
                 </div>
               `
             : ''}
@@ -1284,8 +1284,8 @@ export class UltraCalendarModule extends BaseUltraModule {
 
           ${module.show_week_separator
             ? html`
-                <div class="conditional-fields-group">
-                  <div class="conditional-fields-content">
+                <div>
+                  
                     <div class="separator-row">
                       <div class="separator-field">
                         <div class="field-title">Week Separator Color</div>
@@ -1300,7 +1300,7 @@ export class UltraCalendarModule extends BaseUltraModule {
                         ></ultra-color-picker>
                       </div>
                     </div>
-                  </div>
+                  
                 </div>
               `
             : ''}

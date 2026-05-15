@@ -626,123 +626,46 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
           ${summaryModule.enable_auto_filter
             ? html`
                 <div style="margin-top: 16px;">
-                  <!-- Include Filters -->
-                  <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
-                    ${localize('editor.status_summary.include_filters', lang, 'Include Filters')}
-                  </div>
-                  <div
-                    style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 8px;"
-                  >
-                    ${localize(
+                  ${this.renderChipListField(
+                    localize(
+                      'editor.status_summary.include_filters',
+                      lang,
+                      'Include Filters'
+                    ),
+                    localize(
                       'editor.status_summary.include_filters_desc',
                       lang,
-                      'Add domains or partial names to include. Examples: "binary_sensor", "light", "garage", "kitchen"'
-                    )}
-                  </div>
-                  <div
-                    style="font-size: 11px; color: var(--secondary-text-color); margin-bottom: 8px; font-style: italic;"
-                  >
-                    Common domains: binary_sensor, light, switch, sensor, climate, cover, fan, lock,
-                    media_player
-                  </div>
-
-                  <!-- Include filter tags -->
-                  <div style="margin-bottom: 8px; min-height: 32px;">
-                    ${(summaryModule.include_filters || []).map(
-                      filter => html`
-                        <span class="filter-chip">
-                          ${filter}
-                          <ha-icon
-                            icon="mdi:close"
-                            class="chip-remove-icon"
-                            @click=${(e: Event) =>
-                              this.removeFilter('include', filter, summaryModule, updateModule, e)}
-                          ></ha-icon>
-                        </span>
-                      `
-                    )}
-                  </div>
-
-                  <div class="domain-input-row">
-                    <input
-                      type="text"
-                      class="state-color-input"
-                      placeholder="e.g., binary_sensor, garage, kitchen"
-                      @keydown=${(e: KeyboardEvent) => {
-                        if (e.key === 'Enter') {
-                          this.addFilter('include', summaryModule, updateModule, e);
-                        }
-                      }}
-                    />
-                    <button
-                      class="add-entity-btn"
-                      style="width: auto; padding: 8px 16px;"
-                      @click=${(e: Event) =>
-                        this.addFilter('include', summaryModule, updateModule, e)}
-                    >
-                      <ha-icon icon="mdi:plus"></ha-icon>
-                    </button>
-                  </div>
-
-                  <!-- Exclude Filters -->
-                  <div style="margin-top: 24px;">
-                    <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
-                      ${localize('editor.status_summary.exclude_filters', lang, 'Exclude Filters')}
-                    </div>
-                    <div
-                      style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 8px;"
-                    >
-                      ${localize(
-                        'editor.status_summary.exclude_filters_desc',
-                        lang,
-                        'Add domains or partial names to exclude. Examples: "battery", "update", "unavailable"'
-                      )}
-                    </div>
-
-                    <!-- Exclude filter tags -->
-                    <div style="margin-bottom: 8px; min-height: 32px;">
-                      ${(summaryModule.exclude_filters || []).map(
-                        filter => html`
-                          <span class="filter-chip exclude-chip">
-                            ${filter}
-                            <ha-icon
-                              icon="mdi:close"
-                              class="chip-remove-icon"
-                              @click=${(e: Event) =>
-                                this.removeFilter(
-                                  'exclude',
-                                  filter,
-                                  summaryModule,
-                                  updateModule,
-                                  e
-                                )}
-                            ></ha-icon>
-                          </span>
-                        `
-                      )}
-                    </div>
-
-                    <div class="domain-input-row">
-                      <input
-                        type="text"
-                        class="state-color-input"
-                        placeholder="e.g., battery, update, unavailable"
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'Enter') {
-                            this.addFilter('exclude', summaryModule, updateModule, e);
-                          }
-                        }}
-                      />
-                      <button
-                        class="add-entity-btn"
-                        style="width: auto; padding: 8px 16px;"
-                        @click=${(e: Event) =>
-                          this.addFilter('exclude', summaryModule, updateModule, e)}
-                      >
-                        <ha-icon icon="mdi:plus"></ha-icon>
-                      </button>
-                    </div>
-                  </div>
+                      'Add domains or partial names to include. Examples: "binary_sensor", "light", "garage", "kitchen". Common domains: binary_sensor, light, switch, sensor, climate, cover, fan, lock, media_player.'
+                    ),
+                    hass,
+                    summaryModule.include_filters || [],
+                    next => updateModule({ include_filters: next }),
+                    {
+                      mode: 'free-text',
+                      placeholder: 'e.g., binary_sensor, garage, kitchen',
+                      variant: 'primary',
+                    }
+                  )}
+                  ${this.renderChipListField(
+                    localize(
+                      'editor.status_summary.exclude_filters',
+                      lang,
+                      'Exclude Filters'
+                    ),
+                    localize(
+                      'editor.status_summary.exclude_filters_desc',
+                      lang,
+                      'Add domains or partial names to exclude. Examples: "battery", "update", "unavailable".'
+                    ),
+                    hass,
+                    summaryModule.exclude_filters || [],
+                    next => updateModule({ exclude_filters: next }),
+                    {
+                      mode: 'free-text',
+                      placeholder: 'e.g., battery, update, unavailable',
+                      variant: 'exclude',
+                    }
+                  )}
                 </div>
               `
             : ''}
@@ -787,6 +710,42 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
               ) {
                 updates.unified_template = '{\n  "color": "{{ state }}"\n}';
                 updates.unified_template_mode = true;
+              }
+              // Seed sensible defaults the first time a user switches to
+              // state-based mode. Without this the editor accepts the mode
+              // but the preview shows no coloring at all (no state map →
+              // _getEntityTextColor falls through to default_text_color),
+              // which looks like the feature is broken.
+              if (
+                mode === 'state' &&
+                Object.keys(summaryModule.global_state_colors || {}).length === 0
+              ) {
+                updates.global_state_colors = {
+                  on: 'var(--success-color, #4caf50)',
+                  off: 'var(--secondary-text-color, #9e9e9e)',
+                  open: 'var(--success-color, #4caf50)',
+                  closed: 'var(--secondary-text-color, #9e9e9e)',
+                  home: 'var(--success-color, #4caf50)',
+                  not_home: 'var(--secondary-text-color, #9e9e9e)',
+                  active: 'var(--success-color, #4caf50)',
+                  idle: 'var(--info-color, #2196f3)',
+                  playing: 'var(--info-color, #2196f3)',
+                  paused: 'var(--warning-color, #ff9800)',
+                  unavailable: 'var(--error-color, #f44336)',
+                  unknown: 'var(--warning-color, #ff9800)',
+                };
+              }
+              // Seed sensible time-threshold defaults too.
+              if (
+                mode === 'time' &&
+                !(summaryModule.global_time_colors || []).length
+              ) {
+                updates.global_time_colors = [
+                  { threshold: 5, color: 'var(--success-color, #4caf50)' },
+                  { threshold: 60, color: 'var(--info-color, #2196f3)' },
+                  { threshold: 24 * 60, color: 'var(--warning-color, #ff9800)' },
+                  { threshold: 7 * 24 * 60, color: 'var(--error-color, #f44336)' },
+                ];
               }
               updateModule(updates);
             }

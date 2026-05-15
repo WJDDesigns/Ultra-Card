@@ -1084,187 +1084,59 @@ export class UltraGridModule extends BaseUltraModule {
           ${gridModule.enable_auto_filter
             ? html`
                 <div class="conditional-group">
-                  <!-- Include Domains -->
-                  <div class="field-container">
-                    <div class="field-title">Include Domains</div>
-                    <div class="field-description">Select domains to include in the grid.</div>
-                    <div class="chips-container">
-                      ${(gridModule.include_domains || []).map(
-                        domain => html`
-                          <div class="filter-chip">
-                            ${domain}
-                            <ha-icon
-                              icon="mdi:close"
-                              class="chip-remove-icon"
-                              @click=${() => {
-                                updateModule({
-                                  include_domains: (gridModule.include_domains || []).filter(
-                                    d => d !== domain
-                                  ),
-                                });
-                              }}
-                            ></ha-icon>
-                          </div>
-                        `
-                      )}
-                    </div>
-                    <div class="domain-input-row">
-                      <select
-                        class="domain-select"
-                        @change=${(e: Event) => {
-                          const target = e.target as HTMLSelectElement;
-                          const domain = target.value;
-                          if (domain && !(gridModule.include_domains || []).includes(domain)) {
-                            updateModule({
-                              include_domains: [...(gridModule.include_domains || []), domain],
-                            });
-                          }
-                          target.value = '';
-                        }}
-                      >
-                        <option value="">Select domain to include...</option>
-                        ${availableDomains
-                          .filter(d => !(gridModule.include_domains || []).includes(d))
-                          .map(domain => html`<option value="${domain}">${domain}</option>`)}
-                      </select>
-                    </div>
-                  </div>
+                  ${this.renderChipListField(
+                    'Include Domains',
+                    'Select domains to include in the grid.',
+                    hass,
+                    gridModule.include_domains || [],
+                    next => updateModule({ include_domains: next }),
+                    {
+                      mode: 'select',
+                      variant: 'primary',
+                      selectAddLabel: 'Add domain to include…',
+                      selectOptions: availableDomains.map(d => ({ value: d, label: d })),
+                    }
+                  )}
 
-                  <!-- Exclude Domains -->
-                  <div class="field-container">
-                    <div class="field-title">Exclude Domains</div>
-                    <div class="field-description">Select domains to exclude from the grid.</div>
-                    <div class="chips-container">
-                      ${(gridModule.exclude_domains || []).map(
-                        domain => html`
-                          <div class="filter-chip exclude-chip">
-                            ${domain}
-                            <ha-icon
-                              icon="mdi:close"
-                              class="chip-remove-icon"
-                              @click=${() => {
-                                updateModule({
-                                  exclude_domains: (gridModule.exclude_domains || []).filter(
-                                    d => d !== domain
-                                  ),
-                                });
-                              }}
-                            ></ha-icon>
-                          </div>
-                        `
-                      )}
-                    </div>
-                    <div class="domain-input-row">
-                      <select
-                        class="domain-select"
-                        @change=${(e: Event) => {
-                          const target = e.target as HTMLSelectElement;
-                          const domain = target.value;
-                          if (domain && !(gridModule.exclude_domains || []).includes(domain)) {
-                            updateModule({
-                              exclude_domains: [...(gridModule.exclude_domains || []), domain],
-                            });
-                          }
-                          target.value = '';
-                        }}
-                      >
-                        <option value="">Select domain to exclude...</option>
-                        ${availableDomains
-                          .filter(d => !(gridModule.exclude_domains || []).includes(d))
-                          .map(domain => html`<option value="${domain}">${domain}</option>`)}
-                      </select>
-                    </div>
-                  </div>
+                  ${this.renderChipListField(
+                    'Exclude Domains',
+                    'Select domains to exclude from the grid.',
+                    hass,
+                    gridModule.exclude_domains || [],
+                    next => updateModule({ exclude_domains: next }),
+                    {
+                      mode: 'select',
+                      variant: 'exclude',
+                      selectAddLabel: 'Add domain to exclude…',
+                      selectOptions: availableDomains.map(d => ({ value: d, label: d })),
+                    }
+                  )}
 
-                  <!-- Include Keywords -->
-                  <div class="field-container">
-                    <div class="field-title">Include Keywords</div>
-                    <div class="field-description">Only show entities containing these words (case-insensitive).</div>
-                    <div class="chips-container">
-                      ${(gridModule.include_keywords || []).map(
-                        keyword => html`
-                          <div class="filter-chip">
-                            ${keyword}
-                            <ha-icon
-                              icon="mdi:close"
-                              class="chip-remove-icon"
-                              @click=${() => {
-                                updateModule({
-                                  include_keywords: (gridModule.include_keywords || []).filter(
-                                    k => k !== keyword
-                                  ),
-                                });
-                              }}
-                            ></ha-icon>
-                          </div>
-                        `
-                      )}
-                    </div>
-                    <div class="keyword-input-row">
-                      <input
-                        type="text"
-                        class="keyword-input"
-                        placeholder="Type keyword and press Enter..."
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'Enter') {
-                            const target = e.target as HTMLInputElement;
-                            const keyword = target.value.trim();
-                            if (keyword && !(gridModule.include_keywords || []).includes(keyword)) {
-                              updateModule({
-                                include_keywords: [...(gridModule.include_keywords || []), keyword],
-                              });
-                            }
-                            target.value = '';
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
+                  ${this.renderChipListField(
+                    'Include Keywords',
+                    'Only show entities containing these words (case-insensitive).',
+                    hass,
+                    gridModule.include_keywords || [],
+                    next => updateModule({ include_keywords: next }),
+                    {
+                      mode: 'free-text',
+                      placeholder: 'Type keyword and press Enter...',
+                      variant: 'primary',
+                    }
+                  )}
 
-                  <!-- Exclude Keywords -->
-                  <div class="field-container">
-                    <div class="field-title">Exclude Keywords</div>
-                    <div class="field-description">Hide entities containing these words (case-insensitive).</div>
-                    <div class="chips-container">
-                      ${(gridModule.exclude_keywords || []).map(
-                        keyword => html`
-                          <div class="filter-chip exclude-chip">
-                            ${keyword}
-                            <ha-icon
-                              icon="mdi:close"
-                              class="chip-remove-icon"
-                              @click=${() => {
-                                updateModule({
-                                  exclude_keywords: (gridModule.exclude_keywords || []).filter(
-                                    k => k !== keyword
-                                  ),
-                                });
-                              }}
-                            ></ha-icon>
-                          </div>
-                        `
-                      )}
-                    </div>
-                    <div class="keyword-input-row">
-                      <input
-                        type="text"
-                        class="keyword-input"
-                        placeholder="Type keyword and press Enter..."
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'Enter') {
-                            const target = e.target as HTMLInputElement;
-                            const keyword = target.value.trim();
-                            if (keyword && !(gridModule.exclude_keywords || []).includes(keyword)) {
-                              updateModule({
-                                exclude_keywords: [...(gridModule.exclude_keywords || []), keyword],
-                              });
-                            }
-                            target.value = '';
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
+                  ${this.renderChipListField(
+                    'Exclude Keywords',
+                    'Hide entities containing these words (case-insensitive).',
+                    hass,
+                    gridModule.exclude_keywords || [],
+                    next => updateModule({ exclude_keywords: next }),
+                    {
+                      mode: 'free-text',
+                      placeholder: 'Type keyword and press Enter...',
+                      variant: 'exclude',
+                    }
+                  )}
 
                   <!-- Entity Count Info -->
                   <div class="info-box">
@@ -1826,147 +1698,46 @@ export class UltraGridModule extends BaseUltraModule {
           ${gridModule.enable_auto_filter
             ? html`
                 <div class="conditional-group">
-                  <!-- Include Domains -->
-                  <div class="field-container">
-                    <div class="field-title">Include Domains</div>
-                    <div class="field-description">Select domains to include in the grid.</div>
-                    <div class="chips-container">
-                      ${(gridModule.include_domains || []).map(
-                        domain => html`
-                          <div class="filter-chip">
-                            ${domain}
-                            <ha-icon
-                              icon="mdi:close"
-                              class="chip-remove-icon"
-                              @click=${() => {
-                                updateModule({
-                                  include_domains: (gridModule.include_domains || []).filter(
-                                    d => d !== domain
-                                  ),
-                                });
-                              }}
-                            ></ha-icon>
-                          </div>
-                        `
-                      )}
-                    </div>
-                    <div class="domain-input-row">
-                      <select
-                        class="domain-select"
-                        @change=${(e: Event) => {
-                          const target = e.target as HTMLSelectElement;
-                          const domain = target.value;
-                          if (
-                            domain &&
-                            !(gridModule.include_domains || []).includes(domain)
-                          ) {
-                            updateModule({
-                              include_domains: [...(gridModule.include_domains || []), domain],
-                            });
-                          }
-                          target.value = '';
-                        }}
-                      >
-                        <option value="">Select domain...</option>
-                        ${availableDomains
-                          .filter(d => !(gridModule.include_domains || []).includes(d))
-                          .map(domain => html`<option value="${domain}">${domain}</option>`)}
-                      </select>
-                    </div>
-                  </div>
+                  ${this.renderChipListField(
+                    'Include Domains',
+                    'Select domains to include in the grid.',
+                    hass,
+                    gridModule.include_domains || [],
+                    next => updateModule({ include_domains: next }),
+                    {
+                      mode: 'select',
+                      variant: 'primary',
+                      selectAddLabel: 'Add domain to include…',
+                      selectOptions: availableDomains.map(d => ({ value: d, label: d })),
+                    }
+                  )}
 
-                  <!-- Exclude Domains -->
-                  <div class="field-container">
-                    <div class="field-title">Exclude Domains</div>
-                    <div class="field-description">Select domains to exclude from the grid.</div>
-                    <div class="chips-container">
-                      ${(gridModule.exclude_domains || []).map(
-                        domain => html`
-                          <div class="filter-chip exclude-chip">
-                            ${domain}
-                            <ha-icon
-                              icon="mdi:close"
-                              class="chip-remove-icon"
-                              @click=${() => {
-                                updateModule({
-                                  exclude_domains: (gridModule.exclude_domains || []).filter(
-                                    d => d !== domain
-                                  ),
-                                });
-                              }}
-                            ></ha-icon>
-                          </div>
-                        `
-                      )}
-                    </div>
-                    <div class="domain-input-row">
-                      <select
-                        class="domain-select"
-                        @change=${(e: Event) => {
-                          const target = e.target as HTMLSelectElement;
-                          const domain = target.value;
-                          if (
-                            domain &&
-                            !(gridModule.exclude_domains || []).includes(domain)
-                          ) {
-                            updateModule({
-                              exclude_domains: [...(gridModule.exclude_domains || []), domain],
-                            });
-                          }
-                          target.value = '';
-                        }}
-                      >
-                        <option value="">Select domain...</option>
-                        ${availableDomains
-                          .filter(d => !(gridModule.exclude_domains || []).includes(d))
-                          .map(domain => html`<option value="${domain}">${domain}</option>`)}
-                      </select>
-                    </div>
-                  </div>
+                  ${this.renderChipListField(
+                    'Exclude Domains',
+                    'Select domains to exclude from the grid.',
+                    hass,
+                    gridModule.exclude_domains || [],
+                    next => updateModule({ exclude_domains: next }),
+                    {
+                      mode: 'select',
+                      variant: 'exclude',
+                      selectAddLabel: 'Add domain to exclude…',
+                      selectOptions: availableDomains.map(d => ({ value: d, label: d })),
+                    }
+                  )}
 
-                  <!-- Exclude Entities -->
-                  <div class="field-container">
-                    <div class="field-title">Exclude Specific Entities</div>
-                    <div class="field-description">Exclude specific entities from the grid.</div>
-                    <div class="chips-container">
-                      ${(gridModule.exclude_entities || []).map(
-                        entityId => html`
-                          <div class="filter-chip exclude-chip">
-                            ${entityId.split('.')[1] || entityId}
-                            <ha-icon
-                              icon="mdi:close"
-                              class="chip-remove-icon"
-                              @click=${() => {
-                                updateModule({
-                                  exclude_entities: (gridModule.exclude_entities || []).filter(
-                                    e => e !== entityId
-                                  ),
-                                });
-                              }}
-                            ></ha-icon>
-                          </div>
-                        `
-                      )}
-                    </div>
-                    ${UcFormUtils.renderFieldSection(
-                      '',
-                      '',
-                      hass,
-                      { exclude_entity: '' },
-                      [UcFormUtils.entity('exclude_entity')],
-                      (e: CustomEvent) => {
-                        const entityId = e.detail.value.exclude_entity;
-                        if (
-                          entityId &&
-                          !(gridModule.exclude_entities || []).includes(entityId)
-                        ) {
-                          updateModule({
-                            exclude_entities: [...(gridModule.exclude_entities || []), entityId],
-                          });
-                        }
-                      }
-                    )}
-                  </div>
+                  ${this.renderChipListField(
+                    'Exclude Specific Entities',
+                    'Exclude specific entities from the grid.',
+                    hass,
+                    gridModule.exclude_entities || [],
+                    next => updateModule({ exclude_entities: next }),
+                    {
+                      mode: 'entity',
+                      variant: 'exclude',
+                      placeholder: 'Add entity to exclude…',
+                    }
+                  )}
 
                   <!-- Entity Count -->
                   <div class="info-box">

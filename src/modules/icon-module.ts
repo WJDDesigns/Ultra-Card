@@ -512,63 +512,85 @@ export class UltraIconModule extends BaseUltraModule {
                     )}
                   `
                 : html`
-                    <!-- Entity Configuration -->
-                    ${this.renderSettingsSection(
-                      localize('editor.icon.entity_config.title', lang, 'ENTITY CONFIGURATION'),
-                      localize(
-                        'editor.icon.entity_config.desc',
-                        lang,
-                        'Configure the entity and active/inactive states'
-                      ),
-                      []
-                    )}
-                    <div style="margin-bottom: 16px;">
+                    <!-- Entity Configuration (single settings-section box with title,
+                         entity picker, and active/inactive state fields all inside) -->
+                    <div
+                      class="settings-section"
+                      style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+                    >
+                      <div
+                        class="section-title"
+                        style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+                      >
+                        ${localize(
+                          'editor.icon.entity_config.title',
+                          lang,
+                          'Entity Configuration'
+                        )}
+                      </div>
+                      <div
+                        style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+                      >
+                        ${localize(
+                          'editor.icon.entity_config.desc',
+                          lang,
+                          'Configure the entity and active/inactive states'
+                        )}
+                      </div>
                       ${this.renderEntityPickerWithVariables(
-                        hass, config, 'entity', icon.entity || '',
-                        (value: string) => this._handleEntitySelection(icon, index, iconModule, value, hass, updateModule),
+                        hass,
+                        config,
+                        'entity',
+                        icon.entity || '',
+                        (value: string) =>
+                          this._handleEntitySelection(
+                            icon,
+                            index,
+                            iconModule,
+                            value,
+                            hass,
+                            updateModule
+                          ),
                         undefined,
                         localize('editor.icon.entity', lang, 'Entity')
                       )}
+                      ${this.renderFieldSection(
+                        localize('editor.icon.inactive_state', lang, 'Inactive State'),
+                        localize(
+                          'editor.icon.inactive_state_desc',
+                          lang,
+                          'State value considered "inactive" (leave blank to use actual entity state)'
+                        ),
+                        hass,
+                        { inactive_state: icon.inactive_state || '' },
+                        [this.textField('inactive_state')],
+                        (e: CustomEvent) =>
+                          this._updateIcon(
+                            iconModule,
+                            index,
+                            { inactive_state: e.detail.value.inactive_state },
+                            updateModule
+                          )
+                      )}
+                      ${this.renderFieldSection(
+                        localize('editor.icon.active_state', lang, 'Active State'),
+                        localize(
+                          'editor.icon.active_state_desc',
+                          lang,
+                          'State value considered "active" (leave blank to use actual entity state)'
+                        ),
+                        hass,
+                        { active_state: icon.active_state || '' },
+                        [this.textField('active_state')],
+                        (e: CustomEvent) =>
+                          this._updateIcon(
+                            iconModule,
+                            index,
+                            { active_state: e.detail.value.active_state },
+                            updateModule
+                          )
+                      )}
                     </div>
-                    ${this.renderSettingsSection('', '', [
-                        {
-                          title: localize('editor.icon.inactive_state', lang, 'Inactive State'),
-                          description: localize(
-                            'editor.icon.inactive_state_desc',
-                            lang,
-                            'State value considered "inactive" (leave blank to use actual entity state)'
-                          ),
-                          hass,
-                          data: { inactive_state: icon.inactive_state || '' },
-                          schema: [this.textField('inactive_state')],
-                          onChange: (e: CustomEvent) =>
-                            this._updateIcon(
-                              iconModule,
-                              index,
-                              { inactive_state: e.detail.value.inactive_state },
-                              updateModule
-                            ),
-                        },
-                        {
-                          title: localize('editor.icon.active_state', lang, 'Active State'),
-                          description: localize(
-                            'editor.icon.active_state_desc',
-                            lang,
-                            'State value considered "active" (leave blank to use actual entity state)'
-                          ),
-                          hass,
-                          data: { active_state: icon.active_state || '' },
-                          schema: [this.textField('active_state')],
-                          onChange: (e: CustomEvent) =>
-                            this._updateIcon(
-                              iconModule,
-                              index,
-                              { active_state: e.detail.value.active_state },
-                              updateModule
-                            ),
-                        },
-                      ]
-                    )}
 
                     <!-- Attributes Section -->
                     <div class="settings-section" style="margin-bottom: 24px;">
@@ -1786,22 +1808,18 @@ export class UltraIconModule extends BaseUltraModule {
                               <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
                             </button>
                           </div>
-                          <label class="switch">
-                            <input
-                              type="checkbox"
-                              .checked=${icon.unified_template_mode || false}
-                              @change=${(e: Event) => {
-                                const checked = (e.target as HTMLInputElement).checked;
-                                this._updateIcon(
-                                  iconModule,
-                                  index,
-                                  { unified_template_mode: checked },
-                                  updateModule
-                                );
-                              }}
-                            />
-                            <span class="slider round"></span>
-                          </label>
+                          ${this.renderUcForm(
+                            hass,
+                            { unified_template_mode: icon.unified_template_mode || false },
+                            [this.booleanField('unified_template_mode')],
+                            (e: CustomEvent) =>
+                              this._updateIcon(
+                                iconModule,
+                                index,
+                                { unified_template_mode: e.detail.value.unified_template_mode },
+                                updateModule
+                              )
+                          )}
                         </div>
                         <div class="template-description">
                           ${localize(
@@ -6478,21 +6496,26 @@ export class UltraIconModule extends BaseUltraModule {
                   `
                 : fieldType === 'toggle'
                   ? html`
-                      <ha-switch
-                        .checked=${displayValue}
-                        .disabled=${isLocked}
-                        @change=${(e: Event) => {
-                          if (!isLocked) {
-                            const target = e.target as any;
+                      <div
+                        style="opacity: ${isLocked ? '0.5' : '1'}; pointer-events: ${isLocked
+                          ? 'none'
+                          : 'auto'};"
+                      >
+                        ${this.renderUcForm(
+                          hass,
+                          { [activeProperty]: !!displayValue },
+                          [this.booleanField(activeProperty)],
+                          (e: CustomEvent) => {
+                            if (isLocked) return;
                             this._updateIcon(
                               iconModule,
                               index,
-                              { [activeProperty]: target.checked },
+                              { [activeProperty]: !!e.detail.value[activeProperty] },
                               updateModule
                             );
                           }
-                        }}
-                      ></ha-switch>
+                        )}
+                      </div>
                     `
                   : html`
                       <div
@@ -6568,22 +6591,24 @@ export class UltraIconModule extends BaseUltraModule {
 
     return html`
       <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-        <input
-          type="range"
-          class="gap-slider"
-          min="${min}"
-          max="${max}"
-          step="1"
-          .value="${displayValue}"
+        <ha-slider
+          class="uc-ha-slider"
+          style="flex: 1;"
+          labeled
+          pin
+          .min=${min}
+          .max=${max}
+          .step=${1}
+          .value=${displayValue}
           .disabled=${isLocked}
-          @input=${(e: Event) => {
-            if (!isLocked) {
-              const target = e.target as HTMLInputElement;
-              const newValue = Number(target.value);
-              this._updateIcon(iconModule, index, { [activeProperty]: newValue }, updateModule);
+          @change=${(e: Event) => {
+            if (isLocked) return;
+            const v = Number((e.target as HTMLInputElement).value);
+            if (!isNaN(v)) {
+              this._updateIcon(iconModule, index, { [activeProperty]: v }, updateModule);
             }
           }}
-        />
+        ></ha-slider>
         <input
           type="number"
           class="gap-input"
@@ -6614,6 +6639,7 @@ export class UltraIconModule extends BaseUltraModule {
         />
         <button
           class="reset-btn"
+          type="button"
           @click=${() => {
             if (!isLocked) {
               this._updateIcon(iconModule, index, { [activeProperty]: defaultValue }, updateModule);

@@ -4,8 +4,6 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, BackgroundModule, UltraCardConfig } from '../types';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
-import { uploadImage } from '../utils/image-upload';
-import { ucToastService } from '../services/uc-toast-service';
 
 export class UltraBackgroundModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -118,17 +116,21 @@ export class UltraBackgroundModule extends BaseUltraModule {
           ? this.renderConditionalFieldsGroup(
               localize('editor.background.upload_config', lang, 'Upload Image Configuration'),
               html`
-                <div class="field-title">${localize('editor.background.upload', lang, 'Upload Image')}</div>
-                <div class="field-description">${localize('editor.background.upload_desc', lang, 'Click to upload a background image file from your device.')}</div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
-                  @change=${(e: Event) => this.handleFileUpload(e, updateModule, hass)}
-                />
-                ${backgroundModule.background_image
-                  ? html`<div style="margin-top: 8px; font-size: 12px; color: var(--success-color);">✓ ${localize('editor.background.uploaded', lang, 'Image uploaded')}</div>`
-                  : ''}
+                ${this.renderFileField(
+                  localize('editor.background.upload', lang, 'Upload Image'),
+                  localize(
+                    'editor.background.upload_desc',
+                    lang,
+                    'Click to upload a background image file from your device.'
+                  ),
+                  hass,
+                  backgroundModule.background_image || '',
+                  path => {
+                    updateModule({ background_image: path });
+                    this.triggerPreviewUpdate();
+                  },
+                  'image/*'
+                )}
               `
             )
           : ''}
@@ -334,27 +336,6 @@ export class UltraBackgroundModule extends BaseUltraModule {
     }
 
     return { valid: errors.length === 0, errors };
-  }
-
-  /**
-   * Handle file upload
-   */
-  private async handleFileUpload(
-    event: Event,
-    updateModule: (updates: Partial<CardModule>) => void,
-    hass: HomeAssistant
-  ): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    try {
-      const imagePath = await uploadImage(hass, file);
-      updateModule({ background_image: imagePath });
-    } catch (error) {
-      console.error('Failed to upload background image:', error);
-      ucToastService.error('Failed to upload image. Please try again.');
-    }
   }
 
   /**

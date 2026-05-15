@@ -717,7 +717,10 @@
       "error_url_desc": "Voer een afbeelding URL in op het tabblad Algemeen",
       "error_upload_desc": "Upload een afbeelding in het Algemeen tabblad",
       "error_entity_desc": "Selecteer een afbeeldingsentiteit in het Algemeen tabblad",
-      "error_attribute_desc": "Selecteer een entiteit en attribuut in het Algemeen tabblad"
+      "error_attribute_desc": "Selecteer een entiteit en attribuut in het Algemeen tabblad",
+      "upload_choose": "Choose file",
+      "upload_clear": "Remove file",
+      "attribute_entity_desc": "Select an entity that contains an image URL in one of its attributes."
     },
     "graphs": {
       "chart_type": {
@@ -1480,7 +1483,26 @@
         "layout_spacing": "Indeling & Ruimte",
         "gap": "Kloof",
         "data_items_direction": "Data Items Richting",
-        "alignment": "Uitlijning"
+        "alignment": "Uitlijning",
+        "badge_top_left": "Linksboven",
+        "badge_top_right": "Rechtsboven",
+        "badge_bottom_left": "Linksonder",
+        "badge_bottom_right": "Rechtsonder",
+        "direction_row": "Rij",
+        "direction_column": "Kolom",
+        "align_left": "Links",
+        "align_center": "Midden",
+        "align_right": "Rechts",
+        "data_item": {
+          "location": "Locatie",
+          "battery": "Batterij",
+          "time_info": "Tijdinfo",
+          "media": "Media",
+          "sensor": "Sensor",
+          "device_state": "Apparaatstatus",
+          "attribute": "Attribuut",
+          "toggle": "Schakelaar"
+        }
       }
     },
     "common": {
@@ -1642,7 +1664,12 @@
       "error_no_entity": "Configureer Bron Entiteit",
       "error_no_entity_desc": "Selecteer een bronentiteit in het tabblad Algemeen",
       "error_no_options": "Voeg Opties Toe",
-      "error_no_options_desc": "Configureer dropdownopties in het tabblad Algemeen of schakel Unified Template in"
+      "error_no_options_desc": "Configureer dropdownopties in het tabblad Algemeen of schakel Unified Template in",
+      "unified_template_section": {
+        "title": "Sjabloonmodus",
+        "enable": "Sjabloonmodus inschakelen",
+        "desc": "Use a single Jinja2 template to generate all dropdown options with icons, labels, and colors. Return a JSON array of option objects. When enabled, manual options are replaced by template-generated options."
+      }
     },
     "favorite_colors": {
       "title": "Favoriete Kleuren",
@@ -3041,7 +3068,9 @@
       "section_entity_desc": "Selecteer de stofzuigerentiteit om te bedienen",
       "entity": "Stofzuiger Entiteit",
       "section_animations": "Animaties",
-      "section_animations_desc": "Bedien stofzuigeranimaties"
+      "section_animations_desc": "Bedien stofzuigeranimaties",
+      "name": "Weergavenaam",
+      "name_desc": "Aangepaste weergavenaam (laat leeg om de entiteitsnaam te gebruiken)"
     },
     "navigation": {
       "section_desktop": "DESKTOP MODUS",
@@ -3054,7 +3083,10 @@
     "climate": {
       "error_no_entity": "Geen Klimaat Entiteit",
       "error_no_entity_desc": "Selecteer een klimaatentiteit in het Algemeen tabblad",
-      "error_not_found": "Entiteit Niet Gevonden"
+      "error_not_found": "Entiteit Niet Gevonden",
+      "entity_config_title": "Entiteitsconfiguratie",
+      "entity_config_desc": "Selecteer de te bedienen klimaatentiteit",
+      "entity": "Klimaatentiteit"
     },
     "people": {
       "error_no_entity": "Selecteer Persoon Entiteit",
@@ -3557,13 +3589,16 @@
       "show_unavailable_desc": "When off, entities in unavailable or unknown states are hidden.",
       "section_source": "Entity source",
       "pinned_entities": "Pinned entities",
-      "pinned_entities_desc": "Always appear first, regardless of filters. Expand a row for overrides.",
+      "pinned_entities_desc": "Always appear first, regardless of filters. Click a chip to edit overrides; hover to remove.",
       "pin_entity": "Pin entity",
+      "pinned_add": "Add pinned entity",
       "hidden_entities": "Hidden entities",
-      "hidden_entities_desc": "Removed from the auto list; click × to show again.",
+      "hidden_entities_desc": "Removed from the auto list. Remove with the × on a chip.",
+      "hidden_add": "Add hidden entity",
       "no_entity": "No entity selected",
       "entity": "Entity",
       "entity_desc": "Entity to pin to the top.",
+      "overrides_for": "Overrides for",
       "label_override": "Label override",
       "icon_override": "Icon override",
       "row_color": "Row color override",

@@ -1278,6 +1278,9 @@
       },
       "upload": "Upload Image",
       "upload_desc": "Click to upload an image file from your device.",
+      "upload_choose": "Choose file",
+      "upload_clear": "Remove file",
+      "attribute_entity_desc": "Select an entity that contains an image URL in one of its attributes.",
       "entity_section": {
         "title": "Entity Image Configuration"
       },
@@ -1551,6 +1554,11 @@
       "basic": {
         "title": "Basic Settings",
         "desc": "Configure the dropdown appearance and behavior."
+      },
+      "unified_template_section": {
+        "title": "Template Mode",
+        "enable": "Enable Template Mode",
+        "desc": "Use a single Jinja2 template to generate all dropdown options with icons, labels, and colors. Return a JSON array of option objects. When enabled, manual options are replaced by template-generated options."
       },
       "label": {
         "title": "Label",
@@ -2215,6 +2223,16 @@
         "data_items": "Data Items",
         "data_items_desc": "Drag to reorder, click to configure",
         "add_data_item": "+ Add Data Item",
+        "data_item": {
+          "location": "Location",
+          "battery": "Battery",
+          "time_info": "Time Info",
+          "media": "Media",
+          "sensor": "Sensor",
+          "device_state": "Device State",
+          "attribute": "Attribute",
+          "toggle": "Toggle"
+        },
         "associated_entities": "Associated Entities",
         "associated_entities_desc": "Link additional entities for battery and media display",
         "battery_entity": "Battery Entity",
@@ -2222,7 +2240,16 @@
         "layout_spacing": "Layout & Spacing",
         "gap": "Gap",
         "data_items_direction": "Data Items Direction",
-        "alignment": "Alignment"
+        "direction_row": "Row",
+        "direction_column": "Column",
+        "alignment": "Alignment",
+        "align_left": "Left",
+        "align_center": "Center",
+        "align_right": "Right",
+        "badge_top_left": "Top Left",
+        "badge_top_right": "Top Right",
+        "badge_bottom_left": "Bottom Left",
+        "badge_bottom_right": "Bottom Right"
       },
       "no_text_configured": "No text configured",
       "no_image_configured": "No image configured",
@@ -3185,13 +3212,16 @@
       "show_unavailable_desc": "When off, entities in unavailable or unknown states are hidden.",
       "section_source": "Entity source",
       "pinned_entities": "Pinned entities",
-      "pinned_entities_desc": "Always appear first, regardless of filters. Expand a row for overrides.",
+      "pinned_entities_desc": "Always appear first, regardless of filters. Click a chip to edit overrides; hover to remove.",
       "pin_entity": "Pin entity",
+      "pinned_add": "Add pinned entity",
       "hidden_entities": "Hidden entities",
-      "hidden_entities_desc": "Removed from the auto list; click × to show again.",
+      "hidden_entities_desc": "Removed from the auto list. Remove with the × on a chip.",
+      "hidden_add": "Add hidden entity",
       "no_entity": "No entity selected",
       "entity": "Entity",
       "entity_desc": "Entity to pin to the top.",
+      "overrides_for": "Overrides for",
       "label_override": "Label override",
       "icon_override": "Icon override",
       "row_color": "Row color override",
@@ -3338,6 +3368,8 @@
       "section_entity": "Entity Configuration",
       "section_entity_desc": "Select the vacuum entity to control",
       "entity": "Vacuum Entity",
+      "name": "Display Name",
+      "name_desc": "Custom name to display (leave empty to use entity name)",
       "section_animations": "Animations",
       "section_animations_desc": "Control vacuum animations"
     },
@@ -3350,6 +3382,9 @@
       "section_haptics_desc": "Configure haptic feedback for interactions."
     },
     "climate": {
+      "entity_config_title": "Entity Configuration",
+      "entity_config_desc": "Select the climate entity to control",
+      "entity": "Climate Entity",
       "error_no_entity": "No Climate Entity",
       "error_no_entity_desc": "Select a climate entity in the General tab",
       "error_not_found": "Entity Not Found"

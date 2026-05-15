@@ -556,26 +556,31 @@ export class UltraDynamicListModule extends BaseUltraModule {
             ></ha-selector>
           </div>
           <div class="field-group" style="margin-bottom: 12px;">
-            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Icon (default / fallback)</label>
-            <ha-icon-picker
-              .hass=${hass}
-              .value=${todoTpl.icon || 'mdi:checkbox-marked-circle-outline'}
-              @value-changed=${(e: CustomEvent) =>
+            ${this.renderIconField(
+              'Icon (default / fallback)',
+              '',
+              hass,
+              todoTpl.icon || 'mdi:checkbox-marked-circle-outline',
+              v =>
                 updateModule({
-                  todo_item_template: { ...todoTpl, icon: e.detail.value || 'mdi:checkbox-marked-circle-outline' },
-                } as Partial<CardModule>)}
-            ></ha-icon-picker>
+                  todo_item_template: {
+                    ...todoTpl,
+                    icon: v || 'mdi:checkbox-marked-circle-outline',
+                  },
+                } as Partial<CardModule>)
+            )}
           </div>
           <div class="field-group" style="margin-bottom: 12px;">
-            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Icon when incomplete</label>
-            <ha-icon-picker
-              .hass=${hass}
-              .value=${todoTpl.icon_incomplete ?? todoTpl.icon ?? 'mdi:checkbox-marked-circle-outline'}
-              @value-changed=${(e: CustomEvent) =>
+            ${this.renderIconField(
+              'Icon when incomplete',
+              '',
+              hass,
+              todoTpl.icon_incomplete ?? todoTpl.icon ?? 'mdi:checkbox-marked-circle-outline',
+              v =>
                 updateModule({
-                  todo_item_template: { ...todoTpl, icon_incomplete: e.detail.value || undefined },
-                } as Partial<CardModule>)}
-            ></ha-icon-picker>
+                  todo_item_template: { ...todoTpl, icon_incomplete: v || undefined },
+                } as Partial<CardModule>)
+            )}
           </div>
           <div class="field-group" style="margin-bottom: 12px;">
             <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Icon color when incomplete</label>
@@ -590,15 +595,16 @@ export class UltraDynamicListModule extends BaseUltraModule {
             ></ultra-color-picker>
           </div>
           <div class="field-group" style="margin-bottom: 12px;">
-            <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Icon when completed</label>
-            <ha-icon-picker
-              .hass=${hass}
-              .value=${todoTpl.icon_completed ?? todoTpl.icon ?? 'mdi:checkbox-marked-circle'}
-              @value-changed=${(e: CustomEvent) =>
+            ${this.renderIconField(
+              'Icon when completed',
+              '',
+              hass,
+              todoTpl.icon_completed ?? todoTpl.icon ?? 'mdi:checkbox-marked-circle',
+              v =>
                 updateModule({
-                  todo_item_template: { ...todoTpl, icon_completed: e.detail.value || undefined },
-                } as Partial<CardModule>)}
-            ></ha-icon-picker>
+                  todo_item_template: { ...todoTpl, icon_completed: v || undefined },
+                } as Partial<CardModule>)
+            )}
           </div>
           <div class="field-group" style="margin-bottom: 12px;">
             <label class="field-title" style="display:block; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Icon color when completed</label>

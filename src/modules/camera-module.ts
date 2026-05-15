@@ -788,11 +788,13 @@ export class UltraCameraModule extends BaseUltraModule {
                 <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
               </button>
             </div>
-            <ha-switch
-              .checked=${cameraModule.unified_template_mode || false}
-              @change=${(e: Event) =>
-                updateModule({ unified_template_mode: (e.target as any).checked })}
-            ></ha-switch>
+            ${this.renderUcForm(
+              hass,
+              { unified_template_mode: cameraModule.unified_template_mode || false },
+              [this.booleanField('unified_template_mode')],
+              (e: CustomEvent) =>
+                updateModule({ unified_template_mode: e.detail.value.unified_template_mode })
+            )}
           </div>
           <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; line-height: 1.5;">
             ${localize(

@@ -717,7 +717,10 @@
       "error_url_desc": "Ange en bild URL i fliken Allmänt",
       "error_upload_desc": "Ladda upp en bild i fliken Allmänt",
       "error_entity_desc": "Välj en bildentitet i fliken Allmänt",
-      "error_attribute_desc": "Välj en entitet och attribut i fliken Allmänt"
+      "error_attribute_desc": "Välj en entitet och attribut i fliken Allmänt",
+      "upload_choose": "Choose file",
+      "upload_clear": "Remove file",
+      "attribute_entity_desc": "Select an entity that contains an image URL in one of its attributes."
     },
     "graphs": {
       "chart_type": {
@@ -1480,7 +1483,26 @@
         "layout_spacing": "Layout & Avstånd",
         "gap": "Lucka",
         "data_items_direction": "Data Detems Riktning",
-        "alignment": "Justering"
+        "alignment": "Justering",
+        "badge_top_left": "Top Left",
+        "badge_top_right": "Top Right",
+        "badge_bottom_left": "Bottom Left",
+        "badge_bottom_right": "Bottom Right",
+        "direction_row": "Row",
+        "direction_column": "Column",
+        "align_left": "Left",
+        "align_center": "Center",
+        "align_right": "Right",
+        "data_item": {
+          "location": "Location",
+          "battery": "Battery",
+          "time_info": "Time Info",
+          "media": "Media",
+          "sensor": "Sensor",
+          "device_state": "Device State",
+          "attribute": "Attribute",
+          "toggle": "Toggle"
+        }
       }
     },
     "common": {
@@ -1642,7 +1664,12 @@
       "error_no_entity": "Konfigurera källenhet",
       "error_no_entity_desc": "Välj en källenhet i fliken Allmänt",
       "error_no_options": "Lägg till alternativ",
-      "error_no_options_desc": "Konfigurera rullgardinsalternativ i fliken Allmänt eller aktivera Unified Template"
+      "error_no_options_desc": "Konfigurera rullgardinsalternativ i fliken Allmänt eller aktivera Unified Template",
+      "unified_template_section": {
+        "title": "Template Mode",
+        "enable": "Enable Template Mode",
+        "desc": "Use a single Jinja2 template to generate all dropdown options with icons, labels, and colors. Return a JSON array of option objects. When enabled, manual options are replaced by template-generated options."
+      }
     },
     "favorite_colors": {
       "title": "Favoritfärger",
@@ -3041,7 +3068,9 @@
       "section_entity_desc": "Välj dammsugarens enhet att styra",
       "entity": "Dammsugarens Enhet",
       "section_animations": "Animationer",
-      "section_animations_desc": "Kontrollera dammsugarens animationer"
+      "section_animations_desc": "Kontrollera dammsugarens animationer",
+      "name": "Display Name",
+      "name_desc": "Custom name to display (leave empty to use entity name)"
     },
     "navigation": {
       "section_desktop": "DESKTOPLÄGE",
@@ -3054,7 +3083,10 @@
     "climate": {
       "error_no_entity": "Ingen Klimatenhet",
       "error_no_entity_desc": "Välj en klimatenhet i Allmänt-fliken",
-      "error_not_found": "Enhet Inte Hittad"
+      "error_not_found": "Enhet Inte Hittad",
+      "entity_config_title": "Entity Configuration",
+      "entity_config_desc": "Select the climate entity to control",
+      "entity": "Climate Entity"
     },
     "people": {
       "error_no_entity": "Välj Personenhet",
@@ -3557,13 +3589,16 @@
       "show_unavailable_desc": "When off, entities in unavailable or unknown states are hidden.",
       "section_source": "Entity source",
       "pinned_entities": "Pinned entities",
-      "pinned_entities_desc": "Always appear first, regardless of filters. Expand a row for overrides.",
+      "pinned_entities_desc": "Always appear first, regardless of filters. Click a chip to edit overrides; hover to remove.",
       "pin_entity": "Pin entity",
+      "pinned_add": "Add pinned entity",
       "hidden_entities": "Hidden entities",
-      "hidden_entities_desc": "Removed from the auto list; click × to show again.",
+      "hidden_entities_desc": "Removed from the auto list. Remove with the × on a chip.",
+      "hidden_add": "Add hidden entity",
       "no_entity": "No entity selected",
       "entity": "Entity",
       "entity_desc": "Entity to pin to the top.",
+      "overrides_for": "Overrides for",
       "label_override": "Label override",
       "icon_override": "Icon override",
       "row_color": "Row color override",

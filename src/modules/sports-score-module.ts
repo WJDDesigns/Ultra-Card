@@ -254,8 +254,8 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     }
 
     return html`
+      ${this.injectUcFormStyles()}
       <style>
-        ${this.injectUcFormStyles()}
         ${this.getEditorStyles()}
       </style>
 

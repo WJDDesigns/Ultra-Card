@@ -556,8 +556,8 @@ export class UltraVideoBgModule extends BaseUltraModule {
         </div>
         ${transparency.enabled
           ? html`
-              <div class="conditional-fields-group" style="margin-top: 16px;">
-                <div class="conditional-fields-content">
+              <div style="margin-top: 16px;">
+                
                   ${this.renderSliderField(
                     'Card Opacity',
                     'Control the transparency of all Ultra Cards.',
@@ -623,7 +623,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
                       }}
                     ></ultra-color-picker>
                   </div>
-                </div>
+                
               </div>
             `
           : ''}

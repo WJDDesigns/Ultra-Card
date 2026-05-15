@@ -886,35 +886,26 @@ export class UltraVirtualPetModule extends BaseUltraModule {
             [UcFormUtils.text('pet_name')],
             (e: CustomEvent) => { updateModule({ pet_name: e.detail.value.pet_name } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); }
           )}
-          <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Species</div>
-          <div class="species-grid">
-            ${(
-              [
-                { id: 'cat', icon: 'mdi:cat', label: 'Cat' },
-                { id: 'dog', icon: 'mdi:dog', label: 'Dog' },
-                { id: 'fox', icon: 'mdi:firefox', label: 'Fox' },
-                { id: 'rabbit', icon: 'mdi:rabbit', label: 'Rabbit' },
-                { id: 'owl', icon: 'mdi:owl', label: 'Owl' },
-                { id: 'penguin', icon: 'mdi:penguin', label: 'Penguin' },
-                { id: 'robot', icon: 'mdi:robot', label: 'Robot' },
-                { id: 'shrimp', icon: 'mdi:fish', label: 'Shrimp' },
-                { id: 'snail', icon: 'mdi:bug', label: 'Snail' },
-                { id: 'snake', icon: 'mdi:snake', label: 'Snake' },
-                { id: 'turtle', icon: 'mdi:turtle', label: 'Turtle' },
-                { id: 'frog', icon: 'mdi:spa', label: 'Frog' },
-              ] as { id: PetSpecies; icon: string; label: string }[]
-            ).map(
-              s => html`
-                <div
-                  class="species-btn ${pet.species === s.id ? 'active' : ''}"
-                  @click=${() => { updateModule({ species: s.id } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); }}
-                >
-                  <ha-icon icon="${s.icon}"></ha-icon>
-                  <span>${s.label}</span>
-                </div>
-              `
-            )}
-          </div>
+          ${this.renderSegmentedField(
+            'Species',
+            '',
+            pet.species || 'cat',
+            [
+              { value: 'cat', label: 'Cat', icon: 'mdi:cat' },
+              { value: 'dog', label: 'Dog', icon: 'mdi:dog' },
+              { value: 'fox', label: 'Fox', icon: 'mdi:firefox' },
+              { value: 'rabbit', label: 'Rabbit', icon: 'mdi:rabbit' },
+              { value: 'owl', label: 'Owl', icon: 'mdi:owl' },
+              { value: 'penguin', label: 'Penguin', icon: 'mdi:penguin' },
+              { value: 'robot', label: 'Robot', icon: 'mdi:robot' },
+              { value: 'shrimp', label: 'Shrimp', icon: 'mdi:fish' },
+              { value: 'snail', label: 'Snail', icon: 'mdi:bug' },
+              { value: 'snake', label: 'Snake', icon: 'mdi:snake' },
+              { value: 'turtle', label: 'Turtle', icon: 'mdi:turtle' },
+              { value: 'frog', label: 'Frog', icon: 'mdi:spa' },
+            ],
+            next => updateModule({ species: next as PetSpecies } as any)
+          )}
         </div>
 
         <!-- Entity Bindings -->

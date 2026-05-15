@@ -150,9 +150,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
 
     return html`
-      <style>
-        ${this.injectUcFormStyles()}
-      </style>
+      ${this.injectUcFormStyles()}
 
       <!-- Entity Configuration -->
       ${this.renderSettingsSection(
@@ -406,23 +404,28 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       ${mp.animated_visuals
         ? html`
             <div style="margin-left: 16px; margin-bottom: 16px; padding-left: 12px; border-left: 3px solid var(--primary-color);">
-              <div style="font-size: 13px; font-weight: 500; margin-bottom: 8px;">Visualizer Type</div>
-              <select
-                .value=${mp.visualizer_type || 'rings'}
-                @change=${(e: Event) => updateModule({ visualizer_type: (e.target as HTMLSelectElement).value as any })}
-                style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--divider-color); background: var(--secondary-background-color); color: var(--primary-text-color); font-size: 14px; cursor: pointer;"
-              >
-                <option value="rings">Rings - Pulsing circles</option>
-                <option value="bars">Bars - Vertical equalizer bars</option>
-                <option value="wave">Wave - Oscillating sine wave</option>
-                <option value="dots">Dots - Bouncing dot pattern</option>
-                <option value="spectrum">Spectrum - Radial frequency bars</option>
-                <option value="pulse">Pulse - Breathing glow effect</option>
-                <option value="orbit">Orbit - Rotating particles</option>
-                <option value="spiral">Spiral - Rotating spiral pattern</option>
-                <option value="equalizer">Equalizer - Classic EQ visualization</option>
-                <option value="particles">Particles - Floating particle field</option>
-              </select>
+              ${this.renderFieldSection(
+                'Visualizer Type',
+                '',
+                hass,
+                { visualizer_type: mp.visualizer_type || 'rings' },
+                [
+                  this.selectField('visualizer_type', [
+                    { value: 'rings', label: 'Rings - Pulsing circles' },
+                    { value: 'bars', label: 'Bars - Vertical equalizer bars' },
+                    { value: 'wave', label: 'Wave - Oscillating sine wave' },
+                    { value: 'dots', label: 'Dots - Bouncing dot pattern' },
+                    { value: 'spectrum', label: 'Spectrum - Radial frequency bars' },
+                    { value: 'pulse', label: 'Pulse - Breathing glow effect' },
+                    { value: 'orbit', label: 'Orbit - Rotating particles' },
+                    { value: 'spiral', label: 'Spiral - Rotating spiral pattern' },
+                    { value: 'equalizer', label: 'Equalizer - Classic EQ visualization' },
+                    { value: 'particles', label: 'Particles - Floating particle field' },
+                  ]),
+                ],
+                (e: CustomEvent) =>
+                  updateModule({ visualizer_type: e.detail.value.visualizer_type as any })
+              )}
             </div>
           `
         : ''}

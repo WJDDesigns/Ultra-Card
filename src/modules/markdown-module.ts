@@ -239,17 +239,15 @@ All standard markdown features are automatically enabled!`,
                   <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
                 </button>
               </div>
-              <label class="switch">
-                <input
-                  type="checkbox"
-                  .checked=${markdownModule.unified_template_mode || false}
-                  @change=${(e: Event) => {
-                    const checked = (e.target as HTMLInputElement).checked;
-                    updateModule({ unified_template_mode: checked });
-                  }}
-                />
-                <span class="slider round"></span>
-              </label>
+              ${this.renderUcForm(
+                hass,
+                { unified_template_mode: markdownModule.unified_template_mode || false },
+                [this.booleanField('unified_template_mode')],
+                (e: CustomEvent) =>
+                  updateModule({
+                    unified_template_mode: e.detail.value.unified_template_mode,
+                  })
+              )}
             </div>
             <div class="template-description">
               ${localize(

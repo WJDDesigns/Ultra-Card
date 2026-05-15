@@ -197,71 +197,6 @@ export class UltraInfoModule extends BaseUltraModule {
         }
       </style>
       <div class="module-general-settings">
-        <!-- Module-Wide Size Controls -->
-        <div class="settings-section" style="margin-bottom: 32px;">
-          <div class="section-title">SIZE DEFAULTS (ALL ENTITIES)</div>
-          <div class="section-description" style="margin-bottom: 16px;">
-            Set module-wide defaults here, then use Apply to push them to all entities. Individual entity size settings below can still be adjusted after this. Design tab font size overrides these settings.
-          </div>
-          
-          <!-- Text Size Control -->
-          <div class="field-container" style="margin-bottom: 16px;">
-            ${this.renderSliderField(
-              `Text Size (${infoModule.text_size || 16}px)`,
-              'Module default text size (name + value). Use Apply to update all entities now.',
-              infoModule.text_size || 16,
-              16, 10, 48, 1,
-              (v: number) => {
-                updateModule({ text_size: v });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              }
-            )}
-            <button
-              class="apply-size-btn"
-              @click=${() => {
-                const textSize = infoModule.text_size || 16;
-                const updatedEntities = (infoModule.info_entities || []).map(entityItem => ({
-                  ...entityItem,
-                  name_size: textSize,
-                  text_size: textSize,
-                }));
-                updateModule({ info_entities: updatedEntities });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              }}
-            >
-              ${localize('editor.info.size_defaults.apply_text', lang, 'Apply text size to all entities')}
-            </button>
-          </div>
-
-          <!-- Icon Size Control -->
-          <div class="field-container" style="margin-bottom: 16px;">
-            ${this.renderSliderField(
-              `Icon Size (${infoModule.icon_size || 24}px)`,
-              'Module default icon size. Use Apply to update all entities now.',
-              infoModule.icon_size || 24,
-              24, 12, 64, 1,
-              (v: number) => {
-                updateModule({ icon_size: v });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              }
-            )}
-            <button
-              class="apply-size-btn"
-              @click=${() => {
-                const iconSize = infoModule.icon_size || 24;
-                const updatedEntities = (infoModule.info_entities || []).map(entityItem => ({
-                  ...entityItem,
-                  icon_size: iconSize,
-                }));
-                updateModule({ info_entities: updatedEntities });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              }}
-            >
-              ${localize('editor.info.size_defaults.apply_icon', lang, 'Apply icon size to all entities')}
-            </button>
-          </div>
-        </div>
-
         <!-- Entity Configuration -->
         <div
           class="settings-section"
@@ -689,40 +624,24 @@ export class UltraInfoModule extends BaseUltraModule {
                       'Arrange name and value (horizontal places them on one line)'
                     )}
             </div>
-            <div
-              class="control-button-group"
-              style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%;"
-            >
-              ${[
-                { value: 'vertical', icon: 'mdi:arrow-up-down', label: 'Vertical' },
-                { value: 'horizontal', icon: 'mdi:arrow-left-right', label: 'Horizontal' },
-              ].map(
-                layout => html`
-                  <button
-                    type="button"
-                    class="control-btn ${(entity.name_value_layout || 'vertical') ===
-                    layout.value
-                      ? 'active'
-                      : ''}"
-                    @click=${() => {
-                      this._updateEntity(
-                        infoModule,
-                        0,
-                        { name_value_layout: layout.value as any },
-                        updateModule
-                      );
-                      // Delay long enough for debounced config to propagate (200ms > 100ms debounce)
-                      setTimeout(() => this.triggerPreviewUpdate(), 200);
-                    }}
-                    title="${layout.label}"
-                    style="padding: 12px 8px; gap: 8px;"
-                  >
-                    <ha-icon icon="${layout.icon}"></ha-icon>
-                    <span style="font-size: 12px;">${layout.label}</span>
-                  </button>
-                `
-              )}
-            </div>
+            ${this.renderSegmentedField(
+              '',
+              '',
+              entity.name_value_layout || 'vertical',
+              [
+                { value: 'vertical', label: 'Vertical', icon: 'mdi:arrow-up-down' },
+                { value: 'horizontal', label: 'Horizontal', icon: 'mdi:arrow-left-right' },
+              ],
+              next => {
+                this._updateEntity(
+                  infoModule,
+                  0,
+                  { name_value_layout: next as any },
+                  updateModule
+                );
+                setTimeout(() => this.triggerPreviewUpdate(), 200);
+              }
+            )}
           </div>
 
           <div class="field-container" style="margin-bottom: 24px;">
@@ -768,22 +687,20 @@ export class UltraInfoModule extends BaseUltraModule {
                   <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
                 </button>
               </div>
-              <label class="switch">
-                <input
-                  type="checkbox"
-                  .checked=${entity.unified_template_mode || false}
-                  @change=${(e: Event) => {
-                    const checked = (e.target as HTMLInputElement).checked;
-                    this._updateEntity(
-                      infoModule,
-                      0,
-                      { unified_template_mode: checked },
-                      updateModule
-                    );
-                  }}
-                />
-                <span class="slider round"></span>
-              </label>
+              ${this.renderUcForm(
+                hass,
+                { unified_template_mode: entity.unified_template_mode || false },
+                [this.booleanField('unified_template_mode')],
+                (e: CustomEvent) =>
+                  this._updateEntity(
+                    infoModule,
+                    0,
+                    {
+                      unified_template_mode: e.detail.value.unified_template_mode,
+                    },
+                    updateModule
+                  )
+              )}
             </div>
             <div class="template-description">
               ${localize(
@@ -865,7 +782,7 @@ export class UltraInfoModule extends BaseUltraModule {
             ${localize(
               'editor.info.size_section.desc',
               lang,
-              'These controls affect the selected entity only. Use "Size Defaults (All Entities)" above to apply values to all entities at once.'
+              'These controls affect the selected entity only.'
             )}
           </div>
 
@@ -969,14 +886,15 @@ export class UltraInfoModule extends BaseUltraModule {
                 </div>
               </div>
               <div style="margin-left: 16px;">
-                <ha-switch
-                  .checked=${infoModule.allow_wrap !== false}
-                  @change=${(e: Event) => {
-                    const target = e.target as any;
-                    updateModule({ allow_wrap: target.checked });
+                ${this.renderUcForm(
+                  hass,
+                  { allow_wrap: infoModule.allow_wrap !== false },
+                  [this.booleanField('allow_wrap')],
+                  (e: CustomEvent) => {
+                    updateModule({ allow_wrap: e.detail.value.allow_wrap });
                     setTimeout(() => this.triggerPreviewUpdate(), 50);
-                  }}
-                ></ha-switch>
+                  }
+                )}
               </div>
             </div>
           </div>
@@ -999,38 +917,26 @@ export class UltraInfoModule extends BaseUltraModule {
                 'Position the icon relative to the content (left, top, right, or bottom)'
               )}
             </div>
-            <div
-              class="control-button-group"
-              style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%;"
-            >
-              ${[
-                { value: 'left', icon: 'mdi:arrow-left' },
-                { value: 'top', icon: 'mdi:arrow-up' },
-                { value: 'right', icon: 'mdi:arrow-right' },
-                { value: 'bottom', icon: 'mdi:arrow-down' },
-              ].map(
-                position => html`
-                  <button
-                    type="button"
-                    class="control-btn ${(entity.icon_position || 'left') === position.value
-                      ? 'active'
-                      : ''}"
-                    @click=${() => {
-                      this._updateEntity(
-                        infoModule,
-                        0,
-                        { icon_position: position.value as any },
-                        updateModule
-                      );
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }}
-                    title="${position.value.charAt(0).toUpperCase() + position.value.slice(1)}"
-                  >
-                    <ha-icon icon="${position.icon}"></ha-icon>
-                  </button>
-                `
-              )}
-            </div>
+            ${this.renderSegmentedField(
+              '',
+              '',
+              entity.icon_position || 'left',
+              [
+                { value: 'left', label: 'Left', icon: 'mdi:arrow-left' },
+                { value: 'top', label: 'Top', icon: 'mdi:arrow-up' },
+                { value: 'right', label: 'Right', icon: 'mdi:arrow-right' },
+                { value: 'bottom', label: 'Bottom', icon: 'mdi:arrow-down' },
+              ],
+              next => {
+                this._updateEntity(
+                  infoModule,
+                  0,
+                  { icon_position: next as any },
+                  updateModule
+                );
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            )}
           </div>
 
           <!-- Content Distribution -->
@@ -1051,39 +957,38 @@ export class UltraInfoModule extends BaseUltraModule {
                 'Control how icon and content are distributed along the main axis'
               )}
             </div>
-            <div
-              class="control-button-group"
-              style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%;"
-            >
-              ${[
-                { value: 'normal', icon: 'mdi:format-align-left', label: 'Normal' },
-                { value: 'space-between', icon: 'mdi:arrow-left-right', label: 'Space Between' },
-                { value: 'space-around', icon: 'mdi:arrow-expand-horizontal', label: 'Space Around' },
-                { value: 'space-evenly', icon: 'mdi:arrow-expand-all', label: 'Space Evenly' },
-              ].map(
-                distribution => html`
-                  <button
-                    type="button"
-                    class="control-btn ${(entity.content_distribution || 'normal') ===
-                    distribution.value
-                      ? 'active'
-                      : ''}"
-                    @click=${() => {
-                      this._updateEntity(
-                        infoModule,
-                        0,
-                        { content_distribution: distribution.value as any },
-                        updateModule
-                      );
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }}
-                    title="${distribution.label}"
-                  >
-                    <ha-icon icon="${distribution.icon}"></ha-icon>
-                  </button>
-                `
-              )}
-            </div>
+            ${this.renderSegmentedField(
+              '',
+              '',
+              entity.content_distribution || 'normal',
+              [
+                { value: 'normal', label: 'Normal', icon: 'mdi:format-align-left' },
+                {
+                  value: 'space-between',
+                  label: 'Space Between',
+                  icon: 'mdi:arrow-left-right',
+                },
+                {
+                  value: 'space-around',
+                  label: 'Space Around',
+                  icon: 'mdi:arrow-expand-horizontal',
+                },
+                {
+                  value: 'space-evenly',
+                  label: 'Space Evenly',
+                  icon: 'mdi:arrow-expand-all',
+                },
+              ],
+              next => {
+                this._updateEntity(
+                  infoModule,
+                  0,
+                  { content_distribution: next as any },
+                  updateModule
+                );
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            )}
           </div>
 
           <!-- Overall Alignment and Name Alignment Side by Side -->
@@ -1108,38 +1013,25 @@ export class UltraInfoModule extends BaseUltraModule {
                   'Align the entire info item within its container'
                 )}
               </div>
-              <div
-                class="control-button-group"
-                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"
-              >
-                ${[
-                  { value: 'left', icon: 'mdi:format-align-left' },
-                  { value: 'center', icon: 'mdi:format-align-center' },
-                  { value: 'right', icon: 'mdi:format-align-right' },
-                ].map(
-                  alignment => html`
-                    <button
-                      type="button"
-                      class="control-btn ${(entity.overall_alignment || 'center') ===
-                      alignment.value
-                        ? 'active'
-                        : ''}"
-                      @click=${() => {
-                        this._updateEntity(
-                          infoModule,
-                          0,
-                          { overall_alignment: alignment.value as any },
-                          updateModule
-                        );
-                        setTimeout(() => this.triggerPreviewUpdate(), 50);
-                      }}
-                      title="${alignment.value.charAt(0).toUpperCase() + alignment.value.slice(1)}"
-                    >
-                      <ha-icon icon="${alignment.icon}"></ha-icon>
-                    </button>
-                  `
-                )}
-              </div>
+              ${this.renderSegmentedField(
+                '',
+                '',
+                entity.overall_alignment || 'center',
+                [
+                  { value: 'left', label: 'Left', icon: 'mdi:format-align-left' },
+                  { value: 'center', label: 'Center', icon: 'mdi:format-align-center' },
+                  { value: 'right', label: 'Right', icon: 'mdi:format-align-right' },
+                ],
+                next => {
+                  this._updateEntity(
+                    infoModule,
+                    0,
+                    { overall_alignment: next as any },
+                    updateModule
+                  );
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }
+              )}
             </div>
 
             <!-- Name Alignment -->
@@ -1160,37 +1052,25 @@ export class UltraInfoModule extends BaseUltraModule {
                   'Align the name text within its container'
                 )}
               </div>
-              <div
-                class="control-button-group"
-                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"
-              >
-                ${[
-                  { value: 'start', icon: 'mdi:format-align-left' },
-                  { value: 'center', icon: 'mdi:format-align-center' },
-                  { value: 'end', icon: 'mdi:format-align-right' },
-                ].map(
-                  alignment => html`
-                    <button
-                      type="button"
-                      class="control-btn ${(entity.name_alignment || 'start') === alignment.value
-                        ? 'active'
-                        : ''}"
-                      @click=${() => {
-                        this._updateEntity(
-                          infoModule,
-                          0,
-                          { name_alignment: alignment.value as any },
-                          updateModule
-                        );
-                        setTimeout(() => this.triggerPreviewUpdate(), 50);
-                      }}
-                      title="${alignment.value.charAt(0).toUpperCase() + alignment.value.slice(1)}"
-                    >
-                      <ha-icon icon="${alignment.icon}"></ha-icon>
-                    </button>
-                  `
-                )}
-              </div>
+              ${this.renderSegmentedField(
+                '',
+                '',
+                entity.name_alignment || 'start',
+                [
+                  { value: 'start', label: 'Start', icon: 'mdi:format-align-left' },
+                  { value: 'center', label: 'Center', icon: 'mdi:format-align-center' },
+                  { value: 'end', label: 'End', icon: 'mdi:format-align-right' },
+                ],
+                next => {
+                  this._updateEntity(
+                    infoModule,
+                    0,
+                    { name_alignment: next as any },
+                    updateModule
+                  );
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }
+              )}
             </div>
           </div>
 
@@ -1216,37 +1096,25 @@ export class UltraInfoModule extends BaseUltraModule {
                   'Align the icon along the cross axis'
                 )}
               </div>
-              <div
-                class="control-button-group"
-                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"
-              >
-                ${[
-                  { value: 'start', icon: 'mdi:format-align-left' },
-                  { value: 'center', icon: 'mdi:format-align-center' },
-                  { value: 'end', icon: 'mdi:format-align-right' },
-                ].map(
-                  alignment => html`
-                    <button
-                      type="button"
-                      class="control-btn ${(entity.icon_alignment || 'center') === alignment.value
-                        ? 'active'
-                        : ''}"
-                      @click=${() => {
-                        this._updateEntity(
-                          infoModule,
-                          0,
-                          { icon_alignment: alignment.value as any },
-                          updateModule
-                        );
-                        setTimeout(() => this.triggerPreviewUpdate(), 50);
-                      }}
-                      title="${alignment.value.charAt(0).toUpperCase() + alignment.value.slice(1)}"
-                    >
-                      <ha-icon icon="${alignment.icon}"></ha-icon>
-                    </button>
-                  `
-                )}
-              </div>
+              ${this.renderSegmentedField(
+                '',
+                '',
+                entity.icon_alignment || 'center',
+                [
+                  { value: 'start', label: 'Start', icon: 'mdi:format-align-left' },
+                  { value: 'center', label: 'Center', icon: 'mdi:format-align-center' },
+                  { value: 'end', label: 'End', icon: 'mdi:format-align-right' },
+                ],
+                next => {
+                  this._updateEntity(
+                    infoModule,
+                    0,
+                    { icon_alignment: next as any },
+                    updateModule
+                  );
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }
+              )}
             </div>
 
             <!-- State Alignment -->
@@ -1267,37 +1135,25 @@ export class UltraInfoModule extends BaseUltraModule {
                   'Align the state/value text within its container'
                 )}
               </div>
-              <div
-                class="control-button-group"
-                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"
-              >
-                ${[
-                  { value: 'start', icon: 'mdi:format-align-left' },
-                  { value: 'center', icon: 'mdi:format-align-center' },
-                  { value: 'end', icon: 'mdi:format-align-right' },
-                ].map(
-                  alignment => html`
-                    <button
-                      type="button"
-                      class="control-btn ${(entity.state_alignment || 'start') === alignment.value
-                        ? 'active'
-                        : ''}"
-                      @click=${() => {
-                        this._updateEntity(
-                          infoModule,
-                          0,
-                          { state_alignment: alignment.value as any },
-                          updateModule
-                        );
-                        setTimeout(() => this.triggerPreviewUpdate(), 50);
-                      }}
-                      title="${alignment.value.charAt(0).toUpperCase() + alignment.value.slice(1)}"
-                    >
-                      <ha-icon icon="${alignment.icon}"></ha-icon>
-                    </button>
-                  `
-                )}
-              </div>
+              ${this.renderSegmentedField(
+                '',
+                '',
+                entity.state_alignment || 'start',
+                [
+                  { value: 'start', label: 'Start', icon: 'mdi:format-align-left' },
+                  { value: 'center', label: 'Center', icon: 'mdi:format-align-center' },
+                  { value: 'end', label: 'End', icon: 'mdi:format-align-right' },
+                ],
+                next => {
+                  this._updateEntity(
+                    infoModule,
+                    0,
+                    { state_alignment: next as any },
+                    updateModule
+                  );
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }
+              )}
             </div>
           </div>
         </div>

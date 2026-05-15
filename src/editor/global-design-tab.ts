@@ -3,6 +3,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import '../components/ultra-color-picker';
 import '../components/uc-device-selector';
+import '../components/ultra-file-picker';
+import { UcFormUtils } from '../utils/uc-form-utils';
 import { uploadImage } from '../utils/image-upload';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
@@ -1771,10 +1773,21 @@ export class GlobalDesignTab extends LitElement {
                 : ''}
             </div>
             <div class="responsive-toggle">
-              <ha-switch
-                .checked=${this._responsiveEnabled}
-                @change=${this._toggleResponsiveMode}
-              ></ha-switch>
+              ${UcFormUtils.renderForm(
+                this.hass!,
+                { _responsive_enabled: this._responsiveEnabled },
+                [UcFormUtils.boolean('_responsive_enabled')],
+                (e: CustomEvent) => {
+                  const checked = !!e.detail.value._responsive_enabled;
+                  // Mirror the original handler shape: toggle by current state.
+                  // _toggleResponsiveMode doesn't read the event so passing the
+                  // synthetic checked value through a no-op event is fine.
+                  if (checked !== this._responsiveEnabled) {
+                    this._toggleResponsiveMode(new Event('change'));
+                  }
+                },
+                false
+              )}
             </div>
           </div>
 
@@ -2272,47 +2285,29 @@ export class GlobalDesignTab extends LitElement {
             ${this.designProperties.background_image_type === 'upload'
               ? html`
                   <div class="property-group">
-                    <label
-                      >${localize(
+                    <ultra-file-picker
+                      .hass=${this.hass}
+                      .accept=${'image/*'}
+                      .label=${localize(
                         'editor.design.upload_bg_image',
                         lang,
                         'Upload Background Image'
-                      )}:</label
-                    >
-                    <div class="upload-container">
-                      <div class="file-upload-row">
-                        <label class="file-upload-button">
-                          <div class="button-content">
-                            <ha-icon icon="mdi:upload"></ha-icon>
-                            <span class="button-label"
-                              >${localize('editor.design.choose_file', lang, 'Choose File')}</span
-                            >
-                          </div>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            @change=${this._handleBackgroundImageUpload}
-                            style="display: none"
-                          />
-                        </label>
-                        <div class="path-display">
-                          ${this.designProperties.background_image
-                            ? html`<span
-                                class="uploaded-path"
-                                title="${this.designProperties.background_image}"
-                              >
-                                ${this._truncatePath(this.designProperties.background_image)}
-                              </span>`
-                            : html`<span class="no-file"
-                                >${localize(
-                                  'editor.design.no_file_chosen',
-                                  lang,
-                                  'No file chosen'
-                                )}</span
-                              >`}
-                        </div>
-                      </div>
-                    </div>
+                      )}
+                      .value=${this.designProperties.background_image || ''}
+                      .chooseFileLabel=${localize(
+                        'editor.design.choose_file',
+                        lang,
+                        'Choose File'
+                      )}
+                      .clearLabel=${localize(
+                        'editor.design.remove_file',
+                        lang,
+                        'Remove file'
+                      )}
+                      @value-changed=${(e: CustomEvent<{ value: string }>) => {
+                        this._updateProperty('background_image', e.detail?.value ?? '');
+                      }}
+                    ></ultra-file-picker>
                   </div>
                 `
               : ''}

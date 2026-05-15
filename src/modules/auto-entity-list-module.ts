@@ -1,4 +1,5 @@
 import { TemplateResult, html, nothing } from 'lit';
+import { keyed } from 'lit/directives/keyed.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import {
@@ -44,6 +45,17 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
   };
 
   private _expandedEntities: Set<string> = new Set();
+
+  /** Remount ha-entity-picker after each selection so the combobox clears reliably. */
+  private _pinnedEntityPickerKey = 0;
+  private _hiddenEntityPickerKey = 0;
+
+  private entityShortName(hass: HomeAssistant, entityId: string): string {
+    const name = hass.states[entityId]?.attributes?.friendly_name;
+    if (typeof name === 'string' && name.trim()) return name.trim();
+    const short = entityId.split('.').pop() || entityId;
+    return short.replace(/_/g, ' ');
+  }
 
   createDefault(id?: string): AutoEntityListModule {
     return {
@@ -321,6 +333,69 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 8px;
+        }
+        .uc-ael-editor-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin: 8px 0 12px 0;
+        }
+        .uc-ael-editor-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          background: var(--primary-color);
+          color: var(--text-primary-color, #fff);
+          border-radius: 16px;
+          font-size: 13px;
+          max-width: 100%;
+          position: relative;
+          cursor: pointer;
+          transition: opacity 0.15s ease, padding 0.15s ease, box-shadow 0.15s ease;
+        }
+        .uc-ael-editor-chip.is-active {
+          box-shadow: 0 0 0 2px var(--card-background-color), 0 0 0 4px var(--primary-color);
+        }
+        .uc-ael-editor-chip--hidden {
+          background: var(--error-color);
+          cursor: default;
+        }
+        .uc-ael-editor-chip:hover {
+          opacity: 0.95;
+          padding-right: 30px;
+        }
+        .uc-ael-editor-chip .uc-ael-chip-remove {
+          cursor: pointer;
+          font-size: 16px;
+          opacity: 0;
+          position: absolute;
+          right: 8px;
+          transition: opacity 0.15s ease;
+        }
+        .uc-ael-editor-chip:hover .uc-ael-chip-remove {
+          opacity: 1;
+        }
+        .uc-ael-editor-chip-label {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 220px;
+          pointer-events: none;
+        }
+        .uc-ael-overrides {
+          padding: 16px;
+          background: rgba(var(--rgb-primary-color), 0.05);
+          border-left: 3px solid var(--primary-color);
+          border-radius: 0 8px 8px 0;
+          margin-bottom: 12px;
+        }
+        .uc-ael-overrides-header {
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--primary-text-color);
+          margin-bottom: 8px;
+          opacity: 0.85;
         }
       </style>
 
@@ -859,42 +934,178 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
     updateModule: (u: Partial<CardModule>) => void,
     lang: string
   ): TemplateResult {
+    const pinned = m.pinned_entities || [];
+    const hidden = m.hidden_entities || [];
+
     return html`
       <div class="settings-section">
         <div class="section-title">
           ${localize('editor.auto_entity_list.section_source', lang, 'Entity source')}
         </div>
-        <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
+
+        <div style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;">
           ${localize('editor.auto_entity_list.pinned_entities', lang, 'Pinned entities')}
         </div>
-        <div style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 12px;">
+        <div
+          style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px; opacity: 0.8; line-height: 1.4;"
+        >
           ${localize(
             'editor.auto_entity_list.pinned_entities_desc',
             lang,
-            'Always appear first, regardless of filters. Expand a row for overrides.'
+            'Always appear first, regardless of filters. Click a chip to edit overrides; hover to remove.'
           )}
         </div>
-        ${(m.pinned_entities || []).map((ent, index) =>
-          this._renderPinnedRow(ent, index, m, hass, updateModule, lang)
+
+        ${pinned.length
+          ? html`
+              <div class="uc-ael-editor-chips">
+                ${pinned.map((ent, index) => {
+                  const isExpanded = this._expandedEntities.has(ent.id);
+                  const chipLabel = ent.entity
+                    ? ent.label || this.entityShortName(hass, ent.entity)
+                    : localize(
+                        'editor.auto_entity_list.no_entity',
+                        lang,
+                        'No entity selected'
+                      );
+                  return html`
+                    <div
+                      class="uc-ael-editor-chip ${isExpanded ? 'is-active' : ''}"
+                      title=${ent.entity || ''}
+                      @click=${(e: Event) => {
+                        if (
+                          (e.target as HTMLElement).closest('.uc-ael-chip-remove')
+                        )
+                          return;
+                        if (this._expandedEntities.has(ent.id)) {
+                          this._expandedEntities.delete(ent.id);
+                        } else {
+                          this._expandedEntities.add(ent.id);
+                        }
+                        this.triggerPreviewUpdate();
+                      }}
+                    >
+                      <span class="uc-ael-editor-chip-label">${chipLabel}</span>
+                      <ha-icon
+                        class="uc-ael-chip-remove"
+                        icon="mdi:close"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          const entities = [...pinned];
+                          entities.splice(index, 1);
+                          this._expandedEntities.delete(ent.id);
+                          updateModule({
+                            pinned_entities: entities,
+                          } as Partial<CardModule>);
+                          this.triggerPreviewUpdate();
+                        }}
+                      ></ha-icon>
+                    </div>
+                  `;
+                })}
+              </div>
+            `
+          : nothing}
+
+        ${pinned.map((ent, index) =>
+          this._expandedEntities.has(ent.id)
+            ? this._renderPinnedOverridePanel(ent, index, m, hass, updateModule, lang)
+            : nothing
         )}
-        <button
-          class="add-btn full-width"
-          @click=${() => {
-            const entities = [...(m.pinned_entities || [])];
-            const row: AutoEntityListPinnedEntity = {
-              id: this.generateId('ael_pin'),
-              entity: '',
-            };
-            entities.push(row);
-            updateModule({ pinned_entities: entities } as Partial<CardModule>);
-            this._expandedEntities.add(row.id);
-            this.triggerPreviewUpdate();
-          }}
+
+        ${keyed(
+          this._pinnedEntityPickerKey,
+          this.renderFieldSection(
+            localize('editor.auto_entity_list.pinned_add', lang, 'Add pinned entity'),
+            '',
+            hass,
+            { uc_ael_pin_entity: '' },
+            [{ name: 'uc_ael_pin_entity', selector: { entity: {} } }],
+            (e: CustomEvent) => {
+              const id = String(e.detail.value?.uc_ael_pin_entity ?? '').trim();
+              if (!id) return;
+              if (pinned.some(p => p.entity === id)) return;
+              this._pinnedEntityPickerKey += 1;
+              const row: AutoEntityListPinnedEntity = {
+                id: this.generateId('ael_pin'),
+                entity: id,
+              };
+              updateModule({
+                pinned_entities: [...pinned, row],
+              } as Partial<CardModule>);
+              this.triggerPreviewUpdate();
+            }
+          )
+        )}
+
+        <div
+          style="margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--divider-color);"
         >
-          <ha-icon icon="mdi:pin"></ha-icon>
-          ${localize('editor.auto_entity_list.pin_entity', lang, 'Pin entity')}
-        </button>
-        ${this._renderHiddenChips(m, updateModule, lang)}
+          <div
+            style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
+          >
+            ${localize('editor.auto_entity_list.hidden_entities', lang, 'Hidden entities')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.auto_entity_list.hidden_entities_desc',
+              lang,
+              'Removed from the auto list. Remove with the × on a chip.'
+            )}
+          </div>
+
+          ${hidden.length
+            ? html`
+                <div class="uc-ael-editor-chips">
+                  ${hidden.map(
+                    id => html`
+                      <div
+                        class="uc-ael-editor-chip uc-ael-editor-chip--hidden"
+                        title=${id}
+                      >
+                        <span class="uc-ael-editor-chip-label"
+                          >${this.entityShortName(hass, id)}</span
+                        >
+                        <ha-icon
+                          class="uc-ael-chip-remove"
+                          icon="mdi:close"
+                          @click=${() => {
+                            updateModule({
+                              hidden_entities: hidden.filter(x => x !== id),
+                            } as Partial<CardModule>);
+                            this.triggerPreviewUpdate();
+                          }}
+                        ></ha-icon>
+                      </div>
+                    `
+                  )}
+                </div>
+              `
+            : nothing}
+
+          ${keyed(
+            this._hiddenEntityPickerKey,
+            this.renderFieldSection(
+              localize('editor.auto_entity_list.hidden_add', lang, 'Add hidden entity'),
+              '',
+              hass,
+              { uc_ael_hidden_entity: '' },
+              [{ name: 'uc_ael_hidden_entity', selector: { entity: {} } }],
+              (e: CustomEvent) => {
+                const id = String(e.detail.value?.uc_ael_hidden_entity ?? '').trim();
+                if (!id) return;
+                if (hidden.includes(id)) return;
+                this._hiddenEntityPickerKey += 1;
+                updateModule({
+                  hidden_entities: [...hidden, id],
+                } as Partial<CardModule>);
+                this.triggerPreviewUpdate();
+              }
+            )
+          )}
+        </div>
       </div>
     `;
   }
@@ -1026,47 +1237,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
     `;
   }
 
-  private _renderHiddenChips(
-    m: AutoEntityListModule,
-    updateModule: (u: Partial<CardModule>) => void,
-    lang: string
-  ): TemplateResult {
-    return html`
-      <div style="margin-top: 24px;">
-        <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
-          ${localize('editor.auto_entity_list.hidden_entities', lang, 'Hidden entities')}
-        </div>
-        <div style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 8px;">
-          ${localize(
-            'editor.auto_entity_list.hidden_entities_desc',
-            lang,
-            'Removed from the auto list; click × to show again.'
-          )}
-        </div>
-        <div class="domain-chips">
-          ${(m.hidden_entities || []).map(
-            id => html`
-              <span class="domain-chip">
-                ${id}
-                <ha-icon
-                  icon="mdi:close"
-                  class="chip-remove"
-                  @click=${() => {
-                    updateModule({
-                      hidden_entities: (m.hidden_entities || []).filter(x => x !== id),
-                    } as Partial<CardModule>);
-                    this.triggerPreviewUpdate();
-                  }}
-                ></ha-icon>
-              </span>
-            `
-          )}
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderPinnedRow(
+  private _renderPinnedOverridePanel(
     entity: AutoEntityListPinnedEntity,
     index: number,
     m: AutoEntityListModule,
@@ -1074,97 +1245,86 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void,
     lang: string
   ): TemplateResult {
-    const isExpanded = this._expandedEntities.has(entity.id);
+    const headerLabel = entity.entity
+      ? entity.label || this.entityShortName(hass, entity.entity)
+      : localize('editor.auto_entity_list.no_entity', lang, 'No entity selected');
     return html`
-      <div class="entity-row">
-        <div class="entity-info ${!entity.entity ? 'empty' : ''}">
-          ${entity.entity ||
-          localize('editor.auto_entity_list.no_entity', lang, 'No entity selected')}
+      <div class="uc-ael-overrides">
+        <div class="uc-ael-overrides-header">
+          ${localize(
+            'editor.auto_entity_list.overrides_for',
+            lang,
+            'Overrides for'
+          )}
+          ${headerLabel}
         </div>
-        <ha-icon
-          icon="mdi:chevron-down"
-          class="expand-icon ${isExpanded ? 'expanded' : ''}"
-          @click=${() => {
-            if (this._expandedEntities.has(entity.id)) this._expandedEntities.delete(entity.id);
-            else this._expandedEntities.add(entity.id);
-            this.triggerPreviewUpdate();
-          }}
-        ></ha-icon>
-        <ha-icon
-          icon="mdi:delete"
-          class="delete-icon"
-          @click=${() => {
+        ${!entity.entity
+          ? UcFormUtils.renderFieldSection(
+              localize('editor.auto_entity_list.entity', lang, 'Entity'),
+              localize(
+                'editor.auto_entity_list.entity_desc',
+                lang,
+                'Entity to pin to the top.'
+              ),
+              hass,
+              { entity: entity.entity || '' },
+              [UcFormUtils.entity('entity')],
+              (e: CustomEvent) => {
+                const entities = [...(m.pinned_entities || [])];
+                entities[index] = {
+                  ...entities[index],
+                  entity: e.detail.value.entity,
+                };
+                updateModule({ pinned_entities: entities } as Partial<CardModule>);
+                this.triggerPreviewUpdate();
+              }
+            )
+          : nothing}
+        ${UcFormUtils.renderFieldSection(
+          localize('editor.auto_entity_list.label_override', lang, 'Label override'),
+          '',
+          hass,
+          { label: entity.label || '' },
+          [UcFormUtils.text('label')],
+          (e: CustomEvent) => {
             const entities = [...(m.pinned_entities || [])];
-            entities.splice(index, 1);
-            this._expandedEntities.delete(entity.id);
+            entities[index] = { ...entities[index], label: e.detail.value.label };
             updateModule({ pinned_entities: entities } as Partial<CardModule>);
             this.triggerPreviewUpdate();
-          }}
-        ></ha-icon>
+          }
+        )}
+        ${UcFormUtils.renderFieldSection(
+          localize('editor.auto_entity_list.icon_override', lang, 'Icon override'),
+          '',
+          hass,
+          { icon: entity.icon || '' },
+          [UcFormUtils.icon('icon')],
+          (e: CustomEvent) => {
+            const entities = [...(m.pinned_entities || [])];
+            entities[index] = { ...entities[index], icon: e.detail.value.icon };
+            updateModule({ pinned_entities: entities } as Partial<CardModule>);
+            this.triggerPreviewUpdate();
+          }
+        )}
+        <div style="margin-bottom: 16px;">
+          <ultra-color-picker
+            .label=${localize(
+              'editor.auto_entity_list.row_color',
+              lang,
+              'Row color override'
+            )}
+            .value=${entity.color || ''}
+            .defaultValue=${''}
+            .hass=${hass}
+            @value-changed=${(e: CustomEvent) => {
+              const entities = [...(m.pinned_entities || [])];
+              entities[index] = { ...entities[index], color: e.detail.value };
+              updateModule({ pinned_entities: entities } as Partial<CardModule>);
+              this.triggerPreviewUpdate();
+            }}
+          ></ultra-color-picker>
+        </div>
       </div>
-      ${isExpanded
-        ? html`
-            <div class="entity-settings">
-              ${UcFormUtils.renderFieldSection(
-                localize('editor.auto_entity_list.entity', lang, 'Entity'),
-                localize('editor.auto_entity_list.entity_desc', lang, 'Entity to pin to the top.'),
-                hass,
-                { entity: entity.entity || '' },
-                [UcFormUtils.entity('entity')],
-                (e: CustomEvent) => {
-                  const entities = [...(m.pinned_entities || [])];
-                  entities[index] = { ...entities[index], entity: e.detail.value.entity };
-                  updateModule({ pinned_entities: entities } as Partial<CardModule>);
-                  this.triggerPreviewUpdate();
-                }
-              )}
-              ${UcFormUtils.renderFieldSection(
-                localize('editor.auto_entity_list.label_override', lang, 'Label override'),
-                '',
-                hass,
-                { label: entity.label || '' },
-                [UcFormUtils.text('label')],
-                (e: CustomEvent) => {
-                  const entities = [...(m.pinned_entities || [])];
-                  entities[index] = { ...entities[index], label: e.detail.value.label };
-                  updateModule({ pinned_entities: entities } as Partial<CardModule>);
-                  this.triggerPreviewUpdate();
-                }
-              )}
-              ${UcFormUtils.renderFieldSection(
-                localize('editor.auto_entity_list.icon_override', lang, 'Icon override'),
-                '',
-                hass,
-                { icon: entity.icon || '' },
-                [UcFormUtils.icon('icon')],
-                (e: CustomEvent) => {
-                  const entities = [...(m.pinned_entities || [])];
-                  entities[index] = { ...entities[index], icon: e.detail.value.icon };
-                  updateModule({ pinned_entities: entities } as Partial<CardModule>);
-                  this.triggerPreviewUpdate();
-                }
-              )}
-              <div style="margin-bottom: 16px;">
-                <ultra-color-picker
-                  .label=${localize(
-                    'editor.auto_entity_list.row_color',
-                    lang,
-                    'Row color override'
-                  )}
-                  .value=${entity.color || ''}
-                  .defaultValue=${''}
-                  .hass=${hass}
-                  @value-changed=${(e: CustomEvent) => {
-                    const entities = [...(m.pinned_entities || [])];
-                    entities[index] = { ...entities[index], color: e.detail.value };
-                    updateModule({ pinned_entities: entities } as Partial<CardModule>);
-                    this.triggerPreviewUpdate();
-                  }}
-                ></ultra-color-picker>
-              </div>
-            </div>
-          `
-        : ''}
     `;
   }
 

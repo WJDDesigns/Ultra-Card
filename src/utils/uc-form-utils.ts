@@ -536,42 +536,56 @@ export class UcFormUtils {
       ? (ucCustomVariablesService.resolveEntityField(currentValue, config) ?? currentValue)
       : currentValue;
 
+    // Wrap in a .field-section div so the picker spaces itself like every other
+    // canonical field. Render the label using the same .field-title typography
+    // as renderFieldSection so the picker title visually matches sibling fields
+    // (otherwise "Entity" would render in HA's default form-label style while
+    // sibling fields use the bold .field-title style).
     return html`
-      ${UcFormUtils.renderForm(
-        hass,
-        { [fieldName]: resolvedDisplay || '' },
-        [
-          {
-            name: fieldName,
-            selector: {
-              entity: domain ? { domain } : {},
+      <div class="field-section uc-entity-picker-field" style="margin-bottom: 16px;">
+        ${label
+          ? html`<div
+              class="field-title"
+              style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 8px;"
+            >
+              ${label}
+            </div>`
+          : ''}
+        ${UcFormUtils.renderForm(
+          hass,
+          { [fieldName]: resolvedDisplay || '' },
+          [
+            {
+              name: fieldName,
+              selector: {
+                entity: domain ? { domain } : {},
+              },
             },
-            ...(label ? { label } : {}),
+          ],
+          (e: CustomEvent) => {
+            let newValue: string = e.detail.value[fieldName];
+            // If the user picked a $variable reference from the native picker, resolve it
+            // to a real entity ID so the picker always stores concrete entity IDs.
+            if (newValue?.startsWith('$')) {
+              newValue = ucCustomVariablesService.resolveEntityField(newValue, config) ?? newValue;
+            }
+            // IMPORTANT: compare against the value the form was actually given
+            // (`resolvedDisplay`), NOT the raw `currentValue`. When the field is bound
+            // to a $variable, `currentValue` is e.g. "$climate1" while the picker
+            // holds the resolved entity (e.g. "climate.thermostat"). HA's entity
+            // picker re-emits `value-changed` whenever it re-affirms its current
+            // value (autocomplete hydration, focus/blur, parent re-renders, etc.).
+            // Comparing against `currentValue` made every such re-affirmation look
+            // like a real change and silently overwrote the $variable reference
+            // with the resolved entity ID on the next save (regression introduced
+            // in 3.3.0-beta2 when this picker started showing the resolved entity).
+            if (newValue !== resolvedDisplay && newValue !== currentValue) {
+              onChange(newValue);
+            }
           },
-        ],
-        (e: CustomEvent) => {
-          let newValue: string = e.detail.value[fieldName];
-          // If the user picked a $variable reference from the native picker, resolve it
-          // to a real entity ID so the picker always stores concrete entity IDs.
-          if (newValue?.startsWith('$')) {
-            newValue = ucCustomVariablesService.resolveEntityField(newValue, config) ?? newValue;
-          }
-          // IMPORTANT: compare against the value the form was actually given
-          // (`resolvedDisplay`), NOT the raw `currentValue`. When the field is bound
-          // to a $variable, `currentValue` is e.g. "$climate1" while the picker
-          // holds the resolved entity (e.g. "climate.thermostat"). HA's entity
-          // picker re-emits `value-changed` whenever it re-affirms its current
-          // value (autocomplete hydration, focus/blur, parent re-renders, etc.).
-          // Comparing against `currentValue` made every such re-affirmation look
-          // like a real change and silently overwrote the $variable reference
-          // with the resolved entity ID on the next save (regression introduced
-          // in 3.3.0-beta2 when this picker started showing the resolved entity).
-          if (newValue !== resolvedDisplay && newValue !== currentValue) {
-            onChange(newValue);
-          }
-        },
-        !!label
-      )}
+          false /* hide HA's built-in label; we render our own .field-title above */
+        )}
+      </div>
     `;
   }
 
@@ -639,12 +653,33 @@ export class UcFormUtils {
         letter-spacing: 0.5px !important;
       }
 
+      /*
+       * Single source of truth for the settings-section box look. Every module
+       * editor uses .settings-section to group related fields; making the visual
+       * styling part of the shared stylesheet means modules don't have to
+       * duplicate inline styles (background / padding / radius) on every wrapper
+       * — and modules that previously used a bare <div class="settings-section">
+       * without inline styles (e.g. gauge-module) now show the proper card box.
+       */
       .settings-section {
-        margin-bottom: 16px;
+        background: var(--secondary-background-color);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 32px;
         max-width: 100%;
         box-sizing: border-box;
         overflow: visible;
         position: relative;
+      }
+      /* Section header: uppercase blue title. Matches the inline-styled
+         section-title used in modules that hand-roll their settings-section. */
+      .settings-section > .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--primary-color);
+        margin-bottom: 16px;
+        letter-spacing: 0.5px;
       }
 
       /* Fix for ha-select dropdowns appearing behind other elements */
@@ -821,6 +856,173 @@ export class UcFormUtils {
 
       .uc-variable-chip.selected {
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      /*
+       * .template-section is the bespoke "Template Mode" wrapper used in icon /
+       * info / markdown / text modules. Their per-module CSS only loads in
+       * renderPreview, so in the editor the wrapper had no visible box at all.
+       * Mirror .settings-section styling here so every Template Mode block looks
+       * like every other settings-section card across modules.
+       */
+      .template-section {
+        background: var(--secondary-background-color);
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 16px;
+        margin-bottom: 32px;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .template-section .template-header {
+        margin-bottom: 8px;
+      }
+      .template-section .template-description {
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        opacity: 0.85;
+        line-height: 1.4;
+        margin-top: 4px;
+        margin-bottom: 12px;
+      }
+      .template-section .template-content {
+        margin-top: 12px;
+      }
+
+      /*
+       * Belt-and-suspenders: any direct child of .settings-section that is a bare
+       * <ha-form> (not inside a .field-section, .field-container, or .uc-ultra-field-wrap)
+       * gets the same bottom margin as a .field-section so consecutive fields never
+       * visually hug each other. Without this, a stray UcFormUtils.renderForm call
+       * inside a custom settings-section produces zero gap to the next field.
+       */
+      .settings-section > ha-form,
+      .settings-section > div:not([class]) > ha-form {
+        display: block;
+        margin-bottom: 16px;
+      }
+
+      /*
+       * Inline Template Mode toggle (icon, info, markdown, text modules use a
+       * bespoke .switch-container flex row). Without this rule the embedded
+       * ha-form inherits width: 100% from the global ha-form rule above and
+       * squeezes the label to one-word-per-line ("Template / Mode"). Pinning the
+       * form's intrinsic width keeps the title on a single line and pushes the
+       * toggle to the far right via justify-content: space-between.
+       */
+      .switch-container ha-form,
+      .switch-label-row ~ ha-form {
+        width: auto !important;
+        flex-shrink: 0;
+        flex-grow: 0;
+      }
+      .switch-container > .switch-label-row {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .switch-container .switch-label {
+        white-space: nowrap;
+      }
+
+      /*
+       * Native HA slider used by renderSliderField / renderGapWithUnitField.
+       * ha-slider is HA's own component; these rules just give it the right
+       * vertical alignment inside the gap-control-container and make the pin
+       * pop nicely above the thumb. We deliberately do NOT override colors or
+       * track height so it matches every other slider in HA.
+       */
+      .uc-ha-slider {
+        --paper-slider-active-color: var(--primary-color);
+        --paper-slider-knob-color: var(--primary-color);
+        --paper-slider-pin-color: var(--primary-color);
+        --mdc-theme-secondary: var(--primary-color);
+        min-width: 0;
+      }
+
+      /*
+       * Reset button used next to slider / color fields. Single source of
+       * truth for the reset icon's size + box so it looks identical in every
+       * module (icon module size control, design tab sliders, etc.).
+       */
+      .reset-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+        flex-shrink: 0;
+      }
+      .reset-btn:hover {
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+        border-color: var(--primary-color);
+      }
+      .reset-btn:disabled,
+      .reset-btn[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .reset-btn ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      /* Shared ultra-* field wrappers (BaseUltraModule.renderFileField, etc.) */
+      .uc-ultra-field-wrap {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .uc-ultra-field-wrap ultra-file-picker,
+      .uc-ultra-field-wrap ultra-chip-list,
+      .uc-ultra-field-wrap ultra-segmented,
+      .uc-ultra-field-wrap ultra-icon-field,
+      .uc-ultra-field-wrap ultra-color-picker {
+        display: block;
+        width: 100%;
+      }
+
+      /*
+       * Conditional fields group — used by BaseUltraModule.renderConditionalFieldsGroup.
+       * Lives in the shared stylesheet so every module gets the framed look
+       * automatically, without having to inject getStyles() into the editor.
+       */
+      .conditional-fields-group {
+        margin: 16px 0;
+        border-left: 4px solid var(--primary-color);
+        background: rgba(var(--rgb-primary-color), 0.08);
+        border-radius: 0 8px 8px 0;
+        overflow: hidden;
+        transition: background 0.2s ease;
+      }
+
+      .conditional-fields-group:hover {
+        background: rgba(var(--rgb-primary-color), 0.12);
+      }
+
+      .conditional-fields-header {
+        background: rgba(var(--rgb-primary-color), 0.15);
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-color);
+        border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .conditional-fields-content {
+        padding: 16px;
+      }
+
+      .conditional-fields-content > .field-title:first-child,
+      .conditional-fields-content > *:first-child > .field-title:first-child {
+        margin-top: 0 !important;
       }
     `;
   }

@@ -103,6 +103,10 @@ export function deepQuerySelector(
 }
 
 const INTERACTIVE_SELECTOR_ORDER = [
+  // HA's native slider component used by renderSliderField / renderGapWithUnitField.
+  // It doesn't expose an internal input[type=range] in tests, so we target the
+  // element itself and fire a `change` event with the desired value.
+  'ha-slider',
   'input[type="range"]',
   'input[type="number"]',
   'textarea',
@@ -122,6 +126,15 @@ export function findFirstInteractableDeep(root: Document | ShadowRoot | Element)
 }
 
 export function fireInteractFirstControl(el: HTMLElement) {
+  // <ha-slider> exposes `.value` as a property; tests can bump it and dispatch
+  // a synthetic change event to mimic user dragging.
+  if (el.tagName.toLowerCase() === 'ha-slider') {
+    const sliderEl = el as HTMLElement & { value?: number | string };
+    const current = Number(sliderEl.value) || 0;
+    sliderEl.value = current + 1;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    return;
+  }
   if (el instanceof HTMLSelectElement) {
     if (el.options.length > 1) {
       el.selectedIndex = el.selectedIndex === 0 ? 1 : 0;

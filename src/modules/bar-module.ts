@@ -710,17 +710,30 @@ export class UltraBarModule extends BaseUltraModule {
     return html`
       ${this.injectUcFormStyles()}
       <div class="module-general-settings">
-        <!-- Bar Settings -->
-        ${this.renderSettingsSection(
-          localize('editor.bar.bar_settings.title', lang, 'Bar Settings'),
-          localize(
-            'editor.bar.bar_settings.desc',
-            lang,
-            'Configure how the bar percentage is calculated and displayed.'
-          ),
-          []
-        )}
-        <div class="field-group percentage-type-group" style="margin-top: -16px; margin-bottom: 16px;">
+        <!-- Bar Settings (single settings-section box wraps everything below
+             through to just before "Bar Appearance" so the percentage type,
+             configuration sub-modes, Bar Percentage Entity, and Limit Value Entity
+             are all visually contained — no floating outside-the-box items). -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.bar.bar_settings.title', lang, 'Bar Settings')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.bar.bar_settings.desc',
+              lang,
+              'Configure how the bar percentage is calculated and displayed.'
+            )}
+          </div>
+          <div class="field-group percentage-type-group" style="margin-bottom: 16px;">
           ${this.renderFieldSection(
             localize('editor.bar.percentage_type.title', lang, 'Percentage Type'),
             localize(
@@ -756,34 +769,47 @@ export class UltraBarModule extends BaseUltraModule {
               ? this.renderConditionalFieldsGroup(
                   localize('editor.bar.attr_config.title', lang, 'Entity Attribute Configuration'),
                   html`
-                    ${this.renderSettingsSection(
-                      localize('editor.bar.attr_config.title', lang, 'Entity Attribute Configuration'),
-                      localize('editor.bar.attr_config.desc', lang, 'Configure entity attribute settings'),
-                      []
-                    )}
-                    <div style="margin-bottom: 16px;">
-                      ${this.renderEntityPickerWithVariables(
-                        hass, config, 'percentage_attribute_entity', barModule.percentage_attribute_entity || '',
-                        (value: string) => updateModule({ percentage_attribute_entity: value }),
-                        undefined,
-                        localize('editor.bar.attr_config.attribute_entity', lang, 'Attribute Entity')
+                    <div
+                      style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+                    >
+                      ${localize(
+                        'editor.bar.attr_config.desc',
+                        lang,
+                        'Configure entity attribute settings'
                       )}
                     </div>
-                    ${this.renderSettingsSection('', '', [
-                        {
-                          title: localize('editor.bar.attr_config.attribute_name', lang, 'Attribute Name'),
-                          description: localize(
-                            'editor.bar.attr_config.attribute_name_desc',
-                            lang,
-                            'Enter the name of the attribute that contains the percentage value (e.g., "battery_level")'
-                          ),
-                          hass,
-                          data: { percentage_attribute_name: barModule.percentage_attribute_name || '' },
-                          schema: [this.textField('percentage_attribute_name')],
-                          onChange: (e: CustomEvent) =>
-                            updateModule({ percentage_attribute_name: e.detail.value.percentage_attribute_name }),
-                        },
-                      ]
+                    ${this.renderEntityPickerWithVariables(
+                      hass,
+                      config,
+                      'percentage_attribute_entity',
+                      barModule.percentage_attribute_entity || '',
+                      (value: string) =>
+                        updateModule({ percentage_attribute_entity: value }),
+                      undefined,
+                      localize(
+                        'editor.bar.attr_config.attribute_entity',
+                        lang,
+                        'Attribute Entity'
+                      )
+                    )}
+                    ${this.renderFieldSection(
+                      localize(
+                        'editor.bar.attr_config.attribute_name',
+                        lang,
+                        'Attribute Name'
+                      ),
+                      localize(
+                        'editor.bar.attr_config.attribute_name_desc',
+                        lang,
+                        'Enter the name of the attribute that contains the percentage value (e.g., "battery_level")'
+                      ),
+                      hass,
+                      { percentage_attribute_name: barModule.percentage_attribute_name || '' },
+                      [this.textField('percentage_attribute_name')],
+                      (e: CustomEvent) =>
+                        updateModule({
+                          percentage_attribute_name: e.detail.value.percentage_attribute_name,
+                        })
                     )}
                   `
                 )
@@ -800,27 +826,43 @@ export class UltraBarModule extends BaseUltraModule {
                     'Difference Calculation Configuration'
                   ),
                   html`
-                    ${this.renderSettingsSection(
-                      localize('editor.bar.diff_config.title', lang, 'Difference Calculation Configuration'),
-                      localize('editor.bar.diff_config.desc', lang, 'Configure difference calculation settings'),
-                      []
+                    <div
+                      style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+                    >
+                      ${localize(
+                        'editor.bar.diff_config.desc',
+                        lang,
+                        'Configure difference calculation settings'
+                      )}
+                    </div>
+                    ${this.renderEntityPickerWithVariables(
+                      hass,
+                      config,
+                      'percentage_current_entity',
+                      barModule.percentage_current_entity || '',
+                      (value: string) =>
+                        updateModule({ percentage_current_entity: value }),
+                      undefined,
+                      localize(
+                        'editor.bar.diff_config.current_entity',
+                        lang,
+                        'Current Value Entity'
+                      )
                     )}
-                    <div style="margin-bottom: 16px;">
-                      ${this.renderEntityPickerWithVariables(
-                        hass, config, 'percentage_current_entity', barModule.percentage_current_entity || '',
-                        (value: string) => updateModule({ percentage_current_entity: value }),
-                        undefined,
-                        localize('editor.bar.diff_config.current_entity', lang, 'Current Value Entity')
-                      )}
-                    </div>
-                    <div style="margin-bottom: 16px;">
-                      ${this.renderEntityPickerWithVariables(
-                        hass, config, 'percentage_total_entity', barModule.percentage_total_entity || '',
-                        (value: string) => updateModule({ percentage_total_entity: value }),
-                        undefined,
-                        localize('editor.bar.diff_config.total_entity', lang, 'Total Value Entity')
-                      )}
-                    </div>
+                    ${this.renderEntityPickerWithVariables(
+                      hass,
+                      config,
+                      'percentage_total_entity',
+                      barModule.percentage_total_entity || '',
+                      (value: string) =>
+                        updateModule({ percentage_total_entity: value }),
+                      undefined,
+                      localize(
+                        'editor.bar.diff_config.total_entity',
+                        lang,
+                        'Total Value Entity'
+                      )
+                    )}
                   `
                 )
               : ''
@@ -832,27 +874,43 @@ export class UltraBarModule extends BaseUltraModule {
               ? this.renderConditionalFieldsGroup(
                   localize('editor.bar.time_progress_config.title', lang, 'Time Progress Configuration'),
                   html`
-                    ${this.renderSettingsSection(
-                      localize('editor.bar.time_progress_config.title', lang, 'Time Progress Configuration'),
-                      localize('editor.bar.time_progress_config.desc', lang, 'Configure real-time progress between two timestamp entities. Updates smoothly in the browser without backend load.'),
-                      []
+                    <div
+                      style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+                    >
+                      ${localize(
+                        'editor.bar.time_progress_config.desc',
+                        lang,
+                        'Configure real-time progress between two timestamp entities. Updates smoothly in the browser without backend load.'
+                      )}
+                    </div>
+                    ${this.renderEntityPickerWithVariables(
+                      hass,
+                      config,
+                      'time_progress_start_entity',
+                      (barModule as any).time_progress_start_entity || '',
+                      (value: string) =>
+                        updateModule({ time_progress_start_entity: value }),
+                      undefined,
+                      localize(
+                        'editor.bar.time_progress_config.start_entity',
+                        lang,
+                        'Start Timestamp Entity'
+                      )
                     )}
-                    <div style="margin-bottom: 16px;">
-                      ${this.renderEntityPickerWithVariables(
-                        hass, config, 'time_progress_start_entity', (barModule as any).time_progress_start_entity || '',
-                        (value: string) => updateModule({ time_progress_start_entity: value }),
-                        undefined,
-                        localize('editor.bar.time_progress_config.start_entity', lang, 'Start Timestamp Entity')
-                      )}
-                    </div>
-                    <div style="margin-bottom: 16px;">
-                      ${this.renderEntityPickerWithVariables(
-                        hass, config, 'time_progress_end_entity', (barModule as any).time_progress_end_entity || '',
-                        (value: string) => updateModule({ time_progress_end_entity: value }),
-                        undefined,
-                        localize('editor.bar.time_progress_config.end_entity', lang, 'End Timestamp Entity')
-                      )}
-                    </div>
+                    ${this.renderEntityPickerWithVariables(
+                      hass,
+                      config,
+                      'time_progress_end_entity',
+                      (barModule as any).time_progress_end_entity || '',
+                      (value: string) =>
+                        updateModule({ time_progress_end_entity: value }),
+                      undefined,
+                      localize(
+                        'editor.bar.time_progress_config.end_entity',
+                        lang,
+                        'End Timestamp Entity'
+                      )
+                    )}
                     ${this.renderSettingsSection('', '', [
                         {
                           title: localize('editor.bar.time_progress_config.direction', lang, 'Progress Direction'),
@@ -891,48 +949,83 @@ export class UltraBarModule extends BaseUltraModule {
               ? this.renderConditionalFieldsGroup(
                   localize('editor.bar.range_config.title', lang, 'Range Configuration'),
                   html`
-                    ${this.renderSettingsSection(
-                      localize('editor.bar.range_config.title', lang, 'Range Configuration'),
-                      localize('editor.bar.range_config.desc', lang, 'Configure the start and end values for the range visualization.'),
-                      []
-                    )}
-                    <div style="margin-bottom: 16px;">
-                      ${this.renderEntityPickerWithVariables(
-                        hass, config, 'range_start_entity', (barModule as any).range_start_entity || '',
-                        (value: string) => updateModule({ range_start_entity: value }),
-                        undefined,
-                        localize('editor.bar.range_config.start_entity', lang, 'Range Start Entity')
+                    <div
+                      style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+                    >
+                      ${localize(
+                        'editor.bar.range_config.desc',
+                        lang,
+                        'Configure the start and end values for the range visualization.'
                       )}
                     </div>
-                    ${this.renderSettingsSection('', '', [
-                        {
-                          title: localize('editor.bar.range_config.start_attribute', lang, 'Start Attribute (Optional)'),
-                          description: localize('editor.bar.range_config.start_attribute_desc', lang, 'If the value is in an attribute, enter the attribute name here.'),
-                          hass,
-                          data: { range_start_attribute: (barModule as any).range_start_attribute || '' },
-                          schema: [this.textField('range_start_attribute')],
-                          onChange: (e: CustomEvent) => updateModule({ range_start_attribute: e.detail.value.range_start_attribute }),
-                        },
-                      ]
+                    ${this.renderEntityPickerWithVariables(
+                      hass,
+                      config,
+                      'range_start_entity',
+                      (barModule as any).range_start_entity || '',
+                      (value: string) => updateModule({ range_start_entity: value }),
+                      undefined,
+                      localize(
+                        'editor.bar.range_config.start_entity',
+                        lang,
+                        'Range Start Entity'
+                      )
                     )}
-                    <div style="margin-bottom: 16px;">
-                      ${this.renderEntityPickerWithVariables(
-                        hass, config, 'range_end_entity', (barModule as any).range_end_entity || '',
-                        (value: string) => updateModule({ range_end_entity: value }),
-                        undefined,
-                        localize('editor.bar.range_config.end_entity', lang, 'Range End Entity')
-                      )}
-                    </div>
-                    ${this.renderSettingsSection('', '', [
-                        {
-                          title: localize('editor.bar.range_config.end_attribute', lang, 'End Attribute (Optional)'),
-                          description: localize('editor.bar.range_config.end_attribute_desc', lang, 'If the value is in an attribute, enter the attribute name here.'),
-                          hass,
-                          data: { range_end_attribute: (barModule as any).range_end_attribute || '' },
-                          schema: [this.textField('range_end_attribute')],
-                          onChange: (e: CustomEvent) => updateModule({ range_end_attribute: e.detail.value.range_end_attribute }),
-                        },
-                      ]
+                    ${this.renderFieldSection(
+                      localize(
+                        'editor.bar.range_config.start_attribute',
+                        lang,
+                        'Start Attribute (Optional)'
+                      ),
+                      localize(
+                        'editor.bar.range_config.start_attribute_desc',
+                        lang,
+                        'If the value is in an attribute, enter the attribute name here.'
+                      ),
+                      hass,
+                      {
+                        range_start_attribute:
+                          (barModule as any).range_start_attribute || '',
+                      },
+                      [this.textField('range_start_attribute')],
+                      (e: CustomEvent) =>
+                        updateModule({
+                          range_start_attribute: e.detail.value.range_start_attribute,
+                        })
+                    )}
+                    ${this.renderEntityPickerWithVariables(
+                      hass,
+                      config,
+                      'range_end_entity',
+                      (barModule as any).range_end_entity || '',
+                      (value: string) => updateModule({ range_end_entity: value }),
+                      undefined,
+                      localize(
+                        'editor.bar.range_config.end_entity',
+                        lang,
+                        'Range End Entity'
+                      )
+                    )}
+                    ${this.renderFieldSection(
+                      localize(
+                        'editor.bar.range_config.end_attribute',
+                        lang,
+                        'End Attribute (Optional)'
+                      ),
+                      localize(
+                        'editor.bar.range_config.end_attribute_desc',
+                        lang,
+                        'If the value is in an attribute, enter the attribute name here.'
+                      ),
+                      hass,
+                      {
+                        range_end_attribute: (barModule as any).range_end_attribute || '',
+                      },
+                      [this.textField('range_end_attribute')],
+                      (e: CustomEvent) =>
+                        updateModule({
+                          range_end_attribute: e.detail.value.range_end_attribute,
+                        })
                     )}
 
                     <!-- Current Value Marker (Optional) -->
@@ -1046,78 +1139,70 @@ export class UltraBarModule extends BaseUltraModule {
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                       <!-- Min Value -->
-                      <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <span
-                          style="font-size: 13px; font-weight: 500; color: var(--primary-text-color);"
-                        >
-                          ${localize('editor.bar.range.min', lang, 'Minimum')}
-                        </span>
-                        <ha-textfield
-                          .value=${barModule.percentage_min !== undefined
-                            ? String(barModule.percentage_min)
-                            : ''}
-                          placeholder="${localize('editor.bar.range.auto', lang, 'Auto (0)')}"
-                          @input=${(e: Event) => {
-                            const target = e.target as HTMLInputElement;
-                            const val = (target?.value || '').trim();
-                            clearTimeout(this._templateInputDebounce);
-                            this._templateInputDebounce = setTimeout(() => {
-                              if (val === '') {
-                                updateModule({ percentage_min: undefined });
-                              } else {
-                                let normalized = val;
-                                if (normalized.includes(',') && !normalized.includes('.')) {
-                                  normalized = normalized.replace(',', '.');
-                                }
-                                const num = parseFloat(normalized);
-                                updateModule({
-                                  percentage_min: isNaN(num) ? undefined : num,
-                                });
+                      ${this.renderFieldSection(
+                        localize('editor.bar.range.min', lang, 'Minimum'),
+                        '',
+                        hass,
+                        {
+                          percentage_min:
+                            barModule.percentage_min !== undefined
+                              ? String(barModule.percentage_min)
+                              : '',
+                        },
+                        [this.textField('percentage_min')],
+                        (e: CustomEvent) => {
+                          const val = (e.detail.value.percentage_min || '').trim();
+                          clearTimeout(this._templateInputDebounce);
+                          this._templateInputDebounce = setTimeout(() => {
+                            if (val === '') {
+                              updateModule({ percentage_min: undefined });
+                            } else {
+                              let normalized = val;
+                              if (normalized.includes(',') && !normalized.includes('.')) {
+                                normalized = normalized.replace(',', '.');
                               }
-                              this.triggerPreviewUpdate();
-                            }, 300);
-                          }}
-                          style="width: 100%;"
-                        ></ha-textfield>
-                      </div>
+                              const num = parseFloat(normalized);
+                              updateModule({
+                                percentage_min: isNaN(num) ? undefined : num,
+                              });
+                            }
+                            this.triggerPreviewUpdate();
+                          }, 300);
+                        }
+                      )}
 
                       <!-- Max Value -->
-                      <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <span
-                          style="font-size: 13px; font-weight: 500; color: var(--primary-text-color);"
-                        >
-                          ${localize('editor.bar.range.max', lang, 'Maximum')}
-                        </span>
-                        <ha-textfield
-                          .value=${barModule.percentage_max !== undefined
-                            ? String(barModule.percentage_max)
-                            : ''}
-                          placeholder="${barModule.percentage_type === 'difference'
-                            ? localize('editor.bar.range.auto_total', lang, 'Auto (total entity)')
-                            : localize('editor.bar.range.auto', lang, 'Auto (100)')}"
-                          @input=${(e: Event) => {
-                            const target = e.target as HTMLInputElement;
-                            const val = (target?.value || '').trim();
-                            clearTimeout(this._templateInputDebounce);
-                            this._templateInputDebounce = setTimeout(() => {
-                              if (val === '') {
-                                updateModule({ percentage_max: undefined });
-                              } else {
-                                let normalized = val;
-                                if (normalized.includes(',') && !normalized.includes('.')) {
-                                  normalized = normalized.replace(',', '.');
-                                }
-                                const num = parseFloat(normalized);
-                                updateModule({
-                                  percentage_max: isNaN(num) ? undefined : num,
-                                });
+                      ${this.renderFieldSection(
+                        localize('editor.bar.range.max', lang, 'Maximum'),
+                        '',
+                        hass,
+                        {
+                          percentage_max:
+                            barModule.percentage_max !== undefined
+                              ? String(barModule.percentage_max)
+                              : '',
+                        },
+                        [this.textField('percentage_max')],
+                        (e: CustomEvent) => {
+                          const val = (e.detail.value.percentage_max || '').trim();
+                          clearTimeout(this._templateInputDebounce);
+                          this._templateInputDebounce = setTimeout(() => {
+                            if (val === '') {
+                              updateModule({ percentage_max: undefined });
+                            } else {
+                              let normalized = val;
+                              if (normalized.includes(',') && !normalized.includes('.')) {
+                                normalized = normalized.replace(',', '.');
                               }
-                              this.triggerPreviewUpdate();
-                            }, 300);
-                          }}
-                          style="width: 100%;"
-                        ></ha-textfield>
-                      </div>
+                              const num = parseFloat(normalized);
+                              updateModule({
+                                percentage_max: isNaN(num) ? undefined : num,
+                              });
+                            }
+                            this.triggerPreviewUpdate();
+                          }, 300);
+                        }
+                      )}
                     </div>
                   </div>
                 `}
@@ -1201,6 +1286,7 @@ export class UltraBarModule extends BaseUltraModule {
               ${localize('editor.bar.limit_entity.desc', lang, 'Optional: Add a vertical indicator line on the bar (e.g. charge limit for EV battery).')}
             </div>
           </div>
+        </div>
         </div>
 
         <!-- Bar Appearance Section -->
@@ -1887,13 +1973,13 @@ export class UltraBarModule extends BaseUltraModule {
                         'Comma-separated values in your entity\'s unit. Overrides the number of divisions (e.g. 10,20,30,40). Leave blank to use evenly spaced divisions.'
                       )}
                     </div>
-                    <ha-textfield
-                      style="width: 100%;"
-                      .value=${(barModule as any).scale_custom_ticks || ''}
-                      .placeholder=${'e.g. 10,20,30,40'}
-                      @change=${(e: Event) =>
-                        updateModule({ scale_custom_ticks: (e.target as HTMLInputElement).value })}
-                    ></ha-textfield>
+                    ${this.renderUcForm(
+                      hass,
+                      { scale_custom_ticks: (barModule as any).scale_custom_ticks || '' },
+                      [this.textField('scale_custom_ticks')],
+                      (e: CustomEvent) =>
+                        updateModule({ scale_custom_ticks: e.detail.value.scale_custom_ticks })
+                    )}
                   </div>
 
                   <!-- Custom Tick Labels -->
@@ -1916,15 +2002,18 @@ export class UltraBarModule extends BaseUltraModule {
                               'Optional comma-separated labels matching each custom tick (e.g. Reserve,1/4,1/2,3/4,Full). Leave a slot empty to show that tick\u2019s numeric value, or enter "-" (a single dash) to hide that tick\u2019s label while keeping its tick mark.'
                             )}
                           </div>
-                          <ha-textfield
-                            style="width: 100%;"
-                            .value=${(barModule as any).scale_custom_labels || ''}
-                            .placeholder=${'e.g. Reserve,-,1/2,-,Full'}
-                            @change=${(e: Event) =>
+                          ${this.renderUcForm(
+                            hass,
+                            {
+                              scale_custom_labels:
+                                (barModule as any).scale_custom_labels || '',
+                            },
+                            [this.textField('scale_custom_labels')],
+                            (e: CustomEvent) =>
                               updateModule({
-                                scale_custom_labels: (e.target as HTMLInputElement).value,
-                              })}
-                          ></ha-textfield>
+                                scale_custom_labels: e.detail.value.scale_custom_labels,
+                              })
+                          )}
                           <div
                             style="font-size: 12px; font-style: italic; color: var(--secondary-text-color); margin-top: 6px; line-height: 1.4;"
                           >
@@ -2033,32 +2122,17 @@ export class UltraBarModule extends BaseUltraModule {
 
                   ${barModule.minimal_icon_enabled
                     ? html`
-                        <!-- Icon Picker -->
-                        <div class="field-group" style="margin-bottom: 16px;">
-                          <div
-                            class="field-title"
-                            style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 8px;"
-                          >
-                            ${localize('editor.bar.minimal.icon', lang, 'Icon')}
-                          </div>
-                          <div
-                            class="field-description"
-                            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
-                          >
-                            ${localize(
-                              'editor.bar.minimal.icon_desc',
-                              lang,
-                              'Select the icon to display (e.g., mdi:battery).'
-                            )}
-                          </div>
-                          <ha-icon-picker
-                            .hass=${hass}
-                            .value=${barModule.minimal_icon || ''}
-                            .placeholder=${'mdi:circle'}
-                            @value-changed=${(e: CustomEvent) =>
-                              updateModule({ minimal_icon: e.detail.value })}
-                          ></ha-icon-picker>
-                        </div>
+                        ${this.renderIconField(
+                          localize('editor.bar.minimal.icon', lang, 'Icon'),
+                          localize(
+                            'editor.bar.minimal.icon_desc',
+                            lang,
+                            'Select the icon to display (e.g., mdi:battery).'
+                          ),
+                          hass,
+                          barModule.minimal_icon || '',
+                          v => updateModule({ minimal_icon: v })
+                        )}
 
                         <!-- Icon Display Mode -->
                         <div class="field-group" style="margin-bottom: 16px;">
@@ -2387,11 +2461,24 @@ export class UltraBarModule extends BaseUltraModule {
           }
         </div>
 
-        <!-- Unified Template Section -->
-        <div style="margin-bottom: 24px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:16px;font-weight:600;">${localize('editor.bar.unified_template.toggle', lang, 'Template mode')}</span>
+        <!-- Unified Template Section (wrapped in a settings-section box so the
+             title, help button, toggle and template editor are visually contained
+             alongside every other module section). -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          <div
+            class="switch-container"
+            style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;"
+          >
+            <div
+              class="switch-label-row"
+              style="display:flex;align-items:center;gap:8px;"
+            >
+              <span class="switch-label" style="font-size:16px;font-weight:600;white-space:nowrap;">
+                ${localize('editor.bar.unified_template.toggle', lang, 'Template mode')}
+              </span>
               <button
                 type="button"
                 class="help-btn"
@@ -2410,11 +2497,13 @@ export class UltraBarModule extends BaseUltraModule {
                 <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
               </button>
             </div>
-            <ha-switch
-              .checked=${barModule.unified_template_mode || false}
-              @change=${(e: Event) =>
-                updateModule({ unified_template_mode: (e.target as any).checked })}
-            ></ha-switch>
+            ${this.renderUcForm(
+              hass,
+              { unified_template_mode: barModule.unified_template_mode || false },
+              [this.booleanField('unified_template_mode')],
+              (e: CustomEvent) =>
+                updateModule({ unified_template_mode: e.detail.value.unified_template_mode })
+            )}
           </div>
           <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; line-height: 1.5;">
             ${localize(
@@ -3107,20 +3196,37 @@ export class UltraBarModule extends BaseUltraModule {
           ${
             (barModule as any).bar_animation_enabled
               ? html`
-                  ${this.renderSettingsSection(
-                    localize('editor.bar.animation.trigger.title', lang, 'Animation Trigger'),
-                    localize('editor.bar.animation.trigger.desc', lang, 'Select an entity to watch and define the value + animation to apply when it matches.'),
-                    []
-                  )}
-                  <div style="margin-bottom: 16px;">
-                    ${this.renderEntityPickerWithVariables(
-                      hass, config, 'bar_animation_entity', (barModule as any).bar_animation_entity || '',
-                      (value: string) => updateModule({ bar_animation_entity: value }),
-                      undefined,
-                      localize('editor.common.entity', lang, 'Entity')
-                    )}
-                  </div>
-                  ${this.renderSettingsSection('', '', [
+                  <div
+                    class="conditional-fields-group"
+                    style="margin: 16px 0;"
+                  >
+                    <div class="conditional-fields-header">
+                      ${localize(
+                        'editor.bar.animation.trigger.title',
+                        lang,
+                        'Animation Trigger'
+                      )}
+                    </div>
+                    <div class="conditional-fields-content">
+                      <div
+                        style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+                      >
+                        ${localize(
+                          'editor.bar.animation.trigger.desc',
+                          lang,
+                          'Select an entity to watch and define the value + animation to apply when it matches.'
+                        )}
+                      </div>
+                      ${this.renderEntityPickerWithVariables(
+                        hass,
+                        config,
+                        'bar_animation_entity',
+                        (barModule as any).bar_animation_entity || '',
+                        (value: string) => updateModule({ bar_animation_entity: value }),
+                        undefined,
+                        localize('editor.common.entity', lang, 'Entity')
+                      )}
+                      ${this.renderSettingsSection('', '', [
                       {
                         title: localize('editor.bar.animation.trigger.type', lang, 'Trigger Type'),
                         description: localize('editor.bar.animation.trigger.type_desc', lang, 'Choose whether to compare the entity state or an attribute'),
@@ -3275,20 +3381,41 @@ export class UltraBarModule extends BaseUltraModule {
                       },
                     ]
                   )}
-                  ${this.renderSettingsSection(
-                    localize('editor.bar.animation.override.title', lang, 'Action Animation Override'),
-                    localize('editor.bar.animation.override.desc', lang, 'Select an Action Entity and state to define when this animation should override the regular animation'),
-                    []
-                  )}
-                  <div style="margin-bottom: 16px;">
-                    ${this.renderEntityPickerWithVariables(
-                      hass, config, 'bar_animation_override_entity', (barModule as any).bar_animation_override_entity || '',
-                      (value: string) => updateModule({ bar_animation_override_entity: value }),
-                      undefined,
-                      localize('editor.common.entity', lang, 'Entity')
-                    )}
+                    </div>
                   </div>
-                  ${this.renderSettingsSection('', '', [
+
+                  <div
+                    class="conditional-fields-group"
+                    style="margin: 16px 0;"
+                  >
+                    <div class="conditional-fields-header">
+                      ${localize(
+                        'editor.bar.animation.override.title',
+                        lang,
+                        'Action Animation Override'
+                      )}
+                    </div>
+                    <div class="conditional-fields-content">
+                      <div
+                        style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+                      >
+                        ${localize(
+                          'editor.bar.animation.override.desc',
+                          lang,
+                          'Select an Action Entity and state to define when this animation should override the regular animation'
+                        )}
+                      </div>
+                      ${this.renderEntityPickerWithVariables(
+                        hass,
+                        config,
+                        'bar_animation_override_entity',
+                        (barModule as any).bar_animation_override_entity || '',
+                        (value: string) =>
+                          updateModule({ bar_animation_override_entity: value }),
+                        undefined,
+                        localize('editor.common.entity', lang, 'Entity')
+                      )}
+                      ${this.renderSettingsSection('', '', [
                       {
                         title: localize('editor.bar.animation.trigger.type', lang, 'Trigger Type'),
                         description: localize('editor.bar.animation.override.type_desc', lang, 'Compare the entity state or one of its attributes'),
@@ -3407,6 +3534,8 @@ export class UltraBarModule extends BaseUltraModule {
                       },
                     ]
                   )}
+                    </div>
+                  </div>
                 `
               : ''
           }

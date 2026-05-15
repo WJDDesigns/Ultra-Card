@@ -838,83 +838,28 @@ export class UltraPopupModule extends BaseUltraModule {
                             },
                           ])}
                           ${popupModule.trigger_image_type === 'upload'
-                            ? html`
-                                <div style="margin-bottom: 16px;">
-                                  <div
-                                    style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--primary-text-color);"
-                                  >
-                                    ${localize(
-                                      'editor.design.upload_bg_image',
-                                      lang,
-                                      'Upload Image'
-                                    )}
-                                  </div>
-                                  <div class="upload-container">
-                                    <div
-                                      class="file-upload-row"
-                                      style="display: flex; align-items: center; gap: 12px;"
-                                    >
-                                      <label
-                                        class="file-upload-button"
-                                        style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--primary-color); color: white; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;"
-                                      >
-                                        <ha-icon
-                                          icon="mdi:upload"
-                                          style="--mdc-icon-size: 20px;"
-                                        ></ha-icon>
-                                        <span
-                                          >${localize(
-                                            'editor.design.choose_file',
-                                            lang,
-                                            'Choose File'
-                                          )}</span
-                                        >
-                                        <input
-                                          type="file"
-                                          accept="image/*"
-                                          @change=${async (e: Event) => {
-                                            const input = e.target as HTMLInputElement;
-                                            const file = input.files?.[0];
-                                            if (!file || !hass) return;
-                                            try {
-                                              const { uploadImage } = await import(
-                                                '../utils/image-upload'
-                                              );
-                                              const imagePath = await uploadImage(hass, file);
-                                              updateModule({
-                                                trigger_image_url: imagePath,
-                                                trigger_image_type: 'upload',
-                                              });
-                                              setTimeout(() => {
-                                                this.triggerPreviewUpdate();
-                                              }, 50);
-                                            } catch (error) {
-                                              console.error('Image upload failed:', error);
-                                              ucToastService.error(
-                                                `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-                                              );
-                                            }
-                                          }}
-                                          style="display: none"
-                                        />
-                                      </label>
-                                      <div
-                                        style="flex: 1; color: var(--secondary-text-color); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                      >
-                                        ${popupModule.trigger_image_url &&
-                                        popupModule.trigger_image_url.startsWith(
-                                          '/api/image/serve/'
-                                        )
-                                          ? popupModule.trigger_image_url.split('/').pop() ||
-                                            'Uploaded image'
-                                          : popupModule.trigger_image_url
-                                            ? 'Image selected'
-                                            : 'No file chosen'}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              `
+                            ? this.renderFileField(
+                                localize(
+                                  'editor.design.upload_bg_image',
+                                  lang,
+                                  'Upload Image'
+                                ),
+                                '',
+                                hass,
+                                popupModule.trigger_image_url || '',
+                                path => {
+                                  if (path) {
+                                    updateModule({
+                                      trigger_image_url: path,
+                                      trigger_image_type: 'upload',
+                                    });
+                                  } else {
+                                    updateModule({ trigger_image_url: '' });
+                                  }
+                                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                                },
+                                'image/*'
+                              )
                             : ''}
                           ${popupModule.trigger_image_type === 'entity'
                             ? html`

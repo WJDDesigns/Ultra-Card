@@ -169,6 +169,9 @@ export class UltraPeopleModule extends BaseUltraModule {
 
     return html`
       ${this.injectUcFormStyles()}
+      <style>
+        ${this.getStyles()}
+      </style>
       <div class="module-general-settings">
         <!-- Person Entity Selection -->
         ${this._renderPersonEntitySection(peopleModule, hass, config, updateModule, lang)}
@@ -265,29 +268,20 @@ export class UltraPeopleModule extends BaseUltraModule {
         >
           ${localize('editor.modules.people.layout_style', lang, 'Layout Style')}
         </div>
-        <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;">
-          ${localize(
+        ${this.renderSegmentedField(
+          '',
+          localize(
             'editor.modules.people.layout_style_desc',
             lang,
             'Choose how the person information is displayed'
-          )}
-        </div>
-        <div class="layout-style-grid">
-          ${layoutStyles.map(
-            style => html`
-              <div
-                class="layout-style-option ${module.layout_style === style.value ? 'selected' : ''}"
-                @click=${() => {
-                  updateModule({ layout_style: style.value });
-                  this.triggerPreviewUpdate();
-                }}
-              >
-                <ha-icon icon="${style.icon}"></ha-icon>
-                <span>${style.label}</span>
-              </div>
-            `
-          )}
-        </div>
+          ),
+          module.layout_style,
+          layoutStyles.map(s => ({ value: s.value, label: s.label, icon: s.icon })),
+          next => {
+            updateModule({ layout_style: next as PeopleLayoutStyle });
+            this.triggerPreviewUpdate();
+          }
+        )}
       </div>
     `;
   }
@@ -476,35 +470,62 @@ export class UltraPeopleModule extends BaseUltraModule {
         )}
 
         ${avatarSettings.show_status_badge
-          ? html`
-              <div class="field-container">
-                <div class="field-title">
-                  ${localize('editor.modules.people.badge_position', lang, 'Badge Position')}
-                </div>
-                <div class="position-grid">
-                  ${(['top-left', 'top-right', 'bottom-left', 'bottom-right'] as const).map(
-                    pos => html`
-                      <div
-                        class="position-option ${avatarSettings.status_badge_position === pos
-                          ? 'selected'
-                          : ''}"
-                        @click=${() => {
-                          updateModule({
-                            avatar_settings: {
-                              ...avatarSettings,
-                              status_badge_position: pos,
-                            },
-                          });
-                          this.triggerPreviewUpdate();
-                        }}
-                      >
-                        ${pos.replace('-', ' ')}
-                      </div>
-                    `
-                  )}
-                </div>
-              </div>
-            `
+          ? this.renderSegmentedField(
+              localize('editor.modules.people.badge_position', lang, 'Badge Position'),
+              '',
+              avatarSettings.status_badge_position || 'bottom-right',
+              [
+                {
+                  value: 'top-left',
+                  label: localize(
+                    'editor.modules.people.badge_top_left',
+                    lang,
+                    'Top Left'
+                  ),
+                  icon: 'mdi:arrow-top-left',
+                },
+                {
+                  value: 'top-right',
+                  label: localize(
+                    'editor.modules.people.badge_top_right',
+                    lang,
+                    'Top Right'
+                  ),
+                  icon: 'mdi:arrow-top-right',
+                },
+                {
+                  value: 'bottom-left',
+                  label: localize(
+                    'editor.modules.people.badge_bottom_left',
+                    lang,
+                    'Bottom Left'
+                  ),
+                  icon: 'mdi:arrow-bottom-left',
+                },
+                {
+                  value: 'bottom-right',
+                  label: localize(
+                    'editor.modules.people.badge_bottom_right',
+                    lang,
+                    'Bottom Right'
+                  ),
+                  icon: 'mdi:arrow-bottom-right',
+                },
+              ],
+              next => {
+                updateModule({
+                  avatar_settings: {
+                    ...avatarSettings,
+                    status_badge_position: next as
+                      | 'top-left'
+                      | 'top-right'
+                      | 'bottom-left'
+                      | 'bottom-right',
+                  },
+                });
+                this.triggerPreviewUpdate();
+              }
+            )
           : ''}
       </div>
     `;
@@ -1047,9 +1068,8 @@ export class UltraPeopleModule extends BaseUltraModule {
           ${localize(
             'editor.modules.people.data_items_desc',
             lang,
-            'Drag to reorder, click to configure'
+            'Drag to reorder, click to configure — items are saved per layout style'
           )}
-          - Items are saved per layout style
         </div>
 
         <!-- Data Items List -->
@@ -1062,28 +1082,96 @@ export class UltraPeopleModule extends BaseUltraModule {
         <!-- Add Data Item Button -->
         <div class="add-item-container">
           <div class="add-item-dropdown">
-            <select
-              class="add-item-select"
-              @change=${(e: Event) => {
-                const type = (e.target as HTMLSelectElement).value as PeopleDataItemType;
-                if (type) {
-                  this._addDataItem(module, type, updateModule);
-                  (e.target as HTMLSelectElement).value = '';
-                }
-              }}
-            >
-              <option value="">
-                ${localize('editor.modules.people.add_data_item', lang, '+ Add Data Item')}
-              </option>
-              <option value="location">Location</option>
-              <option value="battery">Battery</option>
-              <option value="time_info">Time Info</option>
-              <option value="media">Media</option>
-              <option value="sensor">Sensor</option>
-              <option value="device_state">Device State</option>
-              <option value="attribute">Attribute</option>
-              <option value="toggle">Toggle</option>
-            </select>
+            ${this.renderUcForm(
+              hass,
+              { _add_data_item: '' },
+              [
+                {
+                  name: '_add_data_item',
+                  label: localize(
+                    'editor.modules.people.add_data_item',
+                    lang,
+                    '+ Add Data Item'
+                  ),
+                  selector: {
+                    select: {
+                      mode: 'dropdown',
+                      options: [
+                        {
+                          value: 'location',
+                          label: localize(
+                            'editor.modules.people.data_item.location',
+                            lang,
+                            'Location'
+                          ),
+                        },
+                        {
+                          value: 'battery',
+                          label: localize(
+                            'editor.modules.people.data_item.battery',
+                            lang,
+                            'Battery'
+                          ),
+                        },
+                        {
+                          value: 'time_info',
+                          label: localize(
+                            'editor.modules.people.data_item.time_info',
+                            lang,
+                            'Time Info'
+                          ),
+                        },
+                        {
+                          value: 'media',
+                          label: localize(
+                            'editor.modules.people.data_item.media',
+                            lang,
+                            'Media'
+                          ),
+                        },
+                        {
+                          value: 'sensor',
+                          label: localize(
+                            'editor.modules.people.data_item.sensor',
+                            lang,
+                            'Sensor'
+                          ),
+                        },
+                        {
+                          value: 'device_state',
+                          label: localize(
+                            'editor.modules.people.data_item.device_state',
+                            lang,
+                            'Device State'
+                          ),
+                        },
+                        {
+                          value: 'attribute',
+                          label: localize(
+                            'editor.modules.people.data_item.attribute',
+                            lang,
+                            'Attribute'
+                          ),
+                        },
+                        {
+                          value: 'toggle',
+                          label: localize(
+                            'editor.modules.people.data_item.toggle',
+                            lang,
+                            'Toggle'
+                          ),
+                        },
+                      ],
+                    },
+                  },
+                },
+              ],
+              (e: CustomEvent) => {
+                const type = e.detail.value._add_data_item as PeopleDataItemType;
+                if (type) this._addDataItem(module, type, updateModule);
+              },
+              true
+            )}
           </div>
         </div>
       </div>
@@ -1575,66 +1663,62 @@ export class UltraPeopleModule extends BaseUltraModule {
               )}
 
               <!-- Data Items Direction -->
-              <div class="field-container">
-                <div class="field-title">
-                  ${localize(
-                    'editor.modules.people.data_items_direction',
-                    lang,
-                    'Data Items Direction'
-                  )}
-                </div>
-                <div class="button-group">
-                  <button
-                    class="option-btn ${module.data_items_direction === 'row' ? 'active' : ''}"
-                    @click=${() => {
-                      updateModule({ data_items_direction: 'row' });
-                      this.triggerPreviewUpdate();
-                    }}
-                  >
-                    <ha-icon icon="mdi:arrow-right"></ha-icon>
-                    Row
-                  </button>
-                  <button
-                    class="option-btn ${module.data_items_direction === 'column' ? 'active' : ''}"
-                    @click=${() => {
-                      updateModule({ data_items_direction: 'column' });
-                      this.triggerPreviewUpdate();
-                    }}
-                  >
-                    <ha-icon icon="mdi:arrow-down"></ha-icon>
-                    Column
-                  </button>
-                </div>
-              </div>
+              ${this.renderSegmentedField(
+                localize(
+                  'editor.modules.people.data_items_direction',
+                  lang,
+                  'Data Items Direction'
+                ),
+                '',
+                module.data_items_direction || 'row',
+                [
+                  {
+                    value: 'row',
+                    label: localize('editor.modules.people.direction_row', lang, 'Row'),
+                    icon: 'mdi:arrow-right',
+                  },
+                  {
+                    value: 'column',
+                    label: localize('editor.modules.people.direction_column', lang, 'Column'),
+                    icon: 'mdi:arrow-down',
+                  },
+                ],
+                next => {
+                  updateModule({ data_items_direction: next as 'row' | 'column' });
+                  this.triggerPreviewUpdate();
+                }
+              )}
             `
           : ''}
 
         <!-- Alignment - only for compact and banner layouts -->
         ${module.layout_style === 'compact' || module.layout_style === 'banner'
-          ? html`
-              <div class="field-container">
-                <div class="field-title">
-                  ${localize('editor.modules.people.alignment', lang, 'Alignment')}
-                </div>
-                <div class="button-group">
-                  ${(['left', 'center', 'right'] as const).map(
-                    align => html`
-                      <button
-                        class="option-btn ${module.alignment === align ? 'active' : ''}"
-                        @click=${() => {
-                          updateModule({ alignment: align });
-                          this.triggerPreviewUpdate();
-                        }}
-                      >
-                        <ha-icon
-                          icon="mdi:format-align-${align === 'center' ? 'center' : align}"
-                        ></ha-icon>
-                      </button>
-                    `
-                  )}
-                </div>
-              </div>
-            `
+          ? this.renderSegmentedField(
+              localize('editor.modules.people.alignment', lang, 'Alignment'),
+              '',
+              module.alignment || 'center',
+              [
+                {
+                  value: 'left',
+                  label: localize('editor.modules.people.align_left', lang, 'Left'),
+                  icon: 'mdi:format-align-left',
+                },
+                {
+                  value: 'center',
+                  label: localize('editor.modules.people.align_center', lang, 'Center'),
+                  icon: 'mdi:format-align-center',
+                },
+                {
+                  value: 'right',
+                  label: localize('editor.modules.people.align_right', lang, 'Right'),
+                  icon: 'mdi:format-align-right',
+                },
+              ],
+              next => {
+                updateModule({ alignment: next as 'left' | 'center' | 'right' });
+                this.triggerPreviewUpdate();
+              }
+            )
           : ''}
       </div>
     `;
@@ -2793,7 +2877,9 @@ export class UltraPeopleModule extends BaseUltraModule {
       ha-expansion-panel.data-item-panel {
         --ha-card-border-radius: 8px;
         --expansion-panel-summary-padding: 0;
-        --expansion-panel-content-padding: 12px;
+        /* Horizontal-only padding on the variable so the collapsed .container
+           (height: 0) does not still leak vertical padding below the row. */
+        --expansion-panel-content-padding: 0 12px;
         margin-bottom: 8px;
       }
 
@@ -2802,6 +2888,9 @@ export class UltraPeopleModule extends BaseUltraModule {
         min-height: unset;
       }
 
+      /* When the panel IS expanded, give the content vertical breathing room
+         via ::part(content) — this only applies to the visible content slot,
+         not the height-animated .container. */
       ha-expansion-panel.data-item-panel::part(content) {
         padding: 12px;
       }
@@ -2987,6 +3076,21 @@ export class UltraPeopleModule extends BaseUltraModule {
 
       .add-item-container {
         margin-top: 8px;
+      }
+
+      /* Tighten the embedded ha-form / ha-select so the section doesn't
+         get a giant empty gap below the "+ Add Data Item" dropdown. */
+      .add-item-container ha-form {
+        display: block;
+      }
+      .add-item-container ha-form .field-section,
+      .add-item-container ha-form .field-section ha-selector,
+      .add-item-container ha-form ha-select {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+      }
+      .add-item-container ha-form ha-select {
+        --mdc-text-field-fill-color: transparent;
       }
 
       .add-item-select {

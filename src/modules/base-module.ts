@@ -11,6 +11,12 @@ import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { getImageUrl } from '../utils/image-upload';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { build3dTransformStyles } from '../utils/transform-3d-utils';
+import '../components/ultra-file-picker';
+import '../components/ultra-chip-list';
+import '../components/ultra-segmented';
+import type { UltraSegmentedOption } from '../components/ultra-segmented';
+import '../components/ultra-icon-field';
+import '../components/ultra-color-picker';
 
 // Module metadata interface
 export interface ModuleMetadata {
@@ -581,15 +587,22 @@ export abstract class BaseUltraModule implements UltraModule {
   // Clean form rendering without CSS label hiding
 
   /**
-   * Ultra Card form renderer
+   * Ultra Card form renderer.
+   *
+   * NOTE: the 5th arg is `showLabels` (matches `UcFormUtils.renderForm`). When
+   * `false` (the default) HA's form labels are suppressed — recommended for
+   * compact / inline use cases (e.g. the boolean toggle inside a renderFieldSection).
+   * Set `showLabels: true` ONLY when the field's `schema.label` provides a
+   * friendly human-readable label; otherwise the raw underscored field name
+   * leaks into the UI.
    */
   protected renderUcForm = (
     hass: HomeAssistant,
     data: Record<string, any>,
     schema: any[],
     onChange: (e: CustomEvent) => void,
-    hideLabels: boolean = true
-  ) => UcFormUtils.renderForm(hass, data, schema, onChange, hideLabels);
+    showLabels: boolean = false
+  ) => UcFormUtils.renderForm(hass, data, schema, onChange, showLabels);
 
   /**
    * Field section with custom title/description + clean form
@@ -636,8 +649,11 @@ export abstract class BaseUltraModule implements UltraModule {
   protected expandableField = UcFormUtils.expandable;
 
   /**
-   * Render a consistent slider control with range slider + number input + reset button.
-   * Use this instead of numberField/renderFieldSection for all numeric slider controls.
+   * Render a consistent slider control with HA-native slider + number input + reset button.
+   *
+   * Uses `<ha-slider>` so the slider track and thumb visually match every other slider
+   * in Home Assistant (settings dialogs, light brightness, etc.). A type-in number box
+   * sits next to it for precise entry, plus a reset button.
    *
    * @param title - Display title for the field
    * @param description - Description text below the title
@@ -660,29 +676,32 @@ export abstract class BaseUltraModule implements UltraModule {
     onChange: (value: number) => void,
     unit: string = 'px'
   ): TemplateResult {
+    const commit = (next: number) => {
+      onChange(next);
+      setTimeout(() => this.triggerPreviewUpdate(), 50);
+    };
     return html`
       <div class="field-container" style="margin-bottom: 16px;">
         <div class="field-title">${title} (${value}${unit})</div>
-        ${description
-          ? html`<div class="field-description">${description}</div>`
-          : ''}
+        ${description ? html`<div class="field-description">${description}</div>` : ''}
         <div
           class="gap-control-container"
           style="display: flex; align-items: center; gap: 12px;"
         >
-          <input
-            type="range"
-            class="gap-slider"
-            min="${min}"
-            max="${max}"
-            step="${step}"
-            .value="${String(value)}"
-            @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              onChange(Number(target.value));
-              setTimeout(() => this.triggerPreviewUpdate(), 50);
+          <ha-slider
+            class="uc-ha-slider"
+            style="flex: 1;"
+            labeled
+            pin
+            .min=${min}
+            .max=${max}
+            .step=${step}
+            .value=${value}
+            @change=${(e: Event) => {
+              const v = Number((e.target as HTMLInputElement).value);
+              if (!isNaN(v)) commit(v);
             }}
-          />
+          ></ha-slider>
           <input
             type="number"
             class="gap-input"
@@ -691,12 +710,8 @@ export abstract class BaseUltraModule implements UltraModule {
             step="${step}"
             .value="${String(value)}"
             @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              const val = Number(target.value);
-              if (!isNaN(val)) {
-                onChange(val);
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              }
+              const v = Number((e.target as HTMLInputElement).value);
+              if (!isNaN(v)) commit(v);
             }}
             @keydown=${(e: KeyboardEvent) => {
               if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -705,18 +720,377 @@ export abstract class BaseUltraModule implements UltraModule {
                 const currentValue = Number(target.value) || defaultValue;
                 const increment = e.key === 'ArrowUp' ? step : -step;
                 const newValue = Math.max(min, Math.min(max, currentValue + increment));
-                onChange(newValue);
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
+                commit(newValue);
               }
             }}
           />
           <button
             class="reset-btn"
+            type="button"
+            @click=${() => commit(defaultValue)}
+            title="Reset to default (${defaultValue})"
+          >
+            <ha-icon icon="mdi:refresh"></ha-icon>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * File upload field (uses {@link UltraFilePicker} + HA media upload).
+   */
+  protected renderFileField(
+    title: string,
+    description: string,
+    hass: HomeAssistant,
+    value: string,
+    onChange: (path: string) => void,
+    accept: string = 'image/*',
+    filePickerLabels?: { chooseFile?: string; clear?: string }
+  ): TemplateResult {
+    return html`
+      <div class="field-container uc-ultra-field-wrap" style="margin-bottom: 16px;">
+        <ultra-file-picker
+          .hass=${hass}
+          .accept=${accept}
+          .label=${title}
+          .description=${description}
+          .value=${value || ''}
+          .chooseFileLabel=${filePickerLabels?.chooseFile ?? 'Choose file'}
+          .clearLabel=${filePickerLabels?.clear ?? 'Remove'}
+          @value-changed=${(e: CustomEvent<{ value: string }>) => {
+            onChange(e.detail?.value ?? '');
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }}
+        ></ultra-file-picker>
+      </div>
+    `;
+  }
+
+  /**
+   * Chip list for strings or entity ids (uses {@link UltraChipList}).
+   *
+   * Modes:
+   *  - `'free-text'`: text input + Enter to add (e.g. keywords)
+   *  - `'entity'`: `ha-entity-picker` for the add control (e.g. entity ids)
+   *  - `'select'`: dropdown of `selectOptions` for the add control (e.g. domain list)
+   */
+  protected renderChipListField(
+    title: string,
+    description: string,
+    hass: HomeAssistant,
+    values: string[],
+    onChange: (next: string[]) => void,
+    options: {
+      mode: 'free-text' | 'entity' | 'select';
+      placeholder?: string;
+      variant?: 'primary' | 'exclude';
+      entityDomains?: string[];
+      selectOptions?: Array<{ value: string; label: string }>;
+      selectAddLabel?: string;
+    }
+  ): TemplateResult {
+    return html`
+      <div class="field-container uc-ultra-field-wrap" style="margin-bottom: 16px;">
+        <ultra-chip-list
+          .hass=${hass}
+          .label=${title}
+          .description=${description}
+          .values=${values || []}
+          .placeholder=${options.placeholder ?? ''}
+          .variant=${options.variant ?? 'primary'}
+          .mode=${options.mode}
+          .entityDomains=${options.entityDomains}
+          .selectOptions=${options.selectOptions}
+          .selectAddLabel=${options.selectAddLabel}
+          @value-changed=${(e: CustomEvent<{ value: string[] }>) => {
+            onChange(e.detail?.value ?? []);
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }}
+        ></ultra-chip-list>
+      </div>
+    `;
+  }
+
+  /**
+   * Segmented control for a single string value (replaces many source-type dropdowns).
+   *
+   * @param columns Optional explicit columns count. If omitted, the component
+   *   picks a sensible default (4 options → 2x2 grid, 6 → 3 cols, 9 → 3 cols,
+   *   etc.) to avoid ugly "3 + 1 leftover" wrap patterns.
+   */
+  protected renderSegmentedField(
+    title: string,
+    description: string,
+    value: string,
+    segments: UltraSegmentedOption[],
+    onChange: (next: string) => void,
+    columns?: number
+  ): TemplateResult {
+    return html`
+      <div class="field-container uc-ultra-field-wrap" style="margin-bottom: 16px;">
+        <ultra-segmented
+          .label=${title}
+          .description=${description}
+          .value=${value}
+          .options=${segments}
+          .columns=${columns as number | undefined}
+          @value-changed=${(e: CustomEvent<{ value: string }>) => {
+            onChange(e.detail?.value ?? '');
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }}
+        ></ultra-segmented>
+      </div>
+    `;
+  }
+
+  /**
+   * Icon picker framed like other editor fields.
+   */
+  protected renderIconField(
+    title: string,
+    description: string,
+    hass: HomeAssistant,
+    value: string,
+    onChange: (next: string) => void
+  ): TemplateResult {
+    return html`
+      <div class="field-container uc-ultra-field-wrap" style="margin-bottom: 16px;">
+        <ultra-icon-field
+          .hass=${hass}
+          .label=${title}
+          .description=${description}
+          .value=${value || ''}
+          @value-changed=${(e: CustomEvent<{ value: string }>) => {
+            onChange(e.detail?.value ?? '');
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }}
+        ></ultra-icon-field>
+      </div>
+    `;
+  }
+
+  /**
+   * Color picker with consistent field spacing (wraps {@link UltraColorPicker}).
+   */
+  protected renderColorField(
+    title: string,
+    description: string,
+    hass: HomeAssistant,
+    value: string,
+    defaultValue: string,
+    onChange: (next: string) => void
+  ): TemplateResult {
+    return html`
+      <div class="field-container uc-ultra-field-wrap" style="margin-bottom: 16px;">
+        ${title ? html`<div class="field-title">${title}</div>` : ''}
+        ${description ? html`<div class="field-description">${description}</div>` : ''}
+        <ultra-color-picker
+          .label=${''}
+          .value=${value || ''}
+          .defaultValue=${defaultValue}
+          .hass=${hass}
+          @value-changed=${(e: CustomEvent<{ value: string }>) => {
+            onChange(e.detail?.value ?? '');
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }}
+        ></ultra-color-picker>
+      </div>
+    `;
+  }
+
+  /**
+   * Unit-aware slider for fields that accept EITHER a plain number (interpreted in
+   * the default unit) OR a CSS string with an explicit unit (e.g. "200px" / "50%").
+   * Used by separator-module for its width / height controls, which can mix
+   * percentage and pixel values.
+   *
+   * Behaviour:
+   *  - When the value is a number or a string suffixed with `sliderUnit` → show the
+   *    HA-native slider + text input + reset (slider stays in sync).
+   *  - When the value is a string with a DIFFERENT suffix → hide the slider and
+   *    show only the text input + reset (so the user can type "200px" or "auto").
+   *  - Empty input clears the value to `undefined`.
+   *
+   * @param sliderUnit  the unit the slider operates in (e.g. `'%'`, `'px'`)
+   * @param defaultValue used by the reset button (number or string)
+   */
+  protected renderUnitAwareSliderField(
+    title: string,
+    description: string,
+    value: number | string | undefined,
+    defaultValue: number | string,
+    sliderMin: number,
+    sliderMax: number,
+    sliderStep: number,
+    sliderUnit: string,
+    placeholder: string,
+    onChange: (next: number | string | undefined) => void
+  ): TemplateResult {
+    const isString = typeof value === 'string';
+    const trimmed = isString ? (value as string).trim() : '';
+    const matchesSliderUnit =
+      isString && sliderUnit && trimmed.endsWith(sliderUnit);
+    const numericForSlider = (() => {
+      if (typeof value === 'number' && !isNaN(value)) return value;
+      if (matchesSliderUnit) {
+        const n = parseFloat(trimmed);
+        return isNaN(n) ? Number(defaultValue) || sliderMin : n;
+      }
+      return Number(defaultValue) || sliderMin;
+    })();
+    const showSlider = !isString || !!matchesSliderUnit;
+    const displayText = (() => {
+      if (isString) return value as string;
+      if (typeof value === 'number') return `${value}${sliderUnit}`;
+      return '';
+    })();
+    const parseTextInput = (raw: string): number | string | undefined => {
+      const v = raw.trim();
+      if (v === '') return undefined;
+      // Anything ending in % or px (or anything letter) → store as the unit-suffixed string
+      if (/[a-z%]+$/i.test(v)) return v;
+      const num = parseFloat(v);
+      return isNaN(num) ? undefined : num;
+    };
+    const resetLabel = typeof defaultValue === 'number'
+      ? `${defaultValue}${sliderUnit}`
+      : String(defaultValue);
+    const commit = (next: number | string | undefined) => {
+      onChange(next);
+      setTimeout(() => this.triggerPreviewUpdate(), 50);
+    };
+    return html`
+      <div class="field-container" style="margin-bottom: 16px;">
+        <div class="field-title">${title}${showSlider ? ` (${numericForSlider}${sliderUnit})` : ''}</div>
+        ${description ? html`<div class="field-description">${description}</div>` : ''}
+        <div
+          class="gap-control-container"
+          style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;"
+        >
+          ${showSlider
+            ? html`
+                <ha-slider
+                  class="uc-ha-slider"
+                  style="flex: 1; min-width: 140px;"
+                  labeled
+                  pin
+                  .min=${sliderMin}
+                  .max=${sliderMax}
+                  .step=${sliderStep}
+                  .value=${numericForSlider}
+                  @change=${(e: Event) => {
+                    const v = Number((e.target as HTMLInputElement).value);
+                    if (!isNaN(v)) commit(v);
+                  }}
+                ></ha-slider>
+              `
+            : ''}
+          <input
+            type="text"
+            class="gap-input"
+            .value=${displayText}
+            placeholder=${placeholder}
+            style="flex: 1; min-width: 0;"
+            @change=${(e: Event) => {
+              const next = parseTextInput((e.target as HTMLInputElement).value);
+              commit(next);
+            }}
+          />
+          <button
+            class="reset-btn"
+            type="button"
+            @click=${() => commit(defaultValue)}
+            title="Reset to default (${resetLabel})"
+          >
+            <ha-icon icon="mdi:refresh"></ha-icon>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Numeric slider + unit selector + reset, intended for gap/padding controls that
+   * support multiple CSS units (px, rem, em, %, vw, vh, etc.). Visually matches
+   * `renderSliderField` so layout modules look identical to other modules' sliders.
+   */
+  protected renderGapWithUnitField(
+    title: string,
+    description: string,
+    hass: HomeAssistant,
+    value: number,
+    defaultValue: number,
+    min: number,
+    max: number,
+    step: number,
+    unit: string,
+    unitOptions: Array<{ value: string; label: string }>,
+    onValueChange: (next: number) => void,
+    onUnitChange: (nextUnit: string, currentValue: number) => void
+  ): TemplateResult {
+    return html`
+      <div class="field-container uc-gap-with-unit" style="margin-bottom: 16px;">
+        <div class="field-title">${title} (${value}${unit})</div>
+        ${description ? html`<div class="field-description">${description}</div>` : ''}
+        <div
+          class="gap-control-container"
+          style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"
+        >
+          <ha-slider
+            class="uc-ha-slider"
+            style="flex: 1; min-width: 140px;"
+            labeled
+            pin
+            .min=${min}
+            .max=${max}
+            .step=${step}
+            .value=${value}
+            @change=${(e: Event) => {
+              const v = Number((e.target as HTMLInputElement).value);
+              if (!isNaN(v)) {
+                onValueChange(v);
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            }}
+          ></ha-slider>
+          <input
+            type="number"
+            class="gap-input"
+            min=${String(min)}
+            max=${String(max)}
+            step=${String(step)}
+            .value=${String(value)}
+            @input=${(e: Event) => {
+              const next = Number((e.target as HTMLInputElement).value);
+              if (!isNaN(next)) {
+                onValueChange(next);
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            }}
+          />
+          <div style="min-width: 72px;">
+            ${this.renderUcForm(
+              hass,
+              { _unit: unit },
+              [this.selectField('_unit', unitOptions)],
+              (e: CustomEvent) => {
+                const newUnit = e.detail.value._unit;
+                if (newUnit && newUnit !== unit) {
+                  onUnitChange(newUnit, value);
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }
+              }
+            )}
+          </div>
+          <button
+            class="reset-btn"
             @click=${() => {
-              onChange(defaultValue);
+              onValueChange(defaultValue);
               setTimeout(() => this.triggerPreviewUpdate(), 50);
             }}
-            title="Reset to default (${defaultValue})"
+            title="Reset to default (${defaultValue}${unit})"
           >
             <ha-icon icon="mdi:refresh"></ha-icon>
           </button>

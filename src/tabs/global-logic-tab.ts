@@ -1,6 +1,7 @@
 import { html, TemplateResult } from 'lit';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { FormUtils } from '../utils/form-utils';
+import { UcFormUtils } from '../utils/uc-form-utils';
 import type { CardModule, CardColumn, CardRow, DeviceBreakpoint } from '../types';
 import { localize } from '../localize/localize';
 import '../components/ultra-template-editor';
@@ -84,21 +85,36 @@ export class GlobalLogicTab {
                     'Return JSON with a boolean "visible" key (or use active / is_active, or a plain true/false string). When enabled, this runs in addition to the display conditions below. Uses the same $variables as module templates.'
                   )}
                 </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
-                  <span style="font-weight: 600;"
-                    >${localize('editor.layout.unified_visibility.toggle', lang, 'Template mode')}</span
+                <div
+                  class="switch-container"
+                  style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;"
+                >
+                  <div
+                    class="switch-label-row"
+                    style="display: flex; align-items: center; gap: 8px;"
                   >
-                  <ha-switch
-                    .checked=${!!rowCol.unified_template_mode}
-                    @change=${(e: Event) => {
-                      const checked = Boolean((e.target as any).checked);
+                    <span class="switch-label" style="font-weight: 600; white-space: nowrap;"
+                      >${localize(
+                        'editor.layout.unified_visibility.toggle',
+                        lang,
+                        'Template mode'
+                      )}</span
+                    >
+                  </div>
+                  ${UcFormUtils.renderForm(
+                    hass,
+                    { unified_template_mode: !!rowCol.unified_template_mode },
+                    [UcFormUtils.boolean('unified_template_mode')],
+                    (e: CustomEvent) => {
+                      const checked = Boolean(e.detail.value.unified_template_mode);
                       const updates: any = { unified_template_mode: checked };
-                      if (checked && !(String(rowCol.unified_template || '').trim())) {
+                      if (checked && !String(rowCol.unified_template || '').trim()) {
                         updates.unified_template = '{\n  "visible": true\n}';
                       }
                       updateModule(updates);
-                    }}
-                  ></ha-switch>
+                    },
+                    false
+                  )}
                 </div>
                 ${rowCol.unified_template_mode
                   ? html`
@@ -162,12 +178,10 @@ export class GlobalLogicTab {
             <label
               style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--card-background-color); border-radius: 6px; cursor: pointer; border: 1px solid ${hiddenOnDevices.includes('desktop') ? 'var(--primary-color)' : 'var(--divider-color)'}; transition: all 0.2s ease;"
             >
-              <input
-                type="checkbox"
+              <ha-checkbox
                 .checked=${hiddenOnDevices.includes('desktop')}
                 @change=${() => toggleDeviceHidden('desktop')}
-                style="width: 18px; height: 18px; accent-color: var(--primary-color);"
-              />
+              ></ha-checkbox>
               <ha-icon icon="mdi:monitor" style="color: ${hiddenOnDevices.includes('desktop') ? 'var(--primary-color)' : 'var(--secondary-text-color)'}; --mdc-icon-size: 20px;"></ha-icon>
               <div style="flex: 1;">
                 <div style="font-weight: 500; font-size: 13px;">Desktop</div>
@@ -177,12 +191,10 @@ export class GlobalLogicTab {
             <label
               style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--card-background-color); border-radius: 6px; cursor: pointer; border: 1px solid ${hiddenOnDevices.includes('laptop') ? 'var(--primary-color)' : 'var(--divider-color)'}; transition: all 0.2s ease;"
             >
-              <input
-                type="checkbox"
+              <ha-checkbox
                 .checked=${hiddenOnDevices.includes('laptop')}
                 @change=${() => toggleDeviceHidden('laptop')}
-                style="width: 18px; height: 18px; accent-color: var(--primary-color);"
-              />
+              ></ha-checkbox>
               <ha-icon icon="mdi:laptop" style="color: ${hiddenOnDevices.includes('laptop') ? 'var(--primary-color)' : 'var(--secondary-text-color)'}; --mdc-icon-size: 20px;"></ha-icon>
               <div style="flex: 1;">
                 <div style="font-weight: 500; font-size: 13px;">Laptop</div>
@@ -192,12 +204,10 @@ export class GlobalLogicTab {
             <label
               style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--card-background-color); border-radius: 6px; cursor: pointer; border: 1px solid ${hiddenOnDevices.includes('tablet') ? 'var(--primary-color)' : 'var(--divider-color)'}; transition: all 0.2s ease;"
             >
-              <input
-                type="checkbox"
+              <ha-checkbox
                 .checked=${hiddenOnDevices.includes('tablet')}
                 @change=${() => toggleDeviceHidden('tablet')}
-                style="width: 18px; height: 18px; accent-color: var(--primary-color);"
-              />
+              ></ha-checkbox>
               <ha-icon icon="mdi:tablet" style="color: ${hiddenOnDevices.includes('tablet') ? 'var(--primary-color)' : 'var(--secondary-text-color)'}; --mdc-icon-size: 20px;"></ha-icon>
               <div style="flex: 1;">
                 <div style="font-weight: 500; font-size: 13px;">Tablet</div>
@@ -207,12 +217,10 @@ export class GlobalLogicTab {
             <label
               style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--card-background-color); border-radius: 6px; cursor: pointer; border: 1px solid ${hiddenOnDevices.includes('mobile') ? 'var(--primary-color)' : 'var(--divider-color)'}; transition: all 0.2s ease;"
             >
-              <input
-                type="checkbox"
+              <ha-checkbox
                 .checked=${hiddenOnDevices.includes('mobile')}
                 @change=${() => toggleDeviceHidden('mobile')}
-                style="width: 18px; height: 18px; accent-color: var(--primary-color);"
-              />
+              ></ha-checkbox>
               <ha-icon icon="mdi:cellphone" style="color: ${hiddenOnDevices.includes('mobile') ? 'var(--primary-color)' : 'var(--secondary-text-color)'}; --mdc-icon-size: 20px;"></ha-icon>
               <div style="flex: 1;">
                 <div style="font-weight: 500; font-size: 13px;">Mobile</div>

@@ -341,56 +341,42 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
           <div class="section-title">
             ${localize('editor.battery_monitor.section_style', lang, 'Style')}
           </div>
-          <div class="style-switcher">
-            ${(
-              [
-                {
-                  k: 'list' as const,
-                  icon: 'mdi:format-list-bulleted',
-                  title: localize('editor.battery_monitor.style_list', lang, 'List'),
-                  desc: localize('editor.battery_monitor.style_list_desc', lang, 'Compact rows'),
-                },
-                {
-                  k: 'bars' as const,
-                  icon: 'mdi:chart-bar',
-                  title: localize('editor.battery_monitor.style_bars', lang, 'Bars'),
-                  desc: localize('editor.battery_monitor.style_bars_desc', lang, 'Full-width bars'),
-                },
-                {
-                  k: 'cards' as const,
-                  icon: 'mdi:view-grid',
-                  title: localize('editor.battery_monitor.style_cards', lang, 'Cards'),
-                  desc: localize('editor.battery_monitor.style_cards_desc', lang, 'Tile grid'),
-                },
-                {
-                  k: 'rings' as const,
-                  icon: 'mdi:circle-outline',
-                  title: localize('editor.battery_monitor.style_rings', lang, 'Rings'),
-                  desc: localize('editor.battery_monitor.style_rings_desc', lang, 'Circular gauges'),
-                },
-                {
-                  k: 'strip' as const,
-                  icon: 'mdi:palette-swatch-horizontal',
-                  title: localize('editor.battery_monitor.style_strip', lang, 'Strip'),
-                  desc: localize('editor.battery_monitor.style_strip_desc', lang, 'Heatmap strip'),
-                },
-              ] as const
-            ).map(
-              s => html`
-                <div
-                  class="style-btn ${m.style === s.k ? 'active' : ''}"
-                  @click=${() => {
-                    updateModule({ style: s.k } as Partial<CardModule>);
-                    this.triggerPreviewUpdate();
-                  }}
-                >
-                  <ha-icon icon=${s.icon}></ha-icon>
-                  <div class="st-title">${s.title}</div>
-                  <div class="st-desc">${s.desc}</div>
-                </div>
-              `
-            )}
-          </div>
+          ${this.renderSegmentedField(
+            '',
+            '',
+            m.style || 'list',
+            [
+              {
+                value: 'list',
+                label: localize('editor.battery_monitor.style_list', lang, 'List'),
+                icon: 'mdi:format-list-bulleted',
+              },
+              {
+                value: 'bars',
+                label: localize('editor.battery_monitor.style_bars', lang, 'Bars'),
+                icon: 'mdi:chart-bar',
+              },
+              {
+                value: 'cards',
+                label: localize('editor.battery_monitor.style_cards', lang, 'Cards'),
+                icon: 'mdi:view-grid',
+              },
+              {
+                value: 'rings',
+                label: localize('editor.battery_monitor.style_rings', lang, 'Rings'),
+                icon: 'mdi:circle-outline',
+              },
+              {
+                value: 'strip',
+                label: localize('editor.battery_monitor.style_strip', lang, 'Strip'),
+                icon: 'mdi:palette-swatch-horizontal',
+              },
+            ],
+            next => {
+              updateModule({ style: next as 'list' | 'bars' | 'cards' | 'rings' | 'strip' } as Partial<CardModule>);
+              this.triggerPreviewUpdate();
+            }
+          )}
         </div>
 
         <div class="settings-section">

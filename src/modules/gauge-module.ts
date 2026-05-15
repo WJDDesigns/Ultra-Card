@@ -306,7 +306,7 @@ export class UltraGaugeModule extends BaseUltraModule {
         </div>
         ${valueType === 'attribute' && !unifiedTemplateEnabled
           ? html`
-              <div class="conditional-fields-group">
+              <div>
                 ${this.renderEntityPickerWithVariables(
                   hass, config, 'value_attribute_entity', gaugeModule.value_attribute_entity || '',
                   (value: string) => updateModule({ value_attribute_entity: value }),
@@ -456,7 +456,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     if (!showFlipOption) return html``;
 
     return html`
-      <div class="conditional-fields-group" style="margin-top: 16px;">
+      <div style="margin-top: 16px;">
         ${this.renderFieldSection(
           'Flip Horizontal',
           'Mirror the gauge so it fills from right to left.',
@@ -581,7 +581,7 @@ export class UltraGaugeModule extends BaseUltraModule {
         )}
         ${pointerEnabled
           ? html`
-              <div class="conditional-fields-group">
+              <div>
                 <div class="field-group" style="margin-bottom: 24px;">
                   <div class="field-title">Pointer Style</div>
                   <div class="field-description">Visual style of the pointer/needle.</div>
@@ -762,7 +762,7 @@ export class UltraGaugeModule extends BaseUltraModule {
         </div>
         ${colorMode === 'solid'
           ? html`
-              <div class="conditional-fields-group">
+              <div>
                 <div class="field-container" style="margin-bottom: 24px;">
                   <div class="field-title">Gauge Color</div>
                   <div class="field-description">Main color of the gauge.</div>
@@ -780,7 +780,7 @@ export class UltraGaugeModule extends BaseUltraModule {
           : ''}
         ${colorMode === 'gradient'
           ? html`
-              <div class="conditional-fields-group">
+              <div>
                 <div class="field-group" style="margin-bottom: 16px;">
                   <div class="field-title">Gradient Display Mode</div>
                   <div class="field-description">How the gradient is displayed on the gauge.</div>
@@ -823,7 +823,7 @@ export class UltraGaugeModule extends BaseUltraModule {
           : ''}
         ${colorMode === 'segments'
           ? html`
-              <div class="conditional-fields-group">
+              <div>
                 <div class="field-title">Color Segments</div>
                 <div class="field-description">Define discrete color segments with ranges.</div>
 
@@ -994,7 +994,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
         ${showValue
           ? html`
-              <div class="conditional-fields-group" style="margin-bottom: 16px;">
+              <div style="margin-bottom: 16px;">
                 <div class="field-container" style="margin-bottom: 24px;">
                   <div class="field-title">Value Position</div>
                   <div class="field-description">Where to display the value text.</div>
@@ -1179,7 +1179,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
         ${showName
           ? html`
-              <div class="conditional-fields-group" style="margin-bottom: 16px;">
+              <div style="margin-bottom: 16px;">
                 <div class="field-group" style="margin-bottom: 24px;">
                   <div class="field-title">Name Position</div>
                   <div class="field-description">Where to display the name/label.</div>
@@ -1367,7 +1367,7 @@ export class UltraGaugeModule extends BaseUltraModule {
             `}
         ${showMinMax
           ? html`
-              <div class="conditional-fields-group">
+              <div>
                 <div class="field-container" style="margin-bottom: 16px;">
                   <div class="field-title">Min/Max Font Size</div>
                   ${this.renderUcForm(
@@ -1422,7 +1422,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
         ${showTicks
           ? html`
-              <div class="conditional-fields-group">
+              <div>
                 <div class="field-container" style="margin-bottom: 16px;">
                   <div class="field-title">Tick Count</div>
                   <div class="field-description">Number of major tick marks.</div>
@@ -1511,7 +1511,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
         ${animationEnabled
           ? html`
-              <div class="conditional-fields-group">
+              <div>
                 <div class="field-container" style="margin-bottom: 16px;">
                   <div class="field-title">Animation Duration</div>
                   <div class="field-description">

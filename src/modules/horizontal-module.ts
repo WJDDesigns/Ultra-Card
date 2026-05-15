@@ -202,64 +202,27 @@ export class UltraHorizontalModule extends BaseUltraModule {
                 { value: 'vh', label: 'vh' },
               ];
 
-              return html`
-                <div class="field-title">${localize('editor.horizontal.gap.between_items', lang, 'Gap Between Items')} (${gapNum}${unit})</div>
-                <div class="field-description" style="margin-bottom: 10px;">
-                  ${localize('editor.horizontal.gap.desc', lang, 'Set the spacing between horizontal items. Use negative values to overlap items.')}
-                </div>
-                <div class="gap-control-container" style="display: flex; align-items: center; gap: 8px;">
-                  <input
-                    type="range"
-                    class="gap-slider"
-                    min="${sliderMin}"
-                    max="${sliderMax}"
-                    step="${sliderStep}"
-                    .value="${String(gapNum)}"
-                    @input=${(e: Event) => {
-                      updateModule({ gap: Number((e.target as HTMLInputElement).value) });
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }}
-                  />
-                  <input
-                    type="number"
-                    class="gap-input"
-                    min="${sliderMin}"
-                    max="${sliderMax}"
-                    step="${sliderStep}"
-                    .value="${String(gapNum)}"
-                    @input=${(e: Event) => {
-                      const val = Number((e.target as HTMLInputElement).value);
-                      if (!isNaN(val)) {
-                        updateModule({ gap: val });
-                        setTimeout(() => this.triggerPreviewUpdate(), 50);
-                      }
-                    }}
-                  />
-                  <select
-                    style="flex-shrink: 0; width: 56px; height: 32px; border-radius: 6px; border: 1px solid var(--divider-color); background: var(--card-background-color, var(--primary-background-color)); color: var(--primary-text-color); font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; outline: none; padding: 0 4px;"
-                    @change=${(e: Event) => {
-                      const newUnit = (e.target as HTMLSelectElement).value;
-                      const converted = convertGap(unit, newUnit, gapNum);
-                      updateModule({ gap: converted, gap_unit: newUnit } as any);
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }}
-                  >
-                    ${unitOptions.map(opt => html`
-                      <option value="${opt.value}" ?selected=${unit === opt.value}>${opt.label}</option>
-                    `)}
-                  </select>
-                  <button
-                    class="reset-btn"
-                    @click=${() => {
-                      updateModule({ gap: defaultVal });
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }}
-                    title="Reset to default (${defaultVal}${unit})"
-                  >
-                    <ha-icon icon="mdi:refresh"></ha-icon>
-                  </button>
-                </div>
-              `;
+              return this.renderGapWithUnitField(
+                localize('editor.horizontal.gap.between_items', lang, 'Gap Between Items'),
+                localize(
+                  'editor.horizontal.gap.desc',
+                  lang,
+                  'Set the spacing between horizontal items. Use negative values to overlap items.'
+                ),
+                hass,
+                gapNum,
+                defaultVal,
+                sliderMin,
+                sliderMax,
+                sliderStep,
+                unit,
+                unitOptions,
+                next => updateModule({ gap: next }),
+                (newUnit, currentValue) => {
+                  const converted = convertGap(unit, newUnit, currentValue);
+                  updateModule({ gap: converted, gap_unit: newUnit } as any);
+                }
+              );
             })()}
           </div>
         </div>

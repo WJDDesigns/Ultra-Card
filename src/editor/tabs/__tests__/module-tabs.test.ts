@@ -34,10 +34,13 @@ describe('layout-tab: module settings tabs (text module)', () => {
   it('general tab: text size slider triggers config-changed', async () => {
     const el = await openTextModule();
     const wait = nextConfigChanged(el);
-    const range = deepQuerySelector(el.shadowRoot!, 'input[type="range"]') as HTMLInputElement;
-    expect(range).toBeTruthy();
-    range.value = '20';
-    range.dispatchEvent(new Event('input', { bubbles: true }));
+    // renderSliderField now renders ha-slider (HA-native) instead of a raw range input.
+    const slider = deepQuerySelector(el.shadowRoot!, 'ha-slider') as HTMLElement & {
+      value?: number;
+    };
+    expect(slider).toBeTruthy();
+    slider.value = 20;
+    slider.dispatchEvent(new Event('change', { bubbles: true }));
     const { config } = await wait;
     const mod = config.layout.rows[0].columns[0].modules[0] as any;
     expect(mod.text_size).toBe(20);
@@ -50,8 +53,8 @@ describe('layout-tab: module settings tabs (text module)', () => {
     const wait = nextConfigChanged(el);
     const cb = deepQuerySelector(
       el.shadowRoot!,
-      '.uc-global-logic-tab input[type="checkbox"]'
-    ) as HTMLInputElement;
+      '.uc-global-logic-tab ha-checkbox'
+    ) as HTMLElement & { checked?: boolean };
     expect(cb).toBeTruthy();
     cb.checked = true;
     cb.dispatchEvent(new Event('change', { bubbles: true }));

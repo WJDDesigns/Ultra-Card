@@ -859,7 +859,10 @@
       "error_url_desc": "Entrez une image \u0001GT1\u0002 dans l'onglet Général",
       "error_upload_desc": "Téléchargez une image dans l'onglet Général",
       "error_entity_desc": "Sélectionnez une entité d'image dans l'onglet Général",
-      "error_attribute_desc": "Sélectionnez une entité et un attribut dans l'onglet Général"
+      "error_attribute_desc": "Sélectionnez une entité et un attribut dans l'onglet Général",
+      "upload_choose": "Choose file",
+      "upload_clear": "Remove file",
+      "attribute_entity_desc": "Select an entity that contains an image URL in one of its attributes."
     },
     "graphs": {
       "chart_type": {
@@ -1570,7 +1573,26 @@
         "layout_spacing": "Mise en Page & Espacement",
         "gap": "Espace",
         "data_items_direction": "Direction des données",
-        "alignment": "Alignement"
+        "alignment": "Alignement",
+        "badge_top_left": "En haut à gauche",
+        "badge_top_right": "En haut à droite",
+        "badge_bottom_left": "En bas à gauche",
+        "badge_bottom_right": "En bas à droite",
+        "direction_row": "Ligne",
+        "direction_column": "Colonne",
+        "align_left": "Gauche",
+        "align_center": "Centre",
+        "align_right": "Droite",
+        "data_item": {
+          "location": "Emplacement",
+          "battery": "Batterie",
+          "time_info": "Infos temps",
+          "media": "Média",
+          "sensor": "Capteur",
+          "device_state": "État de l’appareil",
+          "attribute": "Attribut",
+          "toggle": "Bascule"
+        }
       }
     },
     "dropdown": {
@@ -1642,7 +1664,12 @@
       "error_no_entity": "Configurer l'entité source",
       "error_no_entity_desc": "Sélectionnez une entité source dans l'onglet Général",
       "error_no_options": "Ajouter des options",
-      "error_no_options_desc": "Configurer les options déroulantes dans l'onglet Général ou activer le modèle unifié Tem"
+      "error_no_options_desc": "Configurer les options déroulantes dans l'onglet Général ou activer le modèle unifié Tem",
+      "unified_template_section": {
+        "title": "Mode modèle",
+        "enable": "Activer le mode modèle",
+        "desc": "Use a single Jinja2 template to generate all dropdown options with icons, labels, and colors. Return a JSON array of option objects. When enabled, manual options are replaced by template-generated options."
+      }
     },
     "favorite_colors": {
       "title": "Couleurs préférées",
@@ -3041,7 +3068,9 @@
       "section_entity_desc": "Sélectionnez l'entité d'aspirateur à contrôler",
       "entity": "Entité d'aspirateur",
       "section_animations": "Animations",
-      "section_animations_desc": "Contrôler les animations de l'aspirateur"
+      "section_animations_desc": "Contrôler les animations de l'aspirateur",
+      "name": "Nom d’affichage",
+      "name_desc": "Nom personnalisé à afficher (laisser vide pour utiliser le nom de l’entité)"
     },
     "navigation": {
       "section_desktop": "MODE BUREAU",
@@ -3054,7 +3083,10 @@
     "climate": {
       "error_no_entity": "Aucune entité climatique",
       "error_no_entity_desc": "Sélectionnez une entité climatique dans l'onglet Général",
-      "error_not_found": "Entité non trouvée"
+      "error_not_found": "Entité non trouvée",
+      "entity_config_title": "Configuration de l’entité",
+      "entity_config_desc": "Sélectionnez l’entité climatique à contrôler",
+      "entity": "Entité climatique"
     },
     "people": {
       "error_no_entity": "Sélectionnez l'entité Personne",
@@ -3557,13 +3589,16 @@
       "show_unavailable_desc": "When off, entities in unavailable or unknown states are hidden.",
       "section_source": "Entity source",
       "pinned_entities": "Pinned entities",
-      "pinned_entities_desc": "Always appear first, regardless of filters. Expand a row for overrides.",
+      "pinned_entities_desc": "Always appear first, regardless of filters. Click a chip to edit overrides; hover to remove.",
       "pin_entity": "Pin entity",
+      "pinned_add": "Add pinned entity",
       "hidden_entities": "Hidden entities",
-      "hidden_entities_desc": "Removed from the auto list; click × to show again.",
+      "hidden_entities_desc": "Removed from the auto list. Remove with the × on a chip.",
+      "hidden_add": "Add hidden entity",
       "no_entity": "No entity selected",
       "entity": "Entity",
       "entity_desc": "Entity to pin to the top.",
+      "overrides_for": "Overrides for",
       "label_override": "Label override",
       "icon_override": "Icon override",
       "row_color": "Row color override",

@@ -374,8 +374,8 @@ export class UltraTextModule extends BaseUltraModule {
           <!-- Icon Color (only show if icon is selected) -->
           ${textModule.icon && textModule.icon.trim() !== ''
             ? html`
-                <div class="conditional-fields-group">
-                  <div class="conditional-fields-content">
+                <div>
+                  
                     <div class="field-container">
                       <div
                         class="field-title"
@@ -401,7 +401,7 @@ export class UltraTextModule extends BaseUltraModule {
                           updateModule({ icon_color: e.detail.value })}
                       ></ultra-color-picker>
                     </div>
-                  </div>
+                  
                 </div>
               `
             : ''}
@@ -436,17 +436,15 @@ export class UltraTextModule extends BaseUltraModule {
                   <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
                 </button>
               </div>
-              <label class="switch">
-                <input
-                  type="checkbox"
-                  .checked=${textModule.unified_template_mode || false}
-                  @change=${(e: Event) => {
-                    const checked = (e.target as HTMLInputElement).checked;
-                    updateModule({ unified_template_mode: checked });
-                  }}
-                />
-                <span class="slider round"></span>
-              </label>
+              ${this.renderUcForm(
+                hass,
+                { unified_template_mode: textModule.unified_template_mode || false },
+                [this.booleanField('unified_template_mode')],
+                (e: CustomEvent) =>
+                  updateModule({
+                    unified_template_mode: e.detail.value.unified_template_mode,
+                  })
+              )}
             </div>
             <div class="template-description">
               ${localize(

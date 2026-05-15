@@ -14,10 +14,9 @@ import {
   unifiedTemplateQrContent,
 } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
-import { uploadImage, getImageUrl } from '../utils/image-upload';
+import { getImageUrl } from '../utils/image-upload';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
-import { ucToastService } from '../services/uc-toast-service';
 
 /** Event dispatched when QR data URL is ready so the card can re-render */
 export const UC_QR_DATA_READY_EVENT = 'uc-qr-data-ready';
@@ -542,17 +541,31 @@ export class UltraQrCodeModule extends BaseUltraModule {
               : ''}
 
             ${(qrModule.logo_image_type || 'url') === 'upload'
-              ? html`
-                  <div class="field-title">${localize('editor.qr_code.logo_upload_label', lang, 'Upload logo image')}</div>
-                  <div class="field-description">${localize('editor.qr_code.logo_upload_desc', lang, 'Click to upload a PNG, JPG, or SVG from your device.')}</div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); margin-bottom: 16px;"
-                    @change=${(e: Event) => this._handleLogoFileUpload(e, updateModule, hass)}
-                  />
-                  ${qrModule.logo_url ? html`<div style="font-size:12px;color:var(--secondary-text-color);"><ha-icon icon="mdi:check-circle" style="--mdi-icon-size:14px;color:var(--success-color,#4caf50);"></ha-icon> ${localize('editor.qr_code.logo_uploaded', lang, 'Uploaded')}: <code>${qrModule.logo_url}</code></div>` : ''}
-                `
+              ? this.renderFileField(
+                  localize('editor.qr_code.logo_upload_label', lang, 'Upload logo image'),
+                  localize(
+                    'editor.qr_code.logo_upload_desc',
+                    lang,
+                    'Click to upload a PNG, JPG, or SVG from your device.'
+                  ),
+                  hass,
+                  qrModule.logo_url || '',
+                  path => {
+                    if (path) {
+                      logoDataUrlCache.delete(path);
+                      logoDataUrlCache.delete(getImageUrl(hass, path));
+                      for (const k of [...qrDataUrlCache.keys()]) {
+                        if (k.includes('logo:')) qrDataUrlCache.delete(k);
+                      }
+                      updateModule({ logo_url: path, logo_image_type: 'upload' });
+                    } else {
+                      logoDataUrlCache.delete(qrModule.logo_url || '');
+                      updateModule({ logo_url: '' });
+                    }
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  },
+                  'image/*'
+                )
               : ''}
 
             ${(qrModule.logo_image_type || 'url') === 'entity'
@@ -984,30 +997,6 @@ export class UltraQrCodeModule extends BaseUltraModule {
         ${corsWarningEl}
       </div>
     `, module, hass);
-  }
-
-  private async _handleLogoFileUpload(
-    event: Event,
-    updateModule: (updates: Partial<QrCodeModule>) => void,
-    hass: HomeAssistant
-  ): Promise<void> {
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-    try {
-      const imagePath = await uploadImage(hass, file);
-      // Clear stale logo cache entries (both raw path and resolved URL)
-      logoDataUrlCache.delete(imagePath);
-      logoDataUrlCache.delete(getImageUrl(hass, imagePath));
-      // Also bust any pending QR caches
-      for (const k of [...qrDataUrlCache.keys()]) {
-        if (k.includes('logo:')) qrDataUrlCache.delete(k);
-      }
-      updateModule({ logo_url: imagePath, logo_image_type: 'upload' });
-    } catch (error) {
-      console.error('Error uploading logo file:', error);
-      ucToastService.error(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {

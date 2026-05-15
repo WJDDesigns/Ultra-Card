@@ -238,33 +238,32 @@ export class UltraTabsModule extends BaseUltraModule {
           ),
           []
         )}
-        <div style="display: flex; gap: 8px; margin-bottom: 32px;">
-          ${[
-            {
-              value: 'horizontal',
-              icon: 'mdi:view-column',
-              label: localize('editor.tabs_module.orientation.horizontal', lang, 'Horizontal'),
-            },
-            {
-              value: 'vertical',
-              icon: 'mdi:view-sequential',
-              label: localize('editor.tabs_module.orientation.vertical', lang, 'Vertical'),
-            },
-          ].map(
-            opt => html`
-              <button
-                class="orientation-btn ${(tabsModule.orientation || 'horizontal') === opt.value
-                  ? 'active'
-                  : ''}"
-                @click=${() => {
-                  updateModule({ orientation: opt.value as 'horizontal' | 'vertical' });
-                  setTimeout(() => this.triggerPreviewUpdate(), 50);
-                }}
-              >
-                <ha-icon icon="${opt.icon}" style="--mdc-icon-size: 24px;"></ha-icon>
-                <span style="font-size: 12px;">${opt.label}</span>
-              </button>
-            `
+        <div style="margin-bottom: 32px;">
+          ${this.renderSegmentedField(
+            '',
+            '',
+            tabsModule.orientation || 'horizontal',
+            [
+              {
+                value: 'horizontal',
+                label: localize(
+                  'editor.tabs_module.orientation.horizontal',
+                  lang,
+                  'Horizontal'
+                ),
+                icon: 'mdi:view-column',
+              },
+              {
+                value: 'vertical',
+                label: localize(
+                  'editor.tabs_module.orientation.vertical',
+                  lang,
+                  'Vertical'
+                ),
+                icon: 'mdi:view-sequential',
+              },
+            ],
+            next => updateModule({ orientation: next as 'horizontal' | 'vertical' })
           )}
         </div>
 

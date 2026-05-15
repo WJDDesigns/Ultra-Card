@@ -70,10 +70,11 @@ describe('layout-tab: row settings tabs', () => {
     clickTabByLabel(el, 'Logic');
     await flushUpdates(el);
     const wait = nextConfigChanged(el);
+    // The Hide-on-Devices toggles are now <ha-checkbox> (HA-native), not <input type="checkbox">.
     const cb = deepQuerySelector(
       el.shadowRoot!,
-      '.uc-global-logic-tab input[type="checkbox"]'
-    ) as HTMLInputElement;
+      '.uc-global-logic-tab ha-checkbox'
+    ) as HTMLElement & { checked?: boolean };
     expect(cb).toBeTruthy();
     cb.checked = true;
     cb.dispatchEvent(new Event('change', { bubbles: true }));

@@ -17,6 +17,10 @@ const EMPTY_GENERAL_TAB = new Set([
   'pagebreak',
   'image',
   'gauge',
+  // Default config renders only label/info pickers without a directly-interactable
+  // primitive control after the renderUcForm/booleanField + select migrations.
+  'dropdown',
+  'markdown',
   'button',
   'stack',
   'popup',

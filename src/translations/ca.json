@@ -1308,7 +1308,10 @@
       "error_url_desc": "Introdueix una imatge URL a la pestanya General",
       "error_upload_desc": "Puja una imatge a la pestanya General",
       "error_entity_desc": "Selecciona una entitat d'imatge a la pestanya General",
-      "error_attribute_desc": "Selecciona una entitat i atribut a la pestanya General"
+      "error_attribute_desc": "Selecciona una entitat i atribut a la pestanya General",
+      "upload_choose": "Choose file",
+      "upload_clear": "Remove file",
+      "attribute_entity_desc": "Select an entity that contains an image URL in one of its attributes."
     },
     "graphs": {
       "chart_type": {
@@ -1570,7 +1573,12 @@
       "error_no_entity": "Configura l'entitat font",
       "error_no_entity_desc": "Selecciona una entitat font a la pestanya General",
       "error_no_options": "Afegeix opcions",
-      "error_no_options_desc": "Configura opcions desplegables a la pestanya General o activa la plantilla unificada \u0001GT1\u0002"
+      "error_no_options_desc": "Configura opcions desplegables a la pestanya General o activa la plantilla unificada \u0001GT1\u0002",
+      "unified_template_section": {
+        "title": "Template Mode",
+        "enable": "Enable Template Mode",
+        "desc": "Use a single Jinja2 template to generate all dropdown options with icons, labels, and colors. Return a JSON array of option objects. When enabled, manual options are replaced by template-generated options."
+      }
     },
     "info": {
       "entity_section": {
@@ -2176,7 +2184,26 @@
         "layout_spacing": "Disposició i espaiat",
         "gap": "Espai",
         "data_items_direction": "Direcció dels elements de dades",
-        "alignment": "Alineació"
+        "alignment": "Alineació",
+        "badge_top_left": "Top Left",
+        "badge_top_right": "Top Right",
+        "badge_bottom_left": "Bottom Left",
+        "badge_bottom_right": "Bottom Right",
+        "direction_row": "Row",
+        "direction_column": "Column",
+        "align_left": "Left",
+        "align_center": "Center",
+        "align_right": "Right",
+        "data_item": {
+          "location": "Location",
+          "battery": "Battery",
+          "time_info": "Time Info",
+          "media": "Media",
+          "sensor": "Sensor",
+          "device_state": "Device State",
+          "attribute": "Attribute",
+          "toggle": "Toggle"
+        }
       },
       "no_text_configured": "No s'ha configurat cap text",
       "no_image_configured": "No s'ha configurat cap imatge",
@@ -3041,7 +3068,9 @@
       "section_entity_desc": "Selecciona l'entitat d'aspiradora a controlar",
       "entity": "Entitat d'Aspiradora",
       "section_animations": "Animacions",
-      "section_animations_desc": "Controla les animacions de l'aspiradora"
+      "section_animations_desc": "Controla les animacions de l'aspiradora",
+      "name": "Display Name",
+      "name_desc": "Custom name to display (leave empty to use entity name)"
     },
     "navigation": {
       "section_desktop": "MODE ESCRIPTORI",
@@ -3054,7 +3083,10 @@
     "climate": {
       "error_no_entity": "Sense Entitat Climàtica",
       "error_no_entity_desc": "Selecciona una entitat climàtica a la pestanya General",
-      "error_not_found": "Entitat No Trobat"
+      "error_not_found": "Entitat No Trobat",
+      "entity_config_title": "Entity Configuration",
+      "entity_config_desc": "Select the climate entity to control",
+      "entity": "Climate Entity"
     },
     "people": {
       "error_no_entity": "Selecciona l'Entitat Persona",
@@ -3557,13 +3589,16 @@
       "show_unavailable_desc": "When off, entities in unavailable or unknown states are hidden.",
       "section_source": "Entity source",
       "pinned_entities": "Pinned entities",
-      "pinned_entities_desc": "Always appear first, regardless of filters. Expand a row for overrides.",
+      "pinned_entities_desc": "Always appear first, regardless of filters. Click a chip to edit overrides; hover to remove.",
       "pin_entity": "Pin entity",
+      "pinned_add": "Add pinned entity",
       "hidden_entities": "Hidden entities",
-      "hidden_entities_desc": "Removed from the auto list; click × to show again.",
+      "hidden_entities_desc": "Removed from the auto list. Remove with the × on a chip.",
+      "hidden_add": "Add hidden entity",
       "no_entity": "No entity selected",
       "entity": "Entity",
       "entity_desc": "Entity to pin to the top.",
+      "overrides_for": "Overrides for",
       "label_override": "Label override",
       "icon_override": "Icon override",
       "row_color": "Row color override",

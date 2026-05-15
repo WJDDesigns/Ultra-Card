@@ -6,7 +6,7 @@ import { CardModule, AreaSummaryModule, AreaSummaryStylePreset, UltraCardConfig 
 import { localize } from '../localize/localize';
 import { ucAreaDiscoveryService, RoomSummaryModel, RoomQuickEntity, isEntityActive, sortBucket } from '../services/uc-area-discovery-service';
 import type { TapActionConfig } from '../components/ultra-link';
-import { getImageUrl, uploadImage } from '../utils/image-upload';
+import { getImageUrl } from '../utils/image-upload';
 import { ucToastService } from '../services/uc-toast-service';
 import '../components/ultra-color-picker';
 
@@ -418,31 +418,6 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
     return '';
   }
 
-  private async handleRoomBackgroundUpload(
-    event: Event,
-    updateModule: (updates: Partial<CardModule>) => void,
-    hass: HomeAssistant
-  ): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    try {
-      const imagePath = await uploadImage(hass, file);
-      updateModule({
-        room_background_type: 'upload',
-        room_background_image: imagePath,
-      });
-      this.triggerPreviewUpdate();
-    } catch (err) {
-      console.error('Area summary background upload failed:', err);
-      ucToastService.error(
-        localize('editor.area_summary.bg_upload_error', hass?.locale?.language || 'en', 'Upload failed')
-      );
-    } finally {
-      input.value = '';
-    }
-  }
-
   private entityShortName(hass: HomeAssistant, entityId: string): string {
     const name = hass.states[entityId]?.attributes?.friendly_name;
     if (typeof name === 'string' && name.trim()) return name.trim();
@@ -773,27 +748,28 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
                 ${this.effectiveRoomBackgroundType(m) === 'upload'
                   ? html`
                       <div style="margin-top: 12px;">
-                        <div class="field-title">
-                          ${localize('editor.area_summary.room_bg_upload_btn', lang, 'Upload file')}
-                        </div>
-                        <div class="field-description">
-                          ${localize(
+                        ${this.renderFileField(
+                          localize('editor.area_summary.room_bg_upload_btn', lang, 'Upload file'),
+                          localize(
                             'editor.area_summary.room_bg_upload_btn_desc',
                             lang,
                             'Choose an image from your device. It is stored in your Ultra Card uploads path.'
-                          )}
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
-                          @change=${(e: Event) => this.handleRoomBackgroundUpload(e, updateModule, hass)}
-                        />
-                        ${(m.room_background_image || '').trim()
-                          ? html`<div style="margin-top: 8px; font-size: 12px; color: var(--success-color);">
-                              ${localize('editor.area_summary.room_bg_uploaded', lang, 'Image ready')}
-                            </div>`
-                          : ''}
+                          ),
+                          hass,
+                          m.room_background_image || '',
+                          path => {
+                            if (path) {
+                              updateModule({
+                                room_background_type: 'upload',
+                                room_background_image: path,
+                              });
+                            } else {
+                              updateModule({ room_background_image: '' });
+                            }
+                            this.triggerPreviewUpdate();
+                          },
+                          'image/*'
+                        )}
                       </div>
                     `
                   : ''}

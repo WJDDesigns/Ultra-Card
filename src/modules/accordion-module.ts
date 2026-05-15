@@ -184,33 +184,21 @@ export class UltraAccordionModule extends BaseUltraModule {
                     lang,
                     'Custom Title Configuration'
                   ),
-                  html`
-                    <div
-                      class="field-title"
-                      style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-                    >
-                      ${localize('editor.accordion.title.custom_text', lang, 'Title Text')}
-                    </div>
-                    <div
-                      class="field-description"
-                      style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-                    >
-                      ${localize(
-                        'editor.accordion.title.custom_text_desc',
-                        lang,
-                        'Enter the custom text to display in the accordion header.'
-                      )}
-                    </div>
-                    <ha-textfield
-                      .value=${accordionModule.title_text || ''}
-                      placeholder="Enter title text"
-                      style="width: 100%;"
-                      @input=${(e: Event) => {
-                        const target = e.target as any;
-                        updateModule({ title_text: target.value });
-                      }}
-                    ></ha-textfield>
-                  `
+                  this.renderFieldSection(
+                    localize('editor.accordion.title.custom_text', lang, 'Title Text'),
+                    localize(
+                      'editor.accordion.title.custom_text_desc',
+                      lang,
+                      'Enter the custom text to display in the accordion header.'
+                    ),
+                    hass,
+                    { title_text: accordionModule.title_text || '' },
+                    [this.textField('title_text')],
+                    (e: CustomEvent) => {
+                      updateModule({ title_text: e.detail.value.title_text });
+                      this.triggerPreviewUpdate();
+                    }
+                  )
                 )}
               </div>
             `
@@ -329,95 +317,44 @@ export class UltraAccordionModule extends BaseUltraModule {
           </div>
 
           <!-- Alignment Mode: Center or Apart -->
-          <div style="margin-bottom: 16px;">
-            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
-              ${localize('editor.accordion.alignment.mode', lang, 'Alignment Mode')}
-            </div>
-            <div style="display: flex; gap: 8px;">
-              ${[
-                {
-                  value: 'center',
-                  icon: 'mdi:align-horizontal-center',
-                  title: localize('editor.common.center', lang, 'Center'),
-                },
-                {
-                  value: 'apart',
-                  icon: 'mdi:arrow-left-right',
-                  title: localize('editor.common.apart', lang, 'Apart'),
-                },
-              ].map(
-                align => html`
-                  <button
-                    class="alignment-btn ${(accordionModule.header_alignment || 'apart') ===
-                    align.value
-                      ? 'active'
-                      : ''}"
-                    @click=${() => {
-                      updateModule({ header_alignment: align.value as 'center' | 'apart' });
-                      setTimeout(() => {
-                        this.triggerPreviewUpdate();
-                      }, 50);
-                    }}
-                    title="${align.title}"
-                    style="flex: 1; padding: 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${(accordionModule.header_alignment ||
-                      'apart') === align.value
-                      ? 'var(--primary-color)'
-                      : 'var(--card-background-color)'}; color: ${(accordionModule.header_alignment ||
-                      'apart') === align.value
-                      ? 'white'
-                      : 'var(--primary-text-color)'}; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;"
-                  >
-                    <ha-icon icon="${align.icon}" style="--mdc-icon-size: 24px;"></ha-icon>
-                  </button>
-                `
-              )}
-            </div>
-          </div>
+          ${this.renderSegmentedField(
+            localize('editor.accordion.alignment.mode', lang, 'Alignment Mode'),
+            '',
+            accordionModule.header_alignment || 'apart',
+            [
+              {
+                value: 'center',
+                label: localize('editor.common.center', lang, 'Center'),
+                icon: 'mdi:align-horizontal-center',
+              },
+              {
+                value: 'apart',
+                label: localize('editor.common.apart', lang, 'Apart'),
+                icon: 'mdi:arrow-left-right',
+              },
+            ],
+            next => updateModule({ header_alignment: next as 'center' | 'apart' })
+          )}
 
           <!-- Icon Side: Left or Right -->
-          <div>
-            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
-              ${localize('editor.accordion.alignment.icon_side', lang, 'Icon Side')}
-            </div>
-            <div style="display: flex; gap: 8px;">
-              ${[
-                {
-                  value: 'left',
-                  icon: 'mdi:arrow-left',
-                  title: localize('editor.common.left', lang, 'Left'),
-                },
-                {
-                  value: 'right',
-                  icon: 'mdi:arrow-right',
-                  title: localize('editor.common.right', lang, 'Right'),
-                },
-              ].map(
-                side => html`
-                  <button
-                    class="alignment-btn ${(accordionModule.icon_side || 'right') === side.value
-                      ? 'active'
-                      : ''}"
-                    @click=${() => {
-                      updateModule({ icon_side: side.value as 'left' | 'right' });
-                      setTimeout(() => {
-                        this.triggerPreviewUpdate();
-                      }, 50);
-                    }}
-                    title="${side.title}"
-                    style="flex: 1; padding: 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${(accordionModule.icon_side ||
-                      'right') === side.value
-                      ? 'var(--primary-color)'
-                      : 'var(--card-background-color)'}; color: ${(accordionModule.icon_side ||
-                      'right') === side.value
-                      ? 'white'
-                      : 'var(--primary-text-color)'}; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;"
-                  >
-                    <ha-icon icon="${side.icon}" style="--mdc-icon-size: 24px;"></ha-icon>
-                  </button>
-                `
-              )}
-            </div>
-          </div>
+          ${this.renderSegmentedField(
+            localize('editor.accordion.alignment.icon_side', lang, 'Icon Side'),
+            '',
+            accordionModule.icon_side || 'right',
+            [
+              {
+                value: 'left',
+                label: localize('editor.common.left', lang, 'Left'),
+                icon: 'mdi:arrow-left',
+              },
+              {
+                value: 'right',
+                label: localize('editor.common.right', lang, 'Right'),
+                icon: 'mdi:arrow-right',
+              },
+            ],
+            next => updateModule({ icon_side: next as 'left' | 'right' })
+          )}
         </div>
 
         <!-- Open/Close Logic Section -->

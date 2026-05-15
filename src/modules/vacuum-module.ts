@@ -3010,39 +3010,61 @@ export class UltraVacuumModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
 
     return html`
-      <style>
-        ${this.injectUcFormStyles()}
-      </style>
+      ${this.injectUcFormStyles()}
 
-      <!-- Entity Configuration -->
-      ${this.renderSettingsSection(
-        localize('editor.vacuum.section_entity', lang, 'Entity Configuration'),
-        localize('editor.vacuum.section_entity_desc', lang, 'Select the vacuum entity to control'),
-        []
-      )}
-      <div style="margin-bottom: 24px;">
+      <!-- Entity Configuration (single settings-section box with entity picker + display name) -->
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+        >
+          ${localize('editor.vacuum.section_entity', lang, 'Entity Configuration')}
+        </div>
+        <div
+          style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+        >
+          ${localize(
+            'editor.vacuum.section_entity_desc',
+            lang,
+            'Select the vacuum entity to control'
+          )}
+        </div>
         ${this.renderEntityPickerWithVariables(
-          hass, config, 'entity', vacuumModule.entity || '',
+          hass,
+          config,
+          'entity',
+          vacuumModule.entity || '',
           (value: string) => {
             const entityState = hass.states[value];
-            const detectedIntegration = entityState ? this.detectIntegration(entityState) : 'generic';
+            const detectedIntegration = entityState
+              ? this.detectIntegration(entityState)
+              : 'generic';
             const autoPopulated = this.autoPopulateEntities(value, hass);
-            updateModule({ entity: value, detected_integration: detectedIntegration, ...autoPopulated });
+            updateModule({
+              entity: value,
+              detected_integration: detectedIntegration,
+              ...autoPopulated,
+            });
           },
           ['vacuum'],
           localize('editor.vacuum.entity', lang, 'Vacuum Entity')
         )}
-      </div>
-      ${this.renderSettingsSection('', '', [
-        {
-          title: 'Display Name',
-          description: 'Custom name to display (leave empty to use entity name)',
+        ${this.renderFieldSection(
+          localize('editor.vacuum.name', lang, 'Display Name'),
+          localize(
+            'editor.vacuum.name_desc',
+            lang,
+            'Custom name to display (leave empty to use entity name)'
+          ),
           hass,
-          data: { name: vacuumModule.name || '' },
-          schema: [{ name: 'name', selector: { text: {} } }],
-          onChange: (e: CustomEvent) => updateModule({ name: e.detail.value.name }),
-        },
-      ])}
+          { name: vacuumModule.name || '' },
+          [this.textField('name')],
+          (e: CustomEvent) => updateModule({ name: e.detail.value.name })
+        )}
+      </div>
 
       <!-- Card Layout Builder -->
       ${this.renderCardLayoutSection(vacuumModule, hass, updateModule)}

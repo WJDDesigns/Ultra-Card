@@ -217,149 +217,41 @@ export class UltraSeparatorModule extends BaseUltraModule {
                 ${(separatorModule as any).separator_style === 'shadow' ||
                 (separatorModule as any).separator_style === 'blank'
                   ? html``
-                  : html`
-                      <div class="field-container" style="margin-bottom: 24px;">
-                        <div class="field-title">
-                          ${separatorModule.orientation === 'vertical'
-                            ? localize('editor.separator.height', lang, 'Height')
-                            : localize('editor.separator.width', lang, 'Width')}
-                        </div>
-                        <div class="field-description">
-                          ${separatorModule.orientation === 'vertical'
-                            ? localize(
-                                'editor.separator.height_desc',
-                                lang,
-                                'Height of the separator. Use pixels (e.g., "300px") or percentage (e.g., "50%").'
-                              )
-                            : localize(
-                                'editor.separator.width_desc',
-                                lang,
-                                'Width of the separator. Use percentage (e.g., "100%") or pixels (e.g., "200px").'
-                              )}
-                        </div>
-                        <div
-                          class="gap-control-container"
-                          style="display: flex; align-items: center; gap: 12px;"
-                        >
-                          ${separatorModule.orientation === 'vertical'
-                            ? html`
-                                <input
-                                  type="text"
-                                  class="gap-input"
-                                  .value="${typeof separatorModule.height_px === 'string'
-                                    ? separatorModule.height_px
-                                    : separatorModule.height_px
-                                      ? `${separatorModule.height_px}px`
-                                      : '300px'}"
-                                  placeholder="300px or 50%"
-                                  @input=${(e: Event) => {
-                                    const target = e.target as HTMLInputElement;
-                                    const value = target.value.trim();
-                                    if (value === '') {
-                                      updateModule({ height_px: undefined });
-                                      return;
-                                    }
-                                    // Store as string if it has a unit, otherwise as number
-                                    if (value.endsWith('%') || value.endsWith('px')) {
-                                      updateModule({ height_px: value });
-                                    } else {
-                                      const num = parseFloat(value);
-                                      if (!isNaN(num)) {
-                                        updateModule({ height_px: num });
-                                      }
-                                    }
-                                  }}
-                                  style="flex: 1; min-width: 0;"
-                                />
-                                <button
-                                  class="reset-btn"
-                                  @click=${() => updateModule({ height_px: 300 })}
-                                  title=${localize(
-                                    'editor.fields.reset_default_value',
-                                    lang,
-                                    'Reset to default ({value})'
-                                  ).replace('{value}', '300px')}
-                                >
-                                  <ha-icon icon="mdi:refresh"></ha-icon>
-                                </button>
-                              `
-                            : html`
-                                ${(() => {
-                                  const currentValue = separatorModule.width_percent;
-                                  const isString = typeof currentValue === 'string';
-                                  const isPercent = isString && currentValue.endsWith('%');
-                                  const numericValue = isString
-                                    ? isPercent
-                                      ? parseFloat(currentValue)
-                                      : null
-                                    : typeof currentValue === 'number'
-                                      ? currentValue
-                                      : 100;
-                                  const showSlider = !isString || isPercent;
-
-                                  return html`
-                                    ${showSlider
-                                      ? html`
-                                          <input
-                                            type="range"
-                                            class="gap-slider"
-                                            min="10"
-                                            max="100"
-                                            step="5"
-                                            .value="${numericValue || 100}"
-                                            @input=${(e: Event) => {
-                                              const target = e.target as HTMLInputElement;
-                                              const value = parseFloat(target.value);
-                                              updateModule({ width_percent: value });
-                                            }}
-                                          />
-                                        `
-                                      : html``}
-                                    <input
-                                      type="text"
-                                      class="gap-input"
-                                      .value="${isString
-                                        ? currentValue
-                                        : currentValue
-                                          ? `${currentValue}%`
-                                          : '100%'}"
-                                      placeholder="100% or 200px"
-                                      @input=${(e: Event) => {
-                                        const target = e.target as HTMLInputElement;
-                                        const value = target.value.trim();
-                                        if (value === '') {
-                                          updateModule({ width_percent: undefined });
-                                          return;
-                                        }
-                                        // Store as string if it has a unit, otherwise as number
-                                        if (value.endsWith('%') || value.endsWith('px')) {
-                                          updateModule({ width_percent: value });
-                                        } else {
-                                          const num = parseFloat(value);
-                                          if (!isNaN(num)) {
-                                            updateModule({ width_percent: num });
-                                          }
-                                        }
-                                      }}
-                                      style="flex: 1; min-width: 0;"
-                                    />
-                                    <button
-                                      class="reset-btn"
-                                      @click=${() => updateModule({ width_percent: 100 })}
-                                      title=${localize(
-                                        'editor.fields.reset_default_value',
-                                        lang,
-                                        'Reset to default ({value})'
-                                      ).replace('{value}', '100%')}
-                                    >
-                                      <ha-icon icon="mdi:refresh"></ha-icon>
-                                    </button>
-                                  `;
-                                })()}
-                              `}
-                        </div>
-                      </div>
-                    `}
+                  : separatorModule.orientation === 'vertical'
+                    ? this.renderUnitAwareSliderField(
+                        localize('editor.separator.height', lang, 'Height'),
+                        localize(
+                          'editor.separator.height_desc',
+                          lang,
+                          'Height of the separator. Use pixels (e.g., "300px") or percentage (e.g., "50%").'
+                        ),
+                        separatorModule.height_px as number | string | undefined,
+                        '300px',
+                        50,
+                        600,
+                        10,
+                        'px',
+                        '300px or 50%',
+                        (next: number | string | undefined) =>
+                          updateModule({ height_px: next as any })
+                      )
+                    : this.renderUnitAwareSliderField(
+                        localize('editor.separator.width', lang, 'Width'),
+                        localize(
+                          'editor.separator.width_desc',
+                          lang,
+                          'Width of the separator. Use percentage (e.g., "100%") or pixels (e.g., "200px").'
+                        ),
+                        separatorModule.width_percent as number | string | undefined,
+                        100,
+                        10,
+                        100,
+                        5,
+                        '%',
+                        '100% or 200px',
+                        (next: number | string | undefined) =>
+                          updateModule({ width_percent: next as any })
+                      )}
 
                 <!-- Color -->
                 <div class="field-group">
