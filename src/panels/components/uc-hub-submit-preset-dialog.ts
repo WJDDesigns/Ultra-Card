@@ -10,6 +10,7 @@ import {
   ucCloudSyncService,
   SubmitPresetPayload,
 } from '../../services/uc-cloud-sync-service';
+import { SUPPORTED_IMAGE_ACCEPT } from '../../utils/image-upload';
 
 export interface SubmitPresetDialogPayload {
   shortcode: string;
@@ -943,12 +944,12 @@ export class UcHubSubmitPresetDialog extends LitElement {
           <span class="upload-zone-label">
             <ha-icon icon="mdi:image-plus"></ha-icon>
             <strong>Click to upload photos</strong>
-            <span>PNG, JPG, WEBP</span>
+            <span>PNG, JPG, GIF, WebP, AVIF, SVG…</span>
           </span>
           <input
             id="photo-upload"
             type="file"
-            accept="image/*"
+            accept=${SUPPORTED_IMAGE_ACCEPT}
             multiple
             @change=${this._handleFileInput}
             @input=${this._handleFileInput}

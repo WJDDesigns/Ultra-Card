@@ -1938,7 +1938,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                 class="switch-label"
                 style="font-size:16px;font-weight:600;white-space:nowrap;"
               >
-                ${localize('editor.graphs.unified_template.toggle', lang, 'Template mode')}
+                ${localize('editor.graphs.unified_template.toggle', lang, 'Template Mode')}
               </span>
               <button
                 type="button"

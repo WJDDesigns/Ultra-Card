@@ -544,7 +544,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
         <div style="margin-top: 16px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
             <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:16px;font-weight:600;">${localize('editor.spinbox.unified_template.toggle', lang, 'Template mode')}</span>
+              <span style="font-size:16px;font-weight:600;">${localize('editor.spinbox.unified_template.toggle', lang, 'Template Mode')}</span>
               <button
                 type="button"
                 class="help-btn"

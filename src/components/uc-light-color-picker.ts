@@ -2007,6 +2007,13 @@ export class UcLightColorPicker extends LitElement {
       :host {
         display: block;
         width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        /* min-width: 0 lets us shrink below the inner grids' intrinsic content
+           width — critical inside narrow module editor panes. NOTE: do NOT add
+           overflow: hidden here — nested ultra-color-picker dropdowns and
+           cheatsheet popovers need to escape this element. */
+        min-width: 0;
       }
 
       .light-color-picker {
@@ -2014,6 +2021,10 @@ export class UcLightColorPicker extends LitElement {
         border-radius: 8px;
         padding: 16px;
         border: 1px solid var(--divider-color);
+        /* Box-sizing + max-width ensure the inner padding doesn't push us
+           past the host's width in narrow module editor panes. */
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       .light-color-picker.disabled {
@@ -2056,6 +2067,12 @@ export class UcLightColorPicker extends LitElement {
         display: flex;
         gap: 20px;
         align-items: flex-start;
+        /* Allow children to shrink inside narrow editor panels (the module editor
+           sidebar is typically ~340-420px wide, well below the @media 600px
+           breakpoint that flips us to column layout). */
+        flex-wrap: wrap;
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       .color-wheel-section {
@@ -2102,10 +2119,16 @@ export class UcLightColorPicker extends LitElement {
       }
 
       .color-values {
-        flex: 1;
+        flex: 1 1 220px;
         display: flex;
         flex-direction: column;
         gap: 16px;
+        /* Critical: without min-width: 0, the flex item refuses to shrink below
+           its inner grid's intrinsic content width, which pushes Green / S(Sat) /
+           Y inputs off the right edge of the editor panel. */
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       .section-title {
@@ -2117,7 +2140,10 @@ export class UcLightColorPicker extends LitElement {
 
       .rgb-inputs {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
+        /* minmax(0, 1fr) lets each column shrink below its intrinsic content
+           size when the editor panel is narrow — without this the 3 columns
+           keep their natural min-content width and overflow the right edge. */
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 8px;
       }
 
@@ -2141,6 +2167,11 @@ export class UcLightColorPicker extends LitElement {
         color: var(--primary-text-color);
         font-size: 12px;
         text-align: center;
+        /* Make the input fill its grid cell instead of using its intrinsic
+           browser-default width (which is wider than narrow cells). */
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
       }
 
       .rgb-input-group input:focus {
@@ -2152,12 +2183,18 @@ export class UcLightColorPicker extends LitElement {
         background: var(--secondary-background-color);
         border-radius: 8px;
         padding: 16px;
+        /* Match the rest of the color-values children — never grow past the
+           narrow editor pane. */
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       .hs-inputs,
       .xy-inputs {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        /* Same minmax(0, 1fr) trick as .rgb-inputs — keeps both columns
+           inside the editor panel's available width. */
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
       }
 
@@ -2186,6 +2223,10 @@ export class UcLightColorPicker extends LitElement {
         font-size: 12px;
         text-align: center;
         font-family: monospace;
+        /* Match rgb-input-group: fill the grid cell and never widen past it. */
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
       }
 
       .hs-input-group input:focus,

@@ -2477,7 +2477,7 @@ export class UltraBarModule extends BaseUltraModule {
               style="display:flex;align-items:center;gap:8px;"
             >
               <span class="switch-label" style="font-size:16px;font-weight:600;white-space:nowrap;">
-                ${localize('editor.bar.unified_template.toggle', lang, 'Template mode')}
+                ${localize('editor.bar.unified_template.toggle', lang, 'Template Mode')}
               </span>
               <button
                 type="button"

@@ -330,7 +330,7 @@ export class UltraGaugeModule extends BaseUltraModule {
         <div style="margin-bottom: 24px; margin-top: 24px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
             <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:16px;font-weight:600;">${localize('editor.gauge.unified_template.toggle', hass?.locale?.language || 'en', 'Template mode')}</span>
+              <span style="font-size:16px;font-weight:600;">${localize('editor.gauge.unified_template.toggle', hass?.locale?.language || 'en', 'Template Mode')}</span>
               <button
                 type="button"
                 class="help-btn"

@@ -194,24 +194,30 @@ All standard markdown features are automatically enabled!`,
         </div>
 
         <!-- HTML Support Section -->
-        <div
-          ${this.renderSettingsSection(
-            localize('editor.markdown.html.title', lang, 'HTML Support'),
-            '',
-            [
-              {
-                title: localize('editor.markdown.enable_html', lang, 'Enable HTML'),
-                description: localize('editor.markdown.enable_html_desc', lang, 'Allow raw HTML tags in markdown content (all standard markdown features are always enabled)'),
-                hass,
-                data: { enable_html: markdownModule.enable_html || false },
-                schema: [this.booleanField('enable_html')],
-                onChange: (e: CustomEvent) => { updateModule({ enable_html: e.detail.value.enable_html }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
-              }
-            ]
-          )}
+        ${this.renderSettingsSection(
+          localize('editor.markdown.html.title', lang, 'HTML Support'),
+          '',
+          [
+            {
+              title: localize('editor.markdown.enable_html', lang, 'Enable HTML'),
+              description: localize(
+                'editor.markdown.enable_html_desc',
+                lang,
+                'Allow raw HTML tags in markdown content (all standard markdown features are always enabled)'
+              ),
+              hass,
+              data: { enable_html: markdownModule.enable_html || false },
+              schema: [this.booleanField('enable_html')],
+              onChange: (e: CustomEvent) => {
+                updateModule({ enable_html: e.detail.value.enable_html });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
+            },
+          ]
+        )}
 
         <!-- Unified Template Section -->
-        <div class="template-section" style="margin-top: 24px; margin-bottom: 24px;">
+        <div class="template-section">
           <div class="template-header">
             <div class="switch-container">
               <div class="switch-label-row">
@@ -219,7 +225,7 @@ All standard markdown features are automatically enabled!`,
                   >${localize(
                     'editor.markdown.unified_template_section.toggle',
                     lang,
-                    'Template mode'
+                    'Template Mode'
                   )}</label
                 >
                 <button

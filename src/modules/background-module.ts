@@ -65,97 +65,114 @@ export class UltraBackgroundModule extends BaseUltraModule {
           []
         )}
 
-        <!-- Background Source -->
-        ${this.renderSettingsSection(
-          localize('editor.background.source_title', lang, 'Background Source'),
-          localize('editor.background.source_desc', lang, 'Choose how you want to specify the background image.'),
-          [
-            {
-              title: localize('editor.background.type', lang, 'Background Type'),
-              description: localize('editor.background.type_desc', lang, 'Select the source type for your background image.'),
-              hass,
-              data: { background_type: backgroundModule.background_type || 'none' },
-              schema: [
-                this.selectField('background_type', [
-                  { value: 'none', label: localize('editor.background.type_none', lang, 'None') },
-                  { value: 'upload', label: localize('editor.background.type_upload', lang, 'Upload Image') },
-                  { value: 'entity', label: localize('editor.background.type_entity', lang, 'Entity Image') },
-                  { value: 'url', label: localize('editor.background.type_url', lang, 'Image URL') },
-                ]),
-              ],
-              onChange: (e: CustomEvent) => {
-                const next = e.detail.value.background_type;
-                const prev = backgroundModule.background_type || 'none';
-                if (next === prev) return;
-                updateModule({ background_type: next });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
+        <!-- Background Source (type selector + source-specific fields, one card) -->
+        <div class="settings-section">
+          <div class="section-title">
+            ${localize('editor.background.source_title', lang, 'Background Source')}
+          </div>
+          ${this.renderSegmentedField(
+            localize('editor.background.type', lang, 'Background Type'),
+            localize(
+              'editor.background.type_desc',
+              lang,
+              'Select the source type for your background image.'
+            ),
+            backgroundModule.background_type || 'none',
+            [
+              {
+                value: 'none',
+                label: localize('editor.background.type_none', lang, 'None'),
+                icon: 'mdi:image-off-outline',
               },
-            },
-          ]
-        )}
-
-        <!-- URL Image Source -->
-        ${backgroundModule.background_type === 'url'
-          ? this.renderConditionalFieldsGroup(
-              localize('editor.background.url_config', lang, 'Image URL Configuration'),
-              html`
-                ${this.renderFieldSection(
-                  localize('editor.background.image_url', lang, 'Image URL'),
-                  localize('editor.background.image_url_desc', lang, 'Enter the direct URL to the background image.'),
-                  hass,
-                  { background_image: backgroundModule.background_image || '' },
-                  [this.textField('background_image')],
-                  (e: CustomEvent) => updateModule({ background_image: e.detail.value.background_image })
-                )}
-              `
-            )
-          : ''}
-
-        <!-- Upload Image Source -->
-        ${backgroundModule.background_type === 'upload'
-          ? this.renderConditionalFieldsGroup(
-              localize('editor.background.upload_config', lang, 'Upload Image Configuration'),
-              html`
-                ${this.renderFileField(
-                  localize('editor.background.upload', lang, 'Upload Image'),
-                  localize(
-                    'editor.background.upload_desc',
-                    lang,
-                    'Click to upload a background image file from your device.'
-                  ),
-                  hass,
-                  backgroundModule.background_image || '',
-                  path => {
-                    updateModule({ background_image: path });
-                    this.triggerPreviewUpdate();
-                  },
-                  'image/*'
-                )}
-              `
-            )
-          : ''}
-
-        <!-- Entity Image Source -->
-        ${backgroundModule.background_type === 'entity'
-          ? this.renderConditionalFieldsGroup(
-              localize('editor.background.entity_config', lang, 'Entity Image Configuration'),
-              html`
-                ${this.renderEntityPickerWithVariables(
-                  hass, config, 'background_image_entity', backgroundModule.background_image_entity || '',
-                  (value: string) => {
-                    const prev = backgroundModule.background_image_entity || '';
-                    if (value === prev) return;
-                    updateModule({ background_image_entity: value });
-                  },
-                  undefined,
-                  localize('editor.background.entity', lang, 'Entity')
-                )}
-                <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-top: 4px; color: var(--secondary-text-color);">
-                  ${localize('editor.background.entity_desc', lang, 'Select an entity that provides a picture URL or image (e.g. person, camera, or media player).')}
+              {
+                value: 'upload',
+                label: localize('editor.background.type_upload', lang, 'Upload Image'),
+                icon: 'mdi:upload',
+              },
+              {
+                value: 'entity',
+                label: localize('editor.background.type_entity', lang, 'Entity Image'),
+                icon: 'mdi:account-circle',
+              },
+              {
+                value: 'url',
+                label: localize('editor.background.type_url', lang, 'Image URL'),
+                icon: 'mdi:link-variant',
+              },
+            ],
+            next => {
+              const prev = backgroundModule.background_type || 'none';
+              if (next === prev) return;
+              updateModule({ background_type: next as typeof backgroundModule.background_type });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
+          )}
+          ${backgroundModule.background_type === 'url'
+            ? html`
+                <div style="margin-top: 8px;">
+                  ${this.renderFieldSection(
+                    localize('editor.background.image_url', lang, 'Image URL'),
+                    localize(
+                      'editor.background.image_url_desc',
+                      lang,
+                      'Enter the direct URL to the background image.'
+                    ),
+                    hass,
+                    { background_image: backgroundModule.background_image || '' },
+                    [this.textField('background_image')],
+                    (e: CustomEvent) =>
+                      updateModule({ background_image: e.detail.value.background_image })
+                  )}
                 </div>
               `
-            )
-          : ''}
+            : ''}
+          ${backgroundModule.background_type === 'upload'
+            ? html`
+                <div style="margin-top: 8px;">
+                  ${this.renderFileField(
+                    localize('editor.background.upload', lang, 'Upload Image'),
+                    localize(
+                      'editor.background.upload_desc',
+                      lang,
+                      'Click to upload a background image file from your device.'
+                    ),
+                    hass,
+                    backgroundModule.background_image || '',
+                    path => {
+                      updateModule({ background_image: path });
+                      this.triggerPreviewUpdate();
+                    }
+                  )}
+                </div>
+              `
+            : ''}
+          ${backgroundModule.background_type === 'entity'
+            ? html`
+                <div style="margin-top: 8px;">
+                  ${this.renderEntityPickerWithVariables(
+                    hass,
+                    config,
+                    'background_image_entity',
+                    backgroundModule.background_image_entity || '',
+                    (value: string) => {
+                      const prev = backgroundModule.background_image_entity || '';
+                      if (value === prev) return;
+                      updateModule({ background_image_entity: value });
+                    },
+                    undefined,
+                    localize('editor.background.entity', lang, 'Entity')
+                  )}
+                  <div class="field-description" style="margin-top: 4px;">
+                    ${localize(
+                      'editor.background.entity_desc',
+                      lang,
+                      'Select an entity that provides a picture URL or image (e.g. person, camera, or media player).'
+                    )}
+                  </div>
+                </div>
+              `
+            : ''}
+        </div>
 
         <!-- Background Settings -->
         ${backgroundModule.background_type !== 'none'

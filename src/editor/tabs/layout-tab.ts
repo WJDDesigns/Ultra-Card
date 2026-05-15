@@ -28,7 +28,7 @@ import '../global-design-tab';
 import { DesignProperties } from '../global-design-tab';
 import { GlobalLogicTab } from '../../tabs/global-logic-tab';
 import { logicService } from '../../services/logic-service';
-import { getImageUrl, uploadImage } from '../../utils/image-upload';
+import { getImageUrl, uploadImage, SUPPORTED_IMAGE_ACCEPT } from '../../utils/image-upload';
 import { localize } from '../../localize/localize';
 import { Z_INDEX } from '../../utils/uc-z-index';
 import { ucToastService } from '../../services/uc-toast-service';
@@ -27156,7 +27156,7 @@ export class LayoutTab extends LitElement {
                       </div>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept=${SUPPORTED_IMAGE_ACCEPT}
                         @change=${this._handleBackgroundImageUpload}
                         style="display: none"
                       />
@@ -30651,6 +30651,17 @@ export class LayoutTab extends LitElement {
     return css`
       :host {
         display: block;
+        /*
+         * Fill the parent .tab-content when the editor is in settings-open
+         * mode. Without height: 100% the host sizes to content, which breaks
+         * the flex chain that lets .module-tab-content be the single scroller.
+         * In normal (non-settings-open) mode .tab-content gives us natural
+         * height via min-height: 400px, so this height: 100% resolves to
+         * that minimum.
+         */
+        height: 100%;
+        min-height: 0;
+        box-sizing: border-box;
         --accent-color: var(--orange-color, #ff9800);
         --orange-color: #ff9800;
         --secondary-color: var(--orange-color, #ff9800);
@@ -34423,7 +34434,14 @@ export class LayoutTab extends LitElement {
         padding: 0 24px 24px;
         flex: 1 1 auto;
         min-height: 0; /* allow parent to control height */
-        overflow-y: auto;
+        /*
+         * IMPORTANT: do NOT set overflow-y: auto here.
+         * The parent .module-tab-content already provides the single scroll
+         * context for tab content. If this wrapper also scrolls, the user
+         * gets nested scrollbars — when they scroll to the bottom of the
+         * inner scroller, the bottom is still hidden because the outer
+         * (.module-tab-content or HA dialog .content) also has to scroll.
+         */
         overflow-x: visible; /* allow dropdowns to render outside */
         position: relative;
         z-index: 1;
@@ -34619,7 +34637,14 @@ export class LayoutTab extends LitElement {
         flex: 1;
         max-width: none !important;
         max-height: calc(55vh - 80px);
-        overflow-y: auto;
+        /*
+         * Leave overflow: hidden from the base rule. The inner
+         * .module-tab-content is the single scroll surface — adding
+         * overflow-y: auto here creates a second nested scrollbar that
+         * makes the panel "feel" stuck at the bottom (the inner scroller
+         * is exhausted but the outer still has to scroll to reveal the
+         * last rows of the form).
+         */
         order: unset;
         min-height: 0;
       }

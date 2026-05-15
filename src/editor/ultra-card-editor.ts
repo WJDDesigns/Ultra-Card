@@ -20,7 +20,7 @@ import {
   SnapshotSchedulerStatus,
 } from '../services/uc-snapshot-scheduler-service';
 import { UcConfigEncoder } from '../utils/uc-config-encoder';
-import { uploadImage } from '../utils/image-upload';
+import { uploadImage, SUPPORTED_IMAGE_ACCEPT } from '../utils/image-upload';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { safeGetItem, safeSetItem } from '../utils/safe-storage';
 import './tabs/layout-tab';
@@ -47,6 +47,12 @@ export class UltraCardEditor extends LitElement {
   @state() private _activeTab: EditorTab = 'layout';
   @state() private _configDebounceTimeout: number | undefined;
   @state() private _isFullScreen: boolean = false;
+  /**
+   * Reflected to `data-settings-open` on the host so `:host([data-settings-open])`
+   * CSS rules can constrain the editor to fit within HA's dialog content area
+   * (eliminates the outer "whole window" scroll that appears when our content
+   * grows taller than the visible dialog).
+   */
   @state() private _moduleSettingsOpen: boolean = false;
   @state() private _isMobile: boolean = false;
   @state() private _expandedCardSections: Set<string> = new Set(['appearance']);
@@ -125,6 +131,25 @@ export class UltraCardEditor extends LitElement {
 
   protected override willUpdate(changedProperties: Map<string, any>): void {
     super.willUpdate(changedProperties);
+
+    // Reflect settings-open state to host attribute so `:host([data-settings-open])`
+    // CSS rules can size the editor to fit the dialog (preventing the doubled
+    // inner-panel + whole-window scroll).
+    if (changedProperties.has('_moduleSettingsOpen')) {
+      if (this._moduleSettingsOpen) {
+        this.setAttribute('data-settings-open', '');
+        // Bind host height to HA's .element-editor scroll container — pure CSS
+        // can't reach across HA's shadow-root wrappers (hui-card-element-editor
+        // → .wrapper → .gui-editor are all height: auto), so we measure with
+        // ResizeObserver and set the height inline. This eliminates HA's outer
+        // ".element-editor.ha-scrollbar" scroll because our editor is sized to
+        // never exceed its container.
+        this._bindElementEditorHeight();
+      } else {
+        this.removeAttribute('data-settings-open');
+        this._unbindElementEditorHeight();
+      }
+    }
 
     // Check for integration auth when hass updates
     if (changedProperties.has('hass') && this.hass) {
@@ -305,6 +330,7 @@ export class UltraCardEditor extends LitElement {
         new CustomEvent('uc-preview-suppress-locks-changed', { detail: { suppressed: false } })
       );
     } catch {}
+    this._unbindElementEditorHeight();
     this.removeEventListener('config-changed', this._handleConfigChanged as EventListener);
     this.removeEventListener('keydown', this._handleKeyDown as EventListener);
 
@@ -548,6 +574,104 @@ export class UltraCardEditor extends LitElement {
       document.body.classList.remove('ultra-card-fullscreen');
       this._restoreFromFullscreen();
     }
+  }
+
+  /**
+   * Cached reference to HA's outer scrolling container (`<div class="element-editor ha-scrollbar">`).
+   * Lives outside our shadow root; we walk up through composed parents to find it.
+   */
+  private _haElementEditor: HTMLElement | null = null;
+  private _haElementEditorObserver: ResizeObserver | null = null;
+  private _haElementEditorWindowHandler: (() => void) | null = null;
+
+  /**
+   * Walk up through composed parents (including shadow-root hosts) to find
+   * HA's `.element-editor` ancestor. That element is the outer scrollable
+   * container in HA's card-edit dialog; we need to size our host to fit
+   * within its clientHeight.
+   */
+  private _findHaElementEditor(): HTMLElement | null {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    let node: any = this;
+    let depth = 0;
+    while (node && depth < 40) {
+      if (
+        node instanceof Element &&
+        (node as Element).classList &&
+        (node as Element).classList.contains('element-editor')
+      ) {
+        return node as HTMLElement;
+      }
+      const parent: any = (node as any).parentElement || (node as any).parentNode;
+      if (parent) {
+        node = parent;
+      } else {
+        const rootNode: any = (node as any).getRootNode?.();
+        if (rootNode instanceof ShadowRoot) {
+          node = rootNode.host;
+        } else {
+          node = null;
+        }
+      }
+      depth++;
+    }
+    return null;
+  }
+
+  /**
+   * Compute the vertical offset of our host inside `.element-editor`'s
+   * unscrolled content box. We add the container's scrollTop so the value
+   * reflects where we'd sit if the container were scrolled to top.
+   */
+  private _hostOffsetWithinElementEditor(elementEditor: HTMLElement): number {
+    const editorRect = elementEditor.getBoundingClientRect();
+    const ourRect = this.getBoundingClientRect();
+    return ourRect.top - editorRect.top + elementEditor.scrollTop;
+  }
+
+  private _updateHostHeightFromElementEditor = (): void => {
+    if (!this._moduleSettingsOpen || !this._haElementEditor) return;
+    const offsetTop = this._hostOffsetWithinElementEditor(this._haElementEditor);
+    const available = this._haElementEditor.clientHeight - offsetTop;
+    // Guard against degenerate values (negative, tiny, or NaN) — better to
+    // leave the host alone than to collapse it.
+    if (Number.isFinite(available) && available > 120) {
+      this.style.height = `${available}px`;
+      this.style.maxHeight = `${available}px`;
+    }
+  };
+
+  private _bindElementEditorHeight(): void {
+    this._haElementEditor = this._findHaElementEditor();
+    if (!this._haElementEditor) return;
+    // ResizeObserver fires when the container resizes (window resize, dialog
+    // animation, sibling YAML toggle expand/collapse, etc).
+    this._haElementEditorObserver = new ResizeObserver(() =>
+      this._updateHostHeightFromElementEditor()
+    );
+    this._haElementEditorObserver.observe(this._haElementEditor);
+    // Also handle window resize in case the container itself doesn't change
+    // size but its position does (e.g. ancestor chrome toggling).
+    this._haElementEditorWindowHandler = () => this._updateHostHeightFromElementEditor();
+    window.addEventListener('resize', this._haElementEditorWindowHandler);
+    // Run twice via rAF so initial layout settles before our measurement.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => this._updateHostHeightFromElementEditor())
+    );
+  }
+
+  private _unbindElementEditorHeight(): void {
+    if (this._haElementEditorObserver) {
+      this._haElementEditorObserver.disconnect();
+      this._haElementEditorObserver = null;
+    }
+    if (this._haElementEditorWindowHandler) {
+      window.removeEventListener('resize', this._haElementEditorWindowHandler);
+      this._haElementEditorWindowHandler = null;
+    }
+    this._haElementEditor = null;
+    this.style.height = '';
+    this.style.maxHeight = '';
   }
 
   private _saveAndStyle(el: HTMLElement, css: string): void {
@@ -1008,7 +1132,7 @@ export class UltraCardEditor extends LitElement {
                                     </div>
                                     <input
                                       type="file"
-                                      accept="image/*"
+                                      accept=${SUPPORTED_IMAGE_ACCEPT}
                                       @change=${this._handleCardBackgroundImageUpload}
                                       style="display: none"
                                     />
@@ -1932,6 +2056,30 @@ export class UltraCardEditor extends LitElement {
       /* Global styles for hiding preview in full screen */
       :host {
         --ultra-editor-transition: all 0.3s ease;
+        display: block;
+      }
+
+      /*
+       * When a module / row / column settings panel is open, force the editor
+       * to fill its parent's available height. This is the single most important
+       * piece of the "two scrollbars" fix: without the host being constrained,
+       * the inner flex chain has nothing to flex against — .card-config grows
+       * with content, the inner .module-tab-content grows with it, and HA's
+       * dialog .content has to add its own outer scroll to compensate.
+       *
+       * Setting height: 100% + overflow: hidden here makes the host occupy
+       * exactly the dialog's content area, the inner flex chain has a definite
+       * height to size against, and .module-tab-content ends up being the
+       * SOLE scroller. The HA dialog's outer scroll never engages because the
+       * editor never exceeds its allotted height.
+       */
+      :host([data-settings-open]) {
+        display: block;
+        height: 100%;
+        max-height: 100%;
+        min-height: 0;
+        overflow: hidden;
+        box-sizing: border-box;
       }
 
       /* Fix for ha-select dropdowns appearing behind other UI elements */
@@ -2128,11 +2276,36 @@ export class UltraCardEditor extends LitElement {
 
       .card-config.module-settings-open {
         padding: 0;
+        /*
+         * When a module / row / column settings panel is open, constrain the
+         * whole editor to its parent's height so the inner panel becomes the
+         * single scroll surface. Without this, the editor grew with the
+         * content and the HA dialog's outer .content also had to scroll —
+         * resulting in two scrollbars where reaching the inner bottom still
+         * left half the form below the visible viewport.
+         *
+         * Paired with the :host([data-settings-open]) height:100% rule above,
+         * this creates a complete flex chain from the host down to
+         * .module-tab-content, which is then the only scroller that engages.
+         */
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        max-height: 100%;
+        min-height: 0;
+        overflow: hidden;
       }
 
       .card-config.module-settings-open .tab-content {
         margin-top: 0;
         min-height: 0 !important;
+        /* Take the remaining space inside .card-config so descendant flex
+           chains (.layout-builder → .module-settings-panel → .module-tab-content)
+           have a definite height to flex against. */
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
       }
 
       /* Full screen mode header adjustments - not sticky so it scrolls with content */

@@ -3296,7 +3296,7 @@
       "cors_title": "Afbeelding geblokkeerd door CORS",
       "cors_hint": "Kopieer de afbeelding naar /config/www/ en gebruik /local/your-image.png in plaats daarvan.",
       "logo_upload_label": "Upload logo afbeelding",
-      "logo_upload_desc": "Klik om een PNG, JPG, of SVG van je apparaat te uploaden.",
+      "logo_upload_desc": "Klik om een afbeelding (PNG, JPG, GIF, WebP, AVIF, SVG…) van je apparaat te uploaden.",
       "logo_uploaded": "Geüpload",
       "logo_entity": "Entiteit",
       "logo_attribute": "Attributenaam",

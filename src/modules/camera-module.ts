@@ -766,47 +766,62 @@ export class UltraCameraModule extends BaseUltraModule {
         <!-- Link configuration intentionally omitted for Camera module per design guidelines -->
 
         <!-- Unified Template Section -->
-        <div style="margin-top: 24px; margin-bottom: 24px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:16px;font-weight:600;">${localize('editor.camera.unified_template.toggle', lang, 'Template mode')}</span>
-              <button
-                type="button"
-                class="help-btn"
-                style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
-                title="${localize('editor.camera.unified_template.cheatsheet', lang, 'Template cheatsheet')}"
-                @click=${(e: Event) => {
-                  (e.currentTarget as HTMLElement).dispatchEvent(
-                    new CustomEvent('uc-open-template-cheatsheet', {
-                      bubbles: true,
-                      composed: true,
-                      detail: { module: 'camera' },
-                    })
-                  );
-                }}
-              >
-                <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
-              </button>
+        <div class="template-section">
+          <div class="template-header">
+            <div class="switch-container">
+              <div class="switch-label-row">
+                <label class="switch-label"
+                  >${localize(
+                    'editor.camera.unified_template.toggle',
+                    lang,
+                    'Template Mode'
+                  )}</label
+                >
+                <button
+                  class="help-btn"
+                  style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                  title="${localize(
+                    'editor.camera.unified_template.cheatsheet',
+                    lang,
+                    'Template cheatsheet'
+                  )}"
+                  @click=${(e: Event) => {
+                    (e.currentTarget as HTMLElement).dispatchEvent(
+                      new CustomEvent('uc-open-template-cheatsheet', {
+                        bubbles: true,
+                        composed: true,
+                        detail: { module: 'camera' },
+                      })
+                    );
+                  }}
+                >
+                  <ha-icon
+                    icon="mdi:help-circle"
+                    style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"
+                  ></ha-icon>
+                </button>
+              </div>
+              ${this.renderUcForm(
+                hass,
+                { unified_template_mode: cameraModule.unified_template_mode || false },
+                [this.booleanField('unified_template_mode')],
+                (e: CustomEvent) =>
+                  updateModule({ unified_template_mode: e.detail.value.unified_template_mode })
+              )}
             </div>
-            ${this.renderUcForm(
-              hass,
-              { unified_template_mode: cameraModule.unified_template_mode || false },
-              [this.booleanField('unified_template_mode')],
-              (e: CustomEvent) =>
-                updateModule({ unified_template_mode: e.detail.value.unified_template_mode })
-            )}
-          </div>
-          <div style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; line-height: 1.5;">
-            ${localize(
-              'editor.camera.unified_template.desc',
-              lang,
-              'Return JSON: entity, visible, overlay_text, overlay_color — or a plain entity_id string.'
-            )}
+            <div class="template-description">
+              ${localize(
+                'editor.camera.unified_template.desc',
+                lang,
+                'Return JSON: entity, visible, overlay_text, overlay_color — or a plain entity_id string.'
+              )}
+            </div>
           </div>
 
           ${cameraModule.unified_template_mode
             ? html`
                 <div
+                  class="template-content"
                   @mousedown=${(e: Event) => {
                     const target = e.target as HTMLElement;
                     if (
@@ -818,7 +833,9 @@ export class UltraCameraModule extends BaseUltraModule {
                   }}
                   @dragstart=${(e: Event) => e.stopPropagation()}
                   @insert-snippet=${(e: CustomEvent) => {
-                    const editor = (e.currentTarget as HTMLElement).querySelector('ultra-template-editor');
+                    const editor = (e.currentTarget as HTMLElement).querySelector(
+                      'ultra-template-editor'
+                    );
                     (editor as any)?.insertAtCursor?.(e.detail?.value ?? '');
                   }}
                 >

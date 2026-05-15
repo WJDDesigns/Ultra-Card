@@ -546,7 +546,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
                   localize(
                     'editor.qr_code.logo_upload_desc',
                     lang,
-                    'Click to upload a PNG, JPG, or SVG from your device.'
+                    'Click to upload an image (PNG, JPG, GIF, WebP, AVIF, SVG…) from your device.'
                   ),
                   hass,
                   qrModule.logo_url || '',

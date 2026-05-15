@@ -3296,7 +3296,7 @@
       "cors_title": "Obraz zablokowany przez CORS",
       "cors_hint": "Skopiuj obraz do /config/www/ i użyj /local/your-image.png zamiast.",
       "logo_upload_label": "Prześlij obraz logo",
-      "logo_upload_desc": "Kliknij, aby przesłać PNG, JPG lub SVG z urządzenia.",
+      "logo_upload_desc": "Kliknij, aby przesłać obraz (PNG, JPG, GIF, WebP, AVIF, SVG…) z urządzenia.",
       "logo_uploaded": "Przesłano",
       "logo_entity": "Jednostka",
       "logo_attribute": "Nazwa atrybutu",

@@ -2,7 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { uploadImage } from '../utils/image-upload';
+import { uploadImage, SUPPORTED_IMAGE_ACCEPT } from '../utils/image-upload';
 import { ucToastService } from '../services/uc-toast-service';
 
 /**
@@ -28,7 +28,14 @@ import { ucToastService } from '../services/uc-toast-service';
 export class UltraFilePicker extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
 
-  @property({ type: String }) accept = 'image/*';
+  /**
+   * `accept` attribute for the underlying `<input type="file">`. Defaults to
+   * the canonical image-format list (see {@link SUPPORTED_IMAGE_ACCEPT}) so
+   * modern formats like WebP, AVIF, HEIC, and JPEG XL are pickable in every
+   * environment. Override to narrow (e.g. `'image/png,.png'`) or broaden to
+   * the universal any-file glob.
+   */
+  @property({ type: String }) accept = SUPPORTED_IMAGE_ACCEPT;
 
   @property({ type: String }) label = '';
 

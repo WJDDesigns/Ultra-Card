@@ -3296,7 +3296,7 @@
       "cors_title": "Bild blockerad av CORS",
       "cors_hint": "Kopiera bilden till /config/www/ och använd /local/your-image.png istället.",
       "logo_upload_label": "Ladda upp logobild",
-      "logo_upload_desc": "Klicka för att ladda upp en PNG, JPG, eller SVG från din enhet.",
+      "logo_upload_desc": "Klicka för att ladda upp en bild (PNG, JPG, GIF, WebP, AVIF, SVG…) från din enhet.",
       "logo_uploaded": "Uppladdad",
       "logo_entity": "Enhet",
       "logo_attribute": "Attributnamn",

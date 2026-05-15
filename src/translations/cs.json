@@ -3296,7 +3296,7 @@
       "cors_title": "Obrázek zablokován CORS",
       "cors_hint": "Zkopíruj obrázek do /config/www/ a použij /local/tvůj-obrázek.png místo toho.",
       "logo_upload_label": "Nahrát obrázek loga",
-      "logo_upload_desc": "Klikni pro nahrání PNG, JPG nebo SVG z tvého zařízení.",
+      "logo_upload_desc": "Klikni pro nahrání obrázku (PNG, JPG, GIF, WebP, AVIF, SVG…) z tvého zařízení.",
       "logo_uploaded": "Nahráno",
       "logo_entity": "Entita",
       "logo_attribute": "Název atributu",

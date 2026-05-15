@@ -8,7 +8,7 @@ import { UcFormUtils } from '../utils/uc-form-utils';
 import { UltraLinkComponent, TapActionConfig } from '../components/ultra-link';
 import { ucGestureService, GestureConfig } from '../services/uc-gesture-service';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
-import { getImageUrl } from '../utils/image-upload';
+import { getImageUrl, SUPPORTED_IMAGE_ACCEPT } from '../utils/image-upload';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { build3dTransformStyles } from '../utils/transform-3d-utils';
 import '../components/ultra-file-picker';
@@ -746,7 +746,7 @@ export abstract class BaseUltraModule implements UltraModule {
     hass: HomeAssistant,
     value: string,
     onChange: (path: string) => void,
-    accept: string = 'image/*',
+    accept: string = SUPPORTED_IMAGE_ACCEPT,
     filePickerLabels?: { chooseFile?: string; clear?: string }
   ): TemplateResult {
     return html`

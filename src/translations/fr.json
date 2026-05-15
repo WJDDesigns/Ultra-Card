@@ -3296,7 +3296,7 @@
       "cors_title": "Image bloquée par CORS",
       "cors_hint": "Copiez l'image dans /config/www/ et utilisez /local/your-image.png à la place.",
       "logo_upload_label": "Télécharger l'image du logo",
-      "logo_upload_desc": "Cliquez pour télécharger un PNG, JPG, ou SVG depuis votre appareil.",
+      "logo_upload_desc": "Cliquez pour télécharger une image (PNG, JPG, GIF, WebP, AVIF, SVG…) depuis votre appareil.",
       "logo_uploaded": "Téléchargé",
       "logo_entity": "Entité",
       "logo_attribute": "Nom de l'attribut",

@@ -3296,7 +3296,7 @@
       "cors_title": "Imagen bloqueada por CORS",
       "cors_hint": "Copia la imagen a /config/www/ y usa /local/tu-imagen.png en su lugar.",
       "logo_upload_label": "Subir imagen del logo",
-      "logo_upload_desc": "Haga clic para subir un PNG, JPG, o SVG desde su dispositivo.",
+      "logo_upload_desc": "Haga clic para subir una imagen (PNG, JPG, GIF, WebP, AVIF, SVG…) desde su dispositivo.",
       "logo_uploaded": "Subido",
       "logo_entity": "Entidad",
       "logo_attribute": "Nombre del atributo",

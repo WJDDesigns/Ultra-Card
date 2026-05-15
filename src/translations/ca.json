@@ -3296,7 +3296,7 @@
       "cors_title": "Imatge bloquejada per CORS",
       "cors_hint": "Copia la imatge a /config/www/ i utilitza /local/your-image.png en el seu lloc.",
       "logo_upload_label": "Puja la imatge del logo",
-      "logo_upload_desc": "Fes clic per pujar un PNG, JPG, o SVG des del teu dispositiu.",
+      "logo_upload_desc": "Fes clic per pujar una imatge (PNG, JPG, GIF, WebP, AVIF, SVG…) des del teu dispositiu.",
       "logo_uploaded": "Pujat",
       "logo_entity": "Entitat",
       "logo_attribute": "Nom de l'atribut",

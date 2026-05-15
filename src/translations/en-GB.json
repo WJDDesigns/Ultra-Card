@@ -3296,7 +3296,7 @@
       "cors_title": "Image blocked by CORS",
       "cors_hint": "Copy the image to /config/www/ and use /local/your-image.png instead.",
       "logo_upload_label": "Upload logo image",
-      "logo_upload_desc": "Click to upload a PNG, JPG, or SVG from your device.",
+      "logo_upload_desc": "Click to upload an image (PNG, JPG, GIF, WebP, AVIF, SVG…) from your device.",
       "logo_uploaded": "Uploaded",
       "logo_entity": "Entity",
       "logo_attribute": "Attribute name",

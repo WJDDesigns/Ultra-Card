@@ -10,6 +10,63 @@ export interface ImageUploadResponse {
 }
 
 /**
+ * Canonical `accept` string for image upload inputs across Ultra Card.
+ *
+ * `image/*` is a wildcard that *should* cover every format the browser
+ * recognises as an image — but in practice some file pickers (notably iOS
+ * Safari, Android intents, certain Linux file managers, and a handful of HA
+ * companion-app webviews) only show files whose MIME type they auto-detected,
+ * and they sometimes fail to detect modern formats like WebP / AVIF / HEIC /
+ * JPEG XL. Listing the MIME types *and* the file extensions explicitly makes
+ * every modern image format selectable in every environment.
+ *
+ * Server-side, Home Assistant's `/api/media_source/local/upload` endpoint
+ * accepts arbitrary files (it just streams them to disk under /media/local),
+ * so any format the browser lets the user pick will upload successfully.
+ *
+ * All file pickers (`<ultra-file-picker>`, `renderFileField`, and the few
+ * remaining hand-rolled `<input type="file">` elements) reference this
+ * constant so they stay in sync.
+ */
+export const SUPPORTED_IMAGE_ACCEPT = [
+  // Broad wildcard — primary filter for browsers that auto-detect MIME types.
+  'image/*',
+  // Explicit MIME types — belt-and-suspenders for pickers that won't show a
+  // file unless its MIME is whitelisted by name.
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/avif',
+  'image/svg+xml',
+  'image/bmp',
+  'image/tiff',
+  'image/x-icon',
+  'image/vnd.microsoft.icon',
+  'image/heic',
+  'image/heif',
+  'image/jxl',
+  'image/apng',
+  // Extension fallbacks — some pickers filter purely on extension when the
+  // file's MIME isn't reported (common with HEIC/AVIF/JXL on older OSes).
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.avif',
+  '.svg',
+  '.bmp',
+  '.tif',
+  '.tiff',
+  '.ico',
+  '.heic',
+  '.heif',
+  '.jxl',
+  '.apng',
+].join(',');
+
+/**
  * Uploads a file to Home Assistant using the best available method.
  * Tries local media source first, falls back to image API if needed.
  * @param hass The Home Assistant object.

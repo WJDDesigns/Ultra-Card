@@ -1,5 +1,80 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.4.0
+
+Three months in the making and ten betas later, **3.4.0** is the biggest single Ultra Card update yet. Six brand-new modules. A from-the-ground-up refresh that makes every editor look and feel the same. Sharper translations in 13 languages. And dozens of small fixes that smooth out the rough edges you've been telling us about.
+
+Here's what's new since 3.3.1:
+
+### 🚀 Six brand-new modules
+
+We added more modules in 3.4.0 than in any previous release, and every one of them is designed to do something useful out of the box with zero configuration.
+
+- **🔐 Alarm Panel** - A full-featured alarm control with a 3×4 PIN keypad, three layouts (Hero, Standard, Compact), automatic arm-mode detection, and a pulsing ring when triggered. Drop it on a dashboard and you're done.
+- **☀️ Solar Analytics** - Live solar power, grid import/export, battery charge, self-sufficiency percentage, and today's energy totals, all in beautiful ring gauges. Available in Full and Compact layouts.
+- **🖼️ Screensaver** - Turn any tablet into a true kiosk. Ten visual styles to choose from (Classic, Minimal, Neon, Retro, Frosted Glass, Photo Corner, Sunrise, Dark Luxe, Split, Ambient), an idle timer, image slideshows, weather, and entity-driven activation. The full-screen overlay actually covers the *whole* screen, corner to corner, on every device.
+- **🔋 Battery Monitor Pro** - Auto-discovers every battery in your home (sensors, vacuums, trackers, phones, anything with a battery) and highlights what needs charging. Five visual styles (List, Bars, Cards, Rings, Strip), critical/low color thresholds, charging indicators, and per-device overrides.
+- **📋 Auto Entities List** - Dynamically lists your Home Assistant entities by domain, device class, state, or keyword. Four row styles, sortable, with optional per-row colors that tint themselves to match your RGB lights. Localized in all 13 languages.
+- **🎨 Stack Overlay layout** - Layer modules on top of each other for hero images with overlaid text, camera feeds with corner badges, clock-and-weather combos, or album art with media controls. Each layer gets nine anchor points and four ready-made presets so the most common patterns are one click.
+
+### ✨ New features & powers
+
+- **🎲 3D Transform controls** - Every module, row, and column now gets a 3D Transform section in its Design tab. Tilt cards forward and back, spin them, or turn them sideways with perspective, rotateX, rotateY, and rotateZ.
+- **👻 "Never" display mode** - Temporarily hide a module without deleting it. Perfect for iterating on a dashboard without losing work.
+- **🎯 Smarter Text module templates** - Templates can now drive the icon and icon color along with the text and background. One template, total control.
+- **🤖 AI-powered translation pipeline** - We rebuilt our translation tooling around AI so the 13 languages we support stay current and natural-sounding instead of lagging behind the English version.
+
+### 🎨 A completely refreshed editor
+
+This is the biggest visual change in 3.4.0, and you'll feel it the moment you open the editor.
+
+- **Every module editor now looks identical.** File pickers, icon pickers, color pickers, segmented buttons, sliders, and chip lists all use the same shared components. No more "this module's source picker looks slightly different from that module's." Sliders even use Home Assistant's native slider style now, so they match the rest of HA pixel-for-pixel.
+- **The "Add Module" picker is now organized.** Modules are grouped into Data & Lists, Content & Media, Controls, and Input Helpers, each with a header icon and description. Way faster to scan as the catalog grows.
+- **The mobile editor finally makes sense.** On phones, the live preview now docks right under the tabs where you can actually see it as you edit, instead of being banished to the bottom of the dialog.
+- **One scrollbar, not two.** When you opened a module's settings, you used to get *two* scrollbars fighting each other. Scroll the inner one all the way down and the bottom of the form was still hidden. Now there's one clean scroll surface that just works.
+- **The Background module got a fresh layout.** Its four stacked cards are now one cohesive card with a segmented icon picker for source type, matching the rest of the editor.
+- **The light color picker fits in narrow panels.** RGB, HS, and XY input grids no longer overflow off the right edge in the module editor's side panel.
+- **The Slider Control bar header now breathes.** The drag handle, type badge, entity name, visibility toggles, and duplicate/delete buttons are no longer crammed into a single squeezed row in narrow panels.
+- **Live preview scrolls with the page by default** so you can see your changes without manually pinning it.
+- **Dropped the auto cloud-backup banner** that used to pop up on every editor open. Cloud restore now only happens when you explicitly ask for it.
+
+### 🌍 Translations refreshed in 13 languages
+
+All thirteen languages got a top-to-bottom refresh: Catalan, Czech, Danish, German, English (US/GB), Spanish, French, Italian, Dutch, Polish, Swedish, and Norwegian (Bokmål, Nynorsk, generic). Formality is now respected (formal *Sie* in German, *vous* in French, etc.), technical terminology is preserved (entity_id, RGB, Home Assistant), and every new editor string is translated everywhere. Style preset names now show in your language too.
+
+### 📷 Better images everywhere
+
+Every file picker in Ultra Card now happily accepts modern formats: **WebP, AVIF, HEIC, HEIF, JPEG XL, APNG, BMP, TIFF, ICO, SVG**, and the old standbys. iOS Safari, Android, and HA companion apps that used to silently hide your HEIC photos can finally see them.
+
+### 🐛 Bug fixes & polish
+
+A pile of small-but-meaningful fixes:
+
+- **Mobile no longer accidentally taps things while you're scrolling.** Tapping a button, icon, navbar item, row, column, or module mid-scroll is now correctly recognized as a scroll, not a tap.
+- **Spinbox rapid clicks stack correctly.** Smashing the +/- buttons on a thermostat or number entity now adds up cleanly instead of collapsing onto the same value.
+- **Images from the Home Assistant media browser actually show up.** Files picked from `media-source://` paths now resolve and display as expected.
+- **Third-party custom cards load reliably.** Cards whose script registers after the dashboard (Bubble Card variants, Better Moment Card, etc.) now show a brief "Loading…" placeholder and swap in cleanly once they're ready, instead of rendering as a broken element forever.
+- **The Add Module popup no longer gets clipped on iPad.**
+- **No more flash of "Sample Text"** when a Text module with a template first paints or re-mounts.
+- **Area Summary now reacts to live state** for auto-discovered entities (turn on an RGB light and it bumps to the top of the list).
+- **Nested layouts are fully covered everywhere.** Entity detection, import/export, template migration, and module-limit counting all correctly walk into Stack Overlay, Accordion, Popup, and Slider containers.
+- **`$variable` entity pickers no longer silently overwrite themselves** with the resolved entity ID.
+- **Module margin defaults migrate cleanly** from older saved cards so your spacing doesn't suddenly change.
+- **The Markdown module's HTML Support card** is now structured cleanly.
+- **"Template Mode" is consistently capitalized** across every module that uses it.
+
+### 🛠️ Behind the scenes
+
+A new automated test guards the editor refactor. Any future module that introduces a one-off file picker, switch, or segmented button will now fail CI before it ships. We also added a Layout tab test suite covering every module type, and a module-tabs audit script so we can spot-check what every module exposes in its Design areas.
+
+### 💛 Thank you, beta testers
+
+The ten beta releases this cycle gave us six weeks of real-world feedback, and almost every fix above came from someone telling us "hey, this thing does X, could it do Y instead?" Keep it coming.
+
+Enjoy 3.4.0. 🎉
+
+---
+
 ## Version 3.4.0-beta10
 
 ### 🔧 Improvements

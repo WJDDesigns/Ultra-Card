@@ -703,7 +703,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
           }
           .bar-header {
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            gap: 8px;
             padding: 12px 16px;
             cursor: pointer;
             transition: background-color 0.2s;
@@ -715,10 +716,30 @@ export class UltraSliderControlModule extends BaseUltraModule {
             background: var(--secondary-background-color);
             border-bottom: 1px solid var(--divider-color);
           }
+          /* Top row: drag handle + type badge + entity name + chevron.
+             flex-wrap lets the entity name drop below the badge when the editor
+             pane is very narrow rather than getting squeezed to 60px wide. */
+          .bar-header-primary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+            flex-wrap: wrap;
+          }
+          /* Bottom row: visibility toggles (left) + duplicate/delete (right).
+             space-between keeps the two clusters at opposite edges so they
+             never feel jammed together. */
+          .bar-header-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+          }
           .drag-handle {
             color: var(--secondary-text-color);
-            margin-right: 12px;
             cursor: grab;
+            flex-shrink: 0;
           }
           .drag-handle:active {
             cursor: grabbing;
@@ -734,7 +755,6 @@ export class UltraSliderControlModule extends BaseUltraModule {
             display: flex;
             gap: 8px;
             align-items: center;
-            margin-right: 8px;
           }
           .bar-individual-control {
             display: flex;
@@ -777,14 +797,14 @@ export class UltraSliderControlModule extends BaseUltraModule {
             color: var(--secondary-text-color);
           }
           .bar-type-badge {
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: 12px;
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
-            margin-right: 12px;
             min-width: 60px;
             text-align: center;
+            flex-shrink: 0;
           }
           .bar-type-badge.numeric {
             background: #2196f3;
@@ -819,9 +839,22 @@ export class UltraSliderControlModule extends BaseUltraModule {
             color: white;
           }
           .bar-label {
-            flex: 1;
+            flex: 1 1 auto;
             font-weight: 500;
             color: var(--primary-text-color);
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          /* Chevron pinned to the right edge of the primary row.
+             margin-left: auto pushes it past whatever shrink happens to the
+             label so it always anchors on the right. */
+          .bar-expand-chevron {
+            color: var(--secondary-text-color);
+            margin-left: auto;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
           }
           .bar-actions {
             display: flex;
@@ -983,113 +1016,118 @@ export class UltraSliderControlModule extends BaseUltraModule {
                     }
                   }}
                 >
-                  <ha-icon
-                    icon="mdi:drag-vertical"
-                    class="drag-handle"
-                    @click=${(e: Event) => e.stopPropagation()}
-                    @mousedown=${() => {
-                      this._dragFromHandle = true;
-                    }}
-                    @touchstart=${() => {
-                      this._dragFromHandle = true;
-                    }}
-                  ></ha-icon>
-                  <div class="bar-type-badge ${bar.type}">${bar.type}</div>
-                  <div class="bar-label">${displayName}</div>
-
-                  <!-- Individual Bar Controls -->
-                  <div class="bar-individual-controls">
-                    <div
-                      class="bar-individual-control ${bar.show_icon !== false
-                        ? 'active'
-                        : 'inactive'}"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        const updatedBars = [...(sliderControl.bars || [])];
-                        const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                        if (barIndex !== -1) {
-                          updatedBars[barIndex] = {
-                            ...updatedBars[barIndex],
-                            show_icon: !bar.show_icon,
-                          };
-                        }
-                        updateModule({ bars: updatedBars });
+                  <!-- Primary row: drag handle + type badge + entity name + chevron -->
+                  <div class="bar-header-primary">
+                    <ha-icon
+                      icon="mdi:drag-vertical"
+                      class="drag-handle"
+                      @click=${(e: Event) => e.stopPropagation()}
+                      @mousedown=${() => {
+                        this._dragFromHandle = true;
                       }}
-                      title="Toggle icon visibility"
-                    >
-                      <ha-icon icon="mdi:lightbulb"></ha-icon>
-                    </div>
-                    <div
-                      class="bar-individual-control ${bar.show_name !== false
-                        ? 'active'
-                        : 'inactive'}"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        const updatedBars = [...(sliderControl.bars || [])];
-                        const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                        if (barIndex !== -1) {
-                          updatedBars[barIndex] = {
-                            ...updatedBars[barIndex],
-                            show_name: !bar.show_name,
-                          };
-                        }
-                        updateModule({ bars: updatedBars });
+                      @touchstart=${() => {
+                        this._dragFromHandle = true;
                       }}
-                      title="Toggle name visibility"
-                    >
-                      <ha-icon icon="mdi:text"></ha-icon>
-                    </div>
-                    <div
-                      class="bar-individual-control ${bar.show_value !== false
-                        ? 'active'
-                        : 'inactive'}"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        const updatedBars = [...(sliderControl.bars || [])];
-                        const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                        if (barIndex !== -1) {
-                          updatedBars[barIndex] = {
-                            ...updatedBars[barIndex],
-                            show_value: !bar.show_value,
-                          };
-                        }
-                        updateModule({ bars: updatedBars });
-                      }}
-                      title="Toggle value visibility"
-                    >
-                      <ha-icon icon="mdi:numeric"></ha-icon>
-                    </div>
+                    ></ha-icon>
+                    <div class="bar-type-badge ${bar.type}">${bar.type}</div>
+                    <div class="bar-label" title=${displayName}>${displayName}</div>
+                    <ha-icon
+                      class="bar-expand-chevron"
+                      icon="mdi:chevron-${isExpanded ? 'up' : 'down'}"
+                    ></ha-icon>
                   </div>
 
-                  <div class="bar-actions">
-                    <button
-                      class="bar-action-button"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        const duplicatedBar = this._duplicateBar(bar);
-                        const updatedBars = [...(sliderControl.bars || [])];
-                        updatedBars.splice(index + 1, 0, duplicatedBar);
-                        updateModule({ bars: updatedBars });
-                      }}
-                      title="Duplicate bar"
-                    >
-                      <ha-icon icon="mdi:content-copy"></ha-icon>
-                    </button>
-                    <button
-                      class="bar-action-button delete"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        const updatedBars = this._deleteBar(bar.id, sliderControl.bars || []);
-                        updateModule({ bars: updatedBars });
-                      }}
-                      title="Delete bar"
-                    >
-                      <ha-icon icon="mdi:delete"></ha-icon>
-                    </button>
-                    <ha-icon
-                      icon="mdi:chevron-${isExpanded ? 'up' : 'down'}"
-                      style="transition: transform 0.2s ease;"
-                    ></ha-icon>
+                  <!-- Controls row: visibility toggles (left) + duplicate/delete (right) -->
+                  <div class="bar-header-controls">
+                    <div class="bar-individual-controls">
+                      <div
+                        class="bar-individual-control ${bar.show_icon !== false
+                          ? 'active'
+                          : 'inactive'}"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          const updatedBars = [...(sliderControl.bars || [])];
+                          const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                          if (barIndex !== -1) {
+                            updatedBars[barIndex] = {
+                              ...updatedBars[barIndex],
+                              show_icon: !bar.show_icon,
+                            };
+                          }
+                          updateModule({ bars: updatedBars });
+                        }}
+                        title="Toggle icon visibility"
+                      >
+                        <ha-icon icon="mdi:lightbulb"></ha-icon>
+                      </div>
+                      <div
+                        class="bar-individual-control ${bar.show_name !== false
+                          ? 'active'
+                          : 'inactive'}"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          const updatedBars = [...(sliderControl.bars || [])];
+                          const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                          if (barIndex !== -1) {
+                            updatedBars[barIndex] = {
+                              ...updatedBars[barIndex],
+                              show_name: !bar.show_name,
+                            };
+                          }
+                          updateModule({ bars: updatedBars });
+                        }}
+                        title="Toggle name visibility"
+                      >
+                        <ha-icon icon="mdi:text"></ha-icon>
+                      </div>
+                      <div
+                        class="bar-individual-control ${bar.show_value !== false
+                          ? 'active'
+                          : 'inactive'}"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          const updatedBars = [...(sliderControl.bars || [])];
+                          const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                          if (barIndex !== -1) {
+                            updatedBars[barIndex] = {
+                              ...updatedBars[barIndex],
+                              show_value: !bar.show_value,
+                            };
+                          }
+                          updateModule({ bars: updatedBars });
+                        }}
+                        title="Toggle value visibility"
+                      >
+                        <ha-icon icon="mdi:numeric"></ha-icon>
+                      </div>
+                    </div>
+
+                    <div class="bar-actions">
+                      <button
+                        class="bar-action-button"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          const duplicatedBar = this._duplicateBar(bar);
+                          const updatedBars = [...(sliderControl.bars || [])];
+                          updatedBars.splice(index + 1, 0, duplicatedBar);
+                          updateModule({ bars: updatedBars });
+                        }}
+                        title="Duplicate bar"
+                      >
+                        <ha-icon icon="mdi:content-copy"></ha-icon>
+                      </button>
+                      <button
+                        class="bar-action-button delete"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          const updatedBars = this._deleteBar(bar.id, sliderControl.bars || []);
+                          updateModule({ bars: updatedBars });
+                        }}
+                        title="Delete bar"
+                      >
+                        <ha-icon icon="mdi:delete"></ha-icon>
+                      </button>
+                    </div>
                   </div>
                 </div>
 

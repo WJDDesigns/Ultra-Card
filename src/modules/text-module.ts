@@ -416,7 +416,7 @@ export class UltraTextModule extends BaseUltraModule {
                   >${localize(
                     'editor.text.unified_template_section.toggle',
                     lang,
-                    'Template mode'
+                    'Template Mode'
                   )}</label
                 >
                 <button

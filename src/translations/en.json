@@ -707,7 +707,7 @@
       "unified_visibility": {
         "section_title": "Unified visibility template",
         "section_desc": "Return JSON with a boolean \"visible\" key (or use active / is_active, or a plain true/false string). When enabled, this runs in addition to the display conditions below. Uses the same $variables as module templates.",
-        "toggle": "Template mode",
+        "toggle": "Template Mode",
         "cheatsheet_title": "Template cheatsheet",
         "placeholder": "{ \"visible\": {{ states('input_boolean.show_row') == 'on' }} }"
       }
@@ -1253,7 +1253,7 @@
       "unified_template": {
         "title": "Unified Template",
         "desc": "One Jinja template returning JSON: value, label, color, left_label, right_label, value_min, value_max, container_background_color.",
-        "toggle": "Template mode",
+        "toggle": "Template Mode",
         "cheatsheet": "Template cheatsheet"
       }
     },
@@ -1546,7 +1546,7 @@
       "unified_template": {
         "title": "Unified Template",
         "desc": "Optional JSON: colors (array), global_color, fill_area, pie_fill.",
-        "toggle": "Template mode",
+        "toggle": "Template Mode",
         "cheatsheet": "Template cheatsheet"
       }
     },
@@ -1869,7 +1869,7 @@
       "unified_template": {
         "title": "Unified Template",
         "desc": "JSON with value, button_background_color, button_text_color, value_color — or a plain numeric Jinja result.",
-        "toggle": "Template mode",
+        "toggle": "Template Mode",
         "cheatsheet": "Template cheatsheet"
       }
     },
@@ -1970,7 +1970,7 @@
       "unified_template": {
         "title": "Unified Template",
         "desc": "Return JSON: entity, visible, overlay_text, overlay_color — or a plain entity_id string.",
-        "toggle": "Template mode",
+        "toggle": "Template Mode",
         "toggle_desc": "Dynamically select camera and overlay via one Jinja template",
         "cheatsheet": "Template cheatsheet"
       }
@@ -3601,7 +3601,7 @@
       "cors_title": "Image blocked by CORS",
       "cors_hint": "Copy the image to /config/www/ and use /local/your-image.png instead.",
       "logo_upload_label": "Upload logo image",
-      "logo_upload_desc": "Click to upload a PNG, JPG, or SVG from your device.",
+      "logo_upload_desc": "Click to upload an image (PNG, JPG, GIF, WebP, AVIF, SVG…) from your device.",
       "logo_uploaded": "Uploaded",
       "logo_entity": "Entity",
       "logo_attribute": "Attribute name",
