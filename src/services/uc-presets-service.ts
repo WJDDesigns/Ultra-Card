@@ -171,6 +171,11 @@ class UcPresetsService {
     // Clear the API cache first to ensure fresh data
     directoriesProPresetsAPI.clearCache();
     await this._loadWordPressPresets(true);
+    try {
+      localStorage.setItem('ultra_card_presets_last_refresh', new Date().toISOString());
+    } catch {
+      /* ignore */
+    }
   }
 
   /**

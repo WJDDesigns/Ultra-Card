@@ -55,6 +55,7 @@ export async function mountLayoutTab(config: UltraCardConfig): Promise<LayoutTab
   const el = new LayoutTab();
   el.hass = mockHass;
   el.config = config;
+  el.isFullScreen = false;
   document.body.appendChild(el);
   await el.updateComplete;
   return el;

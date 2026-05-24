@@ -3628,6 +3628,12 @@
     }
   },
   "hub": {
+    "groups": {
+      "home": "Home",
+      "library": "Library",
+      "account": "Account",
+      "help": "Help"
+    },
     "tabs": {
       "dashboard": "Dashboard",
       "account": "Account",
@@ -3637,6 +3643,7 @@
       "colors": "Colors",
       "variables": "Variables",
       "templates": "Templates",
+      "docs": "Docs",
       "about": "About"
     },
     "loading": "Loading…"

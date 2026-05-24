@@ -259,6 +259,127 @@ export class UltraStackModule extends BaseUltraModule {
   /** General-tab selected layer row (editor-only; not persisted) */
   private _stackSelectedLayerIndex = 0;
 
+  /** Active stack-layer pointer drag (editor preview only) */
+  private _stackLayerDrag: {
+    pointerId: number;
+    moduleIndex: number;
+    /** Live ref to .stack-preview-content. Stable across re-renders because it's not inside a Lit repeat(). Cached here because document.querySelector can't pierce HA's shadow DOM. */
+    previewEl: HTMLElement;
+    /** Latest pending position; committed via requestAnimationFrame to avoid synchronous re-renders during pointer flow which empirically suppress subsequent pointermove dispatches. */
+    pending: { offset_x: string; offset_y: string } | null;
+    rafId: number | null;
+    /** True when the layer's width was 'auto'/unset — we'll commit width: 'fit-content' so the icon/text renders at natural size at offset_x rather than filling 100% of the wrapper. */
+    sizeToContent: boolean;
+  } | null = null;
+
+  /** Window-level drag listeners — required because each config update re-renders and replaces the drag handle (so pointer capture on the handle would be lost). The .stack-preview-content ancestor is structurally stable across renders, so we cache its live ref at pointerdown. */
+  private _stackLayerDragWindowMove = (e: PointerEvent): void => {
+    const st = this._stackLayerDrag;
+    if (!st || e.pointerId !== st.pointerId) return;
+    const previewEl = st.previewEl;
+    if (!previewEl.isConnected) return;
+    const rect = previewEl.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return;
+    // Use pixel offsets instead of percentages: in CSS, percentage padding-top
+    // is computed relative to the containing block's WIDTH (not height), so
+    // wider-than-tall stacks would push layers far below the cursor when y%
+    // grows. Pixel offsets are unambiguous on both axes.
+    const px = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const py = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+    const ox = `${Math.round(px)}px`;
+    const oy = `${Math.round(py)}px`;
+    // Stash the pending position. We deliberately do NOT call updateFn
+    // synchronously here — triggering a Lit re-render mid-gesture causes the
+    // browser to suppress subsequent pointermove dispatches. Final commit
+    // happens in pointerup; live preview is achieved via DOM mutation on the
+    // layer wrapper.
+    st.pending = { offset_x: ox, offset_y: oy };
+    this._applyStackLayerDragLivePreview(st, ox, oy);
+  };
+
+  private _stackLayerDragWindowEnd = (e: PointerEvent): void => {
+    const st = this._stackLayerDrag;
+    if (!st || e.pointerId !== st.pointerId) return;
+    if (st.rafId !== null) {
+      cancelAnimationFrame(st.rafId);
+      st.rafId = null;
+    }
+    if (st.pending) {
+      const updateFn = (this as any)._stackDragUpdateFn as
+        | ((idx: number, patch: Partial<StackLayerConfig>) => void)
+        | undefined;
+      if (updateFn) {
+        const patch: Partial<StackLayerConfig> = {
+          anchor: 'top-left',
+          offset_x: st.pending.offset_x,
+          offset_y: st.pending.offset_y,
+        };
+        if (st.sizeToContent) {
+          patch.width = 'fit-content';
+          patch.height = 'auto';
+        }
+        updateFn(st.moduleIndex, patch);
+      }
+    }
+    this._stackLayerDrag = null;
+    this._detachStackLayerDragWindowListeners();
+  };
+
+  /**
+   * During an active drag we mutate the layer's wrapper inline-style directly
+   * to give live visual feedback WITHOUT triggering a Lit re-render. The model
+   * (config) is only committed on pointerup. Without this approach, calling
+   * updateFn on every pointermove triggers a re-render that empirically
+   * suppresses subsequent pointermove dispatches in Chrome.
+   */
+  private _applyStackLayerDragLivePreview(
+    st: NonNullable<UltraStackModule['_stackLayerDrag']>,
+    offsetX: string,
+    offsetY: string
+  ): void {
+    if (st.rafId !== null) return;
+    st.rafId = requestAnimationFrame(() => {
+      st.rafId = null;
+      const wrapper = this._findStackLayerWrapperEl(st.previewEl, st.moduleIndex);
+      if (!wrapper) return;
+      // Mirror the flexbox-padding scheme used by getStackLayerStyles for
+      // anchor='top-left': padding-top = offsetY, padding-left = offsetX.
+      wrapper.style.alignItems = 'flex-start';
+      wrapper.style.justifyContent = 'flex-start';
+      wrapper.style.padding = `${offsetY} 0px 0px ${offsetX}`;
+      // For auto-width layers, also shrink the child to its natural size so
+      // it doesn't fill the post-padding area (which would prevent the icon
+      // from visually reaching the left half regardless of offset_x).
+      if (st.sizeToContent) {
+        const child = wrapper.querySelector<HTMLElement>(':scope > .stack-layer-child');
+        if (child) {
+          child.style.width = 'fit-content';
+          child.style.height = 'auto';
+        }
+      }
+    });
+  }
+
+  private _findStackLayerWrapperEl(
+    previewEl: HTMLElement,
+    moduleIndex: number
+  ): HTMLElement | null {
+    const wrappers = previewEl.querySelectorAll<HTMLElement>(':scope > .stack-layer-wrapper');
+    return wrappers[moduleIndex] ?? null;
+  }
+
+  private _attachStackLayerDragWindowListeners(): void {
+    window.addEventListener('pointermove', this._stackLayerDragWindowMove, { capture: true });
+    window.addEventListener('pointerup', this._stackLayerDragWindowEnd, { capture: true });
+    window.addEventListener('pointercancel', this._stackLayerDragWindowEnd, { capture: true });
+  }
+
+  private _detachStackLayerDragWindowListeners(): void {
+    window.removeEventListener('pointermove', this._stackLayerDragWindowMove, { capture: true });
+    window.removeEventListener('pointerup', this._stackLayerDragWindowEnd, { capture: true });
+    window.removeEventListener('pointercancel', this._stackLayerDragWindowEnd, { capture: true });
+  }
+
   createDefault(id?: string, _hass?: HomeAssistant): StackModule {
     return {
       id: id || this.generateId('stack'),
@@ -287,6 +408,62 @@ export class UltraStackModule extends BaseUltraModule {
       }
     }
     return { valid: errors.length === 0, errors };
+  }
+
+  private _onStackLayerDragDown(
+    e: PointerEvent,
+    moduleIndex: number,
+    initialWidth: string | undefined
+  ): void {
+    const ctx = (this as any)._currentPreviewContext;
+    if (ctx !== 'ha-preview') return;
+    const updateFn = (this as any)._stackDragUpdateFn as
+      | ((idx: number, patch: Partial<StackLayerConfig>) => void)
+      | undefined;
+    if (!updateFn) return;
+    const target = e.currentTarget as HTMLElement | null;
+    if (!target) return;
+    const previewEl = target.closest('.stack-preview-content') as HTMLElement | null;
+    // Layers with no explicit width (or 'auto') get a `width: 100%` fallback in
+    // the renderer, which forces the layer-child to fill the wrapper. For
+    // natural-sized content (icons, text) that means the rendered element is
+    // always centered in the remaining post-padding area — so the visual
+    // position never reaches the left half. We override to `fit-content` on
+    // commit (and during live preview) when the user dragged an auto-width
+    // layer; layers with explicit widths (e.g. image preset's '100%') are
+    // preserved.
+    const sizeToContent = !initialWidth || initialWidth === 'auto';
+    if (!previewEl) return;
+    // Only the layer currently highlighted in the layers panel may be DRAGGED.
+    // A click on a non-selected layer just selects it; the user must click
+    // again (or click and drag) on the now-selected layer to actually move it.
+    // This prevents accidental nudges when the user just wants to switch which
+    // layer they're editing.
+    const selectFn = (this as any)._stackDragSelectFn as ((idx: number) => void) | undefined;
+    if (this._stackSelectedLayerIndex !== moduleIndex) {
+      e.stopPropagation();
+      if (selectFn) selectFn(moduleIndex);
+      return;
+    }
+    e.stopPropagation();
+    e.preventDefault();
+    if (selectFn) selectFn(moduleIndex);
+    if (this._stackLayerDrag) {
+      this._detachStackLayerDragWindowListeners();
+    }
+    this._stackLayerDrag = {
+      pointerId: e.pointerId,
+      moduleIndex,
+      previewEl,
+      pending: null,
+      rafId: null,
+      sizeToContent,
+    };
+    this._attachStackLayerDragWindowListeners();
+    // NOTE: no synthetic move call here. We deliberately do NOT call updateFn
+    // during pointerdown — runtime evidence showed it triggers a re-render that
+    // suppresses subsequent pointermove dispatch. Live position updates happen
+    // via DOM mutation in pointermove; final commit happens on pointerup.
   }
 
   renderLogicTab(
@@ -329,6 +506,22 @@ export class UltraStackModule extends BaseUltraModule {
           : m
       );
       applyModules(next);
+    };
+
+    (this as any)._stackDragUpdateFn = (idx: number, patch: Partial<StackLayerConfig>) => {
+      const next = modules.map((m, i) =>
+        i === idx
+          ? ({
+              ...m,
+              stack_layer: { ...(m as any).stack_layer, ...patch },
+            } as CardModule)
+          : m
+      );
+      applyModules(next);
+    };
+    (this as any)._stackDragSelectFn = (idx: number) => {
+      this._stackSelectedLayerIndex = idx;
+      this.triggerPreviewUpdate(true);
     };
 
     const aspectRatioCurrent = sm.aspect_ratio || '16:9';
@@ -991,8 +1184,38 @@ export class UltraStackModule extends BaseUltraModule {
       .stack-preview-content[style*="cursor: pointer"] .stack-layer-child {
         pointer-events: none !important;
       }
+      .stack-preview-content[style*="cursor: pointer"] .stack-drag-handle {
+        pointer-events: auto !important;
+      }
       .stack-layer-wrapper { box-sizing: border-box; }
       .stack-layer-child { box-sizing: border-box; }
+      .stack-drag-handle {
+        position: absolute;
+        inset: 0;
+        z-index: 10000;
+        /* Non-selected handles act as click-to-select hotspots only. */
+        cursor: pointer;
+        touch-action: none;
+        box-sizing: border-box;
+        pointer-events: auto;
+      }
+      .stack-drag-handle.selected {
+        /* Only the selected layer is draggable. */
+        cursor: move;
+        outline: 2px dashed var(--primary-color);
+        outline-offset: -2px;
+      }
+      .stack-drag-handle.selected::after {
+        content: '';
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        width: 10px;
+        height: 10px;
+        background: var(--primary-color);
+        border-radius: 2px;
+        opacity: 0.8;
+      }
       /* The inner module rendered inside a stack layer should fully fill the
          layer's child box. Without this, child modules that compute their own
          small fixed dimensions (e.g. image module's default 200px height)
@@ -1274,6 +1497,12 @@ export class UltraStackModule extends BaseUltraModule {
                           index + 1,
                           { allowChildOverflow: has3dTransform }
                         );
+                        const moduleIdx = mods.indexOf(childModule);
+                        const showStackDrag =
+                          previewContext === 'ha-preview' &&
+                          typeof (this as any)._stackDragUpdateFn === 'function' &&
+                          moduleIdx >= 0;
+                        const dragSelected = this._stackSelectedLayerIndex === moduleIdx;
                         return html`
                           <div class="stack-layer-wrapper" style="${styles.wrapper}">
                             <div class="stack-layer-child" style="${styles.child}">
@@ -1285,6 +1514,25 @@ export class UltraStackModule extends BaseUltraModule {
                                 previewContext
                               )}
                             </div>
+                            ${showStackDrag
+                              ? html`
+                                  <div
+                                    class="stack-drag-handle ${dragSelected ? 'selected' : ''}"
+                                    @pointerdown=${(ev: PointerEvent) => {
+                                      const layerCfg = (
+                                        childModule as CardModule & {
+                                          stack_layer?: StackLayerConfig;
+                                        }
+                                      ).stack_layer;
+                                      this._onStackLayerDragDown(
+                                        ev,
+                                        moduleIdx,
+                                        layerCfg?.width
+                                      );
+                                    }}
+                                  ></div>
+                                `
+                              : ''}
                           </div>
                         `;
                       }

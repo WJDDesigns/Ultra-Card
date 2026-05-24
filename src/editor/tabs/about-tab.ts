@@ -4,6 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { localize } from '../../localize/localize';
 import { VERSION } from '../../version';
 import { DEFAULT_VEHICLE_IMAGE, DEFAULT_VEHICLE_IMAGE_FALLBACK } from '../../utils/constants';
+import { openHubDocs } from '../../panels/hub-navigation';
 
 @customElement('ultra-about-tab')
 export class AboutTab extends LitElement {
@@ -86,6 +87,11 @@ export class AboutTab extends LitElement {
             </svg>
             ${localize('editor.about.github_repo', lang, 'Check Out Our Github')}
           </a>
+
+          <button type="button" class="about-button docs" @click=${() => openHubDocs('home')}>
+            <ha-icon icon="mdi:book-open-variant"></ha-icon>
+            ${localize('editor.about.hub_docs', lang, 'Documentation in Ultra Card Hub')}
+          </button>
         </div>
 
         <div class="support-section">
@@ -206,6 +212,11 @@ export class AboutTab extends LitElement {
 
     .about-button.github {
       background-color: #24292e;
+    }
+
+    .about-button.docs {
+      background-color: var(--primary-color);
+      cursor: pointer;
     }
 
     .about-button.paypal {

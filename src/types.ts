@@ -856,6 +856,14 @@ export interface BarModule extends BaseModule {
     | 'shimmer'
     | 'vibrate'
     | undefined;
+  bar_animation_direction?: 'normal' | 'reverse' | 'sensor' | undefined;
+  bar_animation_direction_entity?: string | undefined;
+  bar_animation_direction_attribute?: string | undefined;
+  bar_animation_speed_mode?: 'fixed' | 'sensor' | undefined;
+  bar_animation_speed?: number | undefined; // 1 = default speed, higher = faster
+  bar_animation_speed_entity?: string | undefined;
+  bar_animation_speed_attribute?: string | undefined;
+  bar_animation_speed_multiplier?: number | undefined;
 
   // Bar Animation Override (takes precedence over the regular animation)
   bar_animation_override_entity?: string | undefined;
@@ -3066,6 +3074,7 @@ export interface DropdownModule extends BaseModule {
   control_icon?: string | undefined;
   control_alignment?: 'center' | 'apart' | undefined;
   control_icon_side?: 'left' | 'right' | undefined;
+  menu_direction?: 'auto' | 'up' | 'down' | undefined;
 
   // Dropdown display options
   visible_items?: number | undefined; // Number of items visible in dropdown before scrolling (1-20)

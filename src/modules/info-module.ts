@@ -2658,6 +2658,46 @@ export class UltraInfoModule extends BaseUltraModule {
     updateModule({ info_entities: updatedEntities });
   }
 
+  private _syncPrimaryEntityActions(
+    infoModule: InfoModule,
+    moduleUpdates: Record<string, unknown>,
+    primaryEntity: string
+  ): void {
+    const syncAction = (action: any): any => {
+      if (!action || typeof action !== 'object') return action;
+      if (action.target) return action;
+      if (action.action === 'more-info' || action.action === 'toggle' || action.action === 'default') {
+        return { ...action, entity: primaryEntity };
+      }
+      return action;
+    };
+
+    const tapSource =
+      moduleUpdates.tap_action !== undefined ? moduleUpdates.tap_action : (infoModule as any).tap_action;
+    const holdSource =
+      moduleUpdates.hold_action !== undefined
+        ? moduleUpdates.hold_action
+        : (infoModule as any).hold_action;
+    const doubleTapSource =
+      moduleUpdates.double_tap_action !== undefined
+        ? moduleUpdates.double_tap_action
+        : (infoModule as any).double_tap_action;
+
+    const tapAction = syncAction(tapSource);
+    const holdAction = syncAction(holdSource);
+    const doubleTapAction = syncAction(doubleTapSource);
+
+    if (tapAction !== (infoModule as any).tap_action) {
+      moduleUpdates.tap_action = tapAction;
+    }
+    if (holdAction !== (infoModule as any).hold_action) {
+      moduleUpdates.hold_action = holdAction;
+    }
+    if (doubleTapAction !== (infoModule as any).double_tap_action) {
+      moduleUpdates.double_tap_action = doubleTapAction;
+    }
+  }
+
   private _handleEntityChange(
     infoModule: InfoModule,
     index: number,
@@ -2704,6 +2744,12 @@ export class UltraInfoModule extends BaseUltraModule {
           entity: entityId,
         };
       }
+    }
+
+    // Info module actions implicitly follow the first info entity.
+    // Keep action entities synchronized when that primary entity changes.
+    if (index === 0 && entityId) {
+      this._syncPrimaryEntityActions(infoModule, moduleUpdates, entityId);
     }
 
     // Apply all updates in one call to avoid race conditions

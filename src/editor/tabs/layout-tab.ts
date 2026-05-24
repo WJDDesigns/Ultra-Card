@@ -30,6 +30,7 @@ import { GlobalLogicTab } from '../../tabs/global-logic-tab';
 import { logicService } from '../../services/logic-service';
 import { getImageUrl, uploadImage, SUPPORTED_IMAGE_ACCEPT } from '../../utils/image-upload';
 import { localize } from '../../localize/localize';
+import { moduleDocsSlug, openHubDocs } from '../../panels/hub-navigation';
 import { Z_INDEX } from '../../utils/uc-z-index';
 import { ucToastService } from '../../services/uc-toast-service';
 import { ucPresetsService } from '../../services/uc-presets-service';
@@ -24327,7 +24328,19 @@ export class LayoutTab extends LitElement {
     const lang = this.hass?.locale?.language || 'en';
     const moduleNameField = html`
       <div class="settings-section">
-        <label>${localize('editor.layout_extra.module_name', lang, 'Module Name:')}</label>
+        <div class="module-name-row">
+          <label>${localize('editor.layout_extra.module_name', lang, 'Module Name:')}</label>
+          <ha-icon-button
+            .label=${localize(
+              'editor.layout_extra.module_docs',
+              lang,
+              'Open module documentation in Hub'
+            )}
+            @click=${() => openHubDocs(moduleDocsSlug(module.type))}
+          >
+            <ha-icon icon="mdi:help-circle-outline"></ha-icon>
+          </ha-icon-button>
+        </div>
         <input
           type="text"
           .value=${(module as any).module_name || ''}
@@ -25732,7 +25745,19 @@ export class LayoutTab extends LitElement {
       module.type !== 'external_card'
         ? html`
             <div class="settings-section">
-              <label>${localize('editor.layout_extra.module_name', lang, 'Module Name:')}</label>
+              <div class="module-name-row">
+                <label>${localize('editor.layout_extra.module_name', lang, 'Module Name:')}</label>
+                <ha-icon-button
+                  .label=${localize(
+                    'editor.layout_extra.module_docs',
+                    lang,
+                    'Open module documentation in Hub'
+                  )}
+                  @click=${() => openHubDocs(moduleDocsSlug(module.type))}
+                >
+                  <ha-icon icon="mdi:help-circle-outline"></ha-icon>
+                </ha-icon-button>
+              </div>
               <input
                 type="text"
                 .value=${(module as any).module_name || ''}
@@ -36625,6 +36650,18 @@ export class LayoutTab extends LitElement {
         min-height: 80px;
         position: relative;
         transition: all 0.2s ease;
+      }
+
+      .module-name-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+
+      .module-name-row label {
+        margin: 0;
       }
 
       /* Module Name Field Styling */

@@ -2,7 +2,7 @@
  * Ultra Card Hub — Account tab.
  * Sign in, register, and upgrade to Pro. Shown to all users.
  */
-import { LitElement, html, css, TemplateResult } from 'lit';
+import { LitElement, html, css, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { panelStyles } from '../panel-styles';
 import type { HomeAssistant } from 'custom-card-helpers';
@@ -281,6 +281,38 @@ export class HubAccountTab extends LitElement {
       .manage-link a {
         color: var(--primary-color);
         text-decoration: none;
+      }
+
+      .admin-notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px;
+        margin-bottom: 20px;
+        border-radius: 12px;
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.2);
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--primary-text-color);
+      }
+
+      .admin-notice ha-icon {
+        --mdc-icon-size: 22px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      .admin-notice strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 14px;
+      }
+
+      .admin-notice p {
+        margin: 0;
+        color: var(--secondary-text-color);
       }
 
       /* Password strength meter */
@@ -676,6 +708,26 @@ export class HubAccountTab extends LitElement {
     await ucCloudAuthService.logoutViaHass(this.hass);
   }
 
+  private _isHaAdmin(): boolean {
+    return Boolean(this.hass?.user?.is_admin);
+  }
+
+  private _renderAdminNotice(): TemplateResult | typeof nothing {
+    if (this._isHaAdmin()) return nothing;
+    return html`
+      <div class="admin-notice" role="note">
+        <ha-icon icon="mdi:shield-account-outline"></ha-icon>
+        <div>
+          <strong>Home Assistant administrator required</strong>
+          <p>
+            Shared sign-in, cloud sync, and uploads through Ultra Card Connect are managed by
+            HA administrators only. You can still use Hub presets, colors, and documentation.
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
   protected override render(): TemplateResult {
     const user = this._effectiveUser;
 
@@ -737,6 +789,7 @@ export class HubAccountTab extends LitElement {
       user.subscription?.tier === 'pro' && user.subscription?.status === 'active';
 
     return html`
+      ${this._renderAdminNotice()}
       <div class="account-card">
         <h3>
           <ha-icon icon="mdi:account-circle"></ha-icon>
@@ -853,6 +906,7 @@ export class HubAccountTab extends LitElement {
 
   private _renderUnauthenticated(): TemplateResult {
     return html`
+      ${this._renderAdminNotice()}
       <div class="account-card">
         <h3>
           <ha-icon icon="mdi:login"></ha-icon>

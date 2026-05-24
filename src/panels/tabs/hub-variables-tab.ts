@@ -6,6 +6,7 @@ import { panelStyles } from '../panel-styles';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { ucCloudAuthService, CloudUser } from '../../services/uc-cloud-auth-service';
 import { ucCloudSyncService, SyncStatus } from '../../services/uc-cloud-sync-service';
+import { dispatchHubNavigate } from '../hub-navigation';
 
 @customElement('hub-variables-tab')
 export class HubVariablesTab extends LitElement {
@@ -588,11 +589,7 @@ export class HubVariablesTab extends LitElement {
   }
 
   private _goToAccount(): void {
-    this.dispatchEvent(new CustomEvent('hub-navigate-tab', {
-      detail: { tab: 'account' },
-      bubbles: true,
-      composed: true,
-    }));
+    dispatchHubNavigate(this, { tab: 'account' });
   }
 
   private _formatSyncTime(date: Date | null | undefined): string {

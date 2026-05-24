@@ -521,6 +521,14 @@ export class UltraBarModule extends BaseUltraModule {
       bar_animation_attribute: '',
       bar_animation_value: '',
       bar_animation_type: 'none',
+      bar_animation_direction: 'normal',
+      bar_animation_direction_entity: '',
+      bar_animation_direction_attribute: '',
+      bar_animation_speed_mode: 'fixed',
+      bar_animation_speed: 1,
+      bar_animation_speed_entity: '',
+      bar_animation_speed_attribute: '',
+      bar_animation_speed_multiplier: 1,
 
       // Bar Animation Override (takes precedence over regular)
       bar_animation_override_entity: '',
@@ -3379,6 +3387,238 @@ export class UltraBarModule extends BaseUltraModule {
                         ],
                         onChange: (e: CustomEvent) => updateModule(e.detail.value),
                       },
+                      {
+                        title: localize('editor.bar.animation.direction', lang, 'Animation Direction'),
+                        description: localize(
+                          'editor.bar.animation.direction_desc',
+                          lang,
+                          'Choose a fixed direction, or derive direction from a sensor value.'
+                        ),
+                        hass,
+                        data: {
+                          bar_animation_direction:
+                            (barModule as any).bar_animation_direction || 'normal',
+                        },
+                        schema: [
+                          this.selectField('bar_animation_direction', [
+                            {
+                              value: 'normal',
+                              label: localize(
+                                'editor.bar.animation.direction_modes.normal',
+                                lang,
+                                'Normal'
+                              ),
+                            },
+                            {
+                              value: 'reverse',
+                              label: localize(
+                                'editor.bar.animation.direction_modes.reverse',
+                                lang,
+                                'Reverse'
+                              ),
+                            },
+                            {
+                              value: 'sensor',
+                              label: localize(
+                                'editor.bar.animation.direction_modes.sensor',
+                                lang,
+                                'From Sensor'
+                              ),
+                            },
+                          ]),
+                        ],
+                        onChange: (e: CustomEvent) => updateModule(e.detail.value),
+                      },
+                      ...(((barModule as any).bar_animation_direction || 'normal') === 'sensor'
+                        ? [
+                            {
+                              title: localize(
+                                'editor.bar.animation.direction_entity',
+                                lang,
+                                'Direction Sensor'
+                              ),
+                              description: localize(
+                                'editor.bar.animation.direction_entity_desc',
+                                lang,
+                                'Negative values reverse the animation. Positive values keep normal direction.'
+                              ),
+                              hass,
+                              data: {
+                                bar_animation_direction_entity:
+                                  (barModule as any).bar_animation_direction_entity || '',
+                              },
+                              schema: [
+                                {
+                                  name: 'bar_animation_direction_entity',
+                                  selector: { entity: {} },
+                                } as any,
+                              ],
+                              onChange: (e: CustomEvent) =>
+                                updateModule({
+                                  bar_animation_direction_entity:
+                                    e.detail.value.bar_animation_direction_entity,
+                                }),
+                            },
+                            {
+                              title: localize(
+                                'editor.bar.animation.direction_attribute',
+                                lang,
+                                'Direction Attribute (Optional)'
+                              ),
+                              description: localize(
+                                'editor.bar.animation.direction_attribute_desc',
+                                lang,
+                                'Read this attribute instead of entity state when deriving direction.'
+                              ),
+                              hass,
+                              data: {
+                                bar_animation_direction_attribute:
+                                  (barModule as any).bar_animation_direction_attribute || '',
+                              },
+                              schema: [this.textField('bar_animation_direction_attribute')],
+                              onChange: (e: CustomEvent) =>
+                                updateModule({
+                                  bar_animation_direction_attribute:
+                                    e.detail.value.bar_animation_direction_attribute,
+                                }),
+                            },
+                          ]
+                        : []),
+                      {
+                        title: localize(
+                          'editor.bar.animation.speed_mode',
+                          lang,
+                          'Animation Speed Source'
+                        ),
+                        description: localize(
+                          'editor.bar.animation.speed_mode_desc',
+                          lang,
+                          'Use a fixed speed value, or derive speed from a sensor.'
+                        ),
+                        hass,
+                        data: {
+                          bar_animation_speed_mode:
+                            (barModule as any).bar_animation_speed_mode || 'fixed',
+                        },
+                        schema: [
+                          this.selectField('bar_animation_speed_mode', [
+                            {
+                              value: 'fixed',
+                              label: localize(
+                                'editor.bar.animation.speed_modes.fixed',
+                                lang,
+                                'Fixed'
+                              ),
+                            },
+                            {
+                              value: 'sensor',
+                              label: localize(
+                                'editor.bar.animation.speed_modes.sensor',
+                                lang,
+                                'From Sensor'
+                              ),
+                            },
+                          ]),
+                        ],
+                        onChange: (e: CustomEvent) => updateModule(e.detail.value),
+                      },
+                      {
+                        title: localize('editor.bar.animation.speed', lang, 'Base Speed'),
+                        description: localize(
+                          'editor.bar.animation.speed_desc',
+                          lang,
+                          '1 = default speed. Higher values animate faster.'
+                        ),
+                        hass,
+                        data: {
+                          bar_animation_speed:
+                            Number((barModule as any).bar_animation_speed ?? 1) || 1,
+                        },
+                        schema: [this.numberField('bar_animation_speed', 0.1, 20, 0.1)],
+                        onChange: (e: CustomEvent) =>
+                          updateModule({ bar_animation_speed: e.detail.value.bar_animation_speed }),
+                      },
+                      ...(((barModule as any).bar_animation_speed_mode || 'fixed') === 'sensor'
+                        ? [
+                            {
+                              title: localize(
+                                'editor.bar.animation.speed_entity',
+                                lang,
+                                'Speed Sensor'
+                              ),
+                              description: localize(
+                                'editor.bar.animation.speed_entity_desc',
+                                lang,
+                                'Entity whose numeric value controls animation speed.'
+                              ),
+                              hass,
+                              data: {
+                                bar_animation_speed_entity:
+                                  (barModule as any).bar_animation_speed_entity || '',
+                              },
+                              schema: [
+                                {
+                                  name: 'bar_animation_speed_entity',
+                                  selector: { entity: {} },
+                                } as any,
+                              ],
+                              onChange: (e: CustomEvent) =>
+                                updateModule({
+                                  bar_animation_speed_entity:
+                                    e.detail.value.bar_animation_speed_entity,
+                                }),
+                            },
+                            {
+                              title: localize(
+                                'editor.bar.animation.speed_attribute',
+                                lang,
+                                'Speed Attribute (Optional)'
+                              ),
+                              description: localize(
+                                'editor.bar.animation.speed_attribute_desc',
+                                lang,
+                                'Read this attribute instead of entity state when deriving speed.'
+                              ),
+                              hass,
+                              data: {
+                                bar_animation_speed_attribute:
+                                  (barModule as any).bar_animation_speed_attribute || '',
+                              },
+                              schema: [this.textField('bar_animation_speed_attribute')],
+                              onChange: (e: CustomEvent) =>
+                                updateModule({
+                                  bar_animation_speed_attribute:
+                                    e.detail.value.bar_animation_speed_attribute,
+                                }),
+                            },
+                            {
+                              title: localize(
+                                'editor.bar.animation.speed_multiplier',
+                                lang,
+                                'Sensor Multiplier'
+                              ),
+                              description: localize(
+                                'editor.bar.animation.speed_multiplier_desc',
+                                lang,
+                                'Scales sensor values before converting to animation speed.'
+                              ),
+                              hass,
+                              data: {
+                                bar_animation_speed_multiplier:
+                                  Number((barModule as any).bar_animation_speed_multiplier ?? 1) ||
+                                  1,
+                              },
+                              schema: [
+                                this.numberField('bar_animation_speed_multiplier', 0, 1000, 0.1),
+                              ],
+                              onChange: (e: CustomEvent) =>
+                                updateModule({
+                                  bar_animation_speed_multiplier:
+                                    e.detail.value.bar_animation_speed_multiplier,
+                                }),
+                            },
+                          ]
+                        : []),
                     ]
                   )}
                     </div>
@@ -4855,6 +5095,13 @@ export class UltraBarModule extends BaseUltraModule {
       }
     }
 
+    const animationDirection = this.resolveBarAnimationDirection(barModule, hass);
+    const animationSpeedScale = this.resolveBarAnimationSpeedScale(barModule, hass);
+    const animationRuntimeCSS =
+      animationClass !== ''
+        ? `--uc-bar-animation-direction: ${animationDirection}; --uc-bar-animation-speed-scale: ${animationSpeedScale};`
+        : '';
+
     let normalizedWidthValue = Number(barModule.bar_width ?? 100);
     if (Number.isNaN(normalizedWidthValue)) {
       const normalizedBarWidth = this.normalizeSizeValue(barModule.bar_width ?? 100);
@@ -5468,6 +5715,7 @@ export class UltraBarModule extends BaseUltraModule {
                             border-radius: ${Math.max(1, Math.floor(lineHeight / 2))}px;
                             opacity: 0.8;
                             transition: ${barModule.animation !== false ? 'all 0.3s ease' : 'none'};
+                            ${animationRuntimeCSS}
                           "
                             ></div>
                           `
@@ -5486,6 +5734,7 @@ export class UltraBarModule extends BaseUltraModule {
                             border-radius: ${Math.max(1, Math.floor(lineHeight / 2))}px;
                             opacity: 0.8;
                             transition: ${barModule.animation !== false ? 'all 0.3s ease' : 'none'};
+                            ${animationRuntimeCSS}
                           "
                             ></div>
                           `}
@@ -5528,6 +5777,7 @@ export class UltraBarModule extends BaseUltraModule {
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
+                                ${animationRuntimeCSS}
                               "
                             >
                               <ha-icon
@@ -5568,6 +5818,7 @@ export class UltraBarModule extends BaseUltraModule {
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
+                                ${animationRuntimeCSS}
                               "
                             >
                               <ha-icon
@@ -5605,6 +5856,7 @@ export class UltraBarModule extends BaseUltraModule {
                                 : 'none'};
                                 z-index: 3;
                                 will-change: left, background;
+                                ${animationRuntimeCSS}
                               "
                             ></div>
                           `;
@@ -5752,6 +6004,7 @@ export class UltraBarModule extends BaseUltraModule {
                         will-change: width${isRangeMode ? ', left' : ''};
                         backface-visibility: hidden;
                         ${fillStyleCSS}
+                        ${animationRuntimeCSS}
                       "
                         >
                           ${fillOverlayCSS
@@ -6882,20 +7135,35 @@ export class UltraBarModule extends BaseUltraModule {
         position: absolute; inset: 0; pointer-events: none;
         background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.25) 0, rgba(255,255,255,0.25) 10px, transparent 10px, transparent 20px);
         background-size: 28px 28px;
-        animation: charging-stripes 1.2s linear infinite;
+        animation: charging-stripes calc(1.2s * var(--uc-bar-animation-speed-scale, 1)) linear infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
       }
       @keyframes charging-stripes { 0% { background-position: 0 0; } 100% { background-position: 28px 0; } }
 
-      .bar-fill.bar-anim-pulse { animation: bar-pulse 1.6s ease-in-out infinite; }
+      .bar-fill.bar-anim-pulse {
+        animation: bar-pulse calc(1.6s * var(--uc-bar-animation-speed-scale, 1)) ease-in-out infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes bar-pulse { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.3); } }
 
-      .bar-fill.bar-anim-blink { animation: bar-blink 1s steps(2, start) infinite; }
+      .bar-fill.bar-anim-blink {
+        animation: bar-blink calc(1s * var(--uc-bar-animation-speed-scale, 1)) steps(2, start) infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes bar-blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
-      .bar-fill.bar-anim-bounce { animation: bar-bounce 1.2s ease-in-out infinite; transform-origin: center; }
+      .bar-fill.bar-anim-bounce {
+        animation: bar-bounce calc(1.2s * var(--uc-bar-animation-speed-scale, 1)) ease-in-out infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+        transform-origin: center;
+      }
       @keyframes bar-bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
 
-      .bar-fill.bar-anim-glow { box-shadow: 0 0 10px currentColor, 0 0 20px currentColor; animation: bar-glow 1.5s ease-in-out infinite; }
+      .bar-fill.bar-anim-glow {
+        box-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+        animation: bar-glow calc(1.5s * var(--uc-bar-animation-speed-scale, 1)) ease-in-out infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes bar-glow { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.4); } }
 
       .bar-fill.bar-anim-rainbow::after { 
@@ -6916,7 +7184,8 @@ export class UltraBarModule extends BaseUltraModule {
         background-size: 200% 100%; 
         mix-blend-mode: overlay; 
         opacity: 0.9; 
-        animation: rainbow-shift 4s linear infinite; 
+        animation: rainbow-shift calc(4s * var(--uc-bar-animation-speed-scale, 1)) linear infinite; 
+        animation-direction: var(--uc-bar-animation-direction, normal);
       }
       @keyframes rainbow-shift { 
         0% { background-position: 0% 0%; } 
@@ -6946,7 +7215,8 @@ export class UltraBarModule extends BaseUltraModule {
           radial-gradient(circle at 63% 82%, rgba(255,255,255,0.50) 0 6px, transparent 7px),
           radial-gradient(circle at 77% 68%, rgba(255,255,255,0.46) 0 5px, transparent 6px),
           radial-gradient(circle at 89% 78%, rgba(255,255,255,0.52) 0 6px, transparent 7px);
-        animation: bubbles-rise-layer1 7s linear infinite;
+        animation: bubbles-rise-layer1 calc(7s * var(--uc-bar-animation-speed-scale, 1)) linear infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
         transform: translateY(0%);
       }
       /* Layer 2 (slower, different positions) */
@@ -6957,8 +7227,9 @@ export class UltraBarModule extends BaseUltraModule {
           radial-gradient(circle at 55% 82%, rgba(255,255,255,0.50) 0 6px, transparent 7px),
           radial-gradient(circle at 71% 64%, rgba(255,255,255,0.44) 0 5px, transparent 6px),
           radial-gradient(circle at 84% 78%, rgba(255,255,255,0.50) 0 7px, transparent 8px);
-        animation: bubbles-rise-layer2 10s linear infinite;
-        animation-delay: 1.2s;
+        animation: bubbles-rise-layer2 calc(10s * var(--uc-bar-animation-speed-scale, 1)) linear infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+        animation-delay: calc(1.2s * var(--uc-bar-animation-speed-scale, 1));
         transform: translateY(0%);
       }
       @keyframes bubbles-rise-layer1 {
@@ -6974,7 +7245,10 @@ export class UltraBarModule extends BaseUltraModule {
         100% { transform: translateY(-58%); opacity: 0; }
       }
 
-      .bar-fill.bar-anim-fill { animation: bar-fill-wave 1.5s ease-in-out infinite; }
+      .bar-fill.bar-anim-fill {
+        animation: bar-fill-wave calc(1.5s * var(--uc-bar-animation-speed-scale, 1)) ease-in-out infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes bar-fill-wave { 0%,100% { filter: saturate(1); } 50% { filter: saturate(1.4); } }
 
       .bar-fill.bar-anim-ripple::after {
@@ -6982,7 +7256,8 @@ export class UltraBarModule extends BaseUltraModule {
         position: absolute; inset: 0; pointer-events: none;
         background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.65) 20%, transparent 40%);
         background-size: 200% 100%;
-        animation: ripple-sweep 1.1s ease-in-out infinite;
+        animation: ripple-sweep calc(1.1s * var(--uc-bar-animation-speed-scale, 1)) ease-in-out infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
         opacity: 0.9;
       }
       @keyframes ripple-sweep {
@@ -6998,7 +7273,8 @@ export class UltraBarModule extends BaseUltraModule {
           linear-gradient(-135deg, rgba(255,255,255,0.00) 0 40%, rgba(255,255,255,0.25) 40% 60%, rgba(255,255,255,0.00) 60% 100%);
         background-size: 44px 100%, 44px 100%;
         background-position: 0 0, 22px 0;
-        animation: traffic-chevrons 1s linear infinite;
+        animation: traffic-chevrons calc(1s * var(--uc-bar-animation-speed-scale, 1)) linear infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
         mix-blend-mode: screen;
       }
       @keyframes traffic-chevrons { 0% { background-position: 0 0, 22px 0; } 100% { background-position: 44px 0, 66px 0; } }
@@ -7006,24 +7282,50 @@ export class UltraBarModule extends BaseUltraModule {
       /* Traffic Flow: thicker bands with alternating opacity, moving left->right */
       
 
-      .bar-fill.bar-anim-heartbeat { animation: heartbeat 1.2s ease-in-out infinite; transform-origin: center; }
+      .bar-fill.bar-anim-heartbeat {
+        animation: heartbeat calc(1.2s * var(--uc-bar-animation-speed-scale, 1)) ease-in-out infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+        transform-origin: center;
+      }
       @keyframes heartbeat { 0%,100% { transform: scale(1); } 20% { transform: scale(1.02); } 40% { transform: scale(0.99); } 60% { transform: scale(1.02); } 80% { transform: scale(1); } }
 
-      .bar-fill.bar-anim-flicker { animation: flicker 2s infinite; }
+      .bar-fill.bar-anim-flicker {
+        animation: flicker calc(2s * var(--uc-bar-animation-speed-scale, 1)) infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes flicker { 0%,19%,21%,23%,25%,54%,56%,100%{ opacity:1 } 20%,24%,55%{ opacity:0.4 } }
 
       .bar-fill.bar-anim-shimmer { position: relative; overflow: hidden; }
-      .bar-fill.bar-anim-shimmer::after { content:''; position:absolute; top:0; bottom:0; width:40%; left:-40%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent); animation: shimmer-move 1.4s ease-in-out infinite; }
+      .bar-fill.bar-anim-shimmer::after {
+        content:'';
+        position:absolute;
+        top:0;
+        bottom:0;
+        width:40%;
+        left:-40%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+        animation: shimmer-move calc(1.4s * var(--uc-bar-animation-speed-scale, 1)) ease-in-out infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes shimmer-move { 0% { left: -40%; } 100% { left: 120%; } }
 
-      .bar-fill.bar-anim-vibrate { animation: vibrate 0.15s linear infinite; }
+      .bar-fill.bar-anim-vibrate {
+        animation: vibrate calc(0.15s * var(--uc-bar-animation-speed-scale, 1)) linear infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes vibrate { 0% { transform: translate(0); } 25% { transform: translate(0.5px,-0.5px); } 50% { transform: translate(-0.5px,0.5px); } 75% { transform: translate(0.5px,0.5px); } 100% { transform: translate(0); } }
 
       /* Minimal Bar Animations */
-      .minimal-track.bar-anim-pulse { animation: minimal-track-pulse 1.6s ease-in-out infinite; }
+      .minimal-track.bar-anim-pulse {
+        animation: minimal-track-pulse calc(1.6s * var(--uc-bar-animation-speed-scale, 1)) ease-in-out infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes minimal-track-pulse { 0%,100% { opacity: 0.8; } 50% { opacity: 1; } }
       
-      .minimal-dot.bar-anim-pulse { animation: minimal-dot-pulse 1.6s ease-in-out infinite; }
+      .minimal-dot.bar-anim-pulse {
+        animation: minimal-dot-pulse calc(1.6s * var(--uc-bar-animation-speed-scale, 1)) ease-in-out infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes minimal-dot-pulse { 0%,100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.15); } }
       
       /* Minimal style z-index management */
@@ -7050,26 +7352,136 @@ export class UltraBarModule extends BaseUltraModule {
         text-overflow: ellipsis;
       }
       
-      .minimal-track.bar-anim-glow { box-shadow: 0 0 4px currentColor; animation: minimal-track-glow 1.5s ease-in-out infinite; }
+      .minimal-track.bar-anim-glow {
+        box-shadow: 0 0 4px currentColor;
+        animation: minimal-track-glow calc(1.5s * var(--uc-bar-animation-speed-scale, 1)) ease-in-out infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes minimal-track-glow { 0%,100% { box-shadow: 0 0 4px currentColor; } 50% { box-shadow: 0 0 8px currentColor; } }
       
-      .minimal-dot.bar-anim-glow { animation: minimal-dot-glow 1.5s ease-in-out infinite; }
+      .minimal-dot.bar-anim-glow {
+        animation: minimal-dot-glow calc(1.5s * var(--uc-bar-animation-speed-scale, 1)) ease-in-out infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes minimal-dot-glow { 0%,100% { box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 0 6px currentColor; } 50% { box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 0 12px currentColor; } }
       
-      .minimal-track.bar-anim-blink { animation: minimal-blink 1s steps(2, start) infinite; }
-      .minimal-dot.bar-anim-blink { animation: minimal-blink 1s steps(2, start) infinite; }
+      .minimal-track.bar-anim-blink {
+        animation: minimal-blink calc(1s * var(--uc-bar-animation-speed-scale, 1)) steps(2, start) infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
+      .minimal-dot.bar-anim-blink {
+        animation: minimal-blink calc(1s * var(--uc-bar-animation-speed-scale, 1)) steps(2, start) infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes minimal-blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
       
-      .minimal-dot.bar-anim-bouncing { animation: minimal-dot-bounce 1.2s ease-in-out infinite; }
+      .minimal-dot.bar-anim-bouncing {
+        animation: minimal-dot-bounce calc(1.2s * var(--uc-bar-animation-speed-scale, 1)) ease-in-out infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes minimal-dot-bounce { 0%,100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 4px)); } }
       
       .minimal-track.bar-anim-shimmer { position: relative; overflow: hidden; }
-      .minimal-track.bar-anim-shimmer::after { content:''; position:absolute; top:-50%; bottom:-50%; width:40%; left:-40%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent); animation: minimal-shimmer-move 1.4s ease-in-out infinite; }
+      .minimal-track.bar-anim-shimmer::after {
+        content:'';
+        position:absolute;
+        top:-50%;
+        bottom:-50%;
+        width:40%;
+        left:-40%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+        animation: minimal-shimmer-move calc(1.4s * var(--uc-bar-animation-speed-scale, 1)) ease-in-out infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes minimal-shimmer-move { 0% { left: -40%; } 100% { left: 120%; } }
       
-      .minimal-dot.bar-anim-vibrate { animation: minimal-dot-vibrate 0.15s linear infinite; }
+      .minimal-dot.bar-anim-vibrate {
+        animation: minimal-dot-vibrate calc(0.15s * var(--uc-bar-animation-speed-scale, 1)) linear infinite;
+        animation-direction: var(--uc-bar-animation-direction, normal);
+      }
       @keyframes minimal-dot-vibrate { 0% { transform: translate(-50%, -50%); } 25% { transform: translate(calc(-50% + 0.5px), calc(-50% - 0.5px)); } 50% { transform: translate(calc(-50% - 0.5px), calc(-50% + 0.5px)); } 75% { transform: translate(calc(-50% + 0.5px), calc(-50% + 0.5px)); } 100% { transform: translate(-50%, -50%); } }
     `;
+  }
+
+  private getAnimationSourceTextValue(
+    entityId: string | undefined,
+    attributeName: string | undefined,
+    hass?: HomeAssistant
+  ): string {
+    if (!hass || !entityId || entityId.trim() === '' || !hass.states?.[entityId]) {
+      return '';
+    }
+    const stateObj = hass.states[entityId];
+    const attrName = (attributeName || '').trim();
+    if (attrName) {
+      const attrValue = (stateObj.attributes as any)?.[attrName];
+      return attrValue === undefined || attrValue === null ? '' : String(attrValue);
+    }
+    return String(stateObj.state ?? '');
+  }
+
+  private resolveBarAnimationDirection(barModule: BarModule, hass?: HomeAssistant): 'normal' | 'reverse' {
+    const directionMode = (barModule as any).bar_animation_direction || 'normal';
+    if (directionMode === 'reverse') return 'reverse';
+    if (directionMode !== 'sensor') return 'normal';
+
+    const sourceEntity =
+      ((barModule as any).bar_animation_direction_entity || '').trim() ||
+      ((barModule as any).bar_animation_speed_entity || '').trim() ||
+      ((barModule as any).bar_animation_entity || '').trim() ||
+      (barModule.entity || '').trim();
+    const sourceAttribute = (barModule as any).bar_animation_direction_attribute || '';
+    const rawValue = this.getAnimationSourceTextValue(sourceEntity, sourceAttribute, hass);
+    if (!rawValue) return 'normal';
+
+    const numericValue = parseLocaleNumber(rawValue);
+    if (Number.isFinite(numericValue)) {
+      return Number(numericValue) < 0 ? 'reverse' : 'normal';
+    }
+
+    const normalized = rawValue.trim().toLowerCase();
+    const reverseKeywords = [
+      'discharg',
+      'export',
+      'outgoing',
+      'outbound',
+      'reverse',
+      'drain',
+      'sending',
+    ];
+    if (reverseKeywords.some(keyword => normalized.includes(keyword))) {
+      return 'reverse';
+    }
+    return 'normal';
+  }
+
+  private resolveBarAnimationSpeedScale(barModule: BarModule, hass?: HomeAssistant): number {
+    const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+    const toPositiveNumber = (value: unknown, fallback: number): number => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    };
+
+    const fixedSpeed = clamp(toPositiveNumber((barModule as any).bar_animation_speed, 1), 0.1, 20);
+    let effectiveSpeed = fixedSpeed;
+    const speedMode = (barModule as any).bar_animation_speed_mode || 'fixed';
+
+    if (speedMode === 'sensor') {
+      const speedEntity = ((barModule as any).bar_animation_speed_entity || '').trim();
+      const speedAttribute = (barModule as any).bar_animation_speed_attribute || '';
+      const speedValueText = this.getAnimationSourceTextValue(speedEntity, speedAttribute, hass);
+      const sensedNumeric = parseLocaleNumber(speedValueText);
+      if (Number.isFinite(sensedNumeric)) {
+        const multiplier = toPositiveNumber((barModule as any).bar_animation_speed_multiplier, 1);
+        const sensedSpeed = Math.abs(Number(sensedNumeric)) * multiplier;
+        if (sensedSpeed > 0) {
+          effectiveSpeed = clamp(sensedSpeed, 0.1, 20);
+        }
+      }
+    }
+
+    const speedScale = clamp(1 / Math.max(0.1, effectiveSpeed), 0.05, 10);
+    return Number(speedScale.toFixed(4));
   }
 
   private normalizeSizeValue(value: string | number): { value: number; unit: '%' | 'px' } | null {

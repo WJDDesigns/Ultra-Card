@@ -158,7 +158,23 @@
         "toggle": "Template-modus",
         "cheatsheet_title": "Template jukseark",
         "placeholder": "{ \"visible\": {{ states('input_boolean.show_row') == 'on' }} }"
-      }
+      },
+      "stack_layout": "Stack Group",
+      "layout_builder": "Layout Builder",
+      "exit_builder": "Exit Builder",
+      "layers": "Layers",
+      "inspector": "Inspector",
+      "studio_select_hint": "Select a layer to edit its properties",
+      "preview_device": "Preview device",
+      "save_card": "Save",
+      "cancel": "Cancel",
+      "toggle_layers": "Toggle Layers",
+      "toggle_inspector": "Toggle Inspector",
+      "yaml": "YAML",
+      "yaml_apply": "Apply",
+      "yaml_revert": "Revert",
+      "yaml_synced": "In sync with layout",
+      "yaml_unapplied": "Unapplied changes"
     },
     "about": {
       "developed_by": "Utviklet av",
@@ -3625,6 +3641,18 @@
       "row_gap_desc": "Vertical gap between rows. Applies to every style.",
       "columns": "Columns",
       "columns_desc": "Arrange rows in a grid. 1 = single column (default)."
+    },
+    "builder": {
+      "lock": "Lock layer",
+      "unlock": "Unlock layer",
+      "hide": "Hide layer",
+      "show": "Show layer",
+      "group": "Group into Stack Group",
+      "promote_to_stack": "Wrap in Stack Group for free positioning?",
+      "promote_wrap": "Wrap",
+      "promote_cancel": "Cancel",
+      "drag_handle": "Drag to move",
+      "locked_cannot_drag": "Layer is locked"
     }
   },
   "hub": {
@@ -3637,8 +3665,15 @@
       "colors": "Farger",
       "variables": "Variabler",
       "templates": "Tem-plater",
-      "about": "Om"
+      "about": "Om",
+      "docs": "Docs"
     },
-    "loading": "Laster…"
+    "loading": "Laster…",
+    "groups": {
+      "home": "Home",
+      "library": "Library",
+      "account": "Account",
+      "help": "Help"
+    }
   }
 }

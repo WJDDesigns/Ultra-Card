@@ -800,6 +800,85 @@ export class UltraLinkComponent {
     return undefined;
   }
 
+  private static collectModuleEntities(moduleEntity?: string, module?: CardModule): string[] {
+    const entities: string[] = [];
+    const addEntity = (value: unknown) => {
+      if (typeof value !== 'string') return;
+      const trimmed = value.trim();
+      if (!trimmed) return;
+      if (!entities.includes(trimmed)) {
+        entities.push(trimmed);
+      }
+    };
+
+    addEntity(moduleEntity);
+    const primary = this.resolveDefaultEntity(moduleEntity, module);
+    addEntity(primary);
+
+    const moduleRecord = module as Record<string, unknown> | undefined;
+    if (!moduleRecord) {
+      return entities;
+    }
+
+    if (Array.isArray(moduleRecord.icons)) {
+      for (const item of moduleRecord.icons) {
+        if (item && typeof item === 'object') {
+          addEntity((item as Record<string, unknown>).entity);
+        }
+      }
+    }
+
+    if (Array.isArray(moduleRecord.info_entities)) {
+      for (const item of moduleRecord.info_entities) {
+        if (item && typeof item === 'object') {
+          addEntity((item as Record<string, unknown>).entity);
+        }
+      }
+    }
+
+    return entities;
+  }
+
+  /**
+   * Keep entity-bound actions aligned with the module's current entity context.
+   * This heals duplicated modules where action.entity can remain stuck on the
+   * source module's old entity after the new module entity is changed.
+   */
+  private static normalizeEntityBoundAction(
+    action: TapActionConfig,
+    moduleEntity?: string,
+    module?: CardModule
+  ): TapActionConfig {
+    if (action.action !== 'more-info' && action.action !== 'toggle') {
+      return action;
+    }
+
+    // Respect explicit target-based toggles.
+    if (action.action === 'toggle' && action.target) {
+      return action;
+    }
+
+    const moduleEntities = this.collectModuleEntities(moduleEntity, module);
+    const fallbackEntity = moduleEntities[0];
+    if (!fallbackEntity) {
+      return action;
+    }
+
+    if (!action.entity) {
+      return { ...action, entity: fallbackEntity };
+    }
+
+    // For implicit-entity modules (icon/info), heal stale entity references
+    // copied from duplicated modules if they no longer exist in this module.
+    const moduleType = (module as any)?.type;
+    const isImplicitEntityModule = moduleType === 'icon' || moduleType === 'info';
+    if (isImplicitEntityModule && !moduleEntities.includes(action.entity)) {
+      return { ...action, entity: fallbackEntity };
+    }
+
+    return action;
+  }
+
   /**
    * Render any Jinja templates embedded in the action config. Returns a fresh
    * action object — never mutates the original. Entity context is taken from
@@ -944,6 +1023,8 @@ export class UltraLinkComponent {
       module,
       config
     );
+
+    resolvedAction = this.normalizeEntityBoundAction(resolvedAction, moduleEntity, module);
 
     // Check if confirmation is required
     const confirmAction = module?.confirm_action === true;

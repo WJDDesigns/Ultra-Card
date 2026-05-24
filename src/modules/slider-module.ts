@@ -1115,6 +1115,46 @@ export class UltraSliderModule extends BaseUltraModule {
             const swiper = new Swiper(element, swiperOptions);
             SwiperInstanceManager.setInstance(sliderId, swiper);
 
+            // iOS/WKWebView can occasionally drop Swiper's end/cancel handlers
+            // when nested cards intercept pointer events. If that happens, the
+            // slide can get stuck halfway after a swipe. We listen in capture
+            // phase and force a nearest-snap only when Swiper still thinks a
+            // touch gesture is active.
+            const settleIncompleteSwipe = () => {
+              if (!swiper || swiper.destroyed || swiper.animating) return;
+              const swiperAny = swiper as any;
+              const touchData = swiperAny.touchEventsData as
+                | { isTouched?: boolean; isMoved?: boolean }
+                | undefined;
+              const isTouched = Boolean(swiperAny.isTouched || touchData?.isTouched);
+              const isMoved = Boolean(swiperAny.isMoved || touchData?.isMoved);
+              if (!isTouched || !isMoved) return;
+              const slideToClosest = swiperAny.slideToClosest as
+                | ((speed?: number, runCallbacks?: boolean, internal?: boolean) => void)
+                | undefined;
+              if (typeof slideToClosest === 'function') {
+                slideToClosest.call(swiperAny, swiper.params.speed, true, false);
+              } else {
+                swiper.slideTo(swiper.activeIndex, swiper.params.speed);
+              }
+            };
+            const onGlobalGestureEnd = () => {
+              requestAnimationFrame(() => settleIncompleteSwipe());
+            };
+            const attachGlobalGestureEndListeners = () => {
+              window.addEventListener('pointerup', onGlobalGestureEnd, true);
+              window.addEventListener('pointercancel', onGlobalGestureEnd, true);
+              window.addEventListener('touchend', onGlobalGestureEnd, true);
+              window.addEventListener('touchcancel', onGlobalGestureEnd, true);
+            };
+            const detachGlobalGestureEndListeners = () => {
+              window.removeEventListener('pointerup', onGlobalGestureEnd, true);
+              window.removeEventListener('pointercancel', onGlobalGestureEnd, true);
+              window.removeEventListener('touchend', onGlobalGestureEnd, true);
+              window.removeEventListener('touchcancel', onGlobalGestureEnd, true);
+            };
+            attachGlobalGestureEndListeners();
+
             // Store the context that was used for initialization
             element.setAttribute('data-swiper-init-context', currentContext);
 
@@ -1515,6 +1555,7 @@ export class UltraSliderModule extends BaseUltraModule {
 
             swiper.on('destroy', () => {
               // Cleanup handled automatically
+              detachGlobalGestureEndListeners();
             });
 
             // CRITICAL: Set initial height and arrow visibility
@@ -1877,6 +1918,7 @@ export class UltraSliderModule extends BaseUltraModule {
           overflow: hidden !important;
           border: none;
           ${previewContext === 'live' ? 'min-height: 0; max-width: 100% !important; overflow: hidden !important;' : ''}
+          touch-action: ${isVertical ? 'pan-x' : 'pan-y'};
           /* CRITICAL: Ensure container doesn't clip slides during transition */
           ${transitionEffect === 'slide' ||
         transitionEffect === 'slide-left' ||

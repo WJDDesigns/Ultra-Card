@@ -1,5 +1,28 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.5.0-beta1
+
+### 🚀 New Features
+
+- **Hub Docs tab and unified sidebar navigation** - Added the new Hub navigation model with a dedicated Docs tab, new shared navigation types, and smarter tab routing so account, dashboard, presets, favorites, colors, variables, and docs all stay in sync across panel and editor contexts.
+- **Linked docs experience in-panel** - Added `ultra-link` support and docs rendering paths so Hub can deep-link to release/help content directly from the sidebar experience.
+
+### 🔧 Improvements
+
+- **Module editor quality pass for Bar, Dropdown, Slider, Icon, Info, and Stack modules** - Improved layout controls, field organization, and module behavior consistency across key modules updated in this beta.
+- **Dashboard and tab wiring cleanup** - Refactored Hub dashboard/tab internals with shared dashboard types and navigation helpers for cleaner state flow and easier future tab additions.
+
+### 🐛 Bug Fixes
+
+- **Hub tab stability fixes** - Resolved tab switching edge cases across dashboard/account/favorites/presets/colors/variables flows and improved account/dashboard rendering transitions.
+- **Preset service and type alignment fixes** - Patched preset service typing/integration paths and aligned updated module/panel data contracts.
+
+### 🌐 Translations
+
+- **Updated localized strings across supported languages** - Synced new Hub navigation/docs text and related UI copy across all translated locale files.
+
+---
+
 ## Version 3.4.0
 
 Three months in the making and ten betas later, **3.4.0** is the biggest single Ultra Card update yet. Six brand-new modules. A from-the-ground-up refresh that makes every editor look and feel the same. Sharper translations in 13 languages. And dozens of small fixes that smooth out the rough edges you've been telling us about.

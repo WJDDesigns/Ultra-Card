@@ -37,6 +37,7 @@ export class UltraDropdownModule extends BaseUltraModule {
   private dropdownOpenStates: Map<string, boolean> = new Map(); // moduleId -> isOpen
   private currentSelection: Map<string, string> = new Map(); // moduleId -> selectedOption
   private clickOutsideHandler: ((e: Event) => void) | null = null;
+  private clickOutsideKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
   private scrollHandler: ((e: Event) => void) | null = null;
   private resizeHandler: ((e: Event) => void) | null = null;
   private portaledDropdowns: Map<string, HTMLElement> = new Map(); // moduleId -> portaled element
@@ -90,6 +91,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       control_icon: 'mdi:chevron-down',
       control_alignment: 'apart',
       control_icon_side: 'right',
+      menu_direction: 'auto',
       visible_items: 5, // Number of items visible before scrolling
       // label removed
       // Global actions
@@ -950,6 +952,43 @@ export class UltraDropdownModule extends BaseUltraModule {
                 },
               ],
               next => updateModule({ control_icon_side: next as 'left' | 'right' })
+            )}
+          </div>
+
+          <div style="margin-top: 16px;">
+            ${this.renderFieldSection(
+              localize('editor.dropdown.menu_direction.title', lang, 'Menu Direction'),
+              localize(
+                'editor.dropdown.menu_direction.desc',
+                lang,
+                'Choose how the dropdown opens: auto picks best fit, or force up/down.'
+              ),
+              hass,
+              { menu_direction: dropdownModule.menu_direction || 'auto' },
+              [
+                this.selectField('menu_direction', [
+                  {
+                    value: 'auto',
+                    label: localize('editor.dropdown.menu_direction.auto', lang, 'Auto'),
+                  },
+                  {
+                    value: 'up',
+                    label: localize('editor.dropdown.menu_direction.up', lang, 'Up'),
+                  },
+                  {
+                    value: 'down',
+                    label: localize('editor.dropdown.menu_direction.down', lang, 'Down'),
+                  },
+                ]),
+              ],
+              (e: CustomEvent) => {
+                const next = (e.detail.value.menu_direction || 'auto') as
+                  | 'auto'
+                  | 'up'
+                  | 'down';
+                updateModule({ menu_direction: next });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
             )}
           </div>
 
@@ -2325,6 +2364,70 @@ export class UltraDropdownModule extends BaseUltraModule {
     return option.icon_color || 'var(--primary-color)';
   }
 
+  private resolveMenuDirection(
+    module: DropdownModule | undefined,
+    triggerRect: DOMRect,
+    menuMaxHeight: number
+  ): 'up' | 'down' {
+    const configuredDirection = module?.menu_direction || 'auto';
+    if (configuredDirection === 'up' || configuredDirection === 'down') {
+      return configuredDirection;
+    }
+
+    const spaceBelow = window.innerHeight - triggerRect.bottom;
+    const spaceAbove = triggerRect.top;
+    return spaceBelow >= menuMaxHeight || spaceBelow >= spaceAbove ? 'down' : 'up';
+  }
+
+  private positionDropdownFromTrigger(
+    dropdownElement: HTMLElement,
+    triggerRect: DOMRect,
+    hostRect: { left: number; top: number },
+    direction: 'up' | 'down'
+  ): void {
+    const downOverlapPx = 0;
+    const upOverlapPx = 1;
+    dropdownElement.style.position = 'fixed';
+    dropdownElement.style.left = `${triggerRect.left - hostRect.left}px`;
+    dropdownElement.style.width = `${triggerRect.width}px`;
+    dropdownElement.style.right = 'auto';
+
+    if (direction === 'up') {
+      const bottom = Math.max(
+        0,
+        window.innerHeight - triggerRect.top + hostRect.top - upOverlapPx
+      );
+      dropdownElement.style.bottom = `${bottom}px`;
+      dropdownElement.style.top = 'auto';
+      dropdownElement.style.transformOrigin = 'bottom center';
+    } else {
+      const top = Math.max(0, triggerRect.bottom - hostRect.top - downOverlapPx);
+      dropdownElement.style.top = `${top}px`;
+      dropdownElement.style.bottom = 'auto';
+      dropdownElement.style.transformOrigin = 'top center';
+    }
+  }
+
+  private getFixedHostRect(host: Element | null): { left: number; top: number } {
+    if (!host || host === document.body || host === document.documentElement) {
+      return { left: 0, top: 0 };
+    }
+
+    const rect = (host as HTMLElement).getBoundingClientRect();
+    return { left: rect.left || 0, top: rect.top || 0 };
+  }
+
+  private applyDropdownOpenAnimation(
+    dropdownElement: HTMLElement,
+    direction: 'up' | 'down'
+  ): void {
+    const animationName = direction === 'up' ? 'uc-dropdown-grow-up' : 'uc-dropdown-grow-down';
+    dropdownElement.style.animation = 'none';
+    requestAnimationFrame(() => {
+      dropdownElement.style.animation = `${animationName} 140ms ease-out`;
+    });
+  }
+
   private toggleDropdown(event?: Event, moduleId?: string, previewContext?: 'live' | 'ha-preview' | 'dashboard'): void {
     // Find the dropdown options and selected element relative to the clicked element
     let dropdownElement: HTMLElement | null = null;
@@ -2376,9 +2479,18 @@ export class UltraDropdownModule extends BaseUltraModule {
       if (newState) {
         // Get position of the selected element
         if (selectedElement) {
+          const rect = selectedElement.getBoundingClientRect();
+          const moduleContext = this.moduleContexts.get(instanceId);
+          const moduleVisibleItems = (moduleContext?.module as DropdownModule)?.visible_items ?? 5;
+          const dropdownMaxHeight = moduleVisibleItems * 44; // Match calculated max-height
+          const menuDirection = this.resolveMenuDirection(
+            moduleContext?.module as DropdownModule | undefined,
+            rect,
+            dropdownMaxHeight
+          );
+
           // In preview contexts, use fixed positioning to escape container stacking context
           if (isPreviewContext) {
-            const rect = selectedElement.getBoundingClientRect();
             const { zIndex: overlayZIndex } = resolveOverlayLayer(
               selectedElement,
               Z_INDEX.DROPDOWN_MENU
@@ -2386,12 +2498,15 @@ export class UltraDropdownModule extends BaseUltraModule {
             dropdownElement.style.display = 'block';
             dropdownElement.style.pointerEvents = 'auto';
             dropdownElement.style.visibility = 'visible';
-            dropdownElement.style.position = 'fixed'; // Use fixed to escape container boundaries
-            dropdownElement.style.top = `${rect.bottom}px`;
-            dropdownElement.style.left = `${rect.left}px`;
-            dropdownElement.style.width = `${rect.width}px`;
-            dropdownElement.style.right = 'auto';
+            this.positionDropdownFromTrigger(
+              dropdownElement,
+              rect,
+              { left: 0, top: 0 },
+              menuDirection
+            );
             dropdownElement.style.zIndex = overlayZIndex.toString();
+            dropdownElement.style.maxHeight = `${dropdownMaxHeight}px`;
+            this.applyDropdownOpenAnimation(dropdownElement, menuDirection);
             
             // Ensure click-outside closes dropdown in preview contexts too
             this.setupClickOutsideHandler(dropdownElement, selectedElement, instanceId);
@@ -2400,7 +2515,6 @@ export class UltraDropdownModule extends BaseUltraModule {
             this.setupScrollAndResizeHandlers(instanceId);
           } else {
             // Dashboard context - use portaled dropdown with scroll handlers
-            const rect = selectedElement.getBoundingClientRect();
             const { host: overlayHost, zIndex: overlayZIndex } = resolveOverlayLayer(
               selectedElement,
               Z_INDEX.DROPDOWN_MENU
@@ -2432,18 +2546,6 @@ export class UltraDropdownModule extends BaseUltraModule {
             // Re-attach event handlers to the cloned dropdown's options
             this.attachPortaledDropdownHandlers(portaledDropdown, instanceId);
 
-            // Smart positioning - drop up if not enough space below
-            const viewportHeight = window.innerHeight;
-            const spaceBelow = viewportHeight - rect.bottom;
-            const spaceAbove = rect.top;
-            // Get module context for visible_items setting
-            const moduleContext = this.moduleContexts.get(instanceId);
-            const moduleVisibleItems = (moduleContext?.module as DropdownModule)?.visible_items ?? 5;
-            const portaledDropdownMaxHeight = moduleVisibleItems * 44; // Match calculated max-height
-            
-            // Calculate if we should drop up or down
-            const shouldDropUp = spaceBelow < portaledDropdownMaxHeight && spaceAbove > spaceBelow;
-            
             // Position portaled dropdown using fixed positioning.
             // When the overlay host is `document.body`, hostRect is {0,0} and no
             // correction is needed. When the host is an `.ultra-popup-portal`
@@ -2451,27 +2553,15 @@ export class UltraDropdownModule extends BaseUltraModule {
             // `position: fixed` becomes positioned relative to that transformed
             // ancestor instead of the viewport. Subtracting hostRect makes the
             // dropdown render at the correct viewport coordinates in either case.
-            const hostRect = overlayHost.getBoundingClientRect();
-            portaledDropdown.style.position = 'fixed';
-            portaledDropdown.style.left = `${rect.left - hostRect.left}px`;
-            portaledDropdown.style.width = `${rect.width}px`;
-            portaledDropdown.style.right = 'auto';
-
-            if (shouldDropUp) {
-              // Drop up - position above the trigger
-              portaledDropdown.style.bottom = `${viewportHeight - rect.top + hostRect.top}px`;
-              portaledDropdown.style.top = 'auto';
-            } else {
-              // Drop down - position below the trigger (default)
-              portaledDropdown.style.top = `${rect.bottom - hostRect.top}px`;
-              portaledDropdown.style.bottom = 'auto';
-            }
+            const hostRect = this.getFixedHostRect(overlayHost);
+            this.positionDropdownFromTrigger(portaledDropdown, rect, hostRect, menuDirection);
             
             portaledDropdown.style.display = 'block';
             portaledDropdown.style.pointerEvents = 'auto';
             portaledDropdown.style.visibility = 'visible';
             portaledDropdown.style.zIndex = overlayZIndex.toString();
-            portaledDropdown.style.maxHeight = `${portaledDropdownMaxHeight}px`;
+            portaledDropdown.style.maxHeight = `${dropdownMaxHeight}px`;
+            this.applyDropdownOpenAnimation(portaledDropdown, menuDirection);
             
             // Ensure scrollbar is interactive
             portaledDropdown.style.overflowY = 'auto';
@@ -2576,25 +2666,32 @@ export class UltraDropdownModule extends BaseUltraModule {
     this.removeClickOutsideHandler();
 
     this.clickOutsideHandler = (e: Event) => {
-      const target = e.target as HTMLElement;
+      const target = e.target as Node | null;
+      if (!(target instanceof Node)) return;
       const composedPath = e.composedPath();
 
       // Don't close if clicking inside portaled dropdown, on the selected element, or on the chevron container
       const isChevronClick = composedPath.some(
-        (el: any) => el?.classList?.contains?.('dropdown-chevron-container') || el?.classList?.contains?.('dropdown-chevron')
-      ) || target.classList.contains('dropdown-chevron-container') || target.closest('.dropdown-chevron-container');
+        (el: any) =>
+          el?.classList?.contains?.('dropdown-chevron-container') ||
+          el?.classList?.contains?.('dropdown-chevron')
+      );
 
       // Don't close if clicking inside dropdown (including scrollbar area)
-      const isInsideDropdown = portaledDropdown.contains(target) || 
-                               target === portaledDropdown ||
-                               composedPath.some((el: any) => el === portaledDropdown || (el.nodeType === Node.ELEMENT_NODE && portaledDropdown.contains(el)));
-
-      if (
-        isInsideDropdown ||
-        selectedElement.contains(target) ||
+      const isInsideDropdown =
+        target === portaledDropdown ||
+        portaledDropdown.contains(target) ||
+        composedPath.some(
+          (el: any) =>
+            el === portaledDropdown ||
+            (el?.nodeType === Node.ELEMENT_NODE && portaledDropdown.contains(el as Node))
+        );
+      const isInsideSelected =
         target === selectedElement ||
-        isChevronClick
-      ) {
+        selectedElement.contains(target) ||
+        composedPath.some(el => el === selectedElement);
+
+      if (isInsideDropdown || isInsideSelected || isChevronClick) {
         return;
       }
 
@@ -2612,16 +2709,25 @@ export class UltraDropdownModule extends BaseUltraModule {
       this.removeScrollAndResizeHandlers(moduleId);
     };
 
-    // Add listener with a slight delay to avoid immediate triggering
-    setTimeout(() => {
-      document.addEventListener('click', this.clickOutsideHandler!, true);
-    }, 10);
+    this.clickOutsideKeydownHandler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      this.closeDropdown(undefined, moduleId);
+    };
+
+    document.addEventListener('pointerdown', this.clickOutsideHandler, true);
+    document.addEventListener('click', this.clickOutsideHandler, true);
+    document.addEventListener('keydown', this.clickOutsideKeydownHandler, true);
   }
 
   private removeClickOutsideHandler(): void {
     if (this.clickOutsideHandler) {
+      document.removeEventListener('pointerdown', this.clickOutsideHandler, true);
       document.removeEventListener('click', this.clickOutsideHandler, true);
       this.clickOutsideHandler = null;
+    }
+    if (this.clickOutsideKeydownHandler) {
+      document.removeEventListener('keydown', this.clickOutsideKeydownHandler, true);
+      this.clickOutsideKeydownHandler = null;
     }
   }
 
@@ -2804,33 +2910,23 @@ export class UltraDropdownModule extends BaseUltraModule {
 
     try {
       const rect = trigger.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const spaceBelow = viewportHeight - rect.bottom;
-      const spaceAbove = rect.top;
       // Get module context for visible_items setting
       const moduleContext = this.moduleContexts.get(instanceId);
       const moduleVisibleItems = (moduleContext?.module as DropdownModule)?.visible_items ?? 5;
       const positionDropdownMaxHeight = moduleVisibleItems * 44;
-
-      const shouldDropUp = spaceBelow < positionDropdownMaxHeight && spaceAbove > spaceBelow;
+      const menuDirection = this.resolveMenuDirection(
+        moduleContext?.module as DropdownModule | undefined,
+        rect,
+        positionDropdownMaxHeight
+      );
 
       // Same correction as in the open flow: compensate for any transformed
       // ancestor on the overlay host so fixed positioning reads as viewport-relative.
       const host = portaledDropdown.parentElement;
-      const hostRect = host ? host.getBoundingClientRect() : { left: 0, top: 0 };
+      const hostRect = this.getFixedHostRect(host);
 
       // Update position
-      portaledDropdown.style.left = `${rect.left - hostRect.left}px`;
-      portaledDropdown.style.width = `${rect.width}px`;
-      portaledDropdown.style.right = 'auto';
-
-      if (shouldDropUp) {
-        portaledDropdown.style.bottom = `${viewportHeight - rect.top + hostRect.top}px`;
-        portaledDropdown.style.top = 'auto';
-      } else {
-        portaledDropdown.style.top = `${rect.bottom - hostRect.top}px`;
-        portaledDropdown.style.bottom = 'auto';
-      }
+      this.positionDropdownFromTrigger(portaledDropdown, rect, hostRect, menuDirection);
     } catch (error) {
       console.error('Error updating dropdown position:', error);
     }
@@ -3402,6 +3498,28 @@ export class UltraDropdownModule extends BaseUltraModule {
         overscroll-behavior: contain;
         scrollbar-width: thin;
         scrollbar-color: var(--divider-color) var(--secondary-background-color);
+      }
+
+      @keyframes uc-dropdown-grow-down {
+        from {
+          opacity: 0;
+          transform: translateY(-4px) scaleY(0.92);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scaleY(1);
+        }
+      }
+
+      @keyframes uc-dropdown-grow-up {
+        from {
+          opacity: 0;
+          transform: translateY(4px) scaleY(0.92);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scaleY(1);
+        }
       }
 
       /* Preview contexts - use fixed positioning with higher z-index */

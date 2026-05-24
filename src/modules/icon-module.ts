@@ -6152,6 +6152,50 @@ export class UltraIconModule extends BaseUltraModule {
   }
 
   /**
+   * Keep module-level entity actions aligned with the primary icon entity.
+   * This prevents duplicated modules from keeping stale action entities.
+   */
+  private _syncPrimaryEntityActions(
+    iconModule: IconModule,
+    moduleUpdates: Record<string, unknown>,
+    primaryEntity: string
+  ): void {
+    const syncAction = (action: any): any => {
+      if (!action || typeof action !== 'object') return action;
+      if (action.target) return action;
+      if (action.action === 'more-info' || action.action === 'toggle' || action.action === 'default') {
+        return { ...action, entity: primaryEntity };
+      }
+      return action;
+    };
+
+    const tapSource =
+      moduleUpdates.tap_action !== undefined ? moduleUpdates.tap_action : (iconModule as any).tap_action;
+    const holdSource =
+      moduleUpdates.hold_action !== undefined
+        ? moduleUpdates.hold_action
+        : (iconModule as any).hold_action;
+    const doubleTapSource =
+      moduleUpdates.double_tap_action !== undefined
+        ? moduleUpdates.double_tap_action
+        : (iconModule as any).double_tap_action;
+
+    const tapAction = syncAction(tapSource);
+    const holdAction = syncAction(holdSource);
+    const doubleTapAction = syncAction(doubleTapSource);
+
+    if (tapAction !== (iconModule as any).tap_action) {
+      moduleUpdates.tap_action = tapAction;
+    }
+    if (holdAction !== (iconModule as any).hold_action) {
+      moduleUpdates.hold_action = holdAction;
+    }
+    if (doubleTapAction !== (iconModule as any).double_tap_action) {
+      moduleUpdates.double_tap_action = doubleTapAction;
+    }
+  }
+
+  /**
    * Handle entity selection from both variable chips and entity picker
    * Centralizes all entity change logic (auto-populate icon, states, etc.)
    */
@@ -6196,6 +6240,12 @@ export class UltraIconModule extends BaseUltraModule {
       i === index ? { ...ic, ...updates } : ic
     );
     const moduleUpdates: any = { icons: updatedIcons };
+
+    // Module-level actions on icon modules implicitly follow the first icon.
+    // Sync action entities when the primary icon entity changes.
+    if (index === 0 && entityId) {
+      this._syncPrimaryEntityActions(iconModule, moduleUpdates, entityId);
+    }
 
     // Apply all updates in one call to avoid race conditions
     updateModule(moduleUpdates);
