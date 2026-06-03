@@ -236,7 +236,14 @@ export class UltraGraphsModule extends BaseUltraModule {
     dataSource?: string
   ): Array<{ value: string; label: string }> {
     const prefix = dataSource === 'forecast' ? 'Next' : 'Last';
-    return [
+    const options: Array<{ value: string; label: string }> = [];
+
+    // "Today" (midnight → now) only applies to historical data, not forecasts
+    if (dataSource !== 'forecast') {
+      options.push({ value: 'today', label: localize('editor.graphs.period.today', lang, 'Today') });
+    }
+
+    options.push(
       { value: '1h', label: localize('editor.graphs.period.1h', lang, `${prefix} Hour`) },
       { value: '3h', label: localize('editor.graphs.period.3h', lang, `${prefix} 3 Hours`) },
       { value: '6h', label: localize('editor.graphs.period.6h', lang, `${prefix} 6 Hours`) },
@@ -246,8 +253,10 @@ export class UltraGraphsModule extends BaseUltraModule {
       { value: '7d', label: localize('editor.graphs.period.7d', lang, `${prefix} Week`) },
       { value: '30d', label: localize('editor.graphs.period.30d', lang, `${prefix} Month`) },
       { value: '90d', label: localize('editor.graphs.period.90d', lang, `${prefix} 3 Months`) },
-      { value: '365d', label: localize('editor.graphs.period.365d', lang, `${prefix} Year`) },
-    ];
+      { value: '365d', label: localize('editor.graphs.period.365d', lang, `${prefix} Year`) }
+    );
+
+    return options;
   }
 
   private getAggregationOptions(lang: string): Array<{ value: string; label: string }> {
@@ -3947,6 +3956,21 @@ export class UltraGraphsModule extends BaseUltraModule {
     const points: string[] = [];
     const now = new Date();
 
+    // "Today" = midnight (local) → now, bucketed hourly
+    if (timePeriod === 'today') {
+      const midnight = new Date(now);
+      midnight.setHours(0, 0, 0, 0);
+      const hoursElapsed = Math.floor((now.getTime() - midnight.getTime()) / (60 * 60 * 1000));
+      // Always emit at least two points so the chart can draw a line shortly after midnight
+      const lastHour = Math.max(1, hoursElapsed);
+      for (let h = 0; h <= lastHour; h++) {
+        const date = new Date(midnight);
+        date.setHours(date.getHours() + h);
+        points.push(date.toLocaleTimeString([], { hour: '2-digit' }));
+      }
+      return points;
+    }
+
     let count = 12;
     let interval = 'hour';
 
@@ -4205,9 +4229,21 @@ export class UltraGraphsModule extends BaseUltraModule {
       const now = new Date();
       // debug removed
 
+      // "Today" spans from local midnight to now; its lookback depends on the
+      // current time of day rather than a fixed window.
+      const midnightToday = new Date(now);
+      midnightToday.setHours(0, 0, 0, 0);
+      const todayHoursElapsed = Math.max(
+        1,
+        Math.ceil((now.getTime() - midnightToday.getTime()) / (60 * 60 * 1000))
+      );
+
       // Use shorter time periods for faster loading (like mini-graph approach)
       let hoursBack = 24; // Default
       switch (module.time_period) {
+        case 'today':
+          hoursBack = todayHoursElapsed;
+          break;
         case '1h':
           hoursBack = 1;
           break;
@@ -4242,7 +4278,10 @@ export class UltraGraphsModule extends BaseUltraModule {
           hoursBack = 24;
       }
 
-      const startTime = new Date(now.getTime() - hoursBack * 60 * 60 * 1000);
+      const startTime =
+        module.time_period === 'today'
+          ? midnightToday
+          : new Date(now.getTime() - hoursBack * 60 * 60 * 1000);
 
       // Fetch history for all entities
       const entityIds = module.entities.filter(e => e.entity).map(e => e.entity!);

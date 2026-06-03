@@ -984,6 +984,7 @@
         "show_value": "Show Value in Slice"
       },
       "period": {
+        "today": "Today",
         "1h": "Last Hour",
         "3h": "Last 3 Hours",
         "6h": "Last 6 Hours",

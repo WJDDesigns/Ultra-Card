@@ -67,6 +67,7 @@ temp/
 temp_*/
 hacs-default-temp/
 hacs-default-submission/
+.tmp-wiki-work/
 
 # Miscellaneous development files
 *.sql

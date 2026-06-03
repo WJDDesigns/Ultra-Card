@@ -805,7 +805,8 @@
         "7d": "Ostatni tydzień",
         "30d": "Ostatni miesiąc",
         "90d": "Ostatnie 3 miesiące",
-        "365d": "Ostatni rok"
+        "365d": "Ostatni rok",
+        "today": "Today"
       },
       "normalize_values": "Normalizuj wartości do tej samej skali",
       "normalize_desc": "Przydatne przy porównywaniu encji z różnymi jednostkami (np. % vs mile)",

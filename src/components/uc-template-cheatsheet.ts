@@ -84,6 +84,83 @@ const RETURN_PROPERTIES: CheatsheetEntry[] = [
   { key: 'overlay_text', type: 'string', description: 'Camera overlay text', snippet: '"overlay_text": "Live"', modules: ['camera'] },
   { key: 'overlay_color', type: 'string', description: 'Camera overlay text color', snippet: '"overlay_color": "white"', modules: ['camera'] },
   {
+    key: 'card_background',
+    type: 'string',
+    description: 'Card container background (color or gradient)',
+    snippet: '"card_background": "#1b1f3a"',
+    modules: ['card'],
+  },
+  {
+    key: 'card_border_color',
+    type: 'string',
+    description: 'Card border color',
+    snippet: '"card_border_color": "var(--divider-color)"',
+    modules: ['card'],
+  },
+  {
+    key: 'card_border_radius',
+    type: 'number | string',
+    description: 'Card border radius in px',
+    snippet: '"card_border_radius": 12',
+    modules: ['card'],
+  },
+  {
+    key: 'card_border_width',
+    type: 'number | string',
+    description: 'Card border width in px',
+    snippet: '"card_border_width": 1',
+    modules: ['card'],
+  },
+  {
+    key: 'card_padding',
+    type: 'number | string',
+    description: 'Card inner padding in px',
+    snippet: '"card_padding": 16',
+    modules: ['card'],
+  },
+  {
+    key: 'card_shadow_enabled',
+    type: 'boolean',
+    description: 'Enable custom card drop shadow',
+    snippet: '"card_shadow_enabled": true',
+    modules: ['card'],
+  },
+  {
+    key: 'card_shadow_color',
+    type: 'string',
+    description: 'Card shadow color',
+    snippet: '"card_shadow_color": "rgba(0,0,0,0.15)"',
+    modules: ['card'],
+  },
+  {
+    key: 'card_shadow_horizontal',
+    type: 'number | string',
+    description: 'Card shadow horizontal offset (px)',
+    snippet: '"card_shadow_horizontal": 0',
+    modules: ['card'],
+  },
+  {
+    key: 'card_shadow_vertical',
+    type: 'number | string',
+    description: 'Card shadow vertical offset (px)',
+    snippet: '"card_shadow_vertical": 2',
+    modules: ['card'],
+  },
+  {
+    key: 'card_shadow_blur',
+    type: 'number | string',
+    description: 'Card shadow blur radius (px)',
+    snippet: '"card_shadow_blur": 8',
+    modules: ['card'],
+  },
+  {
+    key: 'card_shadow_spread',
+    type: 'number | string',
+    description: 'Card shadow spread (px)',
+    snippet: '"card_shadow_spread": 0',
+    modules: ['card'],
+  },
+  {
     key: 'match',
     type: 'boolean | string',
     description: 'When true (or on/yes/1) this toggle point is selected',
@@ -370,6 +447,33 @@ const EXAMPLE_TEMPLATES: Record<string, { label: string; code: string }[]> = {
       code: "{{ 'true' if states('sensor.count') | int > 0 else 'false' }}",
     },
   ],
+  card: [
+    {
+      label: 'Background by time of day',
+      code: `{% set period = states('sensor.day_period') %}
+{% if period == 'night' %}
+  #1b1f3a
+{% elif period == 'morning' %}
+  #fff3cd
+{% elif period == 'afternoon' %}
+  #d1ecf1
+{% else %}
+  #343a40
+{% endif %}`,
+    },
+    {
+      label: 'Full card appearance JSON',
+      code: `{% set period = states('sensor.day_period') %}
+{
+  "card_background": "{% if period == 'night' %}#1b1f3a{% else %}var(--card-background-color){% endif %}",
+  "card_border_color": "{% if period == 'night' %}#3d4570{% else %}var(--divider-color){% endif %}",
+  "card_border_radius": 12,
+  "card_padding": 16,
+  "card_shadow_enabled": true,
+  "card_shadow_color": "rgba(0,0,0,0.2)"
+}`,
+    },
+  ],
 };
 
 @customElement('uc-template-cheatsheet')
@@ -388,6 +492,7 @@ export class UcTemplateCheatsheet extends LitElement {
     | 'qr'
     | 'status_summary'
     | 'layout'
+    | 'card'
     | 'actions' = 'info';
   @property({ type: Boolean }) public open = false;
 

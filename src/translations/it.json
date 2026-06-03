@@ -993,7 +993,8 @@
         "7d": "Ultima settimana",
         "30d": "Ultimo mese",
         "90d": "Ultimi 3 mesi",
-        "365d": "Ultimo anno"
+        "365d": "Ultimo anno",
+        "today": "Today"
       },
       "reset_345": "Ripristina predefinito (345px)",
       "reset_100": "Ripristina predefinito (100%)",

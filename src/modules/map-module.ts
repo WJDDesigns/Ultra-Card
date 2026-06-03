@@ -8,6 +8,11 @@ import '../components/ultra-color-picker';
 import { getImageUrl } from '../utils/image-upload';
 import { SENSITIVE_PLACEHOLDER } from '../utils/uc-config-encoder';
 import * as L from 'leaflet';
+// Bundle Leaflet's stylesheet locally so the map renders without any external
+// CDN. Injected as a shadow-scoped <style> (style-loader can't reach the card's
+// shadow root). The card uses divIcon/HTML markers, so the CSS's url() image
+// references (layers control, default markers) are not needed.
+import leafletCss from 'leaflet/dist/leaflet.css?raw';
 
 export class UltraMapModule extends BaseUltraModule {
   private mapInstances: Map<string, L.Map> = new Map();
@@ -1482,12 +1487,9 @@ export class UltraMapModule extends BaseUltraModule {
     };
 
     return this.wrapWithAnimation(html`
-      <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-        crossorigin=""
-      />
+      <style>
+        ${leafletCss}
+      </style>
       <style>
         .leaflet-container {
           font-family: var(--primary-font-family, inherit);

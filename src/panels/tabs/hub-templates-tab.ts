@@ -20,6 +20,7 @@ const TEMPLATE_CAPABLE_MODULES: { type: string; title: string }[] = [
   { type: 'gauge', title: 'Gauge' },
   { type: 'display_conditions', title: 'Display conditions' },
   { type: 'layout', title: 'Layout (row/column visibility)' },
+  { type: 'card', title: 'Card appearance (Card Settings)' },
 ];
 
 interface CopyableExample {
@@ -344,6 +345,18 @@ export class HubTemplatesTab extends LitElement {
         title: 'Simple string (icon name)',
         description: 'Returning a plain string is valid; in icon module it is used as the icon name.',
         code: "mdi:lightbulb-on",
+      },
+      {
+        title: 'Card appearance (background, border, shadow)',
+        description:
+          'Enable Appearance Template Mode in Card Settings. Return a color string for background-only, or JSON with card_* keys.',
+        code: `{% set period = states('sensor.day_period') %}
+{
+  "card_background": "{% if period == 'night' %}#1b1f3a{% else %}var(--card-background-color){% endif %}",
+  "card_border_color": "var(--divider-color)",
+  "card_border_radius": 12,
+  "card_shadow_enabled": true
+}`,
       },
     ];
 

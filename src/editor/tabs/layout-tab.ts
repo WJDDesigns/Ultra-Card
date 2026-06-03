@@ -84,6 +84,7 @@ import '../uc-card-selector-tab';
 import '../uc-presets-selector-tab';
 import '../uc-favorites-selector-tab';
 import '../uc-modules-selector-tab';
+import '../uc-smart-selector-tab';
 import '../../components/uc-template-cheatsheet';
 import '../../panels/components/uc-hub-login-dialog';
 import '../../panels/components/uc-hub-rate-dialog';
@@ -176,7 +177,7 @@ export class LayoutTab extends LitElement {
   @state() private _globalExternalCardCount = 0;
 
   // New state properties for presets, favorites, and export/import
-  @state() private _activeModuleSelectorTab: 'modules' | 'cards' | 'presets' | 'favorites' =
+  @state() private _activeModuleSelectorTab: 'modules' | 'cards' | 'presets' | 'smart' | 'favorites' =
     'modules';
   @state() private _selectedPresetSource: 'all' | 'standard' | 'community' = 'all';
   @state() private _showFavoriteDialog = false;
@@ -8027,7 +8028,13 @@ export class LayoutTab extends LitElement {
     this._showSubmitPresetDialog = true;
   }
 
-  private _addPreset(preset: PresetDefinition): void {
+  private _addPreset(
+    preset: PresetDefinition,
+    options?: {
+      suppressSuccessToast?: boolean | undefined;
+      skipEntityMapping?: boolean | undefined;
+    }
+  ): void {
     try {
       // debug removed
 
@@ -8038,10 +8045,15 @@ export class LayoutTab extends LitElement {
         return;
       }
 
+      if (options?.skipEntityMapping) {
+        this._applyPresetToLayout(preset, [], options);
+        return;
+      }
+
       const entityReferences = entityDetector.scanLayout(preset.layout, preset.wizard);
 
       if (entityReferences.length === 0) {
-        this._applyPresetToLayout(preset, []);
+        this._applyPresetToLayout(preset, [], options);
         return;
       }
 
@@ -8051,7 +8063,7 @@ export class LayoutTab extends LitElement {
           ? preset.wizard
           : buildAutoPresetWizard(this.hass, entityReferences);
       if (!effectiveWizard?.steps?.length) {
-        this._showEntityMappingDialog(preset, entityReferences);
+        this._showEntityMappingDialog(preset, entityReferences, options);
         return;
       }
 
@@ -8066,11 +8078,11 @@ export class LayoutTab extends LitElement {
         presetForWizard,
         (result: PresetWizardApplyResult) => {
           this._entityMappingOpen = false;
-          this._applyPresetWithWizardResults(presetForWizard, result);
+          this._applyPresetWithWizardResults(presetForWizard, result, options);
         },
         () => {
           this._entityMappingOpen = false;
-          this._applyPresetToLayout(preset, []);
+          this._applyPresetToLayout(preset, [], options);
         }
       );
     } catch (error) {
@@ -8086,7 +8098,11 @@ export class LayoutTab extends LitElement {
    */
   private _applyPresetWithWizardResults(
     preset: PresetDefinition,
-    result: PresetWizardApplyResult
+    result: PresetWizardApplyResult,
+    options?: {
+      suppressSuccessToast?: boolean | undefined;
+      skipEntityMapping?: boolean | undefined;
+    }
   ): void {
     try {
       let layout: LayoutConfig = JSON.parse(JSON.stringify(preset.layout)) as LayoutConfig;
@@ -8109,6 +8125,7 @@ export class LayoutTab extends LitElement {
       this._applyPresetToLayout(preset, result.mappings, {
         preprocessedLayout: layout,
         additionalConfig,
+        suppressSuccessToast: options?.suppressSuccessToast,
       });
     } catch (error) {
       this._showToast(
@@ -8187,7 +8204,14 @@ export class LayoutTab extends LitElement {
     };
   }
 
-  private _showEntityMappingDialog(preset: PresetDefinition, entityReferences: any[]): void {
+  private _showEntityMappingDialog(
+    preset: PresetDefinition,
+    entityReferences: any[],
+    options?: {
+      suppressSuccessToast?: boolean | undefined;
+      skipEntityMapping?: boolean | undefined;
+    }
+  ): void {
     if (this._entityMappingOpen) {
       return;
     }
@@ -8200,12 +8224,12 @@ export class LayoutTab extends LitElement {
       entityReferences,
       (mappings: EntityMapping[]) => {
         this._entityMappingOpen = false;
-        this._applyPresetToLayout(preset, mappings);
+        this._applyPresetToLayout(preset, mappings, options);
       },
       () => {
         this._entityMappingOpen = false;
         // On cancel, add preset with all original entities
-        this._applyPresetToLayout(preset, []);
+        this._applyPresetToLayout(preset, [], options);
       }
     );
   }
@@ -8226,6 +8250,7 @@ export class LayoutTab extends LitElement {
     options?: {
       preprocessedLayout?: LayoutConfig | undefined;
       additionalConfig?: Partial<UltraCardConfig> | undefined;
+      suppressSuccessToast?: boolean | undefined;
     }
   ): void {
     try {
@@ -8309,7 +8334,9 @@ export class LayoutTab extends LitElement {
       this._selectedNestedNestedChildIndex = -1;
       this._selectedRowIndex = -1;
       this._selectedColumnIndex = -1;
-      this._showToast(`"${preset.name}" preset added successfully!`, 'success');
+      if (!options?.suppressSuccessToast) {
+        this._showToast(`"${preset.name}" preset added successfully!`, 'success');
+      }
 
       if (variableSummary) {
         let message = `Imported ${variableSummary.added} variable(s) as card-specific`;
@@ -28500,7 +28527,9 @@ export class LayoutTab extends LitElement {
     this._selectedNestedNestedChildIndex = -1;
   }
 
-  private _handleSelectorTabChange(e: CustomEvent<{ tab: 'modules' | 'cards' | 'presets' | 'favorites' }>): void {
+  private _handleSelectorTabChange(
+    e: CustomEvent<{ tab: 'modules' | 'cards' | 'presets' | 'smart' | 'favorites' }>
+  ): void {
     this._activeModuleSelectorTab = e.detail.tab;
     if (e.detail.tab === 'presets') ucPresetsService.ensureWordPressLoaded();
     if (e.detail.tab === 'cards') this._refreshGlobalExternalCardCount();
@@ -28582,6 +28611,21 @@ export class LayoutTab extends LitElement {
         ></uc-presets-selector-tab>
       `;
     }
+    if (this._activeModuleSelectorTab === 'smart') {
+      const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+      const isPro =
+        integrationUser?.subscription?.tier === 'pro' &&
+        integrationUser?.subscription?.status === 'active';
+      return html`
+        <uc-smart-selector-tab
+          .hass=${this.hass}
+          .isPro=${isPro}
+          .isCloudAuthenticated=${this._isCloudAuthenticated}
+          @preset-selected=${this._handlePresetSelectorPresetSelected}
+          @open-pro=${this._openProPage}
+        ></uc-smart-selector-tab>
+      `;
+    }
     if (this._activeModuleSelectorTab === 'modules') {
       const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
       const isPro =
@@ -28613,8 +28657,21 @@ export class LayoutTab extends LitElement {
     return html``;
   }
 
-  private _handlePresetSelectorPresetSelected(e: CustomEvent<{ preset: PresetDefinition }>): void {
-    this._addPreset(e.detail.preset);
+  private _handlePresetSelectorPresetSelected(
+    e: CustomEvent<{
+      preset: PresetDefinition;
+      closeSelector?: boolean | undefined;
+      suppressToast?: boolean | undefined;
+      skipEntityMapping?: boolean | undefined;
+    }>
+  ): void {
+    if (e.detail.closeSelector) {
+      this._handleSelectorClose();
+    }
+    this._addPreset(e.detail.preset, {
+      suppressSuccessToast: e.detail.suppressToast,
+      skipEntityMapping: e.detail.skipEntityMapping,
+    });
   }
 
   private _handlePresetSelectorRefresh(): void {
@@ -28669,6 +28726,13 @@ export class LayoutTab extends LitElement {
         const presetTab = this.shadowRoot?.querySelector('uc-presets-selector-tab');
         if (presetTab && 'focusSearchInput' in presetTab) {
           (presetTab as { focusSearchInput: () => void }).focusSearchInput();
+        }
+        return;
+      }
+      if (this._activeModuleSelectorTab === 'smart') {
+        const smartTab = this.shadowRoot?.querySelector('uc-smart-selector-tab');
+        if (smartTab && 'focusSearchInput' in smartTab) {
+          (smartTab as { focusSearchInput: () => void }).focusSearchInput();
         }
         return;
       }

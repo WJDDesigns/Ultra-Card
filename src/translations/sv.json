@@ -805,7 +805,8 @@
         "7d": "Senaste veckan",
         "30d": "Senaste månaden",
         "90d": "Senaste 3 månaderna",
-        "365d": "Senaste året"
+        "365d": "Senaste året",
+        "today": "Today"
       },
       "normalize_values": "Normalisera värden till samma skala",
       "normalize_desc": "Användbart vid jämförelse av entiteter med olika enheter (t.ex. % vs mil)",

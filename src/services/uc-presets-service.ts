@@ -614,6 +614,14 @@ class UcPresetsService {
     let hasSettings = false;
 
     // Card background
+    if (cardData.card_unified_template_mode !== undefined) {
+      settings.card_unified_template_mode = cardData.card_unified_template_mode;
+      hasSettings = true;
+    }
+    if (cardData.card_unified_template !== undefined) {
+      settings.card_unified_template = cardData.card_unified_template;
+      hasSettings = true;
+    }
     if (cardData.card_background !== undefined) {
       settings.card_background = cardData.card_background;
       hasSettings = true;

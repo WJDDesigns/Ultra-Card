@@ -25,6 +25,8 @@ import { Z_INDEX } from '../utils/uc-z-index';
 import { safeGetItem, safeSetItem } from '../utils/safe-storage';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
+import '../components/ultra-template-editor';
+import '../components/uc-template-cheatsheet';
 import '../components/uc-custom-variables-manager';
 import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';
 import '../components/uc-variable-mapping-dialog';
@@ -1006,7 +1008,18 @@ export class UltraCardEditor extends LitElement {
     const defaultCardBackground = 'var(--card-background-color)';
 
     return html`
-      <div class="settings-tab">
+      <div
+        class="settings-tab"
+        @uc-open-template-cheatsheet=${(e: CustomEvent) => {
+          e.stopPropagation();
+          const panel = e.currentTarget as HTMLElement;
+          const cs = panel.querySelector('uc-template-cheatsheet') as any;
+          if (cs) {
+            cs.module = e.detail?.module || 'card';
+            cs.open = true;
+          }
+        }}
+      >
         <div class="settings-header">
           <div class="settings-header-content">
             <ha-icon icon="mdi:cog-outline" style="--mdc-icon-size: 24px; color: var(--primary-color);"></ha-icon>
@@ -1025,23 +1038,6 @@ export class UltraCardEditor extends LitElement {
 
         <div class="settings-container">
 
-          <!-- Card Name (always visible, compact) -->
-          <div class="card-name-bar">
-            <ha-icon icon="mdi:label-outline" style="--mdc-icon-size: 18px; color: var(--secondary-text-color);"></ha-icon>
-            <ha-textfield
-              .value="${this.config.card_name || ''}"
-              @input="${this._handleCardNameChange}"
-              placeholder="${localize(
-                'editor.ultra_card_pro.card_name_placeholder',
-                lang,
-                'My Ultra Card'
-              )}"
-              maxlength="100"
-              style="flex: 1;"
-              .label=${localize('editor.ultra_card_pro.card_name', lang, 'Card Name')}
-            ></ha-textfield>
-          </div>
-
           <!-- Appearance Accordion -->
           <div class="cs-accordion">
             <button
@@ -1057,12 +1053,91 @@ export class UltraCardEditor extends LitElement {
             ${this._expandedCardSections.has('appearance') ? html`
               <div class="cs-accordion-content">
                 <div class="settings-grid">
+                  <div class="setting-item" style="grid-column: 1 / -1;">
+                    <div class="template-section" style="margin-bottom: 8px;">
+                      <div class="template-header">
+                        <div class="switch-label-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                          <label class="switch-label" style="font-weight:600;">
+                            ${localize(
+                              'editor.appearance.unified_template_section.title',
+                              lang,
+                              'Appearance Template Mode'
+                            )}
+                          </label>
+                          <button
+                            class="help-btn"
+                            style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                            title="${localize(
+                              'editor.appearance.template_cheatsheet',
+                              lang,
+                              'Template Cheatsheet'
+                            )}"
+                            @click=${(e: Event) => {
+                              (e.currentTarget as HTMLElement).dispatchEvent(
+                                new CustomEvent('uc-open-template-cheatsheet', {
+                                  detail: { module: 'card' },
+                                  bubbles: true,
+                                  composed: true,
+                                })
+                              );
+                            }}
+                          >
+                            <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
+                          </button>
+                        </div>
+                        <div class="setting-description" style="margin-bottom:12px;">
+                          ${localize(
+                            'editor.appearance.unified_template_section.desc',
+                            lang,
+                            'Use Jinja2 templates to control card background, border, shadow, and padding dynamically. Return a simple color string for background-only, or a JSON object for multiple card appearance properties.'
+                          )}
+                        </div>
+                        <label class="switch-row" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                          <ha-switch
+                            .checked=${this.config.card_unified_template_mode || false}
+                            @change=${(e: Event) => {
+                              const target = e.target as any;
+                              this._updateConfig({
+                                card_unified_template_mode: target.checked,
+                              });
+                            }}
+                          ></ha-switch>
+                          <span>${localize('editor.appearance.template_mode_enable', lang, 'Enable template mode')}</span>
+                        </label>
+                      </div>
+                      ${this.config.card_unified_template_mode
+                        ? html`
+                            <div
+                              class="template-content"
+                              @mousedown=${(e: Event) => {
+                                const target = e.target as HTMLElement;
+                                if (
+                                  !target.closest('ultra-template-editor') &&
+                                  !target.closest('.cm-editor')
+                                ) {
+                                  e.stopPropagation();
+                                }
+                              }}
+                              @dragstart=${(e: Event) => e.stopPropagation()}
+                            >
+                              <ultra-template-editor
+                                .hass=${this.hass}
+                                .value=${this.config.card_unified_template || ''}
+                                .placeholder=${`{% set period = states('sensor.day_period') %}\n{% if period == 'night' %}\n  #1b1f3a\n{% elif period == 'morning' %}\n  #fff3cd\n{% else %}\n  #343a40\n{% endif %}`}
+                                .minHeight=${180}
+                                .maxHeight=${400}
+                                @value-changed=${(e: CustomEvent) =>
+                                  this._updateConfig({ card_unified_template: e.detail.value })}
+                              ></ultra-template-editor>
+                            </div>
+                          `
+                        : ''}
+                    </div>
+                  </div>
+
                   <div class="setting-item">
-                    <label>
-                      ${localize('editor.fields.card_background_color', lang, 'Card Background Color')}
-                    </label>
                     <ultra-color-picker
-                      .label=${'Card Background Color'}
+                      .label=${localize('editor.fields.card_background_color', lang, 'Card Background Color')}
                       .value=${this.config.card_background || defaultCardBackground}
                       .defaultValue=${defaultCardBackground}
                       .hass=${this.hass}
@@ -1857,6 +1932,7 @@ export class UltraCardEditor extends LitElement {
           </div>
 
         </div>
+        <uc-template-cheatsheet pane></uc-template-cheatsheet>
       </div>
     `;
   }
@@ -2605,20 +2681,6 @@ export class UltraCardEditor extends LitElement {
         flex: 1;
       }
 
-      /* Card name compact bar */
-      .card-name-bar {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 8px 12px;
-        background: var(--secondary-background-color);
-        border-radius: 10px;
-        margin-bottom: 4px;
-      }
-
-      .card-name-bar ha-textfield {
-        --mdc-text-field-filled-border-radius: 8px;
-      }
 
       /* Card Settings Accordion */
       .cs-accordion {

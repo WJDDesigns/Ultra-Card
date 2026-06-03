@@ -993,7 +993,8 @@
         "7d": "Letzte Woche",
         "30d": "Letzter Monat",
         "90d": "Letzte 3 Monate",
-        "365d": "Letztes Jahr"
+        "365d": "Letztes Jahr",
+        "today": "Today"
       },
       "reset_345": "Auf Standard zurücksetzen (345px)",
       "reset_100": "Auf Standard zurücksetzen (100%)",

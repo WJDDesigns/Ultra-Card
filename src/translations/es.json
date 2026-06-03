@@ -970,7 +970,8 @@
         "7d": "Última semana",
         "30d": "Último mes",
         "90d": "Últimos 3 meses",
-        "365d": "Último año"
+        "365d": "Último año",
+        "today": "Today"
       },
       "agg": {
         "mean": "Promedio",

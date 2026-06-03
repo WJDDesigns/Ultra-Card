@@ -65,6 +65,19 @@ export interface UnifiedTemplateResult {
   overlay_text?: string | undefined; // Overlay text to display
   overlay_color?: string | undefined; // Overlay text color
 
+  // Display properties (card appearance)
+  card_background?: string | undefined;
+  card_border_color?: string | undefined;
+  card_border_radius?: number | string | undefined;
+  card_border_width?: number | string | undefined;
+  card_padding?: number | string | undefined;
+  card_shadow_enabled?: boolean | undefined;
+  card_shadow_color?: string | undefined;
+  card_shadow_horizontal?: number | string | undefined;
+  card_shadow_vertical?: number | string | undefined;
+  card_shadow_blur?: number | string | undefined;
+  card_shadow_spread?: number | string | undefined;
+
   /** Toggle point match (legacy match_template) */
   match?: boolean | string | undefined;
   /** QR payload (legacy content_template) */
@@ -105,6 +118,39 @@ function parseTicksArray(raw: unknown): UnifiedTemplateResult['ticks'] {
     out.push(tick);
   }
   return out.length ? out : undefined;
+}
+
+function toNumberOrString(value: unknown): number | string | undefined {
+  if (typeof value === 'number' || typeof value === 'string') return value;
+  return undefined;
+}
+
+function applyCardAppearanceTemplateFields(
+  source: Record<string, unknown>,
+  result: UnifiedTemplateResult
+): void {
+  if (source.card_background !== undefined)
+    result.card_background = String(source.card_background).trim();
+  if (source.card_border_color !== undefined)
+    result.card_border_color = String(source.card_border_color).trim();
+  if (source.card_border_radius !== undefined)
+    result.card_border_radius = toNumberOrString(source.card_border_radius);
+  if (source.card_border_width !== undefined)
+    result.card_border_width = toNumberOrString(source.card_border_width);
+  if (source.card_padding !== undefined)
+    result.card_padding = toNumberOrString(source.card_padding);
+  if (source.card_shadow_enabled !== undefined)
+    result.card_shadow_enabled = Boolean(source.card_shadow_enabled);
+  if (source.card_shadow_color !== undefined)
+    result.card_shadow_color = String(source.card_shadow_color).trim();
+  if (source.card_shadow_horizontal !== undefined)
+    result.card_shadow_horizontal = toNumberOrString(source.card_shadow_horizontal);
+  if (source.card_shadow_vertical !== undefined)
+    result.card_shadow_vertical = toNumberOrString(source.card_shadow_vertical);
+  if (source.card_shadow_blur !== undefined)
+    result.card_shadow_blur = toNumberOrString(source.card_shadow_blur);
+  if (source.card_shadow_spread !== undefined)
+    result.card_shadow_spread = toNumberOrString(source.card_shadow_spread);
 }
 
 /**
@@ -196,6 +242,8 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
     if (templateResult.active !== undefined) result.active = Boolean(templateResult.active);
     if (templateResult.is_active !== undefined)
       result.is_active = Boolean(templateResult.is_active);
+
+    applyCardAppearanceTemplateFields(templateResult as Record<string, unknown>, result);
 
     return result;
   }
@@ -289,6 +337,8 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
       if (parsed.qr_content !== undefined) result.qr_content = String(parsed.qr_content).trim();
       if (parsed.active !== undefined) result.active = Boolean(parsed.active);
       if (parsed.is_active !== undefined) result.is_active = Boolean(parsed.is_active);
+
+      applyCardAppearanceTemplateFields(parsed as Record<string, unknown>, result);
 
       return result;
     } catch (error) {

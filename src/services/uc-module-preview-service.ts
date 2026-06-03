@@ -9,6 +9,12 @@ import { localize } from '../localize/localize';
 import { responsiveDesignService } from './uc-responsive-design-service';
 import { ucCustomVariablesService } from './uc-custom-variables-service';
 import { autoMigrateCardModule } from '../utils/template-migration';
+import { TemplateService } from './template-service';
+import {
+  registerCardAppearanceTemplateSubscriptions,
+  resolveCardAppearance,
+  buildCardContainerStyleFromAppearance,
+} from '../utils/card-appearance-template';
 
 /**
  * Centralized Module Preview Service
@@ -32,6 +38,7 @@ import { autoMigrateCardModule } from '../utils/template-migration';
 class UcModulePreviewService {
   // Current preview breakpoint for simulating device widths
   private _previewBreakpoint: DeviceBreakpoint = 'desktop';
+  private _cardTemplateService: TemplateService | null = null;
 
   /**
    * Set the preview breakpoint for simulating different device widths.
@@ -130,7 +137,8 @@ class UcModulePreviewService {
     const animationData = this._getPreviewAnimationData(moduleWithDesign);
 
     // Get card container styling
-    const cardStyle = this._getCardContainerStyle(config);
+    this._ensureCardAppearanceTemplateSubscriptions(hass, config);
+    const cardStyle = this._getCardContainerStyle(config, hass);
 
     // Wrap with card container and logic status indicator
     return html`
@@ -571,56 +579,41 @@ class UcModulePreviewService {
    * Mimics the ultra-card container styling
    * @private
    */
-  private _getCardContainerStyle(config: UltraCardConfig): string {
-    const styles = [];
-
-    // Apply background color - use HA card background as default
-    if (config.card_background) {
-      styles.push(`background: ${config.card_background}`);
+  private _ensureCardAppearanceTemplateSubscriptions(
+    hass: HomeAssistant,
+    config: UltraCardConfig
+  ): void {
+    if (!this._cardTemplateService) {
+      this._cardTemplateService = new TemplateService(hass);
     } else {
-      styles.push(`background: var(--card-background-color, var(--ha-card-background, white))`);
+      this._cardTemplateService.updateHass(hass);
     }
+    registerCardAppearanceTemplateSubscriptions(
+      config,
+      hass,
+      this._cardTemplateService,
+      () => undefined
+    );
+  }
 
-    // Apply border radius
-    if (config.card_border_radius !== undefined) {
-      styles.push(`border-radius: ${config.card_border_radius}px`);
-    } else {
-      styles.push(`border-radius: 12px`);
-    }
+  private _getCardContainerStyle(config: UltraCardConfig, hass?: HomeAssistant): string {
+    const appearance = resolveCardAppearance(config, hass);
+    const baseStyle = buildCardContainerStyleFromAppearance(appearance, {
+      includeDefaultBackground: true,
+      includeDefaultRadius: true,
+      includeDefaultPadding: true,
+      defaultBorderWidth: 0,
+      defaultBorderColor: 'transparent',
+      requirePositiveBorderWidth: true,
+    });
 
-    // Only apply border if explicitly configured
-    if (config.card_border_color || config.card_border_width !== undefined) {
-      const borderWidth = config.card_border_width !== undefined ? config.card_border_width : 0;
-      const borderColor = config.card_border_color || 'transparent';
-      if (borderWidth > 0) {
-        styles.push(`border: ${borderWidth}px solid ${borderColor}`);
-      }
-    }
+    const styles = [baseStyle];
 
-    // Apply padding - use default 16px for preview if not configured
-    // This ensures modules don't hang off the edges of the preview container
-    if (config.card_padding !== undefined) {
-      styles.push(`padding: ${config.card_padding}px`);
-    } else {
-      styles.push(`padding: 16px`);
-    }
-
-    // Apply margin
     if (config.card_margin !== undefined) {
       styles.push(`margin: ${config.card_margin}px`);
     }
 
-    // Apply custom shadow
-    if (config.card_shadow_enabled) {
-      const shadowColor = config.card_shadow_color || 'rgba(0, 0, 0, 0.15)';
-      const horizontal = config.card_shadow_horizontal ?? 0;
-      const vertical = config.card_shadow_vertical ?? 2;
-      const blur = config.card_shadow_blur ?? 8;
-      const spread = config.card_shadow_spread ?? 0;
-      styles.push(`box-shadow: ${horizontal}px ${vertical}px ${blur}px ${spread}px ${shadowColor}`);
-    }
-
-    return styles.join('; ');
+    return styles.filter((s) => s).join('; ');
   }
 
   /**

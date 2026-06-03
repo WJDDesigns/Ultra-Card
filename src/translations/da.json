@@ -805,7 +805,8 @@
         "7d": "Seneste uge",
         "30d": "Seneste måned",
         "90d": "Seneste 3 måneder",
-        "365d": "Seneste år"
+        "365d": "Seneste år",
+        "today": "Today"
       },
       "normalize_values": "Normalisér værdier til samme skala",
       "normalize_desc": "Nyttigt ved sammenligning af entiteter med forskellige enheder (fx % vs miles)",

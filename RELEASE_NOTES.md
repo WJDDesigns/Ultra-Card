@@ -1,5 +1,26 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.5.0-beta2
+
+Here's what's new since 3.5.0-beta1:
+
+### 🚀 New Features
+
+- **🤖 Smart card generation** - A brand-new **Smart** tab in the card builder turns a plain-language prompt ("show my living room lights and temperature") into a ready-to-use Ultra Card. It works through your existing Home Assistant Assist pipeline or an Ultra Card Pro cloud connector, automatically matches the layout to your real entities, sanitizes the result, and corrects the plan so you only ever get valid modules.
+- **🎨 Card appearance templates** - Card Settings now has an **Appearance Template Mode** that lets a single Jinja template drive the whole card's look. Return a color string for background-only, or JSON with `card_background`, `card_border_color`, `card_border_radius`, `card_border_width`, `card_padding`, and `card_shadow_*` keys to make the entire card react to state. New cheatsheet entries and Hub → Templates examples show exactly how.
+
+### 🔧 Improvements
+
+- **📈 "Today" time period for Graphs** - The Graphs module can now plot from local midnight to right now, in addition to the existing rolling windows (last hour, day, week, etc.).
+- **🗺️ Maps now render fully offline** - The Map module bundles Leaflet's stylesheet locally instead of fetching it from an external CDN, so maps load reliably without outbound requests to unpkg.
+- **Presets carry card appearance** - Importing/exporting a full card preset now preserves the card-level Appearance Template settings alongside the other card styles.
+
+### 🌐 Translations
+
+- **Synced localized strings** - Updated the supported locale files for the new Smart and card-appearance copy.
+
+---
+
 ## Version 3.5.0-beta1
 
 ### 🚀 New Features

@@ -9,6 +9,12 @@ export function getPresetCardSettingsUpdates(
 
   const updates: Partial<UltraCardConfig> = {};
 
+  if (cardSettings.card_unified_template_mode !== undefined) {
+    updates.card_unified_template_mode = cardSettings.card_unified_template_mode;
+  }
+  if (cardSettings.card_unified_template !== undefined) {
+    updates.card_unified_template = cardSettings.card_unified_template;
+  }
   if (cardSettings.card_background !== undefined) {
     updates.card_background = cardSettings.card_background;
   }

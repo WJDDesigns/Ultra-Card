@@ -48,6 +48,11 @@ import {
 } from '../pro/third-party-limit-service';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';
+import {
+  registerCardAppearanceTemplateSubscriptions,
+  resolveCardAppearance,
+  buildCardContainerStyleFromAppearance,
+} from '../utils/card-appearance-template';
 import { UC_ULTRA_CARD_HASS_READY } from '../utils/uc-pro-banner';
 
 import { externalCardContainerService } from '../services/external-card-container-service';
@@ -85,6 +90,10 @@ export class UltraCard extends LitElement {
         ) {
           this._registerLayoutTemplateSubscriptions();
           this._layoutTemplatesRegistered = true;
+        }
+        if (this.config && this._layoutTemplateService && !this._cardTemplatesRegistered) {
+          this._registerCardAppearanceTemplateSubscriptions();
+          this._cardTemplatesRegistered = true;
         }
       } catch (e) {
         console.warn('[UltraCard] Layout template setup failed:', e);
@@ -124,6 +133,8 @@ export class UltraCard extends LitElement {
   private _layoutTemplateService: TemplateService | null = null;
   /** True after layout columns_template / modules_template subs are registered for this service instance */
   private _layoutTemplatesRegistered = false;
+  /** True after card appearance template subs are registered for this service instance */
+  private _cardTemplatesRegistered = false;
   private _templateUpdateDebounceTimer: number | undefined;
   /** Monotonic counter bumped on every config change; used as a cheap cache key instead of JSON.stringify. */
   private _configVersion = 0;
@@ -530,6 +541,7 @@ export class UltraCard extends LitElement {
       this._layoutTemplateService = null;
     }
     this._layoutTemplatesRegistered = false;
+    this._cardTemplatesRegistered = false;
 
     // Clean up event listener
     if (this._templateUpdateListener) {
@@ -1041,8 +1053,30 @@ export class UltraCard extends LitElement {
         }
       }
 
+      if (this._layoutTemplateService && this.hass) {
+        Promise.all([
+          this._layoutTemplateService.unsubscribeTemplatesByPrefix('unified_card_'),
+          this._layoutTemplateService.unsubscribeTemplatesByPrefix('card_field_'),
+        ])
+          .then(() => {
+            try {
+              this._registerCardAppearanceTemplateSubscriptions();
+              this._cardTemplatesRegistered = true;
+            } catch (e) {
+              console.warn('[UltraCard] Card appearance template re-registration failed:', e);
+            }
+          })
+          .catch((err) => {
+            console.warn(
+              '[UltraCard] Card appearance template subscription failed:',
+              err?.message || err
+            );
+          });
+      }
+
       // Reflect card-level styles to host CSS variables so HA wrappers honor them
-      const radius = newConfig?.card_border_radius;
+      const resolvedAppearance = resolveCardAppearance(newConfig, this.hass);
+      const radius = resolvedAppearance.card_border_radius ?? newConfig?.card_border_radius;
       if (radius !== undefined && radius !== null) {
         this.style.setProperty('--ha-card-border-radius', `${radius}px`);
       } else {
@@ -1802,12 +1836,13 @@ export class UltraCard extends LitElement {
   private _getCardStyle(): string {
     if (!this.config) return '';
 
-    const styles: string[] = [];
-
-    // Apply background color (supports gradients and solid colors)
-    if (this.config.card_background) {
-      styles.push(`background: ${this.config.card_background}`);
-    }
+    const appearance = resolveCardAppearance(this.config, this.hass);
+    const styles: string[] = [
+      buildCardContainerStyleFromAppearance(appearance, {
+        defaultBorderWidth: 1,
+        defaultBorderColor: 'var(--divider-color)',
+      }),
+    ].filter(Boolean);
 
     // Apply background image
     if (
@@ -1832,24 +1867,6 @@ export class UltraCard extends LitElement {
       }
     }
 
-    // Apply border radius
-    if (this.config.card_border_radius !== undefined) {
-      styles.push(`border-radius: ${this.config.card_border_radius}px`);
-    }
-
-    // Apply border color and width
-    if (this.config.card_border_color || this.config.card_border_width !== undefined) {
-      const borderWidth =
-        this.config.card_border_width !== undefined ? this.config.card_border_width : 1;
-      const borderColor = this.config.card_border_color || 'var(--divider-color)';
-      styles.push(`border: ${borderWidth}px solid ${borderColor}`);
-    }
-
-    // Apply padding
-    if (this.config.card_padding !== undefined) {
-      styles.push(`padding: ${this.config.card_padding}px`);
-    }
-
     // Apply margin
     if (this.config.card_margin !== undefined) {
       styles.push(`margin: ${this.config.card_margin}px`);
@@ -1860,17 +1877,7 @@ export class UltraCard extends LitElement {
       styles.push(`overflow: ${this.config.card_overflow}`);
     }
 
-    // Apply custom shadow
-    if (this.config.card_shadow_enabled) {
-      const shadowColor = this.config.card_shadow_color || 'rgba(0, 0, 0, 0.15)';
-      const horizontal = this.config.card_shadow_horizontal ?? 0;
-      const vertical = this.config.card_shadow_vertical ?? 2;
-      const blur = this.config.card_shadow_blur ?? 8;
-      const spread = this.config.card_shadow_spread ?? 0;
-      styles.push(`box-shadow: ${horizontal}px ${vertical}px ${blur}px ${spread}px ${shadowColor}`);
-    }
-
-    return styles.join('; ');
+    return styles.filter((s) => s).join('; ');
   }
 
   /**
@@ -2125,10 +2132,6 @@ export class UltraCard extends LitElement {
     return rowContent;
   }
 
-  /**
-   * Pre-register layout template subscriptions when config.layout changes.
-   * Called from willUpdate (config change) and hass setter (first load).
-   */
   private _registerLayoutTemplateSubscriptions(): void {
     const layout = this.config?.layout;
     const rows = layout?.rows;
@@ -2159,6 +2162,17 @@ export class UltraCard extends LitElement {
         }
       });
     });
+  }
+
+  /** Pre-register card appearance template subscriptions (unified + inline field templates). */
+  private _registerCardAppearanceTemplateSubscriptions(): void {
+    if (!this.config || !this._layoutTemplateService || !this.hass) return;
+    registerCardAppearanceTemplateSubscriptions(
+      this.config,
+      this.hass,
+      this._layoutTemplateService,
+      () => this.requestUpdate()
+    );
   }
 
   /**

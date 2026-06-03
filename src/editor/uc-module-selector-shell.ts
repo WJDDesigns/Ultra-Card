@@ -5,7 +5,7 @@
 import { LitElement, html, css, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
-export type ModuleSelectorTab = 'modules' | 'cards' | 'presets' | 'favorites';
+export type ModuleSelectorTab = 'modules' | 'cards' | 'presets' | 'smart' | 'favorites';
 
 @customElement('uc-module-selector-shell')
 export class UcModuleSelectorShell extends LitElement {
@@ -357,6 +357,13 @@ export class UcModuleSelectorShell extends LitElement {
               >
                 <ha-icon icon="mdi:palette"></ha-icon>
                 <span>Presets</span>
+              </button>
+              <button
+                class="tab-button ${this.activeTab === 'smart' ? 'active' : ''}"
+                @click=${() => this._dispatchTabChange('smart')}
+              >
+                <ha-icon icon="mdi:brain"></ha-icon>
+                <span>Smart</span>
               </button>
               <button
                 class="tab-button ${this.activeTab === 'favorites' ? 'active' : ''}"

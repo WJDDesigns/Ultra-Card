@@ -805,7 +805,8 @@
         "7d": "Laatste Week",
         "30d": "Laatste Maand",
         "90d": "Laatste 3 Maanden",
-        "365d": "Laatste Jaar"
+        "365d": "Laatste Jaar",
+        "today": "Today"
       },
       "normalize_values": "Normaliseer waarden naar dezelfde schaal",
       "normalize_desc": "Nuttig bij het vergelijken van entiteiten met verschillende eenheden (bijv. % vs mijlen)",

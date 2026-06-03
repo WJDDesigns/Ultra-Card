@@ -69,7 +69,15 @@ module.exports = (env, argv) => {
           exclude: /node_modules/,
         },
         {
+          // Raw CSS imports (e.g. `import css from 'leaflet/dist/leaflet.css?raw'`)
+          // are inlined as a string so they can be injected into a shadow root.
           test: /\.css$/,
+          resourceQuery: /raw/,
+          type: 'asset/source',
+        },
+        {
+          test: /\.css$/,
+          resourceQuery: { not: [/raw/] },
           use: ['style-loader', 'css-loader'],
         },
       ],

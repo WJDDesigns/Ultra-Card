@@ -1475,7 +1475,8 @@
         "7d": "Última setmana",
         "30d": "Últim mes",
         "90d": "Últims 3 mesos",
-        "365d": "Últim any"
+        "365d": "Últim any",
+        "today": "Today"
       },
       "reset_345": "Restableix al valor per defecte (345px)",
       "reset_100": "Restableix al valor per defecte (100%)",

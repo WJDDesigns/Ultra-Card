@@ -805,7 +805,8 @@
         "7d": "Poslední týden",
         "30d": "Poslední měsíc",
         "90d": "Poslední 3 měsíce",
-        "365d": "Poslední rok"
+        "365d": "Poslední rok",
+        "today": "Today"
       },
       "normalize_values": "Normalizovat hodnoty na stejnou škálu",
       "normalize_desc": "Užitečné při porovnávání entit s různými jednotkami (např. % vs míle)",

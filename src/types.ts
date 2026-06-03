@@ -2839,7 +2839,19 @@ export interface GraphsModule extends BaseModule {
   entities: GraphEntityConfig[];
 
   // Time period
-  time_period: '1h' | '3h' | '6h' | '12h' | '24h' | '2d' | '7d' | '30d' | '90d' | '365d' | 'custom';
+  time_period:
+    | 'today'
+    | '1h'
+    | '3h'
+    | '6h'
+    | '12h'
+    | '24h'
+    | '2d'
+    | '7d'
+    | '30d'
+    | '90d'
+    | '365d'
+    | 'custom';
   custom_time_start?: string | undefined;
   custom_time_end?: string | undefined;
 
@@ -5791,6 +5803,8 @@ export interface PresetDefinition {
   wizard?: PresetWizardConfig | undefined;
   // Card-level settings from full card exports
   cardSettings?: {
+    card_unified_template_mode?: boolean | undefined;
+    card_unified_template?: string | undefined;
     card_background?: string | undefined;
     card_border_radius?: number | undefined;
     card_border_color?: string | undefined;
@@ -5817,6 +5831,65 @@ export interface PresetDefinition {
     rating?: number | undefined;
     entityMappings?: EntityMapping[] | undefined; // Store original→mapped entity pairs
   };
+}
+
+export type SmartConnectorPreference = 'auto' | 'ha_assist' | 'user_provider' | 'cloud_default';
+
+export interface SmartTierAccess {
+  can_generate_free: boolean;
+  can_generate_pro: boolean;
+  is_pro_user: boolean;
+  free_daily_generations?: number | null | undefined;
+  free_remaining?: number | null | undefined;
+}
+
+export type SmartPreset = PresetDefinition;
+
+export interface SmartConnectorStatus {
+  available: {
+    ha_assist: boolean;
+    user_provider: boolean;
+    cloud_default: boolean;
+  };
+  default_connector: SmartConnectorPreference;
+  ha?: {
+    pipeline_id?: string | undefined;
+    pipeline_name?: string | undefined;
+    supports_text?: boolean | undefined;
+  };
+  limits?: {
+    free_daily_generations?: number | null | undefined;
+    free_remaining?: number | null | undefined;
+    pro_unlimited?: boolean | undefined;
+  };
+  tier_access?: SmartTierAccess | undefined;
+  warnings?: string[] | undefined;
+}
+
+export interface SmartGenerateRequest {
+  prompt: string;
+  tier: 'free' | 'pro';
+  connector_preference?: SmartConnectorPreference | undefined;
+  context?: Record<string, unknown> | undefined;
+  constraints?: {
+    style?: string | undefined;
+    max_modules?: number | undefined;
+    allow_pro_modules?: boolean | undefined;
+  } | undefined;
+}
+
+export interface SmartGenerateResponse {
+  smart_preset?: SmartPreset | undefined;
+  presets?: SmartPreset[] | undefined;
+  tier_access?: SmartTierAccess | undefined;
+  limits?: SmartConnectorStatus['limits'] | undefined;
+  generation?: {
+    connector_used?: SmartConnectorPreference | string | undefined;
+    tier_required?: 'free' | 'pro' | undefined;
+    warnings?: string[] | undefined;
+    fallback?: boolean | undefined;
+  } | undefined;
+  error?: string | undefined;
 }
 
 // Favorites system types
@@ -5861,6 +5934,10 @@ export interface UltraCardConfig {
    */
   disable_navigation_js_templates?: boolean | undefined;
   global_css?: string | undefined;
+  /** When true, `card_unified_template` controls card appearance via unified template JSON or color string. */
+  card_unified_template_mode?: boolean | undefined;
+  /** Unified template for card-level appearance (background, border, shadow, padding). */
+  card_unified_template?: string | undefined;
   card_background?: string | undefined;
   card_border_radius?: number | undefined;
   card_border_color?: string | undefined;
