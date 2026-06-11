@@ -109,10 +109,10 @@ export class UltraFanModule extends BaseUltraModule {
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
+    const baseValidation = super.validate(module);
     const fan = module as FanModuleConfig;
-    if (!module.id) errors.push('Module ID is required');
-    if (!module.type || module.type !== 'fan') errors.push('Module type must be fan');
+    const errors = [...baseValidation.errors];
+    if (module.type && module.type !== 'fan') errors.push('Module type must be fan');
     if (!fan.entity?.trim()) errors.push(localize('editor.fan.error_entity', 'en', 'Select a fan entity'));
     return { valid: errors.length === 0, errors };
   }
@@ -174,8 +174,10 @@ export class UltraFanModule extends BaseUltraModule {
               hass,
               data: { icon: fan.icon || '' },
               schema: [this.textField('icon')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ icon: (e.detail.value?.icon as string) ?? '' }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ icon: (e.detail.value?.icon as string) ?? '' });
+                this.triggerPreviewUpdate();
+              },
             },
           ]
         )}
@@ -190,8 +192,10 @@ export class UltraFanModule extends BaseUltraModule {
               hass,
               data: { show_title: fan.show_title !== false },
               schema: [this.booleanField('show_title')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_title: e.detail.value?.show_title ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_title: e.detail.value?.show_title ?? true });
+                this.triggerPreviewUpdate();
+              },
             },
             {
               title: localize('editor.fan.show_icon', lang, 'Show icon'),
@@ -199,8 +203,10 @@ export class UltraFanModule extends BaseUltraModule {
               hass,
               data: { show_icon: fan.show_icon !== false },
               schema: [this.booleanField('show_icon')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_icon: e.detail.value?.show_icon ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_icon: e.detail.value?.show_icon ?? true });
+                this.triggerPreviewUpdate();
+              },
             },
             {
               title: localize('editor.fan.show_state', lang, 'Show state'),
@@ -208,8 +214,10 @@ export class UltraFanModule extends BaseUltraModule {
               hass,
               data: { show_state: fan.show_state !== false },
               schema: [this.booleanField('show_state')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_state: e.detail.value?.show_state ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_state: e.detail.value?.show_state ?? true });
+                this.triggerPreviewUpdate();
+              },
             },
             {
               title: localize('editor.fan.show_percentage', lang, 'Show percentage'),
@@ -217,8 +225,10 @@ export class UltraFanModule extends BaseUltraModule {
               hass,
               data: { show_percentage: fan.show_percentage !== false },
               schema: [this.booleanField('show_percentage')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_percentage: e.detail.value?.show_percentage ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_percentage: e.detail.value?.show_percentage ?? true });
+                this.triggerPreviewUpdate();
+              },
             },
             {
               title: localize('editor.fan.show_percentage_control', lang, 'Show speed slider'),
@@ -226,8 +236,10 @@ export class UltraFanModule extends BaseUltraModule {
               hass,
               data: { show_percentage_control: fan.show_percentage_control !== false },
               schema: [this.booleanField('show_percentage_control')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_percentage_control: e.detail.value?.show_percentage_control ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_percentage_control: e.detail.value?.show_percentage_control ?? true });
+                this.triggerPreviewUpdate();
+              },
             },
             {
               title: localize('editor.fan.show_preset_modes', lang, 'Show preset modes'),
@@ -235,8 +247,10 @@ export class UltraFanModule extends BaseUltraModule {
               hass,
               data: { show_preset_modes: fan.show_preset_modes !== false },
               schema: [this.booleanField('show_preset_modes')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_preset_modes: e.detail.value?.show_preset_modes ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_preset_modes: e.detail.value?.show_preset_modes ?? true });
+                this.triggerPreviewUpdate();
+              },
             },
             {
               title: localize('editor.fan.show_oscillate', lang, 'Show oscillate'),
@@ -244,8 +258,10 @@ export class UltraFanModule extends BaseUltraModule {
               hass,
               data: { show_oscillate: fan.show_oscillate !== false },
               schema: [this.booleanField('show_oscillate')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_oscillate: e.detail.value?.show_oscillate ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_oscillate: e.detail.value?.show_oscillate ?? true });
+                this.triggerPreviewUpdate();
+              },
             },
             {
               title: localize('editor.fan.show_direction', lang, 'Show direction'),
@@ -253,8 +269,10 @@ export class UltraFanModule extends BaseUltraModule {
               hass,
               data: { show_direction: fan.show_direction !== false },
               schema: [this.booleanField('show_direction')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_direction: e.detail.value?.show_direction ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_direction: e.detail.value?.show_direction ?? true });
+                this.triggerPreviewUpdate();
+              },
             },
             {
               title: localize('editor.fan.show_speed_steppers', lang, 'Show speed steppers'),
@@ -262,8 +280,10 @@ export class UltraFanModule extends BaseUltraModule {
               hass,
               data: { show_speed_steppers: fan.show_speed_steppers !== false },
               schema: [this.booleanField('show_speed_steppers')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_speed_steppers: e.detail.value?.show_speed_steppers ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_speed_steppers: e.detail.value?.show_speed_steppers ?? true });
+                this.triggerPreviewUpdate();
+              },
             },
           ]
         )}
@@ -476,6 +496,67 @@ export class UltraFanModule extends BaseUltraModule {
       this.triggerPreviewUpdate(true);
     };
 
+    /** Stepper buttons: step speed by the entity's percentage_step (fallback 10) with clamping */
+    const percentageStepRaw = attrs.percentage_step;
+    const speedStep =
+      typeof percentageStepRaw === 'number' && percentageStepRaw > 0 ? percentageStepRaw : 10;
+    const stepSpeed = (dir: 1 | -1) => {
+      const next = Math.max(0, Math.min(100, Math.round(displaySpeedPct + dir * speedStep)));
+      if (next === displaySpeedPct) return;
+      this._fanSpeedOverride.set(entityId, next);
+      setPercentage(next);
+      this.triggerPreviewUpdate(true);
+    };
+
+    /** Speed slider with optional −/+ steppers (shared by all layouts) */
+    const speedSlider = () => html`
+      <div class="uc-fan-speed-ctrl">
+        ${showSteppers
+          ? html`
+              <button
+                type="button"
+                class="uc-fan-stepper-btn"
+                aria-label="${localize('editor.fan.decrease_speed', lang, 'Decrease speed')}"
+                @click=${() => stepSpeed(-1)}
+                ?disabled=${isUnavailable || displaySpeedPct <= 0}
+              >
+                <ha-icon icon="mdi:minus"></ha-icon>
+              </button>
+            `
+          : nothing}
+        <div class="uc-fan-slider-combo" style="--uc-fan-pct: ${displaySpeedPct};">
+          <div class="uc-fan-slider-fill"></div>
+          <input
+            type="range"
+            class="uc-fan-range"
+            min="0"
+            max="100"
+            .value=${String(displaySpeedPct)}
+            @input=${onSpeedInput}
+            ?disabled=${isUnavailable}
+            aria-label="${localize('editor.fan.speed', lang, 'Speed')}"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="${displaySpeedPct}"
+            aria-valuetext="${displaySpeedPct}%"
+          />
+        </div>
+        ${showSteppers
+          ? html`
+              <button
+                type="button"
+                class="uc-fan-stepper-btn"
+                aria-label="${localize('editor.fan.increase_speed', lang, 'Increase speed')}"
+                @click=${() => stepSpeed(1)}
+                ?disabled=${isUnavailable || displaySpeedPct >= 100}
+              >
+                <ha-icon icon="mdi:plus"></ha-icon>
+              </button>
+            `
+          : nothing}
+      </div>
+    `;
+
     /** Fan graphic — SVG or MDI icon */
     const fanGraphic = (sz: number) =>
       iconOverride
@@ -509,23 +590,7 @@ export class UltraFanModule extends BaseUltraModule {
                   : nothing}
               </div>
               ${showPctCtrl
-                ? html`
-                    <div
-                      class="uc-fan-slider-combo"
-                      style="--uc-fan-pct: ${displaySpeedPct};"
-                    >
-                      <div class="uc-fan-slider-fill"></div>
-                      <input
-                        type="range"
-                        class="uc-fan-range"
-                        min="0"
-                        max="100"
-                        .value=${String(displaySpeedPct)}
-                        @input=${onSpeedInput}
-                        ?disabled=${isUnavailable}
-                      />
-                    </div>
-                  `
+                ? speedSlider()
                 : showPct
                   ? html`<div class="uc-fan-track">
                       <div class="uc-fan-track__fill" style="width: ${pctForBar}%;"></div>
@@ -555,6 +620,7 @@ export class UltraFanModule extends BaseUltraModule {
                             <button
                               type="button"
                               class="uc-fan-chip ${presetMode === pm ? 'is-active' : ''}"
+                              aria-pressed="${presetMode === pm ? 'true' : 'false'}"
                               @click=${() => call('set_preset_mode', { preset_mode: pm })}
                               ?disabled=${isUnavailable}
                             >
@@ -576,6 +642,7 @@ export class UltraFanModule extends BaseUltraModule {
                         <button
                           type="button"
                           class="uc-fan-chip ${direction === 'forward' ? 'is-active' : ''}"
+                          aria-pressed="${direction === 'forward' ? 'true' : 'false'}"
                           @click=${() => call('set_direction', { direction: 'forward' })}
                           ?disabled=${isUnavailable}
                         >
@@ -584,6 +651,7 @@ export class UltraFanModule extends BaseUltraModule {
                         <button
                           type="button"
                           class="uc-fan-chip ${direction === 'reverse' ? 'is-active' : ''}"
+                          aria-pressed="${direction === 'reverse' ? 'true' : 'false'}"
                           @click=${() => call('set_direction', { direction: 'reverse' })}
                           ?disabled=${isUnavailable}
                         >
@@ -603,6 +671,7 @@ export class UltraFanModule extends BaseUltraModule {
             <button
               type="button"
               class="uc-fan-chip ${oscillating ? 'is-active' : ''}"
+              aria-pressed="${oscillating ? 'true' : 'false'}"
               @click=${() => call('oscillate', { oscillating: !oscillating })}
               ?disabled=${isUnavailable}
             >
@@ -686,23 +755,7 @@ export class UltraFanModule extends BaseUltraModule {
             ${powerBtn('compact')}
           </div>
           ${hasSetSpeed && showPctCtrl
-            ? html`
-                <div
-                  class="uc-fan-slider-combo"
-                  style="--uc-fan-pct: ${displaySpeedPct};"
-                >
-                  <div class="uc-fan-slider-fill"></div>
-                  <input
-                    type="range"
-                    class="uc-fan-range"
-                    min="0"
-                    max="100"
-                    .value=${String(displaySpeedPct)}
-                    @input=${onSpeedInput}
-                    ?disabled=${isUnavailable}
-                  />
-                </div>
-              `
+            ? speedSlider()
             : hasSetSpeed && showPct && !showPctCtrl
               ? html`<div class="uc-fan-track">
                   <div class="uc-fan-track__fill" style="width: ${pctForBar}%;"></div>
@@ -950,6 +1003,39 @@ export class UltraFanModule extends BaseUltraModule {
         box-shadow: 0 0 12px color-mix(in srgb, var(--primary-color) 28%, transparent);
         transition: width 0.32s cubic-bezier(0.25, 0.8, 0.25, 1);
       }
+
+      /* ── Speed control row (steppers + slider) ──── */
+      .uc-fan-speed-ctrl {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .uc-fan-speed-ctrl .uc-fan-slider-combo {
+        flex: 1;
+        min-width: 0;
+      }
+      .uc-fan-stepper-btn {
+        font: inherit;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border-radius: 50%;
+        border: 1px solid color-mix(in srgb, var(--divider-color) 72%, transparent);
+        background: color-mix(in srgb, var(--divider-color) 8%, var(--card-background-color, var(--ha-card-background)));
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: background 0.14s, border-color 0.14s, color 0.14s;
+      }
+      .uc-fan-stepper-btn ha-icon { --mdc-icon-size: 16px; }
+      .uc-fan-stepper-btn:hover:not(:disabled) {
+        border-color: color-mix(in srgb, var(--primary-color) 28%, var(--divider-color));
+        color: var(--primary-text-color);
+      }
+      .uc-fan-stepper-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
       /* ── Combined slider (fill layer under range) ── */
       .uc-fan-slider-combo {

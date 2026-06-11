@@ -3,7 +3,6 @@ import { localize } from '../localize/localize';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, ButtonModule, UltraCardConfig } from '../types';
-import { LinkAction, linkService } from '../services/link-service';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
@@ -27,9 +26,6 @@ export class UltraButtonModule extends BaseUltraModule {
       id: id || this.generateId('button'),
       type: 'button',
       label: '',
-      action: {
-        action_type: 'none',
-      },
       style: 'flat',
       // alignment: undefined, // No default alignment to allow Global Design tab control
       icon: '',
@@ -119,7 +115,10 @@ export class UltraButtonModule extends BaseUltraModule {
               hass,
               data: buttonModule,
               schema: [this.textField('label')],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
+              onChange: (e: CustomEvent) => {
+                updateModule(e.detail.value);
+                this.triggerPreviewUpdate();
+              },
             },
             {
               title: localize('editor.button.style.title', lang, 'Button Style'),
@@ -194,6 +193,7 @@ export class UltraButtonModule extends BaseUltraModule {
                   updates.show_icon = false;
                 }
                 updateModule(updates);
+                this.triggerPreviewUpdate();
               }
             )}
           </div>
@@ -322,8 +322,10 @@ export class UltraButtonModule extends BaseUltraModule {
                     .value=${buttonModule.background_color || 'var(--primary-color)'}
                     .defaultValue=${'var(--primary-color)'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) =>
-                      updateModule({ background_color: e.detail.value })}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ background_color: e.detail.value });
+                      this.triggerPreviewUpdate();
+                    }}
                   ></ultra-color-picker>
                 </div>
               `}
@@ -335,7 +337,10 @@ export class UltraButtonModule extends BaseUltraModule {
               .value=${buttonModule.text_color || 'white'}
               .defaultValue=${'white'}
               .hass=${hass}
-              @value-changed=${(e: CustomEvent) => updateModule({ text_color: e.detail.value })}
+              @value-changed=${(e: CustomEvent) => {
+                updateModule({ text_color: e.detail.value });
+                this.triggerPreviewUpdate();
+              }}
             ></ultra-color-picker>
           </div>
         </div>
@@ -376,118 +381,6 @@ export class UltraButtonModule extends BaseUltraModule {
     `;
   }
 
-  private renderLinkActionForm(
-    action: LinkAction,
-    hass: HomeAssistant,
-    config: UltraCardConfig,
-    onUpdate: (action: LinkAction) => void
-  ): TemplateResult {
-    const actionTypes = linkService.getActionTypeOptions();
-
-    return html`
-      <div class="link-action-form">
-        <!-- Action Type -->
-        <div class="field-group" style="margin-bottom: 16px;">
-          ${this.renderFieldSection(
-            'Action Type',
-            'Choose what happens when the button is clicked',
-            hass,
-            { action_type: action.action_type || 'none' },
-            [this.selectField('action_type', actionTypes)],
-            (e: CustomEvent) => {
-              const next = e.detail.value.action_type;
-              const prev = action.action_type || 'none';
-              if (next === prev) return;
-              onUpdate({ ...action, action_type: next });
-              // Trigger re-render to update dropdown UI
-              setTimeout(() => {
-                this.triggerPreviewUpdate();
-              }, 50);
-            }
-          )}
-        </div>
-
-        ${this.renderActionTypeSpecificFields(action, hass, config, onUpdate)}
-      </div>
-    `;
-  }
-
-  private renderActionTypeSpecificFields(
-    action: LinkAction,
-    hass: HomeAssistant,
-    config: UltraCardConfig,
-    onUpdate: (action: LinkAction) => void
-  ): TemplateResult {
-    switch (action.action_type) {
-      case 'toggle':
-      case 'show_more_info':
-      case 'trigger':
-        return this.renderEntityPickerWithVariables(
-          hass, config, 'entity', action.entity || '',
-          (value: string) => onUpdate({ ...action, entity: value }),
-          undefined,
-          'Entity'
-        );
-
-      case 'navigate':
-        return this.renderFieldSection(
-          'Navigation Path',
-          'Path to navigate to (e.g., /dashboard/energy)',
-          hass,
-          { navigation_path: action.navigation_path || '' },
-          [this.textField('navigation_path')],
-          (e: CustomEvent) =>
-            onUpdate({ ...action, navigation_path: e.detail.value.navigation_path })
-        );
-
-      case 'url':
-        return this.renderFieldSection(
-          'URL',
-          'URL to open (e.g., https://example.com)',
-          hass,
-          { url: action.url || '' },
-          [this.textField('url')],
-          (e: CustomEvent) => onUpdate({ ...action, url: e.detail.value.url })
-        );
-
-      case 'call_service':
-        return html`
-          <div class="field-group" style="margin-bottom: 16px;">
-            ${this.renderFieldSection(
-              'Service',
-              'Service to call (e.g., light.turn_on)',
-              hass,
-              { service: action.service || '' },
-              [this.textField('service')],
-              (e: CustomEvent) => onUpdate({ ...action, service: e.detail.value.service })
-            )}
-          </div>
-
-          <div class="field-group">
-            ${this.renderFieldSection(
-              'Service Data (JSON)',
-              'Optional data to pass to the service (JSON format)',
-              hass,
-              { service_data: JSON.stringify(action.service_data || {}) },
-              [this.textField('service_data')],
-              (e: CustomEvent) => {
-                try {
-                  const parsed = JSON.parse(e.detail.value.service_data || '{}');
-                  onUpdate({ ...action, service_data: parsed });
-                } catch (error) {
-                  console.warn('Invalid JSON in service data');
-                }
-              }
-            )}
-          </div>
-        `;
-
-      case 'none':
-      default:
-        return html``;
-    }
-  }
-
   override renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
@@ -497,99 +390,6 @@ export class UltraButtonModule extends BaseUltraModule {
     const buttonModule = module as ButtonModule;
 
     return GlobalActionsTab.render(buttonModule as any, hass, updates => updateModule(updates));
-  }
-
-  private renderButtonActionConfig(
-    buttonModule: ButtonModule,
-    hass: HomeAssistant,
-    updateModule: (updates: Partial<ButtonModule>) => void
-  ): TemplateResult {
-    return html`
-      <div style="margin-bottom: 16px;">
-        ${this.renderSingleActionConfig(
-          'Tap Action',
-          'Action to perform when button is tapped',
-          buttonModule.tap_action || { action: 'nothing' },
-          hass,
-          action => updateModule({ tap_action: action })
-        )}
-      </div>
-
-      <div style="margin-bottom: 16px;">
-        ${this.renderSingleActionConfig(
-          'Hold Action',
-          'Action to perform when button is held down',
-          buttonModule.hold_action || { action: 'nothing' },
-          hass,
-          action => updateModule({ hold_action: action })
-        )}
-      </div>
-
-      <div style="margin-bottom: 16px;">
-        ${this.renderSingleActionConfig(
-          'Double Tap Action',
-          'Action to perform when button is double-tapped',
-          buttonModule.double_tap_action || { action: 'nothing' },
-          hass,
-          action => updateModule({ double_tap_action: action })
-        )}
-      </div>
-    `;
-  }
-
-  private renderSingleActionConfig(
-    label: string,
-    description: string,
-    action: any,
-    hass: HomeAssistant,
-    updateAction: (action: any) => void
-  ): TemplateResult {
-    return html`
-      <div style="margin-bottom: 16px;">
-        <div
-          class="field-title"
-          style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
-        >
-          ${label}
-        </div>
-        <div style="margin-bottom: 12px;">
-          <ha-form
-            .hass=${hass}
-            .data=${{
-              action_config:
-                action?.action === 'nothing' ? { ...action, action: 'default' } : action,
-            }}
-            .schema=${[
-              {
-                name: 'action_config',
-                label: '',
-                selector: {
-                  ui_action: {
-                    actions: [
-                      'default',
-                      'more-info',
-                      'toggle',
-                      'navigate',
-                      'url',
-                      'perform-action',
-                      'assist',
-                    ],
-                  },
-                },
-              },
-            ]}
-            .computeLabel=${(schema: any) => schema.label || ''}
-            .computeDescription=${(schema: any) => schema.description || ''}
-            @value-changed=${(e: CustomEvent) => {
-              const newAction = e.detail.value?.action_config;
-              if (newAction) {
-                updateAction(newAction);
-              }
-            }}
-          ></ha-form>
-        </div>
-      </div>
-    `;
   }
 
   renderPreview(
@@ -616,14 +416,20 @@ export class UltraButtonModule extends BaseUltraModule {
       designProperties.background_color || buttonModule.background_color || 'var(--primary-color)';
     
     if (buttonModule.use_entity_color && buttonModule.background_color_entity && hass) {
-      const entityState = hass.states[buttonModule.background_color_entity];
+      const resolvedColorEntity =
+        this.resolveEntity(buttonModule.background_color_entity, config) ||
+        buttonModule.background_color_entity;
+      const entityState = hass.states[resolvedColorEntity];
       if (entityState) {
         // Check state colors mapping first
         if (
           buttonModule.background_state_colors &&
           Object.keys(buttonModule.background_state_colors).length > 0
         ) {
-          const stateColor = buttonModule.background_state_colors[entityState.state];
+          const stateColor = this.matchStateColor(
+            buttonModule.background_state_colors,
+            entityState.state
+          );
           if (stateColor) {
             backgroundColor = stateColor;
           } else {
@@ -838,7 +644,8 @@ export class UltraButtonModule extends BaseUltraModule {
       background: designProperties.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },
-        hass
+        hass,
+        config
       ),
       backgroundSize:
         designProperties.background_size || moduleWithDesign.background_size || 'cover',
@@ -1073,6 +880,35 @@ export class UltraButtonModule extends BaseUltraModule {
   }
 
   /**
+   * Look up a state color, tolerating numeric states ("20" matches "20.0")
+   */
+  private matchStateColor(
+    stateColors: { [state: string]: string },
+    state: string
+  ): string | undefined {
+    if (stateColors[state] !== undefined) {
+      return stateColors[state];
+    }
+    // Numeric-tolerant comparison so e.g. "20.0" matches a "20" mapping
+    const toNumber = (value: string): number | null => {
+      const trimmed = value.trim();
+      if (trimmed === '') return null;
+      const num = Number(trimmed);
+      return Number.isNaN(num) ? null : num;
+    };
+    const stateNum = toNumber(state);
+    if (stateNum !== null) {
+      for (const [key, color] of Object.entries(stateColors)) {
+        const keyNum = toNumber(key);
+        if (keyNum !== null && keyNum === stateNum) {
+          return color;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  /**
    * Extract color from entity state attributes
    */
   private getEntityStateColor(entityState: any): string | null {
@@ -1160,7 +996,11 @@ export class UltraButtonModule extends BaseUltraModule {
   }
 
   // Resolve background images from global design (upload/url/entity)
-  private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
+  private getBackgroundImageCSS(
+    moduleWithDesign: any,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): string {
     const imageType = moduleWithDesign.background_image_type;
     const backgroundImage = moduleWithDesign.background_image;
     const backgroundEntity = moduleWithDesign.background_image_entity;
@@ -1183,7 +1023,8 @@ export class UltraButtonModule extends BaseUltraModule {
       }
       case 'entity': {
         if (backgroundEntity && hass) {
-          const entityState = hass.states[backgroundEntity];
+          const resolvedEntity = this.resolveEntity(backgroundEntity, config) || backgroundEntity;
+          const entityState = hass.states[resolvedEntity];
           if (entityState) {
             const imageUrl =
               (entityState.attributes as any)?.entity_picture ||

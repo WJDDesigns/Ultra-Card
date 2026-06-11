@@ -32,6 +32,7 @@ import { getImageUrl, uploadImage, SUPPORTED_IMAGE_ACCEPT } from '../../utils/im
 import { localize } from '../../localize/localize';
 import { moduleDocsSlug, openHubDocs } from '../../panels/hub-navigation';
 import { Z_INDEX } from '../../utils/uc-z-index';
+import { promoteToTopLayer } from '../../utils/uc-top-layer';
 import { ucToastService } from '../../services/uc-toast-service';
 import { ucPresetsService } from '../../services/uc-presets-service';
 import { directoriesProPresetsAPI } from '../../services/directories-pro-presets-api';
@@ -27971,6 +27972,14 @@ export class LayoutTab extends LitElement {
       this._patchDialogContainment(false);
     }
 
+    // The image preview popup must live in the top layer: it can be opened
+    // from inside the Add Module popup (preset thumbnails), which is itself a
+    // top-layer popover and would otherwise paint above it.
+    if (changedProperties.has('_showImagePopup') && this._showImagePopup) {
+      const overlay = this.shadowRoot?.querySelector('.image-popup-overlay') as HTMLElement | null;
+      if (overlay) promoteToTopLayer(overlay);
+    }
+
     // Initialize popup positioning when popups are shown
     if (changedProperties.has('_showModuleSelector') && this._showModuleSelector) {
       setTimeout(() => {
@@ -33912,6 +33921,15 @@ export class LayoutTab extends LitElement {
         align-items: center;
         justify-content: center;
         padding: 20px;
+        /* Neutralize UA [popover] styles (overlay is promoted to the top layer) */
+        margin: 0;
+        border: 0;
+        width: auto;
+        height: auto;
+        max-width: none;
+        max-height: none;
+        overflow: visible;
+        color: inherit;
       }
 
       .image-popup-content {

@@ -67,7 +67,8 @@ export class UltraLockModule extends BaseUltraModule {
     const lock = module as LockModuleConfig;
     if (!module.id) errors.push('Module ID is required');
     if (!module.type || module.type !== 'lock') errors.push('Module type must be lock');
-    if (!lock.entity?.trim()) errors.push(localize('editor.lock.error_entity', 'en', 'Select a lock entity'));
+    // No hass/lang available in validate() — plain English matches other modules' validators
+    if (!lock.entity?.trim()) errors.push('Select a lock entity');
     return { valid: errors.length === 0, errors };
   }
 
@@ -120,8 +121,10 @@ export class UltraLockModule extends BaseUltraModule {
               hass,
               data: { icon: lock.icon || '' },
               schema: [this.textField('icon')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ icon: (e.detail.value?.icon as string) ?? '' }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ icon: (e.detail.value?.icon as string) ?? '' });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
           ]
         )}
@@ -136,8 +139,10 @@ export class UltraLockModule extends BaseUltraModule {
               hass,
               data: { show_title: lock.show_title !== false },
               schema: [this.booleanField('show_title')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_title: e.detail.value?.show_title ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_title: e.detail.value?.show_title ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.lock.show_icon', lang, 'Show icon'),
@@ -145,8 +150,10 @@ export class UltraLockModule extends BaseUltraModule {
               hass,
               data: { show_icon: lock.show_icon !== false },
               schema: [this.booleanField('show_icon')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_icon: e.detail.value?.show_icon ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_icon: e.detail.value?.show_icon ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.lock.show_state', lang, 'Show state'),
@@ -154,8 +161,10 @@ export class UltraLockModule extends BaseUltraModule {
               hass,
               data: { show_state: lock.show_state !== false },
               schema: [this.booleanField('show_state')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_state: e.detail.value?.show_state ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_state: e.detail.value?.show_state ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.lock.show_open_button', lang, 'Show open button'),
@@ -167,8 +176,10 @@ export class UltraLockModule extends BaseUltraModule {
               hass,
               data: { show_open_button: lock.show_open_button !== false },
               schema: [this.booleanField('show_open_button')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_open_button: e.detail.value?.show_open_button ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_open_button: e.detail.value?.show_open_button ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
           ]
         )}
@@ -375,7 +386,16 @@ export class UltraLockModule extends BaseUltraModule {
                   ${lockIconEl(18)}
                 </div>`
               : nothing}
-            <span class="uc-lock-chip-label">${showTitle ? name : stateLabel}</span>
+            <span class="uc-lock-chip-label">
+              ${showTitle
+                ? html`<span class="uc-lock-chip-name">${name}</span>`
+                : showState
+                  ? html`<span class="uc-lock-chip-name">${stateLabel}</span>`
+                  : nothing}
+              ${showTitle && showState
+                ? html`<span class="uc-lock-chip-state">${stateLabel}</span>`
+                : nothing}
+            </span>
             <button
               type="button"
               class="uc-lock-chip-btn ${lockedVisual ? '' : 'uc-lock-chip-btn--active'}"
@@ -536,10 +556,22 @@ export class UltraLockModule extends BaseUltraModule {
       .uc-lock-chip-label {
         flex: 1;
         min-width: 0;
+        display: flex;
+        flex-direction: column;
         font-size: 0.8125rem;
         font-weight: 600;
         color: var(--primary-text-color);
         white-space: nowrap;
+        overflow: hidden;
+      }
+      .uc-lock-chip-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .uc-lock-chip-state {
+        font-size: 0.6875rem;
+        font-weight: 500;
+        color: var(--secondary-text-color);
         overflow: hidden;
         text-overflow: ellipsis;
       }
@@ -675,6 +707,12 @@ export class UltraLockModule extends BaseUltraModule {
       .uc-lock-btn:hover:not(:disabled) {
         border-color: color-mix(in srgb, var(--primary-color) 30%, transparent);
         box-shadow: 0 4px 16px color-mix(in srgb, var(--primary-color) 10%, transparent);
+      }
+      .uc-lock-btn:focus-visible {
+        border-color: color-mix(in srgb, var(--primary-color) 30%, transparent);
+        box-shadow: 0 4px 16px color-mix(in srgb, var(--primary-color) 10%, transparent);
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
       .uc-lock-btn--ghost {
         font-weight: 600;

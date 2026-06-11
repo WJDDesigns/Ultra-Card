@@ -8,6 +8,7 @@ import type {
   EntityMapping,
 } from '../types';
 import { entityMapper } from '../services/uc-entity-mapper';
+import { promoteToTopLayer } from '../utils/uc-top-layer';
 
 function findOverlayHost(): HTMLElement {
   const findOpenDialog = (root: Document | ShadowRoot): HTMLElement | null => {
@@ -88,6 +89,18 @@ export class UcPresetWizardDialog extends LitElement {
       inset: 0;
       z-index: 999999;
       pointer-events: none;
+      /* Neutralize UA [popover] styles (host is promoted to the top layer so
+         it sizes against the viewport instead of HA's dialog surface). */
+      margin: 0;
+      border: 0;
+      padding: 0;
+      width: auto;
+      height: auto;
+      max-width: none;
+      max-height: none;
+      overflow: visible;
+      background: transparent;
+      color: inherit;
     }
     :host([open]) {
       pointer-events: auto;
@@ -521,6 +534,15 @@ export class UcPresetWizardDialog extends LitElement {
       cursor: not-allowed;
     }
   `;
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    // The dialog is mounted inside HA's edit dialog (for focus handling), so it
+    // must be promoted to the top layer to escape the dialog's containing
+    // block (otherwise it renders as a small clipped window) and to paint
+    // above other top-layer UI such as the Add Module popup.
+    promoteToTopLayer(this);
+  }
 
   override willUpdate(changed: Map<string, unknown>): void {
     if (changed.has('open') && this.open && this.preset?.wizard) {

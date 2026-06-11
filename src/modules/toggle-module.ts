@@ -30,9 +30,18 @@ export class UltraToggleModule extends BaseUltraModule {
   private _draggedItem: TogglePoint | null = null;
   private _hass: HomeAssistant | undefined;
   private _activeTogglePointId: string | undefined;
+  /**
+   * Optimistic override set when the user clicks a toggle point while entity
+   * tracking is enabled. Prevents the active state from flickering back to the
+   * entity-derived point during the service-call round trip. Cleared once the
+   * tracked entity state actually changes or the window expires.
+   */
+  private _optimisticActive:
+    | { pointId: string; timestamp: number; stateSignature: string }
+    | undefined;
+  private static readonly OPTIMISTIC_ACTIVE_WINDOW_MS = 4000;
   private _actionFormChangeGuard: boolean = false;
   private _templateService: TemplateService | null = null;
-  private _templateMatchCache: Map<string, boolean> = new Map();
   private _quickSetupEntity: string | undefined;
 
   createDefault(id?: string, hass?: HomeAssistant): ToggleModule {
@@ -139,11 +148,18 @@ export class UltraToggleModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
-    updateModule: (updates: Partial<CardModule>) => void
+    rawUpdateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const toggleModule = module as ToggleModule;
     const lang = hass?.locale?.language || 'en';
     this._hass = hass;
+
+    // Every editor change must also refresh the live preview. Wrapping here keeps
+    // the individual field callbacks below simple and guarantees none are missed.
+    const updateModule = (updates: Partial<CardModule>) => {
+      rawUpdateModule(updates);
+      this.triggerPreviewUpdate();
+    };
 
     return html`
       ${this.injectUcFormStyles()}
@@ -522,18 +538,24 @@ export class UltraToggleModule extends BaseUltraModule {
             )}
           </div>
 
-          ${UcFormUtils.renderFieldSection(
-            localize('editor.toggle.tracking_entity', lang, 'Global Tracking Entity'),
-            localize(
+          ${this.renderEntityPickerWithVariables(
+            hass,
+            config,
+            'tracking_entity',
+            toggleModule.tracking_entity || '',
+            (value: string) => updateModule({ tracking_entity: value }),
+            undefined,
+            localize('editor.toggle.tracking_entity', lang, 'Global Tracking Entity')
+          )}
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-top: 4px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
               'editor.toggle.tracking_entity_desc',
               lang,
               'The entity whose state determines the active toggle point. Toggle points with a matching match_state (or no match_entity set) will be compared against this entity.'
-            ),
-            hass,
-            { tracking_entity: toggleModule.tracking_entity || '' },
-            [UcFormUtils.entity('tracking_entity')],
-            (e: CustomEvent) => updateModule({ tracking_entity: e.detail.value.tracking_entity })
-          )}
+            )}
+          </div>
         </div>
 
         <!-- Icon Settings Section -->
@@ -1485,7 +1507,7 @@ export class UltraToggleModule extends BaseUltraModule {
     }
 
     // Subscribe to any template-based toggle points
-    this._subscribeToToggleTemplates(toggleModule, hass);
+    this._subscribeToToggleTemplates(toggleModule, hass, config);
 
     // Determine active toggle point
     // Priority: Always check entity state first, then fall back to clicked state
@@ -1501,9 +1523,28 @@ export class UltraToggleModule extends BaseUltraModule {
       );
 
     if (hasEntityTracking) {
-      // When entity tracking is configured, always determine from entity state
-      // This ensures the toggle reacts to external state changes
-      activePointId = this.determineActiveTogglePoint(toggleModule, hass);
+      // When entity tracking is configured, determine from entity state so the
+      // toggle reacts to external changes. But prefer a recently clicked point
+      // (optimistic override) until the tracked entity state actually changes
+      // or the optimistic window expires — otherwise the active state flickers
+      // back to the stale entity-derived point during the service round trip.
+      const optimistic = this._optimisticActive;
+      if (optimistic) {
+        const expired =
+          Date.now() - optimistic.timestamp > UltraToggleModule.OPTIMISTIC_ACTIVE_WINDOW_MS;
+        const stateChanged =
+          this._trackingStateSignature(toggleModule, hass, config) !==
+          optimistic.stateSignature;
+        if (expired || stateChanged) {
+          this._optimisticActive = undefined;
+        }
+      }
+
+      if (this._optimisticActive) {
+        activePointId = this._optimisticActive.pointId;
+      } else {
+        activePointId = this.determineActiveTogglePoint(toggleModule, hass, config);
+      }
       // Update the cached value so it stays in sync
       this._activeTogglePointId = activePointId;
     } else if (this._activeTogglePointId) {
@@ -1513,16 +1554,6 @@ export class UltraToggleModule extends BaseUltraModule {
       // No entity tracking and nothing clicked - default to first point
       activePointId = toggleModule.toggle_points[0]?.id;
       this._activeTogglePointId = activePointId;
-    }
-
-    // Log active state for debugging (only in development)
-    if (hasEntityTracking && console.debug) {
-      const activePoint = toggleModule.toggle_points.find(p => p.id === activePointId);
-      if (activePoint) {
-        console.debug(
-          `[Toggle Module] Active point: "${activePoint.label}" (entity tracking enabled)`
-        );
-      }
     }
 
     // Render based on visual style
@@ -1546,13 +1577,68 @@ export class UltraToggleModule extends BaseUltraModule {
           return this.renderSegmented(toggleModule, hass, activePointId);
       }
     })();
+
+    // Wire module-level tap/hold/double-tap gestures, but ONLY when at least one
+    // action is actually configured. Toggle point controls are excluded so a
+    // point press never double-fires the module-level action.
+    const hasModuleAction = (action?: { action?: string } | undefined) =>
+      !!action?.action && action.action !== 'nothing' && action.action !== 'default';
+    const hasModuleGestures =
+      hasModuleAction(toggleModule.tap_action) ||
+      hasModuleAction(toggleModule.hold_action) ||
+      hasModuleAction(toggleModule.double_tap_action);
+
+    if (hasModuleGestures) {
+      const gestureHandlers = this.createGestureHandlers(
+        toggleModule.id,
+        {
+          tap_action: toggleModule.tap_action,
+          hold_action: toggleModule.hold_action,
+          double_tap_action: toggleModule.double_tap_action,
+          entity:
+            this.resolveEntity(toggleModule.tracking_entity, config) ||
+            toggleModule.tracking_entity,
+          module: toggleModule,
+        },
+        hass,
+        config,
+        [
+          '.segmented-button',
+          '.group-button',
+          '.slider-marker',
+          '.timeline-point',
+          '.minimal-option',
+          '.ios-toggle-track',
+        ]
+      );
+      return this.wrapWithAnimation(
+        html`<div
+          class="${hoverClass}"
+          style="${designStyles}"
+          @pointerdown=${gestureHandlers.onPointerDown}
+          @pointermove=${gestureHandlers.onPointerMove}
+          @pointerup=${gestureHandlers.onPointerUp}
+          @pointerleave=${gestureHandlers.onPointerLeave}
+          @pointercancel=${gestureHandlers.onPointerCancel}
+        >
+          ${innerContent}
+        </div>`,
+        module,
+        hass
+      );
+    }
+
     return this.wrapWithAnimation(html`<div class="${hoverClass}" style="${designStyles}">${innerContent}</div>`, module, hass);
   }
 
   /**
    * Subscribe to templates for toggle points that use template-based matching
    */
-  private _subscribeToToggleTemplates(module: ToggleModule, hass: HomeAssistant): void {
+  private _subscribeToToggleTemplates(
+    module: ToggleModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     if (!this._templateService || !hass) return;
 
     // Ensure template string cache exists
@@ -1563,7 +1649,10 @@ export class UltraToggleModule extends BaseUltraModule {
     for (const point of module.toggle_points) {
       const ut = point.unified_template;
       if (point.unified_template_mode && ut) {
-        const trackedEntity = point.match_entity || module.tracking_entity || '';
+        const trackedEntity =
+          this.resolveEntity(point.match_entity, config) ||
+          this.resolveEntity(module.tracking_entity, config) ||
+          '';
         const processed = preprocessTemplateVariables(ut, hass, undefined);
         const templateHash = this._hashString(processed);
         const templateKey = `unified_toggle_${module.id}_${point.id}_${templateHash}`;
@@ -1599,14 +1688,22 @@ export class UltraToggleModule extends BaseUltraModule {
 
   private determineActiveTogglePoint(
     module: ToggleModule,
-    hass: HomeAssistant
+    hass: HomeAssistant,
+    config?: UltraCardConfig
   ): string | undefined {
+    // Resolve $variable references so tracking works with custom variables
+    const resolvedTrackingEntity =
+      this.resolveEntity(module.tracking_entity, config) || module.tracking_entity;
+
     // PRIORITY 1: Check template-based matching first
     // Templates allow for more complex conditions (ranges, attributes, etc.)
     for (const point of module.toggle_points) {
       const ut = point.unified_template;
       if (point.unified_template_mode && ut) {
-        const trackedEntity = point.match_entity || module.tracking_entity || '';
+        const trackedEntity =
+          this.resolveEntity(point.match_entity, config) ||
+          resolvedTrackingEntity ||
+          '';
         const processed = preprocessTemplateVariables(ut, hass, undefined);
         const templateHash = this._hashString(processed);
         const templateKey = `unified_toggle_${module.id}_${point.id}_${templateHash}`;
@@ -1632,16 +1729,18 @@ export class UltraToggleModule extends BaseUltraModule {
 
     // PRIORITY 2: If tracking entity is set, check for simple matching toggle points
     // Also matches points with no match_entity set (they implicitly inherit tracking_entity)
-    if (module.tracking_entity && hass.states[module.tracking_entity]) {
-      const entityState = hass.states[module.tracking_entity].state;
+    if (resolvedTrackingEntity && hass.states[resolvedTrackingEntity]) {
+      const entityState = hass.states[resolvedTrackingEntity].state;
 
       // Find first toggle point that matches the entity state
       const matchingPoint = module.toggle_points.find(point => {
         // Skip template-mode points (already checked above)
         if (point.unified_template_mode) return false;
 
+        const pointMatchEntity =
+          this.resolveEntity(point.match_entity, config) || point.match_entity;
         const usesTrackingEntity =
-          point.match_entity === module.tracking_entity || !point.match_entity;
+          pointMatchEntity === resolvedTrackingEntity || !point.match_entity;
         if (usesTrackingEntity) {
           return this._matchesState(point.match_state, entityState);
         }
@@ -1658,8 +1757,9 @@ export class UltraToggleModule extends BaseUltraModule {
       // Skip template-mode points (already checked above)
       if (point.unified_template_mode) continue;
 
-      if (point.match_entity && hass.states[point.match_entity]) {
-        const entityState = hass.states[point.match_entity].state;
+      const pointMatchEntity = this.resolveEntity(point.match_entity, config);
+      if (pointMatchEntity && hass.states[pointMatchEntity]) {
+        const entityState = hass.states[pointMatchEntity].state;
         if (this._matchesState(point.match_state, entityState)) {
           return point.id;
         }
@@ -1668,6 +1768,31 @@ export class UltraToggleModule extends BaseUltraModule {
 
     // Default to first toggle point if no match
     return module.toggle_points[0]?.id;
+  }
+
+  /**
+   * Build a signature of all tracked entity states. Used to detect when any
+   * tracked entity actually changes so the optimistic click override can be
+   * dropped in favor of the entity-derived active point.
+   */
+  private _trackingStateSignature(
+    module: ToggleModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): string {
+    const parts: string[] = [];
+    const tracking =
+      this.resolveEntity(module.tracking_entity, config) || module.tracking_entity;
+    if (tracking && hass.states[tracking]) {
+      parts.push(`${tracking}:${hass.states[tracking].state}`);
+    }
+    for (const point of module.toggle_points) {
+      const matchEntity = this.resolveEntity(point.match_entity, config) || point.match_entity;
+      if (matchEntity && matchEntity !== tracking && hass.states[matchEntity]) {
+        parts.push(`${matchEntity}:${hass.states[matchEntity].state}`);
+      }
+    }
+    return parts.join('|');
   }
 
   /**
@@ -1755,6 +1880,14 @@ export class UltraToggleModule extends BaseUltraModule {
     // Update active toggle point
     this._activeTogglePointId = point.id;
 
+    // Keep the clicked point active as an optimistic override while waiting
+    // for the tracked entity to confirm the new state (prevents flicker).
+    this._optimisticActive = {
+      pointId: point.id,
+      timestamp: Date.now(),
+      stateSignature: this._trackingStateSignature(module, hass),
+    };
+
     // Force immediate re-render to show the active state
     this.triggerPreviewUpdate(true);
 
@@ -1771,7 +1904,9 @@ export class UltraToggleModule extends BaseUltraModule {
       // Skip auto-injection for perform-action with explicit data to avoid unwanted entity_id
       const actionEntity = isPerformActionWithData
         ? point.tap_action.entity
-        : point.tap_action.entity || point.match_entity || module.tracking_entity;
+        : point.tap_action.entity ||
+          this.resolveEntity(point.match_entity) ||
+          this.resolveEntity(module.tracking_entity);
 
       // Build the action config with entity injected if needed
       const actionConfig =
@@ -1973,11 +2108,12 @@ export class UltraToggleModule extends BaseUltraModule {
         ${module.show_title && module.title
           ? html`<div class="segmented-title">${module.title}</div>`
           : ''}
-        <div class="segmented-control">
+        <div class="segmented-control" role="group" aria-label="${module.title || 'Toggle'}">
           ${module.toggle_points.map(
             point => html`
               <button
                 class="segmented-button ${activePointId === point.id ? 'active' : ''}"
+                aria-pressed="${activePointId === point.id ? 'true' : 'false'}"
                 style="
                   background-color: ${activePointId === point.id
                   ? point.active_background_color ||
@@ -2084,11 +2220,12 @@ export class UltraToggleModule extends BaseUltraModule {
         ${module.show_title && module.title
           ? html`<div class="button-group-title">${module.title}</div>`
           : ''}
-        <div class="button-group">
+        <div class="button-group" role="group" aria-label="${module.title || 'Toggle'}">
           ${module.toggle_points.map(
             point => html`
               <button
                 class="group-button ${activePointId === point.id ? 'active' : ''}"
+                aria-pressed="${activePointId === point.id ? 'true' : 'false'}"
                 style="
                   background-color: ${activePointId === point.id
                   ? point.active_background_color ||
@@ -2484,11 +2621,12 @@ export class UltraToggleModule extends BaseUltraModule {
         ${module.show_title && module.title
           ? html`<div class="minimal-title">${module.title}</div>`
           : ''}
-        <div class="minimal-options">
+        <div class="minimal-options" role="group" aria-label="${module.title || 'Toggle'}">
           ${module.toggle_points.map(
             point => html`
               <button
                 class="minimal-option ${activePointId === point.id ? 'active' : ''}"
+                aria-pressed="${activePointId === point.id ? 'true' : 'false'}"
                 style="
                   color: ${activePointId === point.id
                   ? point.active_text_color ||

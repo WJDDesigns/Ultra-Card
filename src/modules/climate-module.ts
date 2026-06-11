@@ -33,10 +33,12 @@ export class UltraClimateModule extends BaseUltraModule {
     tags: ['climate', 'thermostat', 'temperature', 'hvac', 'heating', 'cooling', 'pro'],
   };
 
-  private _liveTargetValue: number | undefined;
-  private _liveTargetLow: number | undefined;
-  private _liveTargetHigh: number | undefined;
-  private _lastRenderedEntity: string | undefined;
+  // Live drag state keyed by module id so multiple climate module instances
+  // never share slider state
+  private _liveTargetValue = new Map<string, number>();
+  private _liveTargetLow = new Map<string, number>();
+  private _liveTargetHigh = new Map<string, number>();
+  private _lastRenderedEntity = new Map<string, string>();
 
   createDefault(id?: string, hass?: HomeAssistant): CardModule {
     return {
@@ -142,7 +144,7 @@ export class UltraClimateModule extends BaseUltraModule {
             hass,
             data: { show_dial: climateModule.show_dial !== false },
             schema: [this.booleanField('show_dial')],
-            onChange: (e: CustomEvent) => updateModule({ show_dial: e.detail.value.show_dial }),
+            onChange: (e: CustomEvent) => { updateModule({ show_dial: e.detail.value.show_dial }); this.triggerPreviewUpdate(); },
           },
           {
             title: 'Show Current Temperature',
@@ -150,8 +152,10 @@ export class UltraClimateModule extends BaseUltraModule {
             hass,
             data: { show_current_temp: climateModule.show_current_temp !== false },
             schema: [this.booleanField('show_current_temp')],
-            onChange: (e: CustomEvent) =>
-              updateModule({ show_current_temp: e.detail.value.show_current_temp }),
+            onChange: (e: CustomEvent) => {
+              updateModule({ show_current_temp: e.detail.value.show_current_temp });
+              this.triggerPreviewUpdate();
+            },
           },
           {
             title: 'Show Target Temperature',
@@ -159,8 +163,10 @@ export class UltraClimateModule extends BaseUltraModule {
             hass,
             data: { show_target_temp: climateModule.show_target_temp !== false },
             schema: [this.booleanField('show_target_temp')],
-            onChange: (e: CustomEvent) =>
-              updateModule({ show_target_temp: e.detail.value.show_target_temp }),
+            onChange: (e: CustomEvent) => {
+              updateModule({ show_target_temp: e.detail.value.show_target_temp });
+              this.triggerPreviewUpdate();
+            },
           },
           {
             title: 'Show Temperature Controls',
@@ -168,8 +174,10 @@ export class UltraClimateModule extends BaseUltraModule {
             hass,
             data: { show_temp_controls: climateModule.show_temp_controls !== false },
             schema: [this.booleanField('show_temp_controls')],
-            onChange: (e: CustomEvent) =>
-              updateModule({ show_temp_controls: e.detail.value.show_temp_controls }),
+            onChange: (e: CustomEvent) => {
+              updateModule({ show_temp_controls: e.detail.value.show_temp_controls });
+              this.triggerPreviewUpdate();
+            },
           },
           {
             title: 'Show Humidity',
@@ -177,8 +185,10 @@ export class UltraClimateModule extends BaseUltraModule {
             hass,
             data: { show_humidity: climateModule.show_humidity !== false },
             schema: [this.booleanField('show_humidity')],
-            onChange: (e: CustomEvent) =>
-              updateModule({ show_humidity: e.detail.value.show_humidity }),
+            onChange: (e: CustomEvent) => {
+              updateModule({ show_humidity: e.detail.value.show_humidity });
+              this.triggerPreviewUpdate();
+            },
           },
         ]
       )}
@@ -194,8 +204,10 @@ export class UltraClimateModule extends BaseUltraModule {
             hass,
             data: { show_mode_switcher: climateModule.show_mode_switcher !== false },
             schema: [this.booleanField('show_mode_switcher')],
-            onChange: (e: CustomEvent) =>
-              updateModule({ show_mode_switcher: e.detail.value.show_mode_switcher }),
+            onChange: (e: CustomEvent) => {
+              updateModule({ show_mode_switcher: e.detail.value.show_mode_switcher });
+              this.triggerPreviewUpdate();
+            },
           },
           {
             title: 'Show Power Toggle',
@@ -203,8 +215,10 @@ export class UltraClimateModule extends BaseUltraModule {
             hass,
             data: { show_power_button: climateModule.show_power_button !== false },
             schema: [this.booleanField('show_power_button')],
-            onChange: (e: CustomEvent) =>
-              updateModule({ show_power_button: e.detail.value.show_power_button }),
+            onChange: (e: CustomEvent) => {
+              updateModule({ show_power_button: e.detail.value.show_power_button });
+              this.triggerPreviewUpdate();
+            },
           },
           {
             title: 'Show Fan Controls',
@@ -212,8 +226,10 @@ export class UltraClimateModule extends BaseUltraModule {
             hass,
             data: { show_fan_controls: climateModule.show_fan_controls || false },
             schema: [this.booleanField('show_fan_controls')],
-            onChange: (e: CustomEvent) =>
-              updateModule({ show_fan_controls: e.detail.value.show_fan_controls }),
+            onChange: (e: CustomEvent) => {
+              updateModule({ show_fan_controls: e.detail.value.show_fan_controls });
+              this.triggerPreviewUpdate();
+            },
           },
           {
             title: 'Show Preset Modes',
@@ -221,8 +237,10 @@ export class UltraClimateModule extends BaseUltraModule {
             hass,
             data: { show_preset_modes: climateModule.show_preset_modes || false },
             schema: [this.booleanField('show_preset_modes')],
-            onChange: (e: CustomEvent) =>
-              updateModule({ show_preset_modes: e.detail.value.show_preset_modes }),
+            onChange: (e: CustomEvent) => {
+              updateModule({ show_preset_modes: e.detail.value.show_preset_modes });
+              this.triggerPreviewUpdate();
+            },
           },
         ]
       )}
@@ -254,16 +272,18 @@ export class UltraClimateModule extends BaseUltraModule {
               { value: 'celsius', label: 'Celsius (°C)' },
             ]),
           ],
-          onChange: (e: CustomEvent) =>
-            updateModule({ temperature_unit: e.detail.value.temperature_unit }),
+          onChange: (e: CustomEvent) => {
+            updateModule({ temperature_unit: e.detail.value.temperature_unit });
+            this.triggerPreviewUpdate();
+          },
         },
       ])}
 
       ${this.renderSliderField(
         'Control Button Size',
         'Size of the +/- temperature control buttons (24-60px)',
-        climateModule.temp_control_size || 32,
-        32,
+        climateModule.temp_control_size || 26,
+        26,
         24,
         60,
         2,
@@ -293,7 +313,10 @@ export class UltraClimateModule extends BaseUltraModule {
                 hass,
                 { dynamic_colors: climateModule.dynamic_colors !== false },
                 [this.booleanField('dynamic_colors')],
-                (e: CustomEvent) => updateModule({ dynamic_colors: e.detail.value.dynamic_colors }),
+                (e: CustomEvent) => {
+                  updateModule({ dynamic_colors: e.detail.value.dynamic_colors });
+                  this.triggerPreviewUpdate();
+                },
                 false
               )}
             </div>
@@ -326,8 +349,10 @@ export class UltraClimateModule extends BaseUltraModule {
                     .value=${climateModule.dial_color_heating || '#ff6b6b'}
                     .defaultValue=${'#ff6b6b'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) =>
-                      updateModule({ dial_color_heating: e.detail.value })}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ dial_color_heating: e.detail.value });
+                      this.triggerPreviewUpdate();
+                    }}
                   ></ultra-color-picker>
                 </div>
 
@@ -348,8 +373,10 @@ export class UltraClimateModule extends BaseUltraModule {
                     .value=${climateModule.dial_color_cooling || '#4dabf7'}
                     .defaultValue=${'#4dabf7'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) =>
-                      updateModule({ dial_color_cooling: e.detail.value })}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ dial_color_cooling: e.detail.value });
+                      this.triggerPreviewUpdate();
+                    }}
                   ></ultra-color-picker>
                 </div>
 
@@ -370,8 +397,10 @@ export class UltraClimateModule extends BaseUltraModule {
                     .value=${climateModule.dial_color_idle || 'var(--primary-color)'}
                     .defaultValue=${'var(--primary-color)'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) =>
-                      updateModule({ dial_color_idle: e.detail.value })}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ dial_color_idle: e.detail.value });
+                      this.triggerPreviewUpdate();
+                    }}
                   ></ultra-color-picker>
                 </div>
 
@@ -392,8 +421,10 @@ export class UltraClimateModule extends BaseUltraModule {
                     .value=${climateModule.dial_color_off || 'var(--disabled-text-color)'}
                     .defaultValue=${'var(--disabled-text-color)'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) =>
-                      updateModule({ dial_color_off: e.detail.value })}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ dial_color_off: e.detail.value });
+                      this.triggerPreviewUpdate();
+                    }}
                   ></ultra-color-picker>
                 </div>
               `
@@ -419,8 +450,10 @@ export class UltraClimateModule extends BaseUltraModule {
                     .value=${climateModule.current_temp_color || 'var(--primary-text-color)'}
                     .defaultValue=${'var(--primary-text-color)'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) =>
-                      updateModule({ current_temp_color: e.detail.value })}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ current_temp_color: e.detail.value });
+                      this.triggerPreviewUpdate();
+                    }}
                   ></ultra-color-picker>
                 </div>
               `
@@ -446,8 +479,10 @@ export class UltraClimateModule extends BaseUltraModule {
                     .value=${climateModule.target_temp_color || 'var(--secondary-text-color)'}
                     .defaultValue=${'var(--secondary-text-color)'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) =>
-                      updateModule({ target_temp_color: e.detail.value })}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ target_temp_color: e.detail.value });
+                      this.triggerPreviewUpdate();
+                    }}
                   ></ultra-color-picker>
                 </div>
               `
@@ -473,8 +508,10 @@ export class UltraClimateModule extends BaseUltraModule {
                     .value=${climateModule.mode_text_color || 'var(--secondary-text-color)'}
                     .defaultValue=${'var(--secondary-text-color)'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) =>
-                      updateModule({ mode_text_color: e.detail.value })}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ mode_text_color: e.detail.value });
+                      this.triggerPreviewUpdate();
+                    }}
                   ></ultra-color-picker>
                 </div>
               `
@@ -500,8 +537,10 @@ export class UltraClimateModule extends BaseUltraModule {
                     .value=${climateModule.humidity_color || 'var(--secondary-text-color)'}
                     .defaultValue=${'var(--secondary-text-color)'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) =>
-                      updateModule({ humidity_color: e.detail.value })}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ humidity_color: e.detail.value });
+                      this.triggerPreviewUpdate();
+                    }}
                   ></ultra-color-picker>
                 </div>
               `
@@ -528,11 +567,15 @@ export class UltraClimateModule extends BaseUltraModule {
       );
     }
 
-    const entity = hass.states[climateModule.entity];
+    // Resolve $variable references once; use the resolved id for state lookups
+    // and all service calls
+    const entityId = this.resolveEntity(climateModule.entity, config) || climateModule.entity;
+
+    const entity = hass.states[entityId];
     if (!entity) {
       return this.renderGradientErrorState(
         localize('editor.climate.error_not_found', lang, 'Entity Not Found'),
-        `Climate entity "${climateModule.entity}" not found`
+        `Climate entity "${entityId}" not found`
       );
     }
 
@@ -541,8 +584,10 @@ export class UltraClimateModule extends BaseUltraModule {
     const targetTemp = entity.attributes.temperature;
     const targetTempHigh = entity.attributes.target_temp_high;
     const targetTempLow = entity.attributes.target_temp_low;
-    const minTemp = entity.attributes.min_temp || 44.6;
-    const maxTemp = entity.attributes.max_temp || 95;
+    // Fallback dial range depends on the HA temperature unit (°C vs °F)
+    const hassIsCelsius = hass.config?.unit_system?.temperature === '°C';
+    const minTemp = entity.attributes.min_temp ?? (hassIsCelsius ? 7 : 44.6);
+    const maxTemp = entity.attributes.max_temp ?? (hassIsCelsius ? 35 : 95);
     const tempStep = climateModule.temp_step_override || entity.attributes.target_temp_step || 0.5;
 
     // Check if humidity attribute exists and is a valid number
@@ -641,11 +686,12 @@ export class UltraClimateModule extends BaseUltraModule {
 
     const targetColor = climateModule.target_temp_color || 'var(--secondary-text-color)';
 
-    if (this._lastRenderedEntity !== climateModule.entity) {
-      this._liveTargetValue = undefined;
-      this._liveTargetLow = undefined;
-      this._liveTargetHigh = undefined;
-      this._lastRenderedEntity = climateModule.entity;
+    const moduleId = climateModule.id;
+    if (this._lastRenderedEntity.get(moduleId) !== entityId) {
+      this._liveTargetValue.delete(moduleId);
+      this._liveTargetLow.delete(moduleId);
+      this._liveTargetHigh.delete(moduleId);
+      this._lastRenderedEntity.set(moduleId, entityId);
     }
 
     const useRangeSlider =
@@ -655,8 +701,8 @@ export class UltraClimateModule extends BaseUltraModule {
       targetTempHigh !== undefined;
 
     if (!useRangeSlider) {
-      this._liveTargetLow = undefined;
-      this._liveTargetHigh = undefined;
+      this._liveTargetLow.delete(moduleId);
+      this._liveTargetHigh.delete(moduleId);
     }
 
     const sliderModes: Record<string, 'start' | 'end' | 'full'> = {
@@ -672,9 +718,11 @@ export class UltraClimateModule extends BaseUltraModule {
     const sliderMode = sliderModes[hvacMode] ?? 'full';
 
     const fallbackTarget = targetTemp ?? currentTemp ?? minTemp;
-    const displayTarget = this._liveTargetValue ?? fallbackTarget ?? minTemp;
-    const displayLow = this._liveTargetLow ?? targetTempLow ?? fallbackTarget ?? minTemp;
-    const displayHigh = this._liveTargetHigh ?? targetTempHigh ?? fallbackTarget ?? maxTemp;
+    const displayTarget = this._liveTargetValue.get(moduleId) ?? fallbackTarget ?? minTemp;
+    const displayLow =
+      this._liveTargetLow.get(moduleId) ?? targetTempLow ?? fallbackTarget ?? minTemp;
+    const displayHigh =
+      this._liveTargetHigh.get(moduleId) ?? targetTempHigh ?? fallbackTarget ?? maxTemp;
 
     const heatingColor =
       climateModule.dynamic_colors !== false
@@ -713,8 +761,11 @@ export class UltraClimateModule extends BaseUltraModule {
 
     const handleSliderValueChanging = (event: CustomEvent<{ value?: number }>) => {
       if (sliderDisabled) return;
-      const nextValue = typeof event.detail.value === 'number' ? event.detail.value : undefined;
-      this._liveTargetValue = nextValue;
+      if (typeof event.detail.value === 'number') {
+        this._liveTargetValue.set(moduleId, event.detail.value);
+      } else {
+        this._liveTargetValue.delete(moduleId);
+      }
       // Removed triggerPreviewUpdate - ha-control-circular-slider handles visual feedback during drag
     };
 
@@ -723,13 +774,13 @@ export class UltraClimateModule extends BaseUltraModule {
       const nextValue =
         typeof event.detail.value === 'number'
           ? event.detail.value
-          : (this._liveTargetValue ?? targetTemp);
-      this._liveTargetValue = undefined;
+          : (this._liveTargetValue.get(moduleId) ?? targetTemp);
+      this._liveTargetValue.delete(moduleId);
       this.triggerPreviewUpdate(true);
       if (nextValue === undefined || Number.isNaN(nextValue)) return;
       await this.callClimateService(
         'set_temperature',
-        climateModule.entity,
+        entityId,
         { temperature: nextValue },
         hass
       );
@@ -737,15 +788,21 @@ export class UltraClimateModule extends BaseUltraModule {
 
     const handleSliderLowChanging = (event: CustomEvent<{ value?: number }>) => {
       if (!useRangeSlider || sliderDisabled) return;
-      const nextValue = typeof event.detail.value === 'number' ? event.detail.value : undefined;
-      this._liveTargetLow = nextValue;
+      if (typeof event.detail.value === 'number') {
+        this._liveTargetLow.set(moduleId, event.detail.value);
+      } else {
+        this._liveTargetLow.delete(moduleId);
+      }
       // Removed triggerPreviewUpdate - ha-control-circular-slider handles visual feedback during drag
     };
 
     const handleSliderHighChanging = (event: CustomEvent<{ value?: number }>) => {
       if (!useRangeSlider || sliderDisabled) return;
-      const nextValue = typeof event.detail.value === 'number' ? event.detail.value : undefined;
-      this._liveTargetHigh = nextValue;
+      if (typeof event.detail.value === 'number') {
+        this._liveTargetHigh.set(moduleId, event.detail.value);
+      } else {
+        this._liveTargetHigh.delete(moduleId);
+      }
       // Removed triggerPreviewUpdate - ha-control-circular-slider handles visual feedback during drag
     };
 
@@ -754,9 +811,9 @@ export class UltraClimateModule extends BaseUltraModule {
       const lowValue =
         typeof event.detail.value === 'number'
           ? event.detail.value
-          : (this._liveTargetLow ?? targetTempLow);
-      const highValue = this._liveTargetHigh ?? targetTempHigh ?? lowValue;
-      this._liveTargetLow = undefined;
+          : (this._liveTargetLow.get(moduleId) ?? targetTempLow);
+      const highValue = this._liveTargetHigh.get(moduleId) ?? targetTempHigh ?? lowValue;
+      this._liveTargetLow.delete(moduleId);
       this.triggerPreviewUpdate(true);
       if (
         lowValue === undefined ||
@@ -768,7 +825,7 @@ export class UltraClimateModule extends BaseUltraModule {
       }
       await this.callClimateService(
         'set_temperature',
-        climateModule.entity,
+        entityId,
         { target_temp_low: lowValue, target_temp_high: highValue },
         hass
       );
@@ -779,9 +836,9 @@ export class UltraClimateModule extends BaseUltraModule {
       const highValue =
         typeof event.detail.value === 'number'
           ? event.detail.value
-          : (this._liveTargetHigh ?? targetTempHigh);
-      const lowValue = this._liveTargetLow ?? targetTempLow ?? highValue;
-      this._liveTargetHigh = undefined;
+          : (this._liveTargetHigh.get(moduleId) ?? targetTempHigh);
+      const lowValue = this._liveTargetLow.get(moduleId) ?? targetTempLow ?? highValue;
+      this._liveTargetHigh.delete(moduleId);
       this.triggerPreviewUpdate(true);
       if (
         highValue === undefined ||
@@ -793,7 +850,7 @@ export class UltraClimateModule extends BaseUltraModule {
       }
       await this.callClimateService(
         'set_temperature',
-        climateModule.entity,
+        entityId,
         { target_temp_low: lowValue, target_temp_high: highValue },
         hass
       );
@@ -813,38 +870,59 @@ export class UltraClimateModule extends BaseUltraModule {
       return icons[mode] || 'mdi:thermostat';
     };
 
-    // Temperature adjustment handlers
+    // Temperature adjustment handlers.
+    // Explicit undefined/null checks so a target of 0 still works; in heat_cool
+    // range mode (no single target) adjust the appropriate low/high target.
+    const hasSingleTarget = targetTemp !== undefined && targetTemp !== null;
+    const hasRangeTargets =
+      targetTempLow !== undefined &&
+      targetTempLow !== null &&
+      targetTempHigh !== undefined &&
+      targetTempHigh !== null;
+    const canIncrease = hasSingleTarget
+      ? targetTemp < maxTemp
+      : hasRangeTargets && targetTempHigh < maxTemp;
+    const canDecrease = hasSingleTarget
+      ? targetTemp > minTemp
+      : hasRangeTargets && targetTempLow > minTemp;
+
     const handleTempIncrease = async (e: Event) => {
       e.stopPropagation();
-      if (!targetTemp) return;
-
-      const newTemp = Math.min(maxTemp, targetTemp + tempStep);
-      await this.callClimateService(
-        'set_temperature',
-        climateModule.entity,
-        { temperature: newTemp },
-        hass
-      );
+      if (hasSingleTarget) {
+        const newTemp = Math.min(maxTemp, targetTemp + tempStep);
+        await this.callClimateService('set_temperature', entityId, { temperature: newTemp }, hass);
+      } else if (hasRangeTargets) {
+        const newHigh = Math.min(maxTemp, targetTempHigh + tempStep);
+        await this.callClimateService(
+          'set_temperature',
+          entityId,
+          { target_temp_low: targetTempLow, target_temp_high: newHigh },
+          hass
+        );
+      }
     };
 
     const handleTempDecrease = async (e: Event) => {
       e.stopPropagation();
-      if (!targetTemp) return;
-
-      const newTemp = Math.max(minTemp, targetTemp - tempStep);
-      await this.callClimateService(
-        'set_temperature',
-        climateModule.entity,
-        { temperature: newTemp },
-        hass
-      );
+      if (hasSingleTarget) {
+        const newTemp = Math.max(minTemp, targetTemp - tempStep);
+        await this.callClimateService('set_temperature', entityId, { temperature: newTemp }, hass);
+      } else if (hasRangeTargets) {
+        const newLow = Math.max(minTemp, targetTempLow - tempStep);
+        await this.callClimateService(
+          'set_temperature',
+          entityId,
+          { target_temp_low: newLow, target_temp_high: targetTempHigh },
+          hass
+        );
+      }
     };
 
     // Mode change handler
     const handleModeChange = async (mode: string) => {
       await this.callClimateService(
         'set_hvac_mode',
-        climateModule.entity,
+        entityId,
         { hvac_mode: mode },
         hass
       );
@@ -852,14 +930,14 @@ export class UltraClimateModule extends BaseUltraModule {
 
     // Fan mode change handler
     const handleFanModeChange = async (mode: string) => {
-      await this.callClimateService('set_fan_mode', climateModule.entity, { fan_mode: mode }, hass);
+      await this.callClimateService('set_fan_mode', entityId, { fan_mode: mode }, hass);
     };
 
     // Preset mode change handler
     const handlePresetModeChange = async (mode: string) => {
       await this.callClimateService(
         'set_preset_mode',
-        climateModule.entity,
+        entityId,
         { preset_mode: mode },
         hass
       );
@@ -1042,7 +1120,7 @@ export class UltraClimateModule extends BaseUltraModule {
                               class="climate-control-btn-inline"
                               style="width: ${buttonSize}px; height: ${buttonSize}px; --icon-size: ${iconSize}px; border-color: ${dialColor}; color: ${dialColor};"
                               @click=${handleTempDecrease}
-                              ?disabled=${!targetTemp || targetTemp <= minTemp}
+                              ?disabled=${!canDecrease}
                             >
                               <ha-icon icon="mdi:minus"></ha-icon>
                             </button>
@@ -1088,7 +1166,7 @@ export class UltraClimateModule extends BaseUltraModule {
                               class="climate-control-btn-inline"
                               style="width: ${buttonSize}px; height: ${buttonSize}px; --icon-size: ${iconSize}px; border-color: ${dialColor}; color: ${dialColor};"
                               @click=${handleTempIncrease}
-                              ?disabled=${!targetTemp || targetTemp >= maxTemp}
+                              ?disabled=${!canIncrease}
                             >
                               <ha-icon icon="mdi:plus"></ha-icon>
                             </button>
@@ -1176,7 +1254,10 @@ export class UltraClimateModule extends BaseUltraModule {
                             : ''}"
                           @click=${async (e: Event) => {
                             e.stopPropagation();
-                            const newMode = hvacMode === 'off' ? 'heat' : 'off';
+                            // Power-on uses the entity's first non-off mode, not a hardcoded one
+                            const powerOnMode =
+                              hvacModes.find((m: string) => m !== 'off') || 'heat';
+                            const newMode = hvacMode === 'off' ? powerOnMode : 'off';
                             await handleModeChange(newMode);
                           }}
                           title="Power ${hvacMode === 'off' ? 'On' : 'Off'}"
@@ -1364,8 +1445,12 @@ export class UltraClimateModule extends BaseUltraModule {
       errors.push('Climate entity is required');
     }
 
-    // Validate entity domain
-    if (climateModule.entity && !climateModule.entity.startsWith('climate.')) {
+    // Validate entity domain ($variable references are resolved at render time)
+    if (
+      climateModule.entity &&
+      !climateModule.entity.startsWith('$') &&
+      !climateModule.entity.startsWith('climate.')
+    ) {
       errors.push('Entity must be a climate domain entity (climate.*)');
     }
 

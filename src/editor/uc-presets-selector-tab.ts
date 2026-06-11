@@ -311,7 +311,6 @@ export class UcPresetsSelectorTab extends LitElement {
       background: var(--card-background-color);
       border: 1px solid var(--divider-color);
       border-radius: 12px;
-      cursor: pointer;
       transition: all 0.2s ease;
       position: relative;
       overflow: hidden;
@@ -885,10 +884,6 @@ export class UcPresetsSelectorTab extends LitElement {
                         ? 'community-preset'
                         : 'default-preset'
                       : 'builtin-preset'}"
-                    @click=${() => {
-                      this._emitPresetSelected(preset);
-                      if (isWpPreset) ucPresetsService.trackPresetDownload(preset.id);
-                    }}
                   >
                     <div class="preset-header">
                       <div class="preset-header-left">

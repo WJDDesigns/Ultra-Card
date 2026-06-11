@@ -1,4 +1,5 @@
 import { TemplateResult, html } from 'lit';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { formatEntityState } from '../utils/number-format';
@@ -420,6 +421,28 @@ export class UltraIconModule extends BaseUltraModule {
         ${iconModule.icons.map(
           (icon, index) => html`
             <div class="icon-settings-container">
+              <!-- Icon Row Header (number + remove) -->
+              <div
+                class="icon-row-header"
+                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
+              >
+                <div style="font-size: 14px; font-weight: 600; color: var(--primary-text-color);">
+                  ${localize('editor.icon.icon_row_title', lang, 'Icon {number}').replace(
+                    '{number}',
+                    String(index + 1)
+                  )}
+                </div>
+                <button
+                  class="remove-icon-btn"
+                  ?disabled=${iconModule.icons.length <= 1}
+                  style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--divider-color); border-radius: 6px; background: transparent; color: var(--error-color); cursor: pointer;"
+                  title="${localize('editor.icon.remove_icon', lang, 'Remove Icon')}"
+                  @click=${() => this._removeIcon(iconModule, index, updateModule)}
+                >
+                  <ha-icon icon="mdi:delete" style="--mdc-icon-size: 18px;"></ha-icon>
+                </button>
+              </div>
+
               <!-- Icon Mode Selector -->
               <div class="settings-section" style="margin-bottom: 24px;">
                 <div class="section-title">
@@ -549,7 +572,8 @@ export class UltraIconModule extends BaseUltraModule {
                             iconModule,
                             value,
                             hass,
-                            updateModule
+                            updateModule,
+                            config
                           ),
                         undefined,
                         localize('editor.icon.entity', lang, 'Entity')
@@ -630,7 +654,7 @@ export class UltraIconModule extends BaseUltraModule {
                           [
                             this.selectField(
                               'display_attribute',
-                              this._getEntityAttributes(icon.entity, hass)
+                              this._getEntityAttributes(icon.entity, hass, config)
                             ),
                           ],
                           (e: CustomEvent) => {
@@ -669,7 +693,7 @@ export class UltraIconModule extends BaseUltraModule {
                           [
                             this.selectField(
                               'inactive_attribute',
-                              this._getEntityAttributes(icon.entity, hass)
+                              this._getEntityAttributes(icon.entity, hass, config)
                             ),
                           ],
                           (e: CustomEvent) => {
@@ -708,7 +732,7 @@ export class UltraIconModule extends BaseUltraModule {
                           [
                             this.selectField(
                               'active_attribute',
-                              this._getEntityAttributes(icon.entity, hass)
+                              this._getEntityAttributes(icon.entity, hass, config)
                             ),
                           ],
                           (e: CustomEvent) => {
@@ -2127,6 +2151,16 @@ export class UltraIconModule extends BaseUltraModule {
             </div>
           `
         )}
+
+        <!-- Add Icon -->
+        <button
+          class="add-icon-btn"
+          style="width: 100%; padding: 12px; border: 2px dashed var(--divider-color); border-radius: 8px; background: transparent; color: var(--primary-text-color); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 500; transition: all 0.2s ease;"
+          @click=${() => this._addIcon(iconModule, updateModule)}
+        >
+          <ha-icon icon="mdi:plus" style="--mdc-icon-size: 20px;"></ha-icon>
+          ${localize('editor.icon.add_icon', lang, 'Add Icon')}
+        </button>
       </div>
     `;
   }
@@ -2554,7 +2588,7 @@ export class UltraIconModule extends BaseUltraModule {
         }
 
         if (this._templateService) {
-          const context = this._getEntityContext(icon, hass);
+          const context = this._getEntityContext(icon, hass, config);
           const entitySig = computeEntitySignature(icon.entity, hass);
           this._templateService.subscribeToTemplate(
             processedUnifiedTemplate,
@@ -2726,12 +2760,18 @@ export class UltraIconModule extends BaseUltraModule {
             justify-content: ${iconModule.alignment || 'center'};
           "
           >
-            ${validIcons.slice(0, 6).map((icon, iconIdx) => {
+            ${validIcons.map((icon, iconIdx) => {
               const isStaticIcon = icon.icon_mode === 'static';
-              const entityState = isStaticIcon ? undefined : hass?.states[icon.entity];
+              const resolvedIconEntity = isStaticIcon
+                ? undefined
+                : this.resolveEntity(icon.entity, config) || icon.entity;
+              const entityState =
+                isStaticIcon || !resolvedIconEntity
+                  ? undefined
+                  : hass?.states[resolvedIconEntity];
               const currentState = entityState?.state || 'unknown';
 
-              const isActive = isStaticIcon ? false : this._evaluateIconState(icon, hass);
+              const isActive = isStaticIcon ? false : this._evaluateIconState(icon, hass, config);
 
               // Store template results in local variables (icons may be read-only)
               let templateContainerBgColor: string | undefined;
@@ -2808,7 +2848,7 @@ export class UltraIconModule extends BaseUltraModule {
                 }
 
                 if (this._templateService) {
-                  const context = this._getEntityContext(icon, hass);
+                  const context = this._getEntityContext(icon, hass, config);
                   const entitySig = computeEntitySignature(icon.entity, hass);
                   this._templateService.subscribeToTemplate(
                     processedUnifiedTemplate,
@@ -2901,7 +2941,7 @@ export class UltraIconModule extends BaseUltraModule {
               if (tmplStateText !== undefined) {
                 displayState = tmplStateText;
               } else {
-                displayState = this._getDisplayStateValue(icon, hass, isActive);
+                displayState = this._getDisplayStateValue(icon, hass, isActive, config);
               }
 
               // Icon background styles - use active/inactive specific properties
@@ -3031,18 +3071,65 @@ export class UltraIconModule extends BaseUltraModule {
 
               // Create gesture handlers using centralized service
               // This prevents double-click bugs and ensures consistent behavior across all modules
+              // Per-icon actions take precedence when explicitly configured; 'nothing' and
+              // 'default' are treated as "not set" because legacy icon defaults wrote
+              // { action: 'nothing' }, and overriding module-level actions with those
+              // would break existing configs.
+              const pickIconAction = (iconAction: any, moduleAction: any) =>
+                iconAction &&
+                iconAction.action &&
+                iconAction.action !== 'nothing' &&
+                iconAction.action !== 'default'
+                  ? iconAction
+                  : moduleAction;
+              const effectiveTapAction = pickIconAction(icon.tap_action, iconModule.tap_action);
+              const effectiveHoldAction = pickIconAction(icon.hold_action, iconModule.hold_action);
+              const effectiveDoubleTapAction = pickIconAction(
+                icon.double_tap_action,
+                iconModule.double_tap_action
+              );
               const handleGestures = this.createGestureHandlers(
                 `${iconModule.id}_${icon.id}`,
                 {
-                  tap_action: iconModule.tap_action,
-                  hold_action: iconModule.hold_action,
-                  double_tap_action: iconModule.double_tap_action,
+                  tap_action: effectiveTapAction,
+                  hold_action: effectiveHoldAction,
+                  double_tap_action: effectiveDoubleTapAction,
                   entity: icon.entity,
                   module: iconModule,
                 },
                 hass,
                 config
               );
+
+              // Keyboard accessibility: undefined actions fall back to the gesture
+              // service's smart default, so an icon is only non-interactive when its
+              // actions are all explicitly set to nothing/none.
+              const isNothingAction = (a: any) =>
+                !!a && (a.action === 'nothing' || a.action === 'none');
+              const hasActionableGestures =
+                !isNothingAction(effectiveTapAction) ||
+                !isNothingAction(effectiveHoldAction) ||
+                !isNothingAction(effectiveDoubleTapAction);
+              const iconAriaLabel =
+                icon.name ||
+                entityState?.attributes?.friendly_name ||
+                icon.entity ||
+                displayIcon ||
+                'Icon';
+              const onIconKeyDown = (e: KeyboardEvent) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                e.preventDefault();
+                e.stopPropagation();
+                if (isNothingAction(effectiveTapAction)) return;
+                this.handleModuleAction(
+                  effectiveTapAction || ({ action: 'default', entity: icon.entity } as any),
+                  hass,
+                  e.currentTarget as HTMLElement,
+                  config,
+                  icon.entity,
+                  iconModule
+                );
+              };
 
               // Get hover effect configuration from module design
               const hoverEffect = (iconModule as any).design?.hover_effect;
@@ -3051,6 +3138,9 @@ export class UltraIconModule extends BaseUltraModule {
               return html`
                 <div
                   class="icon-item-preview ${hoverEffectClass}"
+                  role=${ifDefined(hasActionableGestures ? 'button' : undefined)}
+                  tabindex=${ifDefined(hasActionableGestures ? '0' : undefined)}
+                  aria-label=${ifDefined(hasActionableGestures ? iconAriaLabel : undefined)}
                   style=${this.styleObjectToCss({
                     ...containerStyles,
                     gap: '0px', // Remove global gap, use specific spacing instead
@@ -3061,6 +3151,7 @@ export class UltraIconModule extends BaseUltraModule {
                     backgroundRepeat: designProperties.background_repeat || 'no-repeat',
                     margin: '0 auto',
                   })}
+                  @keydown=${hasActionableGestures ? onIconKeyDown : undefined}
                   @pointerdown=${handleGestures.onPointerDown}
                   @pointermove=${handleGestures.onPointerMove}
                   @pointerup=${handleGestures.onPointerUp}
@@ -3188,46 +3279,7 @@ export class UltraIconModule extends BaseUltraModule {
                 </div>
               `;
             })}
-            ${validIcons.length > 6
-              ? html`
-                  <div
-                    class="more-icons"
-                    style="
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 8px;
-                color: var(--secondary-text-color);
-                font-size: 12px;
-                font-style: italic;
-              "
-                  >
-                    +${validIcons.length - 6} more
-                  </div>
-                `
-              : ''}
           </div>
-
-          <!-- More Icons Indicator -->
-          ${validIcons.length > 6
-            ? html`
-                <div
-                  class="more-icons"
-                  style="
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 8px;
-                    color: var(--secondary-text-color);
-                    font-size: 12px;
-                    font-style: italic;
-                    margin-top: 8px;
-                  "
-                >
-                  +${validIcons.length - 6} more icons
-                </div>
-              `
-            : ''}
         </div>
       </div>
     `, module, hass);
@@ -3446,7 +3498,8 @@ export class UltraIconModule extends BaseUltraModule {
     cardConfig?: UltraCardConfig,
     iconIndex?: number
   ): TemplateResult {
-    const entityState = hass?.states[icon.entity];
+    const resolvedPreviewEntity = this.resolveEntity(icon.entity, cardConfig) || icon.entity;
+    const entityState = resolvedPreviewEntity ? hass?.states[resolvedPreviewEntity] : undefined;
     const currentState = entityState?.state || 'unknown';
 
     // Store template results in local variables (icons may be read-only)
@@ -3535,7 +3588,7 @@ export class UltraIconModule extends BaseUltraModule {
       }
 
       if (this._templateService) {
-        const baseContext = this._getEntityContext(icon, hass);
+        const baseContext = this._getEntityContext(icon, hass, cardConfig);
         const context =
           previewStateOverride !== null
             ? {
@@ -3651,7 +3704,7 @@ export class UltraIconModule extends BaseUltraModule {
     if (tmplStateText !== undefined) {
       displayState = tmplStateText;
     } else {
-      displayState = this._getDisplayStateValue(icon, hass, isActiveState);
+      displayState = this._getDisplayStateValue(icon, hass, isActiveState, cardConfig);
     }
 
     // Icon background styles - use active/inactive specific properties
@@ -4487,8 +4540,14 @@ export class UltraIconModule extends BaseUltraModule {
   }
 
   // Helper method to get the display state value (attribute value or entity state)
-  private _getDisplayStateValue(icon: IconConfig, hass: HomeAssistant, isActive: boolean): string {
-    const entityState = hass?.states[icon.entity];
+  private _getDisplayStateValue(
+    icon: IconConfig,
+    hass: HomeAssistant,
+    isActive: boolean,
+    config?: UltraCardConfig
+  ): string {
+    const entityId = this.resolveEntity(icon.entity, config) || icon.entity;
+    const entityState = entityId ? hass?.states[entityId] : undefined;
     if (!entityState) {
       return 'unknown';
     }
@@ -4503,7 +4562,7 @@ export class UltraIconModule extends BaseUltraModule {
       const attributeValue = entityState.attributes[icon.display_attribute];
       return this._formatValueWithUnits(
         String(attributeValue),
-        icon.entity,
+        entityId,
         icon,
         hass
       );
@@ -4515,7 +4574,7 @@ export class UltraIconModule extends BaseUltraModule {
     if (selectedAttribute && entityState.attributes?.[selectedAttribute] !== undefined) {
       // Use the attribute value as the display state
       const attributeValue = entityState.attributes[selectedAttribute];
-      return this._formatValueWithUnits(String(attributeValue), icon.entity, icon, hass);
+      return this._formatValueWithUnits(String(attributeValue), entityId, icon, hass);
     }
 
     // Fall back to custom text or entity state
@@ -4525,22 +4584,24 @@ export class UltraIconModule extends BaseUltraModule {
       return customText;
     }
 
-    return this._formatValueWithUnits(currentState, icon.entity, icon, hass);
+    return this._formatValueWithUnits(currentState, entityId, icon, hass);
   }
 
   // Helper method to get available attributes from an entity (ultra-simplified)
   private _getEntityAttributes(
     entityId: string,
-    hass: HomeAssistant
+    hass: HomeAssistant,
+    config?: UltraCardConfig
   ): { value: string | undefined; label: string }[] {
     const options = [{ value: '', label: 'None (Use State)' }];
 
     try {
-      if (!entityId || !hass?.states?.[entityId]) {
+      const resolvedId = this.resolveEntity(entityId, config) || entityId;
+      if (!resolvedId || !hass?.states?.[resolvedId]) {
         return options;
       }
 
-      const entityState = hass.states[entityId];
+      const entityState = hass.states[resolvedId];
       const attributes = entityState.attributes || {};
 
       // Process all attributes, but safely
@@ -4781,14 +4842,19 @@ export class UltraIconModule extends BaseUltraModule {
   }
 
   // Helper method to properly evaluate icon state (matches logic from actual card)
-  private _evaluateIconState(icon: IconConfig, hass: HomeAssistant): boolean {
+  private _evaluateIconState(
+    icon: IconConfig,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): boolean {
     // Static icons have no entity and no active/inactive distinction
     // Always return false (use inactive/single-state properties)
     if (icon.icon_mode === 'static') {
       return false;
     }
 
-    const entityState = hass?.states[icon.entity];
+    const resolvedEntity = this.resolveEntity(icon.entity, config) || icon.entity;
+    const entityState = resolvedEntity ? hass?.states[resolvedEntity] : undefined;
     if (!entityState) {
       return false;
     }
@@ -4828,21 +4894,22 @@ export class UltraIconModule extends BaseUltraModule {
       const processedUnifiedTemplate = preprocessTemplateVariables(
         icon.unified_template,
         hass,
-        undefined
+        config
       );
       const templateKey = this._buildUnifiedIconTemplateKey(
         icon,
         processedUnifiedTemplate,
-        undefined
+        config
       );
 
       if (!hass.__uvc_template_strings) {
         hass.__uvc_template_strings = {};
       }
 
-      // Note: cardConfig not available in _evaluateIconState - only global variables will work here
+      // Note: config may be undefined for callers without card config (e.g. split preview);
+      // in that case only global variables resolve here.
       if (this._templateService) {
-        const context = this._getEntityContext(icon, hass);
+        const context = this._getEntityContext(icon, hass, config);
         const entitySig = computeEntitySignature(icon.entity, hass);
         this._templateService.subscribeToTemplate(
           processedUnifiedTemplate,
@@ -4995,8 +5062,12 @@ export class UltraIconModule extends BaseUltraModule {
    * `render_template`). Refreshed on every render; `TemplateService` re-subscribes
    * when `computeEntitySignature` changes so Jinja sees up-to-date `state`.
    */
-  private _getEntityContext(icon: IconConfig, hass: HomeAssistant): Record<string, any> {
-    return buildEntityContext(icon.entity, hass, {
+  private _getEntityContext(
+    icon: IconConfig,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): Record<string, any> {
+    return buildEntityContext(this.resolveEntity(icon.entity, config) || icon.entity, hass, {
       name: icon.name,
       icon_inactive: icon.icon_inactive,
       icon_active: icon.icon_active,
@@ -6126,6 +6197,7 @@ export class UltraIconModule extends BaseUltraModule {
     // Do not auto-set module-level tap_action; leave as undefined (Default) unless user specifies.
 
     updateModule(moduleUpdates);
+    this.triggerPreviewUpdate();
   }
 
   private _removeIcon(
@@ -6137,6 +6209,7 @@ export class UltraIconModule extends BaseUltraModule {
 
     const updatedIcons = iconModule.icons.filter((_, i) => i !== index);
     updateModule({ icons: updatedIcons });
+    this.triggerPreviewUpdate();
   }
 
   private _updateIcon(
@@ -6149,6 +6222,10 @@ export class UltraIconModule extends BaseUltraModule {
       i === index ? { ...icon, ...updates } : icon
     );
     updateModule({ icons: updatedIcons });
+    // Keep the live preview in sync for all editor callbacks that route through here.
+    // triggerPreviewUpdate is globally debounced, so callers that already trigger
+    // their own update simply coalesce with this one.
+    this.triggerPreviewUpdate();
   }
 
   /**
@@ -6205,14 +6282,18 @@ export class UltraIconModule extends BaseUltraModule {
     iconModule: IconModule,
     entityId: string,
     hass: HomeAssistant,
-    updateModule: (updates: Partial<CardModule>) => void
+    updateModule: (updates: Partial<CardModule>) => void,
+    config?: UltraCardConfig
   ): void {
     const updates: Partial<IconConfig> = { entity: entityId };
 
+    // Resolve $variable references for state lookups while storing the raw value
+    const resolvedEntityId = this.resolveEntity(entityId, config) || entityId;
+
     // Auto-populate from entity when switching
-    if (entityId && hass?.states[entityId]) {
+    if (resolvedEntityId && hass?.states[resolvedEntityId]) {
       // Use the centralized icon service
-      const entityIcon = EntityIconService.getEntityIcon(entityId, hass);
+      const entityIcon = EntityIconService.getEntityIcon(resolvedEntityId, hass);
 
       // Always update icon when switching entities if available
       if (entityIcon) {
@@ -6226,7 +6307,7 @@ export class UltraIconModule extends BaseUltraModule {
     }
 
     // Auto-populate states for binary entities
-    if (entityId && this._isBinaryEntity(entityId)) {
+    if (resolvedEntityId && this._isBinaryEntity(resolvedEntityId)) {
       // Only set default states if both are currently empty
       const currentIcon = iconModule.icons[index];
       if (!currentIcon.active_state && !currentIcon.inactive_state) {
@@ -6924,11 +7005,13 @@ export class UltraIconModule extends BaseUltraModule {
     value: string,
     entityId: string,
     icon: IconConfig,
-    hass: HomeAssistant
+    hass: HomeAssistant,
+    config?: UltraCardConfig
   ): string {
     // Respect entity display precision; include unit only if enabled
-    if (!entityId || !hass?.states?.[entityId]) return value;
-    return formatEntityState(hass, entityId, {
+    const resolvedId = this.resolveEntity(entityId, config) || entityId;
+    if (!resolvedId || !hass?.states?.[resolvedId]) return value;
+    return formatEntityState(hass, resolvedId, {
       state: value,
       includeUnit: icon.show_units !== false,
     });

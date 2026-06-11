@@ -16,7 +16,6 @@ import {
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
-import { getImageUrl } from '../utils/image-upload';
 
 export class UltraSpinboxModule extends BaseUltraModule {
   private _templateService: TemplateService | undefined;
@@ -180,10 +179,17 @@ export class UltraSpinboxModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
-    updateModule: (updates: Partial<CardModule>) => void
+    rawUpdateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const spinboxModule = module as SpinboxModule;
     const lang = hass?.locale?.language || 'en';
+
+    // Every editor change must also refresh the live preview. Wrapping here keeps
+    // the individual field callbacks below simple and guarantees none are missed.
+    const updateModule = (updates: Partial<CardModule>) => {
+      rawUpdateModule(updates);
+      this.triggerPreviewUpdate();
+    };
 
     return html`
       ${this.injectUcFormStyles()}
@@ -631,6 +637,13 @@ export class UltraSpinboxModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const spinboxModule = module as SpinboxModule;
+    const lang = hass?.locale?.language || 'en';
+
+    // Resolve $variable entity references to a real entity id for all reads
+    // and service calls below.
+    const resolvedEntity = spinboxModule.entity
+      ? this.resolveEntity(spinboxModule.entity, config)
+      : undefined;
 
     // Template mode (if enabled)
     let templateValue: number | undefined;
@@ -658,12 +671,12 @@ export class UltraSpinboxModule extends BaseUltraModule {
         const templateKey = `unified_spinbox_${spinboxModule.id}_${templateHash}`;
 
         if (this._templateService) {
-          const context = buildEntityContext(spinboxModule.entity || '', hass, {
+          const context = buildEntityContext(resolvedEntity || '', hass, {
             value: spinboxModule.value,
             min_value: spinboxModule.min_value,
             max_value: spinboxModule.max_value,
           });
-          const entitySig = computeEntitySignature(spinboxModule.entity || '', hass);
+          const entitySig = computeEntitySignature(resolvedEntity || '', hass);
 
           this._templateService.subscribeToTemplate(
             processed,
@@ -718,10 +731,10 @@ export class UltraSpinboxModule extends BaseUltraModule {
       : spinboxModule.value ?? 50;
     let entityDomain = '';
 
-    if (templateValue === undefined && spinboxModule.entity && hass) {
+    if (templateValue === undefined && resolvedEntity && hass) {
       // Get value from entity (only if template didn't provide value)
-      const entityState = hass.states[spinboxModule.entity];
-      entityDomain = spinboxModule.entity.split('.')[0];
+      const entityState = hass.states[resolvedEntity];
+      entityDomain = resolvedEntity.split('.')[0];
 
       if (entityState) {
         // Handle different entity types
@@ -751,8 +764,10 @@ export class UltraSpinboxModule extends BaseUltraModule {
 
     // While the user is rapidly clicking +/- on an entity-linked spinbox, we
     // display the optimistic value instead of the (stale) entity state so
-    // successive clicks stack correctly. See comment on _optimisticValues.
-    if (spinboxModule.entity) {
+    // successive clicks stack correctly. For entity-less spinboxes the
+    // optimistic value is the sole (persistent) source of truth, which lets
+    // the module function standalone. See comment on _optimisticValues.
+    {
       const optimistic = this._optimisticValues.get(spinboxModule.id);
       if (optimistic !== undefined) {
         currentValue = optimistic.value;
@@ -766,7 +781,6 @@ export class UltraSpinboxModule extends BaseUltraModule {
     );
 
     // Apply design properties
-    const moduleWithDesign = spinboxModule as any;
     const designProperties = (spinboxModule as any).design || {};
 
     // Button styling - apply template colors if provided
@@ -843,51 +857,6 @@ export class UltraSpinboxModule extends BaseUltraModule {
       min-width: 60px;
     `;
 
-    // Container styles from Global Design
-    const containerStyles = {
-      width: '100%',
-      height: 'auto',
-      maxWidth: 'none',
-      maxHeight: 'none',
-      minWidth: 'auto',
-      minHeight: 'auto',
-      padding:
-        designProperties.padding_top ||
-        designProperties.padding_bottom ||
-        designProperties.padding_left ||
-        designProperties.padding_right
-          ? `${designProperties.padding_top || '0px'} ${designProperties.padding_right || '0px'} ${designProperties.padding_bottom || '0px'} ${designProperties.padding_left || '0px'}`
-          : '0',
-      margin:
-        designProperties.margin_top ||
-        designProperties.margin_bottom ||
-        designProperties.margin_left ||
-        designProperties.margin_right
-          ? `${designProperties.margin_top || '0px'} ${designProperties.margin_right || '0px'} ${designProperties.margin_bottom || '0px'} ${designProperties.margin_left || '0px'}`
-          : '0',
-      background: designProperties.background_color || 'transparent',
-      backgroundImage: this.getBackgroundImageCSS(
-        { ...moduleWithDesign, ...designProperties },
-        hass
-      ),
-      'background-size': 'cover',
-      'background-position': 'center',
-      'background-repeat': 'no-repeat',
-      'border-radius': designProperties.border_radius || '8px',
-      border:
-        designProperties.border_style && designProperties.border_style !== 'none'
-          ? `${designProperties.border_width || '1px'} ${designProperties.border_style} ${designProperties.border_color || 'var(--divider-color)'}`
-          : 'none',
-      'box-shadow':
-        designProperties.box_shadow_h ||
-        designProperties.box_shadow_v ||
-        designProperties.box_shadow_blur ||
-        designProperties.box_shadow_spread
-          ? `${designProperties.box_shadow_h || '0px'} ${designProperties.box_shadow_v || '0px'} ${designProperties.box_shadow_blur || '0px'} ${designProperties.box_shadow_spread || '0px'} ${designProperties.box_shadow_color || 'rgba(0,0,0,.2)'}`
-          : 'none',
-      'box-sizing': 'border-box',
-    } as Record<string, string>;
-
     // Compute the freshest base value at click time. We must NOT rely on the
     // `currentValue` closed over at render time, because rapid clicks fire
     // before a re-render has happened. Prefer optimistic value (a recent
@@ -895,7 +864,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
     const getBaseValue = (): number => {
       const opt = this._optimisticValues.get(spinboxModule.id);
       if (opt !== undefined) return opt.value;
-      const entityVal = this._getEntityNumericValue(spinboxModule, hass);
+      const entityVal = this._getEntityNumericValue(spinboxModule, hass, config);
       if (entityVal !== undefined) return entityVal;
       return spinboxModule.value ?? 50;
     };
@@ -916,7 +885,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
       const target = e.target as HTMLElement;
       const button = target.closest('.spinbox-button') as HTMLButtonElement;
 
-      if (spinboxModule.entity && hass) {
+      {
         const base = Math.max(
           spinboxModule.min_value,
           Math.min(spinboxModule.max_value, getBaseValue())
@@ -925,8 +894,11 @@ export class UltraSpinboxModule extends BaseUltraModule {
         if (newValue !== base) {
           // Update optimistic value FIRST so a follow-up click within the
           // round-trip window computes off this value, not the stale entity.
-          this._setOptimisticValue(spinboxModule.id, newValue);
-          this.callEntityService(spinboxModule.entity, newValue, hass, entityDomain);
+          // Without an entity the value persists so the spinbox works standalone.
+          this._setOptimisticValue(spinboxModule.id, newValue, !resolvedEntity);
+          if (resolvedEntity && hass) {
+            this.callEntityService(resolvedEntity, newValue, hass, entityDomain);
+          }
           // Force immediate re-render so the display reflects the new value.
           this.triggerPreviewUpdate(true);
         }
@@ -957,15 +929,17 @@ export class UltraSpinboxModule extends BaseUltraModule {
       const target = e.target as HTMLElement;
       const button = target.closest('.spinbox-button') as HTMLButtonElement;
 
-      if (spinboxModule.entity && hass) {
+      {
         const base = Math.max(
           spinboxModule.min_value,
           Math.min(spinboxModule.max_value, getBaseValue())
         );
         const newValue = Math.max(spinboxModule.min_value, base - spinboxModule.step);
         if (newValue !== base) {
-          this._setOptimisticValue(spinboxModule.id, newValue);
-          this.callEntityService(spinboxModule.entity, newValue, hass, entityDomain);
+          this._setOptimisticValue(spinboxModule.id, newValue, !resolvedEntity);
+          if (resolvedEntity && hass) {
+            this.callEntityService(resolvedEntity, newValue, hass, entityDomain);
+          }
           this.triggerPreviewUpdate(true);
         }
       }
@@ -1007,6 +981,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
       <button
         class="spinbox-button decrement ${hoverEffectClass}"
         style="${buttonStyle}"
+        aria-label="${localize('editor.spinbox.decrease', lang, 'Decrease')}"
         @click=${handleDecrement}
         @touchend=${handleDecrement}
         ?disabled=${currentValue <= spinboxModule.min_value}
@@ -1019,6 +994,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
       <button
         class="spinbox-button increment ${hoverEffectClass}"
         style="${buttonStyle}"
+        aria-label="${localize('editor.spinbox.increase', lang, 'Increase')}"
         @click=${handleIncrement}
         @touchend=${handleIncrement}
         ?disabled=${currentValue >= spinboxModule.max_value}
@@ -1208,8 +1184,6 @@ export class UltraSpinboxModule extends BaseUltraModule {
     const entityDomain = domain || entity.split('.')[0];
     const entityState = hass.states[entity];
 
-    console.log(`[Spinbox] Calling service for ${entity} with value ${value}`);
-
     // Determine the appropriate service based on entity domain
     let service = '';
     let serviceData: any = {};
@@ -1217,13 +1191,30 @@ export class UltraSpinboxModule extends BaseUltraModule {
     try {
       switch (entityDomain) {
         case 'input_number':
-        case 'number':
+        case 'number': {
+          // Respect the entity's native min/max/step when provided: snap to the
+          // entity step and clamp to the entity range so set_value never fails.
+          // Config min/max have already been applied by the caller.
+          let adjusted = value;
+          const attrs = entityState?.attributes as any;
+          const attrMin = parseFloat(attrs?.min);
+          const attrMax = parseFloat(attrs?.max);
+          const attrStep = parseFloat(attrs?.step);
+          if (!isNaN(attrStep) && attrStep > 0) {
+            const stepBase = !isNaN(attrMin) ? attrMin : 0;
+            adjusted = Math.round((adjusted - stepBase) / attrStep) * attrStep + stepBase;
+            // Avoid float drift like 20.700000000000003
+            adjusted = parseFloat(adjusted.toFixed(6));
+          }
+          if (!isNaN(attrMin)) adjusted = Math.max(attrMin, adjusted);
+          if (!isNaN(attrMax)) adjusted = Math.min(attrMax, adjusted);
           service = `${entityDomain}.set_value`;
           serviceData = {
             entity_id: entity,
-            value: value,
+            value: adjusted,
           };
           break;
+        }
         case 'climate':
           service = 'climate.set_temperature';
 
@@ -1263,11 +1254,9 @@ export class UltraSpinboxModule extends BaseUltraModule {
               serviceData.target_temp_low = value - 2;
             }
 
-            console.log(`[Spinbox] Climate heat_cool mode - serviceData:`, serviceData);
           } else {
             // Single temperature target (heat, cool, or auto modes)
             serviceData.temperature = value;
-            console.log(`[Spinbox] Climate single temp mode - temperature: ${value}`);
           }
           break;
         default:
@@ -1275,9 +1264,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
           return;
       }
 
-      console.log(`[Spinbox] Calling service ${service} with data:`, serviceData);
       await hass.callService(service.split('.')[0], service.split('.')[1], serviceData);
-      console.log(`[Spinbox] Service call successful`);
     } catch (error) {
       console.error(`[Spinbox] Failed to call service for ${entity}:`, error);
       console.error('[Spinbox] Service data was:', serviceData);
@@ -1291,12 +1278,15 @@ export class UltraSpinboxModule extends BaseUltraModule {
    */
   private _getEntityNumericValue(
     module: SpinboxModule,
-    hass: HomeAssistant | undefined
+    hass: HomeAssistant | undefined,
+    config?: UltraCardConfig
   ): number | undefined {
     if (!module.entity || !hass) return undefined;
-    const entityState = hass.states[module.entity];
+    const resolvedEntity = this.resolveEntity(module.entity, config);
+    if (!resolvedEntity) return undefined;
+    const entityState = hass.states[resolvedEntity];
     if (!entityState) return undefined;
-    const entityDomain = module.entity.split('.')[0];
+    const entityDomain = resolvedEntity.split('.')[0];
     if (entityDomain === 'climate' && entityState.attributes?.temperature !== undefined) {
       const v = parseFloat(String(entityState.attributes.temperature));
       if (!isNaN(v)) return v;
@@ -1311,13 +1301,17 @@ export class UltraSpinboxModule extends BaseUltraModule {
    * the user stops clicking, the value is cleared and the entity state takes
    * over again.
    */
-  private _setOptimisticValue(moduleId: string, value: number): void {
+  private _setOptimisticValue(moduleId: string, value: number, persist: boolean = false): void {
     const existing = this._optimisticValues.get(moduleId);
     if (existing?.timer) clearTimeout(existing.timer);
-    const timer = setTimeout(() => {
-      this._optimisticValues.delete(moduleId);
-      this.triggerPreviewUpdate();
-    }, UltraSpinboxModule.OPTIMISTIC_TIMEOUT_MS);
+    // When `persist` is true (entity-less spinbox) the local value never
+    // expires — it IS the value, since there is no entity state to fall back to.
+    const timer = persist
+      ? null
+      : setTimeout(() => {
+          this._optimisticValues.delete(moduleId);
+          this.triggerPreviewUpdate();
+        }, UltraSpinboxModule.OPTIMISTIC_TIMEOUT_MS);
     this._optimisticValues.set(moduleId, { value, timer });
   }
 
@@ -1327,54 +1321,6 @@ export class UltraSpinboxModule extends BaseUltraModule {
       return stepStr.split('.')[1].length;
     }
     return 0;
-  }
-
-  private styleObjectToCss(styles: Record<string, string | number>): string {
-    return Object.entries(styles)
-      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
-      .join('; ');
-  }
-
-  private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
-    const imageType = moduleWithDesign.background_image_type;
-    const backgroundImage = moduleWithDesign.background_image;
-    const backgroundEntity = moduleWithDesign.background_image_entity;
-
-    if (!imageType || imageType === 'none') return 'none';
-
-    switch (imageType) {
-      case 'upload': {
-        if (backgroundImage) {
-          const resolved = getImageUrl(hass, backgroundImage);
-          return `url("${resolved}")`;
-        }
-        break;
-      }
-      case 'url': {
-        if (backgroundImage) {
-          return `url("${backgroundImage}")`;
-        }
-        break;
-      }
-      case 'entity': {
-        if (backgroundEntity && hass) {
-          const entityState = hass.states[backgroundEntity];
-          if (entityState) {
-            const imageUrl =
-              (entityState.attributes as any)?.entity_picture ||
-              (entityState.attributes as any)?.image ||
-              (typeof entityState.state === 'string' ? entityState.state : '');
-            if (imageUrl && imageUrl !== 'unknown' && imageUrl !== 'unavailable') {
-              const resolved = getImageUrl(hass, imageUrl);
-              return `url("${resolved}")`;
-            }
-          }
-        }
-        break;
-      }
-    }
-
-    return 'none';
   }
 
   private _hashString(str: string): number {

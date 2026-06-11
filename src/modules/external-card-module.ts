@@ -297,7 +297,9 @@ export class UltraExternalCardModule extends BaseUltraModule {
     if ((hass as any)?.editMode) {
       return false;
     }
-    // No limit: all users can add unlimited third-party cards; never show Pro lock overlay
+    // INTENTIONAL (product decision): the third-party card limit is disabled and
+    // this method always returns false. The lock logic below is kept (dead) in
+    // case the limit is ever re-enabled.
     return false;
     // Use centralized ThirdPartyLimitService for consistent global enforcement
     try {
@@ -742,8 +744,17 @@ export class UltraExternalCardModule extends BaseUltraModule {
     }
 
     const handleYamlChange = (e: CustomEvent) => {
+      // Inline parse-error element lives next to the editor (updated imperatively
+      // because a failed parse must not trigger a module update / re-render)
+      const errorEl = (e.target as HTMLElement)
+        ?.closest('.yaml-editor-container')
+        ?.querySelector('.uc-yaml-parse-error') as HTMLElement | null;
       try {
         const newConfig = yaml.load(e.detail.value) as any;
+        if (errorEl) {
+          errorEl.style.display = 'none';
+          errorEl.textContent = '';
+        }
         
         // Extract card type from YAML if present and update card_type accordingly
         // This enables the "Custom YAML Card" workflow where users paste complete configs
@@ -772,6 +783,11 @@ export class UltraExternalCardModule extends BaseUltraModule {
         }
       } catch (error) {
         console.error('Invalid YAML in editor:', error);
+        if (errorEl) {
+          const message = error instanceof Error ? error.message : String(error);
+          errorEl.textContent = `Invalid YAML: ${message}`;
+          errorEl.style.display = 'block';
+        }
       }
     };
 
@@ -814,6 +830,10 @@ export class UltraExternalCardModule extends BaseUltraModule {
               .maxHeight=${600}
               @value-changed=${handleYamlChange}
             ></ultra-template-editor>
+            <div
+              class="uc-yaml-parse-error"
+              style="display: none; margin-top: 8px; padding: 8px 10px; color: var(--error-color, #db4437); font-size: 13px; font-family: monospace; white-space: pre-wrap; border: 1px solid var(--error-color, #db4437); border-radius: 6px; background: rgba(219, 68, 55, 0.08);"
+            ></div>
           </div>
         </div>
       </div>
@@ -899,7 +919,8 @@ export class UltraExternalCardModule extends BaseUltraModule {
         designProperties.background_color || moduleWithDesign.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },
-        hass
+        hass,
+        config
       ),
       backgroundSize:
         designProperties.background_size || moduleWithDesign.background_size || 'cover',
@@ -1388,7 +1409,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
     return this.wrapWithAnimation(html`${guard(
       [module.id, module.card_type],
       () => html`
-        <div class="external-card-module-container ${hoverClass}" style="${designStyles}; ${this.styleObjectToCss(containerStyles)}">
+        <div class="external-card-module-container ${hoverClass}" style="display: flex; flex-direction: column; ${designStyles}">
           ${cache(html`
             <div
               ${ref(mountContainer)}
@@ -1411,7 +1432,11 @@ export class UltraExternalCardModule extends BaseUltraModule {
     )}`, module, hass);
   }
 
-  private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
+  private getBackgroundImageCSS(
+    moduleWithDesign: any,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): string {
     if (
       !moduleWithDesign.background_image_type ||
       moduleWithDesign.background_image_type === 'none'
@@ -1427,12 +1452,11 @@ export class UltraExternalCardModule extends BaseUltraModule {
         }
         break;
 
-      case 'entity':
-        if (
-          moduleWithDesign.background_image_entity &&
-          hass?.states[moduleWithDesign.background_image_entity]
-        ) {
-          const entityState = hass.states[moduleWithDesign.background_image_entity];
+      case 'entity': {
+        // Resolve $variable references before the state lookup
+        const bgEntity = this.resolveEntity(moduleWithDesign.background_image_entity, config);
+        if (bgEntity && hass?.states[bgEntity]) {
+          const entityState = hass.states[bgEntity];
           let imageUrl = '';
 
           // Try to get image from entity
@@ -1452,6 +1476,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
           }
         }
         break;
+      }
     }
 
     return 'none';

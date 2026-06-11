@@ -916,7 +916,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
             Each binding affects a different aspect of your pet's wellbeing.
           </div>
           ${(pet.entity_bindings || []).map((binding, index) =>
-            this._renderBindingRow(binding, index, pet, hass, updateModule)
+            this._renderBindingRow(binding, index, pet, hass, config, updateModule)
           )}
           <button
             class="add-btn full-width"
@@ -1047,9 +1047,12 @@ export class UltraVirtualPetModule extends BaseUltraModule {
     index: number,
     pet: VirtualPetModule,
     hass: HomeAssistant,
+    config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const isExpanded = this._expandedBindings.has(binding.id);
+    // Resolve $variable references so friendly names display correctly
+    const resolvedEntity = this.resolveEntity(binding.entity, config) || binding.entity;
     const roleIcons: Record<string, string> = {
       happiness: 'mdi:emoticon-happy',
       energy: 'mdi:lightning-bolt',
@@ -1063,7 +1066,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
         <ha-icon icon="${roleIcons[binding.role] || 'mdi:tune'}" style="color: var(--primary-color); flex-shrink: 0;"></ha-icon>
         <div class="binding-info ${!binding.entity ? 'empty' : ''}">
           ${binding.entity
-            ? html`${binding.label || hass.states[binding.entity]?.attributes.friendly_name || binding.entity}
+            ? html`${binding.label || hass.states[resolvedEntity]?.attributes.friendly_name || binding.entity}
                 <span style="opacity: 0.5; font-size: 11px; margin-left: 4px;">(${binding.role})</span>`
             : 'No entity selected'}
         </div>
@@ -1270,6 +1273,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
     const bindings = [...(pet.entity_bindings || [])];
     bindings[index] = { ...bindings[index], ...updates };
     updateModule({ entity_bindings: bindings } as any);
+    setTimeout(() => this.triggerPreviewUpdate(), 50);
   }
 
   // ==================================================================
@@ -1292,9 +1296,15 @@ export class UltraVirtualPetModule extends BaseUltraModule {
       );
     }
 
+    // Resolve $variable references in bindings before the mood engine reads states
+    const resolvedBindings = (pet.entity_bindings || []).map(binding => ({
+      ...binding,
+      entity: this.resolveEntity(binding.entity, config) || binding.entity,
+    }));
+
     const moodState =
-      pet.entity_bindings && pet.entity_bindings.length > 0
-        ? computeMoodState(pet.entity_bindings, hass)
+      resolvedBindings.length > 0
+        ? computeMoodState(resolvedBindings, hass)
         : { mood: 'content' as PetMood, happiness: 60, energy: 60, temperature: 50, activity: 40, security: 80 };
 
     const defaults = this._speciesDefaults(pet.species);
@@ -1356,7 +1366,16 @@ export class UltraVirtualPetModule extends BaseUltraModule {
       </div>
     `;
 
-    return this.wrapWithAnimation(content, module, hass);
+    // Apply Design-tab styles + hover effect on the outer preview wrapper
+    // (this module handles its own design styles like sibling modules)
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    return this.wrapWithAnimation(
+      html`<div class="${hoverClass}" style="${designStyles}">${content}</div>`,
+      module,
+      hass
+    );
   }
 
   private _renderStatBar(

@@ -1,5 +1,25 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.5.0-beta5
+
+### 🚀 New Features
+
+- **Added preset variable support to entity pickers in control modules** - Entities supplied through preset variables now resolve correctly across the alarm panel, climate, fan, light, lock, media player, vacuum, and other control modules.
+
+### 🔧 Improvements
+
+- **Improved live preview updates in the module editor** - Changing options in the alarm panel, button, climate, cover, dropdown, external card, fan, icon, light, lock, media player, slider, spinbox, timer, toggle, vacuum, and virtual pet modules now refreshes the preview instantly.
+- **Improved dropdown module template mode** - Unified template mode now resolves the source entity through preset variables, supports non-select entity domains for option actions, and properly cleans up scroll listeners.
+
+### 🐛 Bug Fixes
+
+- **Fixed editor overlays opening as a small clipped window inside the card editor** - The preset wizard, variable mapping dialog, entity mapper, and preset image preview are now promoted to the browser top layer so they display full screen and paint above the Add Module popup.
+- **Fixed climate and vacuum modules sharing state between multiple instances** - Slider drag values and map swipe state are now tracked per module so several cards on one dashboard behave independently.
+- **Fixed timer progress and cleanup issues** - Timer progress now calculates from the original duration, and intervals are fully cleaned up when a timer module is removed so no orphaned timers keep running.
+- **Fixed toggle module flicker after tapping a toggle point** - An optimistic state window prevents the active state from briefly reverting while waiting for the entity to update.
+
+---
+
 ## Version 3.5.0-beta4
 
 ### 🔧 Improvements

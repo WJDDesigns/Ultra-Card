@@ -34,10 +34,12 @@ function supportedFeatures(attrs: Record<string, unknown>): number {
 export class UltraAlarmPanelModule extends BaseUltraModule {
   /** Per-entity optimistic pending state while HA catches up */
   private _pending = new Map<string, string>();
+  /** Fallback timers that clear stuck optimistic pending state if HA never confirms */
+  private _pendingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   /** Per-entity pending code buffer (digits typed in the keypad) */
   private _codeBuffer = new Map<string, string>();
-  /** Which arm mode the user tapped (awaiting code entry) */
-  private _pendingArmMode = new Map<string, ArmMode>();
+  /** Which action the user tapped (awaiting code entry); 'alarm_disarm' = pending disarm */
+  private _pendingArmMode = new Map<string, ArmMode | 'alarm_disarm'>();
 
   override handlesOwnDesignStyles = true;
 
@@ -127,7 +129,10 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
               hass,
               data: { show_title: m.show_title !== false },
               schema: [this.booleanField('show_title')],
-              onChange: (e: CustomEvent) => updateModule({ show_title: e.detail.value?.show_title ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_title: e.detail.value?.show_title ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.alarm_panel.show_icon', lang, 'Show icon'),
@@ -135,7 +140,10 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
               hass,
               data: { show_icon: m.show_icon !== false },
               schema: [this.booleanField('show_icon')],
-              onChange: (e: CustomEvent) => updateModule({ show_icon: e.detail.value?.show_icon ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_icon: e.detail.value?.show_icon ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.alarm_panel.show_state', lang, 'Show state text'),
@@ -143,7 +151,10 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
               hass,
               data: { show_state: m.show_state !== false },
               schema: [this.booleanField('show_state')],
-              onChange: (e: CustomEvent) => updateModule({ show_state: e.detail.value?.show_state ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_state: e.detail.value?.show_state ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.alarm_panel.show_keypad', lang, 'Show keypad'),
@@ -151,7 +162,10 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
               hass,
               data: { show_keypad: m.show_keypad !== false },
               schema: [this.booleanField('show_keypad')],
-              onChange: (e: CustomEvent) => updateModule({ show_keypad: e.detail.value?.show_keypad ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_keypad: e.detail.value?.show_keypad ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
           ]
         )}
@@ -188,7 +202,10 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
               hass,
               data: { show_arm_home: m.show_arm_home ?? true },
               schema: [this.booleanField('show_arm_home')],
-              onChange: (e: CustomEvent) => updateModule({ show_arm_home: e.detail.value?.show_arm_home ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_arm_home: e.detail.value?.show_arm_home ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.alarm_panel.show_arm_away', lang, 'Show Arm Away'),
@@ -196,7 +213,10 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
               hass,
               data: { show_arm_away: m.show_arm_away ?? true },
               schema: [this.booleanField('show_arm_away')],
-              onChange: (e: CustomEvent) => updateModule({ show_arm_away: e.detail.value?.show_arm_away ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_arm_away: e.detail.value?.show_arm_away ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.alarm_panel.show_arm_night', lang, 'Show Arm Night'),
@@ -204,7 +224,10 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
               hass,
               data: { show_arm_night: m.show_arm_night ?? true },
               schema: [this.booleanField('show_arm_night')],
-              onChange: (e: CustomEvent) => updateModule({ show_arm_night: e.detail.value?.show_arm_night ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_arm_night: e.detail.value?.show_arm_night ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.alarm_panel.show_arm_vacation', lang, 'Show Arm Vacation'),
@@ -212,7 +235,10 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
               hass,
               data: { show_arm_vacation: m.show_arm_vacation ?? false },
               schema: [this.booleanField('show_arm_vacation')],
-              onChange: (e: CustomEvent) => updateModule({ show_arm_vacation: e.detail.value?.show_arm_vacation ?? false }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_arm_vacation: e.detail.value?.show_arm_vacation ?? false });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.alarm_panel.show_arm_custom', lang, 'Show Arm Custom Bypass'),
@@ -220,7 +246,10 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
               hass,
               data: { show_arm_custom: m.show_arm_custom ?? false },
               schema: [this.booleanField('show_arm_custom')],
-              onChange: (e: CustomEvent) => updateModule({ show_arm_custom: e.detail.value?.show_arm_custom ?? false }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_arm_custom: e.detail.value?.show_arm_custom ?? false });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
           ]
         )}
@@ -318,17 +347,66 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
     this._codeBuffer.set(entityId, '');
     this._pendingArmMode.delete(entityId);
     this._pending.set(entityId, service);
+    // Fallback: if the service call fails silently (e.g. wrong code) and the
+    // state never changes, clear the optimistic pending flag after 15s
+    const existingTimeout = this._pendingTimeouts.get(entityId);
+    if (existingTimeout) clearTimeout(existingTimeout);
+    this._pendingTimeouts.set(
+      entityId,
+      setTimeout(() => {
+        this._pendingTimeouts.delete(entityId);
+        if (this._pending.delete(entityId)) this.triggerPreviewUpdate();
+      }, 15000)
+    );
+    this.triggerPreviewUpdate(true);
+  }
+
+  /** Submit the typed code for the pending action (arm mode or disarm). */
+  private _submitCode(entityId: string, hass: HomeAssistant): void {
+    const code = this._codeBuffer.get(entityId) || '';
+    const service = this._pendingArmMode.get(entityId) || 'alarm_disarm';
+    this._callAlarm(hass, entityId, service, code);
+  }
+
+  /** Cancel the pending code-entry flow and clear the typed code. */
+  private _cancelCodeEntry(entityId: string): void {
+    this._pendingArmMode.delete(entityId);
+    this._codeBuffer.set(entityId, '');
     this.triggerPreviewUpdate(true);
   }
 
   /** Render the 3×4 PIN keypad */
   private _renderKeypad(entityId: string, hass: HomeAssistant, lang: string): TemplateResult {
     const code = this._codeBuffer.get(entityId) || '';
-    const dots = code.replace(/./g, '●').padEnd(0, '○');
+    // Masked dots for entered digits (no known code length attribute exists,
+    // so only filled slots are rendered)
+    const dots = '●'.repeat(code.length);
     const keys = ['1','2','3','4','5','6','7','8','9','*','0','#'];
 
     return html`
-      <div class="uc-alarm-keypad" role="group" aria-label="${localize('editor.alarm_panel.keypad_label', lang, 'PIN keypad')}">
+      <div class="uc-alarm-keypad" role="group" tabindex="0"
+        aria-label="${localize('editor.alarm_panel.keypad_label', lang, 'PIN keypad')}"
+        @keydown=${(e: KeyboardEvent) => {
+          if (/^[0-9]$/.test(e.key)) {
+            e.preventDefault();
+            e.stopPropagation();
+            this._appendDigit(entityId, e.key);
+          } else if (e.key === 'Backspace') {
+            e.preventDefault();
+            e.stopPropagation();
+            const current = this._codeBuffer.get(entityId) || '';
+            this._codeBuffer.set(entityId, current.slice(0, -1));
+            this.triggerPreviewUpdate(true);
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (this._codeBuffer.get(entityId)) this._submitCode(entityId, hass);
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            this._cancelCodeEntry(entityId);
+          }
+        }}>
         <div class="uc-alarm-code-display" aria-live="polite">
           ${dots || html`<span style="opacity:0.3">${localize('editor.alarm_panel.code_placeholder', lang, 'Enter code')}</span>`}
         </div>
@@ -342,19 +420,12 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
             }
             if (k === '#') {
               return html`<button type="button" class="uc-alarm-key uc-alarm-key--confirm ${code ? '' : 'uc-alarm-key--dim'}"
-                @click=${() => {
-                  const armMode = this._pendingArmMode.get(entityId);
-                  if (armMode) {
-                    this._callAlarm(hass, entityId, armMode, code);
-                  } else {
-                    this._callAlarm(hass, entityId, 'alarm_disarm', code);
-                  }
-                }}
+                @click=${() => this._submitCode(entityId, hass)}
                 aria-label="${localize('editor.alarm_panel.confirm', lang, 'Confirm')}">
                 <ha-icon style="--mdc-icon-size:18px" icon="mdi:check"></ha-icon>
               </button>`;
             }
-            return html`<button type="button" class="uc-alarm-key"
+            return html`<button type="button" class="uc-alarm-key" aria-label="${k}"
               @click=${() => this._appendDigit(entityId, k)}>${k}</button>`;
           })}
         </div>
@@ -395,7 +466,14 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
     const pending = this._pending.get(entityId);
     if (pending) {
       const done = DISARMED_STATES.has(stateStr) || ARMED_STATES.has(stateStr) || TRIGGERED_STATES.has(stateStr);
-      if (done) this._pending.delete(entityId);
+      if (done) {
+        this._pending.delete(entityId);
+        const pendingTimeout = this._pendingTimeouts.get(entityId);
+        if (pendingTimeout) {
+          clearTimeout(pendingTimeout);
+          this._pendingTimeouts.delete(entityId);
+        }
+      }
     }
 
     const isDisarmed    = DISARMED_STATES.has(stateStr);
@@ -413,6 +491,11 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
     const needsCode    = (isArmed || isTriggered || isBusy || (isDisarmed && codeArmReq));
     const showKeypad   = (m.show_keypad !== false) && needsCode && (codeFormat != null);
     const visibleModes = isDisarmed ? this._getVisibleModes(m, sup) : [];
+
+    // Whether arming/disarming must go through the code-entry (keypad) flow
+    const codeRequiredForArm    = codeArmReq && codeFormat != null;
+    const codeRequiredForDisarm = codeFormat != null;
+    const pendingMode = this._pendingArmMode.get(entityId);
 
     const name = m.name?.trim() ||
       (typeof attrs['friendly_name'] === 'string' ? attrs['friendly_name'] : '') ||
@@ -441,7 +524,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
             class="uc-alarm-arm-btn ${this._pendingArmMode.get(entityId) === mode ? 'uc-alarm-arm-btn--active' : ''}"
             ?disabled=${isBusy || isUnavailable}
             @click=${() => {
-              if (showKeypad) {
+              if (showKeypad || codeRequiredForArm) {
                 this._pendingArmMode.set(entityId, mode);
                 this._codeBuffer.set(entityId, '');
                 this.triggerPreviewUpdate(true);
@@ -460,15 +543,45 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
     // ── Disarm button ─────────────────────────────────────────────────────────
     const disarmButton = () => {
       if (isDisarmed) return nothing;
-      const hasCodeEntry = showKeypad && (this._codeBuffer.get(entityId) || '') !== '';
       if (showKeypad) return nothing; // keypad handles disarm via '#' key
       return html`
         <button type="button" class="uc-alarm-disarm-btn"
           ?disabled=${isBusy || isUnavailable}
-          @click=${() => this._callAlarm(hass, entityId, 'alarm_disarm', '')}>
+          @click=${() => {
+            if (codeRequiredForDisarm) {
+              // Code required: open the keypad flow instead of a blank-code call
+              this._pendingArmMode.set(entityId, 'alarm_disarm');
+              this._codeBuffer.set(entityId, '');
+              this.triggerPreviewUpdate(true);
+            } else {
+              this._callAlarm(hass, entityId, 'alarm_disarm', '');
+            }
+          }}>
           <ha-icon style="--mdc-icon-size:18px" icon="mdi:shield-off-outline"></ha-icon>
           ${localize('editor.alarm_panel.action_disarm', lang, 'Disarm')}
         </button>
+      `;
+    };
+
+    // ── Pending code-entry bar (label + cancel) for standard/compact ─────────
+    const pendingBar = () => {
+      if (!pendingMode) return nothing;
+      return html`
+        <div class="uc-alarm-pending-mode-label">
+          ${pendingMode === 'alarm_disarm'
+            ? html`
+                <ha-icon style="--mdc-icon-size:16px; margin-right:6px;" icon="mdi:shield-off-outline"></ha-icon>
+                ${localize('editor.alarm_panel.code_for', lang, 'Code for')} ${localize('editor.alarm_panel.action_disarm', lang, 'Disarm')}
+              `
+            : html`
+                <ha-icon style="--mdc-icon-size:16px; margin-right:6px;" icon="${this._armModeIcon(pendingMode)}"></ha-icon>
+                ${localize('editor.alarm_panel.code_for', lang, 'Code for')} ${this._armModeLabel(pendingMode, lang)}
+              `}
+          <button type="button" class="uc-alarm-cancel-btn"
+            @click=${() => this._cancelCodeEntry(entityId)}>
+            ${localize('editor.alarm_panel.cancel', lang, 'Cancel')}
+          </button>
+        </div>
       `;
     };
 
@@ -481,21 +594,24 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
         if (isDisarmed && !pendingArmMode) {
           return html`${armButtons()}`;
         }
-        if (isDisarmed && pendingArmMode && showKeypad) {
+        if (isDisarmed && pendingArmMode && pendingArmMode !== 'alarm_disarm') {
           return html`
             <div class="uc-alarm-pending-mode-label">
               <ha-icon style="--mdc-icon-size:16px; margin-right:6px;" icon="${this._armModeIcon(pendingArmMode)}"></ha-icon>
               ${localize('editor.alarm_panel.code_for', lang, 'Code for')} ${this._armModeLabel(pendingArmMode, lang)}
               <button type="button" class="uc-alarm-cancel-btn"
-                @click=${() => { this._pendingArmMode.delete(entityId); this._codeBuffer.set(entityId, ''); this.triggerPreviewUpdate(true); }}>
+                @click=${() => this._cancelCodeEntry(entityId)}>
                 ${localize('editor.alarm_panel.cancel', lang, 'Cancel')}
               </button>
             </div>
             ${this._renderKeypad(entityId, hass, lang)}
           `;
         }
-        if ((isArmed || isTriggered) && showKeypad) {
-          return html`${this._renderKeypad(entityId, hass, lang)}`;
+        if ((isArmed || isTriggered) && (showKeypad || pendingMode === 'alarm_disarm')) {
+          return html`
+            ${!showKeypad ? pendingBar() : nothing}
+            ${this._renderKeypad(entityId, hass, lang)}
+          `;
         }
         if (isArmed || isTriggered) {
           return html`${disarmButton()}`;
@@ -565,9 +681,18 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
                 <div class="uc-alarm-std__actions" role="group">
                   ${isDisarmed
                     ? visibleModes.slice(0, 2).map(mode => html`
-                        <button type="button" class="uc-alarm-std-btn"
+                        <button type="button" class="uc-alarm-std-btn ${pendingMode === mode ? 'uc-alarm-arm-btn--active' : ''}"
                           ?disabled=${isBusy || isUnavailable}
-                          @click=${() => this._callAlarm(hass, entityId, mode, '')}>
+                          @click=${() => {
+                            if (codeRequiredForArm) {
+                              // Same pending-mode + keypad flow as the hero layout
+                              this._pendingArmMode.set(entityId, mode);
+                              this._codeBuffer.set(entityId, '');
+                              this.triggerPreviewUpdate(true);
+                            } else {
+                              this._callAlarm(hass, entityId, mode, '');
+                            }
+                          }}>
                           <ha-icon style="--mdc-icon-size:15px;" icon="${this._armModeIcon(mode)}"></ha-icon>
                           ${this._armModeLabel(mode, lang)}
                         </button>
@@ -575,14 +700,23 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
                     : html`
                         <button type="button" class="uc-alarm-std-btn uc-alarm-std-btn--disarm"
                           ?disabled=${isBusy || isUnavailable}
-                          @click=${() => this._callAlarm(hass, entityId, 'alarm_disarm', '')}>
+                          @click=${() => {
+                            if (codeRequiredForDisarm) {
+                              this._pendingArmMode.set(entityId, 'alarm_disarm');
+                              this._codeBuffer.set(entityId, '');
+                              this.triggerPreviewUpdate(true);
+                            } else {
+                              this._callAlarm(hass, entityId, 'alarm_disarm', '');
+                            }
+                          }}>
                           <ha-icon style="--mdc-icon-size:15px;" icon="mdi:shield-off-outline"></ha-icon>
                           ${localize('editor.alarm_panel.action_disarm', lang, 'Disarm')}
                         </button>
                       `}
                 </div>
               </div>
-              ${showKeypad ? this._renderKeypad(entityId, hass, lang) : nothing}
+              ${pendingMode ? pendingBar() : nothing}
+              ${showKeypad || pendingMode ? this._renderKeypad(entityId, hass, lang) : nothing}
             </div>
           `, module, hass)}
         </div>
@@ -593,7 +727,7 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
     return html`
       <style>${this.getStyles()}</style>
       <div class="uc-alarm-wrapper ${hoverClass}"
-        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: 999px; overflow: hidden; ${styleStr}">
+        style="background: var(--card-background-color, var(--ha-card-background)); border-radius: ${pendingMode ? '20px' : '999px'}; overflow: hidden; ${styleStr}">
         ${this.wrapWithAnimation(html`
           <div class="uc-alarm uc-alarm--compact">
             <div class="uc-alarm-compact__row">
@@ -609,7 +743,16 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
                 ? html`
                     <button type="button" class="uc-alarm-compact-btn"
                       ?disabled=${isBusy || isUnavailable}
-                      @click=${() => this._callAlarm(hass, entityId, 'arm_away', '')}>
+                      @click=${() => {
+                        if (codeRequiredForArm) {
+                          // Same pending-mode + keypad flow as the hero layout
+                          this._pendingArmMode.set(entityId, 'arm_away');
+                          this._codeBuffer.set(entityId, '');
+                          this.triggerPreviewUpdate(true);
+                        } else {
+                          this._callAlarm(hass, entityId, 'arm_away', '');
+                        }
+                      }}>
                       <ha-icon style="--mdc-icon-size:13px;" icon="mdi:shield-check"></ha-icon>
                       ${localize('editor.alarm_panel.action_arm', lang, 'Arm')}
                     </button>
@@ -617,12 +760,28 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
                 : html`
                     <button type="button" class="uc-alarm-compact-btn uc-alarm-compact-btn--disarm"
                       ?disabled=${isBusy || isUnavailable}
-                      @click=${() => this._callAlarm(hass, entityId, 'alarm_disarm', '')}>
+                      @click=${() => {
+                        if (codeRequiredForDisarm) {
+                          this._pendingArmMode.set(entityId, 'alarm_disarm');
+                          this._codeBuffer.set(entityId, '');
+                          this.triggerPreviewUpdate(true);
+                        } else {
+                          this._callAlarm(hass, entityId, 'alarm_disarm', '');
+                        }
+                      }}>
                       <ha-icon style="--mdc-icon-size:13px;" icon="mdi:shield-off-outline"></ha-icon>
                       ${localize('editor.alarm_panel.action_disarm', lang, 'Disarm')}
                     </button>
                   `}
             </div>
+            ${pendingMode
+              ? html`
+                  <div class="uc-alarm-compact__keypad">
+                    ${pendingBar()}
+                    ${this._renderKeypad(entityId, hass, lang)}
+                  </div>
+                `
+              : nothing}
           </div>
         `, module, hass)}
       </div>
@@ -849,6 +1008,8 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
 
       /* ═══ STANDARD ═══════════════════════════════════════════════════ */
       .uc-alarm--standard { padding: 14px 16px; }
+      .uc-alarm--standard .uc-alarm-keypad { margin: 12px auto 0; }
+      .uc-alarm--standard .uc-alarm-pending-mode-label { justify-content: center; margin-top: 10px; }
       .uc-alarm-std__row { display: flex; align-items: center; gap: 12px; }
       .uc-alarm-icon-well {
         flex-shrink: 0;
@@ -881,6 +1042,13 @@ export class UltraAlarmPanelModule extends BaseUltraModule {
 
       /* ═══ COMPACT ═══════════════════════════════════════════════════ */
       .uc-alarm--compact { padding: 7px 12px; }
+      .uc-alarm-compact__keypad {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 4px 8px;
+      }
       .uc-alarm-compact__row { display: flex; align-items: center; gap: 8px; }
       .uc-alarm-icon-compact {
         flex-shrink: 0;

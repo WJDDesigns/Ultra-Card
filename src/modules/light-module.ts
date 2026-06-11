@@ -9,6 +9,7 @@ import '../components/uc-light-color-picker';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { simpleEntityMapper } from '../components/uc-simple-entity-mapper';
 import { entityMapper } from '../services/uc-entity-mapper';
+import { ucConfirmService } from '../services/uc-confirm-service';
 
 // Light color mode types based on Home Assistant's supported modes
 export type LightColorMode =
@@ -576,6 +577,7 @@ export class UltraLightModule extends BaseUltraModule {
               const next = e.detail.value.layout;
               if (next === lightModule.layout) return;
               updateModule({ layout: next });
+              this.triggerPreviewUpdate();
             }
           )}
 
@@ -599,6 +601,7 @@ export class UltraLightModule extends BaseUltraModule {
               const next = e.detail.value.button_alignment;
               if (next === lightModule.button_alignment) return;
               updateModule({ button_alignment: next });
+              this.triggerPreviewUpdate();
             }
           )}
           </div>
@@ -613,9 +616,12 @@ export class UltraLightModule extends BaseUltraModule {
               title: 'Allow Button Wrapping',
               description: 'Allow buttons to wrap to the next line when they exceed the container width',
               hass,
-              data: { allow_wrapping: lightModule.allow_wrapping || false },
+              data: { allow_wrapping: lightModule.allow_wrapping ?? true },
               schema: [this.booleanField('allow_wrapping')],
-              onChange: (e: CustomEvent) => updateModule({ allow_wrapping: e.detail.value.allow_wrapping }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ allow_wrapping: e.detail.value.allow_wrapping });
+                this.triggerPreviewUpdate();
+              },
             },
           ]
         )}
@@ -640,7 +646,10 @@ export class UltraLightModule extends BaseUltraModule {
             0,
             5,
             0.1,
-            (value: number) => updateModule({ button_gap: value }),
+            (value: number) => {
+              updateModule({ button_gap: value });
+              this.triggerPreviewUpdate();
+            },
             'rem'
           )}
         </div>
@@ -680,6 +689,7 @@ export class UltraLightModule extends BaseUltraModule {
                       const next = Number(e.detail.value.columns);
                       if (isNaN(next) || next === lightModule.columns) return;
                       updateModule({ columns: next });
+                      this.triggerPreviewUpdate();
                     }
                   )}
                 </div>
@@ -713,6 +723,7 @@ export class UltraLightModule extends BaseUltraModule {
             (value: number) => {
               if (value === lightModule.default_transition_time) return;
               updateModule({ default_transition_time: value });
+              this.triggerPreviewUpdate();
             },
             's'
           )}
@@ -843,12 +854,14 @@ export class UltraLightModule extends BaseUltraModule {
       const newPresets = [...(lightModule.presets || [])];
       newPresets[index] = { ...preset, ...updates };
       updateModule({ presets: newPresets });
+      this.triggerPreviewUpdate();
     };
 
     const deletePreset = () => {
       const newPresets = [...(lightModule.presets || [])];
       newPresets.splice(index, 1);
       updateModule({ presets: newPresets });
+      this.triggerPreviewUpdate();
     };
 
     const duplicatePreset = () => {
@@ -859,6 +872,7 @@ export class UltraLightModule extends BaseUltraModule {
       };
       const newPresets = [...(lightModule.presets || []), newPreset];
       updateModule({ presets: newPresets });
+      this.triggerPreviewUpdate();
     };
 
     const movePreset = (fromIndex: number, toIndex: number) => {
@@ -866,6 +880,7 @@ export class UltraLightModule extends BaseUltraModule {
       const [movedPreset] = newPresets.splice(fromIndex, 1);
       newPresets.splice(toIndex, 0, movedPreset);
       updateModule({ presets: newPresets });
+      this.triggerPreviewUpdate();
     };
 
     return html`
@@ -1661,6 +1676,7 @@ export class UltraLightModule extends BaseUltraModule {
     this.expandedPresets.add(newPresetId);
     const newPresets = [...(lightModule.presets || []), newPreset];
     updateModule({ presets: newPresets });
+    this.triggerPreviewUpdate();
   }
 
   private getPresetColorMode(preset: LightPreset): 'rgb' | 'hs' | 'xy' | 'color_temp' {
@@ -1852,6 +1868,16 @@ export class UltraLightModule extends BaseUltraModule {
     hass: HomeAssistant,
     config?: UltraCardConfig
   ): Promise<void> {
+    // Confirm before applying when enabled (Other tab → Advanced Options)
+    if (lightModule.confirm_actions) {
+      const confirmed = await ucConfirmService.confirm(
+        'Apply Preset',
+        `Apply preset "${preset.name}"?`,
+        { confirmText: 'Apply' }
+      );
+      if (!confirmed) return;
+    }
+
     // Trigger haptic feedback for preset button press
     const hapticEnabled = config?.haptic_feedback !== false;
     if (hapticEnabled) {
@@ -1871,7 +1897,10 @@ export class UltraLightModule extends BaseUltraModule {
 
     const action = preset.action || 'turn_on';
 
-    for (const entityId of entities) {
+    for (const rawEntityId of entities) {
+      // Resolve $variable references to real entity IDs
+      const entityId = this.resolveEntity(rawEntityId, config) || rawEntityId;
+
       // Handle turn_off action - simple, no parameters needed
       if (action === 'turn_off') {
         await this.callLightService('turn_off', entityId, {}, hass);
@@ -1979,8 +2008,16 @@ export class UltraLightModule extends BaseUltraModule {
           tempServiceData.effect = 'Solid'; // Clear effects for WLED devices
         }
 
+        // Honor toggle semantics: if the light is currently on, just turn it off.
+        // (Calling light.toggle twice for the sequential color + temp calls would
+        // cancel itself out, so we resolve the toggle to turn_off/turn_on here.)
+        if (action === 'toggle' && hass.states[entityId]?.state === 'on') {
+          await this.callLightService('turn_off', entityId, {}, hass);
+          continue;
+        }
+
         // Send both calls sequentially (only if enabled)
-        const serviceName = action === 'toggle' ? 'turn_on' : 'turn_on';
+        const serviceName = 'turn_on';
         if (enableColor) {
           await this.callLightService(serviceName, entityId, colorServiceData, hass);
         }
@@ -1994,38 +2031,40 @@ export class UltraLightModule extends BaseUltraModule {
         continue; // Skip the normal single-call logic below
       }
 
-      // Normal mode: enforce single descriptor per call
+      // Normal mode: enforce single descriptor per call.
+      // Work on a per-call copy so the saved preset config is never mutated.
+      const presetData: LightPreset = { ...preset };
       if (!hasEffect) {
         // Not in RGBWW mode and no effect - enforce single descriptor
         if (hasRgbww) {
           // Use rgbww_color exclusively
-          delete (preset as any).rgb_color;
-          delete (preset as any).hs_color;
-          delete (preset as any).xy_color;
-          delete (preset as any).color_temp;
-          delete (preset as any).rgbw_color;
-          delete (preset as any).white;
+          delete presetData.rgb_color;
+          delete presetData.hs_color;
+          delete presetData.xy_color;
+          delete presetData.color_temp;
+          delete presetData.rgbw_color;
+          delete presetData.white;
         } else if (hasRgbw) {
           // Use rgbw_color exclusively
-          delete (preset as any).rgb_color;
-          delete (preset as any).hs_color;
-          delete (preset as any).xy_color;
-          delete (preset as any).color_temp;
-          delete (preset as any).white;
+          delete presetData.rgb_color;
+          delete presetData.hs_color;
+          delete presetData.xy_color;
+          delete presetData.color_temp;
+          delete presetData.white;
         } else if (hasWhite) {
           // Use white exclusively - clear all other color descriptors
-          delete (preset as any).rgb_color;
-          delete (preset as any).hs_color;
-          delete (preset as any).xy_color;
-          delete (preset as any).color_temp;
+          delete presetData.rgb_color;
+          delete presetData.hs_color;
+          delete presetData.xy_color;
+          delete presetData.color_temp;
         } else if (hasColorTemp && hasColorRgb) {
           // Both color_temp and RGB set but not RGBWW mode - prioritize color_temp
-          delete (preset as any).rgb_color;
-          delete (preset as any).hs_color;
-          delete (preset as any).xy_color;
+          delete presetData.rgb_color;
+          delete presetData.hs_color;
+          delete presetData.xy_color;
         } else if (hasColorRgb) {
           // RGB/HS/XY mode - clear white
-          delete (preset as any).white;
+          delete presetData.white;
         }
       }
 
@@ -2075,41 +2114,41 @@ export class UltraLightModule extends BaseUltraModule {
             // Skip effect for this device, but continue with other settings like brightness
           }
         }
-      } else if (preset.color_temp !== undefined && !hasColorRgb && enableColorTemp) {
+      } else if (presetData.color_temp !== undefined && !hasColorRgb && enableColorTemp) {
         // Color temperature mode only (when no color is set and enabled)
         // HA 2024+ removed color_temp (Mireds) from light.turn_on; use color_temp_kelvin instead
-        serviceData.color_temp_kelvin = Math.round(1000000 / preset.color_temp);
-      } else if (isWLED && preset.rgb_color !== undefined && enableColor) {
+        serviceData.color_temp_kelvin = Math.round(1000000 / presetData.color_temp);
+      } else if (isWLED && presetData.rgb_color !== undefined && enableColor) {
         // For WLED devices, prioritize RGB color mode and clear effects
-        serviceData.rgb_color = preset.rgb_color;
+        serviceData.rgb_color = presetData.rgb_color;
         serviceData.effect = 'Solid'; // Explicitly set to Solid effect to clear any active effects
-      } else if (preset.hs_color !== undefined && enableColor) {
+      } else if (presetData.hs_color !== undefined && enableColor) {
         // HS color mode (preferred for Home Assistant)
-        serviceData.hs_color = preset.hs_color;
+        serviceData.hs_color = presetData.hs_color;
         if (isWLED) {
           serviceData.effect = 'Solid'; // Clear effects for WLED devices
         }
-      } else if (preset.xy_color !== undefined && enableColor) {
+      } else if (presetData.xy_color !== undefined && enableColor) {
         // XY color mode
-        serviceData.xy_color = preset.xy_color;
+        serviceData.xy_color = presetData.xy_color;
         if (isWLED) {
           serviceData.effect = 'Solid'; // Clear effects for WLED devices
         }
-      } else if (preset.rgb_color !== undefined && enableColor) {
+      } else if (presetData.rgb_color !== undefined && enableColor) {
         // RGB color mode - fallback for non-WLED devices
-        serviceData.rgb_color = preset.rgb_color;
+        serviceData.rgb_color = presetData.rgb_color;
         if (isWLED) {
           serviceData.effect = 'Solid'; // Clear effects for WLED devices
         }
-      } else if (preset.rgbw_color !== undefined) {
+      } else if (presetData.rgbw_color !== undefined) {
         // RGBW color mode
-        serviceData.rgbw_color = preset.rgbw_color;
-      } else if (preset.rgbww_color !== undefined) {
+        serviceData.rgbw_color = presetData.rgbw_color;
+      } else if (presetData.rgbww_color !== undefined) {
         // RGBWW color mode
-        serviceData.rgbww_color = preset.rgbww_color;
-      } else if (preset.white !== undefined) {
+        serviceData.rgbww_color = presetData.rgbww_color;
+      } else if (presetData.white !== undefined) {
         // White value mode
-        serviceData.white = preset.white;
+        serviceData.white = presetData.white;
       }
 
       // Use the appropriate service based on action
@@ -2147,26 +2186,15 @@ export class UltraLightModule extends BaseUltraModule {
     const lightModule = module as LightModule;
     const presets = lightModule.presets || [];
 
-    // Apply design properties with fallbacks (same as other modules)
-    const moduleWithDesign = lightModule as any;
-
-    // Container styles for positioning and effects
-    const containerStyles = {
-      padding: this.getPaddingCSS(moduleWithDesign),
-      margin: this.getMarginCSS(moduleWithDesign),
-      background: this.getBackgroundCSS(moduleWithDesign),
-      backgroundImage: this.getBackgroundImageCSS(moduleWithDesign, hass),
-      border: this.getBorderCSS(moduleWithDesign),
-      borderRadius: this.addPixelUnit(moduleWithDesign.border_radius) || '8px',
-      boxSizing: 'border-box',
-      width: '100%',
-    };
+    // Design tab styles (shared by happy path and error/empty states)
+    const hoverClass = this.getHoverEffectClass(module);
+    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
     // GRACEFUL RENDERING: Show helpful placeholders for incomplete configurations
 
     if (presets.length === 0) {
       return html`
-        <div class="light-module-container" style=${this.styleObjectToCss(containerStyles)}>
+        <div class="light-module-container ${hoverClass}" style="${designStyles}">
           <div class="no-presets-preview">
             <ha-icon icon="mdi:lightbulb-group"></ha-icon>
             <div>No presets configured</div>
@@ -2185,7 +2213,7 @@ export class UltraLightModule extends BaseUltraModule {
       const presetList = incompletePresets.map((p, i) => p.name || `Preset ${i + 1}`).join(', ');
 
       return html`
-        <div class="light-module-container" style=${this.styleObjectToCss(containerStyles)}>
+        <div class="light-module-container ${hoverClass}" style="${designStyles}">
           <div class="ultra-config-needed">
             <div class="ultra-config-gradient"></div>
             <div class="ultra-config-content">
@@ -2245,9 +2273,6 @@ export class UltraLightModule extends BaseUltraModule {
           `
         : '';
 
-    const hoverClass = this.getHoverEffectClass(module);
-    const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
-
     return this.wrapWithAnimation(html`
       <div class="light-module-container ${hoverClass}" style="${designStyles}">
         ${warningBanner}
@@ -2291,7 +2316,10 @@ export class UltraLightModule extends BaseUltraModule {
       moduleWithDesign.background_image_type === 'entity' &&
       moduleWithDesign.background_image_entity
     ) {
-      const entity = hass.states[moduleWithDesign.background_image_entity];
+      const entityId =
+        this.resolveEntity(moduleWithDesign.background_image_entity) ||
+        moduleWithDesign.background_image_entity;
+      const entity = hass.states[entityId];
       if (entity && entity.attributes.entity_picture) {
         return `url(${entity.attributes.entity_picture})`;
       }

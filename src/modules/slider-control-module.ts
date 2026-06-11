@@ -560,13 +560,19 @@ export class UltraSliderControlModule extends BaseUltraModule {
     return newBars;
   }
 
-  private _detectBarType(entity: string, homeAssistant: HomeAssistant): string {
-    if (!entity || !homeAssistant?.states?.[entity]) {
+  private _detectBarType(
+    entity: string,
+    homeAssistant: HomeAssistant,
+    config?: UltraCardConfig
+  ): string {
+    // Resolve $variable references so auto-detection works for variables too
+    const resolvedEntity = this.resolveEntity(entity, config) || entity;
+    if (!resolvedEntity || !homeAssistant?.states?.[resolvedEntity]) {
       return 'numeric';
     }
 
-    const entityState = homeAssistant.states[entity];
-    const domain = entity.split('.')[0];
+    const entityState = homeAssistant.states[resolvedEntity];
+    const domain = resolvedEntity.split('.')[0];
 
     // Check for RGB color support
     if (entityState.attributes.rgb_color) {
@@ -623,11 +629,18 @@ export class UltraSliderControlModule extends BaseUltraModule {
     module: CardModule,
     homeAssistant: HomeAssistant,
     config: UltraCardConfig,
-    updateModule: (updates: Partial<CardModule>) => void
+    rawUpdateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const sliderControl = module as SliderControlModule;
     const lang = homeAssistant?.locale?.language || 'en';
     const layoutMode = sliderControl.layout_mode || 'outside';
+
+    // Every editor change must also refresh the live preview. Wrapping here keeps
+    // the dozens of field callbacks below simple and guarantees none are missed.
+    const updateModule = (updates: Partial<CardModule>) => {
+      rawUpdateModule(updates);
+      this.triggerPreviewUpdate();
+    };
 
     // Check for legacy config and migrate if needed
     if (sliderControl.entity && (!sliderControl.bars || sliderControl.bars.length === 0)) {
@@ -933,7 +946,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
           </button>
 
           ${(sliderControl.bars || []).map((bar, index) => {
-            const entityState = homeAssistant?.states?.[bar.entity];
+            const resolvedBarEntity = this.resolveEntity(bar.entity, config) || bar.entity;
+            const entityState = homeAssistant?.states?.[resolvedBarEntity];
             const entityName = entityState?.attributes?.friendly_name || bar.entity;
             const displayName = bar.name || entityName;
             const isExpanded = this.expandedBars.has(bar.id);
@@ -1142,7 +1156,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                           ...updatedBars[barIndex],
                           entity: value,
                         };
-                        const detectedType = this._detectBarType(value, homeAssistant);
+                        const detectedType = this._detectBarType(value, homeAssistant, config);
                         updatedBars[barIndex].type = detectedType as any;
                       }
                       updateModule({ bars: updatedBars });
@@ -2127,6 +2141,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
               if (updates.double_tap_action)
                 moduleUpdates.double_tap_action = updates.double_tap_action;
               updateModule(moduleUpdates);
+              this.triggerPreviewUpdate();
             },
             'Link Configuration'
           )}
@@ -2197,7 +2212,10 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
     // Helper to render a single bar
     const renderSingleBar = (bar: SliderBar, index: number) => {
-      const entityState = homeAssistant?.states?.[bar.entity];
+      // Resolve $variable references to a real entity id for all state reads
+      // and service calls below.
+      const barEntity = this.resolveEntity(bar.entity, config) || bar.entity;
+      const entityState = homeAssistant?.states?.[barEntity];
       if (!entityState) {
         return html`
           <div
@@ -2209,8 +2227,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
         `;
       }
 
-      const domain = bar.entity.split('.')[0];
-      const entityName = bar.name || entityState.attributes.friendly_name || bar.entity;
+      const domain = barEntity.split('.')[0];
+      const entityName = bar.name || entityState.attributes.friendly_name || barEntity;
       const isOn = entityState.state === 'on' || entityState.state === 'open';
 
       const showIconSection = bar.show_icon !== false && sliderControl.show_icon !== false;
@@ -2309,6 +2327,11 @@ export class UltraSliderControlModule extends BaseUltraModule {
         let value = 0;
         if (bar.type === 'attribute' && bar.attribute) {
           value = parseFloat(entityState.attributes[bar.attribute]) || 0;
+        } else if (domain === 'media_player') {
+          // media_player state is non-numeric ("playing"/"idle"); read volume_level
+          // (0-1) and scale to 0-100 to match the write side in handleSliderInput.
+          const volumeLevel = parseFloat(entityState.attributes.volume_level);
+          value = isNaN(volumeLevel) ? 0 : volumeLevel * 100;
         } else {
           value = parseFloat(entityState.state) || 0;
         }
@@ -2605,7 +2628,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
         debounceTimer = setTimeout(() => {
           try {
             if (domain === 'light') {
-              const serviceData: any = { entity_id: bar.entity };
+              const serviceData: any = { entity_id: barEntity };
 
               if (bar.type === 'brightness') {
                 const brightness = Math.round((newPercentage / 100) * 255);
@@ -2643,7 +2666,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
               homeAssistant.callService('light', 'turn_on', serviceData);
             } else if (domain === 'cover') {
               homeAssistant.callService('cover', 'set_cover_position', {
-                entity_id: bar.entity,
+                entity_id: barEntity,
                 position: Math.round(newPercentage),
               });
             } else if (domain === 'fan') {
@@ -2659,7 +2682,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 // Clamp to range
                 actualValue = Math.max(min, Math.min(max, actualValue));
                 homeAssistant.callService('fan', 'set_percentage', {
-                  entity_id: bar.entity,
+                  entity_id: barEntity,
                   percentage: Math.round(actualValue),
                 });
               } else if (bar.type === 'attribute' && bar.attribute) {
@@ -2676,7 +2699,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 // Try to call a service based on the attribute name
                 if (bar.attribute === 'volume_level') {
                   homeAssistant.callService('media_player', 'volume_set', {
-                    entity_id: bar.entity,
+                    entity_id: barEntity,
                     volume_level: actualValue / 100, // volume_level is 0-1
                   });
                 } else {
@@ -2686,16 +2709,47 @@ export class UltraSliderControlModule extends BaseUltraModule {
               } else if (bar.type === 'numeric' || !bar.type) {
                 // Default numeric control for fans uses percentage
                 homeAssistant.callService('fan', 'set_percentage', {
-                  entity_id: bar.entity,
+                  entity_id: barEntity,
                   percentage: Math.round(newPercentage),
                 });
               }
+            } else if (domain === 'media_player') {
+              // Volume control: the read side maps volume_level (0-1) to 0-100,
+              // so convert the bar value back through min/max and scale to 0-1.
+              const min = bar.min_value ?? 0;
+              const max = bar.max_value ?? 100;
+              const step = bar.step ?? 1;
+              let actualValue = (newPercentage / 100) * (max - min) + min;
+              if (step > 0) {
+                actualValue = Math.round(actualValue / step) * step;
+              }
+              actualValue = Math.max(min, Math.min(max, actualValue));
+              homeAssistant.callService('media_player', 'volume_set', {
+                entity_id: barEntity,
+                volume_level: Math.max(0, Math.min(1, actualValue / 100)),
+              });
             } else if (domain === 'input_number' || domain === 'number') {
               const min = bar.min_value ?? 0;
               const max = bar.max_value ?? 100;
-              const newValue = (newPercentage / 100) * (max - min) + min;
+              let newValue = (newPercentage / 100) * (max - min) + min;
+              // Respect the entity's native min/max/step when provided: snap to
+              // the entity step and clamp to the entity range so set_value
+              // never fails (mirrors the fan attribute handling above).
+              const attrs = entityState.attributes as any;
+              const attrMin = parseFloat(attrs?.min);
+              const attrMax = parseFloat(attrs?.max);
+              const attrStep = parseFloat(attrs?.step);
+              const step = !isNaN(attrStep) && attrStep > 0 ? attrStep : (bar.step ?? 1);
+              if (step > 0) {
+                const stepBase = !isNaN(attrMin) ? attrMin : min;
+                newValue = Math.round((newValue - stepBase) / step) * step + stepBase;
+                // Avoid float drift like 20.700000000000003
+                newValue = parseFloat(newValue.toFixed(6));
+              }
+              if (!isNaN(attrMin)) newValue = Math.max(attrMin, newValue);
+              if (!isNaN(attrMax)) newValue = Math.min(attrMax, newValue);
               homeAssistant.callService(domain, 'set_value', {
-                entity_id: bar.entity,
+                entity_id: barEntity,
                 value: newValue,
               });
             }
@@ -2819,11 +2873,24 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 return range > 0 ? (step / range) * 100 : 1;
               })()}"
               .value="${visualPercentage}"
+              aria-label="${entityName}"
+              aria-valuemin="${bar.min_value ?? 0}"
+              aria-valuemax="${bar.max_value ?? 100}"
+              aria-valuenow="${(() => {
+                const min = bar.min_value ?? 0;
+                const max = bar.max_value ?? 100;
+                return Math.round((livePercentage / 100) * (max - min) + min);
+              })()}"
+              aria-valuetext="${displayValue}${bar.value_suffix ||
+              sliderControl.value_suffix ||
+              ''}"
               @input=${handleSliderInput}
               @mousedown=${handleSliderStart}
               @mouseup=${handleSliderEnd}
               @touchstart=${handleSliderStart}
               @touchend=${handleSliderEnd}
+              @touchcancel=${handleSliderEnd}
+              @pointercancel=${handleSliderEnd}
               class="${bar.type === 'rgb' || bar.type === 'color_temp'
                 ? `gradient-slider ${isVertical ? 'vertical-gradient-indicator' : 'horizontal-gradient-indicator'}`
                 : 'fill-slider'}"
@@ -2900,32 +2967,32 @@ export class UltraSliderControlModule extends BaseUltraModule {
                         const toggleHandler = iconToggle
                           ? async () => {
                               try {
-                                const domain = bar.entity.split('.')[0];
+                                const domain = barEntity.split('.')[0];
                                 const isOn =
                                   entityState?.state === 'on' || entityState?.state === 'open';
                                 if (domain === 'light') {
                                   await homeAssistant.callService(
                                     'light',
                                     isOn ? 'turn_off' : 'turn_on',
-                                    { entity_id: bar.entity }
+                                    { entity_id: barEntity }
                                   );
                                 } else if (domain === 'cover') {
                                   await homeAssistant.callService(
                                     'cover',
                                     isOn ? 'close_cover' : 'open_cover',
-                                    { entity_id: bar.entity }
+                                    { entity_id: barEntity }
                                   );
                                 } else if (domain === 'fan') {
                                   await homeAssistant.callService(
                                     'fan',
                                     isOn ? 'turn_off' : 'turn_on',
-                                    { entity_id: bar.entity }
+                                    { entity_id: barEntity }
                                   );
                                 } else if (domain === 'switch') {
                                   await homeAssistant.callService(
                                     'switch',
                                     isOn ? 'turn_off' : 'turn_on',
-                                    { entity_id: bar.entity }
+                                    { entity_id: barEntity }
                                   );
                                 }
 
@@ -3072,32 +3139,32 @@ export class UltraSliderControlModule extends BaseUltraModule {
                           const toggleHandler = iconToggle
                             ? async () => {
                                 try {
-                                  const domain = bar.entity.split('.')[0];
+                                  const domain = barEntity.split('.')[0];
                                   const isOn =
                                     entityState?.state === 'on' || entityState?.state === 'open';
                                   if (domain === 'light') {
                                     await homeAssistant.callService(
                                       'light',
                                       isOn ? 'turn_off' : 'turn_on',
-                                      { entity_id: bar.entity }
+                                      { entity_id: barEntity }
                                     );
                                   } else if (domain === 'cover') {
                                     await homeAssistant.callService(
                                       'cover',
                                       isOn ? 'close_cover' : 'open_cover',
-                                      { entity_id: bar.entity }
+                                      { entity_id: barEntity }
                                     );
                                   } else if (domain === 'fan') {
                                     await homeAssistant.callService(
                                       'fan',
                                       isOn ? 'turn_off' : 'turn_on',
-                                      { entity_id: bar.entity }
+                                      { entity_id: barEntity }
                                     );
                                   } else if (domain === 'switch') {
                                     await homeAssistant.callService(
                                       'switch',
                                       isOn ? 'turn_off' : 'turn_on',
-                                      { entity_id: bar.entity }
+                                      { entity_id: barEntity }
                                     );
                                   }
 
@@ -3287,8 +3354,9 @@ export class UltraSliderControlModule extends BaseUltraModule {
     if (layoutMode === 'outside') {
       // Create individual bar info for outside layout
       const barsWithInfo = bars.map((bar, index) => {
-        const entityState = homeAssistant?.states?.[bar.entity];
-        const entityName = bar.name || entityState?.attributes.friendly_name || bar.entity;
+        const barEntity = this.resolveEntity(bar.entity, config) || bar.entity;
+        const entityState = homeAssistant?.states?.[barEntity];
+        const entityName = bar.name || entityState?.attributes.friendly_name || barEntity;
 
         let displayValue = '0';
         if (entityState) {
@@ -3385,19 +3453,19 @@ export class UltraSliderControlModule extends BaseUltraModule {
           const toggleHandler = iconToggle
             ? async () => {
                 try {
-                  const domain = bar.entity.split('.')[0];
+                  const domain = barEntity.split('.')[0];
                   const isOn = entityState?.state === 'on' || entityState?.state === 'open';
                   if (domain === 'light') {
                     await homeAssistant.callService('light', isOn ? 'turn_off' : 'turn_on', {
-                      entity_id: bar.entity,
+                      entity_id: barEntity,
                     });
                   } else if (domain === 'cover') {
                     await homeAssistant.callService('cover', isOn ? 'close_cover' : 'open_cover', {
-                      entity_id: bar.entity,
+                      entity_id: barEntity,
                     });
                   } else if (domain === 'fan') {
                     await homeAssistant.callService('fan', isOn ? 'turn_off' : 'turn_on', {
-                      entity_id: bar.entity,
+                      entity_id: barEntity,
                     });
                   }
 
@@ -3558,19 +3626,19 @@ export class UltraSliderControlModule extends BaseUltraModule {
           const toggleHandler = iconToggle
             ? async () => {
                 try {
-                  const domain = bar.entity.split('.')[0];
+                  const domain = barEntity.split('.')[0];
                   const isOn = entityState?.state === 'on' || entityState?.state === 'open';
                   if (domain === 'light') {
                     await homeAssistant.callService('light', isOn ? 'turn_off' : 'turn_on', {
-                      entity_id: bar.entity,
+                      entity_id: barEntity,
                     });
                   } else if (domain === 'cover') {
                     await homeAssistant.callService('cover', isOn ? 'close_cover' : 'open_cover', {
-                      entity_id: bar.entity,
+                      entity_id: barEntity,
                     });
                   } else if (domain === 'fan') {
                     await homeAssistant.callService('fan', isOn ? 'turn_off' : 'turn_on', {
-                      entity_id: bar.entity,
+                      entity_id: barEntity,
                     });
                   }
 
@@ -3739,8 +3807,9 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
       // Create combined info + bar for each slider
       const combinedBars = bars.map((bar, index) => {
-        const entityState = homeAssistant?.states?.[bar.entity];
-        const entityName = bar.name || entityState?.attributes.friendly_name || bar.entity;
+        const barEntity = this.resolveEntity(bar.entity, config) || bar.entity;
+        const entityState = homeAssistant?.states?.[barEntity];
+        const entityName = bar.name || entityState?.attributes.friendly_name || barEntity;
 
         // Use info_section_position for split mode to determine bar/info layout
         const infoSectionPos = bar.info_section_position || (isVertical ? 'top' : 'left');
@@ -3860,19 +3929,19 @@ export class UltraSliderControlModule extends BaseUltraModule {
           const toggleHandler = iconToggle
             ? async () => {
                 try {
-                  const domain = bar.entity.split('.')[0];
+                  const domain = barEntity.split('.')[0];
                   const isOn = entityState?.state === 'on' || entityState?.state === 'open';
                   if (domain === 'light') {
                     await homeAssistant.callService('light', isOn ? 'turn_off' : 'turn_on', {
-                      entity_id: bar.entity,
+                      entity_id: barEntity,
                     });
                   } else if (domain === 'cover') {
                     await homeAssistant.callService('cover', isOn ? 'close_cover' : 'open_cover', {
-                      entity_id: bar.entity,
+                      entity_id: barEntity,
                     });
                   } else if (domain === 'fan') {
                     await homeAssistant.callService('fan', isOn ? 'turn_off' : 'turn_on', {
-                      entity_id: bar.entity,
+                      entity_id: barEntity,
                     });
                   }
 

@@ -68,11 +68,11 @@ export class UltraCoverModule extends BaseUltraModule {
     if (!module.id) errors.push('Module ID is required');
     if (!module.type || module.type !== 'cover') errors.push('Module type must be cover');
 
+    // Note: multi-cover (`entities` array) is not rendered, so it is intentionally
+    // not accepted here — a config with only `entities` would render an error state.
     const hasEntity = !!(coverModule.entity && coverModule.entity.trim());
-    const hasEntities =
-      Array.isArray(coverModule.entities) && coverModule.entities.length > 0;
-    if (!hasEntity && !hasEntities) {
-      errors.push('Select at least one cover entity');
+    if (!hasEntity) {
+      errors.push('Select a cover entity');
     }
 
     return { valid: errors.length === 0, errors };
@@ -137,8 +137,10 @@ export class UltraCoverModule extends BaseUltraModule {
               hass,
               data: { show_title: coverModule.show_title !== false },
               schema: [this.booleanField('show_title')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_title: e.detail.value?.show_title ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_title: e.detail.value?.show_title ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.cover.show_icon', lang, 'Show icon'),
@@ -146,8 +148,10 @@ export class UltraCoverModule extends BaseUltraModule {
               hass,
               data: { show_icon: coverModule.show_icon !== false },
               schema: [this.booleanField('show_icon')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_icon: e.detail.value?.show_icon ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_icon: e.detail.value?.show_icon ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.cover.show_state', lang, 'Show state'),
@@ -155,8 +159,10 @@ export class UltraCoverModule extends BaseUltraModule {
               hass,
               data: { show_state: coverModule.show_state !== false },
               schema: [this.booleanField('show_state')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_state: e.detail.value?.show_state ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_state: e.detail.value?.show_state ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.cover.show_position', lang, 'Show position'),
@@ -164,8 +170,10 @@ export class UltraCoverModule extends BaseUltraModule {
               hass,
               data: { show_position: coverModule.show_position !== false },
               schema: [this.booleanField('show_position')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_position: e.detail.value?.show_position ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_position: e.detail.value?.show_position ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.cover.show_position_control', lang, 'Show position slider'),
@@ -173,8 +181,10 @@ export class UltraCoverModule extends BaseUltraModule {
               hass,
               data: { show_position_control: coverModule.show_position_control !== false },
               schema: [this.booleanField('show_position_control')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_position_control: e.detail.value?.show_position_control ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_position_control: e.detail.value?.show_position_control ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.cover.show_stop', lang, 'Show stop button'),
@@ -182,8 +192,10 @@ export class UltraCoverModule extends BaseUltraModule {
               hass,
               data: { show_stop: coverModule.show_stop !== false },
               schema: [this.booleanField('show_stop')],
-              onChange: (e: CustomEvent) =>
-                updateModule({ show_stop: e.detail.value?.show_stop ?? true }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ show_stop: e.detail.value?.show_stop ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
           ]
         )}
@@ -232,7 +244,10 @@ export class UltraCoverModule extends BaseUltraModule {
             hass,
             { show_tilt: coverModule.show_tilt ?? false },
             [this.booleanField('show_tilt')],
-            (e: CustomEvent) => updateModule({ show_tilt: e.detail.value?.show_tilt ?? false })
+            (e: CustomEvent) => {
+              updateModule({ show_tilt: e.detail.value?.show_tilt ?? false });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
           )}
           ${this.renderFieldSection(
             localize('editor.cover.show_tilt_control', lang, 'Show tilt slider'),
@@ -240,8 +255,10 @@ export class UltraCoverModule extends BaseUltraModule {
             hass,
             { show_tilt_control: coverModule.show_tilt_control ?? false },
             [this.booleanField('show_tilt_control')],
-            (e: CustomEvent) =>
-              updateModule({ show_tilt_control: e.detail.value?.show_tilt_control ?? false })
+            (e: CustomEvent) => {
+              updateModule({ show_tilt_control: e.detail.value?.show_tilt_control ?? false });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
           )}
         </div>
       </div>
@@ -278,10 +295,12 @@ export class UltraCoverModule extends BaseUltraModule {
     const hasTilt =
       (supported & (COVER_SUPPORT_OPEN_TILT | COVER_SUPPORT_CLOSE_TILT | COVER_SUPPORT_SET_TILT_POSITION)) !== 0;
 
-    const currentPosition =
-      attrs.current_position !== undefined ? Number(attrs.current_position) : undefined;
-    const currentTilt =
+    // Guard against non-numeric attribute values so we never render "NaN%"
+    const rawPosition = attrs.current_position !== undefined ? Number(attrs.current_position) : undefined;
+    const currentPosition = Number.isFinite(rawPosition) ? rawPosition : undefined;
+    const rawTilt =
       attrs.current_tilt_position !== undefined ? Number(attrs.current_tilt_position) : undefined;
+    const currentTilt = Number.isFinite(rawTilt) ? rawTilt : undefined;
     const stateStr = String(state.state);
 
     const showTitle = coverModule.show_title !== false;
@@ -410,7 +429,7 @@ export class UltraCoverModule extends BaseUltraModule {
                       min="0"
                       max="100"
                       .value=${String(positionPercent)}
-                      @input=${(e: Event) => setPosition(Number((e.target as HTMLInputElement).value))}
+                      @change=${(e: Event) => setPosition(Number((e.target as HTMLInputElement).value))}
                       style="width: 100%;"
                     />
                   </div>
@@ -425,7 +444,7 @@ export class UltraCoverModule extends BaseUltraModule {
                       min="0"
                       max="100"
                       .value=${String(currentTilt ?? 0)}
-                      @input=${(e: Event) => setTiltPosition(Number((e.target as HTMLInputElement).value))}
+                      @change=${(e: Event) => setTiltPosition(Number((e.target as HTMLInputElement).value))}
                       style="width: 100%;"
                     />
                   </div>
@@ -475,7 +494,7 @@ export class UltraCoverModule extends BaseUltraModule {
                     min="0"
                     max="100"
                     .value=${String(positionPercent)}
-                    @input=${(e: Event) => setPosition(Number((e.target as HTMLInputElement).value))}
+                    @change=${(e: Event) => setPosition(Number((e.target as HTMLInputElement).value))}
                     style="width: 100%;"
                   />
                 </div>
@@ -492,7 +511,7 @@ export class UltraCoverModule extends BaseUltraModule {
                           min="0"
                           max="100"
                           .value=${String(currentTilt ?? 0)}
-                          @input=${(e: Event) => setTiltPosition(Number((e.target as HTMLInputElement).value))}
+                          @change=${(e: Event) => setTiltPosition(Number((e.target as HTMLInputElement).value))}
                           style="width: 100%;"
                         />
                       `

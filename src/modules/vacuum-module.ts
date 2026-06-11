@@ -40,20 +40,46 @@ export class UltraVacuumModule extends BaseUltraModule {
     tags: ['vacuum', 'cleaning', 'robot', 'pro'],
   };
 
-  // Track current view for swipe gesture
-  private _currentView: 'vacuum' | 'map' = 'vacuum';
-  private _touchStartX: number = 0;
-  private _touchStartY: number = 0;
-  private _isSwiping: boolean = false;
+  // Track current view for swipe gesture (keyed by module ID so multiple vacuum cards don't share state)
+  private _currentViewMap: Map<string, 'vacuum' | 'map'> = new Map();
 
-  // Pointer-drag support for swipe carousel (mouse + touch via Pointer Events)
-  private _pointerDown: boolean = false;
-  private _pointerStartX: number = 0;
-  private _pointerStartY: number = 0;
-  private _pointerDeltaX: number = 0;
-  private _pointerDragActive: boolean = false;
-  private _pointerContainerWidth: number = 0;
-  private _pointerRafPending: boolean = false;
+  // Touch + pointer-drag swipe state for the carousel, keyed by module ID
+  private _swipeStateMap: Map<string, {
+    touchStartX: number;
+    touchStartY: number;
+    isSwiping: boolean;
+    pointerDown: boolean;
+    pointerStartX: number;
+    pointerStartY: number;
+    pointerDeltaX: number;
+    pointerDragActive: boolean;
+    pointerContainerWidth: number;
+    pointerRafPending: boolean;
+  }> = new Map();
+
+  private getCurrentView(moduleId: string): 'vacuum' | 'map' {
+    return this._currentViewMap.get(moduleId) || 'vacuum';
+  }
+
+  private getSwipeState(moduleId: string) {
+    let state = this._swipeStateMap.get(moduleId);
+    if (!state) {
+      state = {
+        touchStartX: 0,
+        touchStartY: 0,
+        isSwiping: false,
+        pointerDown: false,
+        pointerStartX: 0,
+        pointerStartY: 0,
+        pointerDeltaX: 0,
+        pointerDragActive: false,
+        pointerContainerWidth: 0,
+        pointerRafPending: false,
+      };
+      this._swipeStateMap.set(moduleId, state);
+    }
+    return state;
+  }
 
   // Track expanded sections for accordion UI (per module instance)
   private _expandedSectionsMap: Map<string, Set<string>> = new Map();
@@ -845,7 +871,8 @@ export class UltraVacuumModule extends BaseUltraModule {
   private   renderCardLayoutSection(
     vacuumModule: VacuumModule,
     hass: HomeAssistant,
-    updateModule: (updates: Partial<CardModule>) => void
+    updateModule: (updates: Partial<CardModule>) => void,
+    config?: UltraCardConfig
   ): TemplateResult {
     // Get current sections or create defaults
     const sections = vacuumModule.display_sections || this.getDefaultSections();
@@ -1224,7 +1251,7 @@ export class UltraVacuumModule extends BaseUltraModule {
 
           ${isExpanded ? html`
             <div class="vacuum-section-settings">
-              ${this.renderSectionSettings(section, hass, updateSectionSettings, vacuumModule)}
+              ${this.renderSectionSettings(section, hass, updateSectionSettings, vacuumModule, config)}
             </div>
           ` : ''}
         </div>
@@ -1677,7 +1704,8 @@ export class UltraVacuumModule extends BaseUltraModule {
     section: VacuumDisplaySection,
     hass: HomeAssistant,
     updateSettings: (sectionId: string, settings: Partial<VacuumDisplaySection['settings']>) => void,
-    vacuumModule: VacuumModule
+    vacuumModule: VacuumModule,
+    config?: UltraCardConfig
   ): TemplateResult {
     const meta = UltraVacuumModule.VACUUM_SECTIONS[section.type];
     const settings = section.settings || {};
@@ -1723,7 +1751,7 @@ export class UltraVacuumModule extends BaseUltraModule {
             Override the auto-detected entity (current: ${currentEntity || 'none'})
           </div>
           ${this.renderEntityPickerWithVariables(
-            hass, undefined as any, 'entity_override', settings.entity_override || '',
+            hass, config, 'entity_override', settings.entity_override || '',
             (value: string) => updateSettings(section.id, { entity_override: value }),
             undefined,
             'Entity Override'
@@ -1917,22 +1945,22 @@ export class UltraVacuumModule extends BaseUltraModule {
           <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--divider-color);">
             <div class="vacuum-setting-label" style="margin-bottom: 8px;">Entity Overrides</div>
             ${this.renderEntityPickerWithVariables(
-              hass, undefined as any, 'filter_entity_override', settings.filter_entity_override || '',
+              hass, config, 'filter_entity_override', settings.filter_entity_override || '',
               (value: string) => updateSettings(section.id, { filter_entity_override: value }),
               ['sensor'], 'Filter Entity'
             )}
             ${this.renderEntityPickerWithVariables(
-              hass, undefined as any, 'main_brush_entity_override', settings.main_brush_entity_override || '',
+              hass, config, 'main_brush_entity_override', settings.main_brush_entity_override || '',
               (value: string) => updateSettings(section.id, { main_brush_entity_override: value }),
               ['sensor'], 'Main Brush Entity'
             )}
             ${this.renderEntityPickerWithVariables(
-              hass, undefined as any, 'side_brush_entity_override', settings.side_brush_entity_override || '',
+              hass, config, 'side_brush_entity_override', settings.side_brush_entity_override || '',
               (value: string) => updateSettings(section.id, { side_brush_entity_override: value }),
               ['sensor'], 'Side Brush Entity'
             )}
             ${this.renderEntityPickerWithVariables(
-              hass, undefined as any, 'sensor_entity_override', settings.sensor_entity_override || '',
+              hass, config, 'sensor_entity_override', settings.sensor_entity_override || '',
               (value: string) => updateSettings(section.id, { sensor_entity_override: value }),
               ['sensor'], 'Sensor Entity'
             )}
@@ -2085,7 +2113,8 @@ export class UltraVacuumModule extends BaseUltraModule {
       fanSpeedOptions: string[];
       isActive: boolean;
       isDocked: boolean;
-    }
+    },
+    config?: UltraCardConfig
   ): TemplateResult {
     if (!section.enabled) return html``;
     
@@ -2121,17 +2150,18 @@ export class UltraVacuumModule extends BaseUltraModule {
         if (shouldShowMap) {
           return wrapWithMargins(html`
             <div class="vacuum-icon-container">
-              ${this.renderMapView(module, hass, mapSection?.settings, true)}
+              ${this.renderMapView(module, hass, mapSection?.settings, true, config)}
             </div>
           `);
         }
 
         // Swipe mode is a 2-page carousel inside the image area (vacuum ↔ map)
         if (shouldSwipeReplaceImage) {
+          const swipe = this.getSwipeState(module.id);
           // Track is 200% wide (two pages). To show the 2nd page, translate -50% (not -100%).
-          const base = this._currentView === 'map' ? -50 : 0;
-          const dragOffset = this._pointerDragActive && this._pointerContainerWidth
-            ? (this._pointerDeltaX / this._pointerContainerWidth) * 50
+          const base = this.getCurrentView(module.id) === 'map' ? -50 : 0;
+          const dragOffset = swipe.pointerDragActive && swipe.pointerContainerWidth
+            ? (swipe.pointerDeltaX / swipe.pointerContainerWidth) * 50
             : 0;
           const translate = Math.max(-50, Math.min(0, base + dragOffset));
           const trackStyle = `transform: translateX(${translate}%);`;
@@ -2139,15 +2169,15 @@ export class UltraVacuumModule extends BaseUltraModule {
           return wrapWithMargins(html`
             <div class="vacuum-icon-container">
               <div
-                class="vacuum-swipe-carousel ${this._pointerDragActive ? 'dragging' : ''}"
+                class="vacuum-swipe-carousel ${swipe.pointerDragActive ? 'dragging' : ''}"
                 style="width: ${imageSize}px; height: ${imageSize}px;"
-                @touchstart=${(e: TouchEvent) => this.handleTouchStart(e)}
-                @touchmove=${(e: TouchEvent) => this.handleTouchMove(e, true)}
-                @touchend=${(e: TouchEvent) => this.handleTouchEnd(e, true)}
-                @pointerdown=${(e: PointerEvent) => this.handlePointerDown(e, true)}
-                @pointermove=${(e: PointerEvent) => this.handlePointerMove(e, true)}
-                @pointerup=${(e: PointerEvent) => this.handlePointerUp(e, true)}
-                @pointercancel=${(e: PointerEvent) => this.handlePointerUp(e, true)}
+                @touchstart=${(e: TouchEvent) => this.handleTouchStart(e, module.id)}
+                @touchmove=${(e: TouchEvent) => this.handleTouchMove(e, true, module.id)}
+                @touchend=${(e: TouchEvent) => this.handleTouchEnd(e, true, module.id)}
+                @pointerdown=${(e: PointerEvent) => this.handlePointerDown(e, true, module.id)}
+                @pointermove=${(e: PointerEvent) => this.handlePointerMove(e, true, module.id)}
+                @pointerup=${(e: PointerEvent) => this.handlePointerUp(e, true, module.id)}
+                @pointercancel=${(e: PointerEvent) => this.handlePointerUp(e, true, module.id)}
               >
                 <div class="vacuum-swipe-track" style="${trackStyle}">
                   <div class="vacuum-swipe-page">
@@ -2166,11 +2196,11 @@ export class UltraVacuumModule extends BaseUltraModule {
                       : this.renderVacuumIcon(module, params.animationClass, imageSize, params.isActive, params.isDocked, settings.icon_color)}
                   </div>
                   <div class="vacuum-swipe-page">
-                    ${this.renderMapView(module, hass, mapSettings, true)}
+                    ${this.renderMapView(module, hass, mapSettings, true, config)}
                   </div>
                 </div>
               </div>
-              ${showSwipeDots ? this.renderPaginationDots(settings.icon_color) : ''}
+              ${showSwipeDots ? this.renderPaginationDots(module.id, settings.icon_color) : ''}
             </div>
           `);
         }
@@ -2179,8 +2209,8 @@ export class UltraVacuumModule extends BaseUltraModule {
         if (customImg) {
           return wrapWithMargins(html`
             <div 
-              class="vacuum-icon-container ${module.entity ? 'clickable' : ''}"
-              @click=${module.entity ? (e: Event) => this.showMoreInfo(e, module.entity) : nothing}
+              class="vacuum-icon-container ${entity ? 'clickable' : ''}"
+              @click=${entity ? (e: Event) => this.showMoreInfo(e, entity.entity_id) : nothing}
             >
               <div class="vacuum-image ${params.animationClass}" style="width: ${imageSize}px; height: ${imageSize}px;">
                 <img src="${customImg}" alt="Vacuum" style="width: 100%; height: 100%; object-fit: contain;" />
@@ -2192,8 +2222,8 @@ export class UltraVacuumModule extends BaseUltraModule {
         // Otherwise use the animated SVG
         return wrapWithMargins(html`
           <div 
-            class="vacuum-icon-container ${module.entity ? 'clickable' : ''}"
-            @click=${module.entity ? (e: Event) => this.showMoreInfo(e, module.entity) : nothing}
+            class="vacuum-icon-container ${entity ? 'clickable' : ''}"
+            @click=${entity ? (e: Event) => this.showMoreInfo(e, entity.entity_id) : nothing}
           >
             ${this.renderVacuumIcon(module, params.animationClass, imageSize, params.isActive, params.isDocked, settings.icon_color)}
           </div>
@@ -2202,8 +2232,8 @@ export class UltraVacuumModule extends BaseUltraModule {
       case 'title_status':
         return wrapWithMargins(html`
           <div 
-            class="vacuum-header ${module.entity ? 'clickable' : ''}"
-            @click=${module.entity ? (e: Event) => this.showMoreInfo(e, module.entity) : nothing}
+            class="vacuum-header ${entity ? 'clickable' : ''}"
+            @click=${entity ? (e: Event) => this.showMoreInfo(e, entity.entity_id) : nothing}
           >
             ${settings.show_label !== false ? html`
               <div class="vacuum-name" style="${settings.label_color ? `color: ${settings.label_color}` : ''}">
@@ -2219,9 +2249,15 @@ export class UltraVacuumModule extends BaseUltraModule {
         `);
 
       case 'battery':
-        if (params.batteryLevel === null) return html``;
-        const batteryColor = settings.color || this.getBatteryColor(params.batteryLevel, module);
-        const batteryEntityId = settings.entity_override || module.battery_entity;
+        const batteryEntityId = this.resolveEntity(settings.entity_override || module.battery_entity, config);
+        // When a battery sensor is configured (section override or module-level), read its state
+        let sectionBatteryLevel = params.batteryLevel;
+        if (batteryEntityId) {
+          const overrideLevel = this.getEntityNumericValue(hass, batteryEntityId);
+          if (overrideLevel !== null) sectionBatteryLevel = overrideLevel;
+        }
+        if (sectionBatteryLevel === null) return html``;
+        const batteryColor = settings.color || this.getBatteryColor(sectionBatteryLevel, module);
         return wrapWithMargins(html`
           ${settings.show_title ? html`<div class="stats-section-title">Battery</div>` : ''}
           <div 
@@ -2231,16 +2267,16 @@ export class UltraVacuumModule extends BaseUltraModule {
           >
             ${settings.show_icon !== false ? html`
               <ha-icon 
-                icon="${this.getBatteryIcon(params.batteryLevel, params.isCharging)}"
+                icon="${this.getBatteryIcon(sectionBatteryLevel, params.isCharging)}"
                 style="color: ${batteryColor};"
               ></ha-icon>
             ` : ''}
-            ${settings.show_percentage !== false ? html`<span>${params.batteryLevel}%</span>` : ''}
+            ${settings.show_percentage !== false ? html`<span>${sectionBatteryLevel}%</span>` : ''}
           </div>
         `);
 
       case 'current_room':
-        const roomEntity = settings.entity_override || module.current_room_entity;
+        const roomEntity = this.resolveEntity(settings.entity_override || module.current_room_entity, config);
         const currentRoom = this.getEntityValue(hass, roomEntity);
         if (!currentRoom) return html``;
         const roomColor = settings.color;
@@ -2263,22 +2299,22 @@ export class UltraVacuumModule extends BaseUltraModule {
 
       case 'current_stats':
         // Prefer linked entities (auto-populated), fall back to attributes
-        return wrapWithMargins(this.renderCleaningStatsDetailed(entity, module, hass, settings));
+        return wrapWithMargins(this.renderCleaningStatsDetailed(entity, module, hass, settings, config));
 
       case 'last_clean':
         // Uses module-level entities (auto-populated / user configured)
-        return wrapWithMargins(this.renderLastClean(module, hass, settings));
+        return wrapWithMargins(this.renderLastClean(module, hass, settings, config));
 
       case 'total_stats':
         // Uses module-level entities (auto-populated / user configured)
-        return wrapWithMargins(this.renderTotalStats(module, hass, settings));
+        return wrapWithMargins(this.renderTotalStats(module, hass, settings, config));
 
       case 'component_life':
-        return wrapWithMargins(this.renderComponentWearSection(entity, module, hass, settings));
+        return wrapWithMargins(this.renderComponentWearSection(entity, module, hass, settings, config));
 
       case 'errors':
-        const errorEntity = settings.entity_override || module.vacuum_error_entity;
-        const dockErrorEntity = module.dock_error_entity;
+        const errorEntity = this.resolveEntity(settings.entity_override || module.vacuum_error_entity, config);
+        const dockErrorEntity = this.resolveEntity(module.dock_error_entity, config);
         const vacuumError = this.getEntityValue(hass, errorEntity);
         const dockError = this.getEntityValue(hass, dockErrorEntity);
         const hasError = (vacuumError && vacuumError !== 'none' && vacuumError !== 'ok') || 
@@ -2299,10 +2335,10 @@ export class UltraVacuumModule extends BaseUltraModule {
         `);
 
       case 'dnd':
-        return wrapWithMargins(this.renderDndStatus(module, hass, settings));
+        return wrapWithMargins(this.renderDndStatus(module, hass, settings, config));
 
       case 'volume':
-        return wrapWithMargins(this.renderVolumeControl(module, hass, settings));
+        return wrapWithMargins(this.renderVolumeControl(module, hass, settings, config));
 
       case 'quick_controls':
         return wrapWithMargins(this.renderControlsSection(module, entity, hass, params.state, params.fanSpeed, params.fanSpeedOptions, settings));
@@ -2319,13 +2355,16 @@ export class UltraVacuumModule extends BaseUltraModule {
         if (mapDisplayMode === 'swipe') return html``;
         
         // Default 'below_vacuum' mode - render normally
-        const mapEntity = settings.entity_override || module.map_image_entity || module.map_entity;
+        const mapEntity = this.resolveEntity(
+          settings.entity_override || module.map_image_entity || module.map_entity,
+          config
+        );
         return wrapWithMargins(html`
           <div 
             class="${mapEntity ? 'clickable' : ''}"
             @click=${mapEntity ? (e: Event) => this.showMoreInfo(e, mapEntity) : nothing}
           >
-            ${this.renderMapView(module, hass, settings)}
+            ${this.renderMapView(module, hass, settings, false, config)}
           </div>
         `);
 
@@ -2341,25 +2380,26 @@ export class UltraVacuumModule extends BaseUltraModule {
     entity: HassEntity,
     module: VacuumModule,
     hass: HomeAssistant,
-    settings: VacuumDisplaySection['settings']
+    settings: VacuumDisplaySection['settings'],
+    config?: UltraCardConfig
   ): TemplateResult {
     const components: { key: string; label: string; icon: string; entity?: string }[] = [];
     
     // Use entity overrides if provided, otherwise use auto-detected entities
     if (settings?.show_filter !== false) {
-      const filterEntity = settings?.filter_entity_override || module.filter_entity;
+      const filterEntity = this.resolveEntity(settings?.filter_entity_override || module.filter_entity, config);
       if (filterEntity) components.push({ key: 'filter', label: 'Filter', icon: 'mdi:air-filter', entity: filterEntity });
     }
     if (settings?.show_main_brush !== false) {
-      const mainBrushEntity = settings?.main_brush_entity_override || module.main_brush_entity;
+      const mainBrushEntity = this.resolveEntity(settings?.main_brush_entity_override || module.main_brush_entity, config);
       if (mainBrushEntity) components.push({ key: 'main_brush', label: 'Main Brush', icon: 'mdi:brush', entity: mainBrushEntity });
     }
     if (settings?.show_side_brush !== false) {
-      const sideBrushEntity = settings?.side_brush_entity_override || module.side_brush_entity;
+      const sideBrushEntity = this.resolveEntity(settings?.side_brush_entity_override || module.side_brush_entity, config);
       if (sideBrushEntity) components.push({ key: 'side_brush', label: 'Side Brush', icon: 'mdi:asterisk', entity: sideBrushEntity });
     }
     if (settings?.show_sensor !== false) {
-      const sensorEntity = settings?.sensor_entity_override || module.sensor_entity;
+      const sensorEntity = this.resolveEntity(settings?.sensor_entity_override || module.sensor_entity, config);
       if (sensorEntity) components.push({ key: 'sensor', label: 'Sensors', icon: 'mdi:eye', entity: sensorEntity });
     }
 
@@ -2568,7 +2608,8 @@ export class UltraVacuumModule extends BaseUltraModule {
       fanSpeedOptions: string[];
       isActive: boolean;
       isDocked: boolean;
-    }
+    },
+    config?: UltraCardConfig
   ): TemplateResult {
     const sections = module.display_sections || this.getDefaultSections();
     const sectionOrder = module.section_order || sections.map(s => s.id);
@@ -2588,7 +2629,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       const renderColumn = (sectionIds: string[]) => sectionIds.map(sectionId => {
         const section = sections.find(s => s.id === sectionId);
         if (!section || !section.enabled) return html``;
-        return this.renderSection(section, module, entity, hass, params);
+        return this.renderSection(section, module, entity, hass, params, config);
       });
 
       return html`
@@ -2608,7 +2649,7 @@ export class UltraVacuumModule extends BaseUltraModule {
       ${sectionOrder.map(sectionId => {
         const section = sections.find(s => s.id === sectionId);
         if (!section || !section.enabled) return html``;
-        return this.renderSection(section, module, entity, hass, params);
+        return this.renderSection(section, module, entity, hass, params, config);
       })}
     `;
   }
@@ -2616,7 +2657,7 @@ export class UltraVacuumModule extends BaseUltraModule {
   /**
    * Get vacuum state from entity
    */
-  private getVacuumState(entity: HassEntity): string {
+  private getVacuumState(entity: HassEntity | undefined): string {
     if (!entity) return 'unavailable';
     return entity.state || 'unknown';
   }
@@ -2624,16 +2665,21 @@ export class UltraVacuumModule extends BaseUltraModule {
   /**
    * Get battery level from entity attributes
    */
-  private getBatteryLevel(entity: HassEntity): number | null {
+  private getBatteryLevel(entity: HassEntity | undefined): number | null {
     if (!entity?.attributes) return null;
     const battery = entity.attributes.battery_level ?? entity.attributes.battery ?? entity.attributes.battery_percentage;
-    return typeof battery === 'number' ? battery : null;
+    if (typeof battery === 'number') return battery;
+    if (typeof battery === 'string') {
+      const parsed = parseFloat(battery);
+      if (!isNaN(parsed)) return parsed;
+    }
+    return null;
   }
 
   /**
    * Get fan speed options from entity
    */
-  private getFanSpeedOptions(entity: HassEntity): string[] {
+  private getFanSpeedOptions(entity: HassEntity | undefined): string[] {
     if (!entity?.attributes?.fan_speed_list) return [];
     return entity.attributes.fan_speed_list;
   }
@@ -2641,7 +2687,7 @@ export class UltraVacuumModule extends BaseUltraModule {
   /**
    * Get current fan speed from entity
    */
-  private getCurrentFanSpeed(entity: HassEntity): string {
+  private getCurrentFanSpeed(entity: HassEntity | undefined): string {
     if (!entity?.attributes?.fan_speed) return '';
     return entity.attributes.fan_speed;
   }
@@ -2878,59 +2924,63 @@ export class UltraVacuumModule extends BaseUltraModule {
   }
 
   // Swipe gesture handlers
-  private handleTouchStart(e: TouchEvent): void {
-    this._touchStartX = e.touches[0].clientX;
-    this._touchStartY = e.touches[0].clientY;
-    this._isSwiping = false;
+  private handleTouchStart(e: TouchEvent, moduleId: string): void {
+    const swipe = this.getSwipeState(moduleId);
+    swipe.touchStartX = e.touches[0].clientX;
+    swipe.touchStartY = e.touches[0].clientY;
+    swipe.isSwiping = false;
   }
 
-  private handleTouchMove(e: TouchEvent, hasMap: boolean): void {
+  private handleTouchMove(e: TouchEvent, hasMap: boolean, moduleId: string): void {
     if (!hasMap) return;
     
-    const deltaX = e.touches[0].clientX - this._touchStartX;
-    const deltaY = Math.abs(e.touches[0].clientY - this._touchStartY);
+    const swipe = this.getSwipeState(moduleId);
+    const deltaX = e.touches[0].clientX - swipe.touchStartX;
+    const deltaY = Math.abs(e.touches[0].clientY - swipe.touchStartY);
     
     // Only trigger horizontal swipe if movement is more horizontal than vertical
     if (Math.abs(deltaX) > 30 && Math.abs(deltaX) > deltaY) {
-      this._isSwiping = true;
+      swipe.isSwiping = true;
       // Prevent the page from hijacking horizontal swipe gestures
       e.preventDefault();
       e.stopPropagation();
     }
   }
 
-  private handleTouchEnd(e: TouchEvent, hasMap: boolean): void {
-    if (!hasMap || !this._isSwiping) return;
+  private handleTouchEnd(e: TouchEvent, hasMap: boolean, moduleId: string): void {
+    const swipe = this.getSwipeState(moduleId);
+    if (!hasMap || !swipe.isSwiping) return;
     
-    const deltaX = e.changedTouches[0].clientX - this._touchStartX;
+    const deltaX = e.changedTouches[0].clientX - swipe.touchStartX;
     
     if (Math.abs(deltaX) > 50) {
-      if (deltaX < 0 && this._currentView === 'vacuum') {
-        this._currentView = 'map';
-      } else if (deltaX > 0 && this._currentView === 'map') {
-        this._currentView = 'vacuum';
+      if (deltaX < 0 && this.getCurrentView(moduleId) === 'vacuum') {
+        this._currentViewMap.set(moduleId, 'map');
+      } else if (deltaX > 0 && this.getCurrentView(moduleId) === 'map') {
+        this._currentViewMap.set(moduleId, 'vacuum');
       }
       this.triggerPreviewUpdate();
     }
     
-    this._isSwiping = false;
+    swipe.isSwiping = false;
   }
 
   // Pointer handlers for mouse drag + touch swipe on the image carousel
-  private handlePointerDown(e: PointerEvent, hasMap: boolean): void {
+  private handlePointerDown(e: PointerEvent, hasMap: boolean, moduleId: string): void {
     if (!hasMap) return;
     // Only respond to primary button for mouse
     if (e.pointerType === 'mouse' && e.button !== 0) return;
 
-    this._pointerDown = true;
-    this._pointerDragActive = false;
-    this._pointerDeltaX = 0;
-    this._pointerStartX = e.clientX;
-    this._pointerStartY = e.clientY;
+    const swipe = this.getSwipeState(moduleId);
+    swipe.pointerDown = true;
+    swipe.pointerDragActive = false;
+    swipe.pointerDeltaX = 0;
+    swipe.pointerStartX = e.clientX;
+    swipe.pointerStartY = e.clientY;
 
     const el = e.currentTarget as HTMLElement | null;
     if (el) {
-      this._pointerContainerWidth = el.getBoundingClientRect().width || 0;
+      swipe.pointerContainerWidth = el.getBoundingClientRect().width || 0;
       try {
         el.setPointerCapture(e.pointerId);
       } catch {
@@ -2939,16 +2989,17 @@ export class UltraVacuumModule extends BaseUltraModule {
     }
   }
 
-  private handlePointerMove(e: PointerEvent, hasMap: boolean): void {
-    if (!hasMap || !this._pointerDown) return;
+  private handlePointerMove(e: PointerEvent, hasMap: boolean, moduleId: string): void {
+    const swipe = this.getSwipeState(moduleId);
+    if (!hasMap || !swipe.pointerDown) return;
 
-    const dx = e.clientX - this._pointerStartX;
-    const dy = Math.abs(e.clientY - this._pointerStartY);
+    const dx = e.clientX - swipe.pointerStartX;
+    const dy = Math.abs(e.clientY - swipe.pointerStartY);
 
     // Activate drag only when it's clearly horizontal
-    if (!this._pointerDragActive) {
+    if (!swipe.pointerDragActive) {
       if (Math.abs(dx) > 10 && Math.abs(dx) > dy) {
-        this._pointerDragActive = true;
+        swipe.pointerDragActive = true;
       } else {
         return;
       }
@@ -2958,17 +3009,17 @@ export class UltraVacuumModule extends BaseUltraModule {
     e.preventDefault();
     e.stopPropagation();
 
-    this._pointerDeltaX = dx;
-    if (!this._pointerRafPending) {
-      this._pointerRafPending = true;
+    swipe.pointerDeltaX = dx;
+    if (!swipe.pointerRafPending) {
+      swipe.pointerRafPending = true;
       requestAnimationFrame(() => {
-        this._pointerRafPending = false;
+        swipe.pointerRafPending = false;
         this.triggerPreviewUpdate();
       });
     }
   }
 
-  private handlePointerUp(e: PointerEvent, hasMap: boolean): void {
+  private handlePointerUp(e: PointerEvent, hasMap: boolean, moduleId: string): void {
     if (!hasMap) return;
 
     const el = e.currentTarget as HTMLElement | null;
@@ -2980,23 +3031,24 @@ export class UltraVacuumModule extends BaseUltraModule {
       }
     }
 
-    if (!this._pointerDown) return;
+    const swipe = this.getSwipeState(moduleId);
+    if (!swipe.pointerDown) return;
 
-    const dx = this._pointerDeltaX;
-    const w = this._pointerContainerWidth || 0;
+    const dx = swipe.pointerDeltaX;
+    const w = swipe.pointerContainerWidth || 0;
 
-    if (this._pointerDragActive) {
+    if (swipe.pointerDragActive) {
       const threshold = Math.max(60, w * 0.18);
       if (Math.abs(dx) > threshold) {
         // Drag left -> map, drag right -> vacuum
-        this._currentView = dx < 0 ? 'map' : 'vacuum';
+        this._currentViewMap.set(moduleId, dx < 0 ? 'map' : 'vacuum');
       }
     }
 
-    this._pointerDown = false;
-    this._pointerDragActive = false;
-    this._pointerDeltaX = 0;
-    this._pointerContainerWidth = 0;
+    swipe.pointerDown = false;
+    swipe.pointerDragActive = false;
+    swipe.pointerDeltaX = 0;
+    swipe.pointerContainerWidth = 0;
     this.triggerPreviewUpdate();
   }
 
@@ -3048,6 +3100,7 @@ export class UltraVacuumModule extends BaseUltraModule {
               detected_integration: detectedIntegration,
               ...autoPopulated,
             });
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
           },
           ['vacuum'],
           localize('editor.vacuum.entity', lang, 'Vacuum Entity')
@@ -3062,12 +3115,15 @@ export class UltraVacuumModule extends BaseUltraModule {
           hass,
           { name: vacuumModule.name || '' },
           [this.textField('name')],
-          (e: CustomEvent) => updateModule({ name: e.detail.value.name })
+          (e: CustomEvent) => {
+            updateModule({ name: e.detail.value.name });
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }
         )}
       </div>
 
       <!-- Card Layout Builder -->
-      ${this.renderCardLayoutSection(vacuumModule, hass, updateModule)}
+      ${this.renderCardLayoutSection(vacuumModule, hass, updateModule, config)}
 
       <!-- Animations Toggle -->
       ${this.renderSettingsSection(localize('editor.vacuum.section_animations', lang, 'Animations'), localize('editor.vacuum.section_animations_desc', lang, 'Control vacuum animations'), [
@@ -3077,7 +3133,10 @@ export class UltraVacuumModule extends BaseUltraModule {
           hass,
           data: { enable_animations: vacuumModule.enable_animations !== false },
           schema: [this.booleanField('enable_animations')],
-          onChange: (e: CustomEvent) => updateModule({ enable_animations: e.detail.value.enable_animations }),
+          onChange: (e: CustomEvent) => {
+            updateModule({ enable_animations: e.detail.value.enable_animations });
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          },
         },
       ])}
     `;
@@ -3090,11 +3149,19 @@ export class UltraVacuumModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const vacuumModule = module as VacuumModule;
-    const entity = hass?.states[vacuumModule.entity];
+    // Resolve $variable references to a concrete entity ID
+    const resolvedEntityId = this.resolveEntity(vacuumModule.entity, config) || vacuumModule.entity;
+    const entity = resolvedEntityId ? hass?.states[resolvedEntityId] : undefined;
     
     // Get vacuum data
     const state = this.getVacuumState(entity);
-    const batteryLevel = this.getBatteryLevel(entity);
+    // Prefer a dedicated battery sensor when configured, fall back to the vacuum attribute
+    let batteryLevel = this.getBatteryLevel(entity);
+    const batterySensorId = this.resolveEntity(vacuumModule.battery_entity, config);
+    if (batterySensorId) {
+      const sensorLevel = this.getEntityNumericValue(hass, batterySensorId);
+      if (sensorLevel !== null) batteryLevel = sensorLevel;
+    }
     const isCharging = state === 'docked' && entity?.attributes?.status?.toLowerCase().includes('charg');
     const fanSpeed = this.getCurrentFanSpeed(entity);
     const fanSpeedOptions = this.getFanSpeedOptions(entity);
@@ -3133,17 +3200,17 @@ export class UltraVacuumModule extends BaseUltraModule {
       <div 
         class="vacuum-module-container ${hoverEffectClass} layout-${layoutMode} ${mapDisplayMode === 'swipe' ? 'swipe-mode' : ''}"
         style="${designStyles}"
-        @touchstart=${(e: TouchEvent) => this.handleTouchStart(e)}
-        @touchmove=${(e: TouchEvent) => this.handleTouchMove(e, !!hasMap && mapDisplayMode === 'swipe')}
-        @touchend=${(e: TouchEvent) => this.handleTouchEnd(e, !!hasMap && mapDisplayMode === 'swipe')}
+        @touchstart=${(e: TouchEvent) => this.handleTouchStart(e, vacuumModule.id)}
+        @touchmove=${(e: TouchEvent) => this.handleTouchMove(e, !!hasMap && mapDisplayMode === 'swipe', vacuumModule.id)}
+        @touchend=${(e: TouchEvent) => this.handleTouchEnd(e, !!hasMap && mapDisplayMode === 'swipe', vacuumModule.id)}
       >
         ${!entity
           ? this.renderNoEntity(vacuumModule)
           : layoutMode === 'compact'
-            ? this.renderCompactLayout(vacuumModule, entity, hass, displayName, state, batteryLevel, isCharging, statusColor, animationClass, vacuumSize)
+            ? this.renderCompactLayout(vacuumModule, entity, hass, displayName, state, batteryLevel, isCharging, statusColor, animationClass, vacuumSize, config)
             : layoutMode === 'detailed'
-              ? this.renderDetailedLayout(vacuumModule, entity, hass, displayName, state, batteryLevel, isCharging, statusColor, animationClass, vacuumSize, fanSpeed, fanSpeedOptions)
-              : this.renderStandardLayout(vacuumModule, entity, hass, displayName, state, batteryLevel, isCharging, statusColor, animationClass, vacuumSize, fanSpeed, fanSpeedOptions)
+              ? this.renderDetailedLayout(vacuumModule, entity, hass, displayName, state, batteryLevel, isCharging, statusColor, animationClass, vacuumSize, fanSpeed, fanSpeedOptions, config)
+              : this.renderStandardLayout(vacuumModule, entity, hass, displayName, state, batteryLevel, isCharging, statusColor, animationClass, vacuumSize, fanSpeed, fanSpeedOptions, config)
         }
       </div>
     `, module, hass);
@@ -3161,8 +3228,8 @@ export class UltraVacuumModule extends BaseUltraModule {
   /**
    * Render pagination dots for swipe mode
    */
-  private renderPaginationDots(primaryColor?: string): TemplateResult {
-    const isMapView = this._currentView === 'map';
+  private renderPaginationDots(moduleId: string, primaryColor?: string): TemplateResult {
+    const isMapView = this.getCurrentView(moduleId) === 'map';
     const activeStyle = primaryColor ? `background: ${primaryColor};` : '';
     
     return html`
@@ -3170,13 +3237,13 @@ export class UltraVacuumModule extends BaseUltraModule {
         <div 
           class="vacuum-dot ${!isMapView ? 'active' : ''}"
           style="${!isMapView ? activeStyle : ''}"
-          @click=${() => { this._currentView = 'vacuum'; this.triggerPreviewUpdate(); }}
+          @click=${() => { this._currentViewMap.set(moduleId, 'vacuum'); this.triggerPreviewUpdate(); }}
           title="Vacuum"
         ></div>
         <div 
           class="vacuum-dot ${isMapView ? 'active' : ''}"
           style="${isMapView ? activeStyle : ''}"
-          @click=${() => { this._currentView = 'map'; this.triggerPreviewUpdate(); }}
+          @click=${() => { this._currentViewMap.set(moduleId, 'map'); this.triggerPreviewUpdate(); }}
           title="Map"
         ></div>
       </div>
@@ -3193,7 +3260,8 @@ export class UltraVacuumModule extends BaseUltraModule {
     isCharging: boolean,
     statusColor: string,
     animationClass: string,
-    vacuumSize: number
+    vacuumSize: number,
+    config?: UltraCardConfig
   ): TemplateResult {
     const isActive = state === 'cleaning' || state === 'returning';
     const isDocked = state === 'docked' || state === 'charging' || isCharging;
@@ -3215,7 +3283,7 @@ export class UltraVacuumModule extends BaseUltraModule {
     
     return html`
       <div class="vacuum-compact vacuum-sections-layout">
-        ${this.renderSectionsInOrder(module, entity, hass, params)}
+        ${this.renderSectionsInOrder(module, entity, hass, params, config)}
       </div>
     `;
   }
@@ -3232,7 +3300,8 @@ export class UltraVacuumModule extends BaseUltraModule {
     animationClass: string,
     vacuumSize: number,
     fanSpeed: string,
-    fanSpeedOptions: string[]
+    fanSpeedOptions: string[],
+    config?: UltraCardConfig
   ): TemplateResult {
     const isActive = state === 'cleaning' || state === 'returning';
     const isDocked = state === 'docked' || state === 'charging' || isCharging;
@@ -3254,7 +3323,7 @@ export class UltraVacuumModule extends BaseUltraModule {
     
     return html`
       <div class="vacuum-standard vacuum-sections-layout">
-        ${this.renderSectionsInOrder(module, entity, hass, params)}
+        ${this.renderSectionsInOrder(module, entity, hass, params, config)}
       </div>
     `;
   }
@@ -3271,7 +3340,8 @@ export class UltraVacuumModule extends BaseUltraModule {
     animationClass: string,
     vacuumSize: number,
     fanSpeed: string,
-    fanSpeedOptions: string[]
+    fanSpeedOptions: string[],
+    config?: UltraCardConfig
   ): TemplateResult {
     const isActive = state === 'cleaning' || state === 'returning';
     const isDocked = state === 'docked' || state === 'charging' || isCharging;
@@ -3293,7 +3363,7 @@ export class UltraVacuumModule extends BaseUltraModule {
     
     return html`
       <div class="vacuum-detailed vacuum-sections-layout">
-        ${this.renderSectionsInOrder(module, entity, hass, params)}
+        ${this.renderSectionsInOrder(module, entity, hass, params, config)}
       </div>
     `;
   }
@@ -3541,18 +3611,19 @@ export class UltraVacuumModule extends BaseUltraModule {
   }
 
   /**
-   * Get a value from a linked entity
+   * Get a value from a linked entity (resolves $variable references)
    */
-  private getEntityValue(hass: HomeAssistant, entityId?: string): string | null {
-    if (!entityId || !hass.states[entityId]) return null;
-    return hass.states[entityId].state;
+  private getEntityValue(hass: HomeAssistant, entityId?: string, config?: UltraCardConfig): string | null {
+    const resolved = this.resolveEntity(entityId, config);
+    if (!resolved || !hass.states[resolved]) return null;
+    return hass.states[resolved].state;
   }
 
   /**
    * Get numeric value from a linked entity
    */
-  private getEntityNumericValue(hass: HomeAssistant, entityId?: string): number | null {
-    const value = this.getEntityValue(hass, entityId);
+  private getEntityNumericValue(hass: HomeAssistant, entityId?: string, config?: UltraCardConfig): number | null {
+    const value = this.getEntityValue(hass, entityId, config);
     if (value === null || value === 'unavailable' || value === 'unknown') return null;
     const num = parseFloat(value);
     return isNaN(num) ? null : num;
@@ -3569,12 +3640,12 @@ export class UltraVacuumModule extends BaseUltraModule {
       .replace(/\b\w/g, (char) => char.toUpperCase());
   }
 
-  private renderCleaningStatsDetailed(entity: HassEntity, module: VacuumModule, hass: HomeAssistant, settings?: VacuumDisplaySection['settings']): TemplateResult {
+  private renderCleaningStatsDetailed(entity: HassEntity, module: VacuumModule, hass: HomeAssistant, settings?: VacuumDisplaySection['settings'], config?: UltraCardConfig): TemplateResult {
     const attrs = entity?.attributes || {};
     
     // Get entity references for click handling
-    const timeEntity = module.cleaning_time_entity;
-    const areaEntity = module.cleaning_area_entity;
+    const timeEntity = this.resolveEntity(module.cleaning_time_entity, config);
+    const areaEntity = this.resolveEntity(module.cleaning_area_entity, config);
     
     // Try linked entities first, fallback to attributes
     // Supports: Roborock, Xiaomi, Eufy, Shark, Roomba, Tuya naming conventions
@@ -3628,9 +3699,9 @@ export class UltraVacuumModule extends BaseUltraModule {
     `;
   }
 
-  private renderLastClean(module: VacuumModule, hass: HomeAssistant, settings?: VacuumDisplaySection['settings']): TemplateResult {
-    const beginEntity = module.last_clean_begin_entity;
-    const endEntity = module.last_clean_end_entity;
+  private renderLastClean(module: VacuumModule, hass: HomeAssistant, settings?: VacuumDisplaySection['settings'], config?: UltraCardConfig): TemplateResult {
+    const beginEntity = this.resolveEntity(module.last_clean_begin_entity, config);
+    const endEntity = this.resolveEntity(module.last_clean_end_entity, config);
     const lastBegin = this.getEntityValue(hass, beginEntity);
     const lastEnd = this.getEntityValue(hass, endEntity);
     
@@ -3690,15 +3761,16 @@ export class UltraVacuumModule extends BaseUltraModule {
     `;
   }
 
-  private renderTotalStats(module: VacuumModule, hass: HomeAssistant, settings?: VacuumDisplaySection['settings']): TemplateResult {
+  private renderTotalStats(module: VacuumModule, hass: HomeAssistant, settings?: VacuumDisplaySection['settings'], config?: UltraCardConfig): TemplateResult {
     // Get vacuum entity attributes as fallback (for Eufy, Roomba, and others that use attributes)
-    const vacuumEntity = module.entity ? hass?.states[module.entity] : null;
+    const vacuumEntityId = this.resolveEntity(module.entity, config);
+    const vacuumEntity = vacuumEntityId ? hass?.states[vacuumEntityId] : null;
     const attrs = vacuumEntity?.attributes || {};
     
     // Try linked entities first, fallback to vacuum entity attributes
-    const totalAreaEntity = module.total_cleaning_area_entity;
-    const totalTimeEntity = module.total_cleaning_time_entity;
-    const totalCountEntity = module.total_cleaning_count_entity;
+    const totalAreaEntity = this.resolveEntity(module.total_cleaning_area_entity, config);
+    const totalTimeEntity = this.resolveEntity(module.total_cleaning_time_entity, config);
+    const totalCountEntity = this.resolveEntity(module.total_cleaning_count_entity, config);
     
     const totalArea = this.getEntityNumericValue(hass, totalAreaEntity) ??
                       attrs.total_cleaning_area ?? attrs.total_clean_area ?? attrs.lifetime_area;
@@ -3763,19 +3835,20 @@ export class UltraVacuumModule extends BaseUltraModule {
     `;
   }
 
-  private renderDndStatus(module: VacuumModule, hass: HomeAssistant, settings?: VacuumDisplaySection['settings']): TemplateResult {
+  private renderDndStatus(module: VacuumModule, hass: HomeAssistant, settings?: VacuumDisplaySection['settings'], config?: UltraCardConfig): TemplateResult {
     // Get vacuum entity attributes as fallback (for Eufy which uses do_not_disturb as boolean attribute)
-    const vacuumEntity = module.entity ? hass?.states[module.entity] : null;
+    const vacuumEntityId = this.resolveEntity(module.entity, config);
+    const vacuumEntity = vacuumEntityId ? hass?.states[vacuumEntityId] : null;
     const attrs = vacuumEntity?.attributes || {};
     
-    const dndEntityId = settings?.entity_override || module.do_not_disturb_entity;
+    const dndEntityId = this.resolveEntity(settings?.entity_override || module.do_not_disturb_entity, config);
     let dndState = this.getEntityValue(hass, dndEntityId);
     // Fallback to vacuum entity attributes for Eufy and similar
     if (dndState === null && attrs.do_not_disturb !== undefined) {
       dndState = attrs.do_not_disturb ? 'on' : 'off';
     }
-    const beginTime = this.getEntityValue(hass, module.do_not_disturb_begin_entity);
-    const endTime = this.getEntityValue(hass, module.do_not_disturb_end_entity);
+    const beginTime = this.getEntityValue(hass, module.do_not_disturb_begin_entity, config);
+    const endTime = this.getEntityValue(hass, module.do_not_disturb_end_entity, config);
     
     if (dndState === null) return html``;
     
@@ -3806,8 +3879,8 @@ export class UltraVacuumModule extends BaseUltraModule {
     `;
   }
 
-  private renderVolumeControl(module: VacuumModule, hass: HomeAssistant, settings?: VacuumDisplaySection['settings']): TemplateResult {
-    const volumeEntityId = settings?.entity_override || module.volume_entity;
+  private renderVolumeControl(module: VacuumModule, hass: HomeAssistant, settings?: VacuumDisplaySection['settings'], config?: UltraCardConfig): TemplateResult {
+    const volumeEntityId = this.resolveEntity(settings?.entity_override || module.volume_entity, config);
     const volume = this.getEntityNumericValue(hass, volumeEntityId);
     
     if (volume === null) return html``;
@@ -4062,7 +4135,7 @@ export class UltraVacuumModule extends BaseUltraModule {
           style="${extraStyle}"
           @change=${(e: Event) => {
             const select = e.target as HTMLSelectElement;
-            this.handleFanSpeedChange(select.value, module.entity, hass);
+            this.handleFanSpeedChange(select.value, entity.entity_id, hass);
           }}
         >
           ${options.map(
@@ -4114,18 +4187,21 @@ export class UltraVacuumModule extends BaseUltraModule {
     module: VacuumModule,
     hass: HomeAssistant,
     sectionSettings?: VacuumDisplaySection['settings'],
-    inline: boolean = false
+    inline: boolean = false,
+    config?: UltraCardConfig
   ): TemplateResult {
     const mapHeight = sectionSettings?.bar_height || module.map_height || 200;
     const borderRadius = module.map_border_radius || 12;
     const displayMode = sectionSettings?.display_mode || 'below_vacuum';
     
-    const overrideEntityId = sectionSettings?.entity_override;
+    const overrideEntityId = this.resolveEntity(sectionSettings?.entity_override, config);
     const overrideEntity = overrideEntityId ? hass?.states[overrideEntityId] : null;
 
     // Check map_image_entity first (image domain), then fall back to map_entity (camera domain)
-    const mapImageEntity = module.map_image_entity ? hass?.states[module.map_image_entity] : null;
-    const mapCameraEntity = module.map_entity ? hass?.states[module.map_entity] : null;
+    const mapImageEntityId = this.resolveEntity(module.map_image_entity, config);
+    const mapCameraEntityId = this.resolveEntity(module.map_entity, config);
+    const mapImageEntity = mapImageEntityId ? hass?.states[mapImageEntityId] : null;
+    const mapCameraEntity = mapCameraEntityId ? hass?.states[mapCameraEntityId] : null;
     
     // Get the image URL - image entities use entity_picture attribute
     const entityPicture =
@@ -4150,7 +4226,7 @@ export class UltraVacuumModule extends BaseUltraModule {
           ${showCloseButton ? html`
             <button 
               class="map-close-btn"
-              @click=${() => { this._currentView = 'vacuum'; this.triggerPreviewUpdate(); }}
+              @click=${() => { this._currentViewMap.set(module.id, 'vacuum'); this.triggerPreviewUpdate(); }}
             >
               <ha-icon icon="mdi:close"></ha-icon>
             </button>
@@ -4166,7 +4242,7 @@ export class UltraVacuumModule extends BaseUltraModule {
         ${showCloseButton ? html`
           <button 
             class="map-close-btn"
-            @click=${() => { this._currentView = 'vacuum'; this.triggerPreviewUpdate(); }}
+            @click=${() => { this._currentViewMap.set(module.id, 'vacuum'); this.triggerPreviewUpdate(); }}
           >
             <ha-icon icon="mdi:close"></ha-icon>
           </button>
@@ -4182,11 +4258,16 @@ export class UltraVacuumModule extends BaseUltraModule {
     
     if (!vacuumModule.entity || vacuumModule.entity.trim() === '') {
       errors.push('Vacuum entity is required');
-    } else if (!vacuumModule.entity.startsWith('vacuum.')) {
+    } else if (!vacuumModule.entity.startsWith('vacuum.') && !vacuumModule.entity.startsWith('$')) {
+      // '$' prefix = custom variable reference, resolved at render time
       errors.push('Entity must be a vacuum entity (vacuum.*)');
     }
     
-    if (vacuumModule.map_entity && !vacuumModule.map_entity.startsWith('camera.')) {
+    if (
+      vacuumModule.map_entity &&
+      !vacuumModule.map_entity.startsWith('camera.') &&
+      !vacuumModule.map_entity.startsWith('$')
+    ) {
       errors.push('Map entity must be a camera entity (camera.*)');
     }
     

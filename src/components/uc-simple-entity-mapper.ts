@@ -3,6 +3,7 @@ import { EntityReference, EntityMapping } from '../types';
 import { entityMapper } from '../services/uc-entity-mapper';
 import { inferEntityDomainFromReference } from '../utils/uc-preset-wizard-auto';
 import { escapeHtml } from '../utils/html-sanitizer';
+import { promoteToTopLayer } from '../utils/uc-top-layer';
 
 const _UC_DEBUG = !!(window as any).__UC_DEBUG;
 
@@ -144,6 +145,11 @@ export class UcSimpleEntityMapper {
     // Appending to document.body can place this UI behind the editor dialog regardless of z-index.
     const overlayHost = this.findOverlayHost();
     overlayHost.appendChild(this.container);
+
+    // Escape the dialog's containing block (transform/contain would otherwise
+    // trap the fixed-position overlay into a small window) and paint above
+    // other top-layer UI like the Add Module popup.
+    promoteToTopLayer(this.container);
     
     // Force the dialog to be interactive and on top
     setTimeout(() => {
@@ -342,6 +348,17 @@ export class UcSimpleEntityMapper {
           bottom: 0;
           z-index: 999999 !important;
           pointer-events: auto !important;
+          /* Neutralize UA [popover] styles (container is promoted to the top layer) */
+          margin: 0;
+          border: 0;
+          padding: 0;
+          width: auto;
+          height: auto;
+          max-width: none;
+          max-height: none;
+          overflow: visible;
+          background: transparent;
+          color: inherit;
         }
         
         .dialog-backdrop {

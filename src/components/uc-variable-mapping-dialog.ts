@@ -5,6 +5,7 @@ import { ucCustomVariablesService } from '../services/uc-custom-variables-servic
 import { localize } from '../localize/localize';
 import { readHaSelectSelectedValue } from '../utils/form-utils';
 import { ucVariableValueTypeHaSelectOptions } from '../utils/uc-variable-value-type-options';
+import { promoteToTopLayer } from '../utils/uc-top-layer';
 
 export interface VariableMapping {
   variableName: string;
@@ -34,6 +35,11 @@ export class UcVariableMappingDialog extends LitElement {
   override updated(changedProperties: Map<string, any>): void {
     if (changedProperties.has('missingVariables')) {
       this._initializeMappings();
+    }
+    if (this.open) {
+      // Escape HA dialog containment so the fixed overlay spans the viewport.
+      const overlay = this.shadowRoot?.querySelector('.dialog-overlay') as HTMLElement | null;
+      if (overlay) promoteToTopLayer(overlay);
     }
   }
 
@@ -255,6 +261,16 @@ export class UcVariableMappingDialog extends LitElement {
         align-items: center;
         justify-content: center;
         z-index: 10000;
+        /* Neutralize UA [popover] styles (overlay is promoted to the top layer) */
+        margin: 0;
+        border: 0;
+        padding: 0;
+        width: auto;
+        height: auto;
+        max-width: none;
+        max-height: none;
+        overflow: visible;
+        color: inherit;
       }
 
       .dialog {

@@ -8,6 +8,8 @@ export type TimerStatus = 'idle' | 'running' | 'paused' | 'expired';
 export interface TimerState {
   status: TimerStatus;
   remaining_seconds: number;
+  /** Total seconds the timer was started with (basis for progress calculation) */
+  total_seconds?: number | undefined;
   end_time?: number | undefined; // timestamp when timer will reach 0 (for running)
   interval_id?: ReturnType<typeof setInterval> | undefined;
   on_expire?: (() => void) | undefined;
@@ -42,6 +44,23 @@ function dispatchUpdate(): void {
   window.dispatchEvent(
     new CustomEvent('ultra-card-template-update', { bubbles: true, composed: true })
   );
+}
+
+/**
+ * Creates the 1-second tick interval for a timer.
+ * The interval self-cleans when its timer state has been removed or replaced,
+ * so orphaned intervals (e.g. after module removal) stop themselves.
+ */
+function startTickInterval(moduleId: string): ReturnType<typeof setInterval> {
+  const intervalId = setInterval(() => {
+    const state = getStore().get(moduleId);
+    if (!state || state.interval_id !== intervalId) {
+      clearInterval(intervalId);
+      return;
+    }
+    tick(moduleId);
+  }, 1000);
+  return intervalId;
 }
 
 function tick(moduleId: string): void {
@@ -82,10 +101,11 @@ export const timerStateService = {
     const state: TimerState = {
       status: 'running',
       remaining_seconds: durationSeconds,
+      total_seconds: durationSeconds,
       end_time: Date.now() + durationSeconds * 1000,
       on_expire: onExpire,
     };
-    state.interval_id = setInterval(() => tick(moduleId), 1000);
+    state.interval_id = startTickInterval(moduleId);
     store.set(moduleId, state);
     dispatchUpdate();
   },
@@ -109,7 +129,7 @@ export const timerStateService = {
     if (!state || state.status !== 'paused') return;
     state.status = 'running';
     state.end_time = Date.now() + state.remaining_seconds * 1000;
-    state.interval_id = setInterval(() => tick(moduleId), 1000);
+    state.interval_id = startTickInterval(moduleId);
     dispatchUpdate();
   },
 
@@ -123,6 +143,22 @@ export const timerStateService = {
 
   dismiss(moduleId: string): void {
     this.reset(moduleId);
+  },
+
+  /**
+   * Fully tears down a timer: clears its interval and removes all stored state
+   * (including the entity-sync record). Idempotent — safe to call for unknown ids.
+   * Call when a timer module is removed so no orphaned interval keeps running.
+   */
+  destroyTimer(moduleId: string): void {
+    const store = getStore();
+    const state = store.get(moduleId);
+    if (state?.interval_id) {
+      clearInterval(state.interval_id);
+      state.interval_id = undefined;
+    }
+    store.delete(moduleId);
+    getEntitySyncStore().delete(moduleId);
   },
 
   snooze(moduleId: string, durationSeconds: number): void {
@@ -143,13 +179,15 @@ export const timerStateService = {
    * @param remainingSeconds  Pre-computed remaining seconds (use timerTimeRemaining() for active)
    * @param lastChanged    HA entity last_changed ISO string (change detector)
    * @param onExpire       Optional callback to run when local countdown hits zero
+   * @param totalSeconds   Optional full duration of the HA timer (basis for progress)
    */
   syncFromEntity(
     moduleId: string,
     haState: string,
     remainingSeconds: number,
     lastChanged: string,
-    onExpire?: () => void
+    onExpire?: () => void,
+    totalSeconds?: number
   ): void {
     const syncStore = getEntitySyncStore();
     const last = syncStore.get(moduleId);
@@ -172,10 +210,11 @@ export const timerStateService = {
       const state: TimerState = {
         status: 'running',
         remaining_seconds: rounded,
+        total_seconds: totalSeconds !== undefined ? Math.round(totalSeconds) : current?.total_seconds,
         end_time: Date.now() + rounded * 1000,
         on_expire: onExpire,
       };
-      state.interval_id = setInterval(() => tick(moduleId), 1000);
+      state.interval_id = startTickInterval(moduleId);
       store.set(moduleId, state);
       dispatchUpdate();
     } else if (haState === 'paused') {
@@ -183,6 +222,7 @@ export const timerStateService = {
       const state: TimerState = {
         status: 'paused',
         remaining_seconds: Math.round(remainingSeconds),
+        total_seconds: totalSeconds !== undefined ? Math.round(totalSeconds) : current?.total_seconds,
         on_expire: current?.on_expire ?? onExpire,
       };
       store.set(moduleId, state);

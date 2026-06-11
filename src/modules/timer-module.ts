@@ -18,6 +18,15 @@ function formatRemaining(seconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+/** Parses an "H:MM:SS" / "MM:SS" / "SS" duration string into seconds. */
+function parseHMS(value: string | undefined): number {
+  if (!value) return 0;
+  const parts = value.split(':').map(Number);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return parts[0] || 0;
+}
+
 /**
  * Computes remaining seconds from a HA timer entity state object.
  * Mirrors the logic in custom-card-helpers' timerTimeRemaining():
@@ -25,12 +34,7 @@ function formatRemaining(seconds: number): string {
  *  - for 'active' state, subtracts the time elapsed since last_changed
  */
 function computeHassTimerRemaining(entityState: { state: string; attributes: Record<string, unknown>; last_changed: string }): number {
-  const remaining = (entityState.attributes.remaining as string) ?? '0:00:00';
-  const parts = remaining.split(':').map(Number);
-  let seconds = 0;
-  if (parts.length === 3) seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
-  else if (parts.length === 2) seconds = parts[0] * 60 + parts[1];
-  else seconds = parts[0] || 0;
+  let seconds = parseHMS((entityState.attributes.remaining as string) ?? '0:00:00');
 
   if (entityState.state === 'active') {
     const elapsed = (Date.now() - new Date(entityState.last_changed).getTime()) / 1000;
@@ -103,7 +107,10 @@ export class UltraTimerModule extends BaseUltraModule {
               hass,
               data: { title: timerModule.title || '' },
               schema: [this.textField('title')],
-              onChange: (e: CustomEvent) => updateModule({ ...e.detail.value }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ ...e.detail.value });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
             {
               title: localize('editor.timer.icon', lang, 'Icon'),
@@ -111,7 +118,10 @@ export class UltraTimerModule extends BaseUltraModule {
               hass,
               data: { icon: timerModule.icon || 'mdi:timer-outline' },
               schema: [this.iconField('icon')],
-              onChange: (e: CustomEvent) => updateModule({ ...e.detail.value }),
+              onChange: (e: CustomEvent) => {
+                updateModule({ ...e.detail.value });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
             },
           ]
         )}
@@ -128,7 +138,10 @@ export class UltraTimerModule extends BaseUltraModule {
             hass,
             { duration_seconds: timerModule.duration_seconds ?? 300 },
             [this.numberField('duration_seconds', 1, 86400)],
-            (e: CustomEvent) => updateModule(e.detail.value)
+            (e: CustomEvent) => {
+              updateModule(e.detail.value);
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
           )}
         </div>
 
@@ -201,7 +214,10 @@ export class UltraTimerModule extends BaseUltraModule {
                 hass,
                 { snooze_seconds: timerModule.snooze_seconds ?? 300 },
                 [this.numberField('snooze_seconds', 1, 3600)],
-                (e: CustomEvent) => updateModule(e.detail.value)
+                (e: CustomEvent) => {
+                  updateModule(e.detail.value);
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }
               )
             : ''}
         </div>
@@ -234,16 +250,21 @@ export class UltraTimerModule extends BaseUltraModule {
 
     // Sync from linked HA timer entity on every render (safe — no-ops if nothing changed)
     if (timerModule.timer_entity && hass) {
-      const entityState = hass.states[timerModule.timer_entity];
+      // Resolve $variable references to a concrete entity ID
+      const timerEntityId =
+        this.resolveEntity(timerModule.timer_entity, config) || timerModule.timer_entity;
+      const entityState = timerEntityId ? hass.states[timerEntityId] : undefined;
       if (entityState) {
         const haState = entityState.state; // 'active' | 'paused' | 'idle'
         const remaining = computeHassTimerRemaining(entityState);
+        const entityDuration = parseHMS(entityState.attributes.duration as string | undefined);
         timerStateService.syncFromEntity(
           timerModule.id,
           haState,
           remaining,
           entityState.last_changed,
-          onExpire
+          onExpire,
+          entityDuration > 0 ? entityDuration : undefined
         );
       }
     }
@@ -326,7 +347,10 @@ export class UltraTimerModule extends BaseUltraModule {
       }
 
       // running or paused
-      const progress = duration > 0 ? 1 - remaining / duration : 0;
+      // Base progress on the duration the timer was actually started with (e.g. a preset),
+      // falling back to the configured default for timers started before total_seconds existed.
+      const totalSeconds = state?.total_seconds && state.total_seconds > 0 ? state.total_seconds : duration;
+      const progress = totalSeconds > 0 ? 1 - remaining / totalSeconds : 0;
       const progressPct = Math.min(1, Math.max(0, progress)) * 100;
 
       return html`

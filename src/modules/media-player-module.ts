@@ -55,7 +55,8 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
   };
 
   // State management
-  private _progressUpdateInterval: ReturnType<typeof setInterval> | null = null;
+  /** One-shot progress tick timers keyed by module id (re-armed on every render while playing) */
+  private _progressTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
   private _expandedModules: Set<string> = new Set();
   private _volumeDragState: Map<string, { dragging: boolean; value: number }> = new Map();
   private _extractedColors: Map<string, { primary: string; accent: string }> = new Map();
@@ -181,7 +182,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
               { value: 'mini', label: 'Mini' },
             ]),
           ],
-          onChange: (e: CustomEvent) => updateModule({ layout: e.detail.value.layout }),
+          onChange: (e: CustomEvent) => { updateModule({ layout: e.detail.value.layout }); this.triggerPreviewUpdate(); },
         },
       ])}
 
@@ -211,7 +212,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { show_album_art: mp.show_album_art !== false },
           schema: [this.booleanField('show_album_art')],
-          onChange: (e: CustomEvent) => updateModule({ show_album_art: e.detail.value.show_album_art }),
+          onChange: (e: CustomEvent) => { updateModule({ show_album_art: e.detail.value.show_album_art }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Show Track Info',
@@ -219,7 +220,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { show_track_info: mp.show_track_info !== false },
           schema: [this.booleanField('show_track_info')],
-          onChange: (e: CustomEvent) => updateModule({ show_track_info: e.detail.value.show_track_info }),
+          onChange: (e: CustomEvent) => { updateModule({ show_track_info: e.detail.value.show_track_info }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Show Album Name',
@@ -227,7 +228,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { show_album_name: mp.show_album_name !== false },
           schema: [this.booleanField('show_album_name')],
-          onChange: (e: CustomEvent) => updateModule({ show_album_name: e.detail.value.show_album_name }),
+          onChange: (e: CustomEvent) => { updateModule({ show_album_name: e.detail.value.show_album_name }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Show Progress Bar',
@@ -235,7 +236,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { show_progress: mp.show_progress !== false },
           schema: [this.booleanField('show_progress')],
-          onChange: (e: CustomEvent) => updateModule({ show_progress: e.detail.value.show_progress }),
+          onChange: (e: CustomEvent) => { updateModule({ show_progress: e.detail.value.show_progress }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Show Duration',
@@ -243,7 +244,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { show_duration: mp.show_duration !== false },
           schema: [this.booleanField('show_duration')],
-          onChange: (e: CustomEvent) => updateModule({ show_duration: e.detail.value.show_duration }),
+          onChange: (e: CustomEvent) => { updateModule({ show_duration: e.detail.value.show_duration }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Show Controls',
@@ -251,7 +252,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { show_controls: mp.show_controls !== false },
           schema: [this.booleanField('show_controls')],
-          onChange: (e: CustomEvent) => updateModule({ show_controls: e.detail.value.show_controls }),
+          onChange: (e: CustomEvent) => { updateModule({ show_controls: e.detail.value.show_controls }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Show Volume',
@@ -259,7 +260,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { show_volume: mp.show_volume !== false },
           schema: [this.booleanField('show_volume')],
-          onChange: (e: CustomEvent) => updateModule({ show_volume: e.detail.value.show_volume }),
+          onChange: (e: CustomEvent) => { updateModule({ show_volume: e.detail.value.show_volume }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Show Stop Button',
@@ -267,7 +268,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { show_stop_button: mp.show_stop_button || false },
           schema: [this.booleanField('show_stop_button')],
-          onChange: (e: CustomEvent) => updateModule({ show_stop_button: e.detail.value.show_stop_button }),
+          onChange: (e: CustomEvent) => { updateModule({ show_stop_button: e.detail.value.show_stop_button }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Show Source Selector',
@@ -275,7 +276,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { show_source: mp.show_source || false },
           schema: [this.booleanField('show_source')],
-          onChange: (e: CustomEvent) => updateModule({ show_source: e.detail.value.show_source }),
+          onChange: (e: CustomEvent) => { updateModule({ show_source: e.detail.value.show_source }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Show Shuffle Button',
@@ -283,7 +284,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { show_shuffle: mp.show_shuffle || false },
           schema: [this.booleanField('show_shuffle')],
-          onChange: (e: CustomEvent) => updateModule({ show_shuffle: e.detail.value.show_shuffle }),
+          onChange: (e: CustomEvent) => { updateModule({ show_shuffle: e.detail.value.show_shuffle }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Show Repeat Button',
@@ -291,7 +292,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { show_repeat: mp.show_repeat || false },
           schema: [this.booleanField('show_repeat')],
-          onChange: (e: CustomEvent) => updateModule({ show_repeat: e.detail.value.show_repeat }),
+          onChange: (e: CustomEvent) => { updateModule({ show_repeat: e.detail.value.show_repeat }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Show Sound Mode',
@@ -299,7 +300,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { show_sound_mode: mp.show_sound_mode || false },
           schema: [this.booleanField('show_sound_mode')],
-          onChange: (e: CustomEvent) => updateModule({ show_sound_mode: e.detail.value.show_sound_mode }),
+          onChange: (e: CustomEvent) => { updateModule({ show_sound_mode: e.detail.value.show_sound_mode }); this.triggerPreviewUpdate(); },
         },
       ])}
 
@@ -311,7 +312,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { enable_seek: mp.enable_seek !== false },
           schema: [this.booleanField('enable_seek')],
-          onChange: (e: CustomEvent) => updateModule({ enable_seek: e.detail.value.enable_seek }),
+          onChange: (e: CustomEvent) => { updateModule({ enable_seek: e.detail.value.enable_seek }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Auto-Hide When Off',
@@ -319,7 +320,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { auto_hide_when_off: mp.auto_hide_when_off || false },
           schema: [this.booleanField('auto_hide_when_off')],
-          onChange: (e: CustomEvent) => updateModule({ auto_hide_when_off: e.detail.value.auto_hide_when_off }),
+          onChange: (e: CustomEvent) => { updateModule({ auto_hide_when_off: e.detail.value.auto_hide_when_off }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Expandable (Compact Mode)',
@@ -327,7 +328,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { expandable: mp.expandable !== false },
           schema: [this.booleanField('expandable')],
-          onChange: (e: CustomEvent) => updateModule({ expandable: e.detail.value.expandable }),
+          onChange: (e: CustomEvent) => { updateModule({ expandable: e.detail.value.expandable }); this.triggerPreviewUpdate(); },
         },
       ])}
 
@@ -339,7 +340,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { blurred_background: mp.blurred_background !== false },
           schema: [this.booleanField('blurred_background')],
-          onChange: (e: CustomEvent) => updateModule({ blurred_background: e.detail.value.blurred_background }),
+          onChange: (e: CustomEvent) => { updateModule({ blurred_background: e.detail.value.blurred_background }); this.triggerPreviewUpdate(); },
         },
       ])}
 
@@ -375,7 +376,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
                 hass,
                 { blur_expand: mp.blur_expand !== false },
                 [this.booleanField('blur_expand')],
-                (e: CustomEvent) => updateModule({ blur_expand: e.detail.value.blur_expand })
+                (e: CustomEvent) => { updateModule({ blur_expand: e.detail.value.blur_expand }); this.triggerPreviewUpdate(); }
               )}
             </div>
           `
@@ -388,7 +389,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { dynamic_colors: mp.dynamic_colors || false },
           schema: [this.booleanField('dynamic_colors')],
-          onChange: (e: CustomEvent) => updateModule({ dynamic_colors: e.detail.value.dynamic_colors }),
+          onChange: (e: CustomEvent) => { updateModule({ dynamic_colors: e.detail.value.dynamic_colors }); this.triggerPreviewUpdate(); },
         },
         {
           title: 'Animated Visuals',
@@ -396,7 +397,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           hass,
           data: { animated_visuals: mp.animated_visuals || false },
           schema: [this.booleanField('animated_visuals')],
-          onChange: (e: CustomEvent) => updateModule({ animated_visuals: e.detail.value.animated_visuals }),
+          onChange: (e: CustomEvent) => { updateModule({ animated_visuals: e.detail.value.animated_visuals }); this.triggerPreviewUpdate(); },
         },
       ])}
 
@@ -423,8 +424,10 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
                     { value: 'particles', label: 'Particles - Floating particle field' },
                   ]),
                 ],
-                (e: CustomEvent) =>
-                  updateModule({ visualizer_type: e.detail.value.visualizer_type as any })
+                (e: CustomEvent) => {
+                  updateModule({ visualizer_type: e.detail.value.visualizer_type as any });
+                  this.triggerPreviewUpdate();
+                }
               )}
             </div>
           `
@@ -454,7 +457,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
                   <ultra-color-picker
                     .hass=${hass}
                     .value=${mp.progress_color || 'var(--primary-color)'}
-                    @color-changed=${(e: CustomEvent) => updateModule({ progress_color: e.detail.value })}
+                    @color-changed=${(e: CustomEvent) => { updateModule({ progress_color: e.detail.value }); this.triggerPreviewUpdate(); }}
                   ></ultra-color-picker>
                 </div>
                 <div>
@@ -462,7 +465,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
                   <ultra-color-picker
                     .hass=${hass}
                     .value=${mp.progress_background || 'var(--divider-color)'}
-                    @color-changed=${(e: CustomEvent) => updateModule({ progress_background: e.detail.value })}
+                    @color-changed=${(e: CustomEvent) => { updateModule({ progress_background: e.detail.value }); this.triggerPreviewUpdate(); }}
                   ></ultra-color-picker>
                 </div>
                 <div>
@@ -470,7 +473,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
                   <ultra-color-picker
                     .hass=${hass}
                     .value=${mp.button_color || 'var(--primary-text-color)'}
-                    @color-changed=${(e: CustomEvent) => updateModule({ button_color: e.detail.value })}
+                    @color-changed=${(e: CustomEvent) => { updateModule({ button_color: e.detail.value }); this.triggerPreviewUpdate(); }}
                   ></ultra-color-picker>
                 </div>
                 <div>
@@ -478,7 +481,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
                   <ultra-color-picker
                     .hass=${hass}
                     .value=${mp.button_active_color || 'var(--primary-color)'}
-                    @color-changed=${(e: CustomEvent) => updateModule({ button_active_color: e.detail.value })}
+                    @color-changed=${(e: CustomEvent) => { updateModule({ button_active_color: e.detail.value }); this.triggerPreviewUpdate(); }}
                   ></ultra-color-picker>
                 </div>
               </div>
@@ -508,7 +511,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
             hass,
             { fallback_icon: mp.fallback_icon || 'mdi:music' },
             [this.iconField('fallback_icon')],
-            (e: CustomEvent) => updateModule({ fallback_icon: e.detail.value.fallback_icon })
+            (e: CustomEvent) => { updateModule({ fallback_icon: e.detail.value.fallback_icon }); this.triggerPreviewUpdate(); }
           )}
           ${this.renderFieldSection(
             'Play Icon',
@@ -516,7 +519,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
             hass,
             { play_icon: mp.play_icon || 'mdi:play' },
             [this.iconField('play_icon')],
-            (e: CustomEvent) => updateModule({ play_icon: e.detail.value.play_icon })
+            (e: CustomEvent) => { updateModule({ play_icon: e.detail.value.play_icon }); this.triggerPreviewUpdate(); }
           )}
           ${this.renderFieldSection(
             'Pause Icon',
@@ -524,7 +527,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
             hass,
             { pause_icon: mp.pause_icon || 'mdi:pause' },
             [this.iconField('pause_icon')],
-            (e: CustomEvent) => updateModule({ pause_icon: e.detail.value.pause_icon })
+            (e: CustomEvent) => { updateModule({ pause_icon: e.detail.value.pause_icon }); this.triggerPreviewUpdate(); }
           )}
           ${this.renderFieldSection(
             'Previous Icon',
@@ -532,7 +535,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
             hass,
             { previous_icon: mp.previous_icon || 'mdi:skip-previous' },
             [this.iconField('previous_icon')],
-            (e: CustomEvent) => updateModule({ previous_icon: e.detail.value.previous_icon })
+            (e: CustomEvent) => { updateModule({ previous_icon: e.detail.value.previous_icon }); this.triggerPreviewUpdate(); }
           )}
           ${this.renderFieldSection(
             'Next Icon',
@@ -540,7 +543,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
             hass,
             { next_icon: mp.next_icon || 'mdi:skip-next' },
             [this.iconField('next_icon')],
-            (e: CustomEvent) => updateModule({ next_icon: e.detail.value.next_icon })
+            (e: CustomEvent) => { updateModule({ next_icon: e.detail.value.next_icon }); this.triggerPreviewUpdate(); }
           )}
         </div>
 
@@ -551,7 +554,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
             hass,
             { album_art_border_radius: mp.album_art_border_radius || '8px' },
             [this.textField('album_art_border_radius')],
-            (e: CustomEvent) => updateModule({ album_art_border_radius: e.detail.value.album_art_border_radius })
+            (e: CustomEvent) => { updateModule({ album_art_border_radius: e.detail.value.album_art_border_radius }); this.triggerPreviewUpdate(); }
           )}
         </div>
       </div>
@@ -574,6 +577,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
             if (updates.hold_action) moduleUpdates.hold_action = updates.hold_action;
             if (updates.double_tap_action) moduleUpdates.double_tap_action = updates.double_tap_action;
             updateModule(moduleUpdates);
+            this.triggerPreviewUpdate();
           },
           'Link Configuration'
         )}
@@ -605,6 +609,25 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
     const state = stateObj.state;
     if (mp.auto_hide_when_off && (state === 'off' || state === 'idle' || state === 'unavailable')) {
       return html`<div class="media-player-hidden"></div>`;
+    }
+
+    // Keep the progress bar ticking while playing: arm a one-shot 1s timer per
+    // module id that forces a re-render. It is cleared and re-armed on every
+    // render, so it self-stops once the module stops playing or is no longer
+    // rendered (leak-safe).
+    const existingTimer = this._progressTimers.get(mp.id);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      this._progressTimers.delete(mp.id);
+    }
+    if (state === 'playing' && mp.show_progress !== false) {
+      this._progressTimers.set(
+        mp.id,
+        setTimeout(() => {
+          this._progressTimers.delete(mp.id);
+          this.triggerPreviewUpdate();
+        }, 1000)
+      );
     }
 
     const hoverClass = this.getHoverEffectClass(module);
@@ -686,6 +709,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
                           class="mp-control-btn mp-expand-btn"
                           @click=${(e: Event) => this.toggleExpand(e, mp.id)}
                           title="${isExpanded ? 'Collapse' : 'Expand'}"
+                          aria-label="${isExpanded ? 'Collapse' : 'Expand'}"
                         >
                           <ha-icon icon="${isExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon>
                         </button>
@@ -733,6 +757,11 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           ? html`<div class="mp-blurred-bg ${mp.blur_expand !== false ? 'mp-blur-expand' : 'mp-blur-contained'}" style="background-image: url('${entityPicture}'); filter: blur(${mp.blur_amount || 10}px); opacity: ${mp.blur_opacity || 0.4};"></div>`
           : ''}
 
+        <!-- Player Name Header -->
+        ${mp.show_name !== false && (mp.name || attrs.friendly_name)
+          ? html`<div class="mp-card-name">${mp.name || attrs.friendly_name}</div>`
+          : ''}
+
         <!-- Album Art with Visualizer -->
         <div class="mp-art-wrapper" style="width: ${cardSize}px; height: ${cardSize}px;">
           ${mp.animated_visuals && state === 'playing'
@@ -766,7 +795,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
                 ${mp.show_shuffle ? this.renderShuffleButton(mp, hass, stateObj) : ''}
                 ${this.supportsFeature(stateObj, SUPPORT_PREVIOUS_TRACK)
                   ? html`
-                      <button class="mp-control-btn" @click=${(e: Event) => this.handlePrevious(e, hass, stateObj)}>
+                      <button class="mp-control-btn" @click=${(e: Event) => this.handlePrevious(e, hass, stateObj)} title="Previous track" aria-label="Previous track">
                         <ha-icon icon="${mp.previous_icon || 'mdi:skip-previous'}"></ha-icon>
                       </button>
                     `
@@ -774,14 +803,14 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
                 ${this.renderPlayPauseButton(mp, hass, stateObj, true)}
                 ${mp.show_stop_button && this.supportsFeature(stateObj, SUPPORT_STOP)
                   ? html`
-                      <button class="mp-control-btn" @click=${(e: Event) => this.handleStop(e, hass, stateObj)}>
+                      <button class="mp-control-btn" @click=${(e: Event) => this.handleStop(e, hass, stateObj)} title="Stop" aria-label="Stop">
                         <ha-icon icon="${mp.stop_icon || 'mdi:stop'}"></ha-icon>
                       </button>
                     `
                   : ''}
                 ${this.supportsFeature(stateObj, SUPPORT_NEXT_TRACK)
                   ? html`
-                      <button class="mp-control-btn" @click=${(e: Event) => this.handleNext(e, hass, stateObj)}>
+                      <button class="mp-control-btn" @click=${(e: Event) => this.handleNext(e, hass, stateObj)} title="Next track" aria-label="Next track">
                         <ha-icon icon="${mp.next_icon || 'mdi:skip-next'}"></ha-icon>
                       </button>
                     `
@@ -984,6 +1013,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         @click=${(e: Event) => this.handlePlayPause(e, hass, stateObj)}
         style="${colorStyle}"
         title="${isPlaying ? 'Pause' : 'Play'}"
+        aria-label="${isPlaying ? 'Pause' : 'Play'}"
       >
         <ha-icon icon="${icon}"></ha-icon>
       </button>
@@ -1000,6 +1030,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         class="mp-control-btn ${isOn ? 'mp-btn-active' : ''}"
         @click=${(e: Event) => this.handleShuffle(e, hass, stateObj)}
         title="Shuffle ${isOn ? 'On' : 'Off'}"
+        aria-label="Shuffle ${isOn ? 'On' : 'Off'}"
         style="${mp.button_active_color && isOn ? `color: ${mp.button_active_color};` : ''}"
       >
         <ha-icon icon="${mp.shuffle_icon || 'mdi:shuffle'}"></ha-icon>
@@ -1022,6 +1053,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         class="mp-control-btn ${isActive ? 'mp-btn-active' : ''}"
         @click=${(e: Event) => this.handleRepeat(e, hass, stateObj)}
         title="Repeat: ${repeat}"
+        aria-label="Repeat: ${repeat}"
         style="${mp.button_active_color && isActive ? `color: ${mp.button_active_color};` : ''}"
       >
         <ha-icon icon="${icon}"></ha-icon>
@@ -1084,6 +1116,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
                 class="mp-control-btn mp-volume-btn ${isMuted ? 'mp-btn-muted' : ''}"
                 @click=${(e: Event) => this.handleMuteToggle(e, hass, stateObj)}
                 title="${isMuted ? 'Unmute' : 'Mute'}"
+                aria-label="${isMuted ? 'Unmute' : 'Mute'}"
               >
                 <ha-icon icon="${volumeIcon}"></ha-icon>
               </button>
@@ -1095,7 +1128,17 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           min="0"
           max="100"
           .value=${volumePercent}
-          @input=${(e: Event) => this.handleVolumeChange(e, hass, stateObj)}
+          aria-label="Volume"
+          @input=${(e: Event) => {
+            // Immediate local visual feedback only; the service call happens on @change
+            const target = e.target as HTMLInputElement;
+            const pct = parseInt(target.value, 10);
+            if (isNaN(pct)) return;
+            target.style.setProperty('--progress', `${pct}%`);
+            const valueEl = target.parentElement?.querySelector('.mp-volume-value');
+            if (valueEl) valueEl.textContent = `${pct}%`;
+          }}
+          @change=${(e: Event) => this.handleVolumeChange(e, hass, stateObj)}
           style="--progress: ${volumePercent}%; --progress-color: ${mp.progress_color || 'var(--primary-color)'}; --bg-color: ${mp.progress_background || 'var(--divider-color)'};"
         />
         <span class="mp-volume-value">${volumePercent}%</span>
@@ -1157,21 +1200,21 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           ${mp.show_shuffle ? this.renderShuffleButton(mp, hass, stateObj) : ''}
           ${this.supportsFeature(stateObj, SUPPORT_PREVIOUS_TRACK)
             ? html`
-                <button class="mp-control-btn" @click=${(e: Event) => this.handlePrevious(e, hass, stateObj)}>
+                <button class="mp-control-btn" @click=${(e: Event) => this.handlePrevious(e, hass, stateObj)} title="Previous track" aria-label="Previous track">
                   <ha-icon icon="${mp.previous_icon || 'mdi:skip-previous'}"></ha-icon>
                 </button>
               `
             : ''}
           ${mp.show_stop_button && this.supportsFeature(stateObj, SUPPORT_STOP)
             ? html`
-                <button class="mp-control-btn" @click=${(e: Event) => this.handleStop(e, hass, stateObj)}>
+                <button class="mp-control-btn" @click=${(e: Event) => this.handleStop(e, hass, stateObj)} title="Stop" aria-label="Stop">
                   <ha-icon icon="${mp.stop_icon || 'mdi:stop'}"></ha-icon>
                 </button>
               `
             : ''}
           ${this.supportsFeature(stateObj, SUPPORT_NEXT_TRACK)
             ? html`
-                <button class="mp-control-btn" @click=${(e: Event) => this.handleNext(e, hass, stateObj)}>
+                <button class="mp-control-btn" @click=${(e: Event) => this.handleNext(e, hass, stateObj)} title="Next track" aria-label="Next track">
                   <ha-icon icon="${mp.next_icon || 'mdi:skip-next'}"></ha-icon>
                 </button>
               `
@@ -2053,6 +2096,17 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         align-items: center;
         gap: 12px;
         text-align: center;
+      }
+
+      .media-player-card .mp-card-name {
+        width: 100%;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .media-player-card .mp-card-track-info {
