@@ -21,6 +21,7 @@ interface RenderContext {
   hass: HomeAssistant;
 }
 import { getModuleRegistry } from '../modules';
+import { closePopupsForModule } from '../modules/popup-module';
 import { getImageUrl } from '../utils/image-upload';
 import { collectModuleTypesFromLayout } from '../utils/uc-layout-module-types';
 import { logicService } from '../services/logic-service';
@@ -2647,6 +2648,11 @@ export class UltraCard extends LitElement {
 
     // Don't render if not visible and not animating out
     if (!isVisible && !isAnimating && !willStartAnimation) {
+      // Popup modules render into a document.body portal; tear it down here since
+      // renderPreview is skipped for hidden modules and can't clean up after itself.
+      if (module.type === 'popup' && module.id) {
+        closePopupsForModule(module.id);
+      }
       return html``;
     }
 

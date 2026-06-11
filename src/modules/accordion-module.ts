@@ -333,7 +333,10 @@ export class UltraAccordionModule extends BaseUltraModule {
                 icon: 'mdi:arrow-left-right',
               },
             ],
-            next => updateModule({ header_alignment: next as 'center' | 'apart' })
+            next => {
+              updateModule({ header_alignment: next as 'center' | 'apart' });
+              this.triggerPreviewUpdate();
+            }
           )}
 
           <!-- Icon Side: Left or Right -->
@@ -353,7 +356,10 @@ export class UltraAccordionModule extends BaseUltraModule {
                 icon: 'mdi:arrow-right',
               },
             ],
-            next => updateModule({ icon_side: next as 'left' | 'right' })
+            next => {
+              updateModule({ icon_side: next as 'left' | 'right' });
+              this.triggerPreviewUpdate();
+            }
           )}
         </div>
 
@@ -420,6 +426,7 @@ export class UltraAccordionModule extends BaseUltraModule {
               @value-changed=${(e: CustomEvent) => {
                 const design = { ...d, container_background_color: e.detail.value };
                 updateModule({ design } as any);
+                this.triggerPreviewUpdate();
               }}
             ></ultra-color-picker>
 
@@ -435,6 +442,7 @@ export class UltraAccordionModule extends BaseUltraModule {
               @value-changed=${(e: CustomEvent) => {
                 const design = { ...d, container_border_color: e.detail.value };
                 updateModule({ design } as any);
+                this.triggerPreviewUpdate();
               }}
             ></ultra-color-picker>
           </div>
@@ -453,6 +461,7 @@ export class UltraAccordionModule extends BaseUltraModule {
                 (value: number) => {
                   const design = { ...d, container_border_width: value };
                   updateModule({ design } as any);
+                  this.triggerPreviewUpdate();
                 },
                 'px'
               )}
@@ -469,6 +478,7 @@ export class UltraAccordionModule extends BaseUltraModule {
                 (value: number) => {
                   const design = { ...d, container_border_radius: value };
                   updateModule({ design } as any);
+                  this.triggerPreviewUpdate();
                 },
                 'px'
               )}
@@ -489,6 +499,7 @@ export class UltraAccordionModule extends BaseUltraModule {
             (e: CustomEvent) => {
               const design = { ...d, container_shadow: e.detail.value.container_shadow };
               updateModule({ design } as any);
+              this.triggerPreviewUpdate();
             }
           )}
         </div>
@@ -518,6 +529,7 @@ export class UltraAccordionModule extends BaseUltraModule {
               @value-changed=${(e: CustomEvent) => {
                 const design = { ...d, header_text_color: e.detail.value };
                 updateModule({ design } as any);
+                this.triggerPreviewUpdate();
               }}
             ></ultra-color-picker>
 
@@ -533,6 +545,7 @@ export class UltraAccordionModule extends BaseUltraModule {
               @value-changed=${(e: CustomEvent) => {
                 const design = { ...d, header_background_color: e.detail.value };
                 updateModule({ design } as any);
+                this.triggerPreviewUpdate();
               }}
             ></ultra-color-picker>
           </div>
@@ -551,6 +564,7 @@ export class UltraAccordionModule extends BaseUltraModule {
               @value-changed=${(e: CustomEvent) => {
                 const design = { ...d, header_hover_color: e.detail.value };
                 updateModule({ design } as any);
+                this.triggerPreviewUpdate();
               }}
             ></ultra-color-picker>
           </div>
@@ -565,6 +579,7 @@ export class UltraAccordionModule extends BaseUltraModule {
               @value-changed=${(e: CustomEvent) => {
                 const design = { ...d, icon_color: e.detail.value };
                 updateModule({ design } as any);
+                this.triggerPreviewUpdate();
               }}
             ></ultra-color-picker>
 
@@ -580,6 +595,7 @@ export class UltraAccordionModule extends BaseUltraModule {
                 (value: number) => {
                   const design = { ...d, icon_size: value };
                   updateModule({ design } as any);
+                  this.triggerPreviewUpdate();
                 },
                 'px'
               )}
@@ -600,6 +616,7 @@ export class UltraAccordionModule extends BaseUltraModule {
                 (value: number) => {
                   const design = { ...d, header_font_size: value };
                   updateModule({ design } as any);
+                  this.triggerPreviewUpdate();
                 },
                 'px'
               )}
@@ -623,6 +640,7 @@ export class UltraAccordionModule extends BaseUltraModule {
                 (e: CustomEvent) => {
                   const design = { ...d, header_font_weight: e.detail.value.header_font_weight };
                   updateModule({ design } as any);
+                  this.triggerPreviewUpdate();
                 }
               )}
             </div>
@@ -644,6 +662,7 @@ export class UltraAccordionModule extends BaseUltraModule {
             (value: number) => {
               const design = { ...d, header_padding: value };
               updateModule({ design } as any);
+              this.triggerPreviewUpdate();
             },
             'px'
           )}
@@ -662,6 +681,7 @@ export class UltraAccordionModule extends BaseUltraModule {
               @value-changed=${(e: CustomEvent) => {
                 const design = { ...d, header_border_color: e.detail.value };
                 updateModule({ design } as any);
+                this.triggerPreviewUpdate();
               }}
             ></ultra-color-picker>
 
@@ -677,6 +697,7 @@ export class UltraAccordionModule extends BaseUltraModule {
                 (value: number) => {
                   const design = { ...d, header_border_width: value };
                   updateModule({ design } as any);
+                  this.triggerPreviewUpdate();
                 },
                 'px'
               )}
@@ -713,6 +734,7 @@ export class UltraAccordionModule extends BaseUltraModule {
               @value-changed=${(e: CustomEvent) => {
                 const design = { ...d, content_background_color: e.detail.value };
                 updateModule({ design } as any);
+                this.triggerPreviewUpdate();
               }}
             ></ultra-color-picker>
           </div>
@@ -733,6 +755,7 @@ export class UltraAccordionModule extends BaseUltraModule {
             (value: number) => {
               const design = { ...d, content_padding: value };
               updateModule({ design } as any);
+              this.triggerPreviewUpdate();
             },
             'px'
           )}
@@ -751,6 +774,7 @@ export class UltraAccordionModule extends BaseUltraModule {
               @value-changed=${(e: CustomEvent) => {
                 const design = { ...d, content_border_color: e.detail.value };
                 updateModule({ design } as any);
+                this.triggerPreviewUpdate();
               }}
             ></ultra-color-picker>
 
@@ -766,6 +790,7 @@ export class UltraAccordionModule extends BaseUltraModule {
                 (value: number) => {
                   const design = { ...d, content_border_width: value };
                   updateModule({ design } as any);
+                  this.triggerPreviewUpdate();
                 },
                 'px'
               )}
@@ -1217,6 +1242,12 @@ export class UltraAccordionModule extends BaseUltraModule {
 
   private accordionStates = new Map<string, boolean>();
 
+  /** Last logic-determined open state per accordion ID. Used to edge-trigger logic so it only forces the state when its RESULT changes, letting manual toggles persist between logic transitions. */
+  private accordionLogicStates = new Map<string, boolean | null>();
+
+  /** The default_open / open_mode values the stored state was initialized with, per accordion ID. If the user changes them in the editor, the stored state is reset so the new config takes effect. */
+  private accordionInitConfigs = new Map<string, { defaultOpen: boolean; openMode: string }>();
+
   renderPreview(
     module: CardModule,
     hass: HomeAssistant,
@@ -1246,30 +1277,49 @@ export class UltraAccordionModule extends BaseUltraModule {
       logicDeterminedState = conditionsResult;
     }
 
+    // Reset stored state when the configured default_open / open_mode change
+    // (e.g. edited in the editor) so the new configuration takes effect.
+    const defaultOpen = accordionModule.default_open || false;
+    const initConfig = this.accordionInitConfigs.get(accordionModule.id);
+    if (
+      initConfig &&
+      (initConfig.defaultOpen !== defaultOpen || initConfig.openMode !== openMode)
+    ) {
+      this.accordionStates.delete(accordionModule.id);
+      this.accordionLogicStates.delete(accordionModule.id);
+    }
+    this.accordionInitConfigs.set(accordionModule.id, { defaultOpen, openMode });
+
     // Initialize accordion state if not exists
     if (!this.accordionStates.has(accordionModule.id)) {
       // Use logic-determined state if available, otherwise use default_open
-      const initialState =
-        logicDeterminedState !== null
-          ? logicDeterminedState
-          : accordionModule.default_open || false;
+      const initialState = logicDeterminedState !== null ? logicDeterminedState : defaultOpen;
       this.accordionStates.set(accordionModule.id, initialState);
-    } else if (logicDeterminedState !== null) {
-      // If logic determines state, update it (overriding manual state)
+    } else if (
+      logicDeterminedState !== null &&
+      this.accordionLogicStates.get(accordionModule.id) !== logicDeterminedState
+    ) {
+      // Edge-trigger: only force the state when the logic RESULT changes.
+      // This lets manual toggles persist between logic transitions (and lets
+      // the user close an 'always' accordion after its one-time open).
       this.accordionStates.set(accordionModule.id, logicDeterminedState);
     }
+    this.accordionLogicStates.set(accordionModule.id, logicDeterminedState);
 
     const isOpen = this.accordionStates.get(accordionModule.id) || false;
 
     // Determine title text
     let titleText = '';
     if (accordionModule.title_mode === 'entity' && accordionModule.title_entity) {
-      const entityState = hass?.states[accordionModule.title_entity];
+      // Resolve $variable references to the actual entity ID before lookup.
+      const titleEntityId =
+        this.resolveEntity(accordionModule.title_entity, config) || accordionModule.title_entity;
+      const entityState = hass?.states[titleEntityId];
       const entityName =
         entityState?.attributes?.friendly_name ||
-        accordionModule.title_entity.split('.')[1] ||
-        accordionModule.title_entity;
-      const entityStateValue = entityState?.state || accordionModule.title_entity;
+        titleEntityId.split('.')[1] ||
+        titleEntityId;
+      const entityStateValue = entityState?.state || titleEntityId;
 
       if (accordionModule.show_entity_name) {
         titleText = `${entityName}: ${entityStateValue}`;
@@ -1355,8 +1405,11 @@ export class UltraAccordionModule extends BaseUltraModule {
     const contentBorderColor = d.content_border_color || 'transparent';
     const contentBackground = d.content_background_color || 'transparent';
     const contentStyles = {
-      maxHeight: isOpen ? '2000px' : '0',
-      overflow: 'hidden',
+      // Large cap keeps the max-height open/close transition working while
+      // overflow:visible when open ensures even taller content is never
+      // clipped (the old 2000px + overflow:hidden combo cut long content off).
+      maxHeight: isOpen ? '10000px' : '0',
+      overflow: isOpen ? 'visible' : 'hidden',
       transition: 'max-height 0.3s ease-in-out, padding 0.3s ease-in-out',
       background: contentBackground,
       padding: isOpen ? `${d.content_padding || 16}px` : '0',
@@ -1388,6 +1441,30 @@ export class UltraAccordionModule extends BaseUltraModule {
     // Hover color for header
     const headerHoverColor = d.header_hover_color || 'rgba(var(--rgb-primary-color), 0.1)';
 
+    // Global tap/hold/double-tap actions on the accordion container (the
+    // header keeps its toggle role and never triggers these).
+    const gestureHandlers = this.createGestureHandlers(
+      accordionModule.id,
+      {
+        tap_action: accordionModule.tap_action,
+        hold_action: accordionModule.hold_action,
+        double_tap_action: accordionModule.double_tap_action,
+        entity: (accordionModule as any).entity,
+        module: accordionModule,
+      },
+      hass,
+      config
+    );
+    const isActionConfigured = (action?: { action?: string }) =>
+      !!action && action.action !== 'nothing' && action.action !== 'default';
+    const hasAccordionActions =
+      isActionConfigured(accordionModule.tap_action) ||
+      isActionConfigured(accordionModule.hold_action) ||
+      isActionConfigured(accordionModule.double_tap_action);
+    // Keep header pointer events from reaching the container's gesture
+    // handlers so a header click only toggles and never double-fires actions.
+    const stopHeaderPointer = (e: PointerEvent) => e.stopPropagation();
+
     // Toggle handler
     const handleToggle = (e: Event) => {
       e.stopPropagation(); // Prevent nested accordion toggles
@@ -1411,7 +1488,14 @@ export class UltraAccordionModule extends BaseUltraModule {
       </style>
       <div
         class="ultra-accordion-container ${hoverClass} ${accordionId}"
-        style="${this.buildStyleString(containerStyles)}; ${designStyles}"
+        style="${this.buildStyleString(containerStyles)}; ${designStyles}${hasAccordionActions
+          ? '; cursor: pointer'
+          : ''}"
+        @pointerdown=${hasAccordionActions ? gestureHandlers.onPointerDown : null}
+        @pointermove=${hasAccordionActions ? gestureHandlers.onPointerMove : null}
+        @pointerup=${hasAccordionActions ? gestureHandlers.onPointerUp : null}
+        @pointercancel=${hasAccordionActions ? gestureHandlers.onPointerCancel : null}
+        @pointerleave=${hasAccordionActions ? gestureHandlers.onPointerLeave : null}
       >
         <!-- Accordion Header -->
         <div
@@ -1421,6 +1505,8 @@ export class UltraAccordionModule extends BaseUltraModule {
           tabindex="0"
           aria-expanded="${isOpen}"
           aria-label="${titleText}${isOpen ? ', expanded' : ', collapsed'}"
+          @pointerdown=${hasAccordionActions ? stopHeaderPointer : null}
+          @pointerup=${hasAccordionActions ? stopHeaderPointer : null}
           @click=${handleToggle}
           @keydown=${(e: KeyboardEvent) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -1450,10 +1536,20 @@ export class UltraAccordionModule extends BaseUltraModule {
                   return ucModulePreviewService.renderModuleLoadingState(childModule);
                 }
 
-                // Check visibility
+                // Check visibility (same rules as horizontal/vertical layouts:
+                // module-level conditions AND design-tab logic_* properties)
                 logicService.setHass(hass);
+                const childWithDesign = childModule as CardModule & {
+                  design?: Record<string, unknown>;
+                };
                 const isVisible = logicService.evaluateModuleVisibility(childModule);
-                if (!isVisible) return '';
+                const globalLogicVisible = logicService.evaluateLogicProperties({
+                  logic_entity: childWithDesign?.design?.logic_entity,
+                  logic_attribute: childWithDesign?.design?.logic_attribute,
+                  logic_operator: childWithDesign?.design?.logic_operator,
+                  logic_value: childWithDesign?.design?.logic_value,
+                });
+                if (!isVisible || !globalLogicVisible) return '';
 
                 // Check Pro access for child modules
                 const isProModule =
@@ -1468,6 +1564,14 @@ export class UltraAccordionModule extends BaseUltraModule {
                   integrationUser?.subscription?.status === 'active'
                 ) {
                   hasProAccess = true;
+                } else if (ucCloudAuthService.isAuthenticated()) {
+                  const cloudUser = ucCloudAuthService.getCurrentUser();
+                  if (
+                    cloudUser?.subscription?.tier === 'pro' &&
+                    cloudUser?.subscription?.status === 'active'
+                  ) {
+                    hasProAccess = true;
+                  }
                 }
 
                 if (isProModule && !hasProAccess) {

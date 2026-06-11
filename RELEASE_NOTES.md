@@ -1,5 +1,33 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.5.0-beta4
+
+### 🔧 Improvements
+
+- **Improved Tabs keyboard accessibility** - Tabs can now be navigated with arrow keys, Home, and End, and overflowing tab bars scroll instead of being clipped
+- **Improved popup accessibility** - Popups now support Escape to close, keep keyboard focus inside while open, and return focus to the trigger when closed
+- **Improved Accordion editor feedback** - Style and color changes in the Accordion editor now refresh the live preview instantly
+- **Improved Navigation module editor** - Restored the desktop position option for the media player widget, added hold and double-tap action options for routes, and haptic sub-settings now follow the master toggle
+- **Improved layout module polish** - Variable-based entities now resolve in Accordion titles and popup fields, vertical alignment can be reset to default on Horizontal layouts, page breaks show a labeled divider in the editor preview, and stack layer selection no longer leaks between stack modules
+
+### 🐛 Bug Fixes
+
+- **Fixed box shadows on layout containers** - Box shadows configured in the Design tab now render correctly on Horizontal and Vertical layouts
+- **Fixed Accordion open behavior** - Manual open/close now persists when using conditional open modes, "Always Open" accordions can be closed as described, and changing the default state in the editor takes effect immediately
+- **Fixed Accordion content clipping** - Tall content inside an open accordion is no longer cut off
+- **Fixed Stack Overlay layer ordering** - Hiding a layer with logic conditions no longer reshuffles the stacking order of the remaining layers
+- **Fixed Stack Overlay drag re-anchoring** - Dragging a layer now keeps its chosen anchor point instead of resetting it to top-left, and the editor anchor grid now matches what actually renders
+- **Fixed Tabs inactive tab background** - The inactive tab background color setting now applies across all tab styles
+- **Fixed tab content losing state when switching tabs** - Tab content stays mounted on dashboards so videos, inputs, and scroll positions survive switching between tabs
+- **Fixed Slider settings not applying** - Changing autoplay, loop, arrows, pagination, speed, and other slider options now reinitializes the slider correctly
+- **Fixed layout container actions** - Tap, hold, and double-tap actions configured on Slider and Accordion containers now fire correctly
+- **Fixed popups left open when hidden by logic** - Popups now close and clean up properly when their module is hidden by logic conditions
+- **Fixed editing a popup while it is open** - Configuration changes now refresh an open popup live instead of requiring it to be closed and reopened
+- **Fixed full screen popup height** - Full screen popups now truly fill the screen, including on mobile dynamic viewports
+- **Fixed blank layout containers** - Horizontal and Vertical layouts whose children are all hidden by logic now render nothing on the dashboard instead of an empty box
+
+---
+
 ## Version 3.5.0-beta3
 
 ### 🚀 New Features

@@ -1,5 +1,6 @@
 import { TemplateResult, html, render } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, UltraCardConfig, PopupModule, NavigationModule, NavRoute } from '../types';
@@ -59,6 +60,32 @@ const {
   lastRenderedHassRef: popupLastRenderedHassRef,
 } = getPopupStore();
 
+// Config hash used for each rendered portal so open popups refresh when their
+// configuration changes without a hass change (e.g. live edits in the editor).
+// Module-level (not on the window store) so stale window stores from older
+// bundles don't need migration; worst case after a bundle reload is one
+// harmless extra content render.
+const popupLastRenderedConfigHash = new Map<string, string>();
+
+// Remove the document-level keydown listener (Escape / focus trap) attached to a
+// portal and restore focus to the element that was focused before the popup opened.
+const cleanupPortalA11y = (portal: HTMLElement) => {
+  const keydownHandler = (portal as any)._ultraKeydownHandler;
+  if (keydownHandler) {
+    document.removeEventListener('keydown', keydownHandler);
+    delete (portal as any)._ultraKeydownHandler;
+  }
+  const prevFocus = (portal as any)._ultraPrevFocus as HTMLElement | null | undefined;
+  delete (portal as any)._ultraPrevFocus;
+  if (prevFocus && prevFocus.isConnected && typeof prevFocus.focus === 'function') {
+    try {
+      prevFocus.focus();
+    } catch {
+      // Element may not be focusable anymore - ignore
+    }
+  }
+};
+
 // Helper to restore HA editor overlays after popup closes
 const restoreHAEditorOverlays = () => {
   document.querySelectorAll('[data-ultra-popup-original-z-index]').forEach((el: Element) => {
@@ -72,6 +99,44 @@ const restoreHAEditorOverlays = () => {
     htmlEl.style.pointerEvents = '';
     delete htmlEl.dataset.ultraPopupOriginalZIndex;
   });
+};
+
+/**
+ * Close and tear down any open popup portals belonging to a popup module.
+ * Called by the host card (ultra-card.ts) when a popup module becomes
+ * logic-hidden: the host skips renderPreview for hidden modules, so the module
+ * itself never gets a chance to remove its document.body portal.
+ */
+export const closePopupsForModule = (moduleId: string): void => {
+  if (!moduleId) return;
+  // Portal keys are either the bare module ID or `${cardInstanceId}:${moduleId}`
+  const keys: string[] = [];
+  popupPortals.forEach((_portal, key) => {
+    if (key === moduleId || key.endsWith(`:${moduleId}`)) keys.push(key);
+  });
+  for (const key of keys) {
+    const portal = popupPortals.get(key);
+    if (portal) {
+      const observer = (portal as any)._ultraInertObserver;
+      if (observer) observer.disconnect();
+      cleanupPortalA11y(portal);
+      portal.remove();
+      popupPortals.delete(key);
+    }
+    popupStates.set(key, false);
+    manuallyOpenedPopups.delete(key);
+    popupNeedsRefresh.delete(key);
+    popupLastRenderedHassRef.delete(key);
+    popupLastRenderedConfigHash.delete(key);
+    const timerId = popupTimers.get(key);
+    if (timerId !== undefined) {
+      window.clearTimeout(timerId);
+      popupTimers.delete(key);
+    }
+  }
+  if (keys.length > 0) {
+    restoreHAEditorOverlays();
+  }
 };
 
 export class UltraPopupModule extends BaseUltraModule {
@@ -228,6 +293,7 @@ export class UltraPopupModule extends BaseUltraModule {
                     @value-changed=${(e: CustomEvent) => {
                       const value = e.detail.value;
                       updateModule({ title_background_color: value });
+                      this.triggerPreviewUpdate();
                     }}
                   ></ultra-color-picker>
                 </div>
@@ -242,6 +308,7 @@ export class UltraPopupModule extends BaseUltraModule {
                     @value-changed=${(e: CustomEvent) => {
                       const value = e.detail.value;
                       updateModule({ title_text_color: value });
+                      this.triggerPreviewUpdate();
                     }}
                   ></ultra-color-picker>
                 </div>
@@ -274,6 +341,7 @@ export class UltraPopupModule extends BaseUltraModule {
               @value-changed=${(e: CustomEvent) => {
                 const value = e.detail.value;
                 updateModule({ popup_background_color: value });
+                this.triggerPreviewUpdate();
               }}
             ></ultra-color-picker>
           </div>
@@ -288,6 +356,7 @@ export class UltraPopupModule extends BaseUltraModule {
               @value-changed=${(e: CustomEvent) => {
                 const value = e.detail.value;
                 updateModule({ popup_text_color: value });
+                this.triggerPreviewUpdate();
               }}
             ></ultra-color-picker>
           </div>
@@ -320,6 +389,7 @@ export class UltraPopupModule extends BaseUltraModule {
                     @value-changed=${(e: CustomEvent) => {
                       const value = e.detail.value;
                       updateModule({ overlay_background: value });
+                      this.triggerPreviewUpdate();
                     }}
                   ></ultra-color-picker>
                 </div>
@@ -358,6 +428,7 @@ export class UltraPopupModule extends BaseUltraModule {
                     @value-changed=${(e: CustomEvent) => {
                       const value = e.detail.value;
                       updateModule({ close_button_color: value });
+                      this.triggerPreviewUpdate();
                     }}
                   ></ultra-color-picker>
                 </div>
@@ -1358,20 +1429,23 @@ export class UltraPopupModule extends BaseUltraModule {
         )}
 
         <!-- Popup Dimensions Section -->
-        ${this.renderFieldSection(
-          localize('editor.popup.popup_width', lang, 'Popup Width'),
-          localize(
-            'editor.popup.popup_width_desc',
-            lang,
-            'Width of the popup (e.g., 600px, 100%, 14rem, 10vw).'
-          ),
-          hass,
-          { popup_width: popupModule.popup_width || '600px' },
-          [this.textField('popup_width')],
-          (e: CustomEvent) => {
-            updateModule(e.detail.value);
-          }
-        )}
+        <!-- Width is ignored for full-width layouts (full_screen, top_panel, bottom_panel) -->
+        ${!['full_screen', 'top_panel', 'bottom_panel'].includes(popupModule.layout || 'default')
+          ? this.renderFieldSection(
+              localize('editor.popup.popup_width', lang, 'Popup Width'),
+              localize(
+                'editor.popup.popup_width_desc',
+                lang,
+                'Width of the popup (e.g., 600px, 100%, 14rem, 10vw).'
+              ),
+              hass,
+              { popup_width: popupModule.popup_width || '600px' },
+              [this.textField('popup_width')],
+              (e: CustomEvent) => {
+                updateModule(e.detail.value);
+              }
+            )
+          : ''}
         ${this.renderFieldSection(
           localize('editor.popup.popup_padding', lang, 'Popup Padding'),
           localize(
@@ -1614,7 +1688,8 @@ export class UltraPopupModule extends BaseUltraModule {
 
   private _getTriggerButtonEntityColor(
     popupModule: PopupModule,
-    hass: HomeAssistant
+    hass: HomeAssistant,
+    config?: UltraCardConfig
   ): string | null {
     if (
       !popupModule.trigger_button_use_entity_color ||
@@ -1623,7 +1698,11 @@ export class UltraPopupModule extends BaseUltraModule {
     ) {
       return null;
     }
-    const entityState = hass.states[popupModule.trigger_button_color_entity];
+    // Resolve $variable references to the actual entity ID
+    const colorEntityId =
+      this.resolveEntity(popupModule.trigger_button_color_entity, config) ||
+      popupModule.trigger_button_color_entity;
+    const entityState = hass.states[colorEntityId];
     if (!entityState) return null;
 
     const stateColors = popupModule.trigger_button_state_colors;
@@ -2544,12 +2623,15 @@ export class UltraPopupModule extends BaseUltraModule {
     const cardInstanceId = (config as any)?.__ucInstanceId || '';
     const uniquePopupKey = cardInstanceId ? `${cardInstanceId}:${popupModule.id}` : popupModule.id;
 
-    // CRITICAL FIX: Ensure trigger_mode is 'manual' for non-logic triggers
-    // This prevents logic evaluation from interfering with button/icon/image/page_load triggers
+    // Stable hash of the popup config (incl. child modules) so an open portal
+    // re-renders when the config changes even if hass hasn't (config-only edits)
+    const popupConfigHash = JSON.stringify(popupModule);
+
+    // Use an effective trigger mode of 'manual' for non-logic triggers (without mutating
+    // the config object) so logic evaluation doesn't interfere with button/icon/image/page_load triggers
     const triggerType = popupModule.trigger_type || 'button';
-    if (triggerType !== 'logic' && popupModule.trigger_mode !== 'manual') {
-      popupModule.trigger_mode = 'manual';
-    }
+    const effectiveTriggerMode =
+      triggerType !== 'logic' ? 'manual' : popupModule.trigger_mode || 'manual';
 
     // Handle module trigger registration
     // When trigger_type is 'module', register this popup to be opened by the selected module
@@ -2572,7 +2654,7 @@ export class UltraPopupModule extends BaseUltraModule {
     let logicDeterminedState: boolean | null = null;
 
     if (triggerType === 'logic') {
-      const triggerMode = popupModule.trigger_mode || 'manual';
+      const triggerMode = effectiveTriggerMode;
 
       if (triggerMode === 'every' || triggerMode === 'any') {
         // Don't auto-open if no conditions are configured yet
@@ -2764,7 +2846,7 @@ export class UltraPopupModule extends BaseUltraModule {
     // Handle trigger click
     const handleTriggerClick = (e: Event) => {
       e.stopPropagation();
-      if (triggerType === 'logic' && popupModule.trigger_mode !== 'manual') {
+      if (triggerType === 'logic' && effectiveTriggerMode !== 'manual') {
         // For logic-controlled triggers, don't allow manual toggle unless mode is manual
         return;
       }
@@ -2817,6 +2899,7 @@ export class UltraPopupModule extends BaseUltraModule {
         if (observer) {
           observer.disconnect();
         }
+        cleanupPortalA11y(portal);
         portal.remove();
         popupPortals.delete(uniquePopupKey);
       }
@@ -2838,12 +2921,15 @@ export class UltraPopupModule extends BaseUltraModule {
     let titleText = '';
     if (popupModule.show_title) {
       if (popupModule.title_mode === 'entity' && popupModule.title_entity) {
-        const entityState = hass?.states[popupModule.title_entity];
+        // Resolve $variable references to the actual entity ID
+        const titleEntityId =
+          this.resolveEntity(popupModule.title_entity, config) || popupModule.title_entity;
+        const entityState = hass?.states[titleEntityId];
         const entityName =
           entityState?.attributes?.friendly_name ||
-          popupModule.title_entity.split('.')[1] ||
-          popupModule.title_entity;
-        const entityStateValue = entityState?.state || popupModule.title_entity;
+          titleEntityId.split('.')[1] ||
+          titleEntityId;
+        const entityStateValue = entityState?.state || titleEntityId;
 
         if (popupModule.show_entity_name) {
           titleText = `${entityName}: ${entityStateValue}`;
@@ -2879,7 +2965,7 @@ export class UltraPopupModule extends BaseUltraModule {
         const hasCustomTextColor = !!popupModule.trigger_button_text_color;
 
         let bgColor = popupModule.trigger_button_background_color || 'var(--primary-color)';
-        const entityColor = this._getTriggerButtonEntityColor(popupModule, hass);
+        const entityColor = this._getTriggerButtonEntityColor(popupModule, hass, config);
         if (entityColor) bgColor = entityColor;
 
         const textColor = popupModule.trigger_button_text_color || 'white';
@@ -2951,6 +3037,7 @@ export class UltraPopupModule extends BaseUltraModule {
 
         triggerElement = html`
           <button
+            type="button"
             class="swiper-no-swiping popup-trigger"
             @click=${handleTriggerClick}
             @touchend=${(e: Event) => {
@@ -2978,7 +3065,11 @@ export class UltraPopupModule extends BaseUltraModule {
             imageUrl = getImageUrl(hass, imageUrl);
           }
         } else if (imageType === 'entity' && popupModule.trigger_image_entity) {
-          const entityState = hass?.states[popupModule.trigger_image_entity];
+          // Resolve $variable references to the actual entity ID
+          const imageEntityId =
+            this.resolveEntity(popupModule.trigger_image_entity, config) ||
+            popupModule.trigger_image_entity;
+          const entityState = hass?.states[imageEntityId];
           if (entityState?.attributes?.entity_picture) {
             imageUrl = entityState.attributes.entity_picture;
             // Convert relative URL to absolute if needed
@@ -3099,8 +3190,9 @@ export class UltraPopupModule extends BaseUltraModule {
 
     if (layout === 'full_screen') {
       popupLayoutClass = 'ultra-popup-layout-full_screen';
+      // 100dvh (with 100vh fallback) tracks the dynamic viewport on mobile browsers
       popupPositionStyle =
-        'width: 100vw; height: 100vh; max-width: 100vw; max-height: 100vh; border-radius: 0;';
+        'width: 100vw; height: 100vh; height: 100dvh; max-width: 100vw; max-height: 100vh; max-height: 100dvh; border-radius: 0;';
     } else if (layout === 'left_panel') {
       popupLayoutClass = 'ultra-popup-layout-left_panel';
       popupPositionStyle = `width: ${popupModule.popup_width || '600px'}; height: 100vh; max-height: 100vh; margin: 0; position: absolute; left: 0; top: 0; border-radius: 0;`;
@@ -3137,6 +3229,8 @@ export class UltraPopupModule extends BaseUltraModule {
       // Always render inside the popup - wrap in button element for reliable click handling in portal
       return html`
         <button
+          type="button"
+          aria-label="${localize('editor.popup.close_button.label', lang, 'Close')}"
           @click=${handleClose}
           @touchend=${(e: Event) => {
             e.preventDefault();
@@ -3223,10 +3317,12 @@ export class UltraPopupModule extends BaseUltraModule {
           if (observer) {
             observer.disconnect();
           }
+          cleanupPortalA11y(portal);
           restoreHAEditorOverlays();
           portal.remove();
           popupPortals.delete(uniquePopupKey);
           popupLastRenderedHassRef.delete(uniquePopupKey);
+          popupLastRenderedConfigHash.delete(uniquePopupKey);
         }
         return;
       }
@@ -3245,6 +3341,8 @@ export class UltraPopupModule extends BaseUltraModule {
         portal = document.createElement('div');
         portal.id = portalId;
         portal.className = 'ultra-popup-portal';
+        // Remember the previously focused element so focus can be restored on close
+        (portal as any)._ultraPrevFocus = document.activeElement as HTMLElement | null;
         // Set styles individually instead of cssText (prevents commenting out)
         portal.style.position = 'fixed';
         portal.style.top = '0';
@@ -3290,6 +3388,42 @@ export class UltraPopupModule extends BaseUltraModule {
         (portal as any)._ultraInertObserver = observer;
       }
 
+      // Keyboard support (a11y): Escape closes the popup, Tab cycles within it.
+      // Attached once per portal; removed via cleanupPortalA11y on close/teardown.
+      if (!(portal as any)._ultraKeydownHandler) {
+        const portalEl = portal;
+        const keydownHandler = (e: KeyboardEvent) => {
+          if (e.key === 'Escape') {
+            e.stopPropagation();
+            handleClose(e);
+            return;
+          }
+          if (e.key === 'Tab') {
+            // Simple focus trap: keep Tab / Shift+Tab cycling inside the popup
+            const focusables = Array.from(
+              portalEl.querySelectorAll<HTMLElement>(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+              )
+            ).filter(el => !el.hasAttribute('disabled'));
+            if (focusables.length === 0) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            const active = document.activeElement;
+            if (e.shiftKey) {
+              if (active === first || !portalEl.contains(active)) {
+                e.preventDefault();
+                last.focus();
+              }
+            } else if (active === last || !portalEl.contains(active)) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        };
+        document.addEventListener('keydown', keydownHandler);
+        (portal as any)._ultraKeydownHandler = keydownHandler;
+      }
+
       // Use extremely high z-index in preview contexts to appear above builder interface and HA edit outlines
       const isPreviewContext = previewContext === 'ha-preview' || previewContext === 'live';
       // Use maximum safe z-index value (2147483647 is max 32-bit integer)
@@ -3323,7 +3457,10 @@ export class UltraPopupModule extends BaseUltraModule {
       const needsRefreshFlag = popupNeedsRefresh.get(uniquePopupKey) === true;
       const hassChangedSinceLastRender =
         !isNewPortal && popupLastRenderedHassRef.get(uniquePopupKey) !== hass;
-      const needsContentRender = isNewPortal || needsRefreshFlag || hassChangedSinceLastRender;
+      const configChangedSinceLastRender =
+        !isNewPortal && popupLastRenderedConfigHash.get(uniquePopupKey) !== popupConfigHash;
+      const needsContentRender =
+        isNewPortal || needsRefreshFlag || hassChangedSinceLastRender || configChangedSinceLastRender;
 
       // Clear the refresh flag after checking
       if (needsRefreshFlag) {
@@ -3438,7 +3575,12 @@ export class UltraPopupModule extends BaseUltraModule {
           class="ultra-popup-overlay"
           role="dialog"
           aria-modal="true"
-          aria-label="${(titleText || 'Popup').trim() || 'Popup'}"
+          aria-label="${ifDefined(
+            popupModule.show_title ? undefined : (titleText || 'Popup').trim() || 'Popup'
+          )}"
+          aria-labelledby="${ifDefined(
+            popupModule.show_title ? `ultra-popup-title-${popupModule.id}` : undefined
+          )}"
           @click=${handleOverlayClick}
           style="
             position: fixed;
@@ -3460,11 +3602,14 @@ export class UltraPopupModule extends BaseUltraModule {
         >
           <div
             class="ultra-popup-container ${popupLayoutClass} ${getAnimationClass()}"
+            tabindex="-1"
             @click=${(e: Event) => e.stopPropagation()}
             style="
               position: relative;
               ${popupPositionStyle}
-              max-height: 90vh;
+              ${layout === 'full_screen'
+              ? 'max-height: 100vh; max-height: 100dvh;'
+              : 'max-height: 90vh;'}
               overflow-y: auto;
               background: ${popupModule.popup_background_color || 'var(--card-background-color)'};
               color: ${popupModule.popup_text_color || 'var(--primary-text-color)'};
@@ -3485,6 +3630,7 @@ export class UltraPopupModule extends BaseUltraModule {
               ? html`
                   <div
                     class="ultra-popup-title"
+                    id="ultra-popup-title-${popupModule.id}"
                     style="
                       background: ${popupModule.title_background_color || 'var(--primary-color)'};
                       color: ${popupModule.title_text_color || '#ffffff'};
@@ -3593,6 +3739,7 @@ export class UltraPopupModule extends BaseUltraModule {
       // Render the popup content into the portal
       render(popupContent, portal);
       popupLastRenderedHassRef.set(uniquePopupKey, hass);
+      popupLastRenderedConfigHash.set(uniquePopupKey, popupConfigHash);
 
       // Add native event listeners as fallback for portal rendering
       // This ensures clicks work even if lit-html event binding has issues with portals
@@ -3647,6 +3794,19 @@ export class UltraPopupModule extends BaseUltraModule {
             e.stopPropagation();
           };
         }
+
+        // Move focus into the dialog when it first opens (a11y).
+        // Focus the close button when present, otherwise the container (tabindex="-1").
+        if (isNewPortal && !initialInvisibleRender) {
+          const focusTarget = closeBtn || container;
+          if (focusTarget) {
+            try {
+              focusTarget.focus();
+            } catch {
+              // Ignore focus failures (element may be detached)
+            }
+          }
+        }
       });
     };
 
@@ -3661,12 +3821,20 @@ export class UltraPopupModule extends BaseUltraModule {
       shouldBeOpen &&
       portalExists &&
       popupLastRenderedHassRef.get(uniquePopupKey) !== hass;
+    const configChangedWhileOpen =
+      shouldBeOpen &&
+      portalExists &&
+      popupLastRenderedConfigHash.get(uniquePopupKey) !== popupConfigHash;
 
     // Only render portal if:
     // 1. Popup should be open AND portal doesn't exist yet (first creation)
     // 2. OR popup should be open AND refresh is needed (template update)
+    // 3. OR popup is open AND hass/config changed since the last content render
     // This prevents constant re-rendering on every card update
-    if (shouldBeOpen && (!portalExists || needsRefresh || hassRefChangedWhileOpen)) {
+    if (
+      shouldBeOpen &&
+      (!portalExists || needsRefresh || hassRefChangedWhileOpen || configChangedWhileOpen)
+    ) {
       renderPopupToPortal(false);
     } else if (!shouldBeOpen && portalExists) {
       // Close the portal if it exists but shouldn't be open
@@ -3676,10 +3844,12 @@ export class UltraPopupModule extends BaseUltraModule {
         if (observer) {
           observer.disconnect();
         }
+        cleanupPortalA11y(portal);
         restoreHAEditorOverlays();
         portal.remove();
         popupPortals.delete(uniquePopupKey);
         popupLastRenderedHassRef.delete(uniquePopupKey);
+        popupLastRenderedConfigHash.delete(uniquePopupKey);
       }
     }
 
@@ -3737,6 +3907,9 @@ export class UltraPopupModule extends BaseUltraModule {
     const triggerType = popupModule.trigger_type || 'button';
     if (triggerType === 'button' && !popupModule.trigger_button_text?.trim()) {
       // Warning but not error
+    }
+    if (triggerType === 'module' && !popupModule.trigger_module_id?.trim()) {
+      errors.push('Trigger module is required when using module trigger type');
     }
     if (triggerType === 'image') {
       const imageType = popupModule.trigger_image_type || 'url';
@@ -3796,6 +3969,7 @@ export class UltraPopupModule extends BaseUltraModule {
         if (observer) {
           observer.disconnect();
         }
+        cleanupPortalA11y(portal);
         portal.remove();
         popupPortals.delete(uniquePopupKey);
       }

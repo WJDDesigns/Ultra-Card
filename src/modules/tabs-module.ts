@@ -492,7 +492,7 @@ export class UltraTabsModule extends BaseUltraModule {
                 <ultra-color-picker
                   .label=${localize('editor.tabs_module.colors.background', lang, 'Background')}
                   .value=${tabsModule.inactive_tab_background || ''}
-                  .defaultValue=${'transparent'}
+                  .defaultValue=${'var(--secondary-background-color)'}
                   .hass=${hass}
                   @value-changed=${(e: CustomEvent) => {
                     updateModule({ inactive_tab_background: e.detail.value });
@@ -854,6 +854,8 @@ export class UltraTabsModule extends BaseUltraModule {
             : localize('editor.tabs_module.sections.set_default', lang, 'Set as Default')}
           @click=${() => {
             updateModule({ default_tab: section.id });
+            // Also switch the live active tab so the preview reflects the new default immediately
+            this.activeTabStates.set(tabsModule.id, section.id);
             setTimeout(() => this.triggerPreviewUpdate(), 50);
           }}
           style="color: ${isDefault ? 'var(--primary-color)' : 'var(--secondary-text-color)'}"
@@ -1483,8 +1485,13 @@ export class UltraTabsModule extends BaseUltraModule {
           display: flex;
           flex-direction: ${orientation === 'horizontal' ? 'row' : 'column'};
           flex-wrap: ${tabsModule.wrap_tabs ? 'wrap' : 'nowrap'};
-          overflow: ${tabsModule.wrap_tabs ? 'visible' : 'hidden'};
-          /* Hide scrollbar by default */
+          /* When not wrapping, keep overflowing tabs reachable by scroll/swipe */
+          ${tabsModule.wrap_tabs
+            ? 'overflow: visible;'
+            : orientation === 'horizontal'
+              ? 'overflow-x: auto; overflow-y: hidden;'
+              : 'overflow-y: auto; overflow-x: hidden;'}
+          /* Hide scrollbar by default (still scrollable) */
           scrollbar-width: none;
           -ms-overflow-style: none;
         }
@@ -1521,15 +1528,30 @@ export class UltraTabsModule extends BaseUltraModule {
           style="${tabsContainerStyles}"
           role="tablist"
           aria-label="Tabs"
+          aria-orientation="${orientation}"
+          @keydown=${(e: KeyboardEvent) => this._handleTablistKeydown(e, tabsModule, sections)}
         >
           ${sections.map(section => this._renderTabButton(section, activeTabId!, tabsModule, hass))}
         </div>
 
         <!-- Tab Content -->
         <div class="ultra-tabs-content" style="${contentStyles}">
-          ${activeSection
-            ? this._renderSectionContent(activeSection, hass, config, previewContext, lang)
-            : ''}
+          ${previewContext === 'live' || previewContext === 'ha-preview'
+            ? activeSection
+              ? this._renderSectionContent(activeSection, hass, config, previewContext, lang)
+              : ''
+            : sections.map(
+                section => html`
+                  <div
+                    class="ultra-tab-panel"
+                    role="tabpanel"
+                    aria-hidden="${section.id !== activeTabId}"
+                    style="${section.id === activeTabId ? '' : 'display: none;'}"
+                  >
+                    ${this._renderSectionContent(section, hass, config, previewContext, lang)}
+                  </div>
+                `
+              )}
         </div>
       </div>
     `, module, hass);
@@ -1578,6 +1600,55 @@ export class UltraTabsModule extends BaseUltraModule {
         ${hasTitle ? html`<span class="tab-text">${section.title}</span>` : ''}
       </button>
     `;
+  }
+
+  /**
+   * WAI-ARIA roving-tabindex keyboard support for the tablist.
+   * Arrow keys (per orientation), Home and End move focus AND activate the tab.
+   */
+  private _handleTablistKeydown(
+    e: KeyboardEvent,
+    tabsModule: TabsModule,
+    sections: TabSection[]
+  ): void {
+    if (sections.length === 0) return;
+
+    const orientation = tabsModule.orientation || 'horizontal';
+    const nextKey = orientation === 'vertical' ? 'ArrowDown' : 'ArrowRight';
+    const prevKey = orientation === 'vertical' ? 'ArrowUp' : 'ArrowLeft';
+
+    const activeTabId =
+      this.activeTabStates.get(tabsModule.id) || tabsModule.default_tab || sections[0]?.id;
+    const currentIndex = Math.max(
+      0,
+      sections.findIndex(s => s.id === activeTabId)
+    );
+
+    let targetIndex = -1;
+    if (e.key === nextKey) {
+      targetIndex = (currentIndex + 1) % sections.length;
+    } else if (e.key === prevKey) {
+      targetIndex = (currentIndex - 1 + sections.length) % sections.length;
+    } else if (e.key === 'Home') {
+      targetIndex = 0;
+    } else if (e.key === 'End') {
+      targetIndex = sections.length - 1;
+    }
+
+    if (targetIndex < 0 || !sections[targetIndex]) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    this.activeTabStates.set(tabsModule.id, sections[targetIndex].id);
+
+    // Move focus to the newly active tab (buttons are reused by Lit, so the
+    // element keeps focus across the re-render triggered below).
+    const tablist = e.currentTarget as HTMLElement;
+    const buttons = tablist?.querySelectorAll<HTMLButtonElement>('.ultra-tab-btn');
+    buttons?.[targetIndex]?.focus();
+
+    this.triggerPreviewUpdate(true);
   }
 
   private _renderSectionContent(
@@ -1769,12 +1840,24 @@ export class UltraTabsModule extends BaseUltraModule {
     // Flex wrap for responsive tabs
     const flexWrap = wrapTabs ? 'flex-wrap: wrap;' : 'flex-wrap: nowrap;';
 
+    // In vertical orientation the cross axis is horizontal, so alignment maps to
+    // align-items. 'left' is the long-standing default and historically rendered
+    // as stretched (full-width) tabs, so it is intentionally left unchanged to
+    // keep existing configs rendering identically.
+    let verticalAlignItems = '';
+    if (orientation === 'vertical') {
+      if (alignment === 'center') verticalAlignItems = 'align-items: center;';
+      else if (alignment === 'right') verticalAlignItems = 'align-items: flex-end;';
+      else if (alignment === 'stretch') verticalAlignItems = 'align-items: stretch;';
+    }
+
     return `
       display: flex;
       flex-direction: ${orientation === 'horizontal' ? 'row' : 'column'};
       gap: ${gap}px;
       ${flexWrap}
       ${orientation === 'horizontal' && alignment !== 'stretch' ? `justify-content: ${justifyContent};` : ''}
+      ${verticalAlignItems}
       ${verticalWidthStyle}
       padding: ${containerPadding};
       background: ${containerBg};
@@ -1823,6 +1906,16 @@ export class UltraTabsModule extends BaseUltraModule {
     const inactiveBg = tabsModule.inactive_tab_background || 'var(--secondary-background-color)';
     const inactiveBorder = tabsModule.inactive_tab_border_color || 'transparent';
 
+    // Only honor an explicitly customized inactive background in the style branches below.
+    // createDefault() historically pre-populates 'var(--secondary-background-color)' on every
+    // module, so that sentinel (like an unset value) must keep each branch's hardcoded
+    // default to leave existing/default renders unchanged.
+    const customInactiveBg =
+      tabsModule.inactive_tab_background &&
+      tabsModule.inactive_tab_background !== 'var(--secondary-background-color)'
+        ? tabsModule.inactive_tab_background
+        : undefined;
+
     // Base styles
     let bgColor = isActive ? activeBg : inactiveBg;
     let textColor = isActive ? activeColor : inactiveColor;
@@ -1837,7 +1930,7 @@ export class UltraTabsModule extends BaseUltraModule {
     switch (style) {
       case 'default':
         // Minimal underline style
-        bgColor = 'transparent';
+        bgColor = isActive ? 'transparent' : customInactiveBg || 'transparent';
         textColor = isActive ? activeBg : inactiveColor;
         border = 'none';
         radius = '0';
@@ -1848,7 +1941,7 @@ export class UltraTabsModule extends BaseUltraModule {
 
       case 'simple':
         // Clean underline
-        bgColor = 'transparent';
+        bgColor = isActive ? 'transparent' : customInactiveBg || 'transparent';
         textColor = isActive ? activeColor : inactiveColor;
         border = 'none';
         radius = '0';
@@ -1859,7 +1952,9 @@ export class UltraTabsModule extends BaseUltraModule {
 
       case 'simple_2':
         // Top and bottom border style
-        bgColor = isActive ? 'rgba(var(--rgb-primary-color), 0.1)' : 'transparent';
+        bgColor = isActive
+          ? 'rgba(var(--rgb-primary-color), 0.1)'
+          : customInactiveBg || 'transparent';
         textColor = isActive ? activeBg : inactiveColor;
         border = 'none';
         radius = '0';
@@ -1870,7 +1965,7 @@ export class UltraTabsModule extends BaseUltraModule {
 
       case 'simple_3':
         // Full border box
-        bgColor = isActive ? 'var(--card-background-color)' : 'transparent';
+        bgColor = isActive ? 'var(--card-background-color)' : customInactiveBg || 'transparent';
         textColor = isActive ? activeColor : inactiveColor;
         radius = '4px';
         extraStyles = isActive
@@ -1880,26 +1975,26 @@ export class UltraTabsModule extends BaseUltraModule {
 
       case 'switch_1':
         // Solid background switch (default)
-        bgColor = isActive ? activeBg : 'transparent';
+        bgColor = isActive ? activeBg : customInactiveBg || 'transparent';
         textColor = isActive ? activeColor : inactiveColor;
         break;
 
       case 'switch_2':
         // Rounded pill switch
         radius = '50px';
-        bgColor = isActive ? activeBg : 'transparent';
+        bgColor = isActive ? activeBg : customInactiveBg || 'transparent';
         textColor = isActive ? activeColor : inactiveColor;
         break;
 
       case 'switch_3':
         // Dark background container switch
-        bgColor = isActive ? activeBg : 'transparent';
+        bgColor = isActive ? activeBg : customInactiveBg || 'transparent';
         textColor = isActive ? activeColor : inactiveColor;
         break;
 
       case 'modern':
         // Clean modern style with subtle indicator
-        bgColor = 'transparent';
+        bgColor = isActive ? 'transparent' : customInactiveBg || 'transparent';
         textColor = isActive ? activeBg : inactiveColor;
         radius = '0';
         extraStyles = isActive
@@ -1915,7 +2010,7 @@ export class UltraTabsModule extends BaseUltraModule {
         // Stylized with gradient-like accent
         bgColor = isActive
           ? `linear-gradient(135deg, ${activeBg}, color-mix(in srgb, ${activeBg} 70%, white))`
-          : 'transparent';
+          : customInactiveBg || 'transparent';
         textColor = isActive ? activeColor : inactiveColor;
         radius = '8px';
         extraStyles = isActive ? 'box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);' : '';
@@ -1923,7 +2018,7 @@ export class UltraTabsModule extends BaseUltraModule {
 
       default:
         // Fallback to switch_1 style
-        bgColor = isActive ? activeBg : 'transparent';
+        bgColor = isActive ? activeBg : customInactiveBg || 'transparent';
         textColor = isActive ? activeColor : inactiveColor;
     }
 

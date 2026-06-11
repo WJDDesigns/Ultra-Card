@@ -64,8 +64,23 @@ export class UltraPageBreakModule extends BaseUltraModule {
     config: UltraCardConfig,
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
-    // Page breaks are only for editor organization - don't render anything in the card preview
-    return html``;
+    // Page breaks are organizational markers: show a slim labeled divider in editor
+    // preview contexts only, and render nothing on the actual dashboard.
+    const isEditorPreview = previewContext === 'live' || previewContext === 'ha-preview';
+    if (!isEditorPreview) {
+      return html``;
+    }
+
+    const lang = hass?.locale?.language || 'en';
+    return html`
+      <style>
+        ${this.getStyles()}
+      </style>
+      <div class="pagebreak-module-container">
+        <ha-icon icon="mdi:format-page-break"></ha-icon>
+        <span>${localize('editor.pagebreak.preview_label', lang, 'Page Break')}</span>
+      </div>
+    `;
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
@@ -77,6 +92,30 @@ export class UltraPageBreakModule extends BaseUltraModule {
     return `
       .pagebreak-module-container {
         user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 2px 0;
+        color: var(--secondary-text-color);
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+      }
+
+      .pagebreak-module-container::before,
+      .pagebreak-module-container::after {
+        content: '';
+        flex: 1;
+        border-top: 1px dashed var(--divider-color);
+      }
+
+      .pagebreak-module-container ha-icon {
+        --mdc-icon-size: 14px;
+        flex-shrink: 0;
       }
     `;
   }

@@ -236,6 +236,24 @@ export class UltraVerticalModule extends BaseUltraModule {
     const effective = { ...moduleWithDesign, ...(moduleWithDesign.design || {}) } as any;
     const hasChildren = verticalModule.modules && verticalModule.modules.length > 0;
 
+    // Filter children hidden by logic up-front so we can detect an entirely-hidden layout
+    logicService.setHass(hass);
+    const visibleChildren = hasChildren
+      ? verticalModule.modules!.filter(cm => {
+          const m: any = cm as any;
+          const visibleByModule = logicService.evaluateModuleVisibility(m);
+          const visibleByGlobal = logicService.evaluateLogicProperties({
+            logic_entity: m?.design?.logic_entity,
+            logic_attribute: m?.design?.logic_attribute,
+            logic_operator: m?.design?.logic_operator,
+            logic_value: m?.design?.logic_value,
+          });
+          return visibleByModule && visibleByGlobal;
+        })
+      : [];
+    const allChildrenHiddenByLogic = hasChildren && visibleChildren.length === 0;
+    const isEditorPreview = previewContext === 'live' || previewContext === 'ha-preview';
+
     // Container styles for positioning and effects
     const gapUnit: string = (verticalModule as any).gap_unit || 'rem';
     const isPxUnit = gapUnit === 'px';
@@ -411,6 +429,20 @@ export class UltraVerticalModule extends BaseUltraModule {
     ) as Record<string, string | undefined>;
     const designStyles = this.buildStyleString(_wrapperOnlyStyles);
 
+    // Design-tab box shadow (box_shadow_h/v/blur/spread/color) is stripped from the
+    // outer wrapper above, so apply it on the inner surface where background/border
+    // render. Legacy `box_shadow` (already in containerStyles) remains the fallback.
+    if (_allDesignStyles.boxShadow) {
+      containerStyles.boxShadow = _allDesignStyles.boxShadow;
+    }
+
+    // When every child is hidden by logic, render nothing on the dashboard so no
+    // blank container (padding/border/background) is left behind. Editor previews
+    // still show an informative empty state below.
+    if (allChildrenHiddenByLogic && !isEditorPreview) {
+      return html``;
+    }
+
     return this.wrapWithAnimation(html`
       <div class="vertical-module-preview ${hoverClass}" style="${designStyles}">
         <div
@@ -424,21 +456,8 @@ export class UltraVerticalModule extends BaseUltraModule {
           @pointercancel=${hasActions ? handlers.onPointerCancel : null}
           @pointerleave=${hasActions ? handlers.onPointerLeave : null}
         >
-          ${hasChildren
+          ${visibleChildren.length > 0
             ? (() => {
-                // Filter hidden children so no empty space remains
-                logicService.setHass(hass);
-                const visibleChildren = verticalModule.modules!.filter(cm => {
-                  const m: any = cm as any;
-                  const visibleByModule = logicService.evaluateModuleVisibility(m);
-                  const visibleByGlobal = logicService.evaluateLogicProperties({
-                    logic_entity: m?.design?.logic_entity,
-                    logic_attribute: m?.design?.logic_attribute,
-                    logic_operator: m?.design?.logic_operator,
-                    logic_value: m?.design?.logic_value,
-                  });
-                  return visibleByModule && visibleByGlobal;
-                });
                 return repeat(
                   visibleChildren,
                   (cm) => cm.id || cm.type,
@@ -471,20 +490,39 @@ export class UltraVerticalModule extends BaseUltraModule {
               })()
             : html`
                 <div class="empty-layout-message">
-                  <span
-                    >${localize(
-                      'editor.vertical.empty.no_modules',
-                      lang,
-                      'No modules added yet'
-                    )}</span
-                  >
-                  <small
-                    >${localize(
-                      'editor.vertical.empty.add_modules',
-                      lang,
-                      'Add modules in the layout builder to see them here'
-                    )}</small
-                  >
+                  ${allChildrenHiddenByLogic
+                    ? html`
+                        <span
+                          >${localize(
+                            'editor.vertical.empty.all_hidden',
+                            lang,
+                            'All modules hidden by logic'
+                          )}</span
+                        >
+                        <small
+                          >${localize(
+                            'editor.vertical.empty.all_hidden_desc',
+                            lang,
+                            'Every module in this layout is hidden by its display conditions'
+                          )}</small
+                        >
+                      `
+                    : html`
+                        <span
+                          >${localize(
+                            'editor.vertical.empty.no_modules',
+                            lang,
+                            'No modules added yet'
+                          )}</span
+                        >
+                        <small
+                          >${localize(
+                            'editor.vertical.empty.add_modules',
+                            lang,
+                            'Add modules in the layout builder to see them here'
+                          )}</small
+                        >
+                      `}
                 </div>
               `}
         </div>
@@ -798,8 +836,9 @@ export class UltraVerticalModule extends BaseUltraModule {
   }
 
   // Helper methods for style conversion and design properties
-  private styleObjectToCss(styles: Record<string, string>): string {
+  private styleObjectToCss(styles: Record<string, string | undefined>): string {
     return Object.entries(styles)
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
       .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
       .join('; ');
   }

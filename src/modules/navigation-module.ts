@@ -862,11 +862,17 @@ export class UltraNavigationModule extends BaseUltraModule {
               data: { enabled: navModule.nav_haptic !== false },
               schema: [UcFormUtils.boolean('enabled')],
               onChange: (e: CustomEvent) => {
+                // `true` restores the enabled defaults; getHapticConfig would echo the
+                // all-disabled config while the master toggle is still off
                 updateModule({
-                  nav_haptic: e.detail.value.enabled ? this.getHapticConfig(navModule) : false,
+                  nav_haptic: e.detail.value.enabled ? true : false,
                 });
               },
             },
+            // Sub-toggles only apply while the master toggle is on
+            ...(navModule.nav_haptic === false
+              ? []
+              : [
             {
               title: 'URL Navigation',
               description: 'Trigger haptic when navigating to a URL.',
@@ -926,6 +932,7 @@ export class UltraNavigationModule extends BaseUltraModule {
                 });
               },
             },
+              ])
           ]
         )}
       </div>
@@ -1062,8 +1069,9 @@ export class UltraNavigationModule extends BaseUltraModule {
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
+    const baseValidation = super.validate(module);
     const navModule = module as NavigationModule;
-    const errors: string[] = [];
+    const errors: string[] = [...baseValidation.errors];
 
     if (!navModule.nav_routes || navModule.nav_routes.length === 0) {
       errors.push('At least one navigation route is required.');
@@ -1644,6 +1652,27 @@ export class UltraNavigationModule extends BaseUltraModule {
         }
       )}
       ${UcFormUtils.renderFieldSection(
+        'Desktop Position',
+        'Where the media player widget appears on desktop.',
+        hass,
+        { desktop_position: mediaPlayer.desktop_position || 'bottom-center' },
+        [
+          UcFormUtils.select('desktop_position', [
+            { value: 'bottom-center', label: 'Bottom Center' },
+            { value: 'bottom-left', label: 'Bottom Left' },
+            { value: 'bottom-right', label: 'Bottom Right' },
+            { value: 'top-center', label: 'Top Center' },
+            { value: 'top-left', label: 'Top Left' },
+            { value: 'top-right', label: 'Top Right' },
+          ]),
+        ],
+        (e: CustomEvent) => {
+          updateModule({
+            nav_media_player: { ...mediaPlayer, desktop_position: e.detail.value.desktop_position },
+          });
+        }
+      )}
+      ${UcFormUtils.renderFieldSection(
         'Album Cover Background',
         'Use album art as blurred background for the widget.',
         hass,
@@ -2019,6 +2048,8 @@ export class UltraNavigationModule extends BaseUltraModule {
                 )}
 
                 ${this.renderActionEditor(route, hass, config || ({} as UltraCardConfig), updateRoute)}
+                ${this.renderActionEditor(route, hass, config || ({} as UltraCardConfig), updateRoute, 'hold_action')}
+                ${this.renderActionEditor(route, hass, config || ({} as UltraCardConfig), updateRoute, 'double_tap_action')}
 
                 ${UcFormUtils.renderFieldSection(
                   'Icon',
@@ -2082,7 +2113,7 @@ export class UltraNavigationModule extends BaseUltraModule {
                   style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--divider-color);"
                 >
                   <div class="field-group-title">Notifications</div>
-                  ${this.renderNotificationEditor(route, hass, updateRoute)}
+                  ${this.renderNotificationEditor(route, hass, updateRoute, config)}
                 </div>
               </div>
             `
@@ -2414,18 +2445,24 @@ export class UltraNavigationModule extends BaseUltraModule {
   /**
    * Map a route's effective action type to a simplified category for our dropdown.
    * HA-native actions (toggle, more-info, assist, etc.) map to 'ha-action'.
+   * For hold/double-tap, an unset action maps to 'none' (disabled).
    */
-  private getActionCategory(route: NavRoute): string {
-    const action = route.tap_action?.action as string | undefined;
-    if (!action || action === 'default') return 'navigate';
-    if (action === 'navigate' && !route.tap_action?.navigation_path) return 'navigate';
+  private getActionCategory(
+    route: NavRoute,
+    actionKey: 'tap_action' | 'hold_action' | 'double_tap_action' = 'tap_action'
+  ): string {
+    const actionConfig = route[actionKey];
+    const isTap = actionKey === 'tap_action';
+    const action = actionConfig?.action as string | undefined;
+    if (!action || action === 'default') return isTap ? 'navigate' : 'none';
+    if (action === 'navigate') return 'navigate';
     if (action === 'url') return 'url';
     if (action === 'open-popup') return 'open-popup';
     if (action === 'toggle') return 'toggle';
     if (action === 'more-info') return 'more-info';
     if (action === 'assist') return 'assist';
     if (action === 'perform-action' || action === 'call-service') return 'perform-action';
-    if (action === 'nothing') return 'nothing';
+    if (action === 'nothing') return isTap ? 'nothing' : 'none';
     // Everything else falls back to perform-action UI
     return 'perform-action';
   }
@@ -2434,14 +2471,19 @@ export class UltraNavigationModule extends BaseUltraModule {
     route: NavRoute,
     hass: HomeAssistant,
     config: UltraCardConfig,
-    updateRoute: (updates: Partial<NavRoute>) => void
+    updateRoute: (updates: Partial<NavRoute>) => void,
+    actionKey: 'tap_action' | 'hold_action' | 'double_tap_action' = 'tap_action'
   ): TemplateResult {
-    const category = this.getActionCategory(route);
+    const isTap = actionKey === 'tap_action';
+    const currentAction = route[actionKey];
+    const setAction = (next: NavActionConfig | undefined) =>
+      updateRoute({ [actionKey]: next } as Partial<NavRoute>);
+    const category = this.getActionCategory(route, actionKey);
     const serviceActionValue = (() => {
-      const tapAction = (route.tap_action || {}) as NavActionConfig;
-      const service = tapAction.perform_action || tapAction.service || '';
-      const data = tapAction.data ?? tapAction.service_data;
-      const target = tapAction.target;
+      const actionConfig = (currentAction || {}) as NavActionConfig;
+      const service = actionConfig.perform_action || actionConfig.service || '';
+      const data = actionConfig.data ?? actionConfig.service_data;
+      const target = actionConfig.target;
       return {
         action: service,
         ...(data ? { data } : {}),
@@ -2451,67 +2493,81 @@ export class UltraNavigationModule extends BaseUltraModule {
 
     const setCategory = (cat: string) => {
       switch (cat) {
+        case 'none':
+          setAction(undefined);
+          break;
         case 'navigate':
-          updateRoute({ tap_action: undefined });
+          if (isTap) {
+            // Tap uses the route's own URL/path
+            setAction(undefined);
+          } else {
+            setAction({
+              action: 'navigate',
+              navigation_path: currentAction?.navigation_path || '',
+            });
+          }
           break;
         case 'url':
-          updateRoute({ tap_action: { action: 'url', url_path: route.tap_action?.url_path || '' } });
+          setAction({ action: 'url', url_path: currentAction?.url_path || '' });
           break;
         case 'open-popup':
-          updateRoute({ tap_action: { action: 'open-popup', popup_id: route.tap_action?.popup_id || '' } });
+          setAction({ action: 'open-popup', popup_id: currentAction?.popup_id || '' });
           break;
         case 'toggle':
-          updateRoute({
-            tap_action: { action: 'toggle', entity: route.tap_action?.entity || '' },
-          });
+          setAction({ action: 'toggle', entity: currentAction?.entity || '' });
           break;
         case 'more-info':
-          updateRoute({
-            tap_action: { action: 'more-info', entity: route.tap_action?.entity || '' },
-          });
+          setAction({ action: 'more-info', entity: currentAction?.entity || '' });
           break;
         case 'assist':
-          updateRoute({
-            tap_action: {
-              action: 'assist',
-              pipeline_id: route.tap_action?.pipeline_id,
-              start_listening: route.tap_action?.start_listening,
-            },
+          setAction({
+            action: 'assist',
+            pipeline_id: currentAction?.pipeline_id,
+            start_listening: currentAction?.start_listening,
           });
           break;
         case 'perform-action':
-          updateRoute({
-            tap_action: {
-              ...(route.tap_action || {}),
-              action: 'perform-action',
-            },
+          setAction({
+            ...(currentAction || {}),
+            action: 'perform-action',
           });
           break;
         case 'nothing':
-          updateRoute({ tap_action: { action: 'nothing' } });
+          setAction({ action: 'nothing' });
           break;
       }
     };
 
+    const sectionTitle = isTap
+      ? 'Action Type'
+      : actionKey === 'hold_action'
+        ? 'Hold Action'
+        : 'Double Tap Action';
+    const sectionDescription = isTap
+      ? 'What happens when this icon is tapped.'
+      : actionKey === 'hold_action'
+        ? 'Optional action when this icon is pressed and held.'
+        : 'Optional action when this icon is double-tapped.';
+    const categoryOptions = [
+      ...(isTap ? [] : [{ value: 'none', label: 'None (disabled)' }]),
+      { value: 'navigate', label: 'Navigate to Path' },
+      { value: 'url', label: 'Open External URL' },
+      { value: 'open-popup', label: 'Open Popup' },
+      { value: 'toggle', label: 'Toggle Entity' },
+      { value: 'more-info', label: 'More Info' },
+      { value: 'perform-action', label: 'Perform Action' },
+      { value: 'assist', label: 'Assist' },
+      ...(isTap ? [{ value: 'nothing', label: 'No Action' }] : []),
+    ];
+
     return html`
       <!-- Action Type -->
       ${UcFormUtils.renderFieldSection(
-        'Action Type',
-        'What happens when this icon is tapped.',
+        sectionTitle,
+        sectionDescription,
         hass,
         { action_category: category },
-        [
-          UcFormUtils.select('action_category', [
-            { value: 'navigate', label: 'Navigate to Path' },
-            { value: 'url', label: 'Open External URL' },
-            { value: 'open-popup', label: 'Open Popup' },
-            { value: 'toggle', label: 'Toggle Entity' },
-            { value: 'more-info', label: 'More Info' },
-            { value: 'perform-action', label: 'Perform Action' },
-            { value: 'assist', label: 'Assist' },
-            { value: 'nothing', label: 'No Action' },
-          ]),
-        ],
+        [UcFormUtils.select('action_category', categoryOptions)],
         (e: CustomEvent) => {
           const nextValue = e.detail?.value?.action_category;
           if (nextValue && nextValue !== category) {
@@ -2530,9 +2586,12 @@ export class UltraNavigationModule extends BaseUltraModule {
               </div>
               <ultra-navigation-picker
                 .hass=${hass}
-                .value=${route.url || ''}
+                .value=${(isTap ? route.url : currentAction?.navigation_path) || ''}
                 label=""
-                @value-changed=${(e: CustomEvent) => updateRoute({ url: e.detail.value })}
+                @value-changed=${(e: CustomEvent) =>
+                  isTap
+                    ? updateRoute({ url: e.detail.value })
+                    : setAction({ action: 'navigate', navigation_path: e.detail.value })}
               ></ultra-navigation-picker>
             </div>
           `
@@ -2544,13 +2603,11 @@ export class UltraNavigationModule extends BaseUltraModule {
             'URL',
             'External website to open in a new tab (e.g., https://google.com).',
             hass,
-            { url_path: route.tap_action?.url_path || '' },
+            { url_path: currentAction?.url_path || '' },
             [UcFormUtils.text('url_path')],
             (e: CustomEvent) => {
               const url = e.detail?.value?.url_path ?? '';
-              updateRoute({
-                tap_action: { ...route.tap_action, action: 'url', url_path: url },
-              });
+              setAction({ ...currentAction, action: 'url', url_path: url });
             }
           )
         : ''}
@@ -2578,15 +2635,13 @@ export class UltraNavigationModule extends BaseUltraModule {
                 return html`
                   <ha-select
                     style="width: 100%;"
-                    .value=${route.tap_action?.popup_id || ''}
+                    .value=${currentAction?.popup_id || ''}
                     @selected=${(e: any) => {
                       e.stopPropagation();
-                      updateRoute({
-                        tap_action: {
-                          ...route.tap_action,
-                          action: 'open-popup',
-                          popup_id: e.target.value,
-                        },
+                      setAction({
+                        ...currentAction,
+                        action: 'open-popup',
+                        popup_id: e.target.value,
                       });
                     }}
                     @closed=${(e: Event) => e.stopPropagation()}
@@ -2612,9 +2667,9 @@ export class UltraNavigationModule extends BaseUltraModule {
                   : 'Select the entity to show more info for.'}
               </div>
               ${this.renderEntityPickerWithVariables(
-                hass, config, 'entity', route.tap_action?.entity || '',
-                (value: string) => updateRoute({
-                  tap_action: { ...(route.tap_action || {}), action: category as 'toggle' | 'more-info', entity: value },
+                hass, config, 'entity', currentAction?.entity || '',
+                (value: string) => setAction({
+                  ...(currentAction || {}), action: category as 'toggle' | 'more-info', entity: value,
                 }),
                 undefined,
                 'Entity'
@@ -2634,8 +2689,8 @@ export class UltraNavigationModule extends BaseUltraModule {
               <ha-form
                 .hass=${hass}
                 .data=${{
-                  pipeline_id: route.tap_action?.pipeline_id,
-                  start_listening: route.tap_action?.start_listening ?? false,
+                  pipeline_id: currentAction?.pipeline_id,
+                  start_listening: currentAction?.start_listening ?? false,
                 }}
                 .schema=${[
                   {
@@ -2652,13 +2707,11 @@ export class UltraNavigationModule extends BaseUltraModule {
                 @value-changed=${(e: CustomEvent) => {
                   e.stopPropagation();
                   const values = e.detail.value || {};
-                  updateRoute({
-                    tap_action: {
-                      ...(route.tap_action || {}),
-                      action: 'assist',
-                      pipeline_id: values.pipeline_id,
-                      start_listening: values.start_listening,
-                    },
+                  setAction({
+                    ...(currentAction || {}),
+                    action: 'assist',
+                    pipeline_id: values.pipeline_id,
+                    start_listening: values.start_listening,
                   });
                 }}
               ></ha-form>
@@ -2682,7 +2735,7 @@ export class UltraNavigationModule extends BaseUltraModule {
                     e.stopPropagation();
                     const value = e.detail?.value || {};
                     const nextAction: NavActionConfig = {
-                      ...(route.tap_action || {}),
+                      ...(currentAction || {}),
                       action: 'perform-action',
                       perform_action: value.action || '',
                       target: value.target,
@@ -2691,7 +2744,7 @@ export class UltraNavigationModule extends BaseUltraModule {
                     if (!value.data) delete (nextAction as any).data;
                     if ((nextAction as any).service_data) delete (nextAction as any).service_data;
                     if ((nextAction as any).service) delete (nextAction as any).service;
-                    updateRoute({ tap_action: nextAction });
+                    setAction(nextAction);
                   }}
                 ></ha-service-control>
               </div>
@@ -2704,7 +2757,8 @@ export class UltraNavigationModule extends BaseUltraModule {
   private renderNotificationEditor(
     route: NavRoute,
     hass: HomeAssistant,
-    updateRoute: (updates: Partial<NavRoute>) => void
+    updateRoute: (updates: Partial<NavRoute>) => void,
+    config?: UltraCardConfig
   ): TemplateResult {
     const badge = route.badge || {};
     const mode = badge.mode || 'static';
@@ -2762,7 +2816,7 @@ export class UltraNavigationModule extends BaseUltraModule {
             <div class="field-container">
               <div class="field-title">Entity</div>
               ${this.renderEntityPickerWithVariables(
-                hass, undefined as any, 'entity', badge.entity || '',
+                hass, config as UltraCardConfig, 'entity', badge.entity || '',
                 (value: string) => updateBadge({ entity: value }),
                 undefined,
                 'Entity'
@@ -2878,15 +2932,17 @@ export class UltraNavigationModule extends BaseUltraModule {
   }
 
   private getHapticConfig(navModule: NavigationModule) {
-    if (navModule.nav_haptic === true) {
+    // Master toggle off: everything disabled
+    if (navModule.nav_haptic === false) {
       return {
         url: false,
-        tap_action: true,
-        hold_action: true,
-        double_tap_action: true,
+        tap_action: false,
+        hold_action: false,
+        double_tap_action: false,
       };
     }
-    if (navModule.nav_haptic === false || !navModule.nav_haptic) {
+    // Enabled (true) or unset: enabled defaults
+    if (navModule.nav_haptic === true || !navModule.nav_haptic) {
       return {
         url: false,
         tap_action: true,

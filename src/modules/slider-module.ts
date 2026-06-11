@@ -66,6 +66,12 @@ class SwiperInstanceManager {
       }
       this.instances.delete(sliderId);
     }
+    // Remove the per-slider global init function so it doesn't leak after
+    // destruction. renderPreview re-registers it on every render, so re-init
+    // paths that capture the function before destroying are unaffected.
+    if (typeof window !== 'undefined') {
+      delete (window as any)[`initSwiper_${sliderId}`];
+    }
   }
 
   static cleanup(sliderId: string): void {
@@ -359,21 +365,24 @@ export class UltraSliderModule extends BaseUltraModule {
             ></ha-textfield>
           </div>
 
-          ${this.renderFieldSection(
-            'Auto Height',
-            'Automatically adjust slider height to fit content on each page',
-            hass,
-            { auto_height: sliderModule.auto_height ?? true },
-            [this.booleanField('auto_height')],
-            (e: CustomEvent) => updateModule({ auto_height: e.detail.value.auto_height })
-          )}
+          ${sliderModule.slider_direction !== 'vertical'
+            ? this.renderFieldSection(
+                'Auto Height',
+                'Automatically adjust slider height to fit content on each page',
+                hass,
+                { auto_height: sliderModule.auto_height ?? true },
+                [this.booleanField('auto_height')],
+                (e: CustomEvent) => updateModule({ auto_height: e.detail.value.auto_height })
+              )
+            : ''}
 
-          ${!(sliderModule.auto_height ?? true)
+          ${sliderModule.slider_direction === 'vertical' || !(sliderModule.auto_height ?? true)
             ? this.renderSliderField(
                 'Slider Height',
                 'Fixed height for the slider in pixels',
-                sliderModule.slider_height || 300,
-                300,
+                sliderModule.slider_height ||
+                  (sliderModule.slider_direction === 'vertical' ? 400 : 300),
+                sliderModule.slider_direction === 'vertical' ? 400 : 300,
                 50,
                 1000,
                 10,
@@ -462,18 +471,14 @@ export class UltraSliderModule extends BaseUltraModule {
                   (e: CustomEvent) =>
                     updateModule({ pagination_style: e.detail.value.pagination_style })
                 )}
-                ${(sliderModule.auto_height ?? true)
-                  ? html`
-                      ${this.renderFieldSection(
-                        'Pagination Overlay',
-                        'When enabled, pagination overlays content. When disabled, pagination gets its own space.',
-                        hass,
-                        { pagination_overlay: sliderModule.pagination_overlay ?? false },
-                        [this.booleanField('pagination_overlay')],
-                        (e: CustomEvent) => updateModule({ pagination_overlay: e.detail.value.pagination_overlay })
-                      )}
-                    `
-                  : ''}
+                ${this.renderFieldSection(
+                  'Pagination Overlay',
+                  'When enabled, pagination overlays content. When disabled, pagination gets its own space.',
+                  hass,
+                  { pagination_overlay: sliderModule.pagination_overlay ?? false },
+                  [this.booleanField('pagination_overlay')],
+                  (e: CustomEvent) => updateModule({ pagination_overlay: e.detail.value.pagination_overlay })
+                )}
                 ${this.renderFieldSection(
                   'Pagination Position',
                   'Where to show pagination indicators',
@@ -1539,19 +1544,9 @@ export class UltraSliderModule extends BaseUltraModule {
               }
             });
 
-            if (nextEl) {
-              nextEl.addEventListener('click', () => {
-                // Navigation handled by Swiper
-              });
-            }
-            if (prevEl) {
-              prevEl.addEventListener('click', () => {
-                // Navigation handled by Swiper
-              });
-            }
-
             // Swiper's built-in navigation is enabled - no manual handlers needed
-            // Swiper will handle arrow clicks automatically
+            // Swiper will handle arrow clicks automatically (no extra click
+            // listeners are added here, so none accumulate across re-inits)
 
             swiper.on('destroy', () => {
               // Cleanup handled automatically
@@ -1890,6 +1885,39 @@ export class UltraSliderModule extends BaseUltraModule {
 
     const hoverClass = this.getHoverEffectClass(module);
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
+
+    // Wire tap/hold/double-tap actions on the slider container. Only attach when a
+    // real action is configured so default sliders keep their current behavior.
+    // Arrows, pagination and scrollbar are excluded so their clicks never trigger
+    // module actions; the gesture service's move threshold keeps swipes from
+    // firing taps, and Swiper's own handlers (on the wrapper) run first.
+    const isRealAction = (a?: { action?: string }): boolean =>
+      !!a && !!a.action && a.action !== 'nothing' && a.action !== 'default';
+    const hasSliderActions =
+      isRealAction(sliderModule.tap_action) ||
+      isRealAction(sliderModule.hold_action) ||
+      isRealAction(sliderModule.double_tap_action);
+    const gestureHandlers = hasSliderActions
+      ? this.createGestureHandlers(
+          sliderModule.id,
+          {
+            tap_action: sliderModule.tap_action,
+            hold_action: sliderModule.hold_action,
+            double_tap_action: sliderModule.double_tap_action,
+            entity: (sliderModule as any).entity,
+            module: sliderModule,
+          },
+          hass,
+          config,
+          [
+            '.swiper-button-prev',
+            '.swiper-button-next',
+            '.swiper-pagination',
+            '.swiper-scrollbar',
+            '.slider-pagination-row',
+          ]
+        )
+      : null;
 
     return this.wrapWithAnimation(html`
       <style>
@@ -2664,7 +2692,16 @@ export class UltraSliderModule extends BaseUltraModule {
           : ''}
       </style>
 
-      <div class="ultra-slider-container uc-module-container ${hoverClass}" style="${designStyles}" data-slider-id="${sliderId}">
+      <div
+        class="ultra-slider-container uc-module-container ${hoverClass}"
+        style="${designStyles}${hasSliderActions ? '; cursor: pointer;' : ''}"
+        data-slider-id="${sliderId}"
+        @pointerdown=${gestureHandlers ? gestureHandlers.onPointerDown : null}
+        @pointermove=${gestureHandlers ? gestureHandlers.onPointerMove : null}
+        @pointerup=${gestureHandlers ? gestureHandlers.onPointerUp : null}
+        @pointercancel=${gestureHandlers ? gestureHandlers.onPointerCancel : null}
+        @pointerleave=${gestureHandlers ? gestureHandlers.onPointerLeave : null}
+      >
         ${paginationOutside && paginationPosition === 'top' ? getPaginationRowTemplate() : ''}
         <div
           class="swiper ${uniqueClass}"
@@ -2677,13 +2714,41 @@ export class UltraSliderModule extends BaseUltraModule {
             const wasInitialized = el.hasAttribute('data-swiper-initialized');
             const previousInitContext = el.getAttribute('data-swiper-init-context');
 
-            // Store config hash to detect config changes
+            // Store config hash to detect config changes.
+            // Must cover every option consumed by mapConfigToSwiper (plus init-time
+            // settings captured in the init closure) so Swiper re-initializes when
+            // any of them change.
             const configHash = JSON.stringify({
-              pagination_style: sliderModule.pagination_style,
+              // Pagination / scrollbar
               show_pagination: sliderModule.show_pagination,
+              pagination_style: sliderModule.pagination_style,
+              pagination_position: sliderModule.pagination_position,
+              pagination_overlay: sliderModule.pagination_overlay,
+              pagination_size: sliderModule.pagination_size,
+              pagination_color: sliderModule.pagination_color,
+              pagination_active_color: sliderModule.pagination_active_color,
+              // Navigation
+              show_arrows: sliderModule.show_arrows,
+              // Layout
               slider_direction: sliderModule.slider_direction,
-              transition_effect: sliderModule.transition_effect,
+              slides_per_view: sliderModule.slides_per_view,
+              space_between: sliderModule.space_between,
+              gap: sliderModule.gap,
               centered_slides: sliderModule.centered_slides,
+              auto_height: sliderModule.auto_height,
+              slider_height: sliderModule.slider_height,
+              // Transition
+              transition_effect: sliderModule.transition_effect,
+              transition_speed: sliderModule.transition_speed,
+              // Auto-play
+              auto_play: sliderModule.auto_play,
+              auto_play_delay: sliderModule.auto_play_delay,
+              pause_on_hover: sliderModule.pause_on_hover,
+              loop: sliderModule.loop,
+              // Interaction
+              allow_swipe: sliderModule.allow_swipe,
+              allow_keyboard: sliderModule.allow_keyboard,
+              allow_mousewheel: sliderModule.allow_mousewheel,
             });
             const previousConfigHash = el.getAttribute('data-config-hash');
             const configChanged = previousConfigHash && previousConfigHash !== configHash;
@@ -2697,6 +2762,10 @@ export class UltraSliderModule extends BaseUltraModule {
             ) {
               return; // Same context and config, already initialized
             }
+
+            // Capture the init function registered by this render BEFORE any
+            // destroy call below (destroyInstance deletes the window global).
+            const initFn = (window as any)[`initSwiper_${sliderId}`];
 
             // Context or config changed or not initialized - proceed
             if (wasInitialized && (previousInitContext !== currentContext || configChanged)) {
@@ -2714,8 +2783,6 @@ export class UltraSliderModule extends BaseUltraModule {
             // Mark as initializing to prevent duplicate attempts
             el.setAttribute('data-swiper-initialized', 'true');
             el.setAttribute('data-config-hash', configHash);
-
-            const initFn = (window as any)[`initSwiper_${sliderId}`];
             if (!initFn) {
               console.error(
                 '[Slider] Initialization function not found for:',
@@ -3116,9 +3183,9 @@ export class UltraSliderModule extends BaseUltraModule {
 
     if (
       sliderModule.slides_per_view &&
-      (sliderModule.slides_per_view < 1 || sliderModule.slides_per_view > 5)
+      (sliderModule.slides_per_view < 1 || sliderModule.slides_per_view > 10)
     ) {
-      errors.push('Slides per view must be between 1 and 5');
+      errors.push('Slides per view must be between 1 and 10');
     }
 
     return { valid: errors.length === 0, errors };

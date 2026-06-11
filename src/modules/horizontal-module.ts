@@ -127,9 +127,10 @@ export class UltraHorizontalModule extends BaseUltraModule {
               'Choose how items are aligned vertically within the container.'
             ),
             hass,
-            data: horizontalModule,
+            data: { vertical_alignment: horizontalModule.vertical_alignment || '' },
             schema: [
               this.selectField('vertical_alignment', [
+                { value: '', label: localize('editor.common.default', lang, 'Default') },
                 { value: 'top', label: localize('editor.common.top', lang, 'Top') },
                 { value: 'center', label: localize('editor.common.center', lang, 'Center') },
                 { value: 'bottom', label: localize('editor.common.bottom', lang, 'Bottom') },
@@ -138,8 +139,11 @@ export class UltraHorizontalModule extends BaseUltraModule {
               ]),
             ],
             onChange: (e: CustomEvent) => {
-              const next = e.detail.value?.vertical_alignment;
-              if (next === undefined || next === horizontalModule.vertical_alignment) return;
+              const raw = e.detail.value?.vertical_alignment;
+              if (raw === undefined) return;
+              // Empty string = "Default" option → store undefined so flexbox works naturally
+              const next = raw === '' ? undefined : raw;
+              if (next === horizontalModule.vertical_alignment) return;
 
               updateModule({ vertical_alignment: next });
               setTimeout(() => this.triggerPreviewUpdate(), 50);
@@ -247,6 +251,24 @@ export class UltraHorizontalModule extends BaseUltraModule {
     const hasChildren = horizontalModule.modules && horizontalModule.modules.length > 0;
     // Wrapping should use flexbox wrap, not force column mode
 
+    // Filter children hidden by logic up-front so we can detect an entirely-hidden layout
+    logicService.setHass(hass);
+    const visibleChildren = hasChildren
+      ? horizontalModule.modules!.filter(cm => {
+          const m: any = cm as any;
+          const visibleByModule = logicService.evaluateModuleVisibility(m);
+          const visibleByGlobal = logicService.evaluateLogicProperties({
+            logic_entity: m?.design?.logic_entity,
+            logic_attribute: m?.design?.logic_attribute,
+            logic_operator: m?.design?.logic_operator,
+            logic_value: m?.design?.logic_value,
+          });
+          return visibleByModule && visibleByGlobal;
+        })
+      : [];
+    const allChildrenHiddenByLogic = hasChildren && visibleChildren.length === 0;
+    const isEditorPreview = previewContext === 'live' || previewContext === 'ha-preview';
+
     // Container styles for positioning and effects
     const gapUnit: string = (horizontalModule as any).gap_unit || 'rem';
     const isPxUnit = gapUnit === 'px';
@@ -333,7 +355,13 @@ export class UltraHorizontalModule extends BaseUltraModule {
       // Only apply justify-content if user explicitly sets alignment
       justifyContent: horizontalAlign ? this.getJustifyContent(horizontalAlign) : undefined,
       // Only use gap for positive values, use negative margins for negative values
-      gap: gapValue >= 0 ? `${gapValue}${gapUnit}` : '0',
+      // space-between and space-around handle their own spacing (mirrors vertical module)
+      gap:
+        gapValue >= 0 &&
+        horizontalAlign !== 'space-between' &&
+        horizontalAlign !== 'space-around'
+          ? `${gapValue}${gapUnit}`
+          : '0',
       // Enable wrapping when wrap option is true
       flexWrap: horizontalModule.wrap ? 'wrap' : 'nowrap',
       // Only apply align-items if user explicitly sets vertical alignment
@@ -406,6 +434,13 @@ export class UltraHorizontalModule extends BaseUltraModule {
     ) as Record<string, string | undefined>;
     const designStyles = this.buildStyleString(_wrapperOnlyStyles);
 
+    // Design-tab box shadow (box_shadow_h/v/blur/spread/color) is stripped from the
+    // outer wrapper above, so apply it on the inner surface where background/border
+    // render. Legacy `box_shadow` (already in containerStyles) remains the fallback.
+    if (_allDesignStyles.boxShadow) {
+      containerStyles.boxShadow = _allDesignStyles.boxShadow;
+    }
+
     // Extract CSS variable prefix for Shadow DOM styling
     const cssVarPrefix = (horizontalModule as any).design?.css_variable_prefix;
 
@@ -440,6 +475,13 @@ export class UltraHorizontalModule extends BaseUltraModule {
       (horizontalModule.double_tap_action &&
         horizontalModule.double_tap_action.action !== 'nothing');
 
+    // When every child is hidden by logic, render nothing on the dashboard so no
+    // blank container (padding/border/background) is left behind. Editor previews
+    // still show an informative empty state below.
+    if (allChildrenHiddenByLogic && !isEditorPreview) {
+      return html``;
+    }
+
     return this.wrapWithAnimation(html`
       <style>
         ${this.getStyles()}
@@ -460,20 +502,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
           @pointercancel=${hasActions ? handlers.onPointerCancel : null}
           @pointerleave=${hasActions ? handlers.onPointerLeave : null}
         >
-          ${hasChildren
+          ${visibleChildren.length > 0
             ? (() => {
-                logicService.setHass(hass);
-                const visibleChildren = horizontalModule.modules!.filter(cm => {
-                  const m: any = cm as any;
-                  const visibleByModule = logicService.evaluateModuleVisibility(m);
-                  const visibleByGlobal = logicService.evaluateLogicProperties({
-                    logic_entity: m?.design?.logic_entity,
-                    logic_attribute: m?.design?.logic_attribute,
-                    logic_operator: m?.design?.logic_operator,
-                    logic_value: m?.design?.logic_value,
-                  });
-                  return visibleByModule && visibleByGlobal;
-                });
                 return repeat(
                   visibleChildren,
                   (cm) => cm.id || cm.type,
@@ -529,20 +559,39 @@ export class UltraHorizontalModule extends BaseUltraModule {
               })()
             : html`
                 <div class="empty-layout-message">
-                  <span
-                    >${localize(
-                      'editor.horizontal.empty.no_modules',
-                      lang,
-                      'No modules added yet'
-                    )}</span
-                  >
-                  <small
-                    >${localize(
-                      'editor.horizontal.empty.add_modules',
-                      lang,
-                      'Add modules in the layout builder to see them here'
-                    )}</small
-                  >
+                  ${allChildrenHiddenByLogic
+                    ? html`
+                        <span
+                          >${localize(
+                            'editor.horizontal.empty.all_hidden',
+                            lang,
+                            'All modules hidden by logic'
+                          )}</span
+                        >
+                        <small
+                          >${localize(
+                            'editor.horizontal.empty.all_hidden_desc',
+                            lang,
+                            'Every module in this layout is hidden by its display conditions'
+                          )}</small
+                        >
+                      `
+                    : html`
+                        <span
+                          >${localize(
+                            'editor.horizontal.empty.no_modules',
+                            lang,
+                            'No modules added yet'
+                          )}</span
+                        >
+                        <small
+                          >${localize(
+                            'editor.horizontal.empty.add_modules',
+                            lang,
+                            'Add modules in the layout builder to see them here'
+                          )}</small
+                        >
+                      `}
                 </div>
               `}
         </div>
@@ -564,9 +613,17 @@ export class UltraHorizontalModule extends BaseUltraModule {
       moduleToRender = this.applyLayoutDesignToChild(childModule, layoutDesign);
     }
 
-    // Pass the horizontal layout's alignment to child modules if they don't have their own
+    // Pass the horizontal layout's alignment to child modules if they don't have their own.
+    // Only cross-axis-safe values are inherited: distribution modes like
+    // 'space-between'/'space-around' describe how the parent spaces its children and are
+    // invalid as a child's own content alignment, so they must not leak down.
+    const INHERITABLE_ALIGNMENTS = ['left', 'center', 'right', 'justify'];
     const horizontalModule = layoutDesign as any;
-    if (horizontalModule && horizontalModule.alignment) {
+    if (
+      horizontalModule &&
+      horizontalModule.alignment &&
+      INHERITABLE_ALIGNMENTS.includes(horizontalModule.alignment)
+    ) {
       const childAsAny = moduleToRender as any;
       // Only override child alignment if it's not explicitly set
       if (!childAsAny.alignment) {

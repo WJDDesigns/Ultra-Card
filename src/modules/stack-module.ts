@@ -134,7 +134,10 @@ function getStackLayerStyles(
   const w = wRaw && wRaw !== 'auto' ? wRaw : '100%';
   const h = hRaw && hRaw !== 'auto' ? hRaw : 'auto';
 
-  const op = cfg?.opacity !== undefined && cfg?.opacity !== null ? Number(cfg.opacity) : 1;
+  const opRaw = cfg?.opacity !== undefined && cfg?.opacity !== null ? Number(cfg.opacity) : 1;
+  // Opacity is stored on a 0-1 scale; guard against non-numeric values so a
+  // malformed config can never emit `opacity: NaN`.
+  const op = Number.isFinite(opRaw) ? Math.min(1, Math.max(0, opRaw)) : 1;
   const zi =
     cfg?.z_index_override !== undefined && cfg?.z_index_override !== null
       ? cfg.z_index_override
@@ -256,8 +259,16 @@ export class UltraStackModule extends BaseUltraModule {
     tags: ['layout', 'stack', 'overlay', 'absolute', 'layer', 'z-index', 'anchor', 'hero'],
   };
 
-  /** General-tab selected layer row (editor-only; not persisted) */
-  private _stackSelectedLayerIndex = 0;
+  /** General-tab selected layer row per stack module ID (editor-only; not persisted). Keyed per module so switching between two stack modules in the editor doesn't carry the selection over (mirrors tabs-module's activeTabStates). */
+  private _stackSelectedLayerIndices = new Map<string, number>();
+
+  private _getStackSelectedLayerIndex(moduleId: string): number {
+    return this._stackSelectedLayerIndices.get(moduleId) ?? 0;
+  }
+
+  private _setStackSelectedLayerIndex(moduleId: string, index: number): void {
+    this._stackSelectedLayerIndices.set(moduleId, index);
+  }
 
   /** Active stack-layer pointer drag (editor preview only) */
   private _stackLayerDrag: {
@@ -270,6 +281,10 @@ export class UltraStackModule extends BaseUltraModule {
     rafId: number | null;
     /** True when the layer's width was 'auto'/unset — we'll commit width: 'fit-content' so the icon/text renders at natural size at offset_x rather than filling 100% of the wrapper. */
     sizeToContent: boolean;
+    /** The layer's effective anchor at drag start — preserved on commit so dragging never re-anchors a layer. */
+    anchor: StackAnchor;
+    /** Update callback captured at drag start. The class-level `_stackDragUpdateFn` is overwritten on every renderGeneralTab, so a drag finishing after the editor switched to another module would otherwise write to the wrong config. */
+    updateFn: (idx: number, patch: Partial<StackLayerConfig>) => void;
   } | null = null;
 
   /** Window-level drag listeners — required because each config update re-renders and replaces the drag handle (so pointer capture on the handle would be lost). The .stack-preview-content ancestor is structurally stable across renders, so we cache its live ref at pointerdown. */
@@ -305,25 +320,88 @@ export class UltraStackModule extends BaseUltraModule {
       st.rafId = null;
     }
     if (st.pending) {
-      const updateFn = (this as any)._stackDragUpdateFn as
-        | ((idx: number, patch: Partial<StackLayerConfig>) => void)
-        | undefined;
-      if (updateFn) {
-        const patch: Partial<StackLayerConfig> = {
-          anchor: 'top-left',
-          offset_x: st.pending.offset_x,
-          offset_y: st.pending.offset_y,
-        };
-        if (st.sizeToContent) {
-          patch.width = 'fit-content';
-          patch.height = 'auto';
-        }
-        updateFn(st.moduleIndex, patch);
-      }
+      st.updateFn(st.moduleIndex, this._buildStackDragCommitPatch(st));
     }
     this._stackLayerDrag = null;
     this._detachStackLayerDragWindowListeners();
   };
+
+  /**
+   * Convert the dragged position into offsets relative to the layer's OWN
+   * anchor so committing a drag never re-anchors the layer. The live preview
+   * always positions with top-left semantics (child's top-left corner at the
+   * pointer), so we apply the final pending position to the DOM, measure
+   * where the child actually sits inside its wrapper, and derive the
+   * matching-side offsets for the preserved anchor (the inverse of the
+   * padding math in getStackLayerStyles). Offsets are rendered as padding and
+   * therefore can't be negative; positions outside the anchor's reachable
+   * region clamp to 0.
+   */
+  private _buildStackDragCommitPatch(
+    st: NonNullable<UltraStackModule['_stackLayerDrag']>
+  ): Partial<StackLayerConfig> {
+    const pending = st.pending!;
+    const patch: Partial<StackLayerConfig> = {
+      anchor: st.anchor,
+      offset_x: pending.offset_x,
+      offset_y: pending.offset_y,
+    };
+    if (st.sizeToContent) {
+      patch.width = 'fit-content';
+      patch.height = 'auto';
+    }
+    // For top-left the pending offsets already match the renderer's padding
+    // scheme (padding-left = offset_x, padding-top = offset_y) — no conversion.
+    if (st.anchor === 'top-left') return patch;
+
+    const wrapper = this._findStackLayerWrapperEl(st.previewEl, st.moduleIndex);
+    const child = wrapper?.querySelector<HTMLElement>(':scope > .stack-layer-child');
+    if (!wrapper || !child) {
+      // Can't measure — fall back to the legacy top-left commit so the layer
+      // at least lands where it was dropped.
+      patch.anchor = 'top-left';
+      return patch;
+    }
+    // Make sure the DOM reflects the final pending position (the rAF for the
+    // last pointermove may not have run yet) before measuring.
+    wrapper.style.alignItems = 'flex-start';
+    wrapper.style.justifyContent = 'flex-start';
+    wrapper.style.padding = `${pending.offset_y} 0px 0px ${pending.offset_x}`;
+    if (st.sizeToContent) {
+      child.style.width = 'fit-content';
+      child.style.height = 'auto';
+    }
+    const wRect = wrapper.getBoundingClientRect();
+    const cRect = child.getBoundingClientRect();
+    if (wRect.width < 1 || wRect.height < 1) {
+      patch.anchor = 'top-left';
+      return patch;
+    }
+
+    let x: number;
+    if (st.anchor.endsWith('left')) {
+      x = cRect.left - wRect.left;
+    } else if (st.anchor.endsWith('right')) {
+      x = wRect.right - cRect.right;
+    } else {
+      // Horizontal center: the renderer applies offset_x as padding-left with
+      // justify-content:center, putting the child center at (offset_x + W) / 2
+      // → offset_x = 2 * centerX - W.
+      x = 2 * (cRect.left + cRect.width / 2 - wRect.left) - wRect.width;
+    }
+    let y: number;
+    if (st.anchor.startsWith('top')) {
+      y = cRect.top - wRect.top;
+    } else if (st.anchor.startsWith('bottom')) {
+      y = wRect.bottom - cRect.bottom;
+    } else {
+      // Vertical center mirrors the horizontal-center math with padding-top.
+      y = 2 * (cRect.top + cRect.height / 2 - wRect.top) - wRect.height;
+    }
+    patch.offset_x = `${Math.max(0, Math.round(x))}px`;
+    patch.offset_y = `${Math.max(0, Math.round(y))}px`;
+    return patch;
+  }
 
   /**
    * During an active drag we mutate the layer's wrapper inline-style directly
@@ -413,7 +491,8 @@ export class UltraStackModule extends BaseUltraModule {
   private _onStackLayerDragDown(
     e: PointerEvent,
     moduleIndex: number,
-    initialWidth: string | undefined
+    stackModuleId: string,
+    layerCfg: StackLayerConfig | undefined
   ): void {
     const ctx = (this as any)._currentPreviewContext;
     if (ctx !== 'ha-preview') return;
@@ -432,6 +511,7 @@ export class UltraStackModule extends BaseUltraModule {
     // commit (and during live preview) when the user dragged an auto-width
     // layer; layers with explicit widths (e.g. image preset's '100%') are
     // preserved.
+    const initialWidth = layerCfg?.width;
     const sizeToContent = !initialWidth || initialWidth === 'auto';
     if (!previewEl) return;
     // Only the layer currently highlighted in the layers panel may be DRAGGED.
@@ -440,7 +520,7 @@ export class UltraStackModule extends BaseUltraModule {
     // This prevents accidental nudges when the user just wants to switch which
     // layer they're editing.
     const selectFn = (this as any)._stackDragSelectFn as ((idx: number) => void) | undefined;
-    if (this._stackSelectedLayerIndex !== moduleIndex) {
+    if (this._getStackSelectedLayerIndex(stackModuleId) !== moduleIndex) {
       e.stopPropagation();
       if (selectFn) selectFn(moduleIndex);
       return;
@@ -458,6 +538,9 @@ export class UltraStackModule extends BaseUltraModule {
       pending: null,
       rafId: null,
       sizeToContent,
+      // 'center' matches the renderer's default for layers with no anchor set.
+      anchor: layerCfg?.anchor ?? 'center',
+      updateFn,
     };
     this._attachStackLayerDragWindowListeners();
     // NOTE: no synthetic move call here. We deliberately do NOT call updateFn
@@ -484,10 +567,11 @@ export class UltraStackModule extends BaseUltraModule {
     const sm = module as StackModule;
     const lang = hass?.locale?.language || 'en';
     const modules = sm.modules || [];
-    if (this._stackSelectedLayerIndex >= modules.length) {
-      this._stackSelectedLayerIndex = Math.max(0, modules.length - 1);
+    let sel = this._getStackSelectedLayerIndex(sm.id);
+    if (sel >= modules.length) {
+      sel = Math.max(0, modules.length - 1);
+      this._setStackSelectedLayerIndex(sm.id, sel);
     }
-    const sel = this._stackSelectedLayerIndex;
     const selected = modules[sel];
 
     const applyModules = (next: CardModule[]) => {
@@ -520,7 +604,7 @@ export class UltraStackModule extends BaseUltraModule {
       applyModules(next);
     };
     (this as any)._stackDragSelectFn = (idx: number) => {
-      this._stackSelectedLayerIndex = idx;
+      this._setStackSelectedLayerIndex(sm.id, idx);
       this.triggerPreviewUpdate(true);
     };
 
@@ -535,7 +619,7 @@ export class UltraStackModule extends BaseUltraModule {
           ? this._renderPresetsSection(lang, presetId =>
               this._applyStackPreset(presetId, hass, next => {
                 applyModules(next);
-                this._stackSelectedLayerIndex = 0;
+                this._setStackSelectedLayerIndex(sm.id, 0);
               })
             )
           : ''}
@@ -635,7 +719,7 @@ export class UltraStackModule extends BaseUltraModule {
             : html`
                 <div class="uc-stack-layer-list">
                   ${modules.map((child, index) =>
-                    this._renderLayerRow(child, index, modules, applyModules, lang)
+                    this._renderLayerRow(child, index, modules, applyModules, lang, sm.id)
                   )}
                 </div>
               `}
@@ -955,20 +1039,21 @@ export class UltraStackModule extends BaseUltraModule {
     index: number,
     modules: CardModule[],
     applyModules: (next: CardModule[]) => void,
-    lang: string
+    lang: string,
+    moduleId: string
   ): TemplateResult {
     const meta = getModuleRegistry().getModuleMetadata(child.type);
     const title = meta?.title || child.type;
     const isHidden = child.display_mode === 'never';
-    const isSelected = this._stackSelectedLayerIndex === index;
-    const anchor = (child as any).stack_layer?.anchor || 'top-left';
+    const isSelected = this._getStackSelectedLayerIndex(moduleId) === index;
+    const anchor = (child as any).stack_layer?.anchor || 'center';
     const subTitle = `${anchor.replace('-', ' ')} · ${localize('editor.stack.layer_z', lang, 'layer')} ${index + 1}`;
 
     return html`
       <div
         class="uc-stack-layer-row ${isSelected ? 'selected' : ''} ${isHidden ? 'hidden' : ''}"
         @click=${() => {
-          this._stackSelectedLayerIndex = index;
+          this._setStackSelectedLayerIndex(moduleId, index);
           this.triggerPreviewUpdate();
         }}
       >
@@ -1005,7 +1090,7 @@ export class UltraStackModule extends BaseUltraModule {
               if (index <= 0) return;
               const next = [...modules];
               [next[index - 1], next[index]] = [next[index], next[index - 1]];
-              this._stackSelectedLayerIndex = index - 1;
+              this._setStackSelectedLayerIndex(moduleId, index - 1);
               applyModules(next);
             }}
           >
@@ -1019,7 +1104,7 @@ export class UltraStackModule extends BaseUltraModule {
               if (index >= modules.length - 1) return;
               const next = [...modules];
               [next[index + 1], next[index]] = [next[index], next[index + 1]];
-              this._stackSelectedLayerIndex = index + 1;
+              this._setStackSelectedLayerIndex(moduleId, index + 1);
               applyModules(next);
             }}
           >
@@ -1031,7 +1116,7 @@ export class UltraStackModule extends BaseUltraModule {
             @click=${(e: Event) => {
               e.stopPropagation();
               const next = modules.filter((_, i) => i !== index);
-              this._stackSelectedLayerIndex = Math.max(0, index - 1);
+              this._setStackSelectedLayerIndex(moduleId, Math.max(0, index - 1));
               applyModules(next);
             }}
           >
@@ -1052,7 +1137,9 @@ export class UltraStackModule extends BaseUltraModule {
     const meta = getModuleRegistry().getModuleMetadata(selected.type);
     const layerTitle = meta?.title || selected.type;
     const cfg: StackLayerConfig = (selected as any).stack_layer || {};
-    const currentAnchor: StackAnchor = (cfg.anchor as StackAnchor) || 'top-left';
+    // 'center' matches the renderer's default (getStackLayerStyles) so the
+    // editor highlights the anchor users actually see.
+    const currentAnchor: StackAnchor = (cfg.anchor as StackAnchor) || 'center';
 
     return html`
       <div class="uc-stack-section">
@@ -1492,17 +1579,21 @@ export class UltraStackModule extends BaseUltraModule {
                           childDesign.transform_rotate_y ||
                           childDesign.transform_rotate_z
                         );
+                        const moduleIdx = mods.indexOf(childModule);
+                        // Default z-order comes from the layer's index in the
+                        // FULL modules array so hiding a layer via logic
+                        // doesn't reshuffle the stacking of remaining layers.
                         const styles = getStackLayerStyles(
                           (childModule as CardModule & { stack_layer?: StackLayerConfig }).stack_layer,
-                          index + 1,
+                          (moduleIdx >= 0 ? moduleIdx : index) + 1,
                           { allowChildOverflow: has3dTransform }
                         );
-                        const moduleIdx = mods.indexOf(childModule);
                         const showStackDrag =
                           previewContext === 'ha-preview' &&
                           typeof (this as any)._stackDragUpdateFn === 'function' &&
                           moduleIdx >= 0;
-                        const dragSelected = this._stackSelectedLayerIndex === moduleIdx;
+                        const dragSelected =
+                          this._getStackSelectedLayerIndex(sm.id) === moduleIdx;
                         return html`
                           <div class="stack-layer-wrapper" style="${styles.wrapper}">
                             <div class="stack-layer-child" style="${styles.child}">
@@ -1527,7 +1618,8 @@ export class UltraStackModule extends BaseUltraModule {
                                       this._onStackLayerDragDown(
                                         ev,
                                         moduleIdx,
-                                        layerCfg?.width
+                                        sm.id,
+                                        layerCfg
                                       );
                                     }}
                                   ></div>

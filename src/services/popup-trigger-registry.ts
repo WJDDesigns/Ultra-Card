@@ -94,8 +94,21 @@ export const openPopupById = (popupId: string): void => {
   const store = w.__ultraPopupStore__;
   
   if (store) {
-    store.states.set(popupId, true);
-    store.manuallyOpened.add(popupId);
+    // The popup module keys its state by `${cardInstanceId}:${moduleId}` (or the bare
+    // module ID when no card instance ID exists). Match both forms so the state write
+    // targets the same key(s) the module reads, instead of creating a phantom bare-ID entry.
+    const matchingKeys: string[] = [];
+    store.states.forEach((_value: boolean, key: string) => {
+      if (key === popupId || key.endsWith(`:${popupId}`)) {
+        matchingKeys.push(key);
+      }
+    });
+    for (const key of matchingKeys) {
+      store.states.set(key, true);
+      store.manuallyOpened.add(key);
+    }
+    // If the popup hasn't rendered yet (no state entry), the event below still opens it
+    // via the module's 'ultra-popup-open' listener, which uses the composite key.
   }
   
   // Dispatch event to notify popup module
