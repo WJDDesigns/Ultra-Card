@@ -55,7 +55,7 @@ export class UcSmartSelectorTab extends LitElement {
   private _emitPresetSelected(preset: PresetDefinition): void {
     this.dispatchEvent(
       new CustomEvent('preset-selected', {
-        detail: { preset, closeSelector: true, suppressToast: true, skipEntityMapping: true },
+        detail: { preset, suppressToast: true, skipEntityMapping: true },
         bubbles: true,
         composed: true,
       })

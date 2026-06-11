@@ -39,6 +39,7 @@ const EMPTY_GENERAL_TAB = new Set([
   'living_canvas',
   'alarm_panel',
   'solar_analytics',
+  'lunar_phase',
   'external_card',
   'native_card',
   'video_bg',

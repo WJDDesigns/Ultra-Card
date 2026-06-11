@@ -1661,31 +1661,29 @@ export class UltraNavigationModule extends BaseUltraModule {
 
       <!-- Inactive Tap Action (idle/off/unavailable only) -->
       <div class="field-group-title" style="margin-top: 16px; margin-bottom: 8px;">Inactive Tap Action</div>
-      <div class="field-description" style="margin-bottom: 12px;">
-        When the media player is idle, off, or unavailable, tapping the icon can do something other than start playback.
-      </div>
-      <div class="field-container">
-        <ha-select
-          style="width: 100%;"
-          .value=${inactiveCategory}
-          @selected=${(e: any) => {
-            e.stopPropagation();
-            const nextValue = e.detail?.value ?? e.target?.value;
-            if (nextValue) setInactiveTapAction(nextValue);
-          }}
-          @closed=${(e: Event) => e.stopPropagation()}
-        >
-          <mwc-list-item value="play">Play (default)</mwc-list-item>
-          <mwc-list-item value="nothing">Do nothing</mwc-list-item>
-          <mwc-list-item value="open-popup">Open popup</mwc-list-item>
-          <mwc-list-item value="navigate">Navigate</mwc-list-item>
-          <mwc-list-item value="url">Open URL</mwc-list-item>
-          <mwc-list-item value="more-info">More info</mwc-list-item>
-          <mwc-list-item value="toggle">Toggle</mwc-list-item>
-          <mwc-list-item value="perform-action">Perform action</mwc-list-item>
-          <mwc-list-item value="assist">Assist</mwc-list-item>
-        </ha-select>
-      </div>
+      ${UcFormUtils.renderFieldSection(
+        '',
+        'When the media player is idle, off, or unavailable, tapping the icon can do something other than start playback.',
+        hass,
+        { inactive_action_category: inactiveCategory },
+        [
+          UcFormUtils.select('inactive_action_category', [
+            { value: 'play', label: 'Play (default)' },
+            { value: 'nothing', label: 'Do nothing' },
+            { value: 'open-popup', label: 'Open popup' },
+            { value: 'navigate', label: 'Navigate' },
+            { value: 'url', label: 'Open URL' },
+            { value: 'more-info', label: 'More info' },
+            { value: 'toggle', label: 'Toggle' },
+            { value: 'perform-action', label: 'Perform action' },
+            { value: 'assist', label: 'Assist' },
+          ]),
+        ],
+        (e: CustomEvent) => {
+          const nextValue = e.detail?.value?.inactive_action_category;
+          if (nextValue && nextValue !== inactiveCategory) setInactiveTapAction(nextValue);
+        }
+      )}
       ${inactiveCategory === 'navigate'
         ? html`
             <div class="field-container" style="margin-top: 8px;">
@@ -1702,16 +1700,16 @@ export class UltraNavigationModule extends BaseUltraModule {
         : ''}
       ${inactiveCategory === 'url'
         ? html`
-            <div class="field-container" style="margin-top: 8px;">
-              <div class="field-title">URL</div>
-              <ha-textfield
-                style="width: 100%;"
-                .value=${mediaPlayer.inactive_tap_action?.url_path || ''}
-                placeholder="https://example.com"
-                @input=${(e: Event) =>
-                  updateInactiveTapAction({ url_path: (e.target as HTMLInputElement).value })}
-                @click=${(e: Event) => e.stopPropagation()}
-              ></ha-textfield>
+            <div style="margin-top: 8px;">
+              ${UcFormUtils.renderFieldSection(
+                'URL',
+                'External website to open (e.g., https://google.com).',
+                hass,
+                { url_path: mediaPlayer.inactive_tap_action?.url_path || '' },
+                [UcFormUtils.text('url_path')],
+                (e: CustomEvent) =>
+                  updateInactiveTapAction({ url_path: e.detail?.value?.url_path ?? '' })
+              )}
             </div>
           `
         : ''}
@@ -2497,33 +2495,30 @@ export class UltraNavigationModule extends BaseUltraModule {
 
     return html`
       <!-- Action Type -->
-      <div class="field-container">
-        <div class="field-title">Action Type</div>
-        <div class="field-description">
-          What happens when this icon is tapped.
-        </div>
-        <ha-select
-          style="width: 100%;"
-          .value=${category}
-          @selected=${(e: any) => {
-            e.stopPropagation();
-            const nextValue = e.detail?.value ?? e.target?.value;
-            if (nextValue) {
-              setCategory(nextValue);
-            }
-          }}
-          @closed=${(e: Event) => e.stopPropagation()}
-        >
-          <mwc-list-item value="navigate">Navigate to Path</mwc-list-item>
-          <mwc-list-item value="url">Open External URL</mwc-list-item>
-          <mwc-list-item value="open-popup">Open Popup</mwc-list-item>
-          <mwc-list-item value="toggle">Toggle Entity</mwc-list-item>
-          <mwc-list-item value="more-info">More Info</mwc-list-item>
-          <mwc-list-item value="perform-action">Perform Action</mwc-list-item>
-          <mwc-list-item value="assist">Assist</mwc-list-item>
-          <mwc-list-item value="nothing">No Action</mwc-list-item>
-        </ha-select>
-      </div>
+      ${UcFormUtils.renderFieldSection(
+        'Action Type',
+        'What happens when this icon is tapped.',
+        hass,
+        { action_category: category },
+        [
+          UcFormUtils.select('action_category', [
+            { value: 'navigate', label: 'Navigate to Path' },
+            { value: 'url', label: 'Open External URL' },
+            { value: 'open-popup', label: 'Open Popup' },
+            { value: 'toggle', label: 'Toggle Entity' },
+            { value: 'more-info', label: 'More Info' },
+            { value: 'perform-action', label: 'Perform Action' },
+            { value: 'assist', label: 'Assist' },
+            { value: 'nothing', label: 'No Action' },
+          ]),
+        ],
+        (e: CustomEvent) => {
+          const nextValue = e.detail?.value?.action_category;
+          if (nextValue && nextValue !== category) {
+            setCategory(nextValue);
+          }
+        }
+      )}
 
       <!-- Navigate: Path picker -->
       ${category === 'navigate'
@@ -2545,26 +2540,19 @@ export class UltraNavigationModule extends BaseUltraModule {
 
       <!-- URL: Text field -->
       ${category === 'url'
-        ? html`
-            <div class="field-container">
-              <div class="field-title">URL</div>
-              <div class="field-description">
-                External website to open in a new tab (e.g., https://google.com).
-              </div>
-              <ha-textfield
-                style="width: 100%;"
-                .value=${route.tap_action?.url_path || ''}
-                placeholder="https://example.com"
-                @input=${(e: Event) => {
-                  const url = (e.target as HTMLInputElement).value;
-                  updateRoute({
-                    tap_action: { ...route.tap_action, action: 'url', url_path: url },
-                  });
-                }}
-                @click=${(e: Event) => e.stopPropagation()}
-              ></ha-textfield>
-            </div>
-          `
+        ? UcFormUtils.renderFieldSection(
+            'URL',
+            'External website to open in a new tab (e.g., https://google.com).',
+            hass,
+            { url_path: route.tap_action?.url_path || '' },
+            [UcFormUtils.text('url_path')],
+            (e: CustomEvent) => {
+              const url = e.detail?.value?.url_path ?? '';
+              updateRoute({
+                tap_action: { ...route.tap_action, action: 'url', url_path: url },
+              });
+            }
+          )
         : ''}
 
       <!-- Open Popup: Popup picker -->

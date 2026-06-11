@@ -183,7 +183,8 @@ export interface BaseModule {
     | 'virtual_pet'
     | 'alarm_panel'
     | 'solar_analytics'
-    | 'screensaver';
+    | 'screensaver'
+    | 'lunar_phase';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -4865,6 +4866,96 @@ export interface ScreensaverModule extends BaseModule {
   display_conditions?: DisplayCondition[] | undefined;
 }
 
+// ─── Lunar Phase Module ───────────────────────────────────────────────────────
+
+/** Data items the Lunar Phase module can display (and hide individually) */
+export type LunarPhaseDataItem =
+  | 'moon_age'
+  | 'illumination'
+  | 'azimuth'
+  | 'altitude'
+  | 'distance'
+  | 'position'
+  | 'moonrise'
+  | 'moonset'
+  | 'moon_highest'
+  | 'next_full_moon'
+  | 'next_new_moon'
+  | 'next_phase';
+
+export interface LunarPhaseModule extends BaseModule {
+  type: 'lunar_phase';
+
+  // ── Location ──
+  /** Where latitude/longitude come from (default: HA system location) */
+  location_source?: 'default' | 'entity' | 'custom' | undefined;
+  /** Entity whose latitude/longitude attributes provide the location */
+  location_entity?: string | undefined;
+  /** Manual latitude (location_source: custom) */
+  latitude?: number | undefined;
+  /** Manual longitude (location_source: custom) */
+  longitude?: number | undefined;
+  /** Mirror the moon image for southern hemisphere viewers */
+  southern_hemisphere?: boolean | undefined;
+
+  // ── Views & layout ──
+  /** View shown when the card loads (default: phase) */
+  default_view?: 'phase' | 'calendar' | 'horizon' | undefined;
+  /** Show the view switcher buttons in the header (default: true) */
+  show_view_switcher?: boolean | undefined;
+  /** Layout style (default: full) */
+  layout?: 'full' | 'compact' | 'minimal' | 'moon_only' | undefined;
+  /** Moon graphic placement in the full layout (default: left) */
+  moon_position?: 'left' | 'right' | undefined;
+  /** Moon graphic size in px (default: 130) */
+  moon_size?: number | undefined;
+  /** Data rows per page in the full layout (default: 5) */
+  items_per_page?: number | undefined;
+  /** Data items to hide */
+  hidden_items?: LunarPhaseDataItem[] | undefined;
+  /** Show labels under compact stat icons (default: true) */
+  show_compact_labels?: boolean | undefined;
+  /** Show the day-stepper footer (prev / next day, back to today) (default: true) */
+  show_date_nav?: boolean | undefined;
+
+  // ── Data formatting ──
+  /** Decimal places for numeric values (default: 1) */
+  number_decimals?: number | undefined;
+  /** Show distance in miles instead of kilometers */
+  use_miles?: boolean | undefined;
+  /** 12-hour AM/PM time format instead of 24-hour */
+  time_12hr?: boolean | undefined;
+
+  // ── Horizon graph ──
+  /** Today = fixed midnight→midnight; dynamic = rolling window around now */
+  graph_mode?: 'today' | 'dynamic' | undefined;
+  graph_show_time?: boolean | undefined;
+  graph_show_current?: boolean | undefined;
+  graph_show_highest?: boolean | undefined;
+  graph_y_ticks?: boolean | undefined;
+  graph_x_ticks?: boolean | undefined;
+
+  // ── Appearance ──
+  /** Card backdrop: animated night sky, theme card background, custom image, or transparent */
+  background_style?: 'night_sky' | 'theme' | 'custom' | 'transparent' | undefined;
+  /** Custom background image (url or uploaded path) when background_style: custom */
+  custom_background?: string | undefined;
+  /** Animated twinkling starfield layer (night_sky / custom backgrounds, default: true) */
+  show_starfield?: boolean | undefined;
+  header_font_size?: 'auto' | 'small' | 'medium' | 'large' | 'x-large' | 'xx-large' | undefined;
+  header_text_transform?: 'none' | 'capitalize' | 'uppercase' | 'lowercase' | undefined;
+  header_color?: string | undefined;
+  label_font_size?: 'auto' | 'small' | 'medium' | 'large' | 'x-large' | 'xx-large' | undefined;
+  label_text_transform?: 'none' | 'capitalize' | 'uppercase' | 'lowercase' | undefined;
+  label_color?: string | undefined;
+  /** Accent color for markers, selected days, and pagination (default: theme primary) */
+  accent_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
 // Union type for all module types
 export type CardModule =
   | TextModule
@@ -4935,7 +5026,8 @@ export type CardModule =
   | VirtualPetModule
   | AlarmPanelModule
   | SolarAnalyticsModule
-  | ScreensaverModule;
+  | ScreensaverModule
+  | LunarPhaseModule;
 
 // Activity Feed Module - Pro module for displaying entity state change history
 export interface ActivityFeedEntity {

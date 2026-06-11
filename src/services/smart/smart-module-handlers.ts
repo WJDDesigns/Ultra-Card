@@ -385,6 +385,18 @@ function sanitizeSolarAnalyticsModule(module: SmartModule, id: string): SmartMod
   return { id, type: 'solar_analytics', ...defaultDisplayActions(), ...(module.entities ? { entities: module.entities } : {}) };
 }
 
+function sanitizeLunarPhaseModule(module: SmartModule, id: string): SmartModule | null {
+  const views = new Set(['phase', 'calendar', 'horizon']);
+  const layouts = new Set(['full', 'compact', 'minimal', 'moon_only']);
+  return {
+    id,
+    type: 'lunar_phase',
+    default_view: views.has(String(module.default_view)) ? module.default_view : 'phase',
+    layout: layouts.has(String(module.layout)) ? module.layout : 'full',
+    ...defaultDisplayActions(),
+  };
+}
+
 function sanitizeSportsScoreModule(module: SmartModule, id: string): SmartModule | null {
   const team = String(module.team || '').trim();
   if (!team) return null;
@@ -601,6 +613,16 @@ export const supplementalSmartModuleHandlers = {
   solar_analytics: {
     sanitize: wrapSanitize((module, _hass, id) => sanitizeSolarAnalyticsModule(module, id)),
     defaultBuilder: (ctx: SmartBuildContext) => ({ id: ctx.id, type: 'solar_analytics', ...defaultDisplayActions() }),
+  },
+  lunar_phase: {
+    sanitize: wrapSanitize((module, _hass, id) => sanitizeLunarPhaseModule(module, id)),
+    defaultBuilder: (ctx: SmartBuildContext) => ({
+      id: ctx.id,
+      type: 'lunar_phase',
+      default_view: 'phase',
+      layout: 'full',
+      ...defaultDisplayActions(),
+    }),
   },
   sports_score: {
     sanitize: wrapSanitize((module, _hass, id) => sanitizeSportsScoreModule(module, id)),

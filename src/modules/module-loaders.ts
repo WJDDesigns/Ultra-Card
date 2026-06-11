@@ -72,6 +72,7 @@ export const coreLoaders: Record<string, ModuleLoader> = {
   alarm_panel: () => import(/* webpackMode: "eager" */ './alarm-panel-module').then(m => new m.UltraAlarmPanelModule()),
   solar_analytics: () => import(/* webpackMode: "eager" */ './solar-analytics-module').then(m => new m.UltraSolarAnalyticsModule()),
   screensaver: () => import(/* webpackMode: "eager" */ './screensaver-module').then(m => new m.UltraScreensaverModule()),
+  lunar_phase: () => import(/* webpackMode: "eager" */ './lunar-phase-module').then(m => new m.UltraLunarPhaseModule()),
   battery_monitor: () => import(/* webpackMode: "eager" */ './battery-monitor-module').then(m => new m.UltraBatteryMonitorModule()),
   auto_entity_list: () => import(/* webpackMode: "eager" */ './auto-entity-list-module').then(m => new m.UltraAutoEntityListModule()),
 };

@@ -88,6 +88,7 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'light-module.ts',
   'living-canvas-module.ts',
   'lock-module.ts',
+  'lunar-phase-module.ts',
   'map-module.ts',
   'markdown-module.ts',
   'media-player-module.ts',

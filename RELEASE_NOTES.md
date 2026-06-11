@@ -1,5 +1,24 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.5.0-beta3
+
+### 🚀 New Features
+
+- **Added new Lunar Phase module** - Animated moon phase tracker with live moon data (illumination, distance, moonrise/moonset, next phases), a month calendar, a horizon altitude graph, four layout styles, and an animated night-sky background with starfield (Pro)
+
+### 🔧 Improvements
+
+- **Improved nested layouts inside tabs sections** - Nested layouts now display their child modules directly in the layout tree with full add, edit, duplicate, delete, and collapse support, including deeper nesting levels
+- **Improved Navigation module editor** - Action type and URL fields now use the standard Ultra Card form controls for a more consistent editing experience
+- **Improved smart selector preset flow** - The selector now stays open after choosing a preset so you can keep browsing
+
+### 🐛 Bug Fixes
+
+- **Fixed popup modules freezing** - Entity-driven modules inside an open popup (toggles, selects, and other live controls) now update in real time when entity states change instead of freezing at the state they had when the popup opened
+- **Fixed duplicate action for nested layouts inside tabs sections** - Duplicating a nested layout now targets the correct tab section
+
+---
+
 ## Version 3.5.0-beta2
 
 Here's what's new since 3.5.0-beta1:

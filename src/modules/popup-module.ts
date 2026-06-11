@@ -3313,9 +3313,17 @@ export class UltraPopupModule extends BaseUltraModule {
       }
 
       // Check if we need to re-render content
-      // Only clear and re-render if: portal is new OR refresh is explicitly requested
+      // Re-render if: portal is new, refresh is explicitly requested, OR hass has
+      // changed since the last content render. Without the hass check, entity-driven
+      // modules inside the popup (boolean toggles, select inputs, etc.) freeze at the
+      // state they had when the popup opened: renderPreview detects the hass change
+      // and calls renderPopupToPortal, but the early-return below would skip the
+      // render AND leave popupLastRenderedHassRef stale, so no later update could
+      // ever get through either.
       const needsRefreshFlag = popupNeedsRefresh.get(uniquePopupKey) === true;
-      const needsContentRender = isNewPortal || needsRefreshFlag;
+      const hassChangedSinceLastRender =
+        !isNewPortal && popupLastRenderedHassRef.get(uniquePopupKey) !== hass;
+      const needsContentRender = isNewPortal || needsRefreshFlag || hassChangedSinceLastRender;
 
       // Clear the refresh flag after checking
       if (needsRefreshFlag) {

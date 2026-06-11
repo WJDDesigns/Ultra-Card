@@ -51,6 +51,7 @@ const KEYWORD_OVERRIDES: Record<string, string[]> = {
   animated_clock: ['flip clock', 'animated clock'],
   energy_display: ['energy flow', 'sankey'],
   solar_analytics: ['solar panel', 'solar power'],
+  lunar_phase: ['moon phase', 'moon', 'lunar', 'full moon', 'moonrise', 'moonset'],
   sports_score: ['sports', 'scoreboard', 'nfl', 'nba'],
   vacuum: ['robot vacuum', 'roomba'],
   text_input: ['input text', 'text helper'],
@@ -246,6 +247,11 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
     purpose: 'Solar production and grid balance analytics.',
     fields: ['entities'],
   },
+  lunar_phase: {
+    purpose: 'Animated moon phase tracker with lunar data, calendar, and horizon graph.',
+    fields: ['default_view', 'layout'],
+    example: { type: 'lunar_phase', default_view: 'phase', layout: 'full' },
+  },
   sports_score: {
     purpose: 'Live sports scores and upcoming games.',
     fields: ['team', 'league'],
@@ -345,6 +351,7 @@ const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
   graphs: ['sensor'],
   energy_display: ['sensor'],
   solar_analytics: ['sensor'],
+  lunar_phase: ['*'],
   sports_score: ['*'],
   qr_code: ['*'],
   animated_weather: ['weather'],
