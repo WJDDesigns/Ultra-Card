@@ -118,6 +118,12 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'vertical-module.ts',
   'video-bg-module.ts',
   'virtual-pet-module.ts',
+  // Free-tier additions (update monitor, clock, humidifier, todo, weather)
+  'update-monitor-module.ts',
+  'clock-module.ts',
+  'humidifier-module.ts',
+  'todo-list-module.ts',
+  'weather-module.ts',
 ]);
 
 /**

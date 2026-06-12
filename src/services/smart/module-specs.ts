@@ -63,6 +63,11 @@ const KEYWORD_OVERRIDES: Record<string, string[]> = {
   button_input: ['input button', 'press button'],
   counter_input: ['input counter'],
   color_input: ['color picker', 'input color'],
+  update_monitor: ['pending updates', 'firmware updates', 'update list'],
+  clock: ['digital clock', 'current time'],
+  humidifier: ['dehumidifier', 'humidity control'],
+  todo_list: ['todo', 'to-do', 'shopping list', 'task list', 'checklist'],
+  weather: ['current weather', 'weather forecast', 'temperature outside'],
 };
 
 const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; example?: Record<string, unknown> }> = {
@@ -308,6 +313,27 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
     purpose: 'Color picker linked to input_text or light entities.',
     fields: ['entity'],
   },
+  update_monitor: {
+    purpose: 'List of pending Home Assistant and device updates with install actions.',
+    fields: ['show_up_to_date', 'max_items'],
+  },
+  clock: {
+    purpose: 'Simple digital clock with optional date line.',
+    fields: ['time_format', 'show_seconds', 'show_date'],
+  },
+  humidifier: {
+    purpose: 'Humidifier and dehumidifier control with target humidity and modes.',
+    fields: ['entity', 'name'],
+  },
+  todo_list: {
+    purpose: 'Interactive to-do or shopping list backed by todo entities.',
+    fields: ['entity', 'show_completed', 'max_items'],
+  },
+  weather: {
+    purpose: 'Current weather conditions and a simple daily or hourly forecast.',
+    fields: ['weather_entity', 'forecast_type', 'forecast_count'],
+    example: { type: 'weather', weather_entity: 'weather.home', forecast_type: 'daily', forecast_count: 5 },
+  },
 };
 
 const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
@@ -357,6 +383,11 @@ const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
   animated_weather: ['weather'],
   animated_forecast: ['weather'],
   animated_clock: ['*'],
+  update_monitor: ['update'],
+  clock: ['*'],
+  humidifier: ['humidifier'],
+  todo_list: ['todo'],
+  weather: ['weather'],
   separator: ['*'],
   text: ['*'],
   markdown: ['*'],

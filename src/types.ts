@@ -184,7 +184,12 @@ export interface BaseModule {
     | 'alarm_panel'
     | 'solar_analytics'
     | 'screensaver'
-    | 'lunar_phase';
+    | 'lunar_phase'
+    | 'update_monitor'
+    | 'clock'
+    | 'humidifier'
+    | 'todo_list'
+    | 'weather';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -5027,7 +5032,130 @@ export type CardModule =
   | AlarmPanelModule
   | SolarAnalyticsModule
   | ScreensaverModule
-  | LunarPhaseModule;
+  | LunarPhaseModule
+  | UpdateMonitorModule
+  | ClockModule
+  | HumidifierModule
+  | TodoListModule
+  | WeatherModule;
+
+// Update Monitor — auto-discover update.* entities and surface pending updates
+export interface UpdateMonitorModule extends BaseModule {
+  type: 'update_monitor';
+
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  show_up_to_date?: boolean | undefined;
+  show_version_info?: boolean | undefined;
+  show_install_button?: boolean | undefined;
+  show_entity_picture?: boolean | undefined;
+  max_items?: number | undefined;
+  sort_direction: 'updates_first' | 'name' | 'unchanged';
+
+  exclude_patterns?: string[] | undefined;
+  hidden_entities?: string[] | undefined;
+
+  update_color?: string | undefined;
+  ok_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// Digital Clock — simple time and date display (free counterpart of the Pro flip clock)
+export interface ClockModule extends BaseModule {
+  type: 'clock';
+
+  time_format?: '12' | '24' | undefined;
+  show_seconds?: boolean | undefined;
+  show_ampm?: boolean | undefined;
+  show_date?: boolean | undefined;
+  date_style?: 'long' | 'short' | 'numeric' | undefined;
+  timezone?: string | undefined;
+  alignment?: 'left' | 'center' | 'right' | undefined;
+
+  time_size?: number | undefined;
+  date_size?: number | undefined;
+  time_color?: string | undefined;
+  date_color?: string | undefined;
+  time_weight?: 'normal' | 'medium' | 'bold' | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// Humidifier Control — humidity target, power, and mode control for humidifier.* entities
+export interface HumidifierModule extends BaseModule {
+  type: 'humidifier';
+
+  entity: string;
+  name?: string | undefined;
+  icon?: string | undefined;
+
+  show_name?: boolean | undefined;
+  show_current_humidity?: boolean | undefined;
+  show_target_slider?: boolean | undefined;
+  show_modes?: boolean | undefined;
+  show_power_button?: boolean | undefined;
+
+  active_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// To-Do List — interactive list backed by Home Assistant todo.* entities
+export interface TodoListModule extends BaseModule {
+  type: 'todo_list';
+
+  entity: string;
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  show_completed?: boolean | undefined;
+  show_due_date?: boolean | undefined;
+  enable_add_item?: boolean | undefined;
+  max_items?: number | undefined;
+
+  accent_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+}
+
+// Basic Weather — current conditions and a simple forecast strip with static MDI icons
+export interface WeatherModule extends BaseModule {
+  type: 'weather';
+
+  weather_entity: string;
+  name?: string | undefined;
+
+  show_current?: boolean | undefined;
+  show_condition_label?: boolean | undefined;
+  show_humidity?: boolean | undefined;
+  show_wind?: boolean | undefined;
+  show_forecast?: boolean | undefined;
+  forecast_type?: 'daily' | 'hourly' | undefined;
+  forecast_count?: number | undefined;
+
+  icon_color?: string | undefined;
+  temp_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
 
 // Activity Feed Module - Pro module for displaying entity state change history
 export interface ActivityFeedEntity {

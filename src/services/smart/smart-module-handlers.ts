@@ -498,6 +498,40 @@ function createEntitiesDefaultBuilder(
   };
 }
 
+function sanitizeUpdateMonitorModule(module: SmartModule, id: string): SmartModule | null {
+  return {
+    id,
+    type: 'update_monitor',
+    show_up_to_date: Boolean(module.show_up_to_date),
+    max_items: numberInRange(module.max_items, 1, 100, 25),
+    ...defaultDisplayActions(),
+  };
+}
+
+function sanitizeClockModule(module: SmartModule, id: string): SmartModule | null {
+  return {
+    id,
+    type: 'clock',
+    time_format: oneOf(module.time_format, ['12', '24'], '12'),
+    show_seconds: Boolean(module.show_seconds),
+    show_date: module.show_date !== false,
+    ...defaultDisplayActions(),
+  };
+}
+
+function sanitizeWeatherModule(module: SmartModule, hass: SmartSanitizeHass, id: string): SmartModule | null {
+  const entityId = String(module.weather_entity || module.entity || '');
+  if (!entityExists(hass, entityId) || !entityId.startsWith('weather.')) return null;
+  return {
+    id,
+    type: 'weather',
+    weather_entity: entityId,
+    forecast_type: oneOf(module.forecast_type, ['daily', 'hourly'], 'daily'),
+    forecast_count: numberInRange(module.forecast_count, 1, 8, 5),
+    ...defaultDisplayActions(),
+  };
+}
+
 export const supplementalSmartModuleHandlers = {
   bar: {
     sanitize: wrapSanitize(sanitizeBarModule),
@@ -700,5 +734,52 @@ export const supplementalSmartModuleHandlers = {
       sanitizeInputHelperModule('color_input', ['input_text', 'light'], module, hass, id)
     ),
     defaultBuilder: createEntityDefaultBuilder('color_input'),
+  },
+  update_monitor: {
+    sanitize: wrapSanitize((module, _hass, id) => sanitizeUpdateMonitorModule(module, id)),
+    defaultBuilder: (ctx: SmartBuildContext) => ({
+      id: ctx.id,
+      type: 'update_monitor',
+      show_up_to_date: false,
+      max_items: 25,
+      ...defaultDisplayActions(),
+    }),
+  },
+  clock: {
+    sanitize: wrapSanitize((module, _hass, id) => sanitizeClockModule(module, id)),
+    defaultBuilder: (ctx: SmartBuildContext) => ({
+      id: ctx.id,
+      type: 'clock',
+      time_format: '12',
+      show_seconds: false,
+      show_date: true,
+      ...defaultDisplayActions(),
+    }),
+  },
+  humidifier: {
+    sanitize: wrapSanitize((module, hass, id) =>
+      sanitizeEntityModule('humidifier', 'humidifier', module, hass, id)
+    ),
+    defaultBuilder: createEntityDefaultBuilder('humidifier'),
+  },
+  todo_list: {
+    sanitize: wrapSanitize((module, hass, id) =>
+      sanitizeEntityModule('todo_list', 'todo', module, hass, id)
+    ),
+    defaultBuilder: createEntityDefaultBuilder('todo_list'),
+  },
+  weather: {
+    sanitize: wrapSanitize(sanitizeWeatherModule),
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      ctx.entity
+        ? {
+            id: ctx.id,
+            type: 'weather',
+            weather_entity: ctx.entity.entityId,
+            forecast_type: 'daily',
+            forecast_count: 5,
+            ...defaultDisplayActions(),
+          }
+        : null,
   },
 };

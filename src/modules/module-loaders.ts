@@ -75,4 +75,9 @@ export const coreLoaders: Record<string, ModuleLoader> = {
   lunar_phase: () => import(/* webpackMode: "eager" */ './lunar-phase-module').then(m => new m.UltraLunarPhaseModule()),
   battery_monitor: () => import(/* webpackMode: "eager" */ './battery-monitor-module').then(m => new m.UltraBatteryMonitorModule()),
   auto_entity_list: () => import(/* webpackMode: "eager" */ './auto-entity-list-module').then(m => new m.UltraAutoEntityListModule()),
+  update_monitor: () => import(/* webpackMode: "eager" */ './update-monitor-module').then(m => new m.UltraUpdateMonitorModule()),
+  clock: () => import(/* webpackMode: "eager" */ './clock-module').then(m => new m.UltraClockModule()),
+  humidifier: () => import(/* webpackMode: "eager" */ './humidifier-module').then(m => new m.UltraHumidifierModule()),
+  todo_list: () => import(/* webpackMode: "eager" */ './todo-list-module').then(m => new m.UltraTodoListModule()),
+  weather: () => import(/* webpackMode: "eager" */ './weather-module').then(m => new m.UltraWeatherModule()),
 };

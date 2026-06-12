@@ -51,6 +51,13 @@ function extractEntityId(module: SmartAiPlanModule): string | null {
 
 const GENERIC_MODULE_TYPES = new Set(['info', 'icon', 'text', 'status_summary']);
 
+/**
+ * Header-style weather prompts ("weather icon and temp on top") keep the icon + info
+ * composition instead of being upgraded to the basic weather module. Mirrors the guard
+ * in uc-smart-composition-planner's resolveForcedModuleType.
+ */
+const WEATHER_HEADER_HINT = /\bicon\b|\btemp\b|\btemperature\b|\bheader\b|\bon top\b|\btop\b/i;
+
 function resolveUpgradeType(
   module: SmartAiPlanModule,
   prompt: string,
@@ -64,6 +71,7 @@ function resolveUpgradeType(
 
   for (const match of matches) {
     if (match.type === currentType) return undefined;
+    if (match.type === 'weather' && WEATHER_HEADER_HINT.test(prompt)) continue;
     if (!match.spec.defaultBuilder) continue;
 
     const entityDomain = entityId?.split('.')[0];

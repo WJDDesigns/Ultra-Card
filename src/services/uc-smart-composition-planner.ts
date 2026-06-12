@@ -313,7 +313,18 @@ function resolveForcedModuleType(sectionText: string, forcedDomains?: string[]):
 
   if (isMultiEntityControlPrompt) return undefined;
 
-  return getForcedModuleTypeFromPrompt(sectionText, 'pro');
+  const forced = getForcedModuleTypeFromPrompt(sectionText, 'pro');
+
+  // Header-style weather prompts ("weather icon and temp on top") keep the dedicated
+  // header recipe (icon + large temperature) instead of the basic weather module.
+  if (
+    forced === 'weather' &&
+    /\bicon\b|\btemp\b|\btemperature\b|\bheader\b|\bon top\b|\btop\b/.test(text)
+  ) {
+    return undefined;
+  }
+
+  return forced;
 }
 
 function parseEntityLimit(sectionText: string): number | undefined {

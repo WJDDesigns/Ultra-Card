@@ -32,6 +32,7 @@ const EMPTY_GENERAL_TAB = new Set([
   'cover',
   'fan',
   'lock',
+  'humidifier',
   'dynamic-list',
   'dynamic_weather',
   'qr_code',
