@@ -1,5 +1,19 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.5.0-beta6
+
+### 🚀 New Features
+
+- **Added 5 new free modules** - Weather, Digital Clock, To-Do List, Update Monitor, and Humidifier are now available to every user at no cost
+- **Added Smart Card AI support for the new free modules so they can be generated automatically from natural language prompts** - Enhanced module functionality for better user experience
+
+### 🔧 Improvements
+
+- **Improved Smart Card generation with a new card composer that builds smarter, more reliable layouts** - Better layout handling and organization
+- **Improved AI composition planning and module sanitization for cleaner, more accurate generated cards** - Enhanced module functionality for better user experience
+
+---
+
 ## Version 3.5.0-beta5
 
 ### 🚀 New Features

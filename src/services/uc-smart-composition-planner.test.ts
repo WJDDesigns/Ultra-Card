@@ -129,4 +129,37 @@ describe('uc-smart-composition-planner', () => {
       domains: expect.arrayContaining(['lock', 'media_player']),
     });
   });
+
+  it('builds clock, weather, and light sections for mixed dashboard prompts', () => {
+    const plan = parseSmartCompositionPlan(
+      'Make a clock and weather card with a list of lights below',
+      hass,
+      'free'
+    );
+
+    expect(plan.sections).toHaveLength(2);
+    expect(plan.sections[0]).toMatchObject({
+      recipe: 'moduleRow',
+      moduleIntents: ['clock', 'header'],
+      domains: ['weather'],
+    });
+    expect(plan.sections[1]).toMatchObject({
+      recipe: 'entityList',
+      domains: ['light'],
+      entities: expect.arrayContaining([
+        expect.objectContaining({ entityId: 'light.hall' }),
+        expect.objectContaining({ entityId: 'light.desk' }),
+      ]),
+    });
+  });
+
+  it('uses pro clock and weather modules when tier is pro', () => {
+    const plan = parseSmartCompositionPlan(
+      'Make a clock and weather card with a list of lights below',
+      hass,
+      'pro'
+    );
+
+    expect(plan.sections[0].moduleIntents).toEqual(['animated_clock', 'header']);
+  });
 });

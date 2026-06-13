@@ -486,9 +486,10 @@ function buildSpecForType(type: string): SmartModuleSpec {
     ...(aiOverride?.example ? { aiExample: aiOverride.example } : {}),
     aiPurpose: aiOverride?.purpose || manifest?.description || `${manifest?.title || type} module`,
     ...(isPro && type === 'climate' ? { proDowngradeType: 'info' } : {}),
+    ...(isPro && type === 'animated_clock' ? { proDowngradeType: 'clock' } : {}),
     ...(isPro &&
     (type === 'animated_weather' || type === 'animated_forecast' || type === 'dynamic_weather')
-      ? { proDowngradeType: 'icon' }
+      ? { proDowngradeType: 'weather' }
       : {}),
   };
 }

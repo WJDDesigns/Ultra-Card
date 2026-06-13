@@ -29,6 +29,7 @@ export type SmartLayoutRecipe =
   | 'gaugeModule'
   | 'barModule'
   | 'singleModule'
+  | 'moduleRow'
   | 'mixedSections';
 
 export type SmartSectionKind = 'header' | 'control' | 'status' | 'list' | 'grid' | 'details';
@@ -40,6 +41,8 @@ export type SmartCompositionSection = {
   domains: string[];
   entities: SmartEntityRef[];
   forcedModuleType?: string | undefined;
+  /** Ordered module types for moduleRow sections (e.g. clock + weather). */
+  moduleIntents?: string[] | undefined;
   wantsButtons: boolean;
   wantsDetails: boolean;
   wantsLargeText: boolean;
@@ -58,29 +61,153 @@ const SECTION_SPLIT_PATTERN =
 
 export function parseSmartCompositionPlan(
   prompt: string,
-  hass: SmartCompositionHass
+  hass: SmartCompositionHass,
+  tier: 'free' | 'pro' = 'pro'
 ): SmartCompositionPlan {
   const inventory = getEntityInventory(hass);
+  const mixedSections = parseMixedModulePrompt(prompt, tier);
   const sectionTexts = splitPromptIntoSections(prompt);
   const sections =
-    sectionTexts.length > 1
-      ? sectionTexts.map((text, index) => buildSectionFromText(`section-${index}`, text, prompt))
-      : expandMultiDomainSinglePrompt(prompt) ||
-        [buildSectionFromText('section-0', prompt, prompt)];
+    mixedSections ||
+    (sectionTexts.length > 1
+      ? sectionTexts.map((text, index) => buildSectionFromText(`section-${index}`, text, prompt, undefined, tier))
+      : expandMultiDomainSinglePrompt(prompt, tier) ||
+        [buildSectionFromText('section-0', prompt, prompt, undefined, tier)]);
 
-  assignEntitiesToSections(sections, inventory, prompt);
+  assignEntitiesToSections(sections, inventory, prompt, tier);
 
   return {
     prompt,
-    sections: sections.filter(
-      section =>
-        section.entities.length > 0 ||
-        section.recipe === 'entityGrid' ||
-        section.recipe === 'gaugeModule' ||
-        section.recipe === 'barModule' ||
-        section.recipe === 'singleModule'
-    ),
+    sections: sections.filter(sectionHasContent),
   };
+}
+
+export function sectionHasContent(section: SmartCompositionSection): boolean {
+  return (
+    section.entities.length > 0 ||
+    section.recipe === 'entityGrid' ||
+    section.recipe === 'gaugeModule' ||
+    section.recipe === 'barModule' ||
+    section.recipe === 'singleModule' ||
+    section.recipe === 'moduleRow'
+  );
+}
+
+export function resolveClockModuleType(tier: 'free' | 'pro', prompt: string): string {
+  const text = prompt.toLowerCase();
+  if (tier === 'pro' && (/\banimated\b|\bflip\b/.test(text) || !/\bdigital\b/.test(text))) {
+    return 'animated_clock';
+  }
+  return 'clock';
+}
+
+export function resolveWeatherModuleType(
+  tier: 'free' | 'pro',
+  prompt: string,
+  sectionText = ''
+): string {
+  const text = `${prompt} ${sectionText}`.toLowerCase();
+  if (/\bicon\b|\btemp\b|\btemperature\b|\bheader\b/.test(text) && !/\bforecast\b|\bmodule\b/.test(text)) {
+    return 'header';
+  }
+  if (tier === 'pro') {
+    if (/\bforecast\b/.test(text)) return 'animated_forecast';
+    return 'animated_weather';
+  }
+  if (/\bforecast\b/.test(text)) return 'weather';
+  return 'weather';
+}
+
+function parseMixedModulePrompt(
+  prompt: string,
+  tier: 'free' | 'pro'
+): SmartCompositionSection[] | null {
+  const text = prompt.toLowerCase();
+  const hasClock = /\bclock\b/.test(text);
+  const hasWeather = /\bweather\b/.test(text);
+  const hasLights = /\blights?\b/.test(text);
+
+  if (hasClock && hasWeather) {
+    const clockType = resolveClockModuleType(tier, prompt);
+    const weatherType = hasClock ? 'header' : resolveWeatherModuleType(tier, prompt, 'weather');
+
+    const sections: SmartCompositionSection[] = [
+      {
+        id: 'section-top-row',
+        kind: 'header',
+        recipe: 'moduleRow',
+        domains: ['weather'],
+        entities: [],
+        moduleIntents: [clockType, weatherType],
+        wantsButtons: false,
+        wantsDetails: false,
+        wantsLargeText: false,
+        layoutPreference: 'horizontal',
+        detailAttributes: [],
+      },
+    ];
+
+    if (hasLights) {
+      sections.push(
+        buildSectionFromText(
+          'section-lights',
+          /\bbelow\b|\bunder\b|\bbeneath\b/.test(text) ? 'list of lights below' : 'list of lights',
+          prompt,
+          ['light'],
+          tier
+        )
+      );
+    }
+
+    return sections;
+  }
+
+  const explicitModules = detectExplicitModuleSections(prompt, tier);
+  if (explicitModules.length >= 2) {
+    return explicitModules;
+  }
+
+  return null;
+}
+
+function detectExplicitModuleSections(
+  prompt: string,
+  tier: 'free' | 'pro'
+): SmartCompositionSection[] {
+  const text = prompt.toLowerCase();
+  const sections: SmartCompositionSection[] = [];
+
+  if (/\bclock\b/.test(text) && !/\bweather\b/.test(text)) {
+    sections.push({
+      id: 'section-clock',
+      kind: 'details',
+      recipe: 'singleModule',
+      domains: [],
+      entities: [],
+      forcedModuleType: resolveClockModuleType(tier, prompt),
+      wantsButtons: false,
+      wantsDetails: false,
+      wantsLargeText: false,
+      layoutPreference: 'vertical',
+      detailAttributes: [],
+    });
+  }
+
+  return sections.length >= 2 ? sections : [];
+}
+
+function scoreEntityForPrompt(entity: SmartEntityRef, prompt: string): number {
+  const tokens = prompt
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(token => token.length >= 3);
+  const haystack = `${entity.entityId} ${entity.name}`.toLowerCase();
+  let score = 0;
+  for (const token of tokens) {
+    if (haystack.includes(token)) score += 12;
+  }
+  return score;
 }
 
 function splitPromptIntoSections(prompt: string): string[] {
@@ -104,7 +231,10 @@ function splitPromptIntoSections(prompt: string): string[] {
   return [normalized];
 }
 
-function expandMultiDomainSinglePrompt(prompt: string): SmartCompositionSection[] | null {
+function expandMultiDomainSinglePrompt(
+  prompt: string,
+  tier: 'free' | 'pro' = 'pro'
+): SmartCompositionSection[] | null {
   const text = prompt.toLowerCase();
   const domains = inferEntityDomainsFromPrompt(prompt);
   if (domains.length < 2) return null;
@@ -112,7 +242,7 @@ function expandMultiDomainSinglePrompt(prompt: string): SmartCompositionSection[
     /\bbeside\b|\bnext to\b|\bside by side\b|\bone row\b|\bsame row\b|\bhorizontal\b/.test(text);
 
   if (wantsSideBySide) {
-    return [buildSectionFromText('section-side-by-side', prompt, prompt, domains)];
+    return [buildSectionFromText('section-side-by-side', prompt, prompt, domains, tier)];
   }
 
   const sections: SmartCompositionSection[] = [];
@@ -122,14 +252,14 @@ function expandMultiDomainSinglePrompt(prompt: string): SmartCompositionSection[
 
   if (hasTopBottom && domains.includes('weather')) {
     const weatherText = extractDomainPhrase(prompt, 'weather') || 'weather icon and temperature on top';
-    sections.push(buildSectionFromText('section-weather', weatherText, prompt));
+    sections.push(buildSectionFromText('section-weather', weatherText, prompt, undefined, tier));
 
     const remainingDomains = domains.filter(domain => domain !== 'weather');
     const restText =
       remainingDomains.map(domain => extractDomainPhrase(prompt, domain)).filter(Boolean).join(' then ') ||
       prompt.replace(/\bweather\b[^.]*?(?=below|under|lights?|list|grid|$)/i, '').trim() ||
       prompt;
-    sections.push(buildSectionFromText('section-rest', restText, prompt));
+    sections.push(buildSectionFromText('section-rest', restText, prompt, undefined, tier));
     return sections;
   }
 
@@ -139,7 +269,8 @@ function expandMultiDomainSinglePrompt(prompt: string): SmartCompositionSection[
         `section-${domain}-${index}`,
         extractDomainPhrase(prompt, domain) || `${domain} controls`,
         prompt,
-        [domain]
+        [domain],
+        tier
       )
     );
   }
@@ -166,14 +297,15 @@ function buildSectionFromText(
   id: string,
   sectionText: string,
   fullPrompt: string,
-  forcedDomains?: string[]
+  forcedDomains?: string[],
+  tier: 'free' | 'pro' = 'pro'
 ): SmartCompositionSection {
   const text = sectionText.toLowerCase();
-  const suggestedModules = suggestSmartModuleTypesForPrompt(sectionText, 'pro', {
+  const suggestedModules = suggestSmartModuleTypesForPrompt(sectionText, tier, {
     includeLibraryOnly: true,
     max: 12,
   });
-  const forcedModuleType = resolveForcedModuleType(sectionText, forcedDomains);
+  const forcedModuleType = resolveForcedModuleType(sectionText, forcedDomains, tier);
   const forcedSpec = forcedModuleType ? getSmartModuleSpec(forcedModuleType) : undefined;
   const domains = forcedSpec?.entityDomains.filter(domain => domain !== '*').length
     ? forcedSpec.entityDomains.filter(domain => domain !== '*')
@@ -199,7 +331,6 @@ function buildSectionFromText(
     };
   }
 
-  const wantsGrid = /\bgrid\b|\btiles?\b|\bmatrix\b/.test(text) || suggestedModules.includes('grid');
   const wantsList = /\blist\b|\brows?\b/.test(text);
   const wantsSideBySide =
     /\bbeside\b|\bnext to\b|\bside by side\b|\bone row\b|\bsame row\b|\bhorizontal\b/.test(text) ||
@@ -219,6 +350,9 @@ function buildSectionFromText(
     (/\bgauge\b|\bfuel\b|\bgas left\b|\btank level\b|\bfuel level\b|\bfuel left\b/.test(text) ||
       suggestedModules.includes('gauge')) &&
     !wantsBar;
+  const wantsGrid =
+    /\bgrid\b|\btiles?\b|\bmatrix\b/.test(text) ||
+    (/\bshow\s+\d+\b/.test(text) && resolvedDomains.includes('light') && !wantsDetails && !wantsButtons);
 
   const detailAttributes: string[] = [];
   if (/\bbrightness\b|\bbright\b/.test(text)) detailAttributes.push('brightness');
@@ -283,7 +417,8 @@ function buildSectionFromText(
   }
 
   if (!detailAttributes.length && wantsDetails && resolvedDomains.includes('light')) {
-    detailAttributes.push('brightness', 'rgb_color');
+    if (/\bbrightness\b|\bbright\b/.test(text)) detailAttributes.push('brightness');
+    if (/\bcolor\b|\bcolour\b/.test(text)) detailAttributes.push('rgb_color');
   }
 
   return {
@@ -301,8 +436,18 @@ function buildSectionFromText(
   };
 }
 
-function resolveForcedModuleType(sectionText: string, forcedDomains?: string[]): string | undefined {
-  if (forcedDomains?.length) return undefined;
+function resolveForcedModuleType(
+  sectionText: string,
+  forcedDomains?: string[],
+  tier: 'free' | 'pro' = 'pro'
+): string | undefined {
+  if (forcedDomains?.length) {
+    const text = sectionText.toLowerCase();
+    if (/\bclock\b/.test(text)) {
+      return resolveClockModuleType(tier, sectionText);
+    }
+    return undefined;
+  }
 
   const text = sectionText.toLowerCase();
   const domains = inferEntityDomainsFromPrompt(sectionText);
@@ -313,7 +458,7 @@ function resolveForcedModuleType(sectionText: string, forcedDomains?: string[]):
 
   if (isMultiEntityControlPrompt) return undefined;
 
-  const forced = getForcedModuleTypeFromPrompt(sectionText, 'pro');
+  const forced = getForcedModuleTypeFromPrompt(sectionText, tier);
 
   // Header-style weather prompts ("weather icon and temp on top") keep the dedicated
   // header recipe (icon + large temperature) instead of the basic weather module.
@@ -338,7 +483,8 @@ function parseEntityLimit(sectionText: string): number | undefined {
 function assignEntitiesToSections(
   sections: SmartCompositionSection[],
   inventory: SmartEntityRef[],
-  prompt: string
+  prompt: string,
+  tier: 'free' | 'pro' = 'pro'
 ): void {
   const usedEntityIds = new Set<string>();
 
@@ -368,6 +514,17 @@ function assignEntitiesToSections(
       continue;
     }
 
+    if (section.recipe === 'moduleRow' && section.domains.includes('weather')) {
+      const weatherCandidates = inventory
+        .filter(entity => entity.domain === 'weather')
+        .map(entity => ({ entity, score: scoreEntityForPrompt(entity, prompt) }))
+        .sort((a, b) => b.score - a.score);
+      const bestWeather = weatherCandidates[0]?.entity;
+      section.entities = bestWeather ? [bestWeather] : [];
+      if (bestWeather) usedEntityIds.add(bestWeather.entityId);
+      continue;
+    }
+
     if (section.recipe === 'singleModule' && section.forcedModuleType) {
       const spec = getSmartModuleSpec(section.forcedModuleType);
       if (spec) {
@@ -384,17 +541,30 @@ function assignEntitiesToSections(
 
     section.entities = candidates
       .filter(entity => !usedEntityIds.has(entity.entityId))
-      .slice(0, entityLimit);
+      .map(entity => ({ entity, score: scoreEntityForPrompt(entity, prompt) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, entityLimit)
+      .map(item => item.entity);
 
     if (section.recipe !== 'entityGrid') {
       section.entities.forEach(entity => usedEntityIds.add(entity.entityId));
     }
   }
 
-  if (!sections.some(section => section.entities.length) && inventory.length) {
-    const fallback = buildSectionFromText('section-fallback', prompt, prompt);
-    fallback.entities = inventory.slice(0, 8);
-    sections.splice(0, sections.length, fallback);
+  if (!sections.some(section => sectionHasContent(section)) && inventory.length) {
+    const inferredDomains = inferEntityDomainsFromPrompt(prompt);
+    if (inferredDomains.length) {
+      const fallback = buildSectionFromText('section-fallback', prompt, prompt, inferredDomains, tier);
+      fallback.entities = inventory
+        .filter(entity => inferredDomains.includes(entity.domain))
+        .map(entity => ({ entity, score: scoreEntityForPrompt(entity, prompt) }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 8)
+        .map(item => item.entity);
+      if (fallback.entities.length) {
+        sections.splice(0, sections.length, fallback);
+      }
+    }
   }
 }
 
@@ -494,13 +664,14 @@ function resolveSectionDomains(section: SmartCompositionSection): string[] {
 
 export function getCompositionCatalogLines(): string[] {
   return [
+    '- moduleRow: horizontal row of explicit modules such as clock beside weather',
     '- header: horizontal(icon + info) for weather or summary headers; use info.text_size for large temperature text',
     '- entityList: vertical list of horizontal(icon + info) status rows',
     '- controlList: vertical list of domain controls or icon + button rows (or horizontal when prompt says beside/side-by-side)',
     '- entityGrid: grid module for multiple entities such as "show 4 lights"',
     '- gaugeModule: gauge module for fuel level, tank, or numeric sensor readouts',
     '- barModule: bar/progress module for fuel level, battery, or percentage sensors',
-    '- singleModule: explicit module type named in the prompt (bar, calendar, qr_code, etc.)',
+    '- singleModule: explicit module type named in the prompt (clock, bar, calendar, qr_code, etc.)',
     '- domainModule: single full domain module such as lock or fan',
     '- mixedSections: vertical stack of multiple sections from the prompt order',
   ];

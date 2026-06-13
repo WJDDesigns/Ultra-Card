@@ -298,4 +298,61 @@ describe('uc-smart-module-sanitizer', () => {
       ]),
     });
   });
+
+  it('builds clock and weather row above light list for mixed dashboard prompts', () => {
+    const prompt = 'Make a clock and weather card with a list of lights below';
+    const modules = buildComposedEntityModules('smart', [], 'clean', hass, {
+      tier: 'free',
+      prompt,
+    });
+
+    expect(modules[0]).toMatchObject({ type: 'vertical' });
+    const stack = modules[0] as { modules: Array<Record<string, unknown>> };
+    expect(stack.modules[0]).toMatchObject({
+      type: 'horizontal',
+      modules: [
+        expect.objectContaining({ type: 'clock' }),
+        expect.objectContaining({
+          type: 'horizontal',
+          modules: [
+            expect.objectContaining({ type: 'icon' }),
+            expect.objectContaining({ type: 'info' }),
+          ],
+        }),
+      ],
+    });
+    expect(stack.modules[1]).toMatchObject({ type: 'separator' });
+    expect(stack.modules[2]).toMatchObject({
+      type: 'vertical',
+      modules: expect.arrayContaining([
+        expect.objectContaining({
+          type: 'horizontal',
+          modules: [
+            expect.objectContaining({ type: 'icon' }),
+            expect.objectContaining({ type: 'info' }),
+          ],
+        }),
+      ]),
+    });
+  });
+
+  it('uses pro animated modules for pro tier clock and weather cards', () => {
+    const prompt = 'Make a clock and weather card with a list of lights below';
+    const modules = buildComposedEntityModules('smart', [], 'clean', hass, {
+      tier: 'pro',
+      prompt,
+      allowProModules: true,
+    });
+
+    const stack = modules[0] as { modules: Array<Record<string, unknown>> };
+    const topRow = stack.modules[0] as { modules: Array<Record<string, unknown>> };
+    expect(topRow.modules[0]).toMatchObject({ type: 'animated_clock' });
+    expect(topRow.modules[1]).toMatchObject({
+      type: 'horizontal',
+      modules: [
+        expect.objectContaining({ type: 'icon' }),
+        expect.objectContaining({ type: 'info' }),
+      ],
+    });
+  });
 });

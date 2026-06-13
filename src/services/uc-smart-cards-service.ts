@@ -13,6 +13,12 @@ import { correctSmartAiPlan } from './smart/uc-smart-plan-corrector';
 import { promptWantsTextContent } from './uc-smart-module-capabilities';
 import { getCompositionCatalogLines } from './uc-smart-composition-planner';
 import {
+  composeSmartCardModules,
+  enhanceSmartPresetLayout,
+  hasStructuredComposerPlan,
+  sanitizeCloudSmartPreset,
+} from './uc-smart-card-composer';
+import {
   buildComposedEntityModules,
   buildStatusSummaryFallback,
   deriveTitleFromPrompt,
@@ -70,7 +76,7 @@ class UcSmartCardsService {
           HA_SMART_GENERATE_PATH,
           request as unknown as Record<string, unknown>
         );
-        return this._normalizeGenerateResponse(result);
+        return this._normalizeGenerateResponse(result, hass, request);
       } catch (err: unknown) {
         const errObj = err as {
           status?: number;
@@ -245,6 +251,11 @@ class UcSmartCardsService {
       'Think in ordered sections from the user prompt, then map each section to a layout recipe:',
       compositionCatalog,
       'Use horizontal/vertical/grid containers to compose sections instead of one repeated flat list.',
+      'Build ordered card sections from the prompt: top summary row, then controls/lists below with separators when needed.',
+      'For clock and weather together, use moduleRow with clock beside weather/animated_weather, then stack light or control sections below.',
+      'Example: "clock and weather card with lights below" => horizontal(clock + weather) then vertical light status rows or light controls.',
+      'Example: room dashboard => area_summary or grouped vertical sections with separators.',
+      'Example: media + lights => horizontal(media_player + light controls) or stacked sections.',
       'Layout words matter: grid, list, top, below that, beside, buttons, gauge, and large text change structure.',
       'For weather headers with large temperature text, use horizontal(icon + info) and set info.text_size to 32-40 with attribute temperature.',
       'For "show N lights", prefer a grid module with exactly N light entities instead of repeated icon/info rows.',
@@ -254,8 +265,8 @@ class UcSmartCardsService {
       'For status/detail prompts, use icon plus info rows for brightness, color, temperature, or state.',
       'Do not use markdown unless the user explicitly asks for notes, instructions, or formatted text.',
       request.tier === 'free'
-        ? 'Free tier: do not use Pro-only modules such as animated_weather, climate, calendar, or vacuum.'
-        : 'Pro tier: Pro modules are allowed when they fit the request.',
+        ? 'Free tier: do not use Pro-only modules such as animated_clock, animated_weather, climate, calendar, or vacuum. Use free equivalents like clock and weather.'
+        : 'Pro tier: prefer Pro modules (animated_clock, animated_weather, climate, calendar, vacuum) when they improve the requested design.',
       `User request: ${request.prompt}`,
       `Requested style: ${request.constraints?.style || 'clean'}`,
       `Tier: ${request.tier}`,
@@ -383,6 +394,10 @@ class UcSmartCardsService {
 
     if (!layout?.rows?.length) return null;
 
+    const enhanced = enhanceSmartPresetLayout(hass, request, layout, id, warnings);
+    layout = enhanced.layout;
+    const allWarnings = enhanced.warnings;
+
     const entities = selectEntitiesForPrompt(hass, request.prompt);
     const promptTitle = deriveTitleFromPrompt(request.prompt, entities);
     const name =
@@ -417,7 +432,7 @@ class UcSmartCardsService {
         connector_used: 'ha_assist',
         tier_required: request.tier,
         fallback: false,
-        ...(warnings.length ? { warnings } : {}),
+        ...(allWarnings.length ? { warnings: allWarnings } : {}),
       },
     };
   }
@@ -454,10 +469,16 @@ class UcSmartCardsService {
     const description = this._deriveDescriptionFromPrompt(request.prompt, entities, assistText);
     const id = `smart-assist-${Date.now()}`;
     const style = request.constraints?.style || 'clean';
+    const useComposer = hasStructuredComposerPlan(request.prompt, hass, context.tier);
+    const composed = useComposer ? composeSmartCardModules(id, hass, context, style) : { modules: [], warnings: [] };
     const modules =
-      entities.length > 0
-        ? (buildComposedEntityModules(id, entities, style, hass, context) as unknown as PresetDefinition['layout']['rows'][number]['columns'][number]['modules'])
-        : this._buildFallbackModules(id, title, request, assistText, hass);
+      composed.modules.length > 0
+        ? (composed.modules as unknown as PresetDefinition['layout']['rows'][number]['columns'][number]['modules'])
+        : entities.length > 0
+          ? (buildComposedEntityModules(id, entities, style, hass, context) as unknown as PresetDefinition['layout']['rows'][number]['columns'][number]['modules'])
+          : this._buildFallbackModules(id, title, request, assistText, hass);
+
+    const generationWarnings = composed.warnings.length ? composed.warnings : undefined;
 
     return {
       smart_preset: {
@@ -492,6 +513,7 @@ class UcSmartCardsService {
         connector_used: 'ha_assist',
         tier_required: request.tier,
         fallback: true,
+        ...(generationWarnings ? { warnings: generationWarnings } : {}),
       },
     };
   }
@@ -576,11 +598,29 @@ class UcSmartCardsService {
       }));
   }
 
-  private _normalizeGenerateResponse(raw: unknown): SmartGenerateResponse {
+  private _normalizeGenerateResponse(
+    raw: unknown,
+    hass?: HassApiClient,
+    request?: SmartGenerateRequest
+  ): SmartGenerateResponse {
     const normalized: SmartGenerateResponse = {};
     if (raw && typeof raw === 'object') {
       const rawObj = raw as Record<string, unknown>;
-      if (rawObj.smart_preset) normalized.smart_preset = rawObj.smart_preset as PresetDefinition;
+      if (rawObj.smart_preset) {
+        const preset = rawObj.smart_preset as PresetDefinition;
+        if (hass && request) {
+          const sanitized = sanitizeCloudSmartPreset(hass, request, preset);
+          normalized.smart_preset = sanitized.preset;
+          if (sanitized.warnings.length) {
+            normalized.generation = {
+              ...(normalized.generation || {}),
+              warnings: sanitized.warnings,
+            };
+          }
+        } else {
+          normalized.smart_preset = preset;
+        }
+      }
       if (Array.isArray(rawObj.presets)) normalized.presets = rawObj.presets as PresetDefinition[];
       if (rawObj.generation && typeof rawObj.generation === 'object') {
         const generation = rawObj.generation as Record<string, unknown>;

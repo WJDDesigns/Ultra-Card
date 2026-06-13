@@ -1,6 +1,7 @@
 import type { PresetDefinition, SmartGenerateRequest } from '../types';
 import {
   parseSmartCompositionPlan,
+  sectionHasContent,
   type SmartCompositionPlan,
   type SmartCompositionSection,
 } from './uc-smart-composition-planner';
@@ -149,6 +150,13 @@ function resolveModuleTypeForTier(type: string, context: SmartSanitizeContext): 
   return type;
 }
 
+export function resolveSmartModuleTypeForTier(
+  type: string,
+  context: SmartSanitizeContext
+): string | null {
+  return resolveModuleTypeForTier(type, context);
+}
+
 function downgradeProModule(
   requestedType: string,
   resolvedType: string,
@@ -167,6 +175,27 @@ function downgradeProModule(
         columns: 1,
       },
       hass,
+      id
+    );
+  }
+
+  if (
+    resolvedType === 'weather' &&
+    (requestedType === 'animated_weather' ||
+      requestedType === 'animated_forecast' ||
+      requestedType === 'dynamic_weather')
+  ) {
+    const entityId = String(module.weather_entity || module.entity || findFirstEntityForDomain(hass, 'weather'));
+    if (!entityExists(hass, entityId)) return null;
+    return sanitizeSmartModule(
+      {
+        type: 'weather',
+        weather_entity: entityId,
+        forecast_type: 'daily',
+        forecast_count: 3,
+      },
+      hass,
+      context,
       id
     );
   }
@@ -812,6 +841,68 @@ export function buildLightControlRow(
   };
 }
 
+export function buildCompactLightStatusRow(
+  id: string,
+  entityId: string,
+  name: string,
+  style = 'clean'
+): SmartModule {
+  const dense = style === 'dense';
+  return {
+    id,
+    type: 'horizontal',
+    gap: dense ? 6 : 8,
+    gap_unit: 'px',
+    alignment: 'space-between',
+    vertical_alignment: 'center',
+    modules: [
+      {
+        id: `${id}-icon`,
+        type: 'icon',
+        icons: [
+          {
+            id: `${id}-icon-entity`,
+            icon_mode: 'entity',
+            entity: entityId,
+            name,
+            icon_inactive: 'mdi:lightbulb-outline',
+            icon_active: 'mdi:lightbulb',
+            inactive_state: 'off',
+            active_state: 'on',
+            use_entity_color_for_icon: true,
+            show_name_when_inactive: true,
+            show_name_when_active: true,
+            show_state_when_inactive: false,
+            show_state_when_active: false,
+            show_icon_when_inactive: true,
+            show_icon_when_active: true,
+          },
+        ],
+        columns: 1,
+        alignment: 'left',
+        vertical_alignment: 'center',
+      },
+      {
+        id: `${id}-state`,
+        type: 'info',
+        info_entities: [
+          {
+            id: `${id}-state-entity`,
+            entity: entityId,
+            name: '',
+            show_icon: false,
+            show_name: false,
+            show_state: true,
+          },
+        ],
+        columns: 1,
+        alignment: 'right',
+        vertical_alignment: 'center',
+      },
+    ],
+  };
+}
+
 export function buildLightStatusRow(
   id: string,
   entityId: string,
@@ -889,16 +980,17 @@ export function buildWeatherHeaderRow(
   id: string,
   entityId: string,
   hass: SmartSanitizeHass,
-  options: { largeText?: boolean } = {}
+  options: { largeText?: boolean; compact?: boolean } = {}
 ): SmartModule {
   const name = entityName(hass, entityId);
   const largeText = options.largeText === true;
+  const compact = options.compact === true;
   return {
     id,
     type: 'horizontal',
-    gap: 12,
+    gap: compact ? 8 : 12,
     gap_unit: 'px',
-    alignment: 'space-between',
+    alignment: compact ? 'center' : 'space-between',
     vertical_alignment: 'center',
     modules: [
       {
@@ -914,10 +1006,10 @@ export function buildWeatherHeaderRow(
             icon_active: 'mdi:weather-partly-cloudy',
             inactive_state: '',
             active_state: '',
-            show_name_when_inactive: !largeText,
-            show_name_when_active: !largeText,
-            show_state_when_inactive: !largeText,
-            show_state_when_active: !largeText,
+            show_name_when_inactive: !largeText && !compact,
+            show_name_when_active: !largeText && !compact,
+            show_state_when_inactive: !largeText && !compact,
+            show_state_when_active: !largeText && !compact,
             show_icon_when_inactive: true,
             show_icon_when_active: true,
           },
@@ -933,17 +1025,17 @@ export function buildWeatherHeaderRow(
           {
             id: `${id}-temp-entity`,
             entity: entityId,
-            name: 'Temperature',
+            name: compact ? '' : 'Temperature',
             show_icon: false,
-            show_name: !largeText,
+            show_name: !largeText && !compact,
             show_state: true,
             attribute: 'temperature',
           },
         ],
         columns: 1,
-        alignment: 'right',
+        alignment: compact ? 'center' : 'right',
         vertical_alignment: 'center',
-        ...(largeText ? { text_size: 36 } : {}),
+        ...(largeText ? { text_size: 36 } : compact ? { text_size: 22 } : {}),
       },
     ],
   };
@@ -1127,12 +1219,40 @@ export function buildModulesFromCompositionPlan(
   hass: SmartSanitizeHass,
   context: SmartSanitizeContext
 ): SmartModule[] {
-  const sections = plan.sections.filter(section => section.entities.length > 0);
+  const sections = plan.sections.filter(sectionHasContent);
   if (!sections.length) return [];
 
-  if (sections.length === 1) {
-    return buildSectionModules(`${id}-section-0`, sections[0], style, hass, context);
+  const sectionModules = sections.flatMap((section, index) =>
+    buildSectionModules(`${id}-section-${index}`, section, style, hass, context)
+  );
+
+  if (!sectionModules.length) return [];
+
+  if (sections.length === 1 && sections[0].recipe !== 'moduleRow') {
+    return sectionModules;
   }
+
+  const polished = polishComposedSections(id, sections, sectionModules, style);
+  return polished;
+}
+
+function polishComposedSections(
+  id: string,
+  sections: SmartCompositionSection[],
+  sectionModules: SmartModule[],
+  style: string
+): SmartModule[] {
+  if (sections.length <= 1) return sectionModules;
+
+  const useSeparators = sections[0]?.recipe === 'moduleRow';
+  const modules: SmartModule[] = [];
+
+  sectionModules.forEach((module, index) => {
+    if (useSeparators && index > 0) {
+      modules.push(buildSectionSeparator(`${id}-sep-${index}`, style));
+    }
+    modules.push(module);
+  });
 
   return [
     {
@@ -1141,11 +1261,134 @@ export function buildModulesFromCompositionPlan(
       gap: sectionGap(style),
       gap_unit: 'px',
       horizontal_alignment: 'stretch',
-      modules: sections.flatMap((section, index) =>
-        buildSectionModules(`${id}-section-${index}`, section, style, hass, context)
-      ),
+      modules: useSeparators ? modules : sectionModules,
     },
   ];
+}
+
+function buildSectionSeparator(id: string, style: string): SmartModule {
+  return {
+    id,
+    type: 'separator',
+    separator_style: 'line',
+    thickness: 2,
+    margin: style === 'dense' ? 10 : 16,
+    width_percent: 100,
+  };
+}
+
+function buildModuleFromIntent(
+  id: string,
+  moduleType: string,
+  section: SmartCompositionSection,
+  style: string,
+  hass: SmartSanitizeHass,
+  context: SmartSanitizeContext
+): SmartModule[] {
+  const inModuleRow = section.recipe === 'moduleRow';
+
+  if (moduleType === 'header') {
+    const weatherEntity = section.entities.find(entity => entity.domain === 'weather');
+    if (!weatherEntity) return [];
+    return [buildWeatherHeaderRow(id, weatherEntity.entityId, hass, { compact: true })];
+  }
+
+  const resolvedType = resolveModuleTypeForTier(moduleType, context);
+  if (!resolvedType) return [];
+  const isWeatherIntent =
+    moduleType === 'weather' ||
+    moduleType === 'animated_weather' ||
+    resolvedType === 'weather';
+
+  if (isWeatherIntent) {
+    const weatherEntity = section.entities.find(entity => entity.domain === 'weather');
+    if (!weatherEntity) return [];
+    if (inModuleRow) {
+      return [buildWeatherHeaderRow(id, weatherEntity.entityId, hass, { compact: true })];
+    }
+    const built = buildWeatherModuleOrHeader(id, weatherEntity.entityId, hass, context, style);
+    return built ? [built] : [];
+  }
+
+  if (moduleType === 'animated_weather' && resolvedType === 'icon') {
+    const weatherEntity = section.entities.find(entity => entity.domain === 'weather');
+    if (weatherEntity) {
+      return [buildWeatherHeaderRow(id, weatherEntity.entityId, hass)];
+    }
+    return [];
+  }
+
+  const spec = getSmartModuleSpec(resolvedType);
+  if (!spec?.defaultBuilder) return [];
+
+  const entity =
+    spec.entityDomains.includes('weather') || spec.entityDomains.includes('*')
+      ? section.entities.find(entry => entry.domain === 'weather') || section.entities[0]
+      : section.entities[0];
+
+  const built = spec.defaultBuilder({
+    id,
+    entity,
+    entities: section.entities,
+    prompt: context.prompt,
+    style,
+    hass,
+    context,
+  });
+  if (!built) return [];
+
+  const modules = Array.isArray(built) ? built : [built];
+  return modules.flatMap((module, index) => {
+    const sanitized = sanitizeSmartModule(module, hass, context, `${id}-intent-${index}`);
+    if (!sanitized) return [];
+    return Array.isArray(sanitized) ? sanitized : [sanitized];
+  });
+}
+
+function buildWeatherModuleOrHeader(
+  id: string,
+  entityId: string,
+  hass: SmartSanitizeHass,
+  context: SmartSanitizeContext,
+  style: string
+): SmartModule | null {
+  if (context.tier === 'pro' && context.allowProModules) {
+    const animated = buildModuleFromIntent(
+      id,
+      'animated_weather',
+      {
+        id,
+        kind: 'header',
+        recipe: 'singleModule',
+        domains: ['weather'],
+        entities: [{ entityId, name: entityName(hass, entityId), domain: 'weather' }],
+        wantsButtons: false,
+        wantsDetails: false,
+        wantsLargeText: false,
+        layoutPreference: 'vertical',
+        detailAttributes: [],
+      },
+      style,
+      hass,
+      context
+    );
+    if (animated.length) return animated[0];
+  }
+
+  const weatherModule = sanitizeSmartModule(
+    {
+      type: 'weather',
+      weather_entity: entityId,
+      forecast_type: 'daily',
+      forecast_count: 3,
+    },
+    hass,
+    context,
+    id
+  );
+  if (weatherModule && !Array.isArray(weatherModule)) return weatherModule;
+
+  return buildWeatherHeaderRow(id, entityId, hass);
 }
 
 function buildSectionModules(
@@ -1156,6 +1399,24 @@ function buildSectionModules(
   context: SmartSanitizeContext
 ): SmartModule[] {
   switch (section.recipe) {
+    case 'moduleRow': {
+      const intents = section.moduleIntents || [];
+      const rowModules = intents.flatMap((moduleType, index) =>
+        buildModuleFromIntent(`${id}-mr-${index}`, moduleType, section, style, hass, context)
+      );
+      if (!rowModules.length) return [];
+      return [
+        {
+          id: `${id}-row`,
+          type: 'horizontal',
+          gap: style === 'dense' ? 10 : style === 'bold' ? 20 : 16,
+          gap_unit: 'px',
+          alignment: 'center',
+          vertical_alignment: 'center',
+          modules: rowModules,
+        },
+      ];
+    }
     case 'header': {
       const entity = section.entities[0];
       if (!entity) return [];
@@ -1223,25 +1484,7 @@ function buildSectionModules(
     }
     case 'singleModule': {
       if (!section.forcedModuleType) return [];
-      const entity = section.entities[0];
-      const spec = getSmartModuleSpec(section.forcedModuleType);
-      if (!spec?.defaultBuilder || !entity) return [];
-      const built = spec.defaultBuilder({
-        id,
-        entity,
-        entities: section.entities,
-        prompt: context.prompt,
-        style,
-        hass,
-        context,
-      });
-      if (!built) return [];
-      const modules = Array.isArray(built) ? built : [built];
-      return modules
-        .map((module, index) =>
-          sanitizeSmartModule(module, hass, context, `${id}-single-${index}`)
-        )
-        .flatMap(item => (item ? (Array.isArray(item) ? item : [item]) : []));
+      return buildModuleFromIntent(id, section.forcedModuleType, section, style, hass, context);
     }
     case 'controlList': {
       const controlRows = section.entities.map((entity, index) =>
@@ -1303,7 +1546,7 @@ function buildSectionModules(
         {
           id: `${id}-list`,
           type: 'vertical',
-          gap: style === 'dense' ? 4 : 8,
+          gap: style === 'dense' ? 4 : 6,
           gap_unit: 'px',
           horizontal_alignment: 'stretch',
           modules: rows,
@@ -1365,8 +1608,11 @@ function buildStatusRowForEntity(
   hass: SmartSanitizeHass,
   context: SmartSanitizeContext
 ): SmartModule {
-  if (entity.domain === 'light' && (section.wantsDetails || section.detailAttributes.length)) {
-    return buildLightStatusRow(id, entity.entityId, entity.name, style);
+  if (entity.domain === 'light') {
+    if (section.detailAttributes.length) {
+      return buildLightStatusRow(id, entity.entityId, entity.name, style);
+    }
+    return buildCompactLightStatusRow(id, entity.entityId, entity.name, style);
   }
   if (entity.domain === 'weather') {
     return buildWeatherHeaderRow(id, entity.entityId, hass);
@@ -1400,9 +1646,11 @@ export function buildComposedEntityModules(
   hass: SmartSanitizeHass,
   context: SmartSanitizeContext
 ): SmartModule[] {
-  const plan = parseSmartCompositionPlan(context.prompt, hass);
+  const plan = parseSmartCompositionPlan(context.prompt, hass, context.tier);
   const modules = buildModulesFromCompositionPlan(id, plan, style, hass, context);
   if (modules.length) return modules;
+
+  if (!entities.length) return [];
 
   return entities.map((entity, index) =>
     buildEntityModule(
@@ -1539,6 +1787,12 @@ export function deriveTitleFromPrompt(
   if (entities.length && entities.every(entity => entity.domain === 'light')) {
     return entities.length === 1 ? 'Light Control' : 'Light Controls';
   }
+  if (/\bclock\b/i.test(prompt)) {
+    if (entities.some(entity => entity.domain === 'weather')) {
+      return 'Clock and Weather';
+    }
+    return 'Clock Card';
+  }
   if (entities.some(entity => entity.domain === 'weather') && entities.some(entity => entity.domain === 'light')) {
     return 'Weather and Light Controls';
   }
@@ -1563,8 +1817,8 @@ export function deriveTitleFromPrompt(
 function promptWantsLightStatusDetails(prompt: string): boolean {
   const text = prompt.toLowerCase();
   return (
-    /\bbrightness\b|\bbright\b|\bcolor\b|\bcolour\b/.test(text) ||
-    (/\blights?\b/.test(text) && /\bstatus\b|\blist\b/.test(text) && !/\bon\/off\b|\bon and off\b|\bbuttons?\b/.test(text))
+    /\bbrightness\b|\bbright\b|\bcolor\b|\bcolour\b/.test(text) &&
+    /\blights?\b/.test(text)
   );
 }
 

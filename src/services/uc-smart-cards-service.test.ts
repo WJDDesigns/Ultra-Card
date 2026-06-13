@@ -610,4 +610,149 @@ describe('uc-smart-cards-service', () => {
     expect(candidates).toHaveLength(1);
     expect(candidates[0].id).toBe('a');
   });
+
+  it('builds clock and weather row above compact light status rows', async () => {
+    const hass = {
+      callApi: vi.fn().mockRejectedValue({ status: 404 }),
+      callWS: vi.fn().mockResolvedValue({ data: 'Clock weather lights card.' }),
+      states: {
+        'ai_task.claude': {},
+        'weather.home': {
+          state: 'sunny',
+          attributes: { friendly_name: 'Home Weather', temperature: 72, temperature_unit: '°F' },
+        },
+        'weather.ecobee': {
+          state: 'windy',
+          attributes: { friendly_name: 'ecobee', temperature: 82, temperature_unit: '°F' },
+        },
+        'light.hall': { state: 'on', attributes: { friendly_name: 'Hall Light' } },
+        'light.desk': { state: 'off', attributes: { friendly_name: 'Desk Lamp' } },
+      },
+    } as unknown as HassLike;
+
+    const prompt = 'vertical card with horizontal clock + weather, separator, then light status rows';
+    const result = await ucSmartCardsService.generatePreset(hass, {
+      prompt,
+      tier: 'free',
+      constraints: { style: 'clean' },
+    });
+
+    const modules = result.smart_preset?.layout.rows[0].columns[0].modules || [];
+    expect(result.smart_preset?.name).toBe('Clock and Weather');
+    expect(JSON.stringify(modules)).toContain('"type":"clock"');
+    expect(JSON.stringify(modules)).not.toContain('weather.ecobee');
+    expect(modules[0]).toMatchObject({
+      type: 'vertical',
+      modules: [
+        expect.objectContaining({
+          type: 'horizontal',
+          modules: [
+            expect.objectContaining({ type: 'clock' }),
+            expect.objectContaining({ type: 'horizontal' }),
+          ],
+        }),
+        expect.objectContaining({ type: 'separator', separator_style: 'line' }),
+        expect.objectContaining({ type: 'vertical' }),
+      ],
+    });
+  });
+
+  it('builds clock and weather row above light list for the regression prompt', async () => {
+    const hass = {
+      callApi: vi.fn().mockRejectedValue({ status: 404 }),
+      callWS: vi.fn().mockResolvedValue({ data: 'Clock weather lights card.' }),
+      states: {
+        'ai_task.claude': {},
+        'weather.home': {
+          state: 'sunny',
+          attributes: { friendly_name: 'Home Weather', temperature: 72, temperature_unit: '°F' },
+        },
+        'light.hall': { state: 'on', attributes: { friendly_name: 'Hall Light' } },
+        'light.desk': { state: 'off', attributes: { friendly_name: 'Desk Lamp' } },
+      },
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, {
+      prompt: 'Make a clock and weather card with a list of lights below',
+      tier: 'free',
+      constraints: { style: 'clean' },
+    });
+
+    const modules = result.smart_preset?.layout.rows[0].columns[0].modules || [];
+    expect(result.smart_preset?.name).toBe('Clock and Weather');
+    expect(modules[0]).toMatchObject({
+      type: 'vertical',
+      modules: [
+        expect.objectContaining({
+          type: 'horizontal',
+          modules: [
+            expect.objectContaining({ type: 'clock' }),
+            expect.objectContaining({ type: 'horizontal' }),
+          ],
+        }),
+        expect.objectContaining({ type: 'separator' }),
+        expect.objectContaining({ type: 'vertical' }),
+      ],
+    });
+  });
+
+  it('sanitizes cloud presets through local tier validation', async () => {
+    const hass = {
+      callApi: vi.fn().mockResolvedValue({
+        smart_preset: {
+          id: 'cloud-1',
+          name: 'Pro Weather',
+          description: 'Cloud generated',
+          category: 'layouts',
+          icon: 'mdi:brain',
+          author: 'Cloud',
+          version: '1.0.0',
+          tags: ['smart', 'pro'],
+          layout: {
+            rows: [
+              {
+                id: 'r1',
+                column_layout: '1-col',
+                columns: [
+                  {
+                    id: 'c1',
+                    modules: [
+                      {
+                        type: 'animated_clock',
+                        format: '12h',
+                        show_seconds: true,
+                      },
+                      {
+                        type: 'animated_weather',
+                        weather_entity: 'weather.home',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          metadata: { created: '2026-01-01', updated: '2026-01-01' },
+        },
+        generation: { connector_used: 'ha_assist', tier_required: 'free' },
+      }),
+      states: {
+        'weather.home': {
+          attributes: { friendly_name: 'Home Weather', temperature: 70 },
+          state: 'sunny',
+        },
+      },
+    } as unknown as HassLike;
+
+    const result = await ucSmartCardsService.generatePreset(hass, {
+      prompt: 'clock and weather card',
+      tier: 'free',
+      constraints: { allow_pro_modules: false },
+    });
+
+    const modules = result.smart_preset?.layout.rows[0].columns[0].modules || [];
+    expect(modules.some(module => module.type === 'animated_clock')).toBe(false);
+    expect(modules.some(module => module.type === 'animated_weather')).toBe(false);
+    expect(modules.some(module => module.type === 'clock' || module.type === 'weather')).toBe(true);
+  });
 });

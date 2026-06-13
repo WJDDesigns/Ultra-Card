@@ -1,0 +1,4 @@
+Added 5 new free modules - Weather, Digital Clock, To-Do List, Update Monitor, and Humidifier are now available to every user at no cost
+Added Smart Card AI support for the new free modules so they can be generated automatically from natural language prompts
+Improved Smart Card generation with a new card composer that builds smarter, more reliable layouts
+Improved AI composition planning and module sanitization for cleaner, more accurate generated cards
