@@ -1,0 +1,29 @@
+Added Smart Card AI generation - describe what you want in plain language and Ultra Card builds the layout automatically using your real Home Assistant entities
+Added 5 new free modules available to everyone - Weather, Digital Clock, To-Do List, Update Monitor, and Humidifier
+Added Lunar Phase module with live moon data, illumination, moonrise/moonset times, a monthly calendar view, and an animated night-sky background
+Added Card Appearance Templates - a single template can now drive the entire card's background, border, padding, and shadow based on entity state
+Added Today time period to the Graphs module so you can plot data from midnight to right now
+Added Hub Docs tab with unified sidebar navigation and deep links to release notes and help content from inside the panel
+Added preset variable support to entity pickers in control modules so entities passed through presets resolve correctly everywhere
+Improved Maps to load fully offline by bundling the map stylesheet locally instead of fetching it from an external CDN
+Improved Tabs with full keyboard navigation using arrow keys, and overflowing tab bars now scroll instead of clipping
+Improved popups with Escape to close, proper focus trapping, and focus returned to the trigger element when closed
+Improved nested layouts inside Tabs sections with full add, edit, duplicate, delete, and collapse support
+Improved Accordion live preview so style and color changes appear instantly in the editor
+Improved live preview across all control modules so option changes reflect immediately without needing to close and reopen the editor
+Improved the Dropdown module template mode to support more entity domains and clean up properly
+Fixed popup modules freezing - entity state changes now update controls inside an open popup in real time
+Fixed editor dialogs appearing as small clipped windows - preset wizard, variable mapping, entity mapper, and image preview now open full screen above everything else
+Fixed multiple climate and vacuum module instances sharing state when placed on the same dashboard
+Fixed timer progress and cleanup - timers now count from the correct duration and stop running after the module is removed
+Fixed toggle flicker after tapping - the active state no longer briefly reverts while waiting for the entity to confirm
+Fixed box shadows not rendering on Horizontal and Vertical layout containers
+Fixed numerous Accordion issues including open/close persistence, content clipping, and default state applying in the editor
+Fixed Stack Overlay layer ordering and drag anchor resetting when layers are hidden or repositioned
+Fixed inactive tab background color not applying across all tab styles
+Fixed tab content losing its state when switching between tabs
+Fixed Slider module options not taking effect when changed in the editor
+Fixed layout container tap and hold actions not firing on Slider and Accordion containers
+Fixed popups staying open when their module is hidden by a logic condition
+Fixed full-screen popups not filling the viewport on mobile
+Fixed empty layout containers showing a blank box when all children are hidden by logic

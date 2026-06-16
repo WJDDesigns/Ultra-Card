@@ -1,5 +1,47 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.5.0
+
+### 🚀 New Features
+
+- **Added Smart Card AI generation** - Describe what you want in plain language and Ultra Card builds the layout automatically using your real Home Assistant entities
+- **Added 5 new free modules available to everyone** - Weather, Digital Clock, To-Do List, Update Monitor, and Humidifier
+- **Added Lunar Phase module with live moon data, illumination, moonrise/moonset times, a monthly calendar view, and an animated night-sky background** - Improved calendar display and event handling
+- **Added Card Appearance Templates** - A single template can now drive the entire card's background, border, padding, and shadow based on entity state
+- **Added Today time period to the Graphs module so you can plot data from midnight to right now** - Enhanced module functionality for better user experience
+- **Added Hub Docs tab with unified sidebar navigation and deep links to release notes and help content from inside the panel** - Enhanced bar visualization and progress display
+- **Added Preset variable support to entity pickers in control modules so entities passed through presets resolve correctly everywhere** - Enhanced variable handling and value evaluation
+
+### 🔧 Improvements
+
+- **Improved Maps to load fully offline by bundling the map stylesheet locally instead of fetching it from an external CDN** - Improved styling and visual appearance
+- **Improved Tabs with full keyboard navigation using arrow keys, and overflowing tab bars now scroll instead of clipping** - Resolved content overflow and clipping issues
+- **Improved Popups with Escape to close, proper focus trapping, and focus returned to the trigger element when closed** - Improved popup behavior and display reliability
+- **Improved Nested layouts inside Tabs sections with full add, edit, duplicate, delete, and collapse support** - Better layout handling and organization
+- **Improved Accordion live preview so style and color changes appear instantly in the editor** - Test your responsive designs directly in the editor preview
+- **Improved Live preview across all control modules so option changes reflect immediately without needing to close and reopen the editor** - Test your responsive designs directly in the editor preview
+- **Improved The Dropdown module template mode to support more entity domains and clean up properly** - Enhanced dropdown functionality and responsiveness
+
+### 🐛 Bug Fixes
+
+- **Fixed popup modules freezing** - Entity state changes now update controls inside an open popup in real time
+- **Fixed editor dialogs appearing as small clipped windows** - Preset wizard, variable mapping, entity mapper, and image preview now open full screen above everything else
+- **Fixed Multiple climate and vacuum module instances sharing state when placed on the same dashboard** - Enhanced climate control interface and usability
+- **Fixed timer progress and cleanup** - Timers now count from the correct duration and stop running after the module is removed
+- **Fixed toggle flicker after tapping** - The active state no longer briefly reverts while waiting for the entity to confirm
+- **Fixed Box shadows not rendering on Horizontal and Vertical layout containers** - Better layout handling and organization
+- **Fixed Numerous Accordion issues including open/close persistence, content clipping, and default state applying in the editor** - Improved accordion behavior and styling
+- **Fixed Stack Overlay layer ordering and drag anchor resetting when layers are hidden or repositioned** - Corrected behavior for more reliable operation
+- **Fixed Inactive tab background color not applying across all tab styles** - Enhanced color handling and customization options
+- **Fixed Tab content losing its state when switching between tabs** - Improved state tracking and automatic updates
+- **Fixed Slider module options not taking effect when changed in the editor** - Enhanced module functionality for better user experience
+- **Fixed Layout container tap and hold actions not firing on Slider and Accordion containers** - Improved accordion behavior and styling
+- **Fixed Popups staying open when their module is hidden by a logic condition** - Enhanced module functionality for better user experience
+- **Fixed Full-screen popups not filling the viewport on mobile** - Better viewport detection and responsive layouts
+- **Fixed Empty layout containers showing a blank box when all children are hidden by logic** - Better layout handling and organization
+
+---
+
 ## Version 3.5.0-beta6
 
 ### 🚀 New Features
