@@ -8,9 +8,11 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import '../components/ultra-color-picker';
 
 export class UltraNumberInputModule extends BaseUltraModule {
-  private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  private _localValue: number | null = null;
-  private _localValueTimer: ReturnType<typeof setTimeout> | null = null;
+  // Keyed by module id: one module class instance renders every number_input
+  // module on the card, so per-input state must not live in plain fields.
+  private _debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private _localValues = new Map<string, number>();
+  private _localValueTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   metadata: ModuleMetadata = {
     type: 'number_input',
@@ -202,7 +204,8 @@ export class UltraNumberInputModule extends BaseUltraModule {
       return this.renderGradientErrorState(localize('editor.common.error_entity_not_found', lang, 'Entity Not Found'), `Entity "${numModule.entity}" is not available`, 'mdi:alert-circle-outline');
     }
 
-    const rawValue = this._localValue !== null ? this._localValue : parseFloat(entityState.state) || 0;
+    const localValue = this._localValues.get(numModule.id);
+    const rawValue = localValue !== undefined ? localValue : parseFloat(entityState.state) || 0;
     const min = entityState.attributes?.min ?? 0;
     const max = entityState.attributes?.max ?? 100;
     const step = entityState.attributes?.step ?? 1;
@@ -221,15 +224,18 @@ export class UltraNumberInputModule extends BaseUltraModule {
     const hoverEffectClass = this.getHoverEffectClass(module);
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
+    const key = numModule.id;
     const setVal = (v: number) => {
       const clamped = Math.min(max, Math.max(min, parseFloat(v.toFixed(10))));
-      this._localValue = clamped;
-      if (this._debounceTimer) clearTimeout(this._debounceTimer);
-      if (this._localValueTimer) clearTimeout(this._localValueTimer);
-      this._debounceTimer = setTimeout(() => {
+      this._localValues.set(key, clamped);
+      const debounceTimer = this._debounceTimers.get(key);
+      if (debounceTimer) clearTimeout(debounceTimer);
+      const localTimer = this._localValueTimers.get(key);
+      if (localTimer) clearTimeout(localTimer);
+      this._debounceTimers.set(key, setTimeout(() => {
         this.callEntityService(numModule.entity!, clamped, hass);
-        this._localValueTimer = setTimeout(() => { this._localValue = null; }, 1000);
-      }, 300);
+        this._localValueTimers.set(key, setTimeout(() => { this._localValues.delete(key); }, 1000));
+      }, 300));
     };
 
     const handleInput = (e: Event) => {

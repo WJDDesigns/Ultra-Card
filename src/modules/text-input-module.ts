@@ -8,9 +8,11 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import '../components/ultra-color-picker';
 
 export class UltraTextInputModule extends BaseUltraModule {
-  private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  private _localValue: string | null = null;
-  private _localValueTimer: ReturnType<typeof setTimeout> | null = null;
+  // Keyed by module id: one module class instance renders every text_input
+  // module on the card, so per-input state must not live in plain fields.
+  private _debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private _localValues = new Map<string, string>();
+  private _localValueTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   metadata: ModuleMetadata = {
     type: 'text_input',
@@ -354,7 +356,8 @@ export class UltraTextInputModule extends BaseUltraModule {
       );
     }
 
-    const currentValue = this._localValue !== null ? this._localValue : (entityState.state || '');
+    const localValue = this._localValues.get(textInputModule.id);
+    const currentValue = localValue !== undefined ? localValue : (entityState.state || '');
     const entityMaxLength = entityState.attributes?.max;
     const entityMode = entityState.attributes?.mode || 'text';
 
@@ -417,27 +420,35 @@ export class UltraTextInputModule extends BaseUltraModule {
     const rows = textInputModule.rows ?? 4;
     const inputType = entityMode === 'password' ? 'password' : 'text';
 
+    const key = textInputModule.id;
+
+    const clearTimers = () => {
+      const localTimer = this._localValueTimers.get(key);
+      if (localTimer) clearTimeout(localTimer);
+      const debounceTimer = this._debounceTimers.get(key);
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
+
     const handleInput = (e: Event) => {
       const input = e.target as HTMLInputElement;
       const newValue = input.value;
 
-      this._localValue = newValue;
-      if (this._localValueTimer) clearTimeout(this._localValueTimer);
-      if (this._debounceTimer) clearTimeout(this._debounceTimer);
+      this._localValues.set(key, newValue);
+      clearTimers();
 
-      this._debounceTimer = setTimeout(() => {
+      this._debounceTimers.set(key, setTimeout(() => {
         this.setEntityValue(textInputModule.entity!, newValue, hass);
-        this._localValueTimer = setTimeout(() => { this._localValue = null; }, 1000);
-      }, 300);
+        this._localValueTimers.set(key, setTimeout(() => { this._localValues.delete(key); }, 1000));
+      }, 300));
     };
 
     const handleClear = (e: Event) => {
       e.stopPropagation();
-      if (this._debounceTimer) { clearTimeout(this._debounceTimer); this._debounceTimer = null; }
-      if (this._localValueTimer) clearTimeout(this._localValueTimer);
-      this._localValue = '';
+      clearTimers();
+      this._debounceTimers.delete(key);
+      this._localValues.set(key, '');
       this.setEntityValue(textInputModule.entity!, '', hass);
-      this._localValueTimer = setTimeout(() => { this._localValue = null; }, 1000);
+      this._localValueTimers.set(key, setTimeout(() => { this._localValues.delete(key); }, 1000));
     };
 
     let appearanceBorder = '';

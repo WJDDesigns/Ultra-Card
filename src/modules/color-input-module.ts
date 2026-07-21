@@ -8,7 +8,9 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import '../components/ultra-color-picker';
 
 export class UltraColorInputModule extends BaseUltraModule {
-  private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  // Keyed by module id: one module class instance renders every color_input
+  // module on the card, so a shared timer would let one input cancel another's write.
+  private _debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   metadata: ModuleMetadata = {
     type: 'color_input',
@@ -177,8 +179,9 @@ export class UltraColorInputModule extends BaseUltraModule {
     const mid = colorMod.id;
 
     const setColor = (hex: string) => {
-      if (this._debounceTimer) clearTimeout(this._debounceTimer);
-      this._debounceTimer = setTimeout(() => {
+      const debounceTimer = this._debounceTimers.get(mid);
+      if (debounceTimer) clearTimeout(debounceTimer);
+      this._debounceTimers.set(mid, setTimeout(() => {
         if (!colorMod.entity || !hass) return;
         if (isLightMode) {
           const r = parseInt(hex.slice(1, 3), 16);
@@ -188,7 +191,7 @@ export class UltraColorInputModule extends BaseUltraModule {
         } else {
           hass.callService('input_text', 'set_value', { entity_id: colorMod.entity, value: hex });
         }
-      }, 150);
+      }, 150));
     };
 
     const handlePickerChange = (e: Event) => {

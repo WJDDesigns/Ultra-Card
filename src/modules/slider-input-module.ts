@@ -8,9 +8,11 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import '../components/ultra-color-picker';
 
 export class UltraSliderInputModule extends BaseUltraModule {
-  private _localValue: number | null = null;
-  private _localValueTimer: ReturnType<typeof setTimeout> | null = null;
-  private _isDragging = false;
+  // Keyed by module id: one module class instance renders every slider_input
+  // module on the card, so per-slider state must not live in plain fields.
+  private _localValues = new Map<string, number>();
+  private _localValueTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private _draggingIds = new Set<string>();
 
   metadata: ModuleMetadata = {
     type: 'slider_input',
@@ -201,7 +203,8 @@ export class UltraSliderInputModule extends BaseUltraModule {
       return this.renderGradientErrorState(localize('editor.common.error_entity_not_found', lang, 'Entity Not Found'), `Entity "${sliderMod.entity}" is not available`, 'mdi:alert-circle-outline');
     }
 
-    const currentValue = this._localValue !== null ? this._localValue : parseFloat(entityState.state) || 0;
+    const localValue = this._localValues.get(sliderMod.id);
+    const currentValue = localValue !== undefined ? localValue : parseFloat(entityState.state) || 0;
     const min = entityState.attributes?.min ?? 0;
     const max = entityState.attributes?.max ?? 100;
     const step = entityState.attributes?.step ?? 1;
@@ -224,23 +227,26 @@ export class UltraSliderInputModule extends BaseUltraModule {
     const hoverEffectClass = this.getHoverEffectClass(module);
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
+    const key = sliderMod.id;
+
     const handleSliderInput = (e: Event) => {
       const input = e.target as HTMLInputElement;
       const v = parseFloat(input.value);
       if (isNaN(v)) return;
-      this._localValue = v;
-      this._isDragging = true;
+      this._localValues.set(key, v);
+      this._draggingIds.add(key);
     };
 
     const handleSliderChange = (e: Event) => {
       const input = e.target as HTMLInputElement;
       const v = parseFloat(input.value);
       if (isNaN(v)) return;
-      this._isDragging = false;
-      this._localValue = v;
-      if (this._localValueTimer) clearTimeout(this._localValueTimer);
+      this._draggingIds.delete(key);
+      this._localValues.set(key, v);
+      const localTimer = this._localValueTimers.get(key);
+      if (localTimer) clearTimeout(localTimer);
       this.callEntityService(sliderMod.entity!, v, hass);
-      this._localValueTimer = setTimeout(() => { this._localValue = null; }, 1000);
+      this._localValueTimers.set(key, setTimeout(() => { this._localValues.delete(key); }, 1000));
     };
 
     const displayValue = Number.isInteger(step) ? currentValue.toFixed(0) : currentValue.toFixed(1);
