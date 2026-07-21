@@ -1,5 +1,16 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.6.0-beta1
+
+### 🐛 Bug Fixes
+
+- **Fixed text input modules showing another input's typed value** - Editing one entity-backed text input no longer causes every other text input in the popup or card to display the same value; each input keeps its own pending value
+- **Fixed number input modules sharing pending values across inputs** - Each number input now tracks its own pending value and debounce timer, so stepping or typing in one field no longer repaints other number inputs
+- **Fixed slider input modules sharing drag state and pending values** - Each slider now tracks its own drag state and pending value, so moving one slider no longer affects the displayed position of others
+- **Fixed color input debounce collisions** - Quickly editing a second color input no longer cancels the first input's pending update to Home Assistant
+
+---
+
 ## Version 3.5.0
 
 ### 🚀 New Features
