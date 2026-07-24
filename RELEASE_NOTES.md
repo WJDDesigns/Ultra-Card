@@ -1,5 +1,38 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.6.0-beta2
+
+A big polish pass across every module, based on a full review of the card. Please report anything odd on GitHub or Discord — this is a pre-release for testing.
+
+### 🚀 New Features
+
+- **Added Layout controls to the Icon module** - Choose how many columns your icons use, adjust the spacing between them, and set alignment and wrapping right from the editor
+- **Added unlock confirmation to the Lock module** - Unlocking or opening now asks you to confirm first so a stray tap can't unlock your door (on by default, can be turned off)
+- **Added editable preset buttons to the Timer module** - You can now add, change, and remove the quick-start duration buttons
+- **Added name and icon overrides to the Cover module** - Rename covers and pick their icon right in the editor
+- **Added a gap control and page counter to the Slider layout** - Adjust the space between slides and see how many pages your slider has at a glance
+- **Added state display and gradient fill options to the Slider module** - Show the entity's current state next to the slider and color the fill with your own gradient
+
+### 🐛 Bug Fixes
+
+- **Fixed tap, hold, and double-tap actions that did nothing on several modules** - The Actions tab now works on the Slider, Media Player, Tabs, and Slider layout instead of being settings with no effect
+- **Fixed duplicated Toggle cards affecting each other** - Tapping a toggle on one card no longer makes copies of that card flicker or change
+- **Fixed layouts with tap actions blocking everything inside them** - Buttons, sliders, and other controls inside a row or column now keep working even when the layout itself has a tap action
+- **Fixed popups covering everything on the screen** - Popups now layer correctly with the rest of Home Assistant instead of sitting on top of absolutely everything
+- **Fixed tab border colors not showing** - Choosing a border color in the Tabs module now shows the border immediately
+- **Fixed modules inside Tabs ignoring their display conditions** - Show/hide logic now works the same inside tabs as it does everywhere else
+- **Fixed Slider layout ignoring setting changes** - Changes to autoplay, arrows, pagination, speed, and other options now take effect right away
+- **Fixed several places where entity shortcuts ($variables) didn't work** - Icons, dropdown options, and the Virtual Pet now resolve card variables everywhere
+
+### 🔧 Improvements
+
+- **Improved keyboard and screen reader support across the card** - Toggles, sliders, tabs, dropdowns, the alarm keypad, and vacuum page dots can now all be used without a mouse or touch
+- **Improved the editor's live preview** - More changes show up instantly without closing and reopening the editor
+- **Improved translations** - More of the editor is translated instead of English-only
+- **Improved consistency between the layout modules** - Rows and columns now space and align their content the same way
+
+---
+
 ## Version 3.6.0-beta1
 
 ### 🐛 Bug Fixes
