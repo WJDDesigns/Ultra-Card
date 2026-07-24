@@ -1,5 +1,19 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.6.0-beta3
+
+A focused light mode and theme polish release. Please report anything odd on GitHub or Discord — this is a pre-release for testing.
+
+### 🐛 Bug Fixes
+
+- **Fixed invisible icons in the card builder when using light mode** - The drag handle, module icon, and three-dot menu on module rows were showing white-on-white in light themes. They now display correctly in both light and dark mode
+
+### ✨ Improvements
+
+- **Full light/dark theme audit across the entire editor** - We reviewed every part of the card editor (the builder, all module settings, dialogs, color pickers, and more) and fixed around 250 places where colors were hardcoded instead of following your theme
+- **Better support for custom themes** - Buttons, badges, and icons that sit on your theme's primary color now use Home Assistant's matching text color, so they stay readable even with unusual theme color choices
+- **Dark mode polish** - Fixed dropdowns and panels that showed up as white boxes in dark mode, hover highlights that were invisible on dark backgrounds, and color picker badges that were unreadable on dark themes
+
 ## Version 3.6.0-beta2
 
 A big polish pass across every module, based on a full review of the card. Please report anything odd on GitHub or Discord — this is a pre-release for testing.
