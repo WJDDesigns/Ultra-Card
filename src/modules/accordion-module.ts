@@ -34,6 +34,10 @@ export class UltraAccordionModule extends BaseUltraModule {
       header_alignment: 'apart',
       icon_side: 'right',
       default_open: false,
+      // Expand behavior
+      expand_direction: 'down',
+      expand_style: 'push',
+      close_on_outside_click: false,
       // Open/Close Logic
       open_mode: 'manual',
       open_conditions: [],
@@ -361,6 +365,112 @@ export class UltraAccordionModule extends BaseUltraModule {
               this.triggerPreviewUpdate();
             }
           )}
+        </div>
+
+        <!-- Expand Behavior Section -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.accordion.behavior.section_title', lang, 'Expand Behavior')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.accordion.behavior.section_desc',
+              lang,
+              'Control which direction the content opens and how it interacts with the rest of the page.'
+            )}
+          </div>
+
+          <!-- Expand Direction -->
+          ${this.renderSegmentedField(
+            localize('editor.accordion.behavior.direction', lang, 'Expand Direction'),
+            localize(
+              'editor.accordion.behavior.direction_desc',
+              lang,
+              'Auto opens upward when the accordion sits in the lower half of the screen.'
+            ),
+            accordionModule.expand_direction || 'down',
+            [
+              {
+                value: 'down',
+                label: localize('editor.accordion.behavior.direction_down', lang, 'Down'),
+                icon: 'mdi:arrow-down',
+              },
+              {
+                value: 'up',
+                label: localize('editor.accordion.behavior.direction_up', lang, 'Up'),
+                icon: 'mdi:arrow-up',
+              },
+              {
+                value: 'auto',
+                label: localize('editor.accordion.behavior.direction_auto', lang, 'Auto'),
+                icon: 'mdi:arrow-up-down',
+              },
+            ],
+            next => {
+              updateModule({ expand_direction: next as 'down' | 'up' | 'auto' });
+              this.triggerPreviewUpdate();
+            }
+          )}
+
+          <!-- Expand Style -->
+          ${this.renderSegmentedField(
+            localize('editor.accordion.behavior.style', lang, 'Expand Style'),
+            localize(
+              'editor.accordion.behavior.style_desc',
+              lang,
+              'In Place grows the accordion and pushes content aside. Overlay floats the open content over the page like a dropdown menu.'
+            ),
+            accordionModule.expand_style || 'push',
+            [
+              {
+                value: 'push',
+                label: localize('editor.accordion.behavior.style_push', lang, 'In Place'),
+                icon: 'mdi:arrow-expand-vertical',
+              },
+              {
+                value: 'overlay',
+                label: localize('editor.accordion.behavior.style_overlay', lang, 'Overlay'),
+                icon: 'mdi:layers-outline',
+              },
+            ],
+            next => {
+              updateModule({ expand_style: next as 'push' | 'overlay' });
+              this.triggerPreviewUpdate();
+            }
+          )}
+
+          <!-- Close on Outside Click -->
+          ${this.renderSettingsSection('', '', [
+            {
+              title: localize(
+                'editor.accordion.behavior.outside_click',
+                lang,
+                'Close on Outside Click'
+              ),
+              description: localize(
+                'editor.accordion.behavior.outside_click_desc',
+                lang,
+                'Collapse the accordion whenever you click or tap anywhere outside it.'
+              ),
+              hass,
+              data: { close_on_outside_click: accordionModule.close_on_outside_click || false },
+              schema: [this.booleanField('close_on_outside_click')],
+              onChange: (e: CustomEvent) => {
+                updateModule(e.detail.value);
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              },
+            },
+          ])}
         </div>
 
         <!-- Open/Close Logic Section -->
@@ -1248,6 +1358,47 @@ export class UltraAccordionModule extends BaseUltraModule {
   /** The default_open / open_mode values the stored state was initialized with, per accordion ID. If the user changes them in the editor, the stored state is reset so the new config takes effect. */
   private accordionInitConfigs = new Map<string, { defaultOpen: boolean; openMode: string }>();
 
+  /** For expand_direction 'auto': the direction resolved from the header's viewport position at toggle time, per accordion ID. */
+  private accordionResolvedDirections = new Map<string, 'down' | 'up'>();
+
+  /** Cleanup callbacks for active document-level outside-click listeners, per accordion ID. */
+  private outsideClickCleanups = new Map<string, () => void>();
+
+  /**
+   * Keep a document-level pointerdown listener in sync with the accordion's
+   * open state when close_on_outside_click is enabled. The listener closes
+   * the accordion (and removes itself) on the first press outside of it.
+   */
+  private _syncOutsideClickListener(moduleId: string, accordionId: string, active: boolean): void {
+    const existing = this.outsideClickCleanups.get(moduleId);
+    if (!active) {
+      if (existing) {
+        existing();
+        this.outsideClickCleanups.delete(moduleId);
+      }
+      return;
+    }
+    if (existing) return;
+
+    const handler = (e: Event) => {
+      const inside = e
+        .composedPath()
+        .some(t => t instanceof Element && t.classList?.contains(accordionId));
+      if (inside) return;
+      document.removeEventListener('pointerdown', handler, true);
+      this.outsideClickCleanups.delete(moduleId);
+      if (this.accordionStates.get(moduleId)) {
+        this.accordionStates.set(moduleId, false);
+        this.triggerPreviewUpdate(true);
+      }
+    };
+    // Capture phase so stopPropagation() elsewhere on the page can't keep the accordion open.
+    document.addEventListener('pointerdown', handler, true);
+    this.outsideClickCleanups.set(moduleId, () =>
+      document.removeEventListener('pointerdown', handler, true)
+    );
+  }
+
   renderPreview(
     module: CardModule,
     hass: HomeAssistant,
@@ -1307,6 +1458,15 @@ export class UltraAccordionModule extends BaseUltraModule {
     this.accordionLogicStates.set(accordionModule.id, logicDeterminedState);
 
     const isOpen = this.accordionStates.get(accordionModule.id) || false;
+
+    // Expand behavior
+    const expandStyle = accordionModule.expand_style || 'push';
+    const isOverlay = expandStyle === 'overlay';
+    const configuredDirection = accordionModule.expand_direction || 'down';
+    const expandUp =
+      configuredDirection === 'up' ||
+      (configuredDirection === 'auto' &&
+        this.accordionResolvedDirections.get(accordionModule.id) === 'up');
 
     // Determine title text
     let titleText = '';
@@ -1374,7 +1534,13 @@ export class UltraAccordionModule extends BaseUltraModule {
     const containerStyles = {
       border: `${containerBorderWidth}px solid ${containerBorderColor}`,
       borderRadius: `${containerBorderRadius}px`,
-      overflow: 'hidden',
+      // Overlay content is absolutely positioned outside the container box,
+      // so it must not be clipped.
+      overflow: isOverlay ? 'visible' : 'hidden',
+      position: 'relative',
+      display: 'flex',
+      // In-place upward expansion renders the content above the header.
+      flexDirection: !isOverlay && expandUp ? 'column-reverse' : 'column',
       background: containerBackground,
       boxShadow: d.container_shadow || 'none',
     };
@@ -1384,7 +1550,7 @@ export class UltraAccordionModule extends BaseUltraModule {
     const headerBorderWidth = d.header_border_width ?? 1;
     const headerBorderColor = d.header_border_color || 'var(--divider-color)';
     const headerBackground = d.header_background_color || 'var(--card-background-color)';
-    const headerStyles = {
+    const headerStyles: Record<string, string> = {
       display: 'flex',
       alignItems: 'center',
       justifyContent: headerJustifyContent,
@@ -1394,17 +1560,20 @@ export class UltraAccordionModule extends BaseUltraModule {
       color: d.header_text_color || 'var(--primary-text-color)',
       fontSize: d.header_font_size ? `${d.header_font_size}px` : '16px',
       fontWeight: d.header_font_weight || 'normal',
-      borderBottom: `${headerBorderWidth}px solid ${headerBorderColor}`,
       transition: 'background 0.2s',
-      userSelect: 'none' as const,
+      userSelect: 'none',
       gap: headerAlignment === 'center' ? '8px' : '0',
     };
+    // The divider sits between header and content, which is above the header
+    // when expanding upward in place.
+    headerStyles[!isOverlay && expandUp ? 'borderTop' : 'borderBottom'] =
+      `${headerBorderWidth}px solid ${headerBorderColor}`;
 
     // Content styles - using design properties
     const contentBorderWidth = d.content_border_width ?? 0;
     const contentBorderColor = d.content_border_color || 'transparent';
     const contentBackground = d.content_background_color || 'transparent';
-    const contentStyles = {
+    const contentStyles: Record<string, string> = {
       // Large cap keeps the max-height open/close transition working while
       // overflow:visible when open ensures even taller content is never
       // clipped (the old 2000px + overflow:hidden combo cut long content off).
@@ -1416,6 +1585,22 @@ export class UltraAccordionModule extends BaseUltraModule {
       borderTop:
         contentBorderWidth > 0 ? `${contentBorderWidth}px solid ${contentBorderColor}` : 'none',
     };
+    if (isOverlay) {
+      // Float the open content over the page, anchored to the header like a
+      // dropdown menu, instead of pushing the modules below it out of the way.
+      Object.assign(contentStyles, {
+        position: 'absolute',
+        left: '0',
+        right: '0',
+        [expandUp ? 'bottom' : 'top']: '100%',
+        [expandUp ? 'marginBottom' : 'marginTop']: '4px',
+        zIndex: '1000',
+        background: contentBackground !== 'transparent' ? contentBackground : containerBackground,
+        borderRadius: `${containerBorderRadius}px`,
+        border: isOpen ? `${containerBorderWidth}px solid ${containerBorderColor}` : 'none',
+        boxShadow: isOpen ? d.container_shadow || '0 4px 16px rgba(0, 0, 0, 0.25)' : 'none',
+      });
+    }
 
     // Chevron icon styles - using design properties
     const iconSize = d.icon_size ?? 24;
@@ -1469,6 +1654,17 @@ export class UltraAccordionModule extends BaseUltraModule {
     const handleToggle = (e: Event) => {
       e.stopPropagation(); // Prevent nested accordion toggles
       const currentState = this.accordionStates.get(accordionModule.id) || false;
+      // Auto direction: decide up vs down from the header's viewport position
+      // at the moment the accordion is opened.
+      if (!currentState && configuredDirection === 'auto') {
+        const headerEl = e.currentTarget as HTMLElement | null;
+        const rect = headerEl?.getBoundingClientRect?.();
+        const viewportH = typeof window !== 'undefined' ? window.innerHeight : 0;
+        this.accordionResolvedDirections.set(
+          accordionModule.id,
+          rect && viewportH && rect.top + rect.height / 2 > viewportH / 2 ? 'up' : 'down'
+        );
+      }
       this.accordionStates.set(accordionModule.id, !currentState);
       this.triggerPreviewUpdate(true);
     };
@@ -1479,6 +1675,14 @@ export class UltraAccordionModule extends BaseUltraModule {
 
     // Generate unique ID for scoped hover styles
     const accordionId = `accordion-${accordionModule.id.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+    // Close-on-outside-click: attach/detach the document listener based on
+    // the current open state.
+    this._syncOutsideClickListener(
+      accordionModule.id,
+      accordionId,
+      isOpen && !!accordionModule.close_on_outside_click
+    );
 
     return this.wrapWithAnimation(html`
       <style>

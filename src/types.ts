@@ -1627,6 +1627,11 @@ export interface AccordionModule extends BaseModule {
   // State configuration
   default_open?: boolean | undefined;
 
+  // Expand behavior
+  expand_direction?: 'down' | 'up' | 'auto' | undefined; // Which way content opens ('auto' picks based on viewport position)
+  expand_style?: 'push' | 'overlay' | undefined; // 'push' moves content below; 'overlay' floats over it like a dropdown menu
+  close_on_outside_click?: boolean | undefined; // Collapse when the user clicks/taps outside the accordion
+
   // Open/Close Logic
   open_mode?: 'always' | 'every' | 'any' | 'manual' | undefined;
   open_conditions?: DisplayCondition[] | undefined;
@@ -5236,6 +5241,7 @@ export interface AutoEntityListModule extends BaseModule {
   // Filters
   include_domains?: string[] | undefined;
   include_device_classes?: string[] | undefined;
+  include_areas?: string[] | undefined; // Area registry IDs; entity matches via its own area or its device's area
   include_keywords?: string[] | undefined;
   exclude_keywords?: string[] | undefined;
   show_unavailable?: boolean | undefined;
@@ -5263,6 +5269,10 @@ export interface AutoEntityListModule extends BaseModule {
   columns?: number | undefined; // 1-6; >1 wraps rows in a CSS grid
   sort_by: AutoEntityListSortBy;
   sort_direction: 'asc' | 'desc';
+
+  // Empty state (shown when no entities match the filters)
+  empty_state_text?: string | undefined; // Custom message; empty = default editor hint
+  empty_state_navigation_path?: string | undefined; // Optional dashboard path / URL the message links to
 
   // Card style only
   card_height?: number | undefined; // 0 = auto

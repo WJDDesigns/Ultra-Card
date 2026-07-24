@@ -90,16 +90,39 @@ export class UcActionConfirmationService {
     const finalize = (confirmed: boolean): void => {
       if (resolved) return;
       resolved = true;
-      document.removeEventListener('keydown', handleKeydown);
+      document.removeEventListener('keydown', handleKeydown, { capture: true });
       if (style.parentNode) style.remove();
       if (overlay.parentNode) overlay.remove();
       resolve(confirmed);
     };
 
+    // Capture-phase handler so this runs BEFORE the popup module's document-level
+    // keydown listeners. Otherwise, when this dialog is opened from inside an
+    // Ultra popup, Escape would also close the popup underneath and the popup's
+    // focus trap would steal Tab focus away from the dialog buttons.
     const handleKeydown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
         event.preventDefault();
+        event.stopPropagation();
         finalize(false);
+        return;
+      }
+      if (event.key === 'Tab') {
+        const buttons = Array.from(
+          overlay.querySelectorAll<HTMLElement>('.uc-confirmation-btn')
+        );
+        if (buttons.length === 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const index = buttons.indexOf(document.activeElement as HTMLElement);
+        const next = event.shiftKey
+          ? index <= 0
+            ? buttons.length - 1
+            : index - 1
+          : index === -1 || index === buttons.length - 1
+            ? 0
+            : index + 1;
+        buttons[next]?.focus();
       }
     };
 
@@ -127,7 +150,7 @@ export class UcActionConfirmationService {
 
     overlay.querySelector('.uc-confirmation-backdrop')?.addEventListener('click', () => finalize(false));
     document.body.appendChild(overlay);
-    document.addEventListener('keydown', handleKeydown);
+    document.addEventListener('keydown', handleKeydown, { capture: true });
 
     requestAnimationFrame(() => {
       const focusTarget =
@@ -142,7 +165,10 @@ export class UcActionConfirmationService {
       .uc-confirmation-overlay {
         position: fixed;
         inset: 0;
-        z-index: 10000;
+        /* Ultra popup portals use the max 32-bit z-index (2147483647). The dialog
+           must match it so DOM order (this overlay is appended to <body> after any
+           open portal) puts the confirmation on top of popups. */
+        z-index: 2147483647;
         display: grid;
         place-items: center;
       }

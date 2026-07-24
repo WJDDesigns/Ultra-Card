@@ -164,7 +164,7 @@ export class UltraBooleanInputModule extends BaseUltraModule {
           <div class="field-group" style="margin-bottom:16px;">
             <ultra-color-picker .label=${localize('editor.boolean_input.text_color', lang, 'Text Color')}
               .value=${boolMod.text_color || 'var(--primary-text-color)'}
-              @color-changed=${(e: CustomEvent) => updateModule({ text_color: e.detail.value })}
+              @color-changed=${(e: CustomEvent) => { updateModule({ text_color: e.detail.value }); setTimeout(() => this.triggerPreviewUpdate(), 50); }}
             ></ultra-color-picker>
           </div>
         </div>
@@ -196,6 +196,9 @@ export class UltraBooleanInputModule extends BaseUltraModule {
     const designProperties = (boolMod as any).design || {};
     const fontSize = boolMod.font_size ?? 14;
     const textColor = boolMod.text_color || 'var(--primary-text-color)';
+    // State text and top label default to the secondary color, but must honor
+    // an explicitly configured text color (issue #101).
+    const secondaryTextColor = boolMod.text_color || 'var(--secondary-text-color)';
     const onColor = boolMod.on_color || 'var(--primary-color)';
     const offColor = boolMod.off_color || 'var(--disabled-color, #bdbdbd)';
     const style = boolMod.toggle_style || 'switch';
@@ -240,8 +243,8 @@ export class UltraBooleanInputModule extends BaseUltraModule {
             background:${isOn ? currentColor : 'transparent'}; }
           .bool-cb-box-${mid} ha-icon { --mdc-icon-size:16px; color:#fff; opacity:${isOn ? '1' : '0'}; transition:opacity .2s; }
           .bool-cb-name { font-size:${fontSize}px; color:${textColor}; }
-          .bool-state-text { font-size:${Math.max(11, fontSize - 2)}px; color:var(--secondary-text-color); }
-          .bool-top-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
+          .bool-state-text { font-size:${Math.max(11, fontSize - 2)}px; color:${secondaryTextColor}; }
+          .bool-top-label { font-size:12px; font-weight:500; color:${secondaryTextColor}; margin-bottom:6px; padding-left:2px; }
         </style>
         <div class="${hoverEffectClass}" style="${designStyles}">
           ${showLabel ? html`<div class="bool-top-label" style="${topLabelStyle}">${boolMod.label}</div>` : ''}
@@ -264,7 +267,7 @@ export class UltraBooleanInputModule extends BaseUltraModule {
           .bool-pill-btn-${mid}.active { background:${currentColor}; color:#fff; font-weight:500; }
           .bool-pill-btn-${mid}:not(.active):hover { background:rgba(var(--rgb-primary-text-color,0,0,0),.05); }
           .bool-pill-label { font-size:${fontSize}px; color:${textColor}; flex:1; }
-          .bool-top-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
+          .bool-top-label { font-size:12px; font-weight:500; color:${secondaryTextColor}; margin-bottom:6px; padding-left:2px; }
         </style>
         <div class="${hoverEffectClass}" style="${designStyles}">
           ${showLabel ? html`<div class="bool-top-label" style="${topLabelStyle}">${boolMod.label}</div>` : ''}
@@ -288,8 +291,8 @@ export class UltraBooleanInputModule extends BaseUltraModule {
           position:absolute; top:2px; left:${isOn ? '24px' : '2px'}; transition:left .3s;
           box-shadow:0 1px 3px rgba(0,0,0,.3); }
         .bool-sw-name { font-size:${fontSize}px; color:${textColor}; }
-        .bool-state-text { font-size:${Math.max(11, fontSize - 2)}px; color:var(--secondary-text-color); }
-        .bool-top-label { font-size:12px; font-weight:500; color:var(--secondary-text-color); margin-bottom:6px; padding-left:2px; }
+        .bool-state-text { font-size:${Math.max(11, fontSize - 2)}px; color:${secondaryTextColor}; }
+        .bool-top-label { font-size:12px; font-weight:500; color:${secondaryTextColor}; margin-bottom:6px; padding-left:2px; }
       </style>
       <div class="${hoverEffectClass}" style="${designStyles}">
         ${showLabel ? html`<div class="bool-top-label" style="${topLabelStyle}">${boolMod.label}</div>` : ''}

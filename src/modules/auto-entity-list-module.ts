@@ -13,7 +13,9 @@ import { UcFormUtils } from '../utils/uc-form-utils';
 import { localize } from '../localize/localize';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { ucActionService } from '../services/uc-action-service';
 import '../components/ultra-color-picker';
+import '../components/navigation-picker';
 
 interface EntityRow {
   entityId: string;
@@ -64,6 +66,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
 
       include_domains: [],
       include_device_classes: [],
+      include_areas: [],
       include_keywords: [],
       exclude_keywords: [],
       show_unavailable: false,
@@ -75,6 +78,8 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
 
       title: 'Auto Entities List',
       show_title: true,
+      empty_state_text: '',
+      empty_state_navigation_path: '',
       max_items: 50,
       show_icon: true,
       show_state: true,
@@ -560,6 +565,56 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
             this.triggerPreviewUpdate();
           }
         )}
+        ${UcFormUtils.renderFieldSection(
+          localize('editor.auto_entity_list.empty_state_text', lang, 'Empty list text'),
+          localize(
+            'editor.auto_entity_list.empty_state_text_desc',
+            lang,
+            'Custom message shown when no entities match the filters. Leave blank for the default hint.'
+          ),
+          hass,
+          { empty_state_text: m.empty_state_text || '' },
+          [UcFormUtils.text('empty_state_text')],
+          (e: CustomEvent) => {
+            updateModule({
+              empty_state_text: e.detail.value.empty_state_text,
+            } as Partial<CardModule>);
+            this.triggerPreviewUpdate();
+          }
+        )}
+        ${(m.empty_state_text || '').trim()
+          ? html`
+              <div style="margin-bottom: 16px;">
+                <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">
+                  ${localize(
+                    'editor.auto_entity_list.empty_state_link',
+                    lang,
+                    'Empty list link (optional)'
+                  )}
+                </div>
+                <div
+                  style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 8px;"
+                >
+                  ${localize(
+                    'editor.auto_entity_list.empty_state_link_desc',
+                    lang,
+                    'Tapping the empty-list message navigates to this dashboard view or URL.'
+                  )}
+                </div>
+                <ultra-navigation-picker
+                  .hass=${hass}
+                  .value=${m.empty_state_navigation_path || ''}
+                  label=""
+                  @value-changed=${(e: CustomEvent) => {
+                    updateModule({
+                      empty_state_navigation_path: e.detail.value,
+                    } as Partial<CardModule>);
+                    this.triggerPreviewUpdate();
+                  }}
+                ></ultra-navigation-picker>
+              </div>
+            `
+          : nothing}
         ${this.renderSettingsSection('', '', [
           {
             title: localize('editor.auto_entity_list.show_title', lang, 'Show title'),
@@ -814,6 +869,33 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           false,
           updateModule
         )}
+
+        <div style="margin-top: 16px;">
+          <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
+            ${localize('editor.auto_entity_list.include_areas', lang, 'Areas')}
+          </div>
+          <div style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 8px;">
+            ${localize(
+              'editor.auto_entity_list.include_areas_desc',
+              lang,
+              'Only entities assigned to these areas (directly or via their device). Empty = all areas.'
+            )}
+          </div>
+          ${this.renderFieldSection(
+            '',
+            '',
+            hass,
+            { include_areas: m.include_areas || [] },
+            [{ name: 'include_areas', selector: { area: { multiple: true } } }],
+            (e: CustomEvent) => {
+              const areas = e.detail.value.include_areas;
+              updateModule({
+                include_areas: Array.isArray(areas) ? areas : areas ? [areas] : [],
+              } as Partial<CardModule>);
+              this.triggerPreviewUpdate();
+            }
+          )}
+        </div>
 
         <div style="margin-top: 16px;">
           <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
@@ -1357,6 +1439,10 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
 
     const rows = this._collectEntities(m, hass);
     if (rows.length === 0) {
+      const customEmpty = (m.empty_state_text || '').trim();
+      if (customEmpty) {
+        return this._renderCustomEmptyState(m, hass, config, customEmpty, designStyles, hoverClass);
+      }
       return this.renderGradientErrorState(
         localize('editor.auto_entity_list.err_empty', lang, 'No entities match'),
         localize(
@@ -1425,6 +1511,77 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
           module,
           hass
         )}
+      </div>
+    `;
+  }
+
+  /**
+   * User-configured empty state: custom message, optionally linking to
+   * another dashboard view or an external URL.
+   */
+  private _renderCustomEmptyState(
+    m: AutoEntityListModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig | undefined,
+    text: string,
+    designStyles: string,
+    hoverClass: string
+  ): TemplateResult {
+    const lang = hass?.locale?.language || 'en';
+    const titleColor = m.text_color || 'var(--primary-text-color)';
+    const secondary = m.secondary_text_color || 'var(--secondary-text-color)';
+    const accent = m.accent_color || 'var(--primary-color)';
+    const navPath = (m.empty_state_navigation_path || '').trim();
+    const isLink = !!navPath;
+
+    const onActivate = (e: Event) => {
+      if (!navPath) return;
+      e.stopPropagation();
+      if (/^https?:\/\//i.test(navPath)) {
+        window.open(navPath, '_blank', 'noopener');
+      } else {
+        ucActionService.handleAction(
+          { action: 'navigate', navigation_path: navPath } as any,
+          hass,
+          e.currentTarget as HTMLElement,
+          config,
+          undefined,
+          m
+        );
+      }
+    };
+
+    return html`
+      <div class="ael-root ${hoverClass}" style="${designStyles}">
+        ${m.show_title !== false
+          ? html`<div
+              class="ael-title"
+              style="color:${titleColor};font-weight:700;margin-bottom:10px;"
+            >
+              ${m.title ||
+              localize('editor.auto_entity_list.default_title', lang, 'Auto Entities List')}
+            </div>`
+          : nothing}
+        <div
+          style="padding:12px 8px;text-align:center;font-size:14px;line-height:1.5;color:${isLink
+            ? accent
+            : secondary};${isLink
+            ? 'cursor:pointer;text-decoration:underline;text-underline-offset:3px;'
+            : ''}"
+          role=${isLink ? 'link' : nothing}
+          tabindex=${isLink ? '0' : nothing}
+          @click=${isLink ? onActivate : null}
+          @keydown=${isLink
+            ? (e: KeyboardEvent) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onActivate(e);
+                }
+              }
+            : null}
+        >
+          ${text}
+        </div>
       </div>
     `;
   }
@@ -1919,11 +2076,27 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
   // DISCOVERY
   // =============================================
 
+  /**
+   * Resolve the area an entity belongs to: the entity registry entry's own
+   * area_id wins, otherwise fall back to the area of the entity's device.
+   */
+  private _entityAreaId(hass: HomeAssistant, entityId: string): string | undefined {
+    const h = hass as unknown as {
+      entities?: Record<string, { area_id?: string; device_id?: string }>;
+      devices?: Record<string, { area_id?: string }>;
+    };
+    const reg = h.entities?.[entityId];
+    if (reg?.area_id) return reg.area_id;
+    if (reg?.device_id) return h.devices?.[reg.device_id]?.area_id || undefined;
+    return undefined;
+  }
+
   private _collectEntities(m: AutoEntityListModule, hass: HomeAssistant): EntityRow[] {
     const hidden = new Set((m.hidden_entities || []).filter(Boolean));
     const pinnedIds = new Set((m.pinned_entities || []).map(p => p.entity).filter(Boolean));
     const includeDomains = (m.include_domains || []).map(s => s.toLowerCase());
     const includeDC = (m.include_device_classes || []).map(s => s.toLowerCase());
+    const includeAreas = (m.include_areas || []).filter(Boolean);
     const includeKw = (m.include_keywords || []).map(s => s.toLowerCase());
     const excludeKw = (m.exclude_keywords || []).map(s => s.toLowerCase());
 
@@ -1935,6 +2108,11 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
 
       if (includeDomains.length && !includeDomains.includes(domain)) return false;
       if (includeDC.length && !includeDC.includes(dc)) return false;
+
+      if (includeAreas.length) {
+        const areaId = this._entityAreaId(hass, id);
+        if (!areaId || !includeAreas.includes(areaId)) return false;
+      }
 
       if (includeKw.length && !includeKw.some(k => lowerId.includes(k))) return false;
       if (excludeKw.length && excludeKw.some(k => lowerId.includes(k))) return false;

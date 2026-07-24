@@ -335,6 +335,92 @@ export class ConfigValidationService {
   }
 
   /**
+   * Collect every module ID in a config, including modules nested inside
+   * layout containers (horizontal/vertical/accordion/etc.).
+   */
+  collectAllModuleIds(config: UltraCardConfig): Set<string> {
+    const ids = new Set<string>();
+    const walkModules = (modules: any[] | undefined): void => {
+      if (!Array.isArray(modules)) return;
+      for (const module of modules) {
+        if (module && typeof module.id === 'string') {
+          ids.add(module.id);
+        }
+        walkModules(module?.modules);
+      }
+    };
+    for (const row of config?.layout?.rows || []) {
+      for (const column of row?.columns || []) {
+        walkModules(column?.modules);
+      }
+    }
+    return ids;
+  }
+
+  /**
+   * Regenerate the given module IDs (recursively, including nested layout
+   * modules) and rewrite intra-config references to them (`popup_id` on
+   * open-popup actions, `trigger_module_id` on popup modules). Used to heal
+   * cross-card duplicate module IDs created by HA's "Duplicate card"
+   * (issue #103).
+   */
+  regenerateModuleIds(config: UltraCardConfig, idsToRegenerate: Set<string>): UltraCardConfig {
+    const correctedConfig = JSON.parse(JSON.stringify(config));
+    const idMap = new Map<string, string>();
+
+    const newIdFor = (module: any): string => {
+      const existing = idMap.get(module.id);
+      if (existing) return existing;
+      const generated = `${module.type || 'module'}-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+      idMap.set(module.id, generated);
+      return generated;
+    };
+
+    const walkModules = (modules: any[] | undefined): void => {
+      if (!Array.isArray(modules)) return;
+      for (const module of modules) {
+        if (module && typeof module.id === 'string' && idsToRegenerate.has(module.id)) {
+          module.id = newIdFor(module);
+        }
+        walkModules(module?.modules);
+      }
+    };
+    for (const row of correctedConfig?.layout?.rows || []) {
+      for (const column of row?.columns || []) {
+        walkModules(column?.modules);
+      }
+    }
+
+    if (idMap.size > 0) {
+      // Rewrite references to the regenerated IDs anywhere in the config.
+      const rewriteRefs = (node: any): void => {
+        if (!node || typeof node !== 'object') return;
+        if (Array.isArray(node)) {
+          node.forEach(rewriteRefs);
+          return;
+        }
+        for (const key of Object.keys(node)) {
+          const value = node[key];
+          if (
+            (key === 'popup_id' || key === 'trigger_module_id') &&
+            typeof value === 'string' &&
+            idMap.has(value)
+          ) {
+            node[key] = idMap.get(value);
+          } else {
+            rewriteRefs(value);
+          }
+        }
+      };
+      rewriteRefs(correctedConfig);
+    }
+
+    return correctedConfig;
+  }
+
+  /**
    * Fixes duplicate module IDs by generating new ones
    */
   fixDuplicateModuleIds(config: UltraCardConfig): UltraCardConfig {

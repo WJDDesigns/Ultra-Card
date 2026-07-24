@@ -6316,6 +6316,32 @@ export class UltraIconModule extends BaseUltraModule {
       }
     }
 
+    // Per-icon actions implicitly follow this icon's entity. Sync them when
+    // the entity changes so duplicated modules don't keep stale click targets
+    // (issue #89). Explicit target-based actions are left untouched.
+    if (entityId) {
+      const syncIconAction = (action: any): any => {
+        if (!action || typeof action !== 'object') return action;
+        if (action.target) return action;
+        if (
+          action.action === 'more-info' ||
+          action.action === 'toggle' ||
+          action.action === 'default'
+        ) {
+          return { ...action, entity: entityId };
+        }
+        return action;
+      };
+      const currentIconCfg = iconModule.icons[index] as any;
+      const syncedTap = syncIconAction(currentIconCfg?.tap_action);
+      const syncedHold = syncIconAction(currentIconCfg?.hold_action);
+      const syncedDoubleTap = syncIconAction(currentIconCfg?.double_tap_action);
+      if (syncedTap !== currentIconCfg?.tap_action) (updates as any).tap_action = syncedTap;
+      if (syncedHold !== currentIconCfg?.hold_action) (updates as any).hold_action = syncedHold;
+      if (syncedDoubleTap !== currentIconCfg?.double_tap_action)
+        (updates as any).double_tap_action = syncedDoubleTap;
+    }
+
     // Update icon in the icons array
     const updatedIcons = iconModule.icons.map((ic, i) =>
       i === index ? { ...ic, ...updates } : ic

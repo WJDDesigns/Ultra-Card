@@ -57,6 +57,7 @@ import {
 import { UC_ULTRA_CARD_HASS_READY } from '../utils/uc-pro-banner';
 
 import { externalCardContainerService } from '../services/external-card-container-service';
+import { ucCardInstanceRegistry } from '../services/uc-card-instance-registry';
 
 @customElement('ultra-card')
 export class UltraCard extends LitElement {
@@ -131,6 +132,8 @@ export class UltraCard extends LitElement {
   private _moduleStylesRefreshTimer: number | null = null;
   private static readonly MODULE_STYLES_REFRESH_DEBOUNCE_MS = 100;
   private _instanceId: string = '';
+  /** Raw stored config JSON as last passed to setConfig (pre-normalization). */
+  private _rawConfigJson: string | undefined;
   private _layoutTemplateService: TemplateService | null = null;
   /** True after layout columns_template / modules_template subs are registered for this service instance */
   private _layoutTemplatesRegistered = false;
@@ -320,6 +323,16 @@ export class UltraCard extends LitElement {
       this._isEditorPreviewCard = previewContext;
     }
 
+    // Register in the live-card registry BEFORE assigning an instance id so
+    // mount-order indexing and claimed-id checks below see this card too.
+    ucCardInstanceRegistry.register({
+      element: this,
+      getInstanceId: () => this._instanceId,
+      getConfig: () => this.config,
+      getRawConfigJson: () => this._rawConfigJson,
+      isEditorPreview: () => this._isEditorPreviewCard,
+    });
+
     // Ensure a stable per-card instance id across remounts
     if (this._isEditorPreviewCard) {
       if (!this._instanceId || !this._instanceId.startsWith('uc-preview-')) {
@@ -327,14 +340,19 @@ export class UltraCard extends LitElement {
       }
     } else if (!this._instanceId || this._instanceId.startsWith('uc-preview-')) {
       const dashboardId = getCurrentDashboardId();
-      const cards = Array.from(document.querySelectorAll('ultra-card')) as Element[];
-      const index = Math.max(0, cards.indexOf(this));
+      // document.querySelectorAll('ultra-card') cannot see cards nested in
+      // HA's shadow DOM, which made every card resolve to index 0 and share
+      // one persisted instance id (issue #103). Use the registry's
+      // mount-order index instead, and never reuse an id already claimed by
+      // another live card.
+      const index = Math.max(0, ucCardInstanceRegistry.indexOf(this));
       const persistKey = `uc_card_id_${dashboardId}:${index}`;
       let id = '';
       try {
         id = localStorage.getItem(persistKey) || '';
       } catch (_e) { /* ignore */ }
-      if (!id) {
+      const claimed = ucCardInstanceRegistry.getClaimedInstanceIds(this);
+      if (!id || claimed.has(id)) {
         id = `uc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         try {
           localStorage.setItem(persistKey, id);
@@ -510,6 +528,7 @@ export class UltraCard extends LitElement {
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    ucCardInstanceRegistry.unregister(this);
     if (this._moduleStylesRefreshTimer != null) {
       clearTimeout(this._moduleStylesRefreshTimer);
       this._moduleStylesRefreshTimer = null;
@@ -1112,6 +1131,15 @@ export class UltraCard extends LitElement {
   public setConfig(config: UltraCardConfig): void {
     if (!config) {
       throw new Error('Invalid configuration');
+    }
+
+    // Snapshot of the raw stored config as HA passed it, before any
+    // validation/normalization. The editor compares against this to tell
+    // "the card being edited" apart from a diverged duplicate (issue #103).
+    try {
+      this._rawConfigJson = JSON.stringify(config);
+    } catch {
+      this._rawConfigJson = undefined;
     }
 
     configValidationService.validateAndCorrectConfig(config).then(validationResult => {

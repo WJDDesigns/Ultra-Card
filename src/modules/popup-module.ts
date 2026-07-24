@@ -2843,6 +2843,35 @@ export class UltraPopupModule extends BaseUltraModule {
     window.addEventListener('ultra-card-template-update', handleChildUpdate);
     w[childUpdateListenerKey] = handleChildUpdate;
 
+    // Guard touch taps so scrolling over a trigger doesn't count as a tap
+    // (issue #83). Mirrors the 10px scroll-cancel threshold used by
+    // uc-gesture-service for buttons/icons.
+    const TOUCH_TAP_THRESHOLD_PX = 10;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const trackTouchStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (t) {
+        touchStartX = t.clientX;
+        touchStartY = t.clientY;
+      }
+    };
+    const guardedTouchEnd =
+      (handler: (e: Event) => void) =>
+      (e: TouchEvent): void => {
+        const t = e.changedTouches[0];
+        if (
+          t &&
+          Math.hypot(t.clientX - touchStartX, t.clientY - touchStartY) > TOUCH_TAP_THRESHOLD_PX
+        ) {
+          // Finger moved — this was a scroll, not a tap.
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        handler(e);
+      };
+
     // Handle trigger click
     const handleTriggerClick = (e: Event) => {
       e.stopPropagation();
@@ -3040,11 +3069,8 @@ export class UltraPopupModule extends BaseUltraModule {
             type="button"
             class="swiper-no-swiping popup-trigger"
             @click=${handleTriggerClick}
-            @touchend=${(e: Event) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleTriggerClick(e);
-            }}
+            @touchstart=${trackTouchStart}
+            @touchend=${guardedTouchEnd(handleTriggerClick)}
             style="${btnStyle}"
           >
             ${buttonIcon && iconPosition === 'before' ? iconHtml : ''}
@@ -3105,11 +3131,8 @@ export class UltraPopupModule extends BaseUltraModule {
               class="swiper-no-swiping popup-trigger"
               src="${imageUrl}"
               @click=${handleTriggerClick}
-              @touchend=${(e: Event) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleTriggerClick(e);
-              }}
+              @touchstart=${trackTouchStart}
+              @touchend=${guardedTouchEnd(handleTriggerClick)}
               style="${isFullWidth
                 ? 'width: 100%;'
                 : 'max-width: 200px;'} cursor: pointer; border-radius: 8px; transition: transform 0.2s ease; display: block; touch-action: manipulation; pointer-events: auto;"
@@ -3133,11 +3156,8 @@ export class UltraPopupModule extends BaseUltraModule {
             class="swiper-no-swiping popup-trigger"
             icon="${triggerIcon}"
             @click=${handleTriggerClick}
-            @touchend=${(e: Event) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleTriggerClick(e);
-            }}
+            @touchstart=${trackTouchStart}
+            @touchend=${guardedTouchEnd(handleTriggerClick)}
             style="--mdc-icon-size: ${triggerIconSize}px; cursor: pointer; color: ${triggerIconColor}; transition: transform 0.2s ease; touch-action: manipulation; pointer-events: auto;"
             @mouseover=${(e: Event) => {
               const target = e.target as HTMLElement;
@@ -3232,11 +3252,8 @@ export class UltraPopupModule extends BaseUltraModule {
           type="button"
           aria-label="${localize('editor.popup.close_button.label', lang, 'Close')}"
           @click=${handleClose}
-          @touchend=${(e: Event) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleClose(e);
-          }}
+          @touchstart=${trackTouchStart}
+          @touchend=${guardedTouchEnd(handleClose)}
           class="ultra-popup-close-button swiper-no-swiping"
           style="
             position: absolute;

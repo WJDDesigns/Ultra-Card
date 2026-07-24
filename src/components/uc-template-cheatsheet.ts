@@ -1100,7 +1100,10 @@ export class UcTemplateCheatsheet extends LitElement {
     }
 
     .entry-snippet code {
-      background: var(--code-editor-background-color, #1a1a1a);
+      /* Pair background and text from the same theme family so light mode
+         never renders dark-on-dark (issue #99). */
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+      border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
       padding: 8px 10px;
       border-radius: 4px;
       display: block;
@@ -1204,7 +1207,9 @@ export class UcTemplateCheatsheet extends LitElement {
     .example-code pre {
       margin: 0;
       padding: 10px 12px;
-      background: var(--code-editor-background-color, #1a1a1a);
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+      border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+      border-bottom: none;
       border-radius: 6px 6px 0 0;
       overflow-x: auto;
       font-size: 11px;
@@ -1218,9 +1223,10 @@ export class UcTemplateCheatsheet extends LitElement {
       justify-content: flex-end;
       gap: 4px;
       padding: 6px 8px;
-      background: var(--code-editor-background-color, #1a1a1a);
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+      border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+      border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
       border-radius: 0 0 6px 6px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     .copy-full-btn {
@@ -1229,9 +1235,9 @@ export class UcTemplateCheatsheet extends LitElement {
       gap: 4px;
       padding: 5px 10px;
       font-size: 11px;
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06);
       color: var(--primary-text-color);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
       border-radius: 4px;
       cursor: pointer;
       transition: background 0.15s ease;
@@ -1245,7 +1251,7 @@ export class UcTemplateCheatsheet extends LitElement {
 
     .insert-full-btn {
       background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.2));
     }
 
     .insert-full-btn:hover {

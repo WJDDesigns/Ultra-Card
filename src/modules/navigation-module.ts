@@ -2562,19 +2562,30 @@ export class UltraNavigationModule extends BaseUltraModule {
 
     return html`
       <!-- Action Type -->
-      ${UcFormUtils.renderFieldSection(
-        sectionTitle,
-        sectionDescription,
-        hass,
-        { action_category: category },
-        [UcFormUtils.select('action_category', categoryOptions)],
-        (e: CustomEvent) => {
-          const nextValue = e.detail?.value?.action_category;
-          if (nextValue && nextValue !== category) {
-            setCategory(nextValue);
-          }
-        }
-      )}
+      <!-- Raw ha-select (same pattern as every other dropdown in this module):
+           the ha-form select wrapper let the internal menu's "closed" event
+           bubble into the surrounding editor, which made the dropdown appear
+           stuck on its current value (issue #92). -->
+      <div class="field-container">
+        <div class="field-title">${sectionTitle}</div>
+        <div class="field-description">${sectionDescription}</div>
+        <ha-select
+          style="width: 100%;"
+          .value=${category}
+          @selected=${(e: any) => {
+            e.stopPropagation();
+            const nextValue = e.target?.value;
+            if (nextValue && nextValue !== category) {
+              setCategory(nextValue);
+            }
+          }}
+          @closed=${(e: Event) => e.stopPropagation()}
+        >
+          ${categoryOptions.map(
+            o => html`<mwc-list-item value="${o.value}">${o.label}</mwc-list-item>`
+          )}
+        </ha-select>
+      </div>
 
       <!-- Navigate: Path picker -->
       ${category === 'navigate'

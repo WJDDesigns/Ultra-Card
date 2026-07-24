@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { UltraCardConfig, HoverEffectConfig, CustomVariable, DeviceBreakpoint } from '../types';
 import { configValidationService } from '../services/config-validation-service';
+import { ucCardInstanceRegistry } from '../services/uc-card-instance-registry';
 import { autoMigrateTemplatesInConfig } from '../utils/template-migration';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
@@ -107,7 +108,8 @@ export class UltraCardEditor extends LitElement {
         layout: { rows: [] },
       };
 
-    const migratedConfig = autoMigrateTemplatesInConfig(incomingConfig);
+    let migratedConfig = autoMigrateTemplatesInConfig(incomingConfig);
+    migratedConfig = this._healCrossCardModuleIdCollisions(incomingConfig, migratedConfig);
     this.config = migratedConfig;
 
     // Persist auto-migration so legacy template fields are repaired even if the user
@@ -128,6 +130,64 @@ export class UltraCardEditor extends LitElement {
       return JSON.stringify(left) !== JSON.stringify(right);
     } catch {
       return true;
+    }
+  }
+
+  /** One-shot guard: the collision heal only runs on the first setConfig (dialog open). */
+  private _crossCardHealDone = false;
+
+  /**
+   * Heal cross-card duplicate module IDs (issue #103).
+   *
+   * HA's "Duplicate card" copies module IDs verbatim, so two Ultra Cards on
+   * one dashboard can share module IDs. Several runtime paths (module patch
+   * events, external/native card containers, preview caches) are keyed by
+   * module ID, so shared IDs make editing one card leak into the other.
+   *
+   * On editor open, compare this config's module IDs against every live
+   * (non-preview) Ultra Card. The card actually being edited is recognized
+   * by raw-config equality; any OTHER card sharing module IDs is a diverged
+   * duplicate, and the shared IDs are regenerated here (persisted through
+   * the normal config-changed flow, with popup/trigger references rewritten).
+   */
+  private _healCrossCardModuleIdCollisions(
+    rawIncoming: UltraCardConfig,
+    migratedConfig: UltraCardConfig
+  ): UltraCardConfig {
+    if (this._crossCardHealDone) return migratedConfig;
+    this._crossCardHealDone = true;
+    try {
+      const myIds = configValidationService.collectAllModuleIds(migratedConfig);
+      if (myIds.size === 0) return migratedConfig;
+
+      let rawIncomingJson: string | undefined;
+      try {
+        rawIncomingJson = JSON.stringify(rawIncoming);
+      } catch {
+        rawIncomingJson = undefined;
+      }
+
+      const collidingIds = new Set<string>();
+      for (const entry of ucCardInstanceRegistry.getAll()) {
+        if (entry.isEditorPreview()) continue;
+        const otherConfig = entry.getConfig();
+        if (!otherConfig) continue;
+        // The live dashboard card being edited holds the same stored config.
+        const otherRawJson = entry.getRawConfigJson();
+        if (rawIncomingJson && otherRawJson && otherRawJson === rawIncomingJson) continue;
+        const otherIds = configValidationService.collectAllModuleIds(otherConfig);
+        for (const id of myIds) {
+          if (otherIds.has(id)) collidingIds.add(id);
+        }
+      }
+
+      if (collidingIds.size === 0) return migratedConfig;
+      console.info(
+        `Ultra Card: regenerated ${collidingIds.size} module ID(s) shared with another card on this dashboard (duplicated card).`
+      );
+      return configValidationService.regenerateModuleIds(migratedConfig, collidingIds);
+    } catch {
+      return migratedConfig;
     }
   }
 
@@ -326,6 +386,12 @@ export class UltraCardEditor extends LitElement {
 
   override disconnectedCallback() {
     super.disconnectedCallback();
+    // Cancel any pending debounced config-changed so a stale config from this
+    // editing session can never fire into a later session (issue #103).
+    if (this._configDebounceTimeout) {
+      clearTimeout(this._configDebounceTimeout);
+      this._configDebounceTimeout = undefined;
+    }
     try {
       (window as any).__UC_PREVIEW_SUPPRESS_LOCKS = false;
       window.dispatchEvent(

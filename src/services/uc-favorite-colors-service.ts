@@ -18,6 +18,8 @@ class UcFavoriteColorsService {
   private _hass: any = null;
   private _haLoaded = false;
   private _logged404 = false;
+  private _integrationMissing = false;
+  private _loadPromise: Promise<void> | null = null;
 
   constructor() {
     this._loadFromStorage();
@@ -186,9 +188,35 @@ class UcFavoriteColorsService {
    */
   setHass(hass: any): void {
     this._hass = hass ?? null;
-    if (!this._haLoaded && hass?.callApi) {
-      this.loadFromHA(hass).catch(() => {});
+    if (this._haLoaded || !hass?.callApi) return;
+    if (this._isIntegrationInstalled(hass) === false) {
+      // Integration not loaded — skip all network calls so we never produce
+      // 404 noise in the console (issue #96).
+      this._integrationMissing = true;
+      this._haLoaded = true;
+      this._logMissingIntegrationOnce();
+      return;
     }
+    this.loadFromHA(hass).catch(() => {});
+  }
+
+  /**
+   * Check hass.config.components for the Ultra Card Pro Cloud integration.
+   * Returns undefined when the components list is unavailable, in which case
+   * callers fall back to probing the API (pre-existing behavior).
+   */
+  private _isIntegrationInstalled(hass: any): boolean | undefined {
+    const components = hass?.config?.components;
+    if (!Array.isArray(components)) return undefined;
+    return components.includes('ultra_card_pro_cloud');
+  }
+
+  private _logMissingIntegrationOnce(): void {
+    if (this._logged404) return;
+    this._logged404 = true;
+    console.info(
+      'Ultra Card: Favorite colors sync requires the "Ultra Card Pro Cloud" integration. Install it from HACS (Integration: Ultra Card Pro Cloud) to persist colors across devices and after logout.'
+    );
   }
 
   /**
@@ -199,7 +227,17 @@ class UcFavoriteColorsService {
    * On 404 (integration not installed), logs a one-time message and leaves favorites unchanged.
    */
   async loadFromHA(hass: any): Promise<void> {
-    if (!hass?.callApi) return;
+    if (!hass?.callApi || this._integrationMissing) return;
+    // In-flight guard: multiple components call setHass() during startup;
+    // without this they each fire their own GET (issue #96).
+    if (this._loadPromise) return this._loadPromise;
+    this._loadPromise = this._doLoadFromHA(hass).finally(() => {
+      this._loadPromise = null;
+    });
+    return this._loadPromise;
+  }
+
+  private async _doLoadFromHA(hass: any): Promise<void> {
     try {
       const result = await hass.callApi('GET', 'ultra_card_pro_cloud/favorite_colors');
       // Only latch after a successful response
@@ -217,14 +255,11 @@ class UcFavoriteColorsService {
     } catch (err: any) {
       const status = err?.status ?? err?.status_code ?? err?.response?.status;
       if (status === 404) {
-        // Integration not installed — latch so we don't spam on every hass update
+        // Integration not installed — latch so we don't spam on every hass
+        // update, and stop mutation POSTs too (issue #96).
         this._haLoaded = true;
-        if (!this._logged404) {
-          this._logged404 = true;
-          console.info(
-            'Ultra Card: Favorite colors sync requires the "Ultra Card Pro Cloud" integration. Install it from HACS (Integration: Ultra Card Pro Cloud) to persist colors across devices and after logout.'
-          );
-        }
+        this._integrationMissing = true;
+        this._logMissingIntegrationOnce();
         return;
       }
       if (status === 401 || status === 403) {
@@ -244,22 +279,24 @@ class UcFavoriteColorsService {
    */
   async syncToHA(hass: any): Promise<void> {
     if (!hass?.callApi) return;
+    // Don't POST when the integration is known to be missing (issue #96) —
+    // favorites still persist to localStorage.
+    if (this._integrationMissing || this._isIntegrationInstalled(hass) === false) {
+      this._integrationMissing = true;
+      return;
+    }
     try {
       await hass.callApi('POST', 'ultra_card_pro_cloud/favorite_colors', {
         colors: this._favorites,
       });
     } catch (err: any) {
       const status = err?.status ?? err?.status_code ?? err?.response?.status;
-      if (status === 404 && !this._logged404) {
-        this._logged404 = true;
-        console.info(
-          'Ultra Card: Favorite colors sync requires the "Ultra Card Pro Cloud" integration. Install it from HACS (Integration: Ultra Card Pro Cloud) to persist colors across devices and after logout.'
-        );
+      if (status === 404) {
+        this._integrationMissing = true;
+        this._logMissingIntegrationOnce();
         return;
       }
-      if (status !== 404) {
-        console.debug('Failed to sync favorite colors to HA:', err);
-      }
+      console.debug('Failed to sync favorite colors to HA:', err);
     }
   }
 
