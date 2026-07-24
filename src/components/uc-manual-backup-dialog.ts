@@ -54,7 +54,7 @@ export class UcManualBackupDialog extends LitElement {
       align-items: center;
       justify-content: space-between;
       background: linear-gradient(135deg, var(--primary-color, #03a9f4) 0%, #00796b 100%);
-      color: white;
+      color: var(--text-primary-color, #fff);
     }
 
     .dialog-title {
@@ -80,7 +80,7 @@ export class UcManualBackupDialog extends LitElement {
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      color: white;
+      color: var(--text-primary-color, #fff);
       transition: background 0.2s;
     }
 
@@ -190,7 +190,7 @@ export class UcManualBackupDialog extends LitElement {
 
     .create-btn {
       background: linear-gradient(135deg, var(--primary-color, #03a9f4) 0%, #00796b 100%);
-      color: white;
+      color: var(--text-primary-color, #fff);
       box-shadow: 0 2px 8px rgba(3, 169, 244, 0.3);
     }
 

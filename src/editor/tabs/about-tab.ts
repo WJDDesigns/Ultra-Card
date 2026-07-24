@@ -216,6 +216,7 @@ export class AboutTab extends LitElement {
 
     .about-button.docs {
       background-color: var(--primary-color);
+      color: var(--text-primary-color, #fff);
       cursor: pointer;
     }
 

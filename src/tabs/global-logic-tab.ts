@@ -56,7 +56,7 @@ export class GlobalLogicTab {
                   <button
                     type="button"
                     class="help-btn"
-                    style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;margin-left:4px;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                    style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;margin-left:4px;background:var(--primary-color, #03a9f4);border:none;color:var(--text-primary-color, #fff);cursor:pointer;border-radius:50%;line-height:0;"
                     title=${localize(
                       'editor.layout.unified_visibility.cheatsheet_title',
                       lang,
@@ -74,7 +74,7 @@ export class GlobalLogicTab {
                   >
                     <ha-icon
                       icon="mdi:help-circle"
-                      style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"
+                      style="--mdc-icon-size:18px;width:18px;height:18px;color:var(--text-primary-color, #fff);"
                     ></ha-icon>
                   </button>
                 </div>

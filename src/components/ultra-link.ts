@@ -336,7 +336,7 @@ export class UltraLinkComponent {
         ></ha-icon>
         <span style="flex:1;line-height:1.4;">
           Supports Jinja templates &mdash;
-          <code style="background:rgba(0,0,0,0.08);padding:1px 4px;border-radius:3px;font-size:11px;">{{ states('sensor.foo') }}</code>
+          <code style="background:rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.08);padding:1px 4px;border-radius:3px;font-size:11px;">{{ states('sensor.foo') }}</code>
           renders at tap time.
         </span>
         <button

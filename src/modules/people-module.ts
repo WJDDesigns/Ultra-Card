@@ -2772,7 +2772,7 @@ export class UltraPeopleModule extends BaseUltraModule {
 
       .option-btn.active {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-color: var(--primary-color);
       }
 
@@ -2803,7 +2803,7 @@ export class UltraPeopleModule extends BaseUltraModule {
 
       .position-option.selected {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-color: var(--primary-color);
       }
 

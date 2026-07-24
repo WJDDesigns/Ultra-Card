@@ -845,7 +845,7 @@ export class UcSmartSelectorTab extends LitElement {
       justify-content: center;
       gap: 8px;
       background: var(--primary-color);
-      color: #fff;
+      color: var(--text-primary-color, #fff);
       font-weight: 600;
       cursor: pointer;
       min-height: 42px;

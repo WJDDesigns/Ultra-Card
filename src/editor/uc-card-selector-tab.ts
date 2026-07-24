@@ -51,7 +51,7 @@ export class UcCardSelectorTab extends LitElement {
     .refresh-btn {
       padding: 8px 16px;
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, white);
       border: none;
       border-radius: 4px;
       cursor: pointer;
@@ -168,7 +168,7 @@ export class UcCardSelectorTab extends LitElement {
     .get-pro-btn-mini {
       padding: 6px 16px;
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, white);
       border: none;
       border-radius: 6px;
       font-weight: 600;
@@ -235,7 +235,7 @@ export class UcCardSelectorTab extends LitElement {
       background: var(--primary-color);
     }
     .yaml-card-item .card-icon ha-icon {
-      color: white;
+      color: var(--text-primary-color, white);
     }
     .card-icon {
       width: 38px;
@@ -343,7 +343,7 @@ export class UcCardSelectorTab extends LitElement {
       margin-top: 12px;
       padding: 8px 16px;
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, white);
       border: none;
       border-radius: 6px;
       cursor: pointer;

@@ -17320,7 +17320,7 @@ export class LayoutTab extends LitElement {
             )}"
             style="
               background: var(--primary-color);
-              color: white;
+              color: var(--text-primary-color, #fff);
               border: none;
               border-radius: 4px;
               padding: 4px 8px;
@@ -17524,7 +17524,7 @@ export class LayoutTab extends LitElement {
             )}"
             style="
               background: var(--primary-color);
-              color: white;
+              color: var(--text-primary-color, #fff);
               border: none;
               border-radius: 4px;
               padding: 4px 8px;
@@ -25764,7 +25764,7 @@ export class LayoutTab extends LitElement {
                 </div>`
               : ''}
             <button
-              style="margin-top:10px;padding:6px 12px;background:var(--primary-color);color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;line-height:1;"
+              style="margin-top:10px;padding:6px 12px;background:var(--primary-color);color:var(--text-primary-color, #fff);border:none;border-radius:4px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;line-height:1;"
               @click=${(e: Event) => {
                 e.stopPropagation();
                 this._openColumnLayoutSelector(this._selectedRowForSettings);
@@ -29376,7 +29376,7 @@ export class LayoutTab extends LitElement {
         .refresh-btn {
           padding: 8px 16px;
           background: var(--primary-color);
-          color: white;
+          color: var(--text-primary-color, #fff);
           border: none;
           border-radius: 4px;
           cursor: pointer;
@@ -29663,7 +29663,7 @@ export class LayoutTab extends LitElement {
         .install-link {
           padding: 6px 12px;
           background: var(--primary-color);
-          color: white;
+          color: var(--text-primary-color, #fff);
           text-decoration: none;
           border-radius: 4px;
           font-size: 12px;
@@ -29821,7 +29821,7 @@ export class LayoutTab extends LitElement {
             var(--primary-color) 0%,
             var(--accent-color, var(--primary-color)) 100%
           );
-          color: white;
+          color: var(--text-primary-color, #fff);
         }
 
         .upgrade-button:hover {
@@ -29831,7 +29831,7 @@ export class LayoutTab extends LitElement {
 
         .signin-button {
           background: var(--primary-color);
-          color: white;
+          color: var(--text-primary-color, #fff);
         }
 
         .signin-button:hover {
@@ -31328,13 +31328,13 @@ export class LayoutTab extends LitElement {
 
       .breadcrumb-item.active {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         cursor: default;
       }
 
       .breadcrumb-item.active:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .breadcrumb-root {
@@ -31512,6 +31512,10 @@ export class LayoutTab extends LitElement {
         background: var(--primary-color, #03a9f4);
       }
 
+      .tree-row > .tree-node-children > .tree-track-collapse .track-chevron {
+        color: var(--text-primary-color, #fff);
+      }
+
       /* Column's track collapse (orange) - on the orange line going to modules */
       .tree-column > .tree-node-children > .tree-track-collapse {
         background: #ff9800;
@@ -31583,7 +31587,7 @@ export class LayoutTab extends LitElement {
 
       .tree-row > .tree-node-content > .tree-node-header {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-radius: 8px;
       }
 
@@ -31593,14 +31597,14 @@ export class LayoutTab extends LitElement {
         color: white;
       }
 
-      .tree-column .tree-node-drag-handle,
-      .tree-column .tree-collapse-btn,
-      .tree-column .tree-overflow-btn {
+      .tree-column > .tree-node-content > .tree-node-header .tree-node-drag-handle,
+      .tree-column > .tree-node-content > .tree-node-header .tree-collapse-btn,
+      .tree-column > .tree-node-content > .tree-node-header .tree-overflow-btn {
         color: white;
       }
 
-      .tree-column .tree-collapse-btn:hover,
-      .tree-column .tree-overflow-btn:hover {
+      .tree-column > .tree-node-content > .tree-node-header .tree-collapse-btn:hover,
+      .tree-column > .tree-node-content > .tree-node-header .tree-overflow-btn:hover {
         background: rgba(255, 255, 255, 0.2);
       }
 
@@ -31630,8 +31634,8 @@ export class LayoutTab extends LitElement {
         cursor: grabbing;
       }
 
-      .tree-row .tree-node-drag-handle {
-        color: white;
+      .tree-row > .tree-node-content > .tree-node-header .tree-node-drag-handle {
+        color: var(--text-primary-color, #fff);
       }
 
       /* Collapse button */
@@ -31652,20 +31656,20 @@ export class LayoutTab extends LitElement {
       }
 
       .tree-collapse-btn:hover {
-        background: rgba(0, 0, 0, 0.1);
+        background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.1);
       }
 
-      .tree-row .tree-collapse-btn:hover {
+      .tree-row > .tree-node-content > .tree-node-header .tree-collapse-btn:hover {
         background: rgba(255, 255, 255, 0.2);
       }
 
       /* Column collapse - white tint on hover (orange header) */
-      .tree-column .tree-collapse-btn:hover {
+      .tree-column > .tree-node-content > .tree-node-header .tree-collapse-btn:hover {
         background: rgba(255, 255, 255, 0.2);
       }
 
       /* Layout module collapse - green tint on hover */
-      .tree-layout-module .tree-collapse-btn:hover {
+      .tree-layout-module > .tree-node-content > .tree-node-header .tree-collapse-btn:hover {
         background: rgba(76, 175, 80, 0.15);
       }
 
@@ -31680,8 +31684,8 @@ export class LayoutTab extends LitElement {
         opacity: 0.8;
       }
 
-      .tree-row .tree-node-icon {
-        color: white;
+      .tree-row > .tree-node-content > .tree-node-header .tree-node-icon {
+        color: var(--text-primary-color, #fff);
       }
 
       /* Tree node title and info */
@@ -31721,9 +31725,9 @@ export class LayoutTab extends LitElement {
         white-space: nowrap;
       }
 
-      .tree-row .tree-node-badge {
+      .tree-row > .tree-node-content > .tree-node-header .tree-node-badge {
         background: rgba(255, 255, 255, 0.2);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .layout-hover-badge {
@@ -31765,13 +31769,13 @@ export class LayoutTab extends LitElement {
       }
 
       /* Column badge - white on orange header */
-      .tree-column .tree-node-badge {
+      .tree-column > .tree-node-content > .tree-node-header .tree-node-badge {
         background: rgba(255, 255, 255, 0.2);
         color: white;
       }
 
       /* Layout module badge - green tint */
-      .tree-layout-module .tree-node-badge {
+      .tree-layout-module > .tree-node-content > .tree-node-header .tree-node-badge {
         background: rgba(76, 175, 80, 0.2);
         color: var(--primary-text-color);
       }
@@ -31841,14 +31845,14 @@ export class LayoutTab extends LitElement {
       .tree-module .tree-action-btn,
       .tree-layout-child .tree-action-btn,
       .tree-deep-child .tree-action-btn {
-        background: rgba(0, 0, 0, 0.1);
+        background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.1);
         color: var(--primary-text-color);
       }
 
       .tree-module .tree-action-btn:hover,
       .tree-layout-child .tree-action-btn:hover,
       .tree-deep-child .tree-action-btn:hover {
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.2);
       }
 
       .tree-module .tree-action-btn.add-btn:hover,
@@ -31883,7 +31887,7 @@ export class LayoutTab extends LitElement {
         background: var(--primary-color);
         border: none;
         border-radius: 4px;
-        color: white;
+        color: var(--text-primary-color, #fff);
         cursor: pointer;
         transition: all 0.2s ease;
         --mdc-icon-size: 16px;
@@ -31919,14 +31923,14 @@ export class LayoutTab extends LitElement {
       }
 
       .tree-overflow-btn:hover {
-        background: rgba(0, 0, 0, 0.1);
+        background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.1);
       }
 
-      .tree-row .tree-overflow-btn {
-        color: white;
+      .tree-row > .tree-node-content > .tree-node-header .tree-overflow-btn {
+        color: var(--text-primary-color, #fff);
       }
 
-      .tree-row .tree-overflow-btn:hover {
+      .tree-row > .tree-node-content > .tree-node-header .tree-overflow-btn:hover {
         background: rgba(255, 255, 255, 0.2);
       }
 
@@ -32483,18 +32487,18 @@ export class LayoutTab extends LitElement {
         color: #4caf50 !important;
       }
 
-      .tree-nested-layout .tree-node-drag-handle,
-      .tree-nested-layout .tree-collapse-btn,
-      .tree-nested-layout .tree-overflow-btn {
+      .tree-nested-layout > .tree-node-content > .tree-node-header .tree-node-drag-handle,
+      .tree-nested-layout > .tree-node-content > .tree-node-header .tree-collapse-btn,
+      .tree-nested-layout > .tree-node-content > .tree-node-header .tree-overflow-btn {
         color: white;
       }
 
-      .tree-nested-layout .tree-collapse-btn:hover,
-      .tree-nested-layout .tree-overflow-btn:hover {
+      .tree-nested-layout > .tree-node-content > .tree-node-header .tree-collapse-btn:hover,
+      .tree-nested-layout > .tree-node-content > .tree-node-header .tree-overflow-btn:hover {
         background: rgba(255, 255, 255, 0.2);
       }
 
-      .tree-nested-layout .tree-node-badge {
+      .tree-nested-layout > .tree-node-content > .tree-node-header .tree-node-badge {
         background: rgba(255, 255, 255, 0.2);
         color: white;
       }
@@ -32637,7 +32641,7 @@ export class LayoutTab extends LitElement {
       /* Visual indicator for collapsed state - show count badge more prominently */
       .tree-node.collapsed .tree-node-badge {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       /* Keep line solid even when collapsed - line still connects to siblings */
@@ -32732,7 +32736,7 @@ export class LayoutTab extends LitElement {
         .tree-overflow-btn {
           width: 32px;
           height: 32px;
-          background: rgba(0, 0, 0, 0.1);
+          background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.1);
         }
 
         /* Ensure overflow button is visible on modules and layout modules */
@@ -32742,7 +32746,7 @@ export class LayoutTab extends LitElement {
         .tree-deep-child .tree-overflow-btn,
         .tree-nested-layout .tree-overflow-btn,
         .tabs-section-child-overflow .tree-overflow-btn {
-          background: rgba(0, 0, 0, 0.15);
+          background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.15);
           color: var(--primary-text-color);
         }
 
@@ -32752,7 +32756,7 @@ export class LayoutTab extends LitElement {
         .tree-deep-child .tree-overflow-btn:hover,
         .tree-nested-layout .tree-overflow-btn:hover,
         .tabs-section-child-overflow .tree-overflow-btn:hover {
-          background: rgba(0, 0, 0, 0.25);
+          background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.25);
         }
 
         /* Reduce indent on mobile */
@@ -32829,7 +32833,7 @@ export class LayoutTab extends LitElement {
         align-items: center;
         justify-content: center;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         cursor: ns-resize;
         border-radius: 8px 0 0 0;
         z-index: 2;
@@ -33031,7 +33035,7 @@ export class LayoutTab extends LitElement {
         gap: 6px;
         padding: 8px 12px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         font-weight: 500;
         border-bottom: 2px solid var(--primary-color);
         position: relative;
@@ -33060,7 +33064,7 @@ export class LayoutTab extends LitElement {
       }
 
       .column-layout-text {
-        color: rgba(255, 255, 255, 0.9);
+        color: color-mix(in srgb, var(--text-primary-color, #fff) 90%, transparent);
         font-size: 13px;
         font-weight: 500;
         white-space: nowrap;
@@ -33096,7 +33100,7 @@ export class LayoutTab extends LitElement {
       }
 
       .row-name-top {
-        color: rgba(255, 255, 255, 0.9);
+        color: color-mix(in srgb, var(--text-primary-color, #fff) 90%, transparent);
         font-size: 14px;
         font-weight: 500;
         max-width: 20ch;
@@ -33111,7 +33115,7 @@ export class LayoutTab extends LitElement {
         justify-content: center;
         width: 20px;
         height: 20px;
-        color: rgba(255, 255, 255, 0.7);
+        color: color-mix(in srgb, var(--text-primary-color, #fff) 70%, transparent);
         cursor: grab;
         opacity: 0.8;
         transition: opacity 0.2s ease;
@@ -33132,7 +33136,7 @@ export class LayoutTab extends LitElement {
         border-radius: 4px;
         padding: 4px 8px;
         cursor: pointer;
-        color: white;
+        color: var(--text-primary-color, #fff);
         font-size: 14px;
         transition: all 0.2s ease;
         min-width: 32px;
@@ -33170,7 +33174,7 @@ export class LayoutTab extends LitElement {
       .row-collapse-btn {
         background: none;
         border: none;
-        color: rgba(255, 255, 255, 0.9);
+        color: color-mix(in srgb, var(--text-primary-color, #fff) 90%, transparent);
         cursor: pointer;
         padding: 3px;
         display: flex;
@@ -33198,7 +33202,7 @@ export class LayoutTab extends LitElement {
       .row-duplicate-btn {
         background: none;
         border: none;
-        color: rgba(255, 255, 255, 0.8);
+        color: color-mix(in srgb, var(--text-primary-color, #fff) 80%, transparent);
         cursor: pointer;
         padding: 0;
         border-radius: 4px;
@@ -33212,13 +33216,13 @@ export class LayoutTab extends LitElement {
 
       .row-duplicate-btn:hover {
         background: rgba(255, 255, 255, 0.2);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .row-add-column-btn {
         background: none;
         border: none;
-        color: rgba(255, 255, 255, 0.8);
+        color: color-mix(in srgb, var(--text-primary-color, #fff) 80%, transparent);
         cursor: pointer;
         padding: 0;
         border-radius: 4px;
@@ -33232,13 +33236,13 @@ export class LayoutTab extends LitElement {
 
       .row-add-column-btn:hover {
         background: rgba(255, 255, 255, 0.2);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .row-settings-btn {
         background: none;
         border: none;
-        color: rgba(255, 255, 255, 0.8);
+        color: color-mix(in srgb, var(--text-primary-color, #fff) 80%, transparent);
         cursor: pointer;
         padding: 0;
         border-radius: 4px;
@@ -33252,13 +33256,13 @@ export class LayoutTab extends LitElement {
 
       .row-settings-btn:hover {
         background: rgba(255, 255, 255, 0.2);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .row-col-sizing-btn {
         background: none;
         border: none;
-        color: rgba(255, 255, 255, 0.8);
+        color: color-mix(in srgb, var(--text-primary-color, #fff) 80%, transparent);
         cursor: pointer;
         padding: 0;
         border-radius: 4px;
@@ -33272,13 +33276,13 @@ export class LayoutTab extends LitElement {
 
       .row-col-sizing-btn:hover {
         background: rgba(255, 255, 255, 0.2);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .delete-row-btn {
         background: none;
         border: none;
-        color: rgba(255, 255, 255, 0.8);
+        color: color-mix(in srgb, var(--text-primary-color, #fff) 80%, transparent);
         cursor: pointer;
         padding: 0;
         border-radius: 4px;
@@ -33586,7 +33590,7 @@ export class LayoutTab extends LitElement {
         align-items: center;
         justify-content: center;
         background: var(--primary-color, #2196f3);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-radius: 6px;
         --mdc-icon-size: 20px;
       }
@@ -33652,7 +33656,7 @@ export class LayoutTab extends LitElement {
 
       .simplified-action-btn.edit-btn:hover {
         background: var(--primary-color, #2196f3);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .simplified-action-btn.duplicate-btn {
@@ -34062,7 +34066,7 @@ export class LayoutTab extends LitElement {
       }
       .shortcode-dialog-copy {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         display: flex;
         align-items: center;
         gap: 6px;
@@ -34299,13 +34303,13 @@ export class LayoutTab extends LitElement {
       .module-type-btn:hover {
         border-color: var(--primary-color);
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       /* Ensure text elements are white on hover */
       .module-type-btn:hover .module-title,
       .module-type-btn:hover .module-description {
-        color: white !important;
+        color: var(--text-primary-color, #fff) !important;
       }
 
       .module-type-btn ha-icon {
@@ -34317,12 +34321,12 @@ export class LayoutTab extends LitElement {
         align-items: center;
         justify-content: center;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-radius: 8px;
       }
 
       .module-type-btn:hover ha-icon {
-        background: white;
+        background: var(--text-primary-color, #fff);
         color: var(--primary-color);
       }
 
@@ -34484,13 +34488,13 @@ export class LayoutTab extends LitElement {
       .content-modules .module-type-btn.content-module:hover {
         border-color: var(--primary-color);
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       /* Ensure content module text is white on hover */
       .content-modules .module-type-btn.content-module:hover .module-title,
       .content-modules .module-type-btn.content-module:hover .module-description {
-        color: white !important;
+        color: var(--text-primary-color, #fff) !important;
       }
 
       /* Column Layout Selector Popup */
@@ -34538,11 +34542,11 @@ export class LayoutTab extends LitElement {
 
       .breakpoint-tab.active {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .breakpoint-tab.active ha-icon {
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .breakpoint-tab ha-icon {
@@ -34571,7 +34575,7 @@ export class LayoutTab extends LitElement {
       }
 
       .breakpoint-tab.active .override-dot {
-        background: white;
+        background: var(--text-primary-color, #fff);
       }
 
       /* Breakpoint Info Bar */
@@ -34708,7 +34712,7 @@ export class LayoutTab extends LitElement {
         gap: 8px;
         padding: 10px 20px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border: none;
         border-radius: 8px;
         cursor: pointer;
@@ -34771,7 +34775,7 @@ export class LayoutTab extends LitElement {
         top: 4px;
         right: 4px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         font-size: 8px;
         font-weight: 600;
         padding: 2px 6px;
@@ -34873,7 +34877,7 @@ export class LayoutTab extends LitElement {
         width: 100%;
         padding: 12px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border: none;
         border-radius: 4px;
         cursor: pointer;
@@ -35085,7 +35089,7 @@ export class LayoutTab extends LitElement {
 
       .panel-back-btn:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .panel-back-btn ha-icon {
@@ -35478,7 +35482,7 @@ export class LayoutTab extends LitElement {
 
       .duplicate-button:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .delete-button {
@@ -35852,7 +35856,7 @@ export class LayoutTab extends LitElement {
 
       .design-subtab.active {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       /* Settings Sections */
@@ -35964,7 +35968,7 @@ export class LayoutTab extends LitElement {
 
       .alignment-btn.active {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-color: var(--primary-color);
       }
 
@@ -36208,7 +36212,7 @@ export class LayoutTab extends LitElement {
       .alignment-btn.active,
       .format-btn.active {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-color: var(--primary-color);
       }
 
@@ -36232,13 +36236,13 @@ export class LayoutTab extends LitElement {
 
       .position-btn:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-color: var(--primary-color);
       }
 
       .position-btn.active {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-color: var(--primary-color);
       }
 
@@ -36275,7 +36279,7 @@ export class LayoutTab extends LitElement {
         width: 32px;
         height: 32px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -36378,7 +36382,7 @@ export class LayoutTab extends LitElement {
         gap: 8px;
         padding: 8px 16px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border: none;
         border-radius: 8px;
         cursor: pointer;
@@ -37490,7 +37494,7 @@ export class LayoutTab extends LitElement {
 
       .layout-child-simplified-module.pagebreak-module .layout-child-icon {
         background: var(--primary-color, #03a9f4);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-radius: 4px;
         padding: 4px;
       }
@@ -37758,12 +37762,12 @@ export class LayoutTab extends LitElement {
 
       .layout-child-action-btn.edit-btn:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .layout-child-action-btn.duplicate-btn:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .layout-child-action-btn.delete-btn:hover {
@@ -37912,7 +37916,7 @@ export class LayoutTab extends LitElement {
       .category-btn.active {
         background: var(--primary-color);
         border-color: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .category-btn ha-icon {
@@ -38081,7 +38085,7 @@ export class LayoutTab extends LitElement {
 
       .retry-btn:hover,
       .refresh-btn:hover {
-        background: rgba(0, 0, 0, 0.1);
+        background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.1);
         transform: scale(1.1);
       }
 
@@ -38157,13 +38161,13 @@ export class LayoutTab extends LitElement {
 
       .preset-header .origin-badge.default {
         background: rgba(var(--rgb-primary-color), 0.9);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border: 1px solid rgba(var(--rgb-primary-color), 1);
       }
 
       .preset-header .origin-badge.builtin {
         background: rgba(var(--rgb-secondary-text-color), 0.8);
-        color: white;
+        color: var(--card-background-color, #fff);
         border: 1px solid rgba(var(--rgb-secondary-text-color), 0.9);
       }
 
@@ -38396,7 +38400,7 @@ export class LayoutTab extends LitElement {
       /* Primary button (Add) */
       .add-preset-btn.primary {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border: none;
       }
 
@@ -38416,7 +38420,7 @@ export class LayoutTab extends LitElement {
 
       .read-more-btn.secondary:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         transform: translateY(-1px);
       }
 
@@ -38698,7 +38702,7 @@ export class LayoutTab extends LitElement {
       .row-remap-entities-btn {
         background: none;
         border: none;
-        color: rgba(255, 255, 255, 0.8);
+        color: color-mix(in srgb, var(--text-primary-color, #fff) 80%, transparent);
         cursor: pointer;
         padding: 0;
         border-radius: 4px;
@@ -38719,7 +38723,7 @@ export class LayoutTab extends LitElement {
       .row-favorite-btn {
         background: none;
         border: none;
-        color: rgba(255, 255, 255, 0.8);
+        color: color-mix(in srgb, var(--text-primary-color, #fff) 80%, transparent);
         cursor: pointer;
         padding: 0;
         border-radius: 4px;
@@ -38739,7 +38743,7 @@ export class LayoutTab extends LitElement {
       .row-export-btn {
         background: none;
         border: none;
-        color: rgba(255, 255, 255, 0.8);
+        color: color-mix(in srgb, var(--text-primary-color, #fff) 80%, transparent);
         cursor: pointer;
         padding: 0;
         border-radius: 4px;
@@ -38766,7 +38770,7 @@ export class LayoutTab extends LitElement {
       .row-more-btn {
         background: none;
         border: none;
-        color: rgba(255, 255, 255, 0.8);
+        color: color-mix(in srgb, var(--text-primary-color, #fff) 80%, transparent);
         cursor: pointer;
         padding: 4px;
         border-radius: 4px;
@@ -38775,7 +38779,7 @@ export class LayoutTab extends LitElement {
 
       .row-more-btn:hover {
         background: rgba(255, 255, 255, 0.2);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       /* Ensure menu appears above everything */
@@ -39136,7 +39140,7 @@ export class LayoutTab extends LitElement {
         align-items: center;
         justify-content: center;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-radius: 8px;
         flex-shrink: 0;
       }
@@ -39176,7 +39180,7 @@ export class LayoutTab extends LitElement {
 
       .search-result-tier.standard {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .search-result-tier.pro {
@@ -39238,7 +39242,7 @@ export class LayoutTab extends LitElement {
       .clear-search-btn-large {
         padding: 12px 24px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border: none;
         border-radius: 8px;
         font-size: 14px;

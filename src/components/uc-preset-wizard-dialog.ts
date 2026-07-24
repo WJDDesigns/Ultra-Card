@@ -323,7 +323,7 @@ export class UcPresetWizardDialog extends LitElement {
     }
     .field-icon ha-icon {
       --mdc-icon-size: 20px;
-      color: #fff;
+      color: var(--text-primary-color, #fff);
     }
     .field-meta {
       flex: 1;

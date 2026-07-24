@@ -219,7 +219,7 @@ export class UltraTabsModule extends BaseUltraModule {
         .orientation-btn.active,
         .style-btn.active {
           background: var(--primary-color);
-          color: white;
+          color: var(--text-primary-color, #fff);
           border-color: var(--primary-color);
         }
       </style>

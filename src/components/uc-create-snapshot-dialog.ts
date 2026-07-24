@@ -289,7 +289,7 @@ export class UcCreateSnapshotDialog extends LitElement {
         gap: 8px;
         padding: 12px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-radius: 4px;
         font-size: 13px;
       }

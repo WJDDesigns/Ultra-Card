@@ -491,11 +491,11 @@ export class UcModulesSelectorTab extends LitElement {
     .module-type-btn:hover {
       border-color: var(--primary-color);
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, white);
     }
     .module-type-btn:hover .module-title,
     .module-type-btn:hover .module-description {
-      color: white !important;
+      color: var(--text-primary-color, white) !important;
     }
     .module-type-btn ha-icon {
       font-size: 32px;
@@ -506,11 +506,11 @@ export class UcModulesSelectorTab extends LitElement {
       align-items: center;
       justify-content: center;
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, white);
       border-radius: 8px;
     }
     .module-type-btn:hover ha-icon {
-      background: white;
+      background: var(--text-primary-color, white);
       color: var(--primary-color);
     }
     .module-info {
@@ -561,11 +561,11 @@ export class UcModulesSelectorTab extends LitElement {
     .content-modules .module-type-btn.content-module:hover {
       border-color: var(--primary-color);
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, white);
     }
     .content-modules .module-type-btn.content-module:hover .module-title,
     .content-modules .module-type-btn.content-module:hover .module-description {
-      color: white !important;
+      color: var(--text-primary-color, white) !important;
     }
     .search-bar-container {
       padding: 16px;
@@ -669,7 +669,7 @@ export class UcModulesSelectorTab extends LitElement {
       align-items: center;
       justify-content: center;
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, white);
       border-radius: 8px;
       flex-shrink: 0;
     }
@@ -703,7 +703,7 @@ export class UcModulesSelectorTab extends LitElement {
     }
     .search-result-tier.standard {
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, white);
     }
     .search-result-tier.pro {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -750,7 +750,7 @@ export class UcModulesSelectorTab extends LitElement {
     .clear-search-btn-large {
       padding: 12px 24px;
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, white);
       border: none;
       border-radius: 8px;
       font-size: 14px;

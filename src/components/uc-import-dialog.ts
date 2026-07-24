@@ -711,7 +711,7 @@ export class UcImportDialog extends LitElement {
 
     .import-btn {
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, #fff);
     }
 
     .import-btn:hover:not(:disabled) {

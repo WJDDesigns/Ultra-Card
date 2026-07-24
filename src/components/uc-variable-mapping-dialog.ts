@@ -428,7 +428,7 @@ export class UcVariableMappingDialog extends LitElement {
 
       .confirm-btn {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .confirm-btn:hover {

@@ -434,7 +434,7 @@ export class UcSimpleEntityMapper {
         
         .bulk-btn:hover {
           background: var(--primary-color);
-          color: white;
+          color: var(--text-primary-color, #fff);
           border-color: var(--primary-color);
         }
         
@@ -488,12 +488,12 @@ export class UcSimpleEntityMapper {
         
         .entity-domain {
           background: var(--primary-color);
-          color: white;
+          color: var(--text-primary-color, #fff);
         }
-        
+
         .entity-module-type {
           background: var(--accent-color, #ff9800);
-          color: white;
+          color: var(--text-primary-color, #fff);
           text-transform: capitalize;
         }
         
@@ -525,9 +525,9 @@ export class UcSimpleEntityMapper {
           padding: 16px;
           border-radius: 8px;
           background: var(--primary-color);
-          color: white;
+          color: var(--text-primary-color, #fff);
         }
-        
+
         .summary p {
           margin: 0;
           font-size: 14px;
@@ -562,7 +562,7 @@ export class UcSimpleEntityMapper {
         
         .dialog-btn.primary {
           background: var(--primary-color);
-          color: white;
+          color: var(--text-primary-color, #fff);
         }
         
         .dialog-btn.primary:hover {

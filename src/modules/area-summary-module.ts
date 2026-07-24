@@ -1359,7 +1359,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
       .uc-ar-skel-line {
         height: 14px;
         border-radius: 8px;
-        background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12), rgba(0,0,0,0.06));
+        background: linear-gradient(90deg, rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06), rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.12), rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06));
         background-size: 200% 100%;
         animation: ucArShimmer 1.2s ease-in-out infinite;
         margin-bottom: 10px;
@@ -1370,7 +1370,7 @@ export class UltraAreaSummaryModule extends BaseUltraModule {
         width: 88px;
         height: 88px;
         border-radius: 50%;
-        background: rgba(0,0,0,0.05);
+        background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.05);
         animation: ucArShimmer 1.2s ease-in-out infinite;
       }
       @keyframes ucArShimmer {

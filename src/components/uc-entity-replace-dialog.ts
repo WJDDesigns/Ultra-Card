@@ -240,7 +240,7 @@ export class UcEntityReplaceDialog extends LitElement {
 
     .btn-primary {
       background: var(--primary-color, #03a9f4);
-      color: #fff;
+      color: var(--text-primary-color, #fff);
     }
 
     .btn-primary:hover:not(:disabled) {

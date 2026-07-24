@@ -456,7 +456,7 @@ export class UcBackupHistoryModal extends LitElement {
         margin-top: 16px;
         padding: 8px 16px;
         background: var(--primary-color);
-        color: var(--text-primary-color);
+        color: var(--text-primary-color, #fff);
         border: none;
         border-radius: 4px;
         cursor: pointer;
@@ -520,7 +520,7 @@ export class UcBackupHistoryModal extends LitElement {
 
       .snapshot-badge {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .auto-badge {
@@ -580,13 +580,13 @@ export class UcBackupHistoryModal extends LitElement {
 
       .action-button:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-color: var(--primary-color);
       }
 
       .action-button.primary {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-color: var(--primary-color);
       }
 
@@ -629,13 +629,13 @@ export class UcBackupHistoryModal extends LitElement {
 
       .page-button:hover:not(:disabled) {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-color: var(--primary-color);
       }
 
       .page-button.active {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border-color: var(--primary-color);
       }
 

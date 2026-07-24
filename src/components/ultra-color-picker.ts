@@ -1462,7 +1462,7 @@ export class UltraColorPicker extends LitElement {
         justify-content: center;
         padding: 8px 12px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         border: none;
         border-radius: 6px;
         cursor: pointer;
@@ -1684,7 +1684,8 @@ export class UltraColorPicker extends LitElement {
         transform: translate(-50%, -50%);
         font-size: 12px;
         font-weight: bold;
-        color: var(--primary-text-color);
+        /* Fixed dark text + white halo stays readable over any swatch color in both themes */
+        color: #212121;
         text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
       }
 
@@ -1712,7 +1713,8 @@ export class UltraColorPicker extends LitElement {
         transform: translate(-50%, -50%);
         font-size: 14px;
         font-weight: bold;
-        color: var(--primary-text-color);
+        /* Fixed dark text + white halo stays readable over the light checkerboard in both themes */
+        color: #212121;
         text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
       }
 

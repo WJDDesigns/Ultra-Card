@@ -2267,18 +2267,18 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         width: 52px;
         height: 52px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .mp-control-btn-large:hover {
         background: var(--primary-color);
         filter: brightness(1.1);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .mp-control-btn-large ha-icon {
         --mdc-icon-size: 28px;
-        color: white;
+        color: var(--text-primary-color, #fff);
         display: flex;
       }
 

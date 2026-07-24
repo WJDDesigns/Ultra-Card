@@ -655,7 +655,7 @@ export class UltraVideoBgModule extends BaseUltraModule {
         <a
           href="https://github.com/WJDDesigns/ultra-card-connect"
           target="_blank"
-          style="display: inline-block; padding: 12px 24px; background: var(--primary-color); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;"
+          style="display: inline-block; padding: 12px 24px; background: var(--primary-color); color: var(--text-primary-color, #fff); text-decoration: none; border-radius: 8px; font-weight: 600;"
         >
           Get Ultra Card Connect
         </a>

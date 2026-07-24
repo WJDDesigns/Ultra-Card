@@ -362,7 +362,7 @@ export class UcFavoriteColorsManager extends LitElement {
 
       .add-btn {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .add-btn:hover:not(:disabled) {

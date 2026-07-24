@@ -451,12 +451,12 @@ export class UcSnapshotRestoreDialog extends LitElement {
     }
 
     .btn-secondary:hover:not(:disabled) {
-      background: #e5e7eb;
+      background: var(--border);
     }
 
     .btn-primary {
       background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-      color: white;
+      color: var(--text-primary-color, #fff);
       border: none;
     }
 

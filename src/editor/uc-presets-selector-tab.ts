@@ -291,7 +291,7 @@ export class UcPresetsSelectorTab extends LitElement {
     .category-btn.active {
       background: var(--primary-color);
       border-color: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, white);
     }
     .presets-header {
       display: flex;
@@ -371,12 +371,12 @@ export class UcPresetsSelectorTab extends LitElement {
       color: white;
     }
     .origin-badge.default {
-      background: rgba(var(--rgb-primary-color), 0.9);
-      color: white;
+      background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.9);
+      color: var(--text-primary-color, white);
     }
     .origin-badge.builtin {
-      background: rgba(var(--rgb-secondary-text-color), 0.8);
-      color: white;
+      background: rgba(var(--rgb-secondary-text-color, 114, 114, 114), 0.8);
+      color: var(--card-background-color, white);
     }
     .new-badge {
       padding: 4px 10px;
@@ -528,7 +528,7 @@ export class UcPresetsSelectorTab extends LitElement {
     }
     .add-preset-btn.primary {
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, white);
     }
     .read-more-btn.secondary {
       background: transparent;
@@ -694,7 +694,7 @@ export class UcPresetsSelectorTab extends LitElement {
       margin-top: 12px;
       padding: 8px 16px;
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, white);
       border: none;
       border-radius: 6px;
       cursor: pointer;
@@ -934,7 +934,7 @@ export class UcPresetsSelectorTab extends LitElement {
                                   return html`
                                     <ha-icon
                                       icon="mdi:star${filled ? '' : half ? '-half-full' : '-outline'}"
-                                      style="color: ${filled || half ? '#ffc107' : '#666'}; --mdc-icon-size: 14px;"
+                                      style="color: ${filled || half ? '#ffc107' : 'var(--secondary-text-color, #666)'}; --mdc-icon-size: 14px;"
                                     ></ha-icon>
                                   `;
                                 })}

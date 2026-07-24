@@ -805,7 +805,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
             transition: color 0.2s ease;
           }
           .bar-individual-control.active ha-icon {
-            color: white;
+            color: var(--text-primary-color, #fff);
           }
           .bar-individual-control.inactive ha-icon {
             color: var(--secondary-text-color);
@@ -915,7 +915,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
             width: 100%;
             padding: 12px;
             background: var(--primary-color);
-            color: white;
+            color: var(--text-primary-color, #fff);
             border: none;
             border-radius: 8px;
             font-weight: 600;

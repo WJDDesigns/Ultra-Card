@@ -772,7 +772,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
                     <button
                       type="button"
                       class="help-btn"
-                      style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                      style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:var(--text-primary-color, #fff);cursor:pointer;border-radius:50%;line-height:0;"
                       title="${localize(
                         'editor.status_summary.template_cheatsheet',
                         lang,
@@ -790,7 +790,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
                     >
                       <ha-icon
                         icon="mdi:help-circle"
-                        style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"
+                        style="--mdc-icon-size:18px;width:18px;height:18px;color:var(--text-primary-color, #fff);"
                       ></ha-icon>
                     </button>
                   </div>
@@ -1226,7 +1226,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
                         <button
                           type="button"
                           class="help-btn"
-                          style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                          style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:var(--text-primary-color, #fff);cursor:pointer;border-radius:50%;line-height:0;"
                           title="${localize(
                             'editor.status_summary.template_cheatsheet',
                             lang,
@@ -1244,7 +1244,7 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
                         >
                           <ha-icon
                             icon="mdi:help-circle"
-                            style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"
+                            style="--mdc-icon-size:18px;width:18px;height:18px;color:var(--text-primary-color, #fff);"
                           ></ha-icon>
                         </button>
                       </div>

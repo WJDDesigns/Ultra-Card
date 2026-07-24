@@ -1132,7 +1132,7 @@ export class UltraCardEditor extends LitElement {
                           </label>
                           <button
                             class="help-btn"
-                            style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                            style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:var(--text-primary-color, #fff);cursor:pointer;border-radius:50%;line-height:0;"
                             title="${localize(
                               'editor.appearance.template_cheatsheet',
                               lang,
@@ -1148,7 +1148,7 @@ export class UltraCardEditor extends LitElement {
                               );
                             }}
                           >
-                            <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"></ha-icon>
+                            <ha-icon icon="mdi:help-circle" style="--mdc-icon-size:18px;width:18px;height:18px;color:var(--text-primary-color, #fff);"></ha-icon>
                           </button>
                         </div>
                         <div class="setting-description" style="margin-bottom:12px;">
@@ -2378,7 +2378,7 @@ export class UltraCardEditor extends LitElement {
       }
 
       .hub-discovery-dismiss:hover {
-        background: rgba(0, 0, 0, 0.06);
+        background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06);
         color: var(--primary-text-color);
       }
 
@@ -2480,7 +2480,7 @@ export class UltraCardEditor extends LitElement {
 
       .fullscreen-exit-btn:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
       }
 
       .fullscreen-exit-btn ha-icon {
@@ -2500,10 +2500,10 @@ export class UltraCardEditor extends LitElement {
         border: none;
         border-radius: 12px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
         padding: 12px 24px;
         font-weight: 600;
-        box-shadow: 0 2px 8px rgba(var(--rgb-primary-color), 0.3);
+        box-shadow: 0 2px 8px rgba(var(--rgb-primary-color, 3, 169, 244), 0.3);
       }
 
       .card-config.fullscreen .tab:hover {
@@ -2646,7 +2646,7 @@ export class UltraCardEditor extends LitElement {
 
       .card-config.fullscreen .fullscreen-toggle:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
         border-color: var(--primary-color);
         transform: translateX(-2px);
       }
@@ -2779,12 +2779,12 @@ export class UltraCardEditor extends LitElement {
 
       .cs-accordion-header:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
       }
 
       .cs-accordion-header.expanded {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
         border-radius: 10px 10px 0 0;
       }
 
@@ -2919,7 +2919,7 @@ export class UltraCardEditor extends LitElement {
       .file-upload-button:hover {
         border-color: var(--primary-color);
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
       }
 
       .button-content {
@@ -3017,7 +3017,7 @@ export class UltraCardEditor extends LitElement {
 
       .reset-btn:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
         border-color: var(--primary-color);
         transform: scale(1.05);
       }
@@ -3352,7 +3352,7 @@ export class UltraCardEditor extends LitElement {
         height: 40px;
         border-radius: 50%;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -3752,7 +3752,7 @@ export class UltraCardEditor extends LitElement {
       }
 
       .integration-not-installed .integration-button {
-        background-color: #f5f5f5;
+        background-color: var(--secondary-background-color, #f5f5f5);
         color: var(--primary-text-color);
         border: 1px solid var(--divider-color);
       }
@@ -4008,7 +4008,7 @@ export class UltraCardEditor extends LitElement {
         margin-top: 12px;
         padding: 10px 20px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
         text-decoration: none;
         border-radius: 8px;
         font-weight: 500;
@@ -4024,7 +4024,7 @@ export class UltraCardEditor extends LitElement {
       .install-integration-link ha-icon {
         font-size: 18px;
         margin: 0;
-        color: white;
+        color: var(--text-primary-color, white);
       }
 
       .user-card {
@@ -4137,7 +4137,7 @@ export class UltraCardEditor extends LitElement {
 
       .header-icon ha-icon {
         --mdc-icon-size: 24px;
-        color: white;
+        color: var(--text-primary-color, white);
       }
 
       .header-content h3 {
@@ -4551,7 +4551,7 @@ export class UltraCardEditor extends LitElement {
 
       .ultra-btn-primary {
         background: linear-gradient(135deg, var(--primary-color) 0%, #00796b 100%);
-        color: white;
+        color: var(--text-primary-color, white);
         box-shadow: 0 4px 12px rgba(3, 169, 244, 0.3);
       }
 
@@ -4592,7 +4592,7 @@ export class UltraCardEditor extends LitElement {
 
       .ultra-btn-view-backups:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(3, 169, 244, 0.3);
       }
@@ -5657,7 +5657,7 @@ export class UltraCardEditor extends LitElement {
 
           .header-icon ha-icon {
             --mdc-icon-size: 28px;
-            color: white;
+            color: var(--text-primary-color, white);
           }
 
           .header-text h3 {
@@ -5770,11 +5770,11 @@ export class UltraCardEditor extends LitElement {
 
           .status-detail.running {
             background: var(--primary-color, #03a9f4);
-            color: white;
+            color: var(--text-primary-color, white);
           }
 
           .status-detail.running .detail-value {
-            color: white;
+            color: var(--text-primary-color, white);
           }
 
           .detail-icon {
@@ -5797,7 +5797,7 @@ export class UltraCardEditor extends LitElement {
           }
 
           .status-detail.running .detail-icon ha-icon {
-            color: white;
+            color: var(--text-primary-color, white);
           }
 
           .detail-content {
@@ -5839,7 +5839,7 @@ export class UltraCardEditor extends LitElement {
             font-size: 15px;
             font-weight: 600;
             background: linear-gradient(135deg, var(--primary-color, #03a9f4) 0%, #0288d1 100%);
-            color: white;
+            color: var(--text-primary-color, white);
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -6095,7 +6095,7 @@ export class UltraCardEditor extends LitElement {
 
           .pro-setting-item .setting-icon ha-icon {
             --mdc-icon-size: 24px;
-            color: white;
+            color: var(--text-primary-color, white);
           }
 
           .pro-setting-item .setting-content {

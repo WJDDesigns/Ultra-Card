@@ -1677,7 +1677,7 @@ export class UltraPopupModule extends BaseUltraModule {
           `
         )}
         <button
-          style="margin-top: 8px; padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
+          style="margin-top: 8px; padding: 8px 16px; background: var(--primary-color); color: var(--text-primary-color, #fff); border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
           @click=${() => {
             const updated = { ...stateColors, new_state: 'gray' };
             onUpdate(updated);
@@ -2287,7 +2287,7 @@ export class UltraPopupModule extends BaseUltraModule {
                             )}
                           </div>
                           <div
-                            style="font-size: 12px; color: var(--secondary-text-color); font-style: italic; padding: 8px; background: rgba(0, 0, 0, 0.1); border-radius: 4px;"
+                            style="font-size: 12px; color: var(--secondary-text-color); font-style: italic; padding: 8px; background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06); border-radius: 4px;"
                           >
                             <strong>Tip:</strong> ${unsafeHTML(
                               localize(

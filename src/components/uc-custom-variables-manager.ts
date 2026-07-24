@@ -962,7 +962,7 @@ export class UcCustomVariablesManager extends LitElement {
 
       .add-btn {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
       }
 
       .add-btn:hover:not(:disabled) {
@@ -1357,7 +1357,7 @@ export class UcCustomVariablesManager extends LitElement {
         height: 32px;
         border-radius: 6px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, #fff);
         display: flex;
         align-items: center;
         justify-content: center;

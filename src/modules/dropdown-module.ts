@@ -1100,7 +1100,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             gap: 8px; 
             padding: 8px 12px;
             background: var(--primary-color);
-            color: white;
+            color: var(--text-primary-color, #fff);
             border-radius: 6px;
             font-size: 14px;
             font-weight: 600;
@@ -1109,7 +1109,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             max-width: 200px;
             transform: rotate(2deg);
           ">
-            <ha-icon icon="mdi:drag" style="color: white; font-size: 16px;"></ha-icon>
+            <ha-icon icon="mdi:drag" style="color: var(--text-primary-color, #fff); font-size: 16px;"></ha-icon>
             <span>${escapeHtml(optionLabel)}</span>
           </div>
         `;

@@ -1066,8 +1066,8 @@ export class UcSnapshotHistoryModal extends LitElement {
     }
 
     .badge.auto {
-      background: #e0e0e0;
-      color: #666;
+      background: var(--secondary-background-color, #e0e0e0);
+      color: var(--secondary-text-color, #666);
     }
 
     .badge.manual {
@@ -1148,7 +1148,7 @@ export class UcSnapshotHistoryModal extends LitElement {
 
     .btn-primary {
       background: var(--primary-color, #03a9f4);
-      color: white;
+      color: var(--text-primary-color, #fff);
     }
 
     .btn-primary:hover {

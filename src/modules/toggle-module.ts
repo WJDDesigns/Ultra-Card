@@ -884,7 +884,7 @@ export class UltraToggleModule extends BaseUltraModule {
                   <button
                     type="button"
                     class="help-btn"
-                    style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:#fff;cursor:pointer;border-radius:50%;line-height:0;"
+                    style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;background:var(--primary-color, #03a9f4);border:none;color:var(--text-primary-color, #fff);cursor:pointer;border-radius:50%;line-height:0;"
                     title="${localize('editor.toggle.template_cheatsheet', lang, 'Template cheatsheet')}"
                     @click=${(e: Event) => {
                       (e.currentTarget as HTMLElement).dispatchEvent(
@@ -898,7 +898,7 @@ export class UltraToggleModule extends BaseUltraModule {
                   >
                     <ha-icon
                       icon="mdi:help-circle"
-                      style="--mdc-icon-size:18px;width:18px;height:18px;color:#fff;"
+                      style="--mdc-icon-size:18px;width:18px;height:18px;color:var(--text-primary-color, #fff);"
                     ></ha-icon>
                   </button>
                 </div>
@@ -2117,7 +2117,7 @@ export class UltraToggleModule extends BaseUltraModule {
 
         .segmented-button.active {
           background: var(--primary-color);
-          color: white;
+          color: var(--text-primary-color, #fff);
           transform: scale(1.02);
         }
 

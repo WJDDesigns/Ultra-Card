@@ -350,7 +350,7 @@ export class UcFavoriteDialog extends LitElement {
 
     .save-btn {
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, #fff);
     }
 
     .save-btn:hover:not(:disabled) {

@@ -118,7 +118,7 @@ export class UcFavoritesSelectorTab extends LitElement {
       gap: 6px;
       padding: 8px 16px;
       background: var(--primary-color);
-      color: white;
+      color: var(--text-primary-color, white);
       border: none;
       border-radius: 6px;
       cursor: pointer;

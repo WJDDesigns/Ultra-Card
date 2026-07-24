@@ -221,7 +221,7 @@ const EXAMPLE_PRE_STYLE = `
 `;
 const USE_BTN_STYLE = `
   background: var(--primary-color);
-  color: white;
+  color: var(--text-primary-color, #fff);
   border: none;
   border-radius: 6px;
   padding: 6px 12px;
@@ -681,7 +681,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
           </div>
           <div
             class="field-description"
-            style="font-size: 11px; margin-top: 12px; padding: 8px; background: rgba(0,0,0,0.15); border-radius: 6px; color: var(--secondary-text-color); line-height: 1.4;"
+            style="font-size: 11px; margin-top: 12px; padding: 8px; background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.08); border-radius: 6px; color: var(--secondary-text-color); line-height: 1.4;"
           >
             <strong>Description JSON (Local Todo, etc.):</strong> You can put JSON in an item’s description to override display or define multiple modules. Object (e.g. <code>{"color": "#f00", "text": "Custom"}</code>) is merged into the row. Array of module configs shows multiple modules for that one item.
           </div>
@@ -1471,7 +1471,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
                 ['value | default("N/A")', 'Use fallback if value is undefined/none'],
                 ['A ~ B', 'Concatenate strings — equivalent to A + B'],
               ] as const).map(([k, v]) => html`
-                <div style="background: rgba(0,0,0,0.15); border-radius: 6px; padding: 8px 10px;">
+                <div style="background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.08); border-radius: 6px; padding: 8px 10px;">
                   <code style="font-size: 11px; color: var(--primary-color); font-family: 'Fira Code', Consolas, monospace; display: block; margin-bottom: 3px;">${k}</code>
                   <span style="font-size: 11px; color: var(--secondary-text-color);">${v}</span>
                 </div>
@@ -1485,7 +1485,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
             <div style="display: flex; flex-direction: column; gap: 8px;">
 
               <details style="border: 1px solid var(--divider-color); border-radius: 6px; overflow: hidden;">
-                <summary style="padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 600; background: rgba(0,0,0,0.1); color: var(--primary-text-color); list-style: none;">
+                <summary style="padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 600; background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06); color: var(--primary-text-color); list-style: none;">
                   text — plain text with optional color
                 </summary>
                 <pre style="${EXAMPLE_PRE_STYLE}">{'id': 'unique_id', 'type': 'text',
@@ -1495,7 +1495,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
               </details>
 
               <details style="border: 1px solid var(--divider-color); border-radius: 6px; overflow: hidden;">
-                <summary style="padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 600; background: rgba(0,0,0,0.1); color: var(--primary-text-color); list-style: none;">
+                <summary style="padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 600; background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06); color: var(--primary-text-color); list-style: none;">
                   icon — entity-linked icon with active/inactive states
                 </summary>
                 <pre style="${EXAMPLE_PRE_STYLE}">{'id': 'unique_id', 'type': 'icon',
@@ -1516,7 +1516,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
               </details>
 
               <details style="border: 1px solid var(--divider-color); border-radius: 6px; overflow: hidden;">
-                <summary style="padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 600; background: rgba(0,0,0,0.1); color: var(--primary-text-color); list-style: none;">
+                <summary style="padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: 600; background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.06); color: var(--primary-text-color); list-style: none;">
                   bar — horizontal progress bar
                 </summary>
                 <pre style="${EXAMPLE_PRE_STYLE}">{'id': 'unique_id', 'type': 'bar',
@@ -1539,7 +1539,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
                 ['display_mode', 'Always set to "always" unless using visibility conditions'],
                 ['display_conditions', 'Always set to [] unless using visibility conditions'],
               ] as const).map(([k, v]) => html`
-                <div style="background: rgba(0,0,0,0.15); border-radius: 6px; padding: 8px 10px;">
+                <div style="background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.08); border-radius: 6px; padding: 8px 10px;">
                   <code style="font-size: 11px; color: var(--primary-color); font-family: 'Fira Code', Consolas, monospace; display: block; margin-bottom: 3px;">${k}</code>
                   <span style="font-size: 11px; color: var(--secondary-text-color);">${v}</span>
                 </div>

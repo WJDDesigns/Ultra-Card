@@ -4508,7 +4508,7 @@ export class GlobalDesignTab extends LitElement {
       .toolbar-button:hover:not(:disabled) {
         border-color: var(--primary-color);
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
         transform: translateY(-1px);
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
@@ -4521,9 +4521,9 @@ export class GlobalDesignTab extends LitElement {
       .toolbar-button:disabled {
         opacity: 0.5;
         cursor: not-allowed;
-        background: var(--disabled-background-color, #f5f5f5);
-        color: var(--disabled-text-color, #999);
-        border-color: var(--disabled-border-color, #ddd);
+        background: var(--disabled-background-color, var(--secondary-background-color, #f5f5f5));
+        color: var(--disabled-text-color, var(--secondary-text-color, #999));
+        border-color: var(--disabled-border-color, var(--divider-color, #ddd));
       }
 
       .toolbar-button ha-icon {
@@ -4736,12 +4736,12 @@ export class GlobalDesignTab extends LitElement {
 
       .accordion-header:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
       }
 
       .accordion-header.expanded {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
         border-radius: 8px 8px 0 0;
       }
 
@@ -4791,7 +4791,7 @@ export class GlobalDesignTab extends LitElement {
 
       .accordion-header:not(.expanded) .reset-button:hover,
       .accordion-header:not(.expanded) .expand-button:hover {
-        background: rgba(0, 0, 0, 0.1);
+        background: rgba(var(--rgb-primary-text-color, 0, 0, 0), 0.1);
       }
 
       .accordion-title {
@@ -4914,7 +4914,7 @@ export class GlobalDesignTab extends LitElement {
 
       .property-btn.active {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
         border-color: var(--primary-color);
       }
 
@@ -4958,7 +4958,7 @@ export class GlobalDesignTab extends LitElement {
 
       .lock-button.locked {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
         border-color: var(--primary-color);
       }
 
@@ -5084,7 +5084,7 @@ export class GlobalDesignTab extends LitElement {
         width: 40px;
         height: 32px;
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -5425,7 +5425,7 @@ export class GlobalDesignTab extends LitElement {
       .file-upload-button:hover {
         border-color: var(--primary-color);
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
       }
 
       .button-content {
@@ -5566,7 +5566,7 @@ export class GlobalDesignTab extends LitElement {
       }
 
       .attribute-value-dropdown-container {
-        background: white;
+        background: var(--card-background-color, white);
         padding: 12px;
         border-radius: 4px;
         border: 1px dashed var(--primary-color);
@@ -5626,7 +5626,7 @@ export class GlobalDesignTab extends LitElement {
       }
 
       .state-value-dropdown-container {
-        background: white;
+        background: var(--card-background-color, white);
         padding: 12px;
         border-radius: 4px;
         border: 1px dashed var(--info-color, #03a9f4);
@@ -5901,7 +5901,7 @@ export class GlobalDesignTab extends LitElement {
 
       .reset-btn:hover {
         background: var(--primary-color);
-        color: white;
+        color: var(--text-primary-color, white);
         border-color: var(--primary-color);
       }
 

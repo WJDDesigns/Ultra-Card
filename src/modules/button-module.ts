@@ -866,7 +866,7 @@ export class UltraButtonModule extends BaseUltraModule {
         )}
         <button
           class="add-state-color-btn"
-          style="margin-top: 8px; padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
+          style="margin-top: 8px; padding: 8px 16px; background: var(--primary-color); color: var(--text-primary-color, #fff); border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
           @click=${() => {
             const updated = { ...stateColors, new_state: 'gray' };
             onUpdate(updated);
