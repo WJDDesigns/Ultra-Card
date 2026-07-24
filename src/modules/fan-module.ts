@@ -113,7 +113,8 @@ export class UltraFanModule extends BaseUltraModule {
     const fan = module as FanModuleConfig;
     const errors = [...baseValidation.errors];
     if (module.type && module.type !== 'fan') errors.push('Module type must be fan');
-    if (!fan.entity?.trim()) errors.push(localize('editor.fan.error_entity', 'en', 'Select a fan entity'));
+    // No hass/lang available in validate() — plain English matches other modules' validators
+    if (!fan.entity?.trim()) errors.push('Select a fan entity');
     return { valid: errors.length === 0, errors };
   }
 

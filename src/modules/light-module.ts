@@ -820,8 +820,10 @@ export class UltraLightModule extends BaseUltraModule {
             hass,
             data: { confirm_actions: lightModule.confirm_actions ?? false },
             schema: [this.booleanField('confirm_actions')],
-            onChange: (e: CustomEvent) =>
-              updateModule({ confirm_actions: e.detail.value.confirm_actions }),
+            onChange: (e: CustomEvent) => {
+              updateModule({ confirm_actions: e.detail.value.confirm_actions });
+              this.triggerPreviewUpdate();
+            },
           },
           {
             title: 'Show Status Feedback',
@@ -829,8 +831,10 @@ export class UltraLightModule extends BaseUltraModule {
             hass,
             data: { show_feedback: lightModule.show_feedback ?? true },
             schema: [this.booleanField('show_feedback')],
-            onChange: (e: CustomEvent) =>
-              updateModule({ show_feedback: e.detail.value.show_feedback }),
+            onChange: (e: CustomEvent) => {
+              updateModule({ show_feedback: e.detail.value.show_feedback });
+              this.triggerPreviewUpdate();
+            },
           },
         ])}
       </div>
@@ -1758,6 +1762,7 @@ export class UltraLightModule extends BaseUltraModule {
           // No entities or no hass, import directly
           const newPresets = [...(lightModule.presets || []), ...importedPresets];
           updateModule({ presets: newPresets });
+          this.triggerPreviewUpdate();
 
           // Show success message
           const event = new CustomEvent('hass-notification', {
@@ -1826,6 +1831,7 @@ export class UltraLightModule extends BaseUltraModule {
         // Add mapped presets
         const newPresets = [...(lightModule.presets || []), ...mappedPresets];
         updateModule({ presets: newPresets });
+        this.triggerPreviewUpdate();
 
         // Show success message
         const event = new CustomEvent('hass-notification', {
@@ -1840,6 +1846,7 @@ export class UltraLightModule extends BaseUltraModule {
         // Cancel - add presets with original entities (no mappings)
         const newPresets = [...(lightModule.presets || []), ...importedPresets];
         updateModule({ presets: newPresets });
+        this.triggerPreviewUpdate();
 
         // Show success message
         const event = new CustomEvent('hass-notification', {
@@ -2175,6 +2182,7 @@ export class UltraLightModule extends BaseUltraModule {
     const presets = [...(lightModule.presets || [])];
     presets.splice(index, 1);
     updateModule({ presets });
+    this.triggerPreviewUpdate();
   }
 
   renderPreview(
@@ -2308,7 +2316,11 @@ export class UltraLightModule extends BaseUltraModule {
     return moduleWithDesign.background_color || 'var(--card-background-color)';
   }
 
-  private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
+  private getBackgroundImageCSS(
+    moduleWithDesign: any,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): string {
     if (moduleWithDesign.background_image_type === 'url' && moduleWithDesign.background_image) {
       return `url(${moduleWithDesign.background_image})`;
     }
@@ -2317,7 +2329,7 @@ export class UltraLightModule extends BaseUltraModule {
       moduleWithDesign.background_image_entity
     ) {
       const entityId =
-        this.resolveEntity(moduleWithDesign.background_image_entity) ||
+        this.resolveEntity(moduleWithDesign.background_image_entity, config) ||
         moduleWithDesign.background_image_entity;
       const entity = hass.states[entityId];
       if (entity && entity.attributes.entity_picture) {

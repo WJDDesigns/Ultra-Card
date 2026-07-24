@@ -1057,7 +1057,16 @@ export class UltraTabsModule extends BaseUltraModule {
               .defaultValue=${'transparent'}
               .hass=${hass}
               @value-changed=${(e: CustomEvent) => {
-                updateModule({ active_tab_border_color: e.detail.value });
+                const updates: Partial<TabsModule> = { active_tab_border_color: e.detail.value };
+                // A border color is invisible while width is 0, so give it a visible width
+                if (
+                  e.detail.value &&
+                  e.detail.value !== 'transparent' &&
+                  (tabsModule.tab_border_width ?? 0) === 0
+                ) {
+                  updates.tab_border_width = 1;
+                }
+                updateModule(updates);
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               }}
             ></ultra-color-picker>
@@ -1127,7 +1136,16 @@ export class UltraTabsModule extends BaseUltraModule {
               .defaultValue=${'transparent'}
               .hass=${hass}
               @value-changed=${(e: CustomEvent) => {
-                updateModule({ inactive_tab_border_color: e.detail.value });
+                const updates: Partial<TabsModule> = { inactive_tab_border_color: e.detail.value };
+                // A border color is invisible while width is 0, so give it a visible width
+                if (
+                  e.detail.value &&
+                  e.detail.value !== 'transparent' &&
+                  (tabsModule.tab_border_width ?? 0) === 0
+                ) {
+                  updates.tab_border_width = 1;
+                }
+                updateModule(updates);
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               }}
             ></ultra-color-picker>
@@ -1340,7 +1358,16 @@ export class UltraTabsModule extends BaseUltraModule {
               .defaultValue=${'transparent'}
               .hass=${hass}
               @value-changed=${(e: CustomEvent) => {
-                updateModule({ content_border_color: e.detail.value });
+                const updates: Partial<TabsModule> = { content_border_color: e.detail.value };
+                // A border color is invisible while width is 0, so give it a visible width
+                if (
+                  e.detail.value &&
+                  e.detail.value !== 'transparent' &&
+                  (tabsModule.content_border_width ?? 0) === 0
+                ) {
+                  updates.content_border_width = 1;
+                }
+                updateModule(updates);
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               }}
             ></ultra-color-picker>
@@ -1475,6 +1502,28 @@ export class UltraTabsModule extends BaseUltraModule {
     const hoverClass = this.getHoverEffectClass(module);
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
+    // Global tap/hold/double-tap actions on the container; the tab header is
+    // excluded so clicking a tab only switches tabs and never fires actions.
+    const gestureHandlers = this.createGestureHandlers(
+      tabsModule.id,
+      {
+        tap_action: tabsModule.tap_action,
+        hold_action: tabsModule.hold_action,
+        double_tap_action: tabsModule.double_tap_action,
+        entity: (tabsModule as any).entity,
+        module: tabsModule,
+      },
+      hass,
+      config,
+      ['.ultra-tabs-header']
+    );
+    const isActionConfigured = (action?: { action?: string }) =>
+      !!action && action.action !== 'nothing' && action.action !== 'default';
+    const hasModuleActions =
+      isActionConfigured(tabsModule.tap_action) ||
+      isActionConfigured(tabsModule.hold_action) ||
+      isActionConfigured(tabsModule.double_tap_action);
+
     return this.wrapWithAnimation(html`
       <style>
         .ultra-tabs-container {
@@ -1521,7 +1570,15 @@ export class UltraTabsModule extends BaseUltraModule {
         ${mobileIconsOnlyCSS}
       </style>
 
-      <div class="ultra-tabs-container ${uniqueContainerClass} ${hoverClass}" style="${designStyles}; ${containerStyles}">
+      <div
+        class="ultra-tabs-container ${uniqueContainerClass} ${hoverClass}"
+        style="${designStyles}; ${containerStyles}${hasModuleActions ? '; cursor: pointer' : ''}"
+        @pointerdown=${hasModuleActions ? gestureHandlers.onPointerDown : null}
+        @pointermove=${hasModuleActions ? gestureHandlers.onPointerMove : null}
+        @pointerup=${hasModuleActions ? gestureHandlers.onPointerUp : null}
+        @pointercancel=${hasModuleActions ? gestureHandlers.onPointerCancel : null}
+        @pointerleave=${hasModuleActions ? gestureHandlers.onPointerLeave : null}
+      >
         <!-- Tabs Header -->
         <div
           class="ultra-tabs-header"
@@ -1538,13 +1595,24 @@ export class UltraTabsModule extends BaseUltraModule {
         <div class="ultra-tabs-content" style="${contentStyles}">
           ${previewContext === 'live' || previewContext === 'ha-preview'
             ? activeSection
-              ? this._renderSectionContent(activeSection, hass, config, previewContext, lang)
+              ? html`
+                  <div
+                    class="ultra-tab-panel"
+                    role="tabpanel"
+                    id="${tabsModule.id}-panel-${activeSection.id}"
+                    aria-labelledby="${tabsModule.id}-tab-${activeSection.id}"
+                  >
+                    ${this._renderSectionContent(activeSection, hass, config, previewContext, lang)}
+                  </div>
+                `
               : ''
             : sections.map(
                 section => html`
                   <div
                     class="ultra-tab-panel"
                     role="tabpanel"
+                    id="${tabsModule.id}-panel-${section.id}"
+                    aria-labelledby="${tabsModule.id}-tab-${section.id}"
                     aria-hidden="${section.id !== activeTabId}"
                     style="${section.id === activeTabId ? '' : 'display: none;'}"
                   >
@@ -1590,6 +1658,8 @@ export class UltraTabsModule extends BaseUltraModule {
           : ''}"
         style="${buttonStyles}"
         role="tab"
+        id="${tabsModule.id}-tab-${section.id}"
+        aria-controls="${tabsModule.id}-panel-${section.id}"
         aria-selected="${isActive}"
         aria-label="${(section.title || 'Tab').trim() || 'Tab'}"
         tabindex="${isActive ? 0 : -1}"
@@ -1682,10 +1752,20 @@ export class UltraTabsModule extends BaseUltraModule {
           return ucModulePreviewService.renderModuleLoadingState(childModule);
         }
 
-        // Check visibility
+        // Check visibility (module-level conditions AND design-tab logic_*
+        // properties, matching horizontal/vertical/stack/accordion)
         logicService.setHass(hass);
+        const childWithDesign = childModule as CardModule & {
+          design?: Record<string, unknown>;
+        };
         const isVisible = logicService.evaluateModuleVisibility(childModule);
-        if (!isVisible) return '';
+        const globalLogicVisible = logicService.evaluateLogicProperties({
+          logic_entity: childWithDesign?.design?.logic_entity,
+          logic_attribute: childWithDesign?.design?.logic_attribute,
+          logic_operator: childWithDesign?.design?.logic_operator,
+          logic_value: childWithDesign?.design?.logic_value,
+        } as any);
+        if (!isVisible || !globalLogicVisible) return '';
 
         // Check Pro access for child modules
         const isProModule =

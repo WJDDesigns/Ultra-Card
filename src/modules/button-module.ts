@@ -894,15 +894,18 @@ export class UltraButtonModule extends BaseUltraModule {
       const trimmed = value.trim();
       if (trimmed === '') return null;
       const num = Number(trimmed);
-      return Number.isNaN(num) ? null : num;
+      return Number.isFinite(num) ? num : null;
     };
     const stateNum = toNumber(state);
-    if (stateNum !== null) {
-      for (const [key, color] of Object.entries(stateColors)) {
-        const keyNum = toNumber(key);
-        if (keyNum !== null && keyNum === stateNum) {
+    const stateLower = state.trim().toLowerCase();
+    for (const [key, color] of Object.entries(stateColors)) {
+      const keyNum = toNumber(key);
+      if (stateNum !== null && keyNum !== null) {
+        if (keyNum === stateNum) {
           return color;
         }
+      } else if (key.trim().toLowerCase() === stateLower) {
+        return color;
       }
     }
     return undefined;

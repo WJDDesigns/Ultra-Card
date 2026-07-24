@@ -29,16 +29,20 @@ export class UltraToggleModule extends BaseUltraModule {
   private _expandedTogglePoints: Set<string> = new Set();
   private _draggedItem: TogglePoint | null = null;
   private _hass: HomeAssistant | undefined;
-  private _activeTogglePointId: string | undefined;
+  // Keyed by module id: this handler instance is a singleton shared by every
+  // toggle module on the page, so clicked state must not leak across cards.
+  private _activeTogglePointIds: Map<string, string> = new Map();
   /**
    * Optimistic override set when the user clicks a toggle point while entity
    * tracking is enabled. Prevents the active state from flickering back to the
    * entity-derived point during the service-call round trip. Cleared once the
-   * tracked entity state actually changes or the window expires.
+   * tracked entity state actually changes or the window expires. Keyed by
+   * module id.
    */
-  private _optimisticActive:
-    | { pointId: string; timestamp: number; stateSignature: string }
-    | undefined;
+  private _optimisticActive: Map<
+    string,
+    { pointId: string; timestamp: number; stateSignature: string }
+  > = new Map();
   private static readonly OPTIMISTIC_ACTIVE_WINDOW_MS = 4000;
   private _actionFormChangeGuard: boolean = false;
   private _templateService: TemplateService | null = null;
@@ -685,7 +689,7 @@ export class UltraToggleModule extends BaseUltraModule {
 
           <div class="toggle-point-rows-container">
             ${toggleModule.toggle_points.map((point, index) =>
-              this.renderTogglePointRow(point, index, toggleModule, hass, updateModule)
+              this.renderTogglePointRow(point, index, toggleModule, hass, config, updateModule)
             )}
           </div>
 
@@ -706,6 +710,7 @@ export class UltraToggleModule extends BaseUltraModule {
     index: number,
     module: ToggleModule,
     hass: HomeAssistant,
+    config: UltraCardConfig,
     updateModule: (updates: Partial<ToggleModule>) => void
   ): TemplateResult {
     const isExpanded = this._expandedTogglePoints.has(point.id);
@@ -763,7 +768,7 @@ export class UltraToggleModule extends BaseUltraModule {
       ${isExpanded
         ? html`
             <div class="toggle-point-settings">
-              ${this.renderTogglePointConfig(point, index, module, hass, updateModule)}
+              ${this.renderTogglePointConfig(point, index, module, hass, config, updateModule)}
             </div>
           `
         : ''}
@@ -775,6 +780,7 @@ export class UltraToggleModule extends BaseUltraModule {
     index: number,
     module: ToggleModule,
     hass: HomeAssistant,
+    config: UltraCardConfig,
     updateModule: (updates: Partial<ToggleModule>) => void
   ): TemplateResult {
     const lang = hass?.locale?.language || 'en';
@@ -927,20 +933,21 @@ export class UltraToggleModule extends BaseUltraModule {
               <div
                 style="border-left: 3px solid var(--primary-color); padding-left: 12px; margin-top: 12px;"
               >
-                ${UcFormUtils.renderFieldSection(
-                  localize('editor.toggle.point_match_entity', lang, 'Match Entity'),
-                  localize('editor.toggle.point_match_entity_desc', lang, 'Entity to match'),
+                ${this.renderEntityPickerWithVariables(
                   hass,
-                  { match_entity: point.match_entity || '' },
-                  [UcFormUtils.entity('match_entity')],
-                  (e: CustomEvent) =>
-                    this.updateTogglePoint(
-                      index,
-                      { match_entity: e.detail.value.match_entity },
-                      module,
-                      updateModule
-                    )
+                  config,
+                  'match_entity',
+                  point.match_entity || '',
+                  (value: string) =>
+                    this.updateTogglePoint(index, { match_entity: value }, module, updateModule),
+                  undefined,
+                  localize('editor.toggle.point_match_entity', lang, 'Match Entity')
                 )}
+                <div
+                  style="font-size: 12px; color: var(--secondary-text-color); margin: 4px 0 12px; opacity: 0.8;"
+                >
+                  ${localize('editor.toggle.point_match_entity_desc', lang, 'Entity to match')}
+                </div>
                 ${UcFormUtils.renderFieldSection(
                   localize('editor.toggle.point_match_state', lang, 'Match State'),
                   localize(
@@ -1528,7 +1535,7 @@ export class UltraToggleModule extends BaseUltraModule {
       // (optimistic override) until the tracked entity state actually changes
       // or the optimistic window expires — otherwise the active state flickers
       // back to the stale entity-derived point during the service round trip.
-      const optimistic = this._optimisticActive;
+      const optimistic = this._optimisticActive.get(toggleModule.id);
       if (optimistic) {
         const expired =
           Date.now() - optimistic.timestamp > UltraToggleModule.OPTIMISTIC_ACTIVE_WINDOW_MS;
@@ -1536,24 +1543,29 @@ export class UltraToggleModule extends BaseUltraModule {
           this._trackingStateSignature(toggleModule, hass, config) !==
           optimistic.stateSignature;
         if (expired || stateChanged) {
-          this._optimisticActive = undefined;
+          this._optimisticActive.delete(toggleModule.id);
         }
       }
 
-      if (this._optimisticActive) {
-        activePointId = this._optimisticActive.pointId;
+      const activeOptimistic = this._optimisticActive.get(toggleModule.id);
+      if (activeOptimistic) {
+        activePointId = activeOptimistic.pointId;
       } else {
         activePointId = this.determineActiveTogglePoint(toggleModule, hass, config);
       }
       // Update the cached value so it stays in sync
-      this._activeTogglePointId = activePointId;
-    } else if (this._activeTogglePointId) {
+      if (activePointId) {
+        this._activeTogglePointIds.set(toggleModule.id, activePointId);
+      }
+    } else if (this._activeTogglePointIds.has(toggleModule.id)) {
       // No entity tracking - use the last clicked toggle point
-      activePointId = this._activeTogglePointId;
+      activePointId = this._activeTogglePointIds.get(toggleModule.id);
     } else {
       // No entity tracking and nothing clicked - default to first point
       activePointId = toggleModule.toggle_points[0]?.id;
-      this._activeTogglePointId = activePointId;
+      if (activePointId) {
+        this._activeTogglePointIds.set(toggleModule.id, activePointId);
+      }
     }
 
     // Render based on visual style
@@ -1878,15 +1890,15 @@ export class UltraToggleModule extends BaseUltraModule {
     event.stopPropagation();
 
     // Update active toggle point
-    this._activeTogglePointId = point.id;
+    this._activeTogglePointIds.set(module.id, point.id);
 
     // Keep the clicked point active as an optimistic override while waiting
     // for the tracked entity to confirm the new state (prevents flicker).
-    this._optimisticActive = {
+    this._optimisticActive.set(module.id, {
       pointId: point.id,
       timestamp: Date.now(),
       stateSignature: this._trackingStateSignature(module, hass),
-    };
+    });
 
     // Force immediate re-render to show the active state
     this.triggerPreviewUpdate(true);
@@ -2013,8 +2025,18 @@ export class UltraToggleModule extends BaseUltraModule {
           : ''}
         <div
           class="ios-toggle-track"
+          role="switch"
+          tabindex="0"
+          aria-checked="${!isPoint1Active ? 'true' : 'false'}"
+          aria-label="${module.title || 'Toggle'}"
           @click=${(e: Event) =>
             this.handleTogglePointClick(isPoint1Active ? point2 : point1, module, hass, e)}
+          @keydown=${(e: KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this.handleTogglePointClick(isPoint1Active ? point2 : point1, module, hass, e);
+            }
+          }}
         >
           <div class="ios-toggle-thumb"></div>
         </div>
@@ -2381,7 +2403,17 @@ export class UltraToggleModule extends BaseUltraModule {
               point => html`
                 <div
                   class="slider-marker ${activePointId === point.id ? 'active' : ''}"
+                  role="button"
+                  tabindex="0"
+                  aria-pressed="${activePointId === point.id ? 'true' : 'false'}"
+                  aria-label="${point.label}"
                   @click=${(e: Event) => this.handleTogglePointClick(point, module, hass, e)}
+                  @keydown=${(e: KeyboardEvent) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      this.handleTogglePointClick(point, module, hass, e);
+                    }
+                  }}
                 >
                   ${module.show_icons && point.icon
                     ? html`<ha-icon icon="${point.icon}"></ha-icon>`
@@ -2526,7 +2558,17 @@ export class UltraToggleModule extends BaseUltraModule {
             point => html`
               <div
                 class="timeline-point ${activePointId === point.id ? 'active' : ''}"
+                role="button"
+                tabindex="0"
+                aria-pressed="${activePointId === point.id ? 'true' : 'false'}"
+                aria-label="${point.label}"
                 @click=${(e: Event) => this.handleTogglePointClick(point, module, hass, e)}
+                @keydown=${(e: KeyboardEvent) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.handleTogglePointClick(point, module, hass, e);
+                  }
+                }}
               >
                 <div class="timeline-dot"></div>
                 ${module.show_icons && point.icon

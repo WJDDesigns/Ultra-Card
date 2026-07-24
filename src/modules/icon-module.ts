@@ -368,6 +368,9 @@ export class UltraIconModule extends BaseUltraModule {
 
     return html`
       ${this.injectUcFormStyles()}
+      <style>
+        ${this.getStyles()}
+      </style>
       <div class="module-general-settings icon-module-general-settings">
         <!-- Module-Wide Size Controls -->
         <div class="settings-section" style="margin-bottom: 32px;">
@@ -416,6 +419,100 @@ export class UltraIconModule extends BaseUltraModule {
               }
             )}
           </div>
+        </div>
+
+        <!-- Layout Controls -->
+        <div class="settings-section" style="margin-bottom: 32px;">
+          <div class="section-title">${localize('editor.icon.layout.title', lang, 'LAYOUT')}</div>
+          <div class="section-description" style="margin-bottom: 16px;">
+            ${localize(
+              'editor.icon.layout.desc',
+              lang,
+              'Control how icons are arranged in the grid.'
+            )}
+          </div>
+
+          <div class="field-container" style="margin-bottom: 16px;">
+            ${this.renderSliderField(
+              localize('editor.icon.layout.columns', lang, 'Columns'),
+              localize(
+                'editor.icon.layout.columns_desc',
+                lang,
+                'Number of icons per row'
+              ),
+              iconModule.columns || 3,
+              3, 1, 6, 1,
+              (v: number) => {
+                updateModule({ columns: v });
+              },
+              ''
+            )}
+          </div>
+
+          <div class="field-container" style="margin-bottom: 16px;">
+            ${this.renderSliderField(
+              localize('editor.icon.layout.gap', lang, 'Gap'),
+              localize('editor.icon.layout.gap_desc', lang, 'Spacing between icons'),
+              iconModule.gap ?? 16,
+              16, 0, 50, 1,
+              (v: number) => {
+                updateModule({ gap: v });
+              }
+            )}
+          </div>
+
+          ${this.renderFieldSection(
+            localize('editor.icon.layout.alignment', lang, 'Alignment'),
+            localize(
+              'editor.icon.layout.alignment_desc',
+              lang,
+              'Horizontal alignment of the icon grid'
+            ),
+            hass,
+            { alignment: iconModule.alignment || 'center' },
+            [
+              this.selectField('alignment', [
+                { value: 'left', label: localize('editor.icon.layout.align_left', lang, 'Left') },
+                {
+                  value: 'center',
+                  label: localize('editor.icon.layout.align_center', lang, 'Center'),
+                },
+                {
+                  value: 'right',
+                  label: localize('editor.icon.layout.align_right', lang, 'Right'),
+                },
+                {
+                  value: 'space-between',
+                  label: localize('editor.icon.layout.align_space_between', lang, 'Space Between'),
+                },
+                {
+                  value: 'space-around',
+                  label: localize('editor.icon.layout.align_space_around', lang, 'Space Around'),
+                },
+              ]),
+            ],
+            (e: CustomEvent) => {
+              const next = e.detail.value.alignment;
+              if (!next || next === (iconModule.alignment || 'center')) return;
+              updateModule({ alignment: next });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
+          )}
+          ${this.renderFieldSection(
+            localize('editor.icon.layout.allow_wrap', lang, 'Allow Wrapping'),
+            localize(
+              'editor.icon.layout.allow_wrap_desc',
+              lang,
+              'Allow icons to wrap onto new rows when they exceed the column count'
+            ),
+            hass,
+            { allow_wrap: iconModule.allow_wrap !== false },
+            [this.booleanField('allow_wrap')],
+            (e: CustomEvent) => {
+              updateModule({ allow_wrap: e.detail.value.allow_wrap });
+              this.triggerPreviewUpdate();
+            }
+          )}
         </div>
 
         ${iconModule.icons.map(
@@ -2651,7 +2748,8 @@ export class UltraIconModule extends BaseUltraModule {
         'transparent',
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },
-        hass
+        hass,
+        config
       ),
       backgroundSize:
         designProperties.background_size || moduleWithDesign.background_size || 'cover',
@@ -3047,7 +3145,7 @@ export class UltraIconModule extends BaseUltraModule {
                 const { styles: backgroundStyles } = computeBackgroundStyles({
                   color: containerBgColor,
                   fallback: containerBgColor,
-                  image: this.getBackgroundImageCSS(icon, hass),
+                  image: this.getBackgroundImageCSS(icon, hass, config),
                   imageSize: (icon as any).background_size || 'cover',
                   imagePosition: icon.background_position || 'center',
                   imageRepeat: icon.background_repeat || 'no-repeat',
@@ -3094,7 +3192,7 @@ export class UltraIconModule extends BaseUltraModule {
                   tap_action: effectiveTapAction,
                   hold_action: effectiveHoldAction,
                   double_tap_action: effectiveDoubleTapAction,
-                  entity: icon.entity,
+                  entity: resolvedIconEntity || icon.entity,
                   module: iconModule,
                 },
                 hass,
@@ -3122,11 +3220,12 @@ export class UltraIconModule extends BaseUltraModule {
                 e.stopPropagation();
                 if (isNothingAction(effectiveTapAction)) return;
                 this.handleModuleAction(
-                  effectiveTapAction || ({ action: 'default', entity: icon.entity } as any),
+                  effectiveTapAction ||
+                    ({ action: 'default', entity: resolvedIconEntity || icon.entity } as any),
                   hass,
                   e.currentTarget as HTMLElement,
                   config,
-                  icon.entity,
+                  resolvedIconEntity || icon.entity,
                   iconModule
                 );
               };
@@ -3145,7 +3244,7 @@ export class UltraIconModule extends BaseUltraModule {
                     ...containerStyles,
                     gap: '0px', // Remove global gap, use specific spacing instead
                     touchAction: 'manipulation', // Improve touch responsiveness
-                    backgroundImage: this.getBackgroundImageCSS(icon, hass),
+                    backgroundImage: this.getBackgroundImageCSS(icon, hass, config),
                     backgroundSize: (icon as any).background_size || 'cover',
                     backgroundPosition: designProperties.background_position || 'center',
                     backgroundRepeat: designProperties.background_repeat || 'no-repeat',
@@ -3798,7 +3897,7 @@ export class UltraIconModule extends BaseUltraModule {
       const { styles: backgroundStyles } = computeBackgroundStyles({
         color: containerBgColor,
         fallback: containerBgColor,
-        image: this.getBackgroundImageCSS(icon, hass),
+        image: this.getBackgroundImageCSS(icon, hass, cardConfig),
         imageSize: (icon as any).background_size || 'cover',
         imagePosition: icon.background_position || 'center',
         imageRepeat: icon.background_repeat || 'no-repeat',
@@ -3840,13 +3939,16 @@ export class UltraIconModule extends BaseUltraModule {
           if (!iconModule) return;
           // Handle undefined actions with smart defaults
           if (!iconModule.tap_action || iconModule.tap_action.action !== 'nothing') {
-            const action = iconModule.tap_action || { action: 'default', entity: icon.entity };
+            const action = iconModule.tap_action || {
+              action: 'default',
+              entity: resolvedPreviewEntity || icon.entity,
+            };
             UltraLinkComponent.handleAction(
               action as any,
               hass,
               e.target as HTMLElement,
-              undefined,
-              icon.entity,
+              cardConfig,
+              resolvedPreviewEntity || icon.entity,
               iconModule
             );
           }
@@ -6453,10 +6555,16 @@ export class UltraIconModule extends BaseUltraModule {
     }, delay);
   }
 
-  private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
+  private getBackgroundImageCSS(
+    moduleWithDesign: any,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): string {
     const imageType = moduleWithDesign.background_image_type;
     const backgroundImage = moduleWithDesign.background_image;
-    const backgroundEntity = moduleWithDesign.background_image_entity;
+    const backgroundEntity =
+      this.resolveEntity(moduleWithDesign.background_image_entity, config) ||
+      moduleWithDesign.background_image_entity;
 
     if (!imageType || imageType === 'none') return 'none';
 

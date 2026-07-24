@@ -12,6 +12,7 @@ import { logicService } from '../services/logic-service';
 import { autoMigrateCardModule } from '../utils/template-migration';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
 import { ucModulePreviewService } from '../services/uc-module-preview-service';
+import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import '../components/ultra-color-picker';
 import Swiper from 'swiper';
 import {
@@ -80,6 +81,10 @@ class SwiperInstanceManager {
 }
 
 export class UltraSliderModule extends BaseUltraModule {
+  // Tracks legacy transition effect values already reported so the fallback
+  // notice is logged only once per effect.
+  private static warnedLegacyEffects = new Set<string>();
+
   metadata: ModuleMetadata = {
     type: 'slider',
     title: 'Slider Layout',
@@ -235,7 +240,14 @@ export class UltraSliderModule extends BaseUltraModule {
             class="section-title"
             style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
           >
-            SLIDER LAYOUT
+            ${localize('editor.slider.section_layout', lang, 'SLIDER LAYOUT')}
+          </div>
+
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8;"
+          >
+            ${localize('editor.slider.pages_label', lang, 'Pages')}: ${pageCount} &middot;
+            ${localize('editor.slider.modules_label', lang, 'Modules')}: ${totalModules}
           </div>
 
           ${this.renderFieldSection(
@@ -374,7 +386,26 @@ export class UltraSliderModule extends BaseUltraModule {
                 [this.booleanField('auto_height')],
                 (e: CustomEvent) => updateModule({ auto_height: e.detail.value.auto_height })
               )
-            : ''}
+            : html`
+                <div style="margin-bottom: 16px; opacity: 0.6;">
+                  <div
+                    class="field-title"
+                    style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                  >
+                    ${localize('editor.slider.auto_height', lang, 'Auto Height')}
+                  </div>
+                  <div
+                    class="field-description"
+                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px; opacity: 0.8; line-height: 1.4;"
+                  >
+                    ${localize(
+                      'editor.slider.auto_height_vertical_note',
+                      lang,
+                      'Not available for vertical sliders. Vertical sliders scroll within the fixed Slider Height set below.'
+                    )}
+                  </div>
+                </div>
+              `}
 
           ${sliderModule.slider_direction === 'vertical' || !(sliderModule.auto_height ?? true)
             ? this.renderSliderField(
@@ -412,6 +443,21 @@ export class UltraSliderModule extends BaseUltraModule {
             (value: number) => updateModule({ space_between: value }),
             'px'
           )}
+          ${this.renderSliderField(
+            localize('editor.slider.gap', lang, 'Gap'),
+            localize(
+              'editor.slider.gap_desc',
+              lang,
+              'Fallback spacing between slides in pixels, used when Space Between is 0'
+            ),
+            sliderModule.gap || 0,
+            0,
+            0,
+            100,
+            5,
+            (value: number) => updateModule({ gap: value }),
+            'px'
+          )}
           ${(sliderModule.slides_per_view || 1) > 1
             ? this.renderFieldSection(
                 'Vertical Alignment',
@@ -438,7 +484,9 @@ export class UltraSliderModule extends BaseUltraModule {
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
         >
           <div class="inline-toggle">
-            <div class="section-title">PAGINATION</div>
+            <div class="section-title">
+              ${localize('editor.slider.section_pagination', lang, 'PAGINATION')}
+            </div>
           </div>
           ${this.renderFieldSection(
             'Enable Pagination',
@@ -559,7 +607,9 @@ export class UltraSliderModule extends BaseUltraModule {
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
         >
           <div class="inline-toggle">
-            <div class="section-title">NAVIGATION ARROWS</div>
+            <div class="section-title">
+              ${localize('editor.slider.section_arrows', lang, 'NAVIGATION ARROWS')}
+            </div>
           </div>
           ${this.renderFieldSection(
             'Show Arrows',
@@ -698,7 +748,7 @@ export class UltraSliderModule extends BaseUltraModule {
             class="section-title"
             style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
           >
-            TRANSITION & ANIMATION
+            ${localize('editor.slider.section_transition', lang, 'TRANSITION & ANIMATION')}
           </div>
 
           ${this.renderFieldSection(
@@ -734,7 +784,9 @@ export class UltraSliderModule extends BaseUltraModule {
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
         >
           <div class="inline-toggle">
-            <div class="section-title">AUTO-PLAY</div>
+            <div class="section-title">
+              ${localize('editor.slider.section_autoplay', lang, 'AUTO-PLAY')}
+            </div>
           </div>
           ${this.renderFieldSection(
             'Enable Auto-play',
@@ -787,7 +839,7 @@ export class UltraSliderModule extends BaseUltraModule {
             class="section-title"
             style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
           >
-            INTERACTION
+            ${localize('editor.slider.section_interaction', lang, 'INTERACTION')}
           </div>
 
           ${this.renderFieldSection(
@@ -836,6 +888,7 @@ export class UltraSliderModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const sliderModule = module as SliderModule;
+    const lang = hass?.locale?.language || 'en';
 
     return html`
       <div class="actions-tab">
@@ -854,7 +907,7 @@ export class UltraSliderModule extends BaseUltraModule {
             class="section-title"
             style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
           >
-            LINK CONFIGURATION
+            ${localize('editor.slider.section_link_config', lang, 'LINK CONFIGURATION')}
           </div>
 
           ${UltraLinkComponent.render(
@@ -1886,6 +1939,21 @@ export class UltraSliderModule extends BaseUltraModule {
     const hoverClass = this.getHoverEffectClass(module);
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
+    // Pro access check for child modules (same logic as horizontal/accordion layouts)
+    let hasProAccess = false;
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(hass);
+    if (
+      integrationUser?.subscription?.tier === 'pro' &&
+      integrationUser?.subscription?.status === 'active'
+    ) {
+      hasProAccess = true;
+    } else if (ucCloudAuthService.isAuthenticated()) {
+      const cloudUser = ucCloudAuthService.getCurrentUser();
+      if (cloudUser?.subscription?.tier === 'pro' && cloudUser?.subscription?.status === 'active') {
+        hasProAccess = true;
+      }
+    }
+
     // Wire tap/hold/double-tap actions on the slider container. Only attach when a
     // real action is configured so default sliders keep their current behavior.
     // Arrows, pagination and scrollbar are excluded so their clicks never trigger
@@ -2749,6 +2817,8 @@ export class UltraSliderModule extends BaseUltraModule {
               allow_swipe: sliderModule.allow_swipe,
               allow_keyboard: sliderModule.allow_keyboard,
               allow_mousewheel: sliderModule.allow_mousewheel,
+              // Slide count affects loop/rewind selection at init time
+              page_count: pages.length,
             });
             const previousConfigHash = el.getAttribute('data-config-hash');
             const configChanged = previousConfigHash && previousConfigHash !== configHash;
@@ -2852,6 +2922,68 @@ export class UltraSliderModule extends BaseUltraModule {
                       // Check visibility
                       const isVisible = logicService.evaluateModuleVisibility(childModule);
                       if (!isVisible) return '';
+
+                      // Pro child modules render behind a lock overlay, same as
+                      // the horizontal layout container
+                      const isProModule =
+                        childModuleHandler.metadata?.tags?.includes('pro') ||
+                        childModuleHandler.metadata?.tags?.includes('premium') ||
+                        false;
+                      if (isProModule && !hasProAccess) {
+                        return html`
+                          <div class="child-module-wrapper" style="width: 100%;">
+                            <div class="pro-module-locked" style="position: relative;">
+                              ${childModuleHandler.renderPreview(
+                                autoMigrateCardModule(childModule),
+                                hass,
+                                config,
+                                previewContext
+                              )}
+                              <div
+                                class="pro-module-overlay"
+                                style="
+                                position: absolute;
+                                top: 0;
+                                left: 0;
+                                right: 0;
+                                bottom: 0;
+                                background: rgba(0, 0, 0, 0.8);
+                                backdrop-filter: blur(8px);
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                border-radius: 12px;
+                                z-index: 10;
+                              "
+                              >
+                                <div
+                                  class="pro-module-message"
+                                  style="
+                                  text-align: center;
+                                  color: white;
+                                  padding: 6px;
+                                  max-width: 95%;
+                                  display: flex;
+                                  flex-direction: column;
+                                  align-items: center;
+                                  gap: 4px;
+                                "
+                                >
+                                  <ha-icon
+                                    icon="mdi:lock"
+                                    style="font-size: 20px; flex-shrink: 0;"
+                                  ></ha-icon>
+                                  <div
+                                    style="font-size: 11px; font-weight: 600; line-height: 1.2; white-space: nowrap;"
+                                  >
+                                    Pro Module
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        `;
+                      }
 
                       // Detect if this is a layout module (handles its own flex layout)
                       const childType = (childModule as any)?.type;
@@ -2958,7 +3090,8 @@ export class UltraSliderModule extends BaseUltraModule {
   ): any {
     // Determine slides per view - use user setting, but default to 1 for pagebreak-based sliders
     const slidesPerView = sliderModule.slides_per_view || 1;
-    const spaceBetween = sliderModule.space_between ?? (sliderModule.gap || 0);
+    // gap acts as a fallback when space_between is unset or 0
+    const spaceBetween = sliderModule.space_between || sliderModule.gap || 0;
 
     // Map layout direction
     let direction: 'horizontal' | 'vertical' = 'horizontal';
@@ -2981,7 +3114,18 @@ export class UltraSliderModule extends BaseUltraModule {
         },
       };
     } else {
-      // Default to slide for any other value (including legacy values)
+      // Default to slide for any other value (including legacy values).
+      // The bundled Swiper build only includes the fade effect module, so
+      // legacy effects (cube, coverflow, flip, ...) cannot be honored.
+      if (
+        transitionEffect !== 'slide' &&
+        !UltraSliderModule.warnedLegacyEffects.has(transitionEffect)
+      ) {
+        UltraSliderModule.warnedLegacyEffects.add(transitionEffect);
+        console.info(
+          `[Ultra Card] Slider transition effect "${transitionEffect}" is no longer supported and falls back to "slide".`
+        );
+      }
       effect = 'slide';
       // slider_direction setting controls direction
       if (sliderModule.slider_direction === 'vertical') {

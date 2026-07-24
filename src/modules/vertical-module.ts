@@ -17,6 +17,25 @@ import { autoMigrateCardModule } from '../utils/template-migration';
 // Use the existing VerticalModule interface from types
 import { VerticalModule } from '../types';
 
+// Interactive elements inside child modules that must keep working even when the
+// layout container itself has tap/hold/double-tap actions configured. Passed to
+// createGestureHandlers as exclude selectors (matched via target.closest()).
+// Child modules with their own gesture handlers already stop propagation.
+const INTERACTIVE_CHILD_SELECTORS = [
+  'button',
+  'input',
+  'select',
+  'textarea',
+  'a[href]',
+  'ha-switch',
+  'ha-slider',
+  'ha-control-slider',
+  'ha-control-select',
+  '[role="button"]',
+  '[role="slider"]',
+  '[role="switch"]',
+];
+
 export class UltraVerticalModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'vertical',
@@ -358,7 +377,9 @@ export class UltraVerticalModule extends BaseUltraModule {
     };
 
     // Create gesture handlers using centralized service
-    // Service automatically handles nested module editor control exclusion
+    // Service automatically handles nested module editor control exclusion.
+    // Interactive elements inside child modules are excluded so the parent
+    // action doesn't swallow taps on nested buttons/sliders/toggles.
     const handlers = this.createGestureHandlers(
       verticalModule.id,
       {
@@ -369,7 +390,8 @@ export class UltraVerticalModule extends BaseUltraModule {
         module: verticalModule,
       },
       hass,
-      config
+      config,
+      INTERACTIVE_CHILD_SELECTORS
     );
 
     // Extract CSS variable prefix for Shadow DOM styling
@@ -1032,17 +1054,12 @@ export class UltraVerticalModule extends BaseUltraModule {
         pointer-events: none;
       }
 
-      /* When vertical layout has actions, disable pointer events on children so container action takes precedence */
-      .vertical-preview-content[style*="cursor: pointer"] .child-module-preview {
-        pointer-events: none;
-      }
-
-      /* But allow specific interactive elements within children to still work if no parent action */
-      .vertical-preview-content:not([style*="cursor: pointer"]) .child-module-preview {
-        pointer-events: auto;
-      }
-
+      /* Child modules keep their pointer events even when the container has actions.
+         Interactive child elements are excluded from the container gesture handlers
+         (see INTERACTIVE_CHILD_SELECTORS) so both parent actions and nested
+         buttons/sliders remain usable. */
       .child-module-preview {
+        pointer-events: auto;
         background: transparent;
         border: none;
         border-radius: 4px;

@@ -3162,7 +3162,13 @@ export class UltraVacuumModule extends BaseUltraModule {
       const sensorLevel = this.getEntityNumericValue(hass, batterySensorId);
       if (sensorLevel !== null) batteryLevel = sensorLevel;
     }
-    const isCharging = state === 'docked' && entity?.attributes?.status?.toLowerCase().includes('charg');
+    // Prefer the dedicated charging binary sensor when available, fall back to the status attribute heuristic
+    let isCharging = state === 'docked' && entity?.attributes?.status?.toLowerCase().includes('charg');
+    const chargingBinaryId = this.resolveEntity(vacuumModule.charging_binary_entity, config);
+    const chargingBinaryState = chargingBinaryId ? hass?.states[chargingBinaryId]?.state : undefined;
+    if (chargingBinaryState === 'on' || chargingBinaryState === 'off') {
+      isCharging = chargingBinaryState === 'on';
+    }
     const fanSpeed = this.getCurrentFanSpeed(entity);
     const fanSpeedOptions = this.getFanSpeedOptions(entity);
     
@@ -3231,19 +3237,40 @@ export class UltraVacuumModule extends BaseUltraModule {
   private renderPaginationDots(moduleId: string, primaryColor?: string): TemplateResult {
     const isMapView = this.getCurrentView(moduleId) === 'map';
     const activeStyle = primaryColor ? `background: ${primaryColor};` : '';
-    
+
+    const selectView = (view: 'vacuum' | 'map') => {
+      this._currentViewMap.set(moduleId, view);
+      this.triggerPreviewUpdate();
+    };
+    const handleKeydown = (e: KeyboardEvent, view: 'vacuum' | 'map') => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectView(view);
+      }
+    };
+
     return html`
       <div class="vacuum-pagination-dots">
         <div 
           class="vacuum-dot ${!isMapView ? 'active' : ''}"
           style="${!isMapView ? activeStyle : ''}"
-          @click=${() => { this._currentViewMap.set(moduleId, 'vacuum'); this.triggerPreviewUpdate(); }}
+          role="button"
+          tabindex="0"
+          aria-pressed="${!isMapView}"
+          aria-label="Vacuum view, 1 of 2"
+          @click=${() => selectView('vacuum')}
+          @keydown=${(e: KeyboardEvent) => handleKeydown(e, 'vacuum')}
           title="Vacuum"
         ></div>
         <div 
           class="vacuum-dot ${isMapView ? 'active' : ''}"
           style="${isMapView ? activeStyle : ''}"
-          @click=${() => { this._currentViewMap.set(moduleId, 'map'); this.triggerPreviewUpdate(); }}
+          role="button"
+          tabindex="0"
+          aria-pressed="${isMapView}"
+          aria-label="Map view, 2 of 2"
+          @click=${() => selectView('map')}
+          @keydown=${(e: KeyboardEvent) => handleKeydown(e, 'map')}
           title="Map"
         ></div>
       </div>
@@ -5041,6 +5068,10 @@ export class UltraVacuumModule extends BaseUltraModule {
       .vacuum-dot:hover {
         background: var(--secondary-text-color);
         transform: scale(1.2);
+      }
+      .vacuum-dot:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
       .vacuum-dot.active {
         background: var(--primary-color);

@@ -1121,6 +1121,11 @@ export class UltraClimateModule extends BaseUltraModule {
                               style="width: ${buttonSize}px; height: ${buttonSize}px; --icon-size: ${iconSize}px; border-color: ${dialColor}; color: ${dialColor};"
                               @click=${handleTempDecrease}
                               ?disabled=${!canDecrease}
+                              aria-label=${localize(
+                                'editor.climate.decrease_temp',
+                                lang,
+                                'Decrease target temperature'
+                              )}
                             >
                               <ha-icon icon="mdi:minus"></ha-icon>
                             </button>
@@ -1167,6 +1172,11 @@ export class UltraClimateModule extends BaseUltraModule {
                               style="width: ${buttonSize}px; height: ${buttonSize}px; --icon-size: ${iconSize}px; border-color: ${dialColor}; color: ${dialColor};"
                               @click=${handleTempIncrease}
                               ?disabled=${!canIncrease}
+                              aria-label=${localize(
+                                'editor.climate.increase_temp',
+                                lang,
+                                'Increase target temperature'
+                              )}
                             >
                               <ha-icon icon="mdi:plus"></ha-icon>
                             </button>

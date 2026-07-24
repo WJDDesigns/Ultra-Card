@@ -633,6 +633,23 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
     const hoverClass = this.getHoverEffectClass(module);
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
+    // Wire configured tap/hold/double-tap actions on the container while
+    // excluding the interactive controls so transport buttons, sliders,
+    // seek bar, and source selectors keep working.
+    const gestureHandlers = this.createGestureHandlers(
+      mp.id,
+      {
+        tap_action: mp.tap_action,
+        hold_action: mp.hold_action,
+        double_tap_action: mp.double_tap_action,
+        entity: entityId,
+        module: mp,
+      },
+      hass,
+      config,
+      ['.mp-control-btn', '.mp-volume-slider', '.mp-progress-bar', '.mp-source-select']
+    );
+
     // Render based on layout mode
     const inner = (() => {
       switch (mp.layout) {
@@ -645,7 +662,21 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           return this.renderCompactLayout(mp, hass, stateObj, config);
       }
     })();
-    return this.wrapWithAnimation(html`<div class="${hoverClass}" style="${designStyles}">${inner}</div>`, module, hass);
+    return this.wrapWithAnimation(
+      html`<div
+        class="${hoverClass}"
+        style="${designStyles}"
+        @pointerdown=${gestureHandlers.onPointerDown}
+        @pointermove=${gestureHandlers.onPointerMove}
+        @pointerup=${gestureHandlers.onPointerUp}
+        @pointerleave=${gestureHandlers.onPointerLeave}
+        @pointercancel=${gestureHandlers.onPointerCancel}
+      >
+        ${inner}
+      </div>`,
+      module,
+      hass
+    );
   }
 
   // ============================

@@ -267,11 +267,13 @@ export class UltraDropdownModule extends BaseUltraModule {
       // Add to expanded options so new options start expanded
       this.expandedOptions.add(newOptionId);
       updateModule({ options: [...dropdownModule.options, newOption] });
+      this.triggerPreviewUpdate();
     };
 
     const removeDropdownOption = (optionId: string) => {
       const updatedOptions = dropdownModule.options.filter(option => option.id !== optionId);
       updateModule({ options: updatedOptions });
+      this.triggerPreviewUpdate();
     };
 
     const duplicateDropdownOption = (optionId: string) => {
@@ -289,6 +291,7 @@ export class UltraDropdownModule extends BaseUltraModule {
           ...dropdownModule.options.slice(optionIndex + 1),
         ];
         updateModule({ options: updatedOptions });
+        this.triggerPreviewUpdate();
       }
     };
 
@@ -1971,7 +1974,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                 class="dropdown-selected"
                 style="${dropdownStyles}"
                 tabindex="0"
-                role="button"
+                role="combobox"
                 aria-haspopup="listbox"
                 aria-expanded="${this.dropdownOpenStates.get(dropdownModule.id) ? 'true' : 'false'}"
                 @keydown=${(e: KeyboardEvent) =>
@@ -3130,6 +3133,14 @@ export class UltraDropdownModule extends BaseUltraModule {
       e.preventDefault();
       e.stopPropagation();
       options[Math.max(idx - 1, 0)]?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      e.stopPropagation();
+      options[0]?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      e.stopPropagation();
+      options[options.length - 1]?.focus();
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       e.stopPropagation();

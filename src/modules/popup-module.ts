@@ -828,8 +828,10 @@ export class UltraPopupModule extends BaseUltraModule {
                                     .value=${popupModule.trigger_button_background_color || 'var(--primary-color)'}
                                     .defaultValue=${'var(--primary-color)'}
                                     .hass=${hass}
-                                    @value-changed=${(e: CustomEvent) =>
-                                      updateModule({ trigger_button_background_color: e.detail.value })}
+                                    @value-changed=${(e: CustomEvent) => {
+                                      updateModule({ trigger_button_background_color: e.detail.value });
+                                      this.triggerPreviewUpdate();
+                                    }}
                                   ></ultra-color-picker>
                                 </div>
                               `}
@@ -840,8 +842,10 @@ export class UltraPopupModule extends BaseUltraModule {
                               .value=${popupModule.trigger_button_text_color || 'white'}
                               .defaultValue=${'white'}
                               .hass=${hass}
-                              @value-changed=${(e: CustomEvent) =>
-                                updateModule({ trigger_button_text_color: e.detail.value })}
+                              @value-changed=${(e: CustomEvent) => {
+                                updateModule({ trigger_button_text_color: e.detail.value });
+                                this.triggerPreviewUpdate();
+                              }}
                             ></ultra-color-picker>
                           </div>
                         `
@@ -3232,9 +3236,10 @@ export class UltraPopupModule extends BaseUltraModule {
       popupPositionStyle = `width: ${popupModule.popup_width || '600px'}; max-width: 90vw;`;
     }
 
-    // Calculate close button z-index (needs to be available in renderCloseButton and requestAnimationFrame)
-    const isPreviewContextForClose = previewContext === 'ha-preview' || previewContext === 'live';
-    const closeButtonZIndex = isPreviewContextForClose ? '2147483647' : '2147483647';
+    // Close button z-index (needs to be available in renderCloseButton and requestAnimationFrame).
+    // Relative to the popup container's stacking context (isolation: isolate), so it only
+    // needs to sit above the popup content.
+    const closeButtonZIndex = `${Z_INDEX.DIALOG_CONTENT}`;
 
     // Render close button
     const renderCloseButton = () => {
@@ -3367,7 +3372,7 @@ export class UltraPopupModule extends BaseUltraModule {
         portal.style.width = '100%';
         portal.style.height = '100%';
         portal.style.pointerEvents = 'auto';
-        portal.style.zIndex = '2147483647';
+        portal.style.zIndex = `${Z_INDEX.DIALOG_OVERLAY}`;
         // Remove inert attribute if present
         portal.removeAttribute('inert');
         document.body.appendChild(portal);
@@ -3385,7 +3390,7 @@ export class UltraPopupModule extends BaseUltraModule {
       portal.style.width = '100%';
       portal.style.height = '100%';
       portal.style.pointerEvents = 'auto';
-      portal.style.zIndex = '2147483647';
+      portal.style.zIndex = `${Z_INDEX.DIALOG_OVERLAY}`;
 
       // Add mutation observer to watch for inert being added by browser extensions
       // This is critical - some extensions add inert to all fixed elements
@@ -3441,10 +3446,12 @@ export class UltraPopupModule extends BaseUltraModule {
         (portal as any)._ultraKeydownHandler = keydownHandler;
       }
 
-      // Use extremely high z-index in preview contexts to appear above builder interface and HA edit outlines
       const isPreviewContext = previewContext === 'ha-preview' || previewContext === 'live';
-      // Use maximum safe z-index value (2147483647 is max 32-bit integer)
-      const overlayZIndex = isPreviewContext ? '2147483647 !important' : Z_INDEX.DIALOG_OVERLAY;
+      // Deliberately NOT maximal: DIALOG_OVERLAY (8000) sits above card content and the
+      // UC navigation layer (page-level z-index 20) but below UC toasts, camera fullscreen,
+      // and graph tooltips. Preview contexts rely on the editor-overlay hiding below rather
+      // than a maximal z-index.
+      const overlayZIndex = `${Z_INDEX.DIALOG_OVERLAY}`;
 
       // CRITICAL FIX for HA Preview: Hide HA's editor overlays when popup is open
       // HA adds .edit-mode overlays and card edit outlines that cover our popup
@@ -3638,7 +3645,7 @@ export class UltraPopupModule extends BaseUltraModule {
               animation-fill-mode: both;
               animation-timing-function: ease;
               pointer-events: auto !important;
-              z-index: 2147483646;
+              z-index: ${Z_INDEX.DIALOG_CONTENT};
               isolation: isolate;
             "
           >

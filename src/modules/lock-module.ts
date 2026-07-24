@@ -3,6 +3,7 @@ import { localize } from '../localize/localize';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, LockModule as LockModuleConfig, UltraCardConfig } from '../types';
+import { ucActionConfirmationService } from '../services/uc-action-confirmation-service';
 
 /** Home Assistant LockEntityFeature.OPEN */
 const LOCK_FEATURE_OPEN = 1;
@@ -54,6 +55,7 @@ export class UltraLockModule extends BaseUltraModule {
       show_icon: true,
       show_state: true,
       show_open_button: true,
+      require_confirmation: true,
       tap_action: { action: 'nothing' },
       hold_action: { action: 'nothing' },
       double_tap_action: { action: 'nothing' },
@@ -185,6 +187,28 @@ export class UltraLockModule extends BaseUltraModule {
         )}
 
         ${this.renderSettingsSection(
+          localize('editor.lock.behavior_section', lang, 'Behavior'),
+          localize('editor.lock.behavior_desc', lang, 'Safety options for lock actions.'),
+          [
+            {
+              title: localize('editor.lock.require_confirmation', lang, 'Confirm unlock / open'),
+              description: localize(
+                'editor.lock.require_confirmation_desc',
+                lang,
+                'Ask for confirmation before unlocking or opening'
+              ),
+              hass,
+              data: { require_confirmation: lock.require_confirmation !== false },
+              schema: [this.booleanField('require_confirmation')],
+              onChange: (e: CustomEvent) => {
+                updateModule({ require_confirmation: e.detail.value?.require_confirmation ?? true });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
+            },
+          ]
+        )}
+
+        ${this.renderSettingsSection(
           localize('editor.lock.layout_section', lang, 'Layout'),
           localize('editor.lock.layout_desc', lang, 'Visual style of the lock control.'),
           [
@@ -196,6 +220,21 @@ export class UltraLockModule extends BaseUltraModule {
               schema: [this.selectField('layout', this.getLayoutOptions(lang))],
               onChange: (e: CustomEvent) => {
                 updateModule({ layout: e.detail.value?.layout || 'standard' });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
+            },
+            {
+              title: localize('editor.lock.alignment', lang, 'Alignment'),
+              description: localize('editor.lock.alignment_desc', lang, 'Content alignment in the hero layout'),
+              hass,
+              data: { alignment: lock.alignment || 'center' },
+              schema: [this.selectField('alignment', [
+                { value: 'left', label: localize('editor.lock.align_left', lang, 'Left') },
+                { value: 'center', label: localize('editor.lock.align_center', lang, 'Center') },
+                { value: 'right', label: localize('editor.lock.align_right', lang, 'Right') },
+              ])],
+              onChange: (e: CustomEvent) => {
+                updateModule({ alignment: e.detail.value?.alignment || 'center' });
                 setTimeout(() => this.triggerPreviewUpdate(), 50);
               },
             },
@@ -296,15 +335,33 @@ export class UltraLockModule extends BaseUltraModule {
       this.triggerPreviewUpdate(true);
     };
 
+    // Unlock/open are security-sensitive: confirm before calling unless disabled
+    const confirmSensitive = async (service: 'unlock' | 'open'): Promise<boolean> => {
+      if (lockCfg.require_confirmation === false) return true;
+      ucActionConfirmationService.setHass(hass);
+      return ucActionConfirmationService.showConfirmation(
+        { action: 'perform-action', perform_action: `lock.${service}`, entity: entityId },
+        {
+          confirmText:
+            service === 'open'
+              ? localize('editor.lock.action_open', lang, 'Open')
+              : localize('editor.lock.action_unlock', lang, 'Unlock'),
+          cancelText: localize('editor.lock.cancel', lang, 'Cancel'),
+        }
+      );
+    };
+
     const onLock = () => {
       setPending('lock');
       call('lock');
     };
-    const onUnlock = () => {
+    const onUnlock = async () => {
+      if (!(await confirmSensitive('unlock'))) return;
       setPending('unlock');
       call('unlock');
     };
-    const onOpen = () => {
+    const onOpen = async () => {
+      if (!(await confirmSensitive('open'))) return;
       setPending('open');
       call('open');
     };
@@ -355,9 +412,12 @@ export class UltraLockModule extends BaseUltraModule {
 
     let content: TemplateResult;
 
+    const alignment = lockCfg.alignment || 'center';
+    const alignClass = alignment === 'center' ? '' : `uc-lock--align-${alignment}`;
+
     if (layout === 'hero') {
       content = html`
-        <div class="uc-lock uc-lock--hero">
+        <div class="uc-lock uc-lock--hero ${alignClass}">
           <div class="uc-lock__visual">
             <div class="uc-lock__glow ${lockedVisual ? 'uc-lock__glow--on' : ''}"></div>
             <div class="uc-lock-circle ${lockedVisual ? 'uc-lock-circle--locked' : ''} ${isJammed ? 'uc-lock-circle--jammed' : ''}">
@@ -514,6 +574,10 @@ export class UltraLockModule extends BaseUltraModule {
         width: 100%;
         max-width: 340px;
       }
+      .uc-lock--hero.uc-lock--align-left { align-items: flex-start; }
+      .uc-lock--hero.uc-lock--align-left .uc-lock__identity { align-items: flex-start; text-align: left; }
+      .uc-lock--hero.uc-lock--align-right { align-items: flex-end; }
+      .uc-lock--hero.uc-lock--align-right .uc-lock__identity { align-items: flex-end; text-align: right; }
 
       /* ═══ STANDARD (single row) ══════════════════ */
       .uc-lock--standard { padding: 14px 16px; }
@@ -590,6 +654,10 @@ export class UltraLockModule extends BaseUltraModule {
         transition: background 0.15s, border-color 0.15s, color 0.15s;
       }
       .uc-lock-chip-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+      .uc-lock-chip-btn:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
       .uc-lock-chip-btn--active {
         border-color: color-mix(in srgb, var(--primary-color) 50%, transparent);
         background: color-mix(in srgb, var(--primary-color) 14%, var(--card-background-color, var(--ha-card-background)));

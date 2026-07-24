@@ -1215,8 +1215,24 @@ export class UltraSpinboxModule extends BaseUltraModule {
           };
           break;
         }
-        case 'climate':
+        case 'climate': {
           service = 'climate.set_temperature';
+
+          // Snap to the entity's native temperature step and clamp to its
+          // min/max range so set_temperature is never rejected by HA.
+          let adjusted = value;
+          const attrs = entityState?.attributes as any;
+          const attrMin = parseFloat(attrs?.min_temp);
+          const attrMax = parseFloat(attrs?.max_temp);
+          const attrStep = parseFloat(attrs?.target_temp_step);
+          if (!isNaN(attrStep) && attrStep > 0) {
+            const stepBase = !isNaN(attrMin) ? attrMin : 0;
+            adjusted = Math.round((adjusted - stepBase) / attrStep) * attrStep + stepBase;
+            // Avoid float drift like 20.700000000000003
+            adjusted = parseFloat(adjusted.toFixed(6));
+          }
+          if (!isNaN(attrMin)) adjusted = Math.max(attrMin, adjusted);
+          if (!isNaN(attrMax)) adjusted = Math.min(attrMax, adjusted);
 
           // Check if entity supports HVAC mode-specific temperature settings
           const hvacMode = entityState?.state;
@@ -1236,29 +1252,30 @@ export class UltraSpinboxModule extends BaseUltraModule {
 
             // Determine which target to adjust based on proximity to current value
             if (currentTemp !== undefined && targetHigh !== undefined && targetLow !== undefined) {
-              const distToHigh = Math.abs(value - targetHigh);
-              const distToLow = Math.abs(value - targetLow);
+              const distToHigh = Math.abs(adjusted - targetHigh);
+              const distToLow = Math.abs(adjusted - targetLow);
 
               if (distToHigh < distToLow) {
                 // Adjust high target
-                serviceData.target_temp_high = value;
+                serviceData.target_temp_high = adjusted;
                 serviceData.target_temp_low = targetLow;
               } else {
                 // Adjust low target
-                serviceData.target_temp_low = value;
+                serviceData.target_temp_low = adjusted;
                 serviceData.target_temp_high = targetHigh;
               }
             } else {
               // Fallback: set both to same value (will be adjusted by thermostat)
-              serviceData.target_temp_high = value + 2;
-              serviceData.target_temp_low = value - 2;
+              serviceData.target_temp_high = adjusted + 2;
+              serviceData.target_temp_low = adjusted - 2;
             }
 
           } else {
             // Single temperature target (heat, cool, or auto modes)
-            serviceData.temperature = value;
+            serviceData.temperature = adjusted;
           }
           break;
+        }
         default:
           console.warn(`[Spinbox] Unsupported entity domain: ${entityDomain}`);
           return;

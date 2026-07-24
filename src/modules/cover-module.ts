@@ -126,6 +126,36 @@ export class UltraCoverModule extends BaseUltraModule {
           )}
         </div>
 
+        <!-- Name & icon overrides -->
+        ${this.renderSettingsSection(
+          localize('editor.cover.overrides_section', lang, 'Name & Icon'),
+          localize('editor.cover.overrides_desc', lang, 'Optional overrides for the entity name and icon.'),
+          [
+            {
+              title: localize('editor.cover.name', lang, 'Name'),
+              description: localize('editor.cover.name_desc', lang, 'Leave empty to use the entity name'),
+              hass,
+              data: { name: coverModule.name || '' },
+              schema: [this.textField('name')],
+              onChange: (e: CustomEvent) => {
+                updateModule({ name: e.detail.value?.name ?? '' });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
+            },
+            {
+              title: localize('editor.cover.icon', lang, 'Icon'),
+              description: localize('editor.cover.icon_desc', lang, 'Leave empty to use the entity icon'),
+              hass,
+              data: { icon: coverModule.icon || '' },
+              schema: [this.iconField('icon')],
+              onChange: (e: CustomEvent) => {
+                updateModule({ icon: e.detail.value?.icon ?? '' });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
+            },
+          ]
+        )}
+
         <!-- Display -->
         ${this.renderSettingsSection(
           localize('editor.cover.display_section', lang, 'Display'),
@@ -428,6 +458,10 @@ export class UltraCoverModule extends BaseUltraModule {
                       type="range"
                       min="0"
                       max="100"
+                      aria-label=${localize('editor.cover.position', lang, 'Position')}
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      aria-valuenow=${String(positionPercent)}
                       .value=${String(positionPercent)}
                       @change=${(e: Event) => setPosition(Number((e.target as HTMLInputElement).value))}
                       style="width: 100%;"
@@ -443,6 +477,10 @@ export class UltraCoverModule extends BaseUltraModule {
                       type="range"
                       min="0"
                       max="100"
+                      aria-label=${localize('editor.cover.tilt', lang, 'Tilt')}
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      aria-valuenow=${String(currentTilt ?? 0)}
                       .value=${String(currentTilt ?? 0)}
                       @change=${(e: Event) => setTiltPosition(Number((e.target as HTMLInputElement).value))}
                       style="width: 100%;"
@@ -493,6 +531,10 @@ export class UltraCoverModule extends BaseUltraModule {
                     type="range"
                     min="0"
                     max="100"
+                    aria-label=${localize('editor.cover.position', lang, 'Position')}
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow=${String(positionPercent)}
                     .value=${String(positionPercent)}
                     @change=${(e: Event) => setPosition(Number((e.target as HTMLInputElement).value))}
                     style="width: 100%;"
@@ -510,6 +552,10 @@ export class UltraCoverModule extends BaseUltraModule {
                           type="range"
                           min="0"
                           max="100"
+                          aria-label=${localize('editor.cover.tilt', lang, 'Tilt')}
+                          aria-valuemin="0"
+                          aria-valuemax="100"
+                          aria-valuenow=${String(currentTilt ?? 0)}
                           .value=${String(currentTilt ?? 0)}
                           @change=${(e: Event) => setTiltPosition(Number((e.target as HTMLInputElement).value))}
                           style="width: 100%;"

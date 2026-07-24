@@ -16,6 +16,25 @@ import { autoMigrateCardModule } from '../utils/template-migration';
 // Use the existing HorizontalModule and VerticalModule interfaces from types
 import { HorizontalModule, VerticalModule } from '../types';
 
+// Interactive elements inside child modules that must keep working even when the
+// layout container itself has tap/hold/double-tap actions configured. Passed to
+// createGestureHandlers as exclude selectors (matched via target.closest()).
+// Child modules with their own gesture handlers already stop propagation.
+const INTERACTIVE_CHILD_SELECTORS = [
+  'button',
+  'input',
+  'select',
+  'textarea',
+  'a[href]',
+  'ha-switch',
+  'ha-slider',
+  'ha-control-slider',
+  'ha-control-select',
+  '[role="button"]',
+  '[role="slider"]',
+  '[role="switch"]',
+];
+
 export class UltraHorizontalModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'horizontal',
@@ -287,8 +306,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
         ? (effective as any).width
         : undefined; // No default - let flexbox handle it naturally
 
-    // Margin is now applied on the outer wrapper via buildDesignStyles
-    // (populated by the v1→v2 migration for legacy configs or the Design tab).
+    // Margin is applied on the inner content container (containerStyles.margin),
+    // matching the vertical module so nested spacing behaves identically.
 
     // When design.background_filter is set the background must be rendered via a ::before
     // pseudo-element so the filter only affects the background without blurring the content.
@@ -322,6 +341,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
 
     const containerStyles: any = {
       padding: this.getPaddingCSS(effective),
+      margin: this.getMarginCSS(effective),
       ...bgResult.styles,
       border:
         effective.border_width ||
@@ -397,7 +417,9 @@ export class UltraHorizontalModule extends BaseUltraModule {
 
 
     // Create gesture handlers using centralized service
-    // Service automatically handles nested module editor control exclusion
+    // Service automatically handles nested module editor control exclusion.
+    // Interactive elements inside child modules are excluded so the parent
+    // action doesn't swallow taps on nested buttons/sliders/toggles.
     const handlers = this.createGestureHandlers(
       horizontalModule.id,
       {
@@ -408,7 +430,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
         module: horizontalModule,
       },
       hass,
-      config
+      config,
+      INTERACTIVE_CHILD_SELECTORS
     );
 
     // Get hover effect configuration from module design
@@ -418,8 +441,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
     // Build design styles but strip visual-surface properties from the outer wrapper.
     // border, borderRadius, background*, padding, boxShadow, backdropFilter, clipPath and
     // overflow are already applied on the inner .horizontal-preview-content div via
-    // containerStyles.  Margin is kept on the outer wrapper so it controls inter-module
-    // spacing (stamped by the v1→v2 migration for legacy configs, or set via Design tab).
+    // containerStyles.  Margin is also stripped — it is handled in containerStyles,
+    // matching the vertical module.
     const _allDesignStyles = this.buildDesignStyles(module, hass);
     const VISUAL_SURFACE_PROPS = new Set([
       'border', 'borderRadius',
@@ -428,6 +451,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
       'backgroundSize', 'backgroundPosition', 'backgroundRepeat',
       'boxShadow', 'backdropFilter', 'webkitBackdropFilter',
       'clipPath', 'overflow', 'isolation', 'filter',
+      'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
     ]);
     const _wrapperOnlyStyles = Object.fromEntries(
       Object.entries(_allDesignStyles).filter(([k]) => !VISUAL_SURFACE_PROPS.has(k))
@@ -1189,6 +1213,15 @@ export class UltraHorizontalModule extends BaseUltraModule {
       : '0';
   }
 
+  private getMarginCSS(moduleWithDesign: any): string {
+    return moduleWithDesign.margin_top ||
+      moduleWithDesign.margin_bottom ||
+      moduleWithDesign.margin_left ||
+      moduleWithDesign.margin_right
+      ? `${this.addPixelUnit(moduleWithDesign.margin_top) || '0'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '0'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0'}`
+      : '0';
+  }
+
   private getBackgroundCSS(moduleWithDesign: any): string {
     return moduleWithDesign.background_color || 'transparent';
   }
@@ -1327,17 +1360,12 @@ export class UltraHorizontalModule extends BaseUltraModule {
         pointer-events: none;
       }
 
-      /* When horizontal layout has actions, disable pointer events on children so container action takes precedence */
-      .horizontal-preview-content[style*="cursor: pointer"] .child-module-preview {
-        pointer-events: none;
-      }
-
-      /* But allow specific interactive elements within children to still work if no parent action */
-      .horizontal-preview-content:not([style*="cursor: pointer"]) .child-module-preview {
-        pointer-events: auto;
-      }
-
+      /* Child modules keep their pointer events even when the container has actions.
+         Interactive child elements are excluded from the container gesture handlers
+         (see INTERACTIVE_CHILD_SELECTORS) so both parent actions and nested
+         buttons/sliders remain usable. */
       .child-module-preview {
+        pointer-events: auto;
         background: transparent;
         border: none;
         border-radius: 4px;

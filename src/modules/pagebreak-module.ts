@@ -47,10 +47,14 @@ export class UltraPageBreakModule extends BaseUltraModule {
               style="color: var(--info-color); margin-top: 2px; flex-shrink: 0; font-size: 24px;"
             ></ha-icon>
             <div style="font-size: 14px; line-height: 1.5; color: var(--primary-text-color);">
-              <strong>How Page Breaks Work:</strong><br />
-              Page breaks are only visible in the editor. When used inside a Slider Layout, they
-              separate content into different slides. All modules before a page break belong to one
-              page, and modules after it belong to the next page.
+              <strong
+                >${localize('editor.pagebreak.info_title', lang, 'How Page Breaks Work:')}</strong
+              ><br />
+              ${localize(
+                'editor.pagebreak.info_text',
+                lang,
+                'Page breaks appear as a slim divider in the editor and are invisible on the dashboard. When used inside a Slider Layout, they separate content into different slides. All modules before a page break belong to one page, and modules after it belong to the next page.'
+              )}
             </div>
           </div>
         </div>

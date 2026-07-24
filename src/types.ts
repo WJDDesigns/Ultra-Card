@@ -4396,6 +4396,8 @@ export interface LockModule extends BaseModule {
   show_state?: boolean | undefined;
   /** Show Open / unlatch when entity supports LockEntityFeature.OPEN */
   show_open_button?: boolean | undefined;
+  /** Ask for confirmation before unlock / open (default true) */
+  require_confirmation?: boolean | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;

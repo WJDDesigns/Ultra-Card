@@ -904,7 +904,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
               { value: 'turtle', label: 'Turtle', icon: 'mdi:turtle' },
               { value: 'frog', label: 'Frog', icon: 'mdi:spa' },
             ],
-            next => updateModule({ species: next as PetSpecies } as any)
+            next => { updateModule({ species: next as PetSpecies } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); }
           )}
         </div>
 
@@ -1035,6 +1035,24 @@ export class UltraVirtualPetModule extends BaseUltraModule {
               .defaultValue=${'var(--primary-color)'}
               .hass=${hass}
               @value-changed=${(e: CustomEvent) => { updateModule({ accent_color: e.detail.value } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); }}
+            ></ultra-color-picker>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <ultra-color-picker
+              .label=${'Speech Bubble Text Color'}
+              .value=${pet.bubble_color || ''}
+              .defaultValue=${'var(--secondary-text-color)'}
+              .hass=${hass}
+              @value-changed=${(e: CustomEvent) => { updateModule({ bubble_color: e.detail.value } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); }}
+            ></ultra-color-picker>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <ultra-color-picker
+              .label=${'Stats Text Color'}
+              .value=${pet.stats_color || ''}
+              .defaultValue=${'var(--secondary-text-color)'}
+              .hass=${hass}
+              @value-changed=${(e: CustomEvent) => { updateModule({ stats_color: e.detail.value } as any); setTimeout(() => this.triggerPreviewUpdate(), 50); }}
             ></ultra-color-picker>
           </div>
         </div>
@@ -1323,7 +1341,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
         <div class="vp-screen ${lcdOn ? 'lcd-on' : ''}">
           ${pet.show_speech_bubble && speechMsg
             ? html`
-                <div class="vp-bubble">
+                <div class="vp-bubble" style="${pet.bubble_color ? `--vp-bubble-color: ${pet.bubble_color};` : ''}">
                   <span class="vp-bubble-text">"${speechMsg}"</span>
                 </div>
               `
@@ -1350,7 +1368,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
 
           ${pet.show_stats
             ? html`
-                <div class="vp-stats">
+                <div class="vp-stats" style="${pet.stats_color ? `--vp-stats-color: ${pet.stats_color};` : ''}">
                   ${this._renderStatBar('HP', moodState.happiness, '#FFB300', accentColor)}
                   ${this._renderStatBar('EP', moodState.energy, '#43A047', accentColor)}
                   ${moodState.temperature !== 50
@@ -1707,7 +1725,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
       .vp-bubble-text {
         font-size: 10px;
         line-height: 1.5;
-        color: var(--secondary-text-color);
+        color: var(--vp-bubble-color, var(--secondary-text-color));
         letter-spacing: 0.3px;
         font-style: italic;
       }
@@ -1800,7 +1818,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
       .vp-stat-lbl {
         font-size: 9px;
         width: 30px;
-        color: var(--secondary-text-color);
+        color: var(--vp-stats-color, var(--secondary-text-color));
         text-transform: uppercase;
         flex-shrink: 0;
         letter-spacing: 0.5px;
@@ -1817,7 +1835,7 @@ export class UltraVirtualPetModule extends BaseUltraModule {
         font-size: 9px;
         width: 28px;
         text-align: right;
-        color: var(--secondary-text-color);
+        color: var(--vp-stats-color, var(--secondary-text-color));
         flex-shrink: 0;
       }
 

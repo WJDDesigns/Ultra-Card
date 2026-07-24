@@ -143,6 +143,22 @@ export class UltraTimerModule extends BaseUltraModule {
               setTimeout(() => this.triggerPreviewUpdate(), 50);
             }
           )}
+          ${this.renderChipListField(
+            localize('editor.timer.preset_durations', lang, 'Preset durations (minutes)'),
+            localize('editor.timer.preset_durations_desc', lang, 'Quick-start buttons shown when the timer is idle.'),
+            hass,
+            (timerModule.preset_durations ?? DEFAULT_PRESETS).map(sec => String(sec / 60)),
+            (next: string[]) => {
+              const seconds = next
+                .map(v => Math.round(parseFloat(v) * 60))
+                .filter(v => Number.isFinite(v) && v > 0);
+              updateModule({ preset_durations: seconds });
+            },
+            {
+              mode: 'free-text',
+              placeholder: localize('editor.timer.preset_placeholder', lang, 'Minutes (e.g. 10)'),
+            }
+          )}
         </div>
 
         <!-- When timer ends -->

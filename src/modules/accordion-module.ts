@@ -1671,7 +1671,6 @@ export class UltraAccordionModule extends BaseUltraModule {
 
     // Render child modules
     const hasChildren = accordionModule.modules && accordionModule.modules.length > 0;
-    const registry = getModuleRegistry();
 
     // Generate unique ID for scoped hover styles
     const accordionId = `accordion-${accordionModule.id.replace(/[^a-zA-Z0-9]/g, '')}`;
@@ -1734,72 +1733,15 @@ export class UltraAccordionModule extends BaseUltraModule {
         <!-- Accordion Content -->
         <div class="ultra-accordion-content" style="${this.buildStyleString(contentStyles)}">
           ${isOpen && hasChildren
-            ? accordionModule.modules.map(childModule => {
-                const childModuleHandler = registry.getModule(childModule.type);
-                if (!childModuleHandler) {
-                  return ucModulePreviewService.renderModuleLoadingState(childModule);
-                }
-
-                // Check visibility (same rules as horizontal/vertical layouts:
-                // module-level conditions AND design-tab logic_* properties)
-                logicService.setHass(hass);
-                const childWithDesign = childModule as CardModule & {
-                  design?: Record<string, unknown>;
-                };
-                const isVisible = logicService.evaluateModuleVisibility(childModule);
-                const globalLogicVisible = logicService.evaluateLogicProperties({
-                  logic_entity: childWithDesign?.design?.logic_entity,
-                  logic_attribute: childWithDesign?.design?.logic_attribute,
-                  logic_operator: childWithDesign?.design?.logic_operator,
-                  logic_value: childWithDesign?.design?.logic_value,
-                });
-                if (!isVisible || !globalLogicVisible) return '';
-
-                // Check Pro access for child modules
-                const isProModule =
-                  childModuleHandler.metadata?.tags?.includes('pro') ||
-                  childModuleHandler.metadata?.tags?.includes('premium') ||
-                  false;
-
-                let hasProAccess = false;
-                const integrationUser = ucCloudAuthService.checkIntegrationAuth(hass);
-                if (
-                  integrationUser?.subscription?.tier === 'pro' &&
-                  integrationUser?.subscription?.status === 'active'
-                ) {
-                  hasProAccess = true;
-                } else if (ucCloudAuthService.isAuthenticated()) {
-                  const cloudUser = ucCloudAuthService.getCurrentUser();
-                  if (
-                    cloudUser?.subscription?.tier === 'pro' &&
-                    cloudUser?.subscription?.status === 'active'
-                  ) {
-                    hasProAccess = true;
-                  }
-                }
-
-                if (isProModule && !hasProAccess) {
-                  return html`
-                    <div
-                      style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-warning-color), 0.1); border: 1px dashed var(--warning-color); border-radius: 8px; margin: 8px 0;"
-                    >
-                      🔒 ${childModuleHandler.metadata.title} - Pro Feature
-                    </div>
-                  `;
-                }
-
-                // Render child module
-                return html`
-                  <div class="accordion-child-module" style="margin-bottom: 8px;">
-                    ${childModuleHandler.renderPreview(
-                      autoMigrateCardModule(childModule),
-                      hass,
-                      config,
-                      previewContext
-                    )}
-                  </div>
-                `;
-              })
+            ? accordionModule.modules.map(childModule =>
+                this._renderAccordionChild(
+                  childModule,
+                  hass,
+                  moduleWithDesign,
+                  config,
+                  previewContext
+                )
+              )
             : isOpen && !hasChildren
               ? html`
                   <div
@@ -1816,6 +1758,196 @@ export class UltraAccordionModule extends BaseUltraModule {
         </div>
       </div>
     `, module, hass);
+  }
+
+  private _renderAccordionChild(
+    childModule: CardModule,
+    hass: HomeAssistant,
+    layoutDesign: any,
+    config?: UltraCardConfig,
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
+  ): TemplateResult {
+    const registry = getModuleRegistry();
+    const childModuleHandler = registry.getModule(childModule.type);
+    if (!childModuleHandler) {
+      return ucModulePreviewService.renderModuleLoadingState(childModule);
+    }
+
+    // Merge the accordion's design into the child, matching what
+    // horizontal/vertical/stack layouts do for their children.
+    const moduleToRender = this.applyLayoutDesignToChild(childModule, layoutDesign);
+
+    // Check visibility (same rules as horizontal/vertical layouts:
+    // module-level conditions AND design-tab logic_* properties)
+    logicService.setHass(hass);
+    const childWithDesign = moduleToRender as CardModule & {
+      design?: Record<string, unknown>;
+    };
+    const isVisible = logicService.evaluateModuleVisibility(moduleToRender);
+    const globalLogicVisible = logicService.evaluateLogicProperties({
+      logic_entity: childWithDesign?.design?.logic_entity,
+      logic_attribute: childWithDesign?.design?.logic_attribute,
+      logic_operator: childWithDesign?.design?.logic_operator,
+      logic_value: childWithDesign?.design?.logic_value,
+    });
+    if (!isVisible || !globalLogicVisible) return html``;
+
+    // Check Pro access for child modules
+    const isProModule =
+      childModuleHandler.metadata?.tags?.includes('pro') ||
+      childModuleHandler.metadata?.tags?.includes('premium') ||
+      false;
+
+    let hasProAccess = false;
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(hass);
+    if (
+      integrationUser?.subscription?.tier === 'pro' &&
+      integrationUser?.subscription?.status === 'active'
+    ) {
+      hasProAccess = true;
+    } else if (ucCloudAuthService.isAuthenticated()) {
+      const cloudUser = ucCloudAuthService.getCurrentUser();
+      if (
+        cloudUser?.subscription?.tier === 'pro' &&
+        cloudUser?.subscription?.status === 'active'
+      ) {
+        hasProAccess = true;
+      }
+    }
+
+    if (isProModule && !hasProAccess) {
+      return html`
+        <div
+          style="padding: 16px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-warning-color), 0.1); border: 1px dashed var(--warning-color); border-radius: 8px; margin: 8px 0;"
+        >
+          🔒 ${childModuleHandler.metadata.title} - Pro Feature
+        </div>
+      `;
+    }
+
+    const moduleContent = html`
+      <div class="accordion-child-module" style="margin-bottom: 8px;">
+        ${childModuleHandler.renderPreview(
+          autoMigrateCardModule(moduleToRender),
+          hass,
+          config,
+          previewContext
+        )}
+      </div>
+    `;
+
+    // State-based animation wrapper for child modules when configured
+    // (same behavior as horizontal/vertical/stack layouts)
+    const m: any = moduleToRender;
+    const animationType = m.animation_type || m.design?.animation_type;
+    if (animationType && animationType !== 'none') {
+      const animationDuration = m.animation_duration || m.design?.animation_duration || '2s';
+      const animationDelay = m.animation_delay || m.design?.animation_delay || '0s';
+      const animationTiming = m.animation_timing || m.design?.animation_timing || 'ease';
+      const entityId = m.animation_entity || m.design?.animation_entity;
+      const triggerType = m.animation_trigger_type || m.design?.animation_trigger_type || 'state';
+      const attribute = m.animation_attribute || m.design?.animation_attribute;
+      const targetState = m.animation_state || m.design?.animation_state;
+
+      let shouldAnimate = false;
+      if (!entityId) {
+        shouldAnimate = true;
+      } else if (targetState && hass && hass.states[entityId]) {
+        const entity = hass.states[entityId];
+        if (triggerType === 'attribute' && attribute) {
+          shouldAnimate = String(entity.attributes[attribute]) === targetState;
+        } else {
+          shouldAnimate = entity.state === targetState;
+        }
+      }
+
+      if (shouldAnimate) {
+        return html`
+          <div
+            class="module-animation-wrapper animation-${animationType}"
+            style="
+              --animation-duration: ${animationDuration};
+              --animation-delay: ${animationDelay};
+              --animation-timing: ${animationTiming};
+            "
+          >
+            ${moduleContent}
+          </div>
+        `;
+      }
+    }
+
+    return moduleContent;
+  }
+
+  /**
+   * Apply layout module design properties to child modules, mirroring
+   * horizontal/vertical/stack layout behavior. Text, shadow, and animation
+   * properties pass through; container sizing, backgrounds, and borders are
+   * intentionally not propagated.
+   */
+  private applyLayoutDesignToChild(childModule: CardModule, layoutDesign: any): CardModule {
+    const mergedModule = { ...childModule } as any;
+    const childDesign = (childModule as any).design || {};
+    const hasExplicitMargin =
+      childDesign.margin_top !== undefined ||
+      childDesign.margin_bottom !== undefined ||
+      childDesign.margin_left !== undefined ||
+      childDesign.margin_right !== undefined ||
+      (childModule as any).margin_top !== undefined ||
+      (childModule as any).margin_bottom !== undefined ||
+      (childModule as any).margin_left !== undefined ||
+      (childModule as any).margin_right !== undefined;
+
+    if (!hasExplicitMargin) {
+      mergedModule.margin_top = '0';
+      mergedModule.margin_bottom = '0';
+      mergedModule.margin_left = '0';
+      mergedModule.margin_right = '0';
+    }
+
+    if (layoutDesign.color) mergedModule.color = layoutDesign.color;
+    if (layoutDesign.font_size) mergedModule.font_size = layoutDesign.font_size;
+    if (layoutDesign.font_family) mergedModule.font_family = layoutDesign.font_family;
+    if (layoutDesign.font_weight) mergedModule.font_weight = layoutDesign.font_weight;
+    if (layoutDesign.text_align) mergedModule.text_align = layoutDesign.text_align;
+    if (layoutDesign.line_height) mergedModule.line_height = layoutDesign.line_height;
+    if (layoutDesign.letter_spacing) mergedModule.letter_spacing = layoutDesign.letter_spacing;
+    if (layoutDesign.text_transform) mergedModule.text_transform = layoutDesign.text_transform;
+    if (layoutDesign.font_style) mergedModule.font_style = layoutDesign.font_style;
+    if (layoutDesign.white_space) mergedModule.white_space = layoutDesign.white_space;
+
+    if (layoutDesign.text_shadow_h) mergedModule.text_shadow_h = layoutDesign.text_shadow_h;
+    if (layoutDesign.text_shadow_v) mergedModule.text_shadow_v = layoutDesign.text_shadow_v;
+    if (layoutDesign.text_shadow_blur)
+      mergedModule.text_shadow_blur = layoutDesign.text_shadow_blur;
+    if (layoutDesign.text_shadow_color)
+      mergedModule.text_shadow_color = layoutDesign.text_shadow_color;
+    if (layoutDesign.box_shadow_h) mergedModule.box_shadow_h = layoutDesign.box_shadow_h;
+    if (layoutDesign.box_shadow_v) mergedModule.box_shadow_v = layoutDesign.box_shadow_v;
+    if (layoutDesign.box_shadow_blur) mergedModule.box_shadow_blur = layoutDesign.box_shadow_blur;
+    if (layoutDesign.box_shadow_spread)
+      mergedModule.box_shadow_spread = layoutDesign.box_shadow_spread;
+    if (layoutDesign.box_shadow_color)
+      mergedModule.box_shadow_color = layoutDesign.box_shadow_color;
+
+    if (layoutDesign.animation_type) mergedModule.animation_type = layoutDesign.animation_type;
+    if (layoutDesign.animation_entity)
+      mergedModule.animation_entity = layoutDesign.animation_entity;
+    if (layoutDesign.animation_trigger_type)
+      mergedModule.animation_trigger_type = layoutDesign.animation_trigger_type;
+    if (layoutDesign.animation_attribute)
+      mergedModule.animation_attribute = layoutDesign.animation_attribute;
+    if (layoutDesign.animation_state) mergedModule.animation_state = layoutDesign.animation_state;
+    if (layoutDesign.intro_animation) mergedModule.intro_animation = layoutDesign.intro_animation;
+    if (layoutDesign.outro_animation) mergedModule.outro_animation = layoutDesign.outro_animation;
+    if (layoutDesign.animation_duration)
+      mergedModule.animation_duration = layoutDesign.animation_duration;
+    if (layoutDesign.animation_delay) mergedModule.animation_delay = layoutDesign.animation_delay;
+    if (layoutDesign.animation_timing)
+      mergedModule.animation_timing = layoutDesign.animation_timing;
+
+    return mergedModule as CardModule;
   }
 
   override validate(module: CardModule): { valid: boolean; errors: string[] } {

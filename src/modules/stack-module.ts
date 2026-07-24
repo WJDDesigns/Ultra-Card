@@ -1609,6 +1609,17 @@ export class UltraStackModule extends BaseUltraModule {
                               ? html`
                                   <div
                                     class="stack-drag-handle ${dragSelected ? 'selected' : ''}"
+                                    title="${dragSelected
+                                      ? localize(
+                                          'editor.stack.layer.drag_hint',
+                                          lang,
+                                          'Drag to move this layer'
+                                        )
+                                      : localize(
+                                          'editor.stack.layer.select_hint',
+                                          lang,
+                                          'Click to select this layer'
+                                        )}"
                                     @pointerdown=${(ev: PointerEvent) => {
                                       const layerCfg = (
                                         childModule as CardModule & {

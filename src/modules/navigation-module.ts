@@ -256,17 +256,25 @@ export class UltraNavigationModule extends BaseUltraModule {
         <div class="info-box" style="margin-bottom: 16px;">
           <ha-icon icon="mdi:information-outline"></ha-icon>
           <span
-            >Changes preview live in the navbar below. Close this editor to interact with the
-            navbar.</span
+            >${localize(
+              'editor.navigation.edit_mode_banner',
+              lang,
+              'Changes preview live in the navbar below. Close this editor to interact with the navbar.'
+            )}</span
           >
         </div>
 
         <!-- Paths Section -->
         <div class="settings-section">
-          <div class="section-title">NAVIGATION ITEMS</div>
+          <div class="section-title">
+            ${localize('editor.navigation.section_items', lang, 'NAVIGATION ITEMS')}
+          </div>
           <div class="section-description">
-            Configure and reorder items that appear in your navbar. Drag to reorder. Drag paths onto
-            a stack to add them as children.
+            ${localize(
+              'editor.navigation.section_items_desc',
+              lang,
+              'Configure and reorder items that appear in your navbar. Drag to reorder. Drag paths onto a stack to add them as children.'
+            )}
           </div>
 
           <div class="routes-list" id="nav-items-list">
@@ -317,10 +325,14 @@ export class UltraNavigationModule extends BaseUltraModule {
                 return this.renderSpecialItemRow(
                   'media_player',
                   'mdi:music',
-                  'Media Player',
+                  localize('editor.navigation.media_player', lang, 'Media Player'),
                   hasEntity && navModule.nav_media_player?.entity
                     ? navModule.nav_media_player.entity
-                    : '⚠️ Click to select entity (required)',
+                    : localize(
+                        'editor.navigation.media_player_entity_required',
+                        lang,
+                        'Click to select entity (required)'
+                      ),
                   visualIndex,
                   unifiedItems.length,
                   navModule,
@@ -344,7 +356,7 @@ export class UltraNavigationModule extends BaseUltraModule {
               }}
             >
               <ha-icon icon="mdi:plus"></ha-icon>
-              Add Path
+              ${localize('editor.navigation.add_path', lang, 'Add Path')}
             </button>
             <button
               class="add-entity-btn"
@@ -357,22 +369,31 @@ export class UltraNavigationModule extends BaseUltraModule {
               }}
             >
               <ha-icon icon="mdi:view-sequential"></ha-icon>
-              Add Stack
+              ${localize('editor.navigation.add_stack', lang, 'Add Stack')}
             </button>
           </div>
         </div>
 
         <!-- Special Items Section -->
         <div class="settings-section">
-          <div class="section-title">SPECIAL ITEMS</div>
+          <div class="section-title">
+            ${localize('editor.navigation.section_special', lang, 'SPECIAL ITEMS')}
+          </div>
           <div class="section-description">
-            Enable special navbar items. When enabled, they appear in the items list above for
-            reordering.
+            ${localize(
+              'editor.navigation.section_special_desc',
+              lang,
+              'Enable special navbar items. When enabled, they appear in the items list above for reordering.'
+            )}
           </div>
 
           ${this.renderFieldSection(
-              'Media Player Icon',
-              'Show a media player icon in the navbar',
+              localize('editor.navigation.media_player_icon', lang, 'Media Player Icon'),
+              localize(
+                'editor.navigation.media_player_icon_desc',
+                lang,
+                'Show a media player icon in the navbar'
+              ),
               hass,
               { nav_media_player_enabled: navModule.nav_media_player?.enabled === true },
               [this.booleanField('nav_media_player_enabled')],
@@ -387,11 +408,17 @@ export class UltraNavigationModule extends BaseUltraModule {
 
         <!-- Style Section -->
         <div class="settings-section">
-          <div class="section-title">NAVBAR STYLE</div>
+          <div class="section-title">
+            ${localize('editor.navigation.section_style', lang, 'NAVBAR STYLE')}
+          </div>
 
           ${UcFormUtils.renderFieldSection(
-            'Visual Preset',
-            'Choose a visual style preset for your navbar.',
+            localize('editor.navigation.visual_preset', lang, 'Visual Preset'),
+            localize(
+              'editor.navigation.visual_preset_desc',
+              lang,
+              'Choose a visual style preset for your navbar.'
+            ),
             hass,
             { nav_style: navModule.nav_style || 'uc_modern' },
             [UcFormUtils.select('nav_style', styleOptions)],
@@ -401,9 +428,15 @@ export class UltraNavigationModule extends BaseUltraModule {
           )}
 
           <div class="color-field" style="margin-top: 16px;">
-            <div class="field-title">Dock Color</div>
+            <div class="field-title">
+              ${localize('editor.navigation.dock_color', lang, 'Dock Color')}
+            </div>
             <div class="field-description">
-              Custom accent color for the dock background. For glass styles this tints the glass.
+              ${localize(
+                'editor.navigation.dock_color_desc',
+                lang,
+                'Custom accent color for the dock background. For glass styles this tints the glass.'
+              )}
             </div>
             <ultra-color-picker
               .hass=${hass}
@@ -413,9 +446,15 @@ export class UltraNavigationModule extends BaseUltraModule {
           </div>
 
           <div class="color-field" style="margin-top: 12px;">
-            <div class="field-title">Icon Color</div>
+            <div class="field-title">
+              ${localize('editor.navigation.icon_color', lang, 'Icon Color')}
+            </div>
             <div class="field-description">
-              Custom color for navbar icons. Overrides the default icon color from the style preset.
+              ${localize(
+                'editor.navigation.icon_color_desc',
+                lang,
+                'Custom color for navbar icons. Overrides the default icon color from the style preset.'
+              )}
             </div>
             <ultra-color-picker
               .hass=${hass}
@@ -427,17 +466,29 @@ export class UltraNavigationModule extends BaseUltraModule {
 
         <!-- Visibility Scope Section -->
         <div class="settings-section">
-          <div class="section-title">VISIBILITY</div>
+          <div class="section-title">
+            ${localize('editor.navigation.section_visibility', lang, 'VISIBILITY')}
+          </div>
 
           ${UcFormUtils.renderFieldSection(
-            'Show Navigation On',
-            'Control where this navbar appears.',
+            localize('editor.navigation.nav_scope', lang, 'Show Navigation On'),
+            localize('editor.navigation.nav_scope_desc', lang, 'Control where this navbar appears.'),
             hass,
             { nav_scope: navModule.nav_scope || 'all_views' },
             [
               UcFormUtils.select('nav_scope', [
-                { value: 'all_views', label: 'All views (global)' },
-                { value: 'current_view', label: 'Current view only' },
+                {
+                  value: 'all_views',
+                  label: localize('editor.navigation.scope_all_views', lang, 'All views (global)'),
+                },
+                {
+                  value: 'current_view',
+                  label: localize(
+                    'editor.navigation.scope_current_view',
+                    lang,
+                    'Current view only'
+                  ),
+                },
               ]),
             ],
             (e: CustomEvent) => {
@@ -448,9 +499,20 @@ export class UltraNavigationModule extends BaseUltraModule {
           <div class="info-box" style="margin-top: 8px;">
             <ha-icon icon="mdi:information"></ha-icon>
             <span>
-              <strong>All views:</strong> Navbar appears on every view in your dashboard.<br />
-              <strong>Current view:</strong> Navbar only appears on the view where this card is
-              placed.
+              <strong>${localize('editor.navigation.scope_all_label', lang, 'All views:')}</strong>
+              ${localize(
+                'editor.navigation.scope_all_info',
+                lang,
+                'Navbar appears on every view in your dashboard.'
+              )}<br />
+              <strong
+                >${localize('editor.navigation.scope_current_label', lang, 'Current view:')}</strong
+              >
+              ${localize(
+                'editor.navigation.scope_current_info',
+                lang,
+                'Navbar only appears on the view where this card is placed.'
+              )}
             </span>
           </div>
 
@@ -460,9 +522,12 @@ export class UltraNavigationModule extends BaseUltraModule {
           >
             <ha-icon icon="mdi:alert" style="color: var(--warning-color);"></ha-icon>
             <span>
-              <strong>Note:</strong> Only one global navbar can be active at a time. If you have
-              multiple navbars set to "All views", only the first registered one will be displayed.
-              Use "Current view only" for navbars on specific pages.
+              <strong>${localize('editor.navigation.note_label', lang, 'Note:')}</strong>
+              ${localize(
+                'editor.navigation.global_navbar_warning',
+                lang,
+                'Only one global navbar can be active at a time. If you have multiple navbars set to "All views", only the first registered one will be displayed. Use "Current view only" for navbars on specific pages.'
+              )}
             </span>
           </div>
         </div>
@@ -473,14 +538,24 @@ export class UltraNavigationModule extends BaseUltraModule {
           localize('editor.navigation.section_desktop_desc', lang, 'Configure navbar appearance and behavior on desktop devices.'),
           [
             {
-              title: 'Mode',
-              description: 'Choose floating (centered with margins) or docked (edge-to-edge).',
+              title: localize('editor.navigation.mode', lang, 'Mode'),
+              description: localize(
+                'editor.navigation.desktop_mode_desc',
+                lang,
+                'Choose floating (centered with margins) or docked (edge-to-edge).'
+              ),
               hass,
               data: { mode: navModule.nav_desktop?.mode || 'floating' },
               schema: [
                 UcFormUtils.select('mode', [
-                  { value: 'floating', label: 'Floating' },
-                  { value: 'docked', label: 'Docked' },
+                  {
+                    value: 'floating',
+                    label: localize('editor.navigation.mode_floating', lang, 'Floating'),
+                  },
+                  {
+                    value: 'docked',
+                    label: localize('editor.navigation.mode_docked', lang, 'Docked'),
+                  },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -490,16 +565,29 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
             },
             {
-              title: 'Position',
-              description: 'Where the navbar appears on desktop.',
+              title: localize('editor.navigation.position', lang, 'Position'),
+              description: localize(
+                'editor.navigation.desktop_position_desc',
+                lang,
+                'Where the navbar appears on desktop.'
+              ),
               hass,
               data: { position: navModule.nav_desktop?.position || 'bottom' },
               schema: [
                 UcFormUtils.select('position', [
-                  { value: 'bottom', label: 'Bottom' },
-                  { value: 'top', label: 'Top' },
-                  { value: 'left', label: 'Left' },
-                  { value: 'right', label: 'Right' },
+                  {
+                    value: 'bottom',
+                    label: localize('editor.navigation.position_bottom', lang, 'Bottom'),
+                  },
+                  { value: 'top', label: localize('editor.navigation.position_top', lang, 'Top') },
+                  {
+                    value: 'left',
+                    label: localize('editor.navigation.position_left', lang, 'Left'),
+                  },
+                  {
+                    value: 'right',
+                    label: localize('editor.navigation.position_right', lang, 'Right'),
+                  },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -509,8 +597,12 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
             },
             {
-              title: 'Show Labels',
-              description: 'Control label visibility on desktop.',
+              title: localize('editor.navigation.show_labels', lang, 'Show Labels'),
+              description: localize(
+                'editor.navigation.desktop_show_labels_desc',
+                lang,
+                'Control label visibility on desktop.'
+              ),
               hass,
               data: {
                 show_labels:
@@ -522,9 +614,22 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
               schema: [
                 UcFormUtils.select('show_labels', [
-                  { value: 'false', label: 'Hidden' },
-                  { value: 'true', label: 'Icons & Labels' },
-                  { value: 'text_only', label: 'Text only (no icons)' },
+                  {
+                    value: 'false',
+                    label: localize('editor.navigation.labels_hidden', lang, 'Hidden'),
+                  },
+                  {
+                    value: 'true',
+                    label: localize('editor.navigation.labels_icons', lang, 'Icons & Labels'),
+                  },
+                  {
+                    value: 'text_only',
+                    label: localize(
+                      'editor.navigation.labels_text_only',
+                      lang,
+                      'Text only (no icons)'
+                    ),
+                  },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -539,17 +644,33 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
             },
             {
-              title: 'Item Alignment',
-              description: 'How items are distributed within the dock.',
+              title: localize('editor.navigation.item_alignment', lang, 'Item Alignment'),
+              description: localize(
+                'editor.navigation.item_alignment_desc',
+                lang,
+                'How items are distributed within the dock.'
+              ),
               hass,
               data: { alignment: navModule.nav_desktop?.alignment || 'center' },
               schema: [
                 UcFormUtils.select('alignment', [
-                  { value: 'center', label: 'Center' },
-                  { value: 'start', label: 'Start' },
-                  { value: 'end', label: 'End' },
-                  { value: 'space-between', label: 'Space Between' },
-                  { value: 'space-around', label: 'Space Around' },
+                  {
+                    value: 'center',
+                    label: localize('editor.navigation.align_center', lang, 'Center'),
+                  },
+                  {
+                    value: 'start',
+                    label: localize('editor.navigation.align_start', lang, 'Start'),
+                  },
+                  { value: 'end', label: localize('editor.navigation.align_end', lang, 'End') },
+                  {
+                    value: 'space-between',
+                    label: localize('editor.navigation.align_space_between', lang, 'Space Between'),
+                  },
+                  {
+                    value: 'space-around',
+                    label: localize('editor.navigation.align_space_around', lang, 'Space Around'),
+                  },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -565,8 +686,12 @@ export class UltraNavigationModule extends BaseUltraModule {
         )}
 
         ${this.renderSliderField(
-          'Min Width',
-          'Viewport width (px) that switches to desktop mode.',
+          localize('editor.navigation.min_width', lang, 'Min Width'),
+          localize(
+            'editor.navigation.min_width_desc',
+            lang,
+            'Viewport width (px) that switches to desktop mode.'
+          ),
           navModule.nav_desktop?.min_width ?? 768,
           768,
           320,
@@ -588,13 +713,17 @@ export class UltraNavigationModule extends BaseUltraModule {
               class="field-title"
               style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
             >
-              Desktop Offset
+              ${localize('editor.navigation.desktop_offset', lang, 'Desktop Offset')}
             </div>
             <div
               class="field-description"
               style="font-size: 13px; color: var(--secondary-text-color);"
             >
-              Distance from screen edge (px). Pushes the dock away from the edge.
+              ${localize(
+                'editor.navigation.offset_desc',
+                lang,
+                'Distance from screen edge (px). Pushes the dock away from the edge.'
+              )}
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
@@ -624,14 +753,24 @@ export class UltraNavigationModule extends BaseUltraModule {
           localize('editor.navigation.section_mobile_desc', lang, 'Configure navbar appearance and behavior on mobile devices.'),
           [
             {
-              title: 'Mode',
-              description: 'Choose docked (default) or floating (desktop-like).',
+              title: localize('editor.navigation.mode', lang, 'Mode'),
+              description: localize(
+                'editor.navigation.mobile_mode_desc',
+                lang,
+                'Choose docked (default) or floating (desktop-like).'
+              ),
               hass,
               data: { mode: navModule.nav_mobile?.mode || 'docked' },
               schema: [
                 UcFormUtils.select('mode', [
-                  { value: 'docked', label: 'Docked' },
-                  { value: 'floating', label: 'Floating' },
+                  {
+                    value: 'docked',
+                    label: localize('editor.navigation.mode_docked', lang, 'Docked'),
+                  },
+                  {
+                    value: 'floating',
+                    label: localize('editor.navigation.mode_floating', lang, 'Floating'),
+                  },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -641,14 +780,21 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
             },
             {
-              title: 'Position',
-              description: 'Where the navbar appears on mobile.',
+              title: localize('editor.navigation.position', lang, 'Position'),
+              description: localize(
+                'editor.navigation.mobile_position_desc',
+                lang,
+                'Where the navbar appears on mobile.'
+              ),
               hass,
               data: { position: navModule.nav_mobile?.position || 'bottom' },
               schema: [
                 UcFormUtils.select('position', [
-                  { value: 'bottom', label: 'Bottom' },
-                  { value: 'top', label: 'Top' },
+                  {
+                    value: 'bottom',
+                    label: localize('editor.navigation.position_bottom', lang, 'Bottom'),
+                  },
+                  { value: 'top', label: localize('editor.navigation.position_top', lang, 'Top') },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -658,8 +804,12 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
             },
             {
-              title: 'Show Labels',
-              description: 'Control label visibility on mobile.',
+              title: localize('editor.navigation.show_labels', lang, 'Show Labels'),
+              description: localize(
+                'editor.navigation.mobile_show_labels_desc',
+                lang,
+                'Control label visibility on mobile.'
+              ),
               hass,
               data: {
                 show_labels:
@@ -671,9 +821,22 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
               schema: [
                 UcFormUtils.select('show_labels', [
-                  { value: 'false', label: 'Hidden' },
-                  { value: 'true', label: 'Icons & Labels' },
-                  { value: 'text_only', label: 'Text only (no icons)' },
+                  {
+                    value: 'false',
+                    label: localize('editor.navigation.labels_hidden', lang, 'Hidden'),
+                  },
+                  {
+                    value: 'true',
+                    label: localize('editor.navigation.labels_icons', lang, 'Icons & Labels'),
+                  },
+                  {
+                    value: 'text_only',
+                    label: localize(
+                      'editor.navigation.labels_text_only',
+                      lang,
+                      'Text only (no icons)'
+                    ),
+                  },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -687,17 +850,33 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
             },
             {
-              title: 'Item Alignment',
-              description: 'How items are distributed within the dock.',
+              title: localize('editor.navigation.item_alignment', lang, 'Item Alignment'),
+              description: localize(
+                'editor.navigation.item_alignment_desc',
+                lang,
+                'How items are distributed within the dock.'
+              ),
               hass,
               data: { alignment: navModule.nav_mobile?.alignment || 'center' },
               schema: [
                 UcFormUtils.select('alignment', [
-                  { value: 'center', label: 'Center' },
-                  { value: 'start', label: 'Start' },
-                  { value: 'end', label: 'End' },
-                  { value: 'space-between', label: 'Space Between' },
-                  { value: 'space-around', label: 'Space Around' },
+                  {
+                    value: 'center',
+                    label: localize('editor.navigation.align_center', lang, 'Center'),
+                  },
+                  {
+                    value: 'start',
+                    label: localize('editor.navigation.align_start', lang, 'Start'),
+                  },
+                  { value: 'end', label: localize('editor.navigation.align_end', lang, 'End') },
+                  {
+                    value: 'space-between',
+                    label: localize('editor.navigation.align_space_between', lang, 'Space Between'),
+                  },
+                  {
+                    value: 'space-around',
+                    label: localize('editor.navigation.align_space_around', lang, 'Space Around'),
+                  },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -719,13 +898,17 @@ export class UltraNavigationModule extends BaseUltraModule {
               class="field-title"
               style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
             >
-              Mobile Offset
+              ${localize('editor.navigation.mobile_offset', lang, 'Mobile Offset')}
             </div>
             <div
               class="field-description"
               style="font-size: 13px; color: var(--secondary-text-color);"
             >
-              Distance from screen edge (px). Pushes the dock away from the edge.
+              ${localize(
+                'editor.navigation.offset_desc',
+                lang,
+                'Distance from screen edge (px). Pushes the dock away from the edge.'
+              )}
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
@@ -756,13 +939,17 @@ export class UltraNavigationModule extends BaseUltraModule {
               class="field-title"
               style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
             >
-              Icon Spacing
+              ${localize('editor.navigation.icon_spacing', lang, 'Icon Spacing')}
             </div>
             <div
               class="field-description"
               style="font-size: 13px; color: var(--secondary-text-color);"
             >
-              Gap between icons in the dock (px).
+              ${localize(
+                'editor.navigation.icon_spacing_desc',
+                lang,
+                'Gap between icons in the dock (px).'
+              )}
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
@@ -788,15 +975,24 @@ export class UltraNavigationModule extends BaseUltraModule {
 
         <!-- Auto-Hide Section -->
         <div class="settings-section">
-          <div class="section-title">AUTO-HIDE</div>
+          <div class="section-title">
+            ${localize('editor.navigation.section_autohide', lang, 'AUTO-HIDE')}
+          </div>
           <div class="section-description">
-            macOS-style dock auto-hide. The navbar slides off-screen after a period of inactivity
-            and reappears when the cursor reaches the screen edge. Off by default.
+            ${localize(
+              'editor.navigation.section_autohide_desc',
+              lang,
+              'macOS-style dock auto-hide. The navbar slides off-screen after a period of inactivity and reappears when the cursor reaches the screen edge. Off by default.'
+            )}
           </div>
 
           ${UcFormUtils.renderFieldSection(
-            'Enable Auto-Hide',
-            'Hide the navbar when not in use.',
+            localize('editor.navigation.autohide_enable', lang, 'Enable Auto-Hide'),
+            localize(
+              'editor.navigation.autohide_enable_desc',
+              lang,
+              'Hide the navbar when not in use.'
+            ),
             hass,
             { enabled: navModule.nav_autohide?.enabled ?? false },
             [UcFormUtils.boolean('enabled')],
@@ -817,13 +1013,17 @@ export class UltraNavigationModule extends BaseUltraModule {
                       class="field-title"
                       style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
                     >
-                      Hide Delay
+                      ${localize('editor.navigation.autohide_delay', lang, 'Hide Delay')}
                     </div>
                     <div
                       class="field-description"
                       style="font-size: 13px; color: var(--secondary-text-color);"
                     >
-                      Seconds of inactivity before the navbar hides.
+                      ${localize(
+                        'editor.navigation.autohide_delay_desc',
+                        lang,
+                        'Seconds of inactivity before the navbar hides.'
+                      )}
                     </div>
                   </div>
                   <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
@@ -856,8 +1056,12 @@ export class UltraNavigationModule extends BaseUltraModule {
           localize('editor.navigation.section_haptics_desc', lang, 'Configure haptic feedback for interactions.'),
           [
             {
-              title: 'Enable Haptics',
-              description: 'Master toggle for all navbar haptic feedback.',
+              title: localize('editor.navigation.haptics_enable', lang, 'Enable Haptics'),
+              description: localize(
+                'editor.navigation.haptics_enable_desc',
+                lang,
+                'Master toggle for all navbar haptic feedback.'
+              ),
               hass,
               data: { enabled: navModule.nav_haptic !== false },
               schema: [UcFormUtils.boolean('enabled')],
@@ -874,8 +1078,12 @@ export class UltraNavigationModule extends BaseUltraModule {
               ? []
               : [
             {
-              title: 'URL Navigation',
-              description: 'Trigger haptic when navigating to a URL.',
+              title: localize('editor.navigation.haptics_url', lang, 'URL Navigation'),
+              description: localize(
+                'editor.navigation.haptics_url_desc',
+                lang,
+                'Trigger haptic when navigating to a URL.'
+              ),
               hass,
               data: { url: this.getHapticConfig(navModule).url ?? false },
               schema: [UcFormUtils.boolean('url')],
@@ -886,8 +1094,12 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
             },
             {
-              title: 'Tap Action',
-              description: 'Trigger haptic on tap.',
+              title: localize('editor.navigation.haptics_tap', lang, 'Tap Action'),
+              description: localize(
+                'editor.navigation.haptics_tap_desc',
+                lang,
+                'Trigger haptic on tap.'
+              ),
               hass,
               data: { tap_action: this.getHapticConfig(navModule).tap_action ?? true },
               schema: [UcFormUtils.boolean('tap_action')],
@@ -901,8 +1113,12 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
             },
             {
-              title: 'Hold Action',
-              description: 'Trigger haptic on hold.',
+              title: localize('editor.navigation.haptics_hold', lang, 'Hold Action'),
+              description: localize(
+                'editor.navigation.haptics_hold_desc',
+                lang,
+                'Trigger haptic on hold.'
+              ),
               hass,
               data: { hold_action: this.getHapticConfig(navModule).hold_action ?? true },
               schema: [UcFormUtils.boolean('hold_action')],
@@ -916,8 +1132,12 @@ export class UltraNavigationModule extends BaseUltraModule {
               },
             },
             {
-              title: 'Double Tap',
-              description: 'Trigger haptic on double tap.',
+              title: localize('editor.navigation.haptics_double_tap', lang, 'Double Tap'),
+              description: localize(
+                'editor.navigation.haptics_double_tap_desc',
+                lang,
+                'Trigger haptic on double tap.'
+              ),
               hass,
               data: {
                 double_tap_action: this.getHapticConfig(navModule).double_tap_action ?? true,

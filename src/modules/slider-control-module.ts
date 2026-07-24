@@ -5,6 +5,7 @@ import { CardModule, UltraCardConfig, SliderControlModule, SliderBar } from '../
 import { UltraLinkComponent } from '../components/ultra-link';
 import { localize } from '../localize/localize';
 import { EntityIconService } from '../services/entity-icon-service';
+import { formatEntityState } from '../utils/number-format';
 
 export class UltraSliderControlModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -2160,6 +2161,35 @@ export class UltraSliderControlModule extends BaseUltraModule {
     return html``;
   }
 
+  /**
+   * Entity state text element (wired to the module-level show_state option).
+   * Rendered alongside the value element in every layout mode.
+   */
+  private _renderStateElement(
+    bar: SliderBar,
+    sliderControl: SliderControlModule,
+    entityState: any,
+    hass: HomeAssistant,
+    barEntity: string,
+    vertical = false
+  ): TemplateResult | null {
+    if (sliderControl.show_state !== true || !entityState) return null;
+    const stateText = formatEntityState(hass, barEntity) || entityState.state;
+    return html`
+      <div
+        class="uc-slider-state"
+        style="
+          font-size: ${sliderControl.state_size || 12}px;
+          color: ${sliderControl.state_color || 'var(--secondary-text-color)'};
+          font-weight: ${sliderControl.state_bold ? 'bold' : 'normal'};
+          ${vertical ? 'writing-mode: vertical-rl; text-orientation: mixed;' : ''}
+        "
+      >
+        ${stateText}
+      </div>
+    `;
+  }
+
   renderPreview(
     module: CardModule,
     hass: HomeAssistant,
@@ -2394,7 +2424,26 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
       let gradient = defaultFill;
 
-      if (useDynamicFill) {
+      // Explicit custom gradient (use_gradient + gradient_stops) takes priority
+      // over dynamic fill and solid overrides for non-color bars.
+      const useCustomGradient = bar.use_gradient ?? sliderControl.use_gradient ?? false;
+      const customGradientStops =
+        bar.gradient_stops && bar.gradient_stops.length > 0
+          ? bar.gradient_stops
+          : sliderControl.gradient_stops;
+
+      if (
+        !isGradientBar &&
+        useCustomGradient &&
+        customGradientStops &&
+        customGradientStops.length >= 2
+      ) {
+        const stops = [...customGradientStops]
+          .sort((a, b) => a.position - b.position)
+          .map(s => `${s.color} ${s.position}%`)
+          .join(', ');
+        gradient = `linear-gradient(${orientation === 'vertical' ? '0deg' : '90deg'}, ${stops})`;
+      } else if (useDynamicFill) {
         gradient = this.resolveDynamicFillColor(bar, entityState, defaultFill);
       } else if (!isGradientBar && barFillOverride) {
         gradient = barFillOverride;
@@ -2442,6 +2491,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
       const barSliderStyle = bar.slider_style || sliderControl.slider_style || 'flat';
       const barSliderRadius = bar.slider_radius || sliderControl.slider_radius || 'round';
       const barGlassBlurAmount = bar.glass_blur_amount || sliderControl.glass_blur_amount || 8;
+      const animateOnChange = bar.animate_on_change ?? sliderControl.animate_on_change ?? true;
 
       // Build container and slider styles based on slider_style
       let containerStyles = '';
@@ -2829,9 +2879,9 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 height: ${containerHeight};
                 width: ${containerWidth};
                 ${containerStyles}
-                transition: all ${bar.transition_duration ||
-              sliderControl.transition_duration ||
-              200}ms ease;
+                transition: ${animateOnChange
+              ? `all ${bar.transition_duration || sliderControl.transition_duration || 200}ms ease`
+              : 'none'};
                 overflow: ${barSliderStyle === 'minimal' ? 'visible' : 'hidden'};
                 ${barSliderStyle === 'minimal' ? 'display: flex; align-items: center;' : ''}
                 ${isVertical ? 'display: flex; justify-content: center; align-items: center;' : ''}
@@ -2853,7 +2903,9 @@ export class UltraSliderControlModule extends BaseUltraModule {
                   border-radius: ${borderRadius};
                   pointer-events: none;
                   z-index: 1;
-                  transition: width 80ms ease-out, height 80ms ease-out;
+                  transition: ${animateOnChange
+                      ? 'width 80ms ease-out, height 80ms ease-out'
+                      : 'none'};
                 "
                   ></div>
                 `
@@ -3082,6 +3134,18 @@ export class UltraSliderControlModule extends BaseUltraModule {
                           else if (valuePos === 'bottom') bottomElements.push(valueElement);
                           else middleElements.push(valueElement);
                         }
+                        const stateElement = this._renderStateElement(
+                          bar,
+                          sliderControl,
+                          entityState,
+                          homeAssistant,
+                          barEntity
+                        );
+                        if (stateElement) {
+                          if (valuePos === 'top') topElements.push(stateElement);
+                          else if (valuePos === 'bottom') bottomElements.push(stateElement);
+                          else middleElements.push(stateElement);
+                        }
 
                         return html`
                           <div
@@ -3276,6 +3340,18 @@ export class UltraSliderControlModule extends BaseUltraModule {
                             if (valuePos === 'left') leftElements.push(valueElement);
                             else if (valuePos === 'right') rightElements.push(valueElement);
                             else centerElements.push(valueElement);
+                          }
+                          const stateElement = this._renderStateElement(
+                            bar,
+                            sliderControl,
+                            entityState,
+                            homeAssistant,
+                            barEntity
+                          );
+                          if (stateElement) {
+                            if (valuePos === 'left') leftElements.push(stateElement);
+                            else if (valuePos === 'right') rightElements.push(stateElement);
+                            else centerElements.push(stateElement);
                           }
 
                           return html`
@@ -3545,6 +3621,15 @@ export class UltraSliderControlModule extends BaseUltraModule {
           if (iconElement && positionGroups[iconPos]) positionGroups[iconPos].push(iconElement);
           if (nameElement && positionGroups[namePos]) positionGroups[namePos].push(nameElement);
           if (valueElement && positionGroups[valuePos]) positionGroups[valuePos].push(valueElement);
+          const stateElement = this._renderStateElement(
+            bar,
+            sliderControl,
+            entityState,
+            homeAssistant,
+            barEntity,
+            true
+          );
+          if (stateElement && positionGroups[valuePos]) positionGroups[valuePos].push(stateElement);
 
           // Check which sides have content
           const hasLeftContent =
@@ -3718,6 +3803,14 @@ export class UltraSliderControlModule extends BaseUltraModule {
           if (iconElement && positionGroups[iconPos]) positionGroups[iconPos].push(iconElement);
           if (nameElement && positionGroups[namePos]) positionGroups[namePos].push(nameElement);
           if (valueElement && positionGroups[valuePos]) positionGroups[valuePos].push(valueElement);
+          const stateElement = this._renderStateElement(
+            bar,
+            sliderControl,
+            entityState,
+            homeAssistant,
+            barEntity
+          );
+          if (stateElement && positionGroups[valuePos]) positionGroups[valuePos].push(stateElement);
 
           // Check which rows have content
           const hasTopContent =
@@ -4017,6 +4110,17 @@ export class UltraSliderControlModule extends BaseUltraModule {
             `);
           }
 
+          const stateElement = this._renderStateElement(
+            bar,
+            sliderControl,
+            entityState,
+            homeAssistant,
+            barEntity
+          );
+          if (stateElement) {
+            allElements.push(stateElement);
+          }
+
           return html`
             <div
               class="uc-slider-info"
@@ -4096,12 +4200,56 @@ export class UltraSliderControlModule extends BaseUltraModule {
     const hoverClass = this.getHoverEffectClass(module);
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
+    // Module-level tap/hold/double-tap actions apply to the non-interactive
+    // region of the card. The slider track (and its range input) plus the icon
+    // toggles are excluded so drags and toggles never fire tap actions.
+    const hasModuleActions = [
+      sliderControl.tap_action,
+      sliderControl.hold_action,
+      sliderControl.double_tap_action,
+    ].some(a => a && a.action && a.action !== 'nothing');
+    const firstBarEntity = validBars[0]
+      ? this.resolveEntity(validBars[0].entity, config) || validBars[0].entity
+      : undefined;
+    const rawGestures = hasModuleActions
+      ? this.createGestureHandlers(
+          `slider-control-${sliderControl.id}`,
+          {
+            tap_action: sliderControl.tap_action,
+            hold_action: sliderControl.hold_action,
+            double_tap_action: sliderControl.double_tap_action,
+            entity: firstBarEntity,
+            module: sliderControl,
+          },
+          hass,
+          config,
+          ['.slider-track-container', 'input[type="range"]', 'ha-icon']
+        )
+      : null;
+    // A drag can start on the (excluded) track but release over the wrapper;
+    // suppress pointerup while any bar is still being dragged so track drags
+    // never end in a tap action.
+    const moduleGestures = rawGestures
+      ? {
+          ...rawGestures,
+          onPointerUp: (e: PointerEvent) => {
+            if (this.interactingBars.size > 0) return;
+            rawGestures.onPointerUp(e);
+          },
+        }
+      : null;
+
     return this.wrapWithAnimation(html`
       <div
         class="slider-control-container ${baseLayoutClass} ${hoverClass}"
         style="${designStyles}; padding: 16px; position: relative; ${backgroundStyle} ${isVertical
           ? `display: flex; justify-content: center; align-items: center; min-height: ${verticalSliderHeight}px;`
           : ''} ${overflowStyle}"
+        @pointerdown=${moduleGestures?.onPointerDown}
+        @pointermove=${moduleGestures?.onPointerMove}
+        @pointerup=${moduleGestures?.onPointerUp}
+        @pointerleave=${moduleGestures?.onPointerLeave}
+        @pointercancel=${moduleGestures?.onPointerCancel}
       >
         ${warningBanner}
         <style>
