@@ -19,10 +19,18 @@ jobs:
 
       - name: Get release information
         id: release_info
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Manual trigger - fetching latest release"
-            RELEASE_DATA=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/releases" | jq '.[0]')
+            # Authenticated request: unauthenticated calls from shared runners
+            # hit rate limits and return an error object instead of the list.
+            RELEASE_DATA=$(curl -s -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/${{ github.repository }}/releases?per_page=1" | jq '.[0]')
+            if [ -z "$RELEASE_DATA" ] || [ "$RELEASE_DATA" = "null" ]; then
+              echo "::error::Could not fetch the latest release from the GitHub API"
+              exit 1
+            fi
             TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
             NAME=$(echo "$RELEASE_DATA" | jq -r '.name // ""')
             BODY=$(echo "$RELEASE_DATA" | jq -r '.body // "" | @base64')
