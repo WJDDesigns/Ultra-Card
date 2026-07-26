@@ -1,4 +1,4 @@
-import { LitElement, html, css, TemplateResult } from 'lit';
+import { LitElement, html, css, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { keyed } from 'lit/directives/keyed.js';
@@ -28,12 +28,34 @@ import '../global-design-tab';
 import { DesignProperties } from '../global-design-tab';
 import { GlobalLogicTab } from '../../tabs/global-logic-tab';
 import { logicService } from '../../services/logic-service';
+import {
+  ucEditorOnboardingService,
+  type OnboardingState,
+} from '../../services/uc-editor-onboarding-service';
+import '../uc-editor-onboarding';
+import type { OnboardingAction } from '../uc-editor-onboarding';
 import { getImageUrl, uploadImage, SUPPORTED_IMAGE_ACCEPT } from '../../utils/image-upload';
 import { localize } from '../../localize/localize';
 import { moduleDocsSlug, openHubDocs } from '../../panels/hub-navigation';
 import { Z_INDEX } from '../../utils/uc-z-index';
 import { promoteToTopLayer } from '../../utils/uc-top-layer';
 import { ucToastService } from '../../services/uc-toast-service';
+import {
+  isLayoutModuleType,
+  isValidLayoutDrop,
+  reorderArray,
+  resolveModuleList as resolveModuleListPure,
+} from '../layout/layout-tree-helpers';
+import { performLayoutMove, relocateLayoutModule } from '../layout/layout-tree-move-engine';
+import {
+  attachLayoutTreeMonitor,
+  isPragmaticTreeDndEnabled,
+  shouldSkipDragAutoExpand,
+  rowTreeNodeData,
+} from '../layout/layout-tree-dnd-bridge';
+import { moveModuleSibling, moveRowSibling, moveColumnSibling } from '../layout/layout-tree-keyboard-move';
+import { treeDndNode } from '../utils/tree-dnd';
+
 import { ucPresetsService } from '../../services/uc-presets-service';
 import { directoriesProPresetsAPI } from '../../services/directories-pro-presets-api';
 import { ucFavoritesService } from '../../services/uc-favorites-service';
@@ -210,7 +232,8 @@ export class LayoutTab extends LitElement {
   @state() private _submitPresetDialogPayload: SubmitPresetDialogPayload | null = null;
   @state() private _isCloudAuthenticated = false;
   @state() private _showKeyboardShortcuts = false;
-  @state() private _showGettingStarted = !localStorage.getItem('ultra-card-editor-seen');
+  @state() private _onboardingState: OnboardingState = ucEditorOnboardingService.getState();
+  @state() private _showOnboarding = ucEditorOnboardingService.shouldShow();
 
   // Inline rating & details for builder preset gallery
   @state() private _builderRatingPreset: {
@@ -301,6 +324,13 @@ export class LayoutTab extends LitElement {
       }
     };
     window.addEventListener('uc-module-patch-by-id', this._modulePatchByIdListener);
+
+    if (isPragmaticTreeDndEnabled()) {
+      this._treeDndCleanup = attachLayoutTreeMonitor(
+        layout => this._updateLayout(layout),
+        () => this._ensureLayout()
+      );
+    }
 
     // Listen for tab switch events from modules
     this._tabSwitchListener = (e: Event) => {
@@ -840,6 +870,16 @@ export class LayoutTab extends LitElement {
           action: () => this._openRowSettings(rowIndex),
         },
         {
+          icon: 'mdi:arrow-up',
+          label: localize('editor.layout.move_up', lang, 'Move up'),
+          action: () => this._moveRowSibling(rowIndex, 'up'),
+        },
+        {
+          icon: 'mdi:arrow-down',
+          label: localize('editor.layout.move_down', lang, 'Move down'),
+          action: () => this._moveRowSibling(rowIndex, 'down'),
+        },
+        {
           icon: 'mdi:plus',
           label: localize('editor.layout.add_column', lang, 'Add Column'),
           action: () => this._addColumn(rowIndex),
@@ -879,6 +919,16 @@ export class LayoutTab extends LitElement {
           action: () => this._openColumnSettings(rowIndex, columnIndex),
         },
         {
+          icon: 'mdi:arrow-up',
+          label: localize('editor.layout.move_up', lang, 'Move up'),
+          action: () => this._moveColumnSibling(rowIndex, columnIndex, 'up'),
+        },
+        {
+          icon: 'mdi:arrow-down',
+          label: localize('editor.layout.move_down', lang, 'Move down'),
+          action: () => this._moveColumnSibling(rowIndex, columnIndex, 'down'),
+        },
+        {
           icon: 'mdi:plus',
           label: localize('editor.layout.add_module', lang, 'Add Module'),
           action: () => this._openModuleSelector(rowIndex, columnIndex),
@@ -915,6 +965,16 @@ export class LayoutTab extends LitElement {
           icon: 'mdi:pencil',
           label: localize('editor.layout.edit', lang, 'Edit'),
           action: () => this._openModuleSettings(rowIndex, columnIndex, moduleIndex),
+        },
+        {
+          icon: 'mdi:arrow-up',
+          label: localize('editor.layout.move_up', lang, 'Move up'),
+          action: () => this._moveModuleSibling(rowIndex, columnIndex, moduleIndex, 'up'),
+        },
+        {
+          icon: 'mdi:arrow-down',
+          label: localize('editor.layout.move_down', lang, 'Move down'),
+          action: () => this._moveModuleSibling(rowIndex, columnIndex, moduleIndex, 'down'),
         },
         {
           icon: 'mdi:content-duplicate',
@@ -2022,13 +2082,34 @@ export class LayoutTab extends LitElement {
           : ''}"
         data-drop-type="row"
         data-row-index="${rowIndex}"
-        draggable="true"
-        @dragstart=${(e: DragEvent) => this._onDragStart(e, 'row', rowIndex)}
-        @dragend=${this._onDragEnd}
-        @dragover=${this._onDragOver}
-        @dragenter=${(e: DragEvent) => this._onDragEnter(e, 'row', rowIndex)}
-        @dragleave=${this._onDragLeave}
-        @drop=${(e: DragEvent) => this._onDrop(e, 'row', rowIndex)}
+        ${isPragmaticTreeDndEnabled()
+          ? treeDndNode(rowTreeNodeData(rowIndex))
+          : nothing}
+        ?draggable=${!isPragmaticTreeDndEnabled()}
+        @dragstart=${(e: DragEvent) => {
+          if (isPragmaticTreeDndEnabled()) return;
+          this._onDragStart(e, 'row', rowIndex);
+        }}
+        @dragend=${(e: DragEvent) => {
+          if (isPragmaticTreeDndEnabled()) return;
+          this._onDragEnd(e);
+        }}
+        @dragover=${(e: DragEvent) => {
+          if (isPragmaticTreeDndEnabled()) return;
+          this._onDragOver(e);
+        }}
+        @dragenter=${(e: DragEvent) => {
+          if (isPragmaticTreeDndEnabled()) return;
+          this._onDragEnter(e, 'row', rowIndex);
+        }}
+        @dragleave=${(e: DragEvent) => {
+          if (isPragmaticTreeDndEnabled()) return;
+          this._onDragLeave(e);
+        }}
+        @drop=${(e: DragEvent) => {
+          if (isPragmaticTreeDndEnabled()) return;
+          this._onDrop(e, 'row', rowIndex);
+        }}
       >
         <div class="tree-node-content">
           <div class="tree-node-header">
@@ -5374,14 +5455,9 @@ export class LayoutTab extends LitElement {
     `;
   }
 
-  // Generic array reorder helper
+  // Generic array reorder helper (delegates to extracted pure function)
   private _reorderArray<T>(arr: T[], fromIndex: number, toIndex: number): T[] {
-    if (fromIndex === toIndex) return arr;
-    const copy = [...arr];
-    const [moved] = copy.splice(fromIndex, 1);
-    const adjustedTo = fromIndex < toIndex ? toIndex - 1 : toIndex;
-    copy.splice(adjustedTo, 0, moved);
-    return copy;
+    return reorderArray(arr, fromIndex, toIndex);
   }
 
   // Render a deeply nested layout module (layout inside layout inside layout)
@@ -6439,13 +6515,7 @@ export class LayoutTab extends LitElement {
 
   /** Navigate layout tree via path [rowIndex, columnIndex, moduleIndex, ...nestedIndices]; returns the modules array at that path or null. */
   private _resolveModuleList(layout: any, path: number[]): any[] | null {
-    if (!path || path.length < 3) return null;
-    let current: any = layout.rows[path[0]]?.columns[path[1]]?.modules[path[2]];
-    for (let i = 3; i < path.length; i++) {
-      if (!current?.modules) return null;
-      current = current.modules[path[i]];
-    }
-    return current?.modules ?? null;
+    return resolveModuleListPure(layout, path);
   }
 
   private _deleteDeepNestedChild(parentPath: number[], childIndex: number): void {
@@ -6711,6 +6781,8 @@ export class LayoutTab extends LitElement {
   @state() private _dragExpandedModules: Set<string> = new Set();
   // Timeout for auto-expand delay
   private _dragExpandTimeout: ReturnType<typeof setTimeout> | null = null;
+  private _treeDndCleanup: (() => void) | null = null;
+  @state() private _reorderAnnouncement = '';
   @state() private _selectedLayoutModuleIndex: number = -1;
   @state() private _selectedNestedChildIndex: number = -1;
   @state() private _selectedNestedNestedChildIndex: number = -1; // For 3rd level nesting
@@ -6836,6 +6908,10 @@ export class LayoutTab extends LitElement {
   // Component lifecycle
   override disconnectedCallback() {
     super.disconnectedCallback();
+    if (this._treeDndCleanup) {
+      this._treeDndCleanup();
+      this._treeDndCleanup = null;
+    }
     // Restore HA dialog styles if patched
     this._patchDialogContainment(false);
     // Clean up any active drag/resize operations
@@ -7536,6 +7612,7 @@ export class LayoutTab extends LitElement {
     try {
       ThirdPartyLimitService.trigger();
     } catch {}
+    this._completeOnboardingStep('add_row');
   }
 
   private _deleteRow(rowIndex: number): void {
@@ -7939,6 +8016,7 @@ export class LayoutTab extends LitElement {
     });
   }
   private _addModule(type: string): void {
+    this._completeOnboardingStep('add_module');
     // Check if adding to a deeply nested layout inside a tabs section
     if (this._tabsSectionDeeplyNestedLayoutContext) {
       this._addModuleToTabsSectionDeeplyNestedLayout(type);
@@ -12419,6 +12497,7 @@ export class LayoutTab extends LitElement {
     if (this._dragExpandTimeout) {
       clearTimeout(this._dragExpandTimeout);
     }
+    if (shouldSkipDragAutoExpand()) return;
     this._dragExpandTimeout = setTimeout(() => {
       this._autoExpandOnDragOver(type, rowIndex, columnIndex, moduleIndex);
     }, 500); // 500ms delay before auto-expand
@@ -13068,389 +13147,68 @@ export class LayoutTab extends LitElement {
     }
   }
 
-  private _isValidDropTarget(sourceType: string, targetType: string): boolean {
-    // Define valid drop combinations
-    const validCombinations: Record<string, string[]> = {
-      module: [
-        'module',
-        'column',
-        'layout',
-        'nested-layout',
-        'layout-child',
-        'nested-child-target',
-        'deep-nested-child-target',
-        'path-child-target',
-      ],
-      'nested-child': [
-        'module',
-        'column',
-        'layout',
-        'nested-layout',
-        'layout-child',
-        'nested-child-target',
-        'deep-nested-child-target',
-        'path-child-target',
-      ],
-      'layout-child': [
-        'module',
-        'column',
-        'layout',
-        'nested-layout',
-        'layout-child',
-        'nested-child-target',
-        'deep-nested-child-target',
-        'path-child-target',
-      ],
-      'deep-nested-child': [
-        'module',
-        'column',
-        'layout',
-        'nested-layout',
-        'layout-child',
-        'nested-child-target',
-        'deep-nested-child-target',
-        'path-child-target',
-      ],
-      'path-child': [
-        'module',
-        'column',
-        'layout',
-        'nested-layout',
-        'layout-child',
-        'nested-child-target',
-        'deep-nested-child-target',
-        'path-child-target',
-      ],
-      'tabs-section-child': [
-        'module',
-        'column',
-        'layout',
-        'nested-layout',
-        'layout-child',
-        'nested-child-target',
-        'deep-nested-child-target',
-        'path-child-target',
-      ],
-      column: ['column', 'row'],
-      row: ['row'],
-    };
+  private _announceReorder(message: string): void {
+    this._reorderAnnouncement = message;
+    window.setTimeout(() => {
+      if (this._reorderAnnouncement === message) this._reorderAnnouncement = '';
+    }, 1500);
+  }
 
-    return validCombinations[sourceType]?.includes(targetType) || false;
+  private _moveModuleSibling(
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number,
+    direction: 'up' | 'down'
+  ): void {
+    const next = moveModuleSibling(this._ensureLayout(), rowIndex, columnIndex, moduleIndex, direction);
+    if (!next) return;
+    this._updateLayout(next);
+    const lang = this.hass?.locale?.language || 'en';
+    this._announceReorder(
+      localize(
+        direction === 'up' ? 'editor.layout.moved_up' : 'editor.layout.moved_down',
+        lang,
+        direction === 'up' ? 'Moved up' : 'Moved down'
+      )
+    );
+  }
+
+  private _moveRowSibling(rowIndex: number, direction: 'up' | 'down'): void {
+    const next = moveRowSibling(this._ensureLayout(), rowIndex, direction);
+    if (!next) return;
+    this._updateLayout(next);
+    const lang = this.hass?.locale?.language || 'en';
+    this._announceReorder(
+      localize(
+        direction === 'up' ? 'editor.layout.moved_up' : 'editor.layout.moved_down',
+        lang,
+        direction === 'up' ? 'Moved up' : 'Moved down'
+      )
+    );
+  }
+
+  private _moveColumnSibling(rowIndex: number, columnIndex: number, direction: 'up' | 'down'): void {
+    const next = moveColumnSibling(this._ensureLayout(), rowIndex, columnIndex, direction);
+    if (!next) return;
+    this._updateLayout(next);
+    const lang = this.hass?.locale?.language || 'en';
+    this._announceReorder(
+      localize(
+        direction === 'up' ? 'editor.layout.moved_up' : 'editor.layout.moved_down',
+        lang,
+        direction === 'up' ? 'Moved up' : 'Moved down'
+      )
+    );
+  }
+
+  private _isValidDropTarget(sourceType: string, targetType: string): boolean {
+    return isValidLayoutDrop(sourceType, targetType);
   }
 
   private _performMove(source: any, target: any): void {
     const layout = this._ensureLayout();
-    const newLayout = JSON.parse(JSON.stringify(layout));
-
-    switch (source.type) {
-      case 'module':
-        this._moveModule(newLayout, source, target);
-        break;
-      case 'layout-child':
-        // Layout children use the same move logic as modules with layoutChildIndex set
-        this._moveModule(newLayout, source, target);
-        break;
-      case 'nested-child':
-        this._moveNestedChild(newLayout, source, target);
-        break;
-      case 'deep-nested-child':
-        this._moveDeepNestedChild(newLayout, source, target);
-        break;
-      case 'path-child':
-        this._movePathChild(newLayout, source, target);
-        break;
-      case 'tabs-section-child':
-        this._moveTabsSectionChild(newLayout, source, target);
-        break;
-      case 'column':
-        this._moveColumn(newLayout, source, target);
-        break;
-      case 'row':
-        this._moveRow(newLayout, source, target);
-        break;
-    }
-
+    const newLayout = performLayoutMove(layout, source, target);
     this._updateLayout(newLayout);
-  }
-  private _moveModule(layout: any, source: any, target: any): void {
-    let sourceModule: any;
-    let sourceRemoved = false;
-
-    // Handle layout-child reordering within the same layout module FIRST
-    if (source.layoutChildIndex !== undefined && target.type === 'layout-child') {
-      const sourceParentRow = source.rowIndex;
-      const sourceParentColumn = source.columnIndex;
-      const sourceParentModule = source.moduleIndex;
-      const sourceChildIndex = source.layoutChildIndex;
-
-      const targetParentRow = target.rowIndex;
-      const targetParentColumn = target.columnIndex;
-      const targetParentModule = target.moduleIndex;
-      const targetChildIndex = target.childIndex;
-
-      // Check if this is reordering within the same layout module
-      if (
-        sourceParentRow === targetParentRow &&
-        sourceParentColumn === targetParentColumn &&
-        sourceParentModule === targetParentModule
-      ) {
-        if (sourceChildIndex === targetChildIndex) {
-          // Dropping on self, do nothing
-          return;
-        }
-
-        const layoutModule = layout.rows[sourceParentRow].columns[sourceParentColumn].modules[
-          sourceParentModule
-        ] as any;
-
-        if (layoutModule && this._isLayoutModule(layoutModule.type) && layoutModule.modules) {
-          // Remove from source position
-          const movedModule = layoutModule.modules.splice(sourceChildIndex, 1)[0];
-
-          // Calculate new insertion index - INSERT BEFORE the target module
-          let newIndex = targetChildIndex;
-
-          // If we removed an item from before the target position, adjust the target index
-          if (sourceChildIndex < targetChildIndex) {
-            newIndex = targetChildIndex - 1;
-          }
-
-          // Insert at new position (before the target module)
-          layoutModule.modules.splice(newIndex, 0, movedModule);
-        }
-        return;
-      }
-    }
-
-    // Get source module and handle removal
-    if (source.layoutChildIndex !== undefined) {
-      // Get source module from layout child
-      const parentLayoutModule = layout.rows[source.rowIndex].columns[source.columnIndex].modules[
-        source.moduleIndex
-      ] as any;
-      sourceModule = parentLayoutModule.modules[source.layoutChildIndex];
-      // Remove from layout child
-      parentLayoutModule.modules.splice(source.layoutChildIndex, 1);
-      sourceRemoved = true;
-    } else {
-      // Get source module from regular column
-      sourceModule =
-        layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
-      // Don't remove from source first for layout targets!
-    }
-
-    // After removing a layout-child from its parent, adjust any target indices
-    // that reference the same parent layout's modules array to account for the shift.
-    if (sourceRemoved && source.layoutChildIndex !== undefined) {
-      const sameParent =
-        target.rowIndex === source.rowIndex &&
-        target.columnIndex === source.columnIndex &&
-        target.moduleIndex === source.moduleIndex;
-      if (sameParent) {
-        const removedIdx = source.layoutChildIndex;
-        // nested-child-target / deep-nested-child-target use layoutChildIndex into the same array
-        if (target.layoutChildIndex != null && target.layoutChildIndex > removedIdx) {
-          target.layoutChildIndex--;
-        }
-        // nested-layout target uses nestedLayoutIndex into the same array
-        if (
-          (target as any).nestedLayoutIndex != null &&
-          (target as any).nestedLayoutIndex > removedIdx
-        ) {
-          (target as any).nestedLayoutIndex--;
-        }
-        // layout-child target uses childIndex as an insertion position in the same array
-        if (
-          target.type === 'layout-child' &&
-          target.childIndex != null &&
-          target.childIndex > removedIdx
-        ) {
-          target.childIndex--;
-        }
-      }
-    }
-
-    if (target.type === 'nested-layout') {
-      // Drop ON a nested layout (e.g. horizontal inside slider) -> insert inside that nested layout
-      const targetParentLayout =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      const targetNestedLayout = targetParentLayout?.modules?.[(target as any).nestedLayoutIndex];
-      if (targetNestedLayout && this._isLayoutModule(targetNestedLayout.type)) {
-        const sourceIsLayoutModule = this._isLayoutModule(sourceModule?.type);
-        if (sourceIsLayoutModule) {
-          const sourceColumn = layout.rows[source.rowIndex].columns[source.columnIndex];
-          const sourceParentLayout =
-            source.layoutChildIndex !== undefined
-              ? sourceColumn.modules[source.moduleIndex]
-              : undefined;
-          const sourceList =
-            source.layoutChildIndex !== undefined && this._isLayoutModule(sourceParentLayout?.type)
-              ? sourceParentLayout.modules
-              : sourceColumn.modules;
-          const targetList = targetNestedLayout.modules ?? (targetNestedLayout.modules = []);
-          if (!Array.isArray(sourceList)) return;
-          const sourceIndex =
-            source.layoutChildIndex !== undefined
-              ? source.layoutChildIndex
-              : (source.moduleIndex ?? -1);
-          if (!sourceRemoved && sourceIndex >= 0 && sourceIndex < sourceList.length) {
-            sourceList.splice(sourceIndex, 1);
-          }
-          targetList.push(sourceModule);
-          return;
-        }
-        if (!targetNestedLayout.modules) {
-          targetNestedLayout.modules = [];
-        }
-        targetNestedLayout.modules.push(sourceModule);
-        if (source.layoutChildIndex === undefined) {
-          layout.rows[source.rowIndex].columns[source.columnIndex].modules.splice(
-            source.moduleIndex,
-            1
-          );
-        }
-      } else if (sourceRemoved && sourceModule) {
-        // Safety: target nested layout validation failed but source was already removed.
-        // Restore the source module to prevent it from disappearing.
-        const parentLayoutModule = layout.rows[source.rowIndex]?.columns[source.columnIndex]
-          ?.modules[source.moduleIndex] as any;
-        if (parentLayoutModule?.modules) {
-          parentLayoutModule.modules.splice(source.layoutChildIndex, 0, sourceModule);
-        }
-      }
-      return;
-    }
-
-    if (target.type === 'layout') {
-      // Move to layout module - validate target first, then move
-      const targetLayoutModule =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-
-      if (targetLayoutModule && this._isLayoutModule(targetLayoutModule.type)) {
-        const sourceIsLayoutModule = this._isLayoutModule(sourceModule?.type);
-
-        if (sourceIsLayoutModule) {
-          this._relocateLayoutModule(layout, source, target, sourceModule, sourceRemoved, 'after');
-          return;
-        }
-
-        if (!targetLayoutModule.modules) {
-          targetLayoutModule.modules = [];
-        }
-        // Add the module to the layout module FIRST
-        targetLayoutModule.modules.push(sourceModule);
-
-        // Only remove from source AFTER successfully adding to target (if not from layout child)
-        if (source.layoutChildIndex === undefined) {
-          layout.rows[source.rowIndex].columns[source.columnIndex].modules.splice(
-            source.moduleIndex,
-            1
-          );
-        }
-      } else if (sourceRemoved && sourceModule) {
-        // Safety: target layout validation failed but source was already removed.
-        // Restore the source module to prevent it from disappearing.
-        const parentLayoutModule = layout.rows[source.rowIndex]?.columns[source.columnIndex]
-          ?.modules[source.moduleIndex] as any;
-        if (parentLayoutModule?.modules) {
-          parentLayoutModule.modules.splice(source.layoutChildIndex, 0, sourceModule);
-        }
-      }
-      return;
-    }
-
-    if (target.type === 'layout-child') {
-      // Move to specific position within layout module
-      const targetLayoutModule =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-
-      if (targetLayoutModule && this._isLayoutModule(targetLayoutModule.type)) {
-        const sourceIsLayoutModule = this._isLayoutModule(sourceModule?.type);
-
-        if (sourceIsLayoutModule) {
-          this._relocateLayoutModule(layout, source, target, sourceModule, sourceRemoved, 'before');
-          return;
-        }
-
-        if (!targetLayoutModule.modules) {
-          targetLayoutModule.modules = [];
-        }
-
-        // Insert at specific position
-        const insertIndex = (target as any).childIndex ?? 0;
-        targetLayoutModule.modules.splice(insertIndex, 0, sourceModule);
-
-        // Only remove from source AFTER successfully adding to target (if not from layout child)
-        if (source.layoutChildIndex === undefined) {
-          layout.rows[source.rowIndex].columns[source.columnIndex].modules.splice(
-            source.moduleIndex,
-            1
-          );
-        }
-      }
-      return;
-    }
-
-    // For non-layout targets, remove from source first (traditional move behavior)
-    if (source.layoutChildIndex === undefined) {
-      layout.rows[source.rowIndex].columns[source.columnIndex].modules.splice(
-        source.moduleIndex,
-        1
-      );
-    }
-
-    // Add to target
-    if (target.type === 'path-child-target' && target.parentPath) {
-      // Insert into level 5+ container (generic path)
-      const targetList = this._resolveModuleList(layout, target.parentPath);
-      if (targetList) {
-        const insertIdx = target.childIndex !== undefined ? target.childIndex : targetList.length;
-        targetList.splice(insertIdx, 0, sourceModule);
-      }
-    } else if (target.type === 'deep-nested-child-target') {
-      // Insert into the deep nested layout's modules array (e.g. vertical inside horizontal inside popup)
-      const targetTopLayout =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      const targetNestedLayout = targetTopLayout?.modules?.[target.layoutChildIndex];
-      const targetDeepLayout = targetNestedLayout?.modules?.[target.nestedChildIndex];
-      if (targetDeepLayout && Array.isArray(targetDeepLayout.modules)) {
-        const insertIdx =
-          target.childIndex !== undefined ? target.childIndex : targetDeepLayout.modules.length;
-        targetDeepLayout.modules.splice(insertIdx, 0, sourceModule);
-      }
-    } else if (target.type === 'nested-child-target') {
-      // Insert into the nested layout's modules array (e.g. horizontal inside slider)
-      const targetParentLayout =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      const targetNestedLayout = targetParentLayout?.modules?.[target.layoutChildIndex];
-      if (targetNestedLayout && Array.isArray(targetNestedLayout.modules)) {
-        const insertIdx =
-          target.childIndex !== undefined ? target.childIndex : targetNestedLayout.modules.length;
-        targetNestedLayout.modules.splice(insertIdx, 0, sourceModule);
-      }
-    } else if (target.type === 'module') {
-      // Insert at specific position
-      let targetIndex = target.moduleIndex ?? 0;
-
-      // If moving within the same column and target is after source, adjust index
-      if (
-        source.layoutChildIndex === undefined &&
-        source.rowIndex === target.rowIndex &&
-        source.columnIndex === target.columnIndex &&
-        (target.moduleIndex ?? 0) > (source.moduleIndex ?? 0)
-      ) {
-        targetIndex--;
-      }
-
-      layout.rows[target.rowIndex].columns[target.columnIndex].modules.splice(
-        targetIndex,
-        0,
-        sourceModule
-      );
-    } else if (target.type === 'column') {
-      // Add to end of column
-      layout.rows[target.rowIndex].columns[target.columnIndex].modules.push(sourceModule);
-    }
   }
 
   private _relocateLayoutModule(
@@ -13463,506 +13221,11 @@ export class LayoutTab extends LitElement {
       childIndex?: number | undefined;
       type?: string | undefined;
     },
-    moduleToMove: CardModule,
+    moduleToMove: any,
     sourceRemoved: boolean,
     position: 'before' | 'after'
   ): void {
-    if (!moduleToMove) {
-      return;
-    }
-
-    const sourceRow = layout.rows[source.rowIndex];
-    const sourceColumn = sourceRow?.columns?.[source.columnIndex];
-    const targetRow = layout.rows[target.rowIndex];
-    const targetColumn = targetRow?.columns?.[target.columnIndex];
-
-    if (!sourceColumn || !targetColumn) {
-      return;
-    }
-
-    const sourceParentLayout =
-      source.layoutChildIndex !== undefined && Array.isArray(sourceColumn.modules)
-        ? sourceColumn.modules[source.moduleIndex]
-        : undefined;
-
-    const targetParentLayout =
-      target.moduleIndex !== undefined && Array.isArray(targetColumn.modules)
-        ? targetColumn.modules[target.moduleIndex]
-        : undefined;
-
-    const sourceList =
-      source.layoutChildIndex !== undefined && this._isLayoutModule(sourceParentLayout?.type)
-        ? sourceParentLayout.modules
-        : sourceColumn.modules;
-
-    const targetList =
-      (target.type === 'layout' || target.type === 'layout-child') &&
-      this._isLayoutModule(targetParentLayout?.type)
-        ? targetParentLayout.modules
-        : targetColumn.modules;
-
-    if (!Array.isArray(targetList) || !Array.isArray(sourceList)) {
-      return;
-    }
-
-    // Allow all layout types to contain other layout types (e.g. horizontal inside vertical)
-
-    const sourceIndex =
-      source.layoutChildIndex !== undefined ? source.layoutChildIndex : (source.moduleIndex ?? -1);
-
-    if (!sourceRemoved && sourceIndex >= 0 && sourceIndex < sourceList.length) {
-      sourceList.splice(sourceIndex, 1);
-      sourceRemoved = true;
-    }
-
-    let insertIndex: number;
-    if (target.type === 'layout-child' && target.childIndex !== undefined) {
-      insertIndex = target.childIndex;
-      if (position === 'after') {
-        insertIndex += 1;
-      }
-    } else {
-      insertIndex = position === 'before' ? 0 : targetList.length;
-    }
-
-    if (
-      sourceRemoved &&
-      sourceList === targetList &&
-      sourceIndex >= 0 &&
-      sourceIndex < insertIndex
-    ) {
-      insertIndex -= 1;
-    }
-
-    insertIndex = Math.max(0, Math.min(targetList.length, insertIndex));
-    targetList.splice(insertIndex, 0, moduleToMove);
-  }
-
-  private _moveColumn(layout: any, source: any, target: any): void {
-    // Remove column from source row
-    const sourceColumn = layout.rows[source.rowIndex].columns[source.columnIndex];
-    layout.rows[source.rowIndex].columns.splice(source.columnIndex, 1);
-
-    // Update source row's column layout after removal and clear custom sizing
-    const sourceRowNewColumnCount = layout.rows[source.rowIndex].columns.length;
-    delete layout.rows[source.rowIndex].custom_column_sizing;
-    if (sourceRowNewColumnCount > 0) {
-      const sourceDefaultLayout = this._getLayoutsForColumnCount(sourceRowNewColumnCount)[0];
-      layout.rows[source.rowIndex].column_layout = sourceDefaultLayout
-        ? sourceDefaultLayout.id
-        : `repeat(${sourceRowNewColumnCount}, 1fr)`;
-    }
-
-    if (target.type === 'column') {
-      // Reorder: insert at specific position within row
-      let insertIdx = target.columnIndex ?? 0;
-      // If same row and source was before target, adjust for the removal
-      if (source.rowIndex === target.rowIndex && source.columnIndex < insertIdx) {
-        insertIdx--;
-      }
-      layout.rows[target.rowIndex].columns.splice(insertIdx, 0, sourceColumn);
-    } else if (target.type === 'row-inside') {
-      // Drop on row header — insert at the TOP of the row's columns
-      layout.rows[target.rowIndex].columns.splice(0, 0, sourceColumn);
-    } else if (target.type === 'row') {
-      // Add to end of target row
-      layout.rows[target.rowIndex].columns.push(sourceColumn);
-    }
-
-    // Update target row's column layout after addition and clear custom sizing
-    const targetRowNewColumnCount = layout.rows[target.rowIndex].columns.length;
-    delete layout.rows[target.rowIndex].custom_column_sizing;
-    const targetDefaultLayout = this._getLayoutsForColumnCount(targetRowNewColumnCount)[0];
-    layout.rows[target.rowIndex].column_layout = targetDefaultLayout
-      ? targetDefaultLayout.id
-      : `repeat(${targetRowNewColumnCount}, 1fr)`;
-  }
-
-  private _moveRow(layout: any, source: any, target: any): void {
-    // Remove row from source
-    const sourceRow = layout.rows[source.rowIndex];
-    layout.rows.splice(source.rowIndex, 1);
-
-    // Insert at target position
-    const targetIndex = target.rowIndex;
-    layout.rows.splice(targetIndex, 0, sourceRow);
-  }
-
-  private _moveNestedChild(layout: any, source: any, target: any): void {
-    // Handle moving nested child modules (modules inside nested layout modules)
-    // Structure: Row -> Column -> Parent Layout (e.g., Slider) -> Nested Layout (e.g., Horizontal) -> Module
-    const sourceParentLayout =
-      layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
-    const sourceNestedLayout = sourceParentLayout.modules[source.layoutChildIndex];
-    const sourceModule = sourceNestedLayout.modules[source.nestedChildIndex];
-
-    // Handle reordering within the same nested layout
-    if (
-      target.type === 'nested-child-target' &&
-      source.rowIndex === target.rowIndex &&
-      source.columnIndex === target.columnIndex &&
-      source.moduleIndex === target.moduleIndex &&
-      source.layoutChildIndex === target.layoutChildIndex
-    ) {
-      // Reordering within the same nested layout
-      const sourceIdx = source.nestedChildIndex;
-      let targetIdx = target.childIndex;
-
-      if (sourceIdx === targetIdx) {
-        return; // No change needed
-      }
-
-      // Remove from source position
-      sourceNestedLayout.modules.splice(sourceIdx, 1);
-
-      // Adjust target index if source was before target
-      if (sourceIdx < targetIdx) {
-        targetIdx--;
-      }
-
-      // Insert at target position
-      sourceNestedLayout.modules.splice(targetIdx, 0, sourceModule);
-      return;
-    }
-
-    // Remove from source
-    sourceNestedLayout.modules.splice(source.nestedChildIndex, 1);
-
-    // After removing a nested-child, adjust target indices that reference
-    // the same nested layout's modules array to account for the shift.
-    const sameNestedParent =
-      target.rowIndex === source.rowIndex &&
-      target.columnIndex === source.columnIndex &&
-      target.moduleIndex === source.moduleIndex &&
-      target.layoutChildIndex === source.layoutChildIndex;
-    if (sameNestedParent) {
-      // deep-nested-child-target uses nestedChildIndex into the same array
-      if (target.nestedChildIndex != null && target.nestedChildIndex > source.nestedChildIndex) {
-        target.nestedChildIndex--;
-      }
-      // nested-child-target uses childIndex as insertion position in the same array
-      if (
-        target.type === 'nested-child-target' &&
-        target.childIndex != null &&
-        target.childIndex > source.nestedChildIndex
-      ) {
-        target.childIndex--;
-      }
-    }
-
-    // Add to target based on target type
-    if (target.type === 'module' || target.type === 'column') {
-      // Moving to a regular column
-      const targetColumn = layout.rows[target.rowIndex].columns[target.columnIndex];
-      const targetIndex =
-        target.moduleIndex !== undefined ? target.moduleIndex : targetColumn.modules.length;
-      targetColumn.modules.splice(targetIndex, 0, sourceModule);
-    } else if (target.type === 'layout') {
-      // Moving to a layout module
-      const targetLayoutModule =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      if (!targetLayoutModule.modules) {
-        targetLayoutModule.modules = [];
-      }
-      targetLayoutModule.modules.push(sourceModule);
-    } else if (target.type === 'layout-child') {
-      // Moving to another position within a layout module (1st level nesting)
-      const targetLayoutModule =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      if (!targetLayoutModule.modules) {
-        targetLayoutModule.modules = [];
-      }
-      const targetIndex =
-        target.childIndex !== undefined ? target.childIndex : targetLayoutModule.modules.length;
-      targetLayoutModule.modules.splice(targetIndex, 0, sourceModule);
-    } else if (target.type === 'nested-child-target') {
-      // Moving to a different nested layout (different parent or different nested layout)
-      const targetParentLayout =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      const targetNestedLayout = targetParentLayout.modules[target.layoutChildIndex];
-      if (!targetNestedLayout.modules) {
-        targetNestedLayout.modules = [];
-      }
-      const targetIndex =
-        target.childIndex !== undefined ? target.childIndex : targetNestedLayout.modules.length;
-      targetNestedLayout.modules.splice(targetIndex, 0, sourceModule);
-    } else if (target.type === 'nested-layout') {
-      // Moving into a nested layout (e.g. dropping on a nested layout header with 'inside')
-      const targetParentLayout =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      const targetNestedLayout = targetParentLayout?.modules?.[(target as any).nestedLayoutIndex];
-      if (targetNestedLayout) {
-        if (!targetNestedLayout.modules) {
-          targetNestedLayout.modules = [];
-        }
-        targetNestedLayout.modules.push(sourceModule);
-      } else {
-        // Safety: target nested layout not found, restore source to prevent disappearance
-        sourceNestedLayout.modules.splice(source.nestedChildIndex, 0, sourceModule);
-      }
-    } else if (target.type === 'deep-nested-child-target') {
-      // Moving to a deep nested layout (level 3)
-      const targetTopLayout =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      const targetNestedLayout = targetTopLayout.modules[target.layoutChildIndex];
-      const targetDeepLayout = targetNestedLayout.modules[target.nestedChildIndex];
-      if (!targetDeepLayout.modules) {
-        targetDeepLayout.modules = [];
-      }
-      const insertIdx =
-        target.childIndex !== undefined ? target.childIndex : targetDeepLayout.modules.length;
-      targetDeepLayout.modules.splice(insertIdx, 0, sourceModule);
-    } else if (target.type === 'path-child-target' && target.parentPath) {
-      const targetList = this._resolveModuleList(layout, target.parentPath);
-      if (targetList) {
-        const insertIdx = target.childIndex !== undefined ? target.childIndex : targetList.length;
-        targetList.splice(insertIdx, 0, sourceModule);
-      }
-    }
-  }
-
-  private _moveDeepNestedChild(layout: any, source: any, target: any): void {
-    // Handle moving deep nested child modules (e.g. module inside Popup -> Horizontal -> Vertical)
-    const sourceTopLayout =
-      layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
-    const sourceNestedLayout = sourceTopLayout.modules[source.layoutChildIndex];
-    const sourceDeepNestedLayout = sourceNestedLayout.modules[source.nestedChildIndex];
-    const sourceModule = sourceDeepNestedLayout.modules[source.deepNestedChildIndex];
-
-    // Handle reordering within the same deep nested layout
-    if (
-      target.type === 'deep-nested-child-target' &&
-      source.rowIndex === target.rowIndex &&
-      source.columnIndex === target.columnIndex &&
-      source.moduleIndex === target.moduleIndex &&
-      source.layoutChildIndex === target.layoutChildIndex &&
-      source.nestedChildIndex === target.nestedChildIndex
-    ) {
-      const sourceIdx = source.deepNestedChildIndex;
-      let targetIdx = target.childIndex;
-
-      if (sourceIdx === targetIdx) return;
-
-      sourceDeepNestedLayout.modules.splice(sourceIdx, 1);
-      if (sourceIdx < targetIdx) targetIdx--;
-      sourceDeepNestedLayout.modules.splice(targetIdx, 0, sourceModule);
-      return;
-    }
-
-    // Remove from source
-    sourceDeepNestedLayout.modules.splice(source.deepNestedChildIndex, 1);
-
-    // After removing a deep-nested-child, adjust target indices that reference
-    // the same deep nested layout's modules array to account for the shift.
-    const sameDeepParent =
-      target.rowIndex === source.rowIndex &&
-      target.columnIndex === source.columnIndex &&
-      target.moduleIndex === source.moduleIndex &&
-      target.layoutChildIndex === source.layoutChildIndex &&
-      target.nestedChildIndex === source.nestedChildIndex;
-    if (sameDeepParent) {
-      if (
-        target.type === 'deep-nested-child-target' &&
-        target.childIndex != null &&
-        target.childIndex > source.deepNestedChildIndex
-      ) {
-        target.childIndex--;
-      }
-    }
-
-    // Add to target based on target type
-    if (target.type === 'deep-nested-child-target') {
-      // Moving to a different deep nested layout
-      const targetTopLayout =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      const targetNestedLayout = targetTopLayout.modules[target.layoutChildIndex];
-      const targetDeepLayout = targetNestedLayout.modules[target.nestedChildIndex];
-      if (!targetDeepLayout.modules) targetDeepLayout.modules = [];
-      const insertIdx =
-        target.childIndex !== undefined ? target.childIndex : targetDeepLayout.modules.length;
-      targetDeepLayout.modules.splice(insertIdx, 0, sourceModule);
-    } else if (target.type === 'nested-child-target') {
-      // Moving to a nested layout (level 2)
-      const targetTopLayout =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      const targetNestedLayout = targetTopLayout.modules[target.layoutChildIndex];
-      if (!targetNestedLayout.modules) targetNestedLayout.modules = [];
-      const insertIdx =
-        target.childIndex !== undefined ? target.childIndex : targetNestedLayout.modules.length;
-      targetNestedLayout.modules.splice(insertIdx, 0, sourceModule);
-    } else if (target.type === 'module' || target.type === 'column') {
-      // Moving to a regular column
-      const targetColumn = layout.rows[target.rowIndex].columns[target.columnIndex];
-      const targetIndex =
-        target.moduleIndex !== undefined ? target.moduleIndex : targetColumn.modules.length;
-      targetColumn.modules.splice(targetIndex, 0, sourceModule);
-    } else if (target.type === 'layout' || target.type === 'nested-layout') {
-      // Moving to a layout module
-      let targetLayoutModule: any;
-      if (target.type === 'nested-layout') {
-        const parentLayout =
-          layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-        targetLayoutModule = parentLayout?.modules?.[(target as any).nestedLayoutIndex];
-      } else {
-        targetLayoutModule =
-          layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      }
-      if (!targetLayoutModule) return;
-      if (!targetLayoutModule.modules) targetLayoutModule.modules = [];
-      targetLayoutModule.modules.push(sourceModule);
-    } else if (target.type === 'layout-child') {
-      // Moving to a specific position within a layout module
-      const targetLayoutModule =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      if (!targetLayoutModule.modules) targetLayoutModule.modules = [];
-      const targetIndex =
-        target.childIndex !== undefined ? target.childIndex : targetLayoutModule.modules.length;
-      targetLayoutModule.modules.splice(targetIndex, 0, sourceModule);
-    } else if (target.type === 'path-child-target' && target.parentPath) {
-      const targetList = this._resolveModuleList(layout, target.parentPath);
-      if (targetList) {
-        const insertIdx = target.childIndex !== undefined ? target.childIndex : targetList.length;
-        targetList.splice(insertIdx, 0, sourceModule);
-      }
-    }
-  }
-
-  /** Move a path-child (level 5+ generic nesting) to a target. */
-  private _movePathChild(layout: any, source: any, target: any): void {
-    const path = source.parentPath;
-    if (!path || source.pathChildIndex === undefined) return;
-
-    const sourceList = this._resolveModuleList(layout, path);
-    if (!sourceList || source.pathChildIndex >= sourceList.length) return;
-
-    const sourceModule = sourceList[source.pathChildIndex];
-
-    // Same-container reorder: path-child-target with same path
-    if (target.type === 'path-child-target' && target.parentPath) {
-      const samePath =
-        path.length === target.parentPath.length &&
-        path.every((v: string, i: number) => v === target.parentPath![i]);
-      if (samePath) {
-        const sourceIdx = source.pathChildIndex;
-        let targetIdx = target.childIndex ?? sourceIdx;
-        if (sourceIdx === targetIdx) return;
-        sourceList.splice(sourceIdx, 1);
-        if (sourceIdx < targetIdx) targetIdx--;
-        sourceList.splice(targetIdx, 0, sourceModule);
-        return;
-      }
-    }
-
-    // Remove from source
-    sourceList.splice(source.pathChildIndex, 1);
-
-    // Insert at target
-    if (target.type === 'path-child-target' && target.parentPath) {
-      const targetList = this._resolveModuleList(layout, target.parentPath);
-      if (targetList) {
-        const insertIdx = target.childIndex !== undefined ? target.childIndex : targetList.length;
-        targetList.splice(insertIdx, 0, sourceModule);
-      }
-      return;
-    }
-
-    if (target.type === 'module' || target.type === 'column') {
-      const targetColumn = layout.rows[target.rowIndex].columns[target.columnIndex];
-      const targetIndex =
-        target.moduleIndex !== undefined ? target.moduleIndex : targetColumn.modules.length;
-      targetColumn.modules.splice(targetIndex, 0, sourceModule);
-    } else if (target.type === 'layout' || target.type === 'nested-layout') {
-      let targetLayoutModule: any;
-      if (target.type === 'nested-layout') {
-        const parentLayout =
-          layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-        targetLayoutModule = parentLayout?.modules?.[(target as any).nestedLayoutIndex];
-      } else {
-        targetLayoutModule =
-          layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      }
-      if (!targetLayoutModule) return;
-      if (!targetLayoutModule.modules) targetLayoutModule.modules = [];
-      targetLayoutModule.modules.push(sourceModule);
-    } else if (target.type === 'layout-child') {
-      const targetLayoutModule =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      if (!targetLayoutModule.modules) targetLayoutModule.modules = [];
-      const insertIdx =
-        target.childIndex !== undefined ? target.childIndex : targetLayoutModule.modules.length;
-      targetLayoutModule.modules.splice(insertIdx, 0, sourceModule);
-    } else if (target.type === 'nested-child-target') {
-      const targetTopLayout =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      const targetNestedLayout = targetTopLayout.modules[target.layoutChildIndex];
-      if (!targetNestedLayout.modules) targetNestedLayout.modules = [];
-      const insertIdx =
-        target.childIndex !== undefined ? target.childIndex : targetNestedLayout.modules.length;
-      targetNestedLayout.modules.splice(insertIdx, 0, sourceModule);
-    } else if (target.type === 'deep-nested-child-target') {
-      const targetTopLayout =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      const targetNestedLayout = targetTopLayout.modules[target.layoutChildIndex];
-      const targetDeepLayout = targetNestedLayout.modules[target.nestedChildIndex];
-      if (!targetDeepLayout.modules) targetDeepLayout.modules = [];
-      const insertIdx =
-        target.childIndex !== undefined ? target.childIndex : targetDeepLayout.modules.length;
-      targetDeepLayout.modules.splice(insertIdx, 0, sourceModule);
-    }
-  }
-
-  /**
-   * Move a module from inside a tabs section to another location in the layout
-   */
-  private _moveTabsSectionChild(layout: any, source: any, target: any): void {
-    // Get the source tabs module
-    let sourceTabsModule: any;
-    if (source.isNested && source.parentLayoutChildIndex !== undefined) {
-      const parentLayout =
-        layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
-      sourceTabsModule = parentLayout.modules[source.parentLayoutChildIndex];
-    } else {
-      sourceTabsModule =
-        layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
-    }
-
-    // Get the module from the tabs section
-    if (!sourceTabsModule?.sections?.[source.sectionIndex]?.modules?.[source.childIndex]) {
-      return;
-    }
-
-    // Extract the module
-    const sourceModule = sourceTabsModule.sections[source.sectionIndex].modules.splice(
-      source.childIndex,
-      1
-    )[0];
-
-    // Add to target based on target type
-    if (target.type === 'module' || target.type === 'column') {
-      // Moving to a regular column
-      const targetColumn = layout.rows[target.rowIndex].columns[target.columnIndex];
-      const targetIndex =
-        target.moduleIndex !== undefined ? target.moduleIndex : targetColumn.modules.length;
-      targetColumn.modules.splice(targetIndex, 0, sourceModule);
-    } else if (target.type === 'layout') {
-      // Moving to a layout module (horizontal, vertical, etc.)
-      const targetLayoutModule =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      if (!targetLayoutModule.modules) {
-        targetLayoutModule.modules = [];
-      }
-      targetLayoutModule.modules.push(sourceModule);
-    } else if (target.type === 'layout-child') {
-      // Moving to a specific position within a layout module
-      const targetLayoutModule =
-        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
-      if (!targetLayoutModule.modules) {
-        targetLayoutModule.modules = [];
-      }
-      const targetIndex =
-        target.childIndex !== undefined ? target.childIndex : targetLayoutModule.modules.length;
-      targetLayoutModule.modules.splice(targetIndex, 0, sourceModule);
-    }
+    relocateLayoutModule(layout, source, target, moduleToMove, sourceRemoved, position);
   }
 
   // Row settings methods
@@ -14184,6 +13447,7 @@ export class LayoutTab extends LitElement {
 
     // Update the module preview service so it applies breakpoint-specific design properties
     ucModulePreviewService.setPreviewBreakpoint(breakpoint);
+    this._completeOnboardingStep('preview_breakpoints');
 
     // Trigger re-render to update all preview areas with new breakpoint styles
     this.requestUpdate();
@@ -28083,6 +27347,7 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div class="layout-builder ${this.isFullScreen ? 'fullscreen' : ''} ${this._showModuleSettings || this._isClosingModuleSettings || this._showLayoutChildSettings || this._isClosingLayoutChildSettings || this._showTabsSectionChildSettings || this._isClosingTabsSectionChildSettings || this._showRowSettings || this._isClosingRowSettings || this._showColumnSettings || this._isClosingColumnSettings ? 'module-settings-open' : ''}">
+        <div class="sr-only" role="status" aria-live="polite">${this._reorderAnnouncement}</div>
         ${this.isFullScreen && this.hass
           ? (this._showModuleSettings ||
             this._isClosingModuleSettings ||
@@ -28301,7 +27566,15 @@ export class LayoutTab extends LitElement {
 
         ${this._renderBreadcrumbs()}
 
-        ${this._showGettingStarted ? this._renderGettingStartedBanner() : ''}
+        ${this._showOnboarding
+          ? html`
+              <uc-editor-onboarding
+                .hass=${this.hass}
+                .state=${this._onboardingState}
+                @onboarding-action=${this._handleOnboardingAction}
+              ></uc-editor-onboarding>
+            `
+          : ''}
 
         <div class="tree-view-container">
           <div id="tree-drop-indicator" class="tree-drop-indicator" aria-hidden="true"></div>
@@ -30000,72 +29273,72 @@ export class LayoutTab extends LitElement {
     `;
   }
 
+  private _syncOnboardingState(): void {
+    this._onboardingState = ucEditorOnboardingService.getState();
+    this._showOnboarding = ucEditorOnboardingService.shouldShow();
+  }
+
+  private _completeOnboardingStep(
+    step: 'add_row' | 'add_module' | 'pick_entity' | 'preview_breakpoints'
+  ): void {
+    if (!this._showOnboarding && !ucEditorOnboardingService.shouldShow()) return;
+    ucEditorOnboardingService.completeStep(step);
+    this._syncOnboardingState();
+  }
+
+  private _handleOnboardingAction = (e: CustomEvent<{ action: OnboardingAction }>): void => {
+    const action = e.detail?.action;
+    if (!action) return;
+
+    switch (action) {
+      case 'dismiss':
+        ucEditorOnboardingService.dismiss();
+        this._syncOnboardingState();
+        break;
+      case 'open_presets':
+        ucEditorOnboardingService.dismiss();
+        this._syncOnboardingState();
+        this._activeModuleSelectorTab = 'presets';
+        this._showModuleSelector = true;
+        break;
+      case 'add_row':
+        this._addRow();
+        this._completeOnboardingStep('add_row');
+        break;
+      case 'add_module':
+        this._completeOnboardingStep('add_module');
+        this._activeModuleSelectorTab = 'modules';
+        this._showModuleSelector = true;
+        break;
+      case 'pick_entity':
+        // Open first module settings if present; otherwise open module selector
+        {
+          const layout = this._ensureLayout();
+          const firstMod = layout.rows?.[0]?.columns?.[0]?.modules?.[0];
+          if (firstMod) {
+            this._selectedModule = { rowIndex: 0, columnIndex: 0, moduleIndex: 0 };
+            this._showModuleSettings = true;
+            this._activeModuleTab = 'general';
+            this._completeOnboardingStep('pick_entity');
+          } else {
+            this._activeModuleSelectorTab = 'modules';
+            this._showModuleSelector = true;
+          }
+        }
+        break;
+      case 'preview_breakpoints':
+        this._previewBreakpoint =
+          this._previewBreakpoint === 'desktop' ? 'mobile' : 'desktop';
+        ucModulePreviewService.setPreviewBreakpoint(this._previewBreakpoint);
+        this._completeOnboardingStep('preview_breakpoints');
+        this.requestUpdate();
+        break;
+    }
+  };
+
   private _renderGettingStartedBanner(): TemplateResult {
-    const lang = this.hass?.locale?.language || 'en';
-    return html`
-      <div style="
-        margin: 8px 4px 4px 12px;
-        padding: 14px 16px;
-        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
-        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.2);
-        border-radius: 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      ">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 14px; font-weight: 600; color: var(--primary-text-color);">
-            ${localize('editor.layout.getting_started', lang, 'Getting Started')}
-          </span>
-          <button
-            style="background: none; border: none; padding: 4px; cursor: pointer; color: var(--secondary-text-color); border-radius: 4px;"
-            @click=${() => {
-              this._showGettingStarted = false;
-              try { localStorage.setItem('ultra-card-editor-seen', '1'); } catch { /* ignore */ }
-            }}
-            aria-label="Close"
-            title="${localize('editor.layout.getting_started_dismiss', lang, "Don't show again")}"
-          >
-            <ha-icon icon="mdi:close" style="--mdc-icon-size: 16px;"></ha-icon>
-          </button>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-          <button
-            style="
-              display: inline-flex; align-items: center; gap: 6px;
-              padding: 6px 14px; font-size: 12px; font-weight: 500;
-              background: var(--primary-color); color: var(--text-primary-color, white);
-              border: none; border-radius: 6px; cursor: pointer;
-            "
-            @click=${() => {
-              this._showGettingStarted = false;
-              try { localStorage.setItem('ultra-card-editor-seen', '1'); } catch { /* ignore */ }
-              this._activeModuleSelectorTab = 'presets';
-              this._showModuleSelector = true;
-            }}
-          >
-            <ha-icon icon="mdi:palette-swatch-variant" style="--mdc-icon-size: 16px;"></ha-icon>
-            ${localize('editor.layout.getting_started_preset', lang, 'Start from a Preset')}
-          </button>
-          <button
-            style="
-              display: inline-flex; align-items: center; gap: 6px;
-              padding: 6px 14px; font-size: 12px; font-weight: 500;
-              background: var(--secondary-background-color); color: var(--primary-text-color);
-              border: 1px solid var(--divider-color); border-radius: 6px; cursor: pointer;
-            "
-            @click=${() => {
-              this._showGettingStarted = false;
-              try { localStorage.setItem('ultra-card-editor-seen', '1'); } catch { /* ignore */ }
-              this._addRow();
-            }}
-          >
-            <ha-icon icon="mdi:plus-circle-outline" style="--mdc-icon-size: 16px;"></ha-icon>
-            ${localize('editor.layout.getting_started_module', lang, 'Add Your First Module')}
-          </button>
-        </div>
-      </div>
-    `;
+    // Kept for compatibility; UI now uses <uc-editor-onboarding>.
+    return html``;
   }
 
   private _renderKeyboardShortcutsDialog(): TemplateResult {
@@ -30600,8 +29873,7 @@ export class LayoutTab extends LitElement {
   }
 
   private _isLayoutModule(moduleType: string): boolean {
-    const layoutModuleTypes = ['horizontal', 'vertical', 'stack', 'accordion', 'popup', 'slider', 'tabs'];
-    return layoutModuleTypes.includes(moduleType);
+    return isLayoutModuleType(moduleType);
   }
 
   /**
@@ -31206,6 +30478,28 @@ export class LayoutTab extends LitElement {
         --secondary-color: var(--orange-color, #ff9800);
         --tree-line-color: var(--divider-color, rgba(127, 127, 127, 0.3));
         --tree-dot-color: var(--primary-color, #03a9f4);
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .pdnd-dragging {
+        opacity: 0.55;
+      }
+
+      .pdnd-over {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: -2px;
+      }
         --tree-dot-size: 8px;
         --tree-indent: 16px;
         --tree-line-width: 1px;
@@ -32924,6 +32218,11 @@ export class LayoutTab extends LitElement {
 
       .tb-btn.has-clipboard {
         color: var(--success-color, #4caf50);
+      }
+
+      .tb-btn.active {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.18);
+        color: var(--primary-color);
       }
 
       .tb-btn.has-clipboard:hover {

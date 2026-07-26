@@ -2784,6 +2784,8 @@ export class UltraVacuumModule extends BaseUltraModule {
       });
     } catch (error) {
       console.error(`Vacuum command ${command} failed:`, error);
+    } finally {
+      this.triggerPreviewUpdate(true);
     }
   }
 
@@ -2802,6 +2804,8 @@ export class UltraVacuumModule extends BaseUltraModule {
       });
     } catch (error) {
       console.error('Fan speed change failed:', error);
+    } finally {
+      this.triggerPreviewUpdate(true);
     }
   }
 

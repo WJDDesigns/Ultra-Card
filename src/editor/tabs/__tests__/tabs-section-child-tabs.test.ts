@@ -58,25 +58,29 @@ describe('layout-tab: tabs section child settings', () => {
     expect(child.text_size).toBe(18);
   });
 
-  it('design tab updates nested module design (uc-responsive-design-tab)', async () => {
+  it('design tab updates nested module design (ultra-global-design-tab)', async () => {
     const el = await mountTabsWithTextChild();
     const anyEl = el as any;
     anyEl._activeTabsChildTab = 'design';
     await flushUpdates(el);
-    const rd = deepQuerySelector(el.shadowRoot!, 'uc-responsive-design-tab') as any;
-    expect(rd).toBeTruthy();
-    await rd.updateComplete;
+    const designEl = deepQuerySelector(el.shadowRoot!, 'ultra-global-design-tab') as any;
+    expect(designEl).toBeTruthy();
+    await designEl.updateComplete;
+    const droot = designEl.shadowRoot as ShadowRoot;
+    const toggle = droot.querySelector('.accordion-toggle') as HTMLElement;
+    expect(toggle).toBeTruthy();
+    toggle.click();
+    await designEl.updateComplete;
     const wait = nextConfigChanged(el);
-    const inp = rd.shadowRoot!.querySelector('.input-grid input[type="text"]') as HTMLInputElement;
-    expect(inp).toBeTruthy();
-    inp.value = '4px';
-    inp.dispatchEvent(new Event('change', { bubbles: true }));
+    const leftBtn = [...droot.querySelectorAll('.property-btn')].find(
+      b => (b as HTMLElement).getAttribute('title') === 'left'
+    ) as HTMLElement;
+    expect(leftBtn).toBeTruthy();
+    leftBtn.click();
     const { config } = await wait;
     const tabsMod = config.layout.rows[0].columns[0].modules[0] as any;
     const child = tabsMod.sections[0].modules[0] as any;
-    const d = child.design || {};
-    const pt = d.padding_top ?? d.base?.padding_top;
-    expect(pt).toBe('4px');
+    expect(child.design?.text_align).toBe('left');
   });
 
   it('logic tab updates nested module hidden_on_devices', async () => {

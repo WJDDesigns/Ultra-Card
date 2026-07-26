@@ -28,10 +28,23 @@ jobs:
       - name: Release checks and production build
         run: npm run release:check
 
+      - name: Layout coverage gates
+        run: npm run test:coverage -- src/editor/layout/
+
       - name: Bundle size check
         run: |
           SIZE=$(stat -c%s dist/ultra-card.js)
           echo "Bundle size: $SIZE bytes"
+          CHUNK_COUNT=$(ls dist/uc-*.js 2>/dev/null | wc -l | tr -d ' ')
+          MOD_COUNT=$(ls dist/uc-mod-*.js 2>/dev/null | wc -l | tr -d ' ')
+          echo "uc-* chunks: $CHUNK_COUNT (mod-*: $MOD_COUNT)"
+          if [ "$CHUNK_COUNT" -lt 1 ]; then
+            echo "::error::Expected uc-*.js async chunks after lazy-load build; found none."
+            exit 1
+          fi
+          if [ ! -f dist/uc-editor.js ]; then
+            echo "::warning::uc-editor.js missing — editor may still be in the main bundle."
+          fi
           if [ "$SIZE" -gt 8388608 ]; then
             echo "::warning::Bundle size ($SIZE bytes) exceeds 8MB. Consider lazy-loading more modules."
           fi

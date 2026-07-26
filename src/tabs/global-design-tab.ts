@@ -1,12 +1,15 @@
 import { html, TemplateResult } from 'lit';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { CardModule } from '../types';
-// Import the responsive design tab component
-import './uc-responsive-design-tab';
+import '../editor/global-design-tab';
+import {
+  applyModuleDesignUpdates,
+  extractModuleDesignProperties,
+} from '../editor/design-tab-bridge';
 
 /**
- * GlobalDesignTab - Now delegates to the responsive design tab component
- * which provides WPBakery-style device-specific design controls.
+ * GlobalDesignTab — thin shim that mounts the canonical
+ * `<ultra-global-design-tab>` for module Design tabs.
  */
 export class GlobalDesignTab {
   static render<M extends CardModule>(
@@ -14,13 +17,15 @@ export class GlobalDesignTab {
     hass: HomeAssistant,
     updateModule: (updates: Partial<M>) => void
   ): TemplateResult {
-    // Use the new responsive design tab component
     return html`
-      <uc-responsive-design-tab
-        .module=${module}
+      <ultra-global-design-tab
         .hass=${hass}
-        .updateModule=${updateModule}
-      ></uc-responsive-design-tab>
+        .designProperties=${extractModuleDesignProperties(module)}
+        .responsiveDesign=${(module as any).design}
+        .onUpdate=${(updates: any) => {
+          updateModule(applyModuleDesignUpdates(module, updates) as Partial<M>);
+        }}
+      ></ultra-global-design-tab>
     `;
   }
 }

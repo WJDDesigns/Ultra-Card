@@ -8,7 +8,10 @@ import type {
   UltraCardConfig,
 } from '../types';
 import { ucSmartCardsService } from '../services/uc-smart-cards-service';
+import { localize } from '../localize/localize';
 import '../cards/ultra-card';
+
+export type SmartWizardStep = 'status' | 'compose' | 'preview' | 'apply';
 
 @customElement('uc-smart-selector-tab')
 export class UcSmartSelectorTab extends LitElement {
@@ -26,6 +29,8 @@ export class UcSmartSelectorTab extends LitElement {
   @state() private _warnings: string[] = [];
   @state() private _connectorUsed: string | null = null;
   @state() private _results: PresetDefinition[] = [];
+  @state() private _wizardStep: SmartWizardStep = 'status';
+  @state() private _selectedPreset: PresetDefinition | null = null;
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -45,7 +50,7 @@ export class UcSmartSelectorTab extends LitElement {
     try {
       this._status = await ucSmartCardsService.getConnectorStatus(this.hass);
     } catch (err) {
-      this._statusError = err instanceof Error ? err.message : 'Failed to load Smart connectors.';
+      this._statusError = err instanceof Error ? err.message : localize('editor.smart.load_failed', this._lang(), 'Failed to load Smart connectors.');
       this._status = null;
     } finally {
       this._loadingStatus = false;
@@ -55,11 +60,24 @@ export class UcSmartSelectorTab extends LitElement {
   private _emitPresetSelected(preset: PresetDefinition): void {
     this.dispatchEvent(
       new CustomEvent('preset-selected', {
-        detail: { preset, suppressToast: true, skipEntityMapping: true },
+        detail: { preset, suppressToast: true },
         bubbles: true,
         composed: true,
       })
     );
+  }
+
+  private _lang(): string {
+    return this.hass?.locale?.language || 'en';
+  }
+
+  private _setStep(step: SmartWizardStep): void {
+    this._wizardStep = step;
+  }
+
+  private _selectPresetForApply(preset: PresetDefinition): void {
+    this._selectedPreset = preset;
+    this._setStep('apply');
   }
 
   private _emitOpenPro(): void {
@@ -108,10 +126,15 @@ export class UcSmartSelectorTab extends LitElement {
       }
       this._results = ucSmartCardsService.getPresetCandidates(response);
       if (!this._results.length) {
-        this._generateError = response.error || 'No Smart preset was generated. Try a different prompt.';
+        this._generateError =
+          response.error ||
+          localize('editor.smart.no_results', this._lang(), 'No Smart preset was generated. Try a different prompt.');
+      } else {
+        this._selectedPreset = this._results[0] || null;
+        this._setStep('preview');
       }
     } catch (err) {
-      this._generateError = err instanceof Error ? err.message : 'Smart generation failed.';
+      this._generateError = err instanceof Error ? err.message : localize('editor.smart.generate_failed', this._lang(), 'Smart generation failed.');
       this._results = [];
     } finally {
       this._isGenerating = false;
@@ -119,6 +142,7 @@ export class UcSmartSelectorTab extends LitElement {
   }
 
   protected override render(): TemplateResult {
+    const lang = this._lang();
     const statusWarnings = this._status?.warnings || [];
     const assistAvailable = !!this._status?.available?.ha_assist;
     const freeRemaining = this._status?.limits?.free_remaining;
@@ -133,178 +157,353 @@ export class UcSmartSelectorTab extends LitElement {
       !freeExhausted &&
       this._prompt.trim().length > 0;
     const connectorUsedLabel =
-      this._connectorUsed === 'ha_assist' ? 'Home Assistant Assist' : this._connectorUsed;
-    const hasResults = this._results.length > 0;
+      this._connectorUsed === 'ha_assist'
+        ? localize('editor.smart.connector_ha_assist', lang, 'Home Assistant Assist')
+        : this._connectorUsed;
+    const steps: SmartWizardStep[] = ['status', 'compose', 'preview', 'apply'];
+    const stepLabels: Record<SmartWizardStep, string> = {
+      status: localize('editor.smart.step_status', lang, 'Status'),
+      compose: localize('editor.smart.step_compose', lang, 'Compose'),
+      preview: localize('editor.smart.step_preview', lang, 'Preview'),
+      apply: localize('editor.smart.step_apply', lang, 'Apply'),
+    };
+    const styleLabels: Record<typeof this._style, string> = {
+      clean: localize('editor.smart.style_clean', lang, 'Clean'),
+      minimal: localize('editor.smart.style_minimal', lang, 'Minimal'),
+      dense: localize('editor.smart.style_dense', lang, 'Dense'),
+      bold: localize('editor.smart.style_bold', lang, 'Bold'),
+    };
 
     return html`
       <div class="smart-container">
         <div class="smart-header">
           <div>
-            <h4>Smart Cards</h4>
+            <h4>${localize('editor.smart.title', lang, 'Smart Cards')}</h4>
             <p>
-              Uses your Home Assistant Assist pipeline to turn a description into a ready-to-apply
-              Ultra Card preset.
+              ${localize(
+                'editor.smart.subtitle',
+                lang,
+                "Uses your Home Assistant Assist pipeline to turn a description into a ready-to-apply Ultra Card preset."
+              )}
             </p>
           </div>
           <button class="refresh-btn" @click=${this._loadConnectorStatus} ?disabled=${this._loadingStatus}>
             <ha-icon icon="mdi:refresh" class="${this._loadingStatus ? 'spinning' : ''}"></ha-icon>
-            <span>Refresh</span>
+            <span>${localize('editor.smart.refresh', lang, 'Refresh')}</span>
           </button>
         </div>
 
-        <div class="status-row">
-          <span class="chip ${assistAvailable ? 'ok' : 'warn'}">
-            ${assistAvailable ? 'HA Assist ready' : 'HA Assist not set up'}
-          </span>
-          <span class="chip used">${this.isPro ? 'Pro modules enabled' : 'Free modules'}</span>
-          ${this._connectorUsed ? html`<span class="chip used">Used: ${connectorUsedLabel}</span>` : ''}
+        <div class="wizard-steps" role="tablist" aria-label=${localize('editor.smart.title', lang, 'Smart Cards')}>
+          ${steps.map(
+            step => html`
+              <button
+                class="wizard-step ${this._wizardStep === step ? 'active' : ''} ${steps.indexOf(step) < steps.indexOf(this._wizardStep) ? 'done' : ''}"
+                role="tab"
+                aria-selected=${this._wizardStep === step}
+                @click=${() => {
+                  // Allow going back freely; forward only when prerequisites met
+                  const targetIdx = steps.indexOf(step);
+                  const currentIdx = steps.indexOf(this._wizardStep);
+                  if (targetIdx <= currentIdx) {
+                    this._setStep(step);
+                    return;
+                  }
+                  if (step === 'compose' && assistAvailable) this._setStep('compose');
+                  if (step === 'preview' && this._results.length) this._setStep('preview');
+                  if (step === 'apply' && this._selectedPreset) this._setStep('apply');
+                }}
+              >
+                <span class="wizard-step-index">${steps.indexOf(step) + 1}</span>
+                <span>${stepLabels[step]}</span>
+              </button>
+            `
+          )}
         </div>
 
-        ${this._isGenerating
+        ${this._wizardStep === 'status'
           ? html`
-              <div class="generating-state" role="status" aria-live="polite">
-                <ha-icon icon="mdi:brain"></ha-icon>
-                <span>Generating smart layout...</span>
-              </div>
-              <div class="skeleton-grid">
-                <div class="skeleton-card"></div>
-              </div>
-            `
-          : ''}
+              <div class="wizard-panel">
+                <div class="status-row">
+                  <span class="chip ${assistAvailable ? 'ok' : 'warn'}">
+                    ${assistAvailable
+                      ? localize('editor.smart.assist_ready', lang, 'HA Assist ready')
+                      : localize('editor.smart.assist_not_ready', lang, 'HA Assist not set up')}
+                  </span>
+                  <span class="chip used">
+                    ${this.isPro
+                      ? localize('editor.smart.pro_modules', lang, 'Pro modules enabled')
+                      : localize('editor.smart.free_modules', lang, 'Free modules')}
+                  </span>
+                  ${this._connectorUsed
+                    ? html`<span class="chip used"
+                        >${localize('editor.smart.used', lang, 'Used: {connector}').replace(
+                          '{connector}',
+                          String(connectorUsedLabel || '')
+                        )}</span
+                      >`
+                    : ''}
+                </div>
 
-        ${hasResults
-          ? html`
-              <div class="results">
-                ${this._results.map(
-                  preset => html`
-                    <div class="result-card">
-                      <div class="result-head">
-                        <h5>${preset.name}</h5>
-                        <span class="result-category">${preset.category}</span>
+                ${!assistAvailable && !this._loadingStatus
+                  ? html`
+                      <div class="notice warn">
+                        <ha-icon icon="mdi:assistant"></ha-icon>
+                        <div>
+                          <div class="notice-title">
+                            ${localize(
+                              'editor.smart.setup_assist_title',
+                              lang,
+                              'Set up Home Assistant Assist'
+                            )}
+                          </div>
+                          <div>
+                            ${localize(
+                              'editor.smart.setup_assist_body',
+                              lang,
+                              "Smart Cards use Home Assistant's Assist/LLM connection. Configure an Assist pipeline in Home Assistant, then refresh this tab."
+                            )}
+                          </div>
+                        </div>
+                        <button class="mini-btn" @click=${this._openAssistSettings}>
+                          ${localize('editor.smart.open_assist', lang, 'Open Assist')}
+                        </button>
                       </div>
-                      <p>${preset.description}</p>
-                      ${this._renderPresetPreview(preset)}
-                      <div class="tags">
-                        ${(preset.tags || []).slice(0, 4).map(tag => html`<span class="tag">${tag}</span>`)}
+                    `
+                  : ''}
+
+                ${this._statusError
+                  ? html`
+                      <div class="notice error">
+                        <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
+                        <div>${this._statusError}</div>
                       </div>
-                      <button class="add-btn" @click=${() => this._emitPresetSelected(preset)}>
-                        <ha-icon icon="mdi:plus"></ha-icon>
-                        <span>Add</span>
-                      </button>
-                      <button class="add-btn" @click=${this._generate} ?disabled=${this._isGenerating}>
-                        <ha-icon icon="mdi:refresh"></ha-icon>
-                        <span>Regenerate</span>
-                      </button>
+                    `
+                  : ''}
+
+                ${statusWarnings.map(
+                  warning => html`
+                    <div class="notice warn compact">
+                      <ha-icon icon="mdi:information-outline"></ha-icon>
+                      <div>${warning}</div>
                     </div>
                   `
                 )}
-              </div>
-            `
-          : ''}
 
-        ${!assistAvailable && !this._loadingStatus
-          ? html`
-              <div class="notice warn">
-                <ha-icon icon="mdi:assistant"></ha-icon>
-                <div>
-                  <div class="notice-title">Set up Home Assistant Assist</div>
-                  <div>
-                    Smart Cards use Home Assistant's Assist/LLM connection. Configure an Assist
-                    pipeline in Home Assistant, then refresh this tab.
-                  </div>
-                </div>
-                <button class="mini-btn" @click=${this._openAssistSettings}>Open Assist</button>
-              </div>
-            `
-          : ''}
+                ${(freeDailyCap ?? null) !== null || (freeRemaining ?? null) !== null
+                  ? html`
+                      <div class="quota-row">
+                        <span>${localize('editor.smart.free_quota', lang, 'Free quota:')}</span>
+                        <strong
+                          >${localize('editor.smart.remaining', lang, '{remaining} / {cap} remaining')
+                            .replace('{remaining}', String(freeRemaining ?? '—'))
+                            .replace('{cap}', String(freeDailyCap ?? '—'))}</strong
+                        >
+                      </div>
+                    `
+                  : ''}
+                ${freeExhausted
+                  ? html`
+                      <div class="notice warn">
+                        <ha-icon icon="mdi:lock-outline"></ha-icon>
+                        <div>
+                          ${localize(
+                            'editor.smart.quota_exhausted',
+                            lang,
+                            'Free Smart generations are used up for today.'
+                          )}
+                        </div>
+                        <button class="mini-btn" @click=${this._emitOpenPro}>
+                          ${localize('editor.smart.upgrade', lang, 'Upgrade')}
+                        </button>
+                      </div>
+                    `
+                  : ''}
 
-        ${this._statusError
-          ? html`
-              <div class="notice error">
-                <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
-                <div>${this._statusError}</div>
-              </div>
-            `
-          : ''}
-
-        ${statusWarnings.map(
-          warning => html`
-            <div class="notice warn compact">
-              <ha-icon icon="mdi:information-outline"></ha-icon>
-              <div>${warning}</div>
-            </div>
-          `
-        )}
-
-        ${(freeDailyCap ?? null) !== null || (freeRemaining ?? null) !== null
-          ? html`
-              <div class="quota-row">
-                <span>Free quota:</span>
-                <strong>${freeRemaining ?? '—'} / ${freeDailyCap ?? '—'} remaining</strong>
-              </div>
-            `
-          : ''}
-        ${freeExhausted
-          ? html`
-              <div class="notice warn">
-                <ha-icon icon="mdi:lock-outline"></ha-icon>
-                <div>Free Smart generations are used up for today.</div>
-                <button class="mini-btn" @click=${this._emitOpenPro}>Upgrade</button>
-              </div>
-            `
-          : ''}
-
-        <div class="prompt-panel">
-          <label for="smart-prompt-input">What should Assist build?</label>
-          <textarea
-            id="smart-prompt-input"
-            placeholder="Ask Assist to build a compact morning dashboard with weather, commute time, and coffee status..."
-            .value=${this._prompt}
-            @input=${(e: Event) => {
-              this._prompt = (e.target as HTMLTextAreaElement).value;
-            }}
-          ></textarea>
-
-          <div class="controls-row">
-            <div class="group">
-              <span class="group-label">Style</span>
-              ${(['clean', 'minimal', 'dense', 'bold'] as const).map(
-                style => html`
+                <div class="wizard-nav">
                   <button
-                    class="pill ${this._style === style ? 'active' : ''}"
-                    @click=${() => (this._style = style)}
+                    class="generate-btn"
+                    ?disabled=${!assistAvailable || freeExhausted}
+                    @click=${() => this._setStep('compose')}
                   >
-                    ${style}
+                    ${localize('editor.smart.continue', lang, 'Continue')}
                   </button>
-                `
-              )}
-            </div>
-          </div>
-
-          <button class="generate-btn" @click=${this._generate} ?disabled=${!canGenerate}>
-            <ha-icon icon="mdi:brain"></ha-icon>
-            <span>${this._isGenerating ? 'Asking Assist...' : 'Ask Assist to Generate'}</span>
-          </button>
-        </div>
-
-        ${this._generateError
-          ? html`
-              <div class="notice error">
-                <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
-                <div>${this._generateError}</div>
+                </div>
               </div>
             `
           : ''}
 
-        ${this._warnings.map(
-          warning => html`
-            <div class="notice warn compact">
-              <ha-icon icon="mdi:information-outline"></ha-icon>
-              <div>${warning}</div>
-            </div>
-          `
-        )}
+        ${this._wizardStep === 'compose'
+          ? html`
+              <div class="wizard-panel">
+                <div class="prompt-panel">
+                  <label for="smart-prompt-input"
+                    >${localize(
+                      'editor.smart.prompt_label',
+                      lang,
+                      'What should Assist build?'
+                    )}</label
+                  >
+                  <textarea
+                    id="smart-prompt-input"
+                    placeholder=${localize(
+                      'editor.smart.prompt_placeholder',
+                      lang,
+                      'Ask Assist to build a compact morning dashboard with weather, commute time, and coffee status...'
+                    )}
+                    .value=${this._prompt}
+                    @input=${(e: Event) => {
+                      this._prompt = (e.target as HTMLTextAreaElement).value;
+                    }}
+                  ></textarea>
 
+                  <div class="controls-row">
+                    <div class="group">
+                      <span class="group-label">${localize('editor.smart.style', lang, 'Style')}</span>
+                      ${(['clean', 'minimal', 'dense', 'bold'] as const).map(
+                        style => html`
+                          <button
+                            class="pill ${this._style === style ? 'active' : ''}"
+                            @click=${() => (this._style = style)}
+                          >
+                            ${styleLabels[style]}
+                          </button>
+                        `
+                      )}
+                    </div>
+                  </div>
+
+                  <button class="generate-btn" @click=${this._generate} ?disabled=${!canGenerate}>
+                    <ha-icon icon="mdi:brain"></ha-icon>
+                    <span
+                      >${this._isGenerating
+                        ? localize('editor.smart.generating_btn', lang, 'Asking Assist...')
+                        : localize('editor.smart.generate', lang, 'Ask Assist to Generate')}</span
+                    >
+                  </button>
+                </div>
+
+                ${this._isGenerating
+                  ? html`
+                      <div class="generating-state" role="status" aria-live="polite">
+                        <ha-icon icon="mdi:brain"></ha-icon>
+                        <span
+                          >${localize(
+                            'editor.smart.generating',
+                            lang,
+                            'Generating smart layout...'
+                          )}</span
+                        >
+                      </div>
+                      <div class="skeleton-grid">
+                        <div class="skeleton-card"></div>
+                      </div>
+                    `
+                  : ''}
+
+                ${this._generateError
+                  ? html`
+                      <div class="notice error">
+                        <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
+                        <div>${this._generateError}</div>
+                      </div>
+                    `
+                  : ''}
+
+                <div class="wizard-nav">
+                  <button class="mini-btn" @click=${() => this._setStep('status')}>
+                    ${localize('editor.smart.back', lang, 'Back')}
+                  </button>
+                </div>
+              </div>
+            `
+          : ''}
+
+        ${this._wizardStep === 'preview'
+          ? html`
+              <div class="wizard-panel">
+                ${this._warnings.length
+                  ? html`
+                      <div class="notice warn">
+                        <ha-icon icon="mdi:information-outline"></ha-icon>
+                        <div>
+                          <div class="notice-title">
+                            ${localize('editor.smart.warnings_title', lang, 'Warnings')}
+                          </div>
+                          ${this._warnings.map(w => html`<div>${w}</div>`)}
+                        </div>
+                      </div>
+                    `
+                  : ''}
+
+                <div class="results">
+                  ${this._results.map(
+                    preset => html`
+                      <div
+                        class="result-card ${this._selectedPreset?.id === preset.id ? 'selected' : ''}"
+                      >
+                        <div class="result-head">
+                          <h5>${preset.name}</h5>
+                          <span class="result-category">${preset.category}</span>
+                        </div>
+                        <p>${preset.description}</p>
+                        ${this._renderPresetPreview(preset)}
+                        <div class="tags">
+                          ${(preset.tags || [])
+                            .slice(0, 4)
+                            .map(tag => html`<span class="tag">${tag}</span>`)}
+                        </div>
+                        <button class="add-btn" @click=${() => this._selectPresetForApply(preset)}>
+                          <ha-icon icon="mdi:check"></ha-icon>
+                          <span>${localize('editor.smart.continue', lang, 'Continue')}</span>
+                        </button>
+                        <button
+                          class="add-btn"
+                          @click=${this._generate}
+                          ?disabled=${this._isGenerating}
+                        >
+                          <ha-icon icon="mdi:refresh"></ha-icon>
+                          <span>${localize('editor.smart.regenerate', lang, 'Regenerate')}</span>
+                        </button>
+                      </div>
+                    `
+                  )}
+                </div>
+
+                <div class="wizard-nav">
+                  <button class="mini-btn" @click=${() => this._setStep('compose')}>
+                    ${localize('editor.smart.back', lang, 'Back')}
+                  </button>
+                </div>
+              </div>
+            `
+          : ''}
+
+        ${this._wizardStep === 'apply' && this._selectedPreset
+          ? html`
+              <div class="wizard-panel">
+                <div class="result-card">
+                  <div class="result-head">
+                    <h5>${this._selectedPreset.name}</h5>
+                    <span class="result-category">${this._selectedPreset.category}</span>
+                  </div>
+                  <p>${this._selectedPreset.description}</p>
+                  ${this._renderPresetPreview(this._selectedPreset)}
+                </div>
+                <div class="wizard-nav">
+                  <button class="mini-btn" @click=${() => this._setStep('preview')}>
+                    ${localize('editor.smart.back', lang, 'Back')}
+                  </button>
+                  <button
+                    class="generate-btn"
+                    @click=${() => this._emitPresetSelected(this._selectedPreset!)}
+                  >
+                    <ha-icon icon="mdi:plus"></ha-icon>
+                    <span>${localize('editor.smart.apply_preset', lang, 'Apply Preset')}</span>
+                  </button>
+                </div>
+              </div>
+            `
+          : ''}
       </div>
     `;
   }
@@ -312,7 +511,7 @@ export class UcSmartSelectorTab extends LitElement {
   private _renderPresetPreview(preset: PresetDefinition): TemplateResult {
     if (customElements.get('ultra-card')) {
       return html`
-        <div class="smart-preview-live" aria-label="Smart preset live preview">
+        <div class="smart-preview-live" aria-label=${localize('editor.smart.preview_aria', this._lang(), 'Smart preset live preview')}>
           <div class="smart-live-viewport">
             <ultra-card
               class="smart-live-card"
@@ -334,13 +533,13 @@ export class UcSmartSelectorTab extends LitElement {
       return html`
         <div class="smart-preview empty">
           <ha-icon icon="mdi:view-dashboard-outline"></ha-icon>
-          <span>Preview unavailable</span>
+          <span>${localize('editor.smart.preview_unavailable', this._lang(), 'Preview unavailable')}</span>
         </div>
       `;
     }
 
     return html`
-      <div class="smart-preview" aria-label="Smart preset preview">
+      <div class="smart-preview" aria-label=${localize('editor.smart.preview_fallback_aria', this._lang(), 'Smart preset preview')}>
         ${modules.map(module => this._renderModulePreview(module as Record<string, unknown>))}
       </div>
     `;
@@ -703,6 +902,58 @@ export class UcSmartSelectorTab extends LitElement {
     .spinning {
       animation: spin 1s linear infinite;
     }
+
+    .wizard-steps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .wizard-step {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--divider-color);
+      background: var(--card-background-color);
+      color: var(--secondary-text-color);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .wizard-step.active {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+    }
+    .wizard-step.done {
+      border-color: rgba(var(--rgb-success-color, 76, 175, 80), 0.45);
+    }
+    .wizard-step-index {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12);
+    }
+    .wizard-panel {
+      display: grid;
+      gap: 12px;
+    }
+    .wizard-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .result-card.selected {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 1px rgba(var(--rgb-primary-color, 3, 169, 244), 0.35);
+    }
+
     .status-row {
       display: flex;
       flex-wrap: wrap;

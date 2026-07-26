@@ -1,20 +1,25 @@
 import './cards/ultra-card';
 import './components/navigation-picker';
 import './components/ultra-color-picker';
-import './editor/ultra-card-editor';
 import { CustomCard } from './types';
 import { VERSION } from './version';
 
 // Initialize the module registry (manifest-first; no module implementations loaded yet)
 import { getModuleRegistry } from './modules';
 import { scheduleBackgroundModulePreloads } from './utils/uc-module-preload-scheduler';
+import { isLazyEditorEnabled } from './utils/uc-lazy-load-flags';
 import {
   UC_ULTRA_CARD_HASS_READY,
   runUltraCardVersionBanner,
 } from './utils/uc-pro-banner';
 
+// Editor is lazy-loaded via getConfigElement() unless rollback flag is set.
+if (!isLazyEditorEnabled()) {
+  void import(/* webpackChunkName: "editor" */ './editor/ultra-card-editor');
+}
+
 const moduleRegistry = getModuleRegistry();
-// Preload module chunks in the background (batched + idle gaps by default; see uc-module-preload-scheduler).
+// Default preload is `minimal` so lazy chunks are not burst-loaded at startup.
 scheduleBackgroundModulePreloads(moduleRegistry);
 
 const __ucModuleCount = moduleRegistry.getAllModuleMetadata().length;

@@ -10,6 +10,10 @@ declare global {
      * `localStorage['ultra-card-module-preload']` accepts the same strings if this is unset.
      */
     __ultraCardModulePreload?: 'batched' | 'full' | 'minimal' | 'off' | 'none' | 'parallel' | 'default' | undefined;
+    /** Rollback: set false to eagerly import the editor at card bootstrap. */
+    __ultraCardLazyEditor?: boolean | string | undefined;
+    /** Rollback hint for docs / tooling (loaders always use dynamic import). */
+    __ultraCardLazyModules?: boolean | string | undefined;
   }
 }
 

@@ -11,8 +11,8 @@ describe('resolveUltraCardModulePreloadMode', () => {
     localStorage.removeItem('ultra-card-module-preload');
   });
 
-  it('defaults to batched', () => {
-    expect(resolveUltraCardModulePreloadMode()).toBe('batched');
+  it('defaults to minimal', () => {
+    expect(resolveUltraCardModulePreloadMode()).toBe('minimal');
   });
 
   it('reads window.__ultraCardModulePreload', () => {
@@ -59,6 +59,16 @@ describe('scheduleBackgroundModulePreloads', () => {
     vi.unstubAllGlobals();
   });
 
+  it('skips preload by default (minimal)', () => {
+    const ensure = vi.fn().mockResolvedValue(undefined);
+    scheduleBackgroundModulePreloads({
+      getAllModuleMetadata: () => [{ type: 'a' }, { type: 'b' }],
+      canLoadModule: () => true,
+      ensureModuleLoaded: ensure,
+    } as any);
+    expect(ensure).not.toHaveBeenCalled();
+  });
+
   it('skips when mode is minimal', () => {
     (window as Window & { __ultraCardModulePreload?: string }).__ultraCardModulePreload = 'minimal';
     const ensure = vi.fn().mockResolvedValue(undefined);
@@ -70,7 +80,8 @@ describe('scheduleBackgroundModulePreloads', () => {
     expect(ensure).not.toHaveBeenCalled();
   });
 
-  it('only preloads types with loaders', async () => {
+  it('only preloads types with loaders when mode is batched', async () => {
+    (window as Window & { __ultraCardModulePreload?: string }).__ultraCardModulePreload = 'batched';
     const registry = {
       getAllModuleMetadata: () => [{ type: 'a' }, { type: 'no_loader' }],
       canLoadModule: (t: string) => t === 'a',
@@ -103,6 +114,7 @@ describe('scheduleBackgroundModulePreloads', () => {
   });
 
   it('batched mode caps concurrency at 3', async () => {
+    (window as Window & { __ultraCardModulePreload?: string }).__ultraCardModulePreload = 'batched';
     const types = ['a', 'b', 'c', 'd', 'e'];
     let peak = 0;
     let inflight = 0;

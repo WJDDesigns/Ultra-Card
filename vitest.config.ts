@@ -18,6 +18,24 @@ export default defineConfig({
         'src/modules/_module-template.ts',
         'src/node_modules/**',
       ],
+      thresholds: {
+        // Baseline for extracted layout helpers (ratchet up as coverage grows).
+        'src/editor/layout/layout-tree-helpers.ts': {
+          lines: 50,
+          functions: 50,
+          statements: 50,
+        },
+        'src/editor/layout/layout-config-writer.ts': {
+          lines: 70,
+          functions: 70,
+          statements: 70,
+        },
+        'src/editor/layout/layout-tree-keyboard-move.ts': {
+          lines: 50,
+          functions: 50,
+          statements: 50,
+        },
+      },
     },
   },
   resolve: {

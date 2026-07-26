@@ -23,7 +23,7 @@ interface RenderContext {
 import { getModuleRegistry } from '../modules';
 import { closePopupsForModule } from '../modules/popup-module';
 import { getImageUrl } from '../utils/image-upload';
-import { collectModuleTypesFromLayout } from '../utils/uc-layout-module-types';
+import { collectModuleTypesFromLayout, forEachNestedChildModules } from '../utils/uc-layout-module-types';
 import { logicService } from '../services/logic-service';
 import { TemplateService } from '../services/template-service';
 import { configValidationService } from '../services/config-validation-service';
@@ -55,7 +55,7 @@ import {
   buildCardContainerStyleFromAppearance,
 } from '../utils/card-appearance-template';
 import { UC_ULTRA_CARD_HASS_READY } from '../utils/uc-pro-banner';
-
+import { loadUltraCardEditor } from '../editor/load-ultra-card-editor';
 import { externalCardContainerService } from '../services/external-card-container-service';
 import { ucCardInstanceRegistry } from '../services/uc-card-instance-registry';
 
@@ -851,19 +851,8 @@ export class UltraCard extends LitElement {
     const processModules = (modules: any[]) => {
       for (const mod of modules) {
         this._collectModuleEntityIds(mod, ids);
-        // Recurse into container modules (accordion, tabs, slider, horizontal, vertical)
-        const m = mod as any;
-        if (Array.isArray(m.modules)) processModules(m.modules);
-        if (Array.isArray(m.panels)) {
-          for (const panel of m.panels) {
-            if (Array.isArray(panel?.modules)) processModules(panel.modules);
-          }
-        }
-        if (Array.isArray(m.tabs)) {
-          for (const tab of m.tabs) {
-            if (Array.isArray(tab?.modules)) processModules(tab.modules);
-          }
-        }
+        // Recurse into container modules (horizontal, vertical, accordion, tabs.sections, panes, …)
+        forEachNestedChildModules(mod, processModules);
       }
     };
 
@@ -923,17 +912,7 @@ export class UltraCard extends LitElement {
           }
         }
         const m = mod as any;
-        if (Array.isArray(m.modules)) visit(m.modules);
-        if (Array.isArray(m.panels)) {
-          for (const panel of m.panels) {
-            if (Array.isArray(panel?.modules)) visit(panel.modules);
-          }
-        }
-        if (Array.isArray(m.tabs)) {
-          for (const tab of m.tabs) {
-            if (Array.isArray(tab?.modules)) visit(tab.modules);
-          }
-        }
+        forEachNestedChildModules(m, visit);
       }
     };
 
@@ -959,28 +938,7 @@ export class UltraCard extends LitElement {
         if (mod?.type === 'animated_clock' && mod?.id) {
           clockUpdateService.unregisterClock(mod.id);
         }
-        const m = mod as any;
-        if (Array.isArray(m.modules)) visit(m.modules);
-        if (Array.isArray(m.panels)) {
-          for (const panel of m.panels) {
-            if (Array.isArray(panel?.modules)) visit(panel.modules);
-          }
-        }
-        if (Array.isArray(m.panes)) {
-          for (const pane of m.panes) {
-            if (Array.isArray(pane?.modules)) visit(pane.modules);
-          }
-        }
-        if (Array.isArray(m.tabs)) {
-          for (const tab of m.tabs) {
-            if (Array.isArray(tab?.modules)) visit(tab.modules);
-          }
-        }
-        if (Array.isArray(m.sections)) {
-          for (const sec of m.sections) {
-            if (Array.isArray(sec?.modules)) visit(sec.modules);
-          }
-        }
+        forEachNestedChildModules(mod, visit);
       }
     };
 
@@ -1324,9 +1282,9 @@ export class UltraCard extends LitElement {
     return `uc-preview-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   }
 
-  // Tell Home Assistant this card has a visual editor
-  public static getConfigElement(): HTMLElement {
-    return document.createElement('ultra-card-editor');
+  // Tell Home Assistant this card has a visual editor (async — loads editor chunk on demand)
+  public static getConfigElement(): Promise<HTMLElement> {
+    return loadUltraCardEditor().then(() => document.createElement('ultra-card-editor'));
   }
 
   // localStorage key for Pro setting to skip default modules

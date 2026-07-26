@@ -89,6 +89,8 @@ module.exports = (env, argv) => {
       filename: '[name].js',
       path: path.resolve(__dirname, 'dist'),
       chunkFilename: 'uc-[name].js',
+      // Derive chunk base URL from the script that loaded the entry (HACS / local / subpaths).
+      publicPath: 'auto',
     },
     optimization: {
       usedExports: true,

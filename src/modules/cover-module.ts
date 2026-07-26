@@ -351,32 +351,40 @@ export class UltraCoverModule extends BaseUltraModule {
       'Cover';
     const icon = coverModule.icon || attrs.icon || 'mdi:blinds';
 
+    const afterCoverControl = () => this.triggerPreviewUpdate(true);
     const openCover = () => {
       hass.callService('cover', 'open_cover', { entity_id: entityId });
+      afterCoverControl();
     };
     const closeCover = () => {
       hass.callService('cover', 'close_cover', { entity_id: entityId });
+      afterCoverControl();
     };
     const stopCover = () => {
       hass.callService('cover', 'stop_cover', { entity_id: entityId });
+      afterCoverControl();
     };
     const setPosition = (position: number) => {
       hass.callService('cover', 'set_cover_position', {
         entity_id: entityId,
         position,
       });
+      afterCoverControl();
     };
     const openTilt = () => {
       hass.callService('cover', 'open_cover_tilt', { entity_id: entityId });
+      afterCoverControl();
     };
     const closeTilt = () => {
       hass.callService('cover', 'close_cover_tilt', { entity_id: entityId });
+      afterCoverControl();
     };
     const setTiltPosition = (tiltPosition: number) => {
       hass.callService('cover', 'set_cover_tilt_position', {
         entity_id: entityId,
         tilt_position: tiltPosition,
       });
+      afterCoverControl();
     };
 
     const isMoving = stateStr === 'opening' || stateStr === 'closing';

@@ -197,7 +197,10 @@ export class UcFormUtils {
     };
   }
 
-  static select(name: string, options: Array<{ value: string | undefined; label: string }>): any {
+  static select(
+    name: string,
+    options: ReadonlyArray<{ value: string | undefined; label: string }>
+  ): any {
     return {
       name,
       selector: {

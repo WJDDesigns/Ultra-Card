@@ -693,7 +693,11 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
     const state = stateObj.state;
     const isPlaying = state === 'playing';
     const attrs = stateObj.attributes;
-    const entityPicture = attrs.entity_picture || attrs.entity_picture_local;
+    const entityPicture = this._resolveMediaPicture(
+      attrs.entity_picture || attrs.entity_picture_local,
+      hass,
+      stateObj
+    );
     
     // Get dynamic colors if enabled
     const dynamicStyles = mp.dynamic_colors ? this.getDynamicColorStyles(mp, stateObj) : '';
@@ -714,7 +718,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         <!-- Main Row -->
         <div class="mp-compact-row">
           <!-- Album Art -->
-          ${mp.show_album_art !== false ? this.renderAlbumArt(mp, stateObj, 48) : ''}
+          ${mp.show_album_art !== false ? this.renderAlbumArt(mp, hass, stateObj, 48) : ''}
 
           <!-- Track Info -->
           <div class="mp-track-info">
@@ -772,7 +776,11 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
     const isPlaying = state === 'playing';
     const attrs = stateObj.attributes;
     const cardSize = mp.card_size || 280;
-    const entityPicture = attrs.entity_picture || attrs.entity_picture_local;
+    const entityPicture = this._resolveMediaPicture(
+      attrs.entity_picture || attrs.entity_picture_local,
+      hass,
+      stateObj
+    );
     
     // Get dynamic colors - always extract for visualizer, apply to controls only if dynamic_colors is on
     const dynamicStyles = this.getDynamicColorStyles(mp, stateObj);
@@ -798,7 +806,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
           ${mp.animated_visuals && state === 'playing'
             ? this.renderVisualizer(mp.visualizer_type || 'rings')
             : ''}
-          ${mp.show_album_art !== false ? this.renderAlbumArt(mp, stateObj, cardSize, true) : ''}
+          ${mp.show_album_art !== false ? this.renderAlbumArt(mp, hass, stateObj, cardSize, true) : ''}
         </div>
 
         <!-- Track Info -->
@@ -894,7 +902,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         ${this.getStyles()}
       </style>
       <div class="media-player-container media-player-mini">
-        ${mp.show_album_art !== false ? this.renderAlbumArt(mp, stateObj, 24) : ''}
+        ${mp.show_album_art !== false ? this.renderAlbumArt(mp, hass, stateObj, 24) : ''}
         <div class="mp-mini-text" title="${nowPlaying}">${nowPlaying}</div>
         ${mp.show_controls !== false ? this.renderPlayPauseButton(mp, hass, stateObj) : ''}
       </div>
@@ -905,11 +913,17 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
   // COMPONENT RENDERERS
   // ============================
 
-  private renderAlbumArt(mp: MediaPlayerModule, stateObj: any, size: number, isCard: boolean = false): TemplateResult {
+  private renderAlbumArt(
+    mp: MediaPlayerModule,
+    hass: HomeAssistant,
+    stateObj: any,
+    size: number,
+    isCard: boolean = false
+  ): TemplateResult {
     const attrs = stateObj.attributes;
-    const entityPicture = attrs.entity_picture || attrs.entity_picture_local;
+    const rawPicture = attrs.entity_picture || attrs.entity_picture_local;
+    const entityPicture = this._resolveMediaPicture(rawPicture, hass, stateObj);
     const borderRadius = mp.album_art_border_radius || '8px';
-    const state = stateObj.state;
 
     return html`
       <div
@@ -917,10 +931,50 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
         style="width: ${size}px; height: ${size}px; border-radius: ${borderRadius};"
       >
         ${entityPicture
-          ? html`<img src="${entityPicture}" alt="Album Art" style="border-radius: ${borderRadius};" />`
-          : html`<ha-icon icon="${mp.fallback_icon || 'mdi:music'}" style="--mdc-icon-size: ${Math.floor(size * 0.5)}px;"></ha-icon>`}
+          ? html`<img
+              src="${entityPicture}"
+              alt="Album Art"
+              style="border-radius: ${borderRadius};"
+            />`
+          : html`<ha-icon
+              icon="${mp.fallback_icon || 'mdi:music'}"
+              style="--mdc-icon-size: ${Math.floor(size * 0.5)}px;"
+            ></ha-icon>`}
       </div>
     `;
+  }
+
+  /** Resolve HA-relative entity_picture URLs and bust cache when track metadata changes. */
+  private _resolveMediaPicture(
+    picture: string | undefined,
+    hass: HomeAssistant,
+    stateObj: any
+  ): string {
+    if (!picture) return '';
+    let url = picture;
+    if (!url.startsWith('http') && !url.startsWith('data:')) {
+      const hassUrl = (hass as any)?.hassUrl;
+      if (typeof hassUrl === 'function') {
+        try {
+          url = hassUrl(url.startsWith('/') ? url : `/${url}`);
+        } catch {
+          const baseUrl = String(hassUrl() || '').replace(/\/$/, '');
+          url = `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+        }
+      }
+    }
+    const attrs = stateObj?.attributes || {};
+    const cacheKey =
+      attrs.media_content_id ||
+      attrs.media_title ||
+      stateObj?.last_changed ||
+      stateObj?.last_updated ||
+      '';
+    if (cacheKey && !url.includes('data:')) {
+      const sep = url.includes('?') ? '&' : '?';
+      url = `${url}${sep}uc=${encodeURIComponent(String(cacheKey).slice(0, 64))}`;
+    }
+    return url;
   }
 
   private renderVisualizer(type: string): TemplateResult {
@@ -1272,6 +1326,12 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
   // EVENT HANDLERS
   // ============================
 
+  private _afterMediaControl(): void {
+    // Force an immediate live-card refresh so play/pause/metadata feel responsive
+    // even when the integration (e.g. Spotify) is slow to push a new hass state.
+    this.triggerPreviewUpdate(true);
+  }
+
   private async handlePlayPause(e: Event, hass: HomeAssistant, stateObj: any): Promise<void> {
     e.stopPropagation();
     const state = stateObj.state;
@@ -1279,41 +1339,37 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
     const attrs = stateObj.attributes;
     const isSpotify = entityId.includes('spotify');
 
-    if (state === 'playing') {
-      hass.callService('media_player', 'media_pause', {
-        entity_id: entityId,
-      });
-    } else if (state === 'paused') {
-      // Simply resume if paused
-      hass.callService('media_player', 'media_play', {
-        entity_id: entityId,
-      });
-    } else {
-      // For Spotify when idle/off, need to ensure a source is selected
-      if (isSpotify) {
+    try {
+      if (state === 'playing') {
+        await hass.callService('media_player', 'media_pause', {
+          entity_id: entityId,
+        });
+      } else if (state === 'paused') {
+        await hass.callService('media_player', 'media_play', {
+          entity_id: entityId,
+        });
+      } else if (isSpotify) {
+        // Spotify idle/off: ensure a source is selected, then play.
         const currentSource = attrs.source;
         const sourceList = attrs.source_list || [];
-        
-        // If no source selected but sources are available, select the first one
         if (!currentSource && sourceList.length > 0) {
           await hass.callService('media_player', 'select_source', {
             entity_id: entityId,
             source: sourceList[0],
           });
-          // Wait for source selection
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Brief wait for source selection without blocking UI refresh forever.
+          await new Promise(resolve => setTimeout(resolve, 250));
         }
-        
-        // Try to play - this will resume last played content if available
-        hass.callService('media_player', 'media_play', {
+        await hass.callService('media_player', 'media_play', {
           entity_id: entityId,
         });
       } else {
-        // Non-Spotify players - just call play
-        hass.callService('media_player', 'media_play', {
+        await hass.callService('media_player', 'media_play', {
           entity_id: entityId,
         });
       }
+    } finally {
+      this._afterMediaControl();
     }
   }
 
@@ -1322,6 +1378,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
     hass.callService('media_player', 'media_stop', {
       entity_id: stateObj.entity_id,
     });
+    this._afterMediaControl();
   }
 
   private handlePrevious(e: Event, hass: HomeAssistant, stateObj: any): void {
@@ -1329,6 +1386,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
     hass.callService('media_player', 'media_previous_track', {
       entity_id: stateObj.entity_id,
     });
+    this._afterMediaControl();
   }
 
   private handleNext(e: Event, hass: HomeAssistant, stateObj: any): void {
@@ -1336,6 +1394,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
     hass.callService('media_player', 'media_next_track', {
       entity_id: stateObj.entity_id,
     });
+    this._afterMediaControl();
   }
 
   private handleShuffle(e: Event, hass: HomeAssistant, stateObj: any): void {
@@ -1345,6 +1404,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       entity_id: stateObj.entity_id,
       shuffle: !currentShuffle,
     });
+    this._afterMediaControl();
   }
 
   private handleRepeat(e: Event, hass: HomeAssistant, stateObj: any): void {
@@ -1369,6 +1429,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       entity_id: stateObj.entity_id,
       repeat: nextRepeat,
     });
+    this._afterMediaControl();
   }
 
   private handleMuteToggle(e: Event, hass: HomeAssistant, stateObj: any): void {
@@ -1378,6 +1439,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       entity_id: stateObj.entity_id,
       is_volume_muted: !isMuted,
     });
+    this._afterMediaControl();
   }
 
   private handleVolumeChange(e: Event, hass: HomeAssistant, stateObj: any): void {
@@ -1389,6 +1451,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       entity_id: stateObj.entity_id,
       volume_level: volume,
     });
+    this._afterMediaControl();
   }
 
   private handleSeek(e: Event, hass: HomeAssistant, stateObj: any, duration: number): void {
@@ -1405,6 +1468,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       entity_id: stateObj.entity_id,
       seek_position: seekPosition,
     });
+    this._afterMediaControl();
   }
 
   private handleSourceChange(e: Event, hass: HomeAssistant, stateObj: any): void {
@@ -1414,6 +1478,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       entity_id: stateObj.entity_id,
       source: target.value,
     });
+    this._afterMediaControl();
   }
 
   private handleSoundModeChange(e: Event, hass: HomeAssistant, stateObj: any): void {
@@ -1423,6 +1488,7 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
       entity_id: stateObj.entity_id,
       sound_mode: target.value,
     });
+    this._afterMediaControl();
   }
 
   private toggleExpand(e: Event, moduleId: string): void {

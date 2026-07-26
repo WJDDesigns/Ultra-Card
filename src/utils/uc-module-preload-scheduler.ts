@@ -1,10 +1,10 @@
 import type { ModuleRegistry } from '../modules/module-registry';
 
 /**
- * Controls background eager module chunk preloading after the card bundle loads.
- * - `batched` (default): bounded concurrency; gaps between batches via `requestIdleCallback` when available.
+ * Controls background module chunk preloading after the card bundle loads.
+ * - `minimal` (default): skip background preload; implementations load on first `ensureModuleLoaded` from UI.
+ * - `batched`: bounded concurrency; gaps between batches via `requestIdleCallback` when available.
  * - `full`: start every load together (legacy burst; still uses `allSettled` so one failure does not cancel others).
- * - `minimal`: skip background preload; implementations load on first `ensureModuleLoaded` from UI.
  */
 export type UltraCardModulePreloadMode = 'batched' | 'full' | 'minimal';
 
@@ -27,10 +27,11 @@ function normalizeMode(raw: string | null | undefined): UltraCardModulePreloadMo
 }
 
 /**
- * Resolve preload mode: `window.__ultraCardModulePreload`, then `localStorage['ultra-card-module-preload']`, else `batched`.
+ * Resolve preload mode: `window.__ultraCardModulePreload`, then `localStorage['ultra-card-module-preload']`,
+ * else `minimal` (preserves true lazy loading). Set to `batched` or `full` to restore legacy preload.
  */
 export function resolveUltraCardModulePreloadMode(): UltraCardModulePreloadMode {
-  if (typeof window === 'undefined') return 'batched';
+  if (typeof window === 'undefined') return 'minimal';
   const w = window as Window & { __ultraCardModulePreload?: string };
   const fromWindow = normalizeMode(w.__ultraCardModulePreload);
   if (fromWindow) return fromWindow;
@@ -40,7 +41,7 @@ export function resolveUltraCardModulePreloadMode(): UltraCardModulePreloadMode 
   } catch {
     /* private mode / blocked storage */
   }
-  return 'batched';
+  return 'minimal';
 }
 
 function collectPreloadTypes(registry: RegistryPick): string[] {

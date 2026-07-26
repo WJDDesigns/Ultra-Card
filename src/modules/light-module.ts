@@ -506,6 +506,9 @@ export class UltraLightModule extends BaseUltraModule {
         detail: { message: `Failed to control light ${entityId}: ${error}` },
       });
       document.dispatchEvent(event);
+    } finally {
+      // Keep live card / preview in sync even when nested under tabs/containers.
+      this.triggerPreviewUpdate(true);
     }
   }
 

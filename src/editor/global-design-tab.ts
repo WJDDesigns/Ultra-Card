@@ -11,6 +11,7 @@ import { Z_INDEX } from '../utils/uc-z-index';
 import { DeviceBreakpoint, DEVICE_BREAKPOINTS, ResponsiveDesignProperties } from '../types';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
 import { ucToastService } from '../services/uc-toast-service';
+import { getDesignSelectOptions, type DesignSelectOption } from './design-select-options';
 
 // Web-safe fonts that don't require loading
 const WEB_SAFE_FONTS = [
@@ -405,6 +406,36 @@ export class GlobalDesignTab extends LitElement {
       this._expandedSections.add(section);
     }
     this.requestUpdate();
+  }
+
+  /**
+   * HA-native select via UcFormUtils (replaces raw <select> in Design tab).
+   */
+  private _renderDesignSelect(
+    property: keyof DesignProperties,
+    value: string | undefined,
+    options: readonly DesignSelectOption[],
+    onAfterChange?: (value: string) => void
+  ): TemplateResult {
+    const key = String(property);
+    return html`
+      <div class="design-ha-select">
+        ${UcFormUtils.renderForm(
+          this.hass!,
+          { [key]: value ?? '' },
+          [UcFormUtils.select(key, options)],
+          (e: CustomEvent) => {
+            const next = e.detail?.value?.[key] ?? '';
+            if (onAfterChange) {
+              onAfterChange(next);
+            } else {
+              this._updateProperty(property, next);
+            }
+          },
+          false
+        )}
+      </div>
+    `;
   }
 
   private _updateProperty(property: keyof DesignProperties, value: any): void {
@@ -1694,6 +1725,7 @@ export class GlobalDesignTab extends LitElement {
 
   protected override render(): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
+    const designSelectOptions = getDesignSelectOptions(lang);
     const hasAnyDeviceOverrides =
       this.responsiveDesign &&
       responsiveDesignService.hasAnyResponsiveOverrides(this.responsiveDesign);
@@ -2064,37 +2096,11 @@ export class GlobalDesignTab extends LitElement {
             <div class="property-group">
               <label>${localize('editor.design.font_weight', lang, 'Font Weight')}:</label>
               <div class="input-with-reset">
-                <select
-                  .value=${effectiveDesign.font_weight || ''}
-                  @change=${(e: Event) =>
-                    this._updateProperty('font_weight', (e.target as HTMLSelectElement).value)}
-                  class="property-select"
-                >
-                  <option value="">
-                    ${localize('editor.design.default_option', lang, '– Default –')}
-                  </option>
-                  <option value="100">
-                    ${localize('editor.design.weight_thin', lang, '100 - Thin')}
-                  </option>
-                  <option value="300">
-                    ${localize('editor.design.weight_light', lang, '300 - Light')}
-                  </option>
-                  <option value="400">
-                    ${localize('editor.design.weight_normal', lang, '400 - Normal')}
-                  </option>
-                  <option value="500">
-                    ${localize('editor.design.weight_medium', lang, '500 - Medium')}
-                  </option>
-                  <option value="600">
-                    ${localize('editor.design.weight_semi_bold', lang, '600 - Semi Bold')}
-                  </option>
-                  <option value="700">
-                    ${localize('editor.design.weight_bold', lang, '700 - Bold')}
-                  </option>
-                  <option value="900">
-                    ${localize('editor.design.weight_black', lang, '900 - Black')}
-                  </option>
-                </select>
+                ${this._renderDesignSelect(
+                  'font_weight',
+                  effectiveDesign.font_weight || '',
+                  designSelectOptions.fontWeight
+                )}
                 <button
                   class="reset-btn"
                   @click=${() => this._updateProperty('font_weight', '')}
@@ -2112,28 +2118,11 @@ export class GlobalDesignTab extends LitElement {
             <div class="property-group">
               <label>${localize('editor.design.text_transform', lang, 'Text Transform')}:</label>
               <div class="input-with-reset">
-                <select
-                  .value=${effectiveDesign.text_transform || ''}
-                  @change=${(e: Event) =>
-                    this._updateProperty('text_transform', (e.target as HTMLSelectElement).value)}
-                  class="property-select"
-                >
-                  <option value="">
-                    ${localize('editor.design.default_option', lang, '– Default –')}
-                  </option>
-                  <option value="none">
-                    ${localize('editor.design.transform_none', lang, 'None')}
-                  </option>
-                  <option value="uppercase">
-                    ${localize('editor.design.transform_uppercase', lang, 'UPPERCASE')}
-                  </option>
-                  <option value="lowercase">
-                    ${localize('editor.design.transform_lowercase', lang, 'lowercase')}
-                  </option>
-                  <option value="capitalize">
-                    ${localize('editor.design.transform_capitalize', lang, 'Capitalize')}
-                  </option>
-                </select>
+                ${this._renderDesignSelect(
+                  'text_transform',
+                  effectiveDesign.text_transform || '',
+                  designSelectOptions.textTransform
+                )}
                 <button
                   class="reset-btn"
                   @click=${() => this._updateProperty('text_transform', '')}
@@ -2151,25 +2140,11 @@ export class GlobalDesignTab extends LitElement {
             <div class="property-group">
               <label>${localize('editor.design.font_style', lang, 'Font Style')}:</label>
               <div class="input-with-reset">
-                <select
-                  .value=${effectiveDesign.font_style || ''}
-                  @change=${(e: Event) =>
-                    this._updateProperty('font_style', (e.target as HTMLSelectElement).value)}
-                  class="property-select"
-                >
-                  <option value="">
-                    ${localize('editor.design.default_option', lang, '– Default –')}
-                  </option>
-                  <option value="normal">
-                    ${localize('editor.design.style_normal', lang, 'Normal')}
-                  </option>
-                  <option value="italic">
-                    ${localize('editor.design.style_italic', lang, 'Italic')}
-                  </option>
-                  <option value="oblique">
-                    ${localize('editor.design.style_oblique', lang, 'Oblique')}
-                  </option>
-                </select>
+                ${this._renderDesignSelect(
+                  'font_style',
+                  effectiveDesign.font_style || '',
+                  designSelectOptions.fontStyle
+                )}
                 <button
                   class="reset-btn"
                   @click=${() => this._updateProperty('font_style', '')}
@@ -2187,31 +2162,11 @@ export class GlobalDesignTab extends LitElement {
             <div class="property-group">
               <label>${localize('editor.design.white_space', lang, 'White Space')}:</label>
               <div class="input-with-reset">
-                <select
-                  .value=${effectiveDesign.white_space || ''}
-                  @change=${(e: Event) =>
-                    this._updateProperty('white_space', (e.target as HTMLSelectElement).value)}
-                  class="property-select"
-                >
-                  <option value="">
-                    ${localize('editor.design.default_option', lang, '– Default –')}
-                  </option>
-                  <option value="normal">
-                    ${localize('editor.design.white_space_normal', lang, 'Normal')}
-                  </option>
-                  <option value="nowrap">
-                    ${localize('editor.design.white_space_nowrap', lang, 'No Wrap')}
-                  </option>
-                  <option value="pre">
-                    ${localize('editor.design.white_space_pre', lang, 'Pre')}
-                  </option>
-                  <option value="pre-wrap">
-                    ${localize('editor.design.white_space_pre_wrap', lang, 'Pre Wrap')}
-                  </option>
-                  <option value="pre-line">
-                    ${localize('editor.design.white_space_pre_line', lang, 'Pre Line')}
-                  </option>
-                </select>
+                ${this._renderDesignSelect(
+                  'white_space',
+                  effectiveDesign.white_space || '',
+                  designSelectOptions.whiteSpace
+                )}
                 <button
                   class="reset-btn"
                   @click=${() => this._updateProperty('white_space', '')}
@@ -2262,24 +2217,11 @@ export class GlobalDesignTab extends LitElement {
                   'Background Image Type'
                 )}:</label
               >
-              <select
-                .value=${effectiveDesign.background_image_type || 'none'}
-                @change=${(e: Event) =>
-                  this._updateProperty(
-                    'background_image_type',
-                    (e.target as HTMLSelectElement).value
-                  )}
-                class="property-select"
-              >
-                <option value="none">${localize('editor.design.bg_none', lang, 'None')}</option>
-                <option value="upload">
-                  ${localize('editor.design.bg_upload', lang, 'Upload Image')}
-                </option>
-                <option value="entity">
-                  ${localize('editor.design.bg_entity', lang, 'Entity Image')}
-                </option>
-                <option value="url">${localize('editor.design.bg_url', lang, 'Image URL')}</option>
-              </select>
+              ${this._renderDesignSelect(
+                  'background_image_type',
+                  effectiveDesign.background_image_type || 'none',
+                  designSelectOptions.backgroundImageType
+                )}
             </div>
 
             ${this.designProperties.background_image_type === 'upload'
@@ -2368,22 +2310,11 @@ export class GlobalDesignTab extends LitElement {
               ? html`
                   <div class="property-group">
                     <label>Background Size:</label>
-                    <select
-                      .value=${this._getBackgroundSizeDropdownValue(
-                        this.designProperties.background_size
-                      )}
-                      @change=${(e: Event) =>
-                        this._updateProperty(
-                          'background_size',
-                          (e.target as HTMLSelectElement).value
-                        )}
-                      class="property-select"
-                    >
-                      <option value="cover">Cover</option>
-                      <option value="contain">Contain</option>
-                      <option value="auto">Auto</option>
-                      <option value="custom">Custom</option>
-                    </select>
+                    ${this._renderDesignSelect(
+                      'background_size',
+                      this._getBackgroundSizeDropdownValue(this.designProperties.background_size),
+                      designSelectOptions.backgroundSize
+                    )}
                   </div>
 
                   ${this._getBackgroundSizeDropdownValue(this.designProperties.background_size) ===
@@ -2456,43 +2387,20 @@ export class GlobalDesignTab extends LitElement {
 
                   <div class="property-group">
                     <label>Background Repeat:</label>
-                    <select
-                      .value=${effectiveDesign.background_repeat || 'no-repeat'}
-                      @change=${(e: Event) =>
-                        this._updateProperty(
-                          'background_repeat',
-                          (e.target as HTMLSelectElement).value
-                        )}
-                      class="property-select"
-                    >
-                      <option value="no-repeat">No Repeat</option>
-                      <option value="repeat">Repeat</option>
-                      <option value="repeat-x">Repeat X</option>
-                      <option value="repeat-y">Repeat Y</option>
-                    </select>
+                    ${this._renderDesignSelect(
+                  'background_repeat',
+                  effectiveDesign.background_repeat || 'no-repeat',
+                  designSelectOptions.backgroundRepeat
+                )}
                   </div>
 
                   <div class="property-group">
                     <label>Background Position:</label>
-                    <select
-                      .value=${effectiveDesign.background_position || 'center center'}
-                      @change=${(e: Event) =>
-                        this._updateProperty(
-                          'background_position',
-                          (e.target as HTMLSelectElement).value
-                        )}
-                      class="property-select"
-                    >
-                      <option value="left top">Left Top</option>
-                      <option value="left center">Left Center</option>
-                      <option value="left bottom">Left Bottom</option>
-                      <option value="center top">Center Top</option>
-                      <option value="center center">Center</option>
-                      <option value="center bottom">Center Bottom</option>
-                      <option value="right top">Right Top</option>
-                      <option value="right center">Right Center</option>
-                      <option value="right bottom">Right Bottom</option>
-                    </select>
+                    ${this._renderDesignSelect(
+                  'background_position',
+                  effectiveDesign.background_position || 'center center',
+                  designSelectOptions.backgroundPosition
+                )}
                   </div>
                 `
               : ''}
@@ -3071,48 +2979,11 @@ export class GlobalDesignTab extends LitElement {
 
             <div class="property-group">
               <label>${localize('editor.design.border_style', lang, 'Border Style')}:</label>
-              <select
-                .value=${effectiveDesign.border_style || ''}
-                @change=${(e: Event) =>
-                  this._updateProperty('border_style', (e.target as HTMLSelectElement).value)}
-                class="property-select"
-              >
-                <option value="">
-                  ${localize(
-                    'editor.design.border_style_none',
-                    this.hass?.locale?.language || 'en',
-                    'None'
-                  )}
-                </option>
-                <option value="solid">
-                  ${localize(
-                    'editor.design.border_style_solid',
-                    this.hass?.locale?.language || 'en',
-                    'Solid'
-                  )}
-                </option>
-                <option value="dashed">
-                  ${localize(
-                    'editor.design.border_style_dashed',
-                    this.hass?.locale?.language || 'en',
-                    'Dashed'
-                  )}
-                </option>
-                <option value="dotted">
-                  ${localize(
-                    'editor.design.border_style_dotted',
-                    this.hass?.locale?.language || 'en',
-                    'Dotted'
-                  )}
-                </option>
-                <option value="double">
-                  ${localize(
-                    'editor.design.border_style_double',
-                    this.hass?.locale?.language || 'en',
-                    'Double'
-                  )}
-                </option>
-              </select>
+              ${this._renderDesignSelect(
+                  'border_style',
+                  effectiveDesign.border_style || '',
+                  designSelectOptions.borderStyle
+                )}
             </div>
 
             <div class="property-group">
@@ -3180,55 +3051,11 @@ export class GlobalDesignTab extends LitElement {
                   'Position'
                 )}:</label
               >
-              <select
-                .value=${effectiveDesign.position || ''}
-                @change=${(e: Event) =>
-                  this._updateProperty('position', (e.target as HTMLSelectElement).value)}
-                class="property-select"
-              >
-                <option value="">
-                  ${localize(
-                    'editor.design.position_default',
-                    this.hass?.locale?.language || 'en',
-                    '– Default –'
-                  )}
-                </option>
-                <option value="static">
-                  ${localize(
-                    'editor.design.position_static',
-                    this.hass?.locale?.language || 'en',
-                    'Static'
-                  )}
-                </option>
-                <option value="relative">
-                  ${localize(
-                    'editor.design.position_relative',
-                    this.hass?.locale?.language || 'en',
-                    'Relative'
-                  )}
-                </option>
-                <option value="absolute">
-                  ${localize(
-                    'editor.design.position_absolute',
-                    this.hass?.locale?.language || 'en',
-                    'Absolute'
-                  )}
-                </option>
-                <option value="fixed">
-                  ${localize(
-                    'editor.design.position_fixed',
-                    this.hass?.locale?.language || 'en',
-                    'Fixed'
-                  )}
-                </option>
-                <option value="sticky">
-                  ${localize(
-                    'editor.design.position_sticky',
-                    this.hass?.locale?.language || 'en',
-                    'Sticky'
-                  )}
-                </option>
-              </select>
+              ${this._renderDesignSelect(
+                  'position',
+                  effectiveDesign.position || '',
+                  designSelectOptions.position
+                )}
             </div>
 
             ${this.designProperties.position && this.designProperties.position !== 'static'
@@ -3651,17 +3478,11 @@ export class GlobalDesignTab extends LitElement {
           html`
             <div class="property-group">
               <label>${localize('editor.design.overflow', lang, 'Overflow')}:</label>
-              <select
-                .value=${effectiveDesign.overflow || 'visible'}
-                @change=${(e: Event) =>
-                  this._updateProperty('overflow', (e.target as HTMLSelectElement).value)}
-                class="property-select"
-              >
-                <option value="visible">Visible (Default)</option>
-                <option value="hidden">Hidden</option>
-                <option value="scroll">Scroll</option>
-                <option value="auto">Auto</option>
-              </select>
+              ${this._renderDesignSelect(
+                  'overflow',
+                  effectiveDesign.overflow || 'visible',
+                  designSelectOptions.overflow
+                )}
             </div>
 
             <div class="property-group">
@@ -3888,26 +3709,11 @@ export class GlobalDesignTab extends LitElement {
                     'Animation Type'
                   )}:</label
                 >
-                <select
-                  .value=${effectiveDesign.animation_type || 'none'}
-                  @change=${(e: Event) =>
-                    this._updateProperty('animation_type', (e.target as HTMLSelectElement).value)}
-                  class="property-select"
-                >
-                  <option value="none">
-                    ${localize('editor.design.none', this.hass?.locale?.language || 'en', 'None')}
-                  </option>
-                  <option value="pulse">Pulse</option>
-                  <option value="vibrate">Vibrate</option>
-                  <option value="rotate-left">Rotate Left</option>
-                  <option value="rotate-right">Rotate Right</option>
-                  <option value="hover">Hover</option>
-                  <option value="fade">Fade</option>
-                  <option value="scale">Scale</option>
-                  <option value="bounce">Bounce</option>
-                  <option value="shake">Shake</option>
-                  <option value="tada">Tada</option>
-                </select>
+                ${this._renderDesignSelect(
+                  'animation_type',
+                  effectiveDesign.animation_type || 'none',
+                  designSelectOptions.animationType
+                )}
               </div>
 
               <div class="property-group">
@@ -3962,22 +3768,16 @@ export class GlobalDesignTab extends LitElement {
                       ? html`
                           <div class="property-group">
                             <label>Animation Trigger Type:</label>
-                            <select
-                              id="animation-trigger-type-select"
-                              .value=${effectiveDesign.animation_trigger_type || 'state'}
-                              @change=${(e: Event) => {
-                                const triggerType = (e.target as HTMLSelectElement).value as
-                                  | 'state'
-                                  | 'attribute';
-
-                                // Create an update object
+                            ${this._renderDesignSelect(
+                              'animation_trigger_type',
+                              effectiveDesign.animation_trigger_type || 'state',
+                              designSelectOptions.animationTriggerType,
+                              (triggerType: string) => {
                                 const updates: Partial<DesignProperties> = {
-                                  animation_trigger_type: triggerType,
-                                  animation_state: '', // Reset state when changing type
-                                  animation_attribute: '', // Reset attribute when changing type
+                                  animation_trigger_type: triggerType as 'state' | 'attribute',
+                                  animation_state: '',
+                                  animation_attribute: '',
                                 };
-
-                                // Apply updates through parent component
                                 if (this.onUpdate) {
                                   this.onUpdate(updates);
                                 } else {
@@ -3989,24 +3789,13 @@ export class GlobalDesignTab extends LitElement {
                                     })
                                   );
                                 }
-
-                                // Force immediate local update for responsive UI
                                 this.designProperties = {
                                   ...this.designProperties,
                                   ...updates,
                                 };
-
-                                // Request update
                                 this.requestUpdate();
-                              }}
-                              class="property-select ${this.designProperties
-                                .animation_trigger_type === 'attribute'
-                                ? 'attribute-mode'
-                                : 'state-mode'}"
-                            >
-                              <option value="state">Entity State</option>
-                              <option value="attribute">Entity Attribute</option>
-                            </select>
+                              }
+                            )}
                             <div
                               class="trigger-type-indicator ${this.designProperties
                                 .animation_trigger_type === 'attribute'
@@ -4230,29 +4019,11 @@ export class GlobalDesignTab extends LitElement {
                       'Intro Animation'
                     )}:</label
                   >
-                  <select
-                    .value=${effectiveDesign.intro_animation || 'none'}
-                    @change=${(e: Event) =>
-                      this._updateProperty(
-                        'intro_animation',
-                        (e.target as HTMLSelectElement).value
-                      )}
-                    class="property-select"
-                  >
-                    <option value="none">
-                      ${localize('editor.design.none', this.hass?.locale?.language || 'en', 'None')}
-                    </option>
-                    <option value="fadeIn">Fade In</option>
-                    <option value="slideInUp">Slide In Up</option>
-                    <option value="slideInDown">Slide In Down</option>
-                    <option value="slideInLeft">Slide In Left</option>
-                    <option value="slideInRight">Slide In Right</option>
-                    <option value="zoomIn">Zoom In</option>
-                    <option value="bounceIn">Bounce In</option>
-                    <option value="flipInX">Flip In X</option>
-                    <option value="flipInY">Flip In Y</option>
-                    <option value="rotateIn">Rotate In</option>
-                  </select>
+                  ${this._renderDesignSelect(
+                  'intro_animation',
+                  effectiveDesign.intro_animation || 'none',
+                  designSelectOptions.introAnimation
+                )}
                 </div>
 
                 <div class="property-group">
@@ -4263,29 +4034,11 @@ export class GlobalDesignTab extends LitElement {
                       'Outro Animation'
                     )}:</label
                   >
-                  <select
-                    .value=${effectiveDesign.outro_animation || 'none'}
-                    @change=${(e: Event) =>
-                      this._updateProperty(
-                        'outro_animation',
-                        (e.target as HTMLSelectElement).value
-                      )}
-                    class="property-select"
-                  >
-                    <option value="none">
-                      ${localize('editor.design.none', this.hass?.locale?.language || 'en', 'None')}
-                    </option>
-                    <option value="fadeOut">Fade Out</option>
-                    <option value="slideOutUp">Slide Out Up</option>
-                    <option value="slideOutDown">Slide Out Down</option>
-                    <option value="slideOutLeft">Slide Out Left</option>
-                    <option value="slideOutRight">Slide Out Right</option>
-                    <option value="zoomOut">Zoom Out</option>
-                    <option value="bounceOut">Bounce Out</option>
-                    <option value="flipOutX">Flip Out X</option>
-                    <option value="flipOutY">Flip Out Y</option>
-                    <option value="rotateOut">Rotate Out</option>
-                  </select>
+                  ${this._renderDesignSelect(
+                  'outro_animation',
+                  effectiveDesign.outro_animation || 'none',
+                  designSelectOptions.outroAnimation
+                )}
                 </div>
               </div>
 
@@ -4341,24 +4094,11 @@ export class GlobalDesignTab extends LitElement {
                       'Timing'
                     )}:</label
                   >
-                  <select
-                    .value=${effectiveDesign.intro_animation_timing || 'ease'}
-                    @change=${(e: Event) =>
-                      this._updateProperty(
-                        'intro_animation_timing',
-                        (e.target as HTMLSelectElement).value
-                      )}
-                    class="property-select"
-                  >
-                    <option value="ease">
-                      ${localize('editor.design.ease', this.hass?.locale?.language || 'en', 'Ease')}
-                    </option>
-                    <option value="linear">Linear</option>
-                    <option value="ease-in">Ease In</option>
-                    <option value="ease-out">Ease Out</option>
-                    <option value="ease-in-out">Ease In Out</option>
-                    <option value="cubic-bezier(0.25,0.1,0.25,1)">Custom Cubic</option>
-                  </select>
+                  ${this._renderDesignSelect(
+                  'intro_animation_timing',
+                  effectiveDesign.intro_animation_timing || 'ease',
+                  designSelectOptions.animationTiming
+                )}
                 </div>
               </div>
             </div>
@@ -5880,6 +5620,15 @@ export class GlobalDesignTab extends LitElement {
       .input-with-reset .property-input,
       .input-with-reset .property-select {
         flex: 1;
+      }
+
+      .design-ha-select {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .design-ha-select ha-form {
+        display: block;
       }
 
       .reset-btn {
