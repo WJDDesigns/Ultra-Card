@@ -6263,6 +6263,7 @@ export interface ClimateModule extends BaseModule {
   show_temp_controls?: boolean | undefined;
   show_dial?: boolean | undefined;
   enable_dial_interaction?: boolean | undefined;
+  enable_animations?: boolean | undefined;
 
   // Layout / info placement
   info_position?: 'top' | 'bottom' | undefined;

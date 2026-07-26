@@ -1,5 +1,11 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.6.0-beta4
+
+### 🚀 New Features
+
+- **Added an HVAC animation toggle to the Climate Module** - The heating and cooling pulse effect can now be disabled directly from the module's Dial & Temperature settings, including when the module is used inside a popup. Existing cards keep the animation enabled by default
+
 ## Version 3.6.0-beta3
 
 A focused light mode and theme polish release. Please report anything odd on GitHub or Discord — this is a pre-release for testing.

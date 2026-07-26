@@ -58,6 +58,7 @@ export class UltraClimateModule extends BaseUltraModule {
       show_temp_controls: true,
       show_dial: true,
       enable_dial_interaction: true,
+      enable_animations: true,
 
       // Dial configuration
       dial_size: 280,
@@ -145,6 +146,17 @@ export class UltraClimateModule extends BaseUltraModule {
             data: { show_dial: climateModule.show_dial !== false },
             schema: [this.booleanField('show_dial')],
             onChange: (e: CustomEvent) => { updateModule({ show_dial: e.detail.value.show_dial }); this.triggerPreviewUpdate(); },
+          },
+          {
+            title: 'Enable HVAC Animation',
+            description: 'Display the pulsing background while actively heating or cooling',
+            hass,
+            data: { enable_animations: climateModule.enable_animations !== false },
+            schema: [this.booleanField('enable_animations')],
+            onChange: (e: CustomEvent) => {
+              updateModule({ enable_animations: e.detail.value.enable_animations });
+              this.triggerPreviewUpdate();
+            },
           },
           {
             title: 'Show Current Temperature',
@@ -982,7 +994,8 @@ export class UltraClimateModule extends BaseUltraModule {
           style="--dial-color: ${dialColor}; --dial-size: ${dialSize}px;"
         >
           <!-- Pulse Circles (shown when heating/cooling) - Background layer -->
-          ${hvacAction === 'heating' || hvacAction === 'cooling'
+          ${climateModule.enable_animations !== false &&
+          (hvacAction === 'heating' || hvacAction === 'cooling')
             ? html`
                 <div class="climate-pulse-background" style="--pulse-color: ${dialColor};">
                   <div class="climate-pulse-circle"></div>
