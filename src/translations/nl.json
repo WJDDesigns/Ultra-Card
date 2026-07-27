@@ -1879,8 +1879,8 @@
       "card_color": "Kaartachtergrondkleur-overlay",
       "card_color_desc": "Optioneel: Voeg een kleurfilter toe aan alle kaarten",
       "pro_required": "Ultra Card Pro vereist",
-      "pro_required_desc": "VideAchtergrond is een Pro functie. Installeer en authenticeer met de Ultra Card Pro Cloud-integratie om deze module te ontgrendelen",
-      "get_pro": "Krijg Ultra Card Pro Cloud",
+      "pro_required_desc": "VideAchtergrond is een Pro functie. Installeer en authenticeer met de Ultra Card Connect-integratie om deze module te ontgrendelen",
+      "get_pro": "Krijg Ultra Card Connect",
       "active": "VideAchtergrond actief",
       "enabled": "Ingeschakeld",
       "disabled": "Uitgeschakeld",
@@ -3832,7 +3832,11 @@
       "badge_ok": "Healthy",
       "badge_issues": "{count} issues",
       "tooltip": "Analyze card health",
-      "open_connect": "Open Connect"
+      "open_connect": "Open Connect",
+      "connect_not_installed": "Ultra Card Connect is not installed. Hub sidebar and Pro sync require the integration.",
+      "connect_not_authenticated": "Ultra Card Connect is installed but not signed in. Open the Hub Account tab to connect.",
+      "connect_needs_reauth": "Ultra Card Connect needs re-authentication. Open the Hub Account tab to sign in again.",
+      "connect_needs_update": "Ultra Card Connect needs updating (installed {current}, required {required}+). Update the integration so Smart Cards, media upload, and Pro sync work reliably."
     },
     "smart": {
       "title": "Smart Cards",

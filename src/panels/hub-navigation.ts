@@ -7,8 +7,6 @@ export interface HubNavigateDetail {
   tab: HubTab;
   /** Docs wiki page slug (when tab is docs). */
   slug?: string;
-  /** Account group sub-tab: account | pro */
-  accountView?: 'account' | 'pro';
 }
 
 export const HUB_NAVIGATE_EVENT = 'hub-navigate-tab';
@@ -48,11 +46,4 @@ export function openHubDocs(slug: string): void {
     /* ignore */
   }
   dispatchHubNavigateGlobal({ tab: 'docs', slug });
-}
-
-export function tabToGroup(tab: HubTab): 'home' | 'library' | 'account' | 'help' {
-  if (tab === 'dashboard') return 'home';
-  if (tab === 'account' || tab === 'pro') return 'account';
-  if (tab === 'docs' || tab === 'about') return 'help';
-  return 'library';
 }

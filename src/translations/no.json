@@ -1879,8 +1879,8 @@
       "card_color": "Kort Bakgrunnsfarge Overlegg",
       "card_color_desc": "Valgfritt: Legg til en fargetone til alle kort",
       "pro_required": "Ultra Card Pro Påkrevd",
-      "pro_required_desc": "Video Bakgrunn er en Pro funksjon. Installer og autentiser med Ultra Card Pro Cloud-integrasjonen for å låse opp denne modulen",
-      "get_pro": "Få Ultra Card Pro Cloud",
+      "pro_required_desc": "Video Bakgrunn er en Pro funksjon. Installer og autentiser med Ultra Card Connect-integrasjonen for å låse opp denne modulen",
+      "get_pro": "Få Ultra Card Connect",
       "active": "Video Bakgrunn Aktiv",
       "enabled": "Aktivert",
       "disabled": "Deaktivert",
@@ -3832,7 +3832,11 @@
       "badge_ok": "Healthy",
       "badge_issues": "{count} issues",
       "tooltip": "Analyze card health",
-      "open_connect": "Open Connect"
+      "open_connect": "Open Connect",
+      "connect_not_installed": "Ultra Card Connect is not installed. Hub sidebar and Pro sync require the integration.",
+      "connect_not_authenticated": "Ultra Card Connect is installed but not signed in. Open the Hub Account tab to connect.",
+      "connect_needs_reauth": "Ultra Card Connect needs re-authentication. Open the Hub Account tab to sign in again.",
+      "connect_needs_update": "Ultra Card Connect needs updating (installed {current}, required {required}+). Update the integration so Smart Cards, media upload, and Pro sync work reliably."
     },
     "smart": {
       "title": "Smart Cards",

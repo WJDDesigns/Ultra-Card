@@ -1,5 +1,6 @@
 import { FavoriteColor } from '../types';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
+import { getConnectInfo, getOutdatedConnectError } from './uc-connect-compatibility';
 // NOTE: Cloud sync disabled - import removed as favorites are local-only per user request
 // import { ucCloudSyncService } from './uc-cloud-sync-service';
 
@@ -18,6 +19,7 @@ class UcFavoriteColorsService {
   private _hass: any = null;
   private _haLoaded = false;
   private _logged404 = false;
+  private _loggedOutdated = false;
   private _integrationMissing = false;
   private _loadPromise: Promise<void> | null = null;
 
@@ -215,8 +217,17 @@ class UcFavoriteColorsService {
     if (this._logged404) return;
     this._logged404 = true;
     console.info(
-      'Ultra Card: Favorite colors sync requires the "Ultra Card Pro Cloud" integration. Install it from HACS (Integration: Ultra Card Pro Cloud) to persist colors across devices and after logout.'
+      'Ultra Card: Favorite colors sync requires the "Ultra Card Connect" integration. Install it from HACS (Integration: Ultra Card Connect) to persist colors across devices and after logout.'
     );
+  }
+
+  private _logOutdatedIntegrationOnce(hass: any): void {
+    if (this._loggedOutdated) return;
+    this._loggedOutdated = true;
+    const message =
+      getOutdatedConnectError(hass, 'Favorite colors sync') ||
+      'Ultra Card: Favorite colors sync needs Ultra Card Connect 1.6.0 or newer. Please update the integration.';
+    console.info(message);
   }
 
   /**
@@ -239,6 +250,14 @@ class UcFavoriteColorsService {
 
   private async _doLoadFromHA(hass: any): Promise<void> {
     try {
+      const connect = getConnectInfo(hass);
+      if (connect.installed && connect.outdated) {
+        this._haLoaded = true;
+        this._integrationMissing = true;
+        this._logOutdatedIntegrationOnce(hass);
+        return;
+      }
+
       const result = await hass.callApi('GET', 'ultra_card_pro_cloud/favorite_colors');
       // Only latch after a successful response
       this._haLoaded = true;
@@ -259,7 +278,12 @@ class UcFavoriteColorsService {
         // update, and stop mutation POSTs too (issue #96).
         this._haLoaded = true;
         this._integrationMissing = true;
-        this._logMissingIntegrationOnce();
+        const connect = getConnectInfo(hass);
+        if (connect.installed) {
+          this._logOutdatedIntegrationOnce(hass);
+        } else {
+          this._logMissingIntegrationOnce();
+        }
         return;
       }
       if (status === 401 || status === 403) {
@@ -293,7 +317,12 @@ class UcFavoriteColorsService {
       const status = err?.status ?? err?.status_code ?? err?.response?.status;
       if (status === 404) {
         this._integrationMissing = true;
-        this._logMissingIntegrationOnce();
+        const connect = getConnectInfo(hass);
+        if (connect.installed) {
+          this._logOutdatedIntegrationOnce(hass);
+        } else {
+          this._logMissingIntegrationOnce();
+        }
         return;
       }
       console.debug('Failed to sync favorite colors to HA:', err);

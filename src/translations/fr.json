@@ -1879,8 +1879,8 @@
       "card_color": "Couleur de fond de la carte superposée",
       "card_color_desc": "Optionnel : Ajoutez une teinte de couleur à toutes les cartes",
       "pro_required": "Ultra Card Pro requis",
-      "pro_required_desc": "L'arrière-plan vidéo est une fonctionnalité Pro. Installez et authentifiez-vous avec l'intégration Ultra Card Pro Cloud pour débloquer ce module",
-      "get_pro": "Obtenez Ultra Card Pro Cloud",
+      "pro_required_desc": "L'arrière-plan vidéo est une fonctionnalité Pro. Installez et authentifiez-vous avec l'intégration Ultra Card Connect pour débloquer ce module",
+      "get_pro": "Obtenez Ultra Card Connect",
       "active": "Arrière-plan vidéo actif",
       "enabled": "Activé",
       "disabled": "Désactivé",
@@ -3832,7 +3832,11 @@
       "badge_ok": "Healthy",
       "badge_issues": "{count} issues",
       "tooltip": "Analyze card health",
-      "open_connect": "Open Connect"
+      "open_connect": "Open Connect",
+      "connect_not_installed": "Ultra Card Connect is not installed. Hub sidebar and Pro sync require the integration.",
+      "connect_not_authenticated": "Ultra Card Connect is installed but not signed in. Open the Hub Account tab to connect.",
+      "connect_needs_reauth": "Ultra Card Connect needs re-authentication. Open the Hub Account tab to sign in again.",
+      "connect_needs_update": "Ultra Card Connect needs updating (installed {current}, required {required}+). Update the integration so Smart Cards, media upload, and Pro sync work reliably."
     },
     "smart": {
       "title": "Smart Cards",

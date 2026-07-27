@@ -1,4 +1,4 @@
-/** Shared Hub tab/group types (avoids circular imports). */
+/** Shared Hub tab types (avoids circular imports). */
 export type HubTab =
   | 'dashboard'
   | 'account'
@@ -7,22 +7,10 @@ export type HubTab =
   | 'colors'
   | 'variables'
   | 'templates'
-  | 'docs'
-  | 'pro'
-  | 'about';
-
-export type HubGroup = 'home' | 'library' | 'account' | 'help';
-
-export interface HubGroupDef {
-  key: HubGroup;
-  labelKey: string;
-  icon: string;
-  tabs: HubTab[];
-}
+  | 'docs';
 
 export interface HubTabDef {
   key: HubTab;
   labelKey: string;
   icon: string;
-  group: HubGroup;
 }

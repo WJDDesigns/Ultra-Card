@@ -1879,8 +1879,8 @@
       "card_color": "Hintergrundfarbe der Karte überlagern",
       "card_color_desc": "Optional: Fügen Sie allen Karten einen Farbstich hinzu",
       "pro_required": "Ultra Card Pro erforderlich",
-      "pro_required_desc": "Der Video-Hintergrund ist ein Pro-Feature. Installieren und authentifizieren Sie sich mit der Ultra Card Pro Cloud-Integration, um dieses Modul freizuschalten",
-      "get_pro": "Holen Sie sich die Ultra Card Pro Cloud",
+      "pro_required_desc": "Der Video-Hintergrund ist ein Pro-Feature. Installieren und authentifizieren Sie sich mit der Ultra Card Connect-Integration, um dieses Modul freizuschalten",
+      "get_pro": "Holen Sie sich die Ultra Card Connect",
       "active": "Video-Hintergrund aktiv",
       "enabled": "Aktiviert",
       "disabled": "Deaktiviert",
@@ -3832,7 +3832,11 @@
       "badge_ok": "Healthy",
       "badge_issues": "{count} issues",
       "tooltip": "Analyze card health",
-      "open_connect": "Open Connect"
+      "open_connect": "Open Connect",
+      "connect_not_installed": "Ultra Card Connect is not installed. Hub sidebar and Pro sync require the integration.",
+      "connect_not_authenticated": "Ultra Card Connect is installed but not signed in. Open the Hub Account tab to connect.",
+      "connect_needs_reauth": "Ultra Card Connect needs re-authentication. Open the Hub Account tab to sign in again.",
+      "connect_needs_update": "Ultra Card Connect needs updating (installed {current}, required {required}+). Update the integration so Smart Cards, media upload, and Pro sync work reliably."
     },
     "smart": {
       "title": "Smart Cards",

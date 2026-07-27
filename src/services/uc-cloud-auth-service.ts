@@ -5,6 +5,11 @@
  */
 
 import { ucSessionSyncService } from './uc-session-sync-service';
+import {
+  createOutdatedConnectError,
+  getConnectInfo,
+  hasCapability,
+} from './uc-connect-compatibility';
 
 /** HA integration endpoint that forwards multipart files to ultracard.io (JWT stays on the server). */
 const UC_MEDIA_UPLOAD_PATH = '/api/ultra_card_pro_cloud/media_upload';
@@ -145,9 +150,15 @@ class UcCloudAuthService {
   private _integrationHass: any = null;
 
   constructor() {
-    // Do NOT load from localStorage on startup — the HA integration sensor is the
-    // single source of truth. Any previous localStorage token is ignored.
-    // Auth is established when checkIntegrationAuth() is called with a live hass object.
+    // HA integration sensor is the single source of truth. Purge any legacy
+    // browser JWT left from older Ultra Card versions.
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(UcCloudAuthService.STORAGE_KEY);
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   /**
@@ -523,6 +534,8 @@ class UcCloudAuthService {
       // Ignore network errors on logout; clear local state regardless
     }
     this._setCurrentUser(null);
+    this._clearStorage();
+    this._clearAutoRefresh();
     this._notifyListeners();
   }
 
@@ -558,237 +571,47 @@ class UcCloudAuthService {
   // ---------------------------------------------------------------------------
 
   /**
-   * Login with username/email and password
-   * @deprecated Use loginViaHass() instead for persistent sessions
+   * Login with username/email and password.
+   * @deprecated Browser JWT login is removed — use loginViaHass().
    */
-  async login(credentials: LoginCredentials): Promise<CloudUser> {
-    try {
-      const response = await fetch(
-        `${UcCloudAuthService.API_BASE}${UcCloudAuthService.JWT_ENDPOINT}/token`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            username: credentials.username,
-            password: credentials.password,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: 'Login failed' }));
-        throw new Error(error.message || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const authData: AuthResponse = await response.json();
-      const user = this._createUserFromAuth(authData);
-
-      // Fetch subscription data
-      await this._fetchSubscriptionData(user);
-
-      this._setCurrentUser(user);
-      this._saveToStorage();
-      this._setupAutoRefresh();
-
-      // Create cloud session for cross-device sync
-      if (ucSessionSyncService.isEnabled()) {
-        const haUserId = this._getHassUserId();
-        if (haUserId) {
-          await ucSessionSyncService.createSession(user, haUserId);
-
-          // Start session validation polling
-          ucSessionSyncService.startPolling(user.token, () => {
-            this.logout();
-          });
-        } else {
-          console.warn('⚠️ HA user ID not available, cloud session sync disabled');
-        }
-      }
-
-      return user;
-    } catch (error) {
-      console.error('❌ Login failed:', error);
-      throw error;
-    }
+  async login(_credentials: LoginCredentials): Promise<CloudUser> {
+    throw new Error(
+      'Direct browser login is no longer supported. Install Ultra Card Connect and sign in from the Hub Account tab.'
+    );
   }
 
   /**
-   * Register a new user account via the Ultra Card custom endpoint.
-   * The endpoint creates the WP subscriber and returns a JWT token in one step,
-   * so we can log the user in immediately without a second round-trip.
+   * Register a new user account.
+   * @deprecated Use registerViaHass() instead.
    */
-  async register(data: RegisterData): Promise<CloudUser> {
-    try {
-      if (!data.password) {
-        throw new Error('Password is required for direct registration.');
-      }
-      const registerResponse = await fetch(
-        `${UcCloudAuthService.API_BASE}/ultra-card/v1/register`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: data.username,
-            email: data.email,
-            password: data.password,
-            display_name: data.firstName
-              ? `${data.firstName} ${data.lastName || ''}`.trim()
-              : data.username,
-          }),
-        }
-      );
-
-      const body = await registerResponse.json().catch(() => ({})) as Record<string, unknown>;
-
-      if (!registerResponse.ok) {
-        // WP REST errors use { code, message }
-        const msg =
-          (body as { message?: string }).message ||
-          `Registration failed (${registerResponse.status})`;
-        throw new Error(msg);
-      }
-
-      // Our endpoint returns the JWT token directly — build an AuthResponse
-      // that _createUserFromAuth can consume
-      const token = (body.token ?? (body as any)?.data?.token) as string | null;
-
-      if (!token) {
-        // Endpoint succeeded but didn't return a token (edge case) — fall back to login
-        return await this.login({ username: data.username, password: data.password });
-      }
-
-      const authData: AuthResponse = {
-        token,
-        user_id:           (body.user_id as number) ?? 0,
-        user_email:        (body.user_email as string)        ?? data.email,
-        user_nicename:     (body.user_nicename as string)     ?? data.username,
-        user_display_name: (body.user_display_name as string) ?? data.username,
-        // Pass expires_in so the session lifetime is set correctly
-        expires_in:        (body.expires_in as number) ?? ((body as any)?.data?.expires_in as number) ?? undefined,
-      };
-
-      const user = this._createUserFromAuth(authData);
-      await this._fetchSubscriptionData(user);
-      this._setCurrentUser(user);
-      this._saveToStorage();
-      this._setupAutoRefresh();
-
-      return user;
-    } catch (error) {
-      console.error('❌ Registration failed:', error);
-      throw error;
-    }
+  async register(_data: RegisterData): Promise<CloudUser> {
+    throw new Error(
+      'Direct browser registration is no longer supported. Use the Hub Account tab (Ultra Card Connect).'
+    );
   }
 
   /**
-   * Refresh the current JWT token with retry logic
+   * Refresh the current JWT token with retry logic.
+   * @deprecated Integration auth refreshes tokens server-side.
    */
-  async refreshToken(retryCount = 0): Promise<string> {
-    const MAX_RETRIES = 3;
-    const BASE_DELAY = 1000; // 1 second
-
-    if (!this._currentUser?.refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    try {
-      const response = await fetch(
-        `${UcCloudAuthService.API_BASE}${UcCloudAuthService.JWT_ENDPOINT}/token/refresh`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            refresh_token: this._currentUser.refreshToken,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        // Check if it's a 4xx error (invalid credentials) vs 5xx (server error)
-        const isClientError = response.status >= 400 && response.status < 500;
-        if (isClientError) {
-          // Invalid refresh token - don't retry
-          throw new Error(`Invalid refresh token (${response.status})`);
-        }
-        throw new Error(`Token refresh failed: ${response.statusText}`);
-      }
-
-      const authData: AuthResponse = await response.json();
-
-      // Update current user with new token
-      this._currentUser = {
-        ...this._currentUser,
-        token: authData.token,
-        expiresAt: Date.now() + (authData.expires_in || 3600) * 1000,
-      };
-
-      this._saveToStorage();
-      this._notifyListeners();
-
-      return authData.token;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const isInvalidToken = errorMessage.includes('Invalid refresh token');
-
-      // Don't retry if token is invalid
-      if (isInvalidToken) {
-        console.error('❌ Refresh token invalid, logging out');
-        await this.logout();
-        throw error;
-      }
-
-      // Retry with exponential backoff for network errors
-      if (retryCount < MAX_RETRIES) {
-        const delay = BASE_DELAY * Math.pow(2, retryCount);
-        console.warn(
-          `⚠️ Token refresh failed (attempt ${retryCount + 1}/${MAX_RETRIES}), retrying in ${delay}ms...`
-        );
-
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return this.refreshToken(retryCount + 1);
-      }
-
-      // All retries exhausted — keep the session alive regardless.
-      // The server will return 401 if the token is truly invalid when an API call is made.
-      // Forcing a local logout here leads to confusing "signed out" states on network errors.
-      console.warn('⚠️ Token refresh failed after all retries, keeping session as-is');
-      throw error;
-    }
+  async refreshToken(_retryCount = 0): Promise<string> {
+    throw new Error(
+      'Browser token refresh is no longer supported. Ultra Card Connect refreshes tokens on the server.'
+    );
   }
 
   /**
-   * Logout current user
+   * Clear local auth state only. Prefer logoutViaHass() when Connect is installed
+   * so HA credentials are cleared too.
    */
   async logout(): Promise<void> {
+    this._setCurrentUser(null);
+    this._clearStorage();
+    this._clearAutoRefresh();
     try {
-      // Invalidate cloud session (affects all devices)
-      if (this._currentUser?.token && ucSessionSyncService.isEnabled()) {
-        await ucSessionSyncService.invalidateSession(this._currentUser.token);
-        ucSessionSyncService.stopPolling();
-      }
-
-      // Optionally invalidate token on server
-      if (this._currentUser?.token) {
-        await fetch(
-          `${UcCloudAuthService.API_BASE}${UcCloudAuthService.JWT_ENDPOINT}/token/invalidate`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${this._currentUser.token}`,
-            },
-          }
-        ).catch(() => {
-          // Ignore errors - we're logging out anyway
-        });
-      }
-    } finally {
-      this._setCurrentUser(null);
-      this._clearStorage();
-      this._clearAutoRefresh();
+      ucSessionSyncService.stopPolling();
+    } catch {
+      /* ignore */
     }
   }
 
@@ -835,8 +658,25 @@ class UcCloudAuthService {
             credentials: 'same-origin',
           });
 
-          // Dedicated route missing on older integration builds (404) — forward via JSON proxy + base64.
+          // Dedicated route missing on older integration builds (404) — forward via JSON proxy + base64
+          // only when Connect is current and claims media_upload. Otherwise surface an update error.
           if (r.status === 404) {
+            const connect = getConnectInfo(this._integrationHass);
+            if (
+              connect.installed &&
+              (connect.outdated || !hasCapability(this._integrationHass, 'media_upload'))
+            ) {
+              const outdatedErr = createOutdatedConnectError(
+                this._integrationHass,
+                'Media upload'
+              );
+              throw (
+                outdatedErr ||
+                new Error(
+                  'Media upload requires an updated Ultra Card Connect integration. Please update Connect and try again.'
+                )
+              );
+            }
             const first = firstFileFromFormData(fd);
             if (!first) {
               throw new Error('No file in FormData');
@@ -1181,37 +1021,10 @@ class UcCloudAuthService {
   private _lastSavedJson: string | null = null;
 
   /**
-   * Save user to localStorage
+   * Legacy no-op: never persist JWT/credentials in the browser.
    */
   private _saveToStorage(): void {
-    try {
-      if (this._currentUser) {
-        const userJson = JSON.stringify(this._currentUser);
-        
-        // Skip if already saved with same data
-        if (userJson === this._lastSavedJson) {
-          return;
-        }
-        
-        localStorage.setItem(UcCloudAuthService.STORAGE_KEY, userJson);
-        this._lastSavedJson = userJson;
-        UcCloudAuthService._quotaErrorLogged = false; // Reset on success
-      } else {
-        this._clearStorage();
-        this._lastSavedJson = null;
-      }
-    } catch (error) {
-      // Handle QuotaExceededError gracefully - only log once to avoid spam
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        if (!UcCloudAuthService._quotaErrorLogged) {
-          console.warn('⚠️ localStorage quota exceeded. Auth state will be kept in memory only.');
-          UcCloudAuthService._quotaErrorLogged = true;
-        }
-        // Auth still works in memory, just won't persist across page reloads
-        return;
-      }
-      console.error('❌ Failed to save auth to storage:', error);
-    }
+    this._clearStorage();
   }
 
   /**

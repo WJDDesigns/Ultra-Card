@@ -139,16 +139,21 @@ describe('ucCardHealthService', () => {
       states: {
         'sensor.ultra_card_pro_cloud_authentication_status': {
           state: 'disconnected',
-          attributes: { authenticated: false },
+          attributes: {
+            authenticated: false,
+            integration_version: '1.6.0',
+            capabilities: { smart: true, proxy: true, media_upload: true, favorite_colors: true },
+          },
         },
       },
     } as any);
     const issue = report.issues.find(i => i.id === 'connect-not-authenticated');
     expect(issue?.severity).toBe('warning');
     expect(issue?.category).toBe('connect');
+    expect(report.issues.some(i => i.id === 'connect-needs-update')).toBe(false);
   });
 
-  it('does not flag Connect when authenticated', async () => {
+  it('reports Connect needs update when handshake attrs missing', async () => {
     const report = await ucCardHealthService.analyze(baseConfig(), {
       states: {
         'sensor.ultra_card_pro_cloud_authentication_status': {
@@ -159,6 +164,34 @@ describe('ucCardHealthService', () => {
             username: 'demo',
             subscription_tier: 'pro',
             subscription_status: 'active',
+          },
+        },
+      },
+    } as any);
+    const issue = report.issues.find(i => i.id === 'connect-needs-update');
+    expect(issue?.severity).toBe('warning');
+    expect(issue?.fixAction).toBe('open_connect');
+    expect(issue?.message).toMatch(/1\.6\.0/);
+  });
+
+  it('does not flag Connect when authenticated on current version', async () => {
+    const report = await ucCardHealthService.analyze(baseConfig(), {
+      states: {
+        'sensor.ultra_card_pro_cloud_authentication_status': {
+          state: 'connected',
+          attributes: {
+            authenticated: true,
+            user_id: '1',
+            username: 'demo',
+            subscription_tier: 'pro',
+            subscription_status: 'active',
+            integration_version: '1.6.0',
+            capabilities: {
+              favorite_colors: true,
+              proxy: true,
+              media_upload: true,
+              smart: true,
+            },
           },
         },
       },

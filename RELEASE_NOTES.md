@@ -1,5 +1,47 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.6.0
+
+The stable 3.6.0 release. This rolls up everything from the 3.6.0 betas plus a redesigned Hub, billing management, Connect diagnostics, and a set of live update fixes. Thanks to everyone who tested the betas and reported issues.
+
+### 🚀 New Features
+
+- **Added billing management to the Hub** - Pro subscribers can now see their plan, subscription status, next and last payment dates, and recent invoices right in the Account tab. Buttons take you straight to the exact page on ultracard.io for payment method changes and cancellations, which have to finish there for payment security
+- **Added a Connect diagnostics panel** - The Account tab now has a Diagnostics view with live status tiles for your Connect version, sign-in state, token, and cloud reachability, plus a downloadable report you can attach to bug reports. Reports never include passwords or tokens
+- **Added Connect version checking** - Ultra Card now knows which version of Ultra Card Connect you have installed. Card Health warns you when Connect needs updating, and features like Smart Cards and media upload tell you to update Connect instead of failing silently
+- **Added an HVAC animation toggle to the Climate Module** - The heating and cooling pulse effect can now be disabled directly from the module's Dial & Temperature settings, including when the module is used inside a popup. Existing cards keep the animation enabled by default
+- **Added Layout controls to the Icon module** - Choose how many columns your icons use, adjust the spacing between them, and set alignment and wrapping right from the editor
+- **Added unlock confirmation to the Lock module** - Unlocking or opening now asks you to confirm first so a stray tap can't unlock your door (on by default, can be turned off)
+- **Added editable preset buttons to the Timer module** - You can now add, change, and remove the quick-start duration buttons
+- **Added name and icon overrides to the Cover module** - Rename covers and pick their icon right in the editor
+- **Added a gap control and page counter to the Slider layout** - Adjust the space between slides and see how many pages your slider has at a glance
+- **Added state display and gradient fill options to the Slider module** - Show the entity's current state next to the slider and color the fill with your own gradient
+
+### 🔧 Improvements
+
+- **Redesigned the Hub navigation** - One clean row of tabs (Home, Favorites, Presets, Colors, Variables, Templates, Account, Docs) instead of the old two level menu. The Account tab is organized into Overview, Pro Tools, and Diagnostics so nothing is buried in one long scroll, and About now lives inside Docs
+- **Simplified sign-in** - Your ultracard.io login is now handled entirely by the Ultra Card Connect integration, so it persists across every device and browser with no tokens stored in your browser
+- **Full light/dark theme audit across the entire editor** - We reviewed every part of the card editor (the builder, all module settings, dialogs, color pickers, and more) and fixed around 250 places where colors were hardcoded instead of following your theme
+- **Better support for custom themes** - Buttons, badges, and icons that sit on your theme's primary color now use Home Assistant's matching text color, so they stay readable even with unusual theme color choices
+- **Improved keyboard and screen reader support across the card** - Toggles, sliders, tabs, dropdowns, the alarm keypad, and vacuum page dots can now all be used without a mouse or touch
+- **Improved the editor's live preview** - More changes show up instantly without closing and reopening the editor
+- **Improved translations** - More of the editor is translated instead of English-only
+- **Improved consistency between the layout modules** - Rows and columns now space and align their content the same way
+
+### 🐛 Bug Fixes
+
+- **Fixed media player cards not updating live** - Pressing play, pause, or skip now updates the card immediately, album art loads reliably, and media players nested inside tabs and layouts stay in sync with what's actually playing
+- **Fixed controls inside tabs and nested layouts not refreshing** - Lights, covers, fans, vacuums, and toggles anywhere in your layout now reflect state changes instantly, even when buried several layers deep
+- **Fixed text, number, slider, and color inputs sharing values** - Editing one input no longer causes other inputs on the same card or popup to display the same value; each input keeps its own pending value
+- **Fixed tap, hold, and double-tap actions that did nothing on several modules** - The Actions tab now works on the Slider, Media Player, Tabs, and Slider layout instead of being settings with no effect
+- **Fixed duplicated Toggle cards affecting each other** - Tapping a toggle on one card no longer makes copies of that card flicker or change
+- **Fixed layouts with tap actions blocking everything inside them** - Buttons, sliders, and other controls inside a row or column now keep working even when the layout itself has a tap action
+- **Fixed popups covering everything on the screen** - Popups now layer correctly with the rest of Home Assistant instead of sitting on top of absolutely everything
+- **Fixed invisible icons in the card builder when using light mode** - The drag handle, module icon, and three-dot menu on module rows now display correctly in both light and dark mode
+- **Fixed modules inside Tabs ignoring their display conditions** - Show/hide logic now works the same inside tabs as it does everywhere else
+- **Fixed Slider layout ignoring setting changes** - Changes to autoplay, arrows, pagination, speed, and other options now take effect right away
+- **Fixed several places where entity shortcuts ($variables) didn't work** - Icons, dropdown options, and the Virtual Pet now resolve card variables everywhere
+
 ## Version 3.6.0-beta4
 
 ### 🚀 New Features

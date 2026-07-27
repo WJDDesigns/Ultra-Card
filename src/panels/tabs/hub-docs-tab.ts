@@ -5,12 +5,16 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { marked } from 'marked';
+import type { HomeAssistant } from 'custom-card-helpers';
 import { panelStyles } from '../panel-styles';
 import { sanitizeMarkdownHtml } from '../../utils/html-sanitizer';
+import '../../editor/tabs/about-tab';
 
 const DOCS_BASE = '/ultra_card_pro_cloud_panel/docs';
 const WIKI_URL = 'https://github.com/WJDDesigns/Ultra-Card/wiki';
 const LAST_SLUG_KEY = 'ultra_card_hub_docs_slug';
+/** Virtual slug rendering the About screen inside Docs. */
+const ABOUT_SLUG = '__about';
 
 interface DocsIndexPage {
   slug: string;
@@ -43,6 +47,7 @@ marked.setOptions({ gfm: true, breaks: true });
 
 @customElement('hub-docs-tab')
 export class HubDocsTab extends LitElement {
+  @property({ attribute: false }) public hass?: HomeAssistant;
   @property({ type: String }) public initialSlug = '';
 
   @state() private _index: DocsIndex | null = null;
@@ -391,7 +396,7 @@ export class HubDocsTab extends LitElement {
       this._initOpenSections(data.sections);
       const slug =
         this.initialSlug ||
-        (data.pages.some(p => p.slug === this._selectedSlug)
+        (this._selectedSlug === ABOUT_SLUG || data.pages.some(p => p.slug === this._selectedSlug)
           ? this._selectedSlug
           : data.pages.find(p => p.slug === 'home')?.slug ?? data.pages[0]?.slug ?? 'home');
       await this._loadPage(slug);
@@ -418,6 +423,15 @@ export class HubDocsTab extends LitElement {
   }
 
   private async _loadPage(slug: string): Promise<void> {
+    if (slug === ABOUT_SLUG) {
+      this._selectedSlug = ABOUT_SLUG;
+      this._pageHtml = '';
+      this._pageToc = [];
+      this._error = null;
+      this._loading = false;
+      localStorage.setItem(LAST_SLUG_KEY, ABOUT_SLUG);
+      return;
+    }
     const page = this._pageBySlug(slug);
     if (!page) {
       this._pageHtml = '';
@@ -613,7 +627,19 @@ export class HubDocsTab extends LitElement {
                   ? html`<div class="docs-empty">No matches</div>`
                   : nothing}
               `
-            : html`<nav aria-label="Documentation pages">${this._renderNavSections()}</nav>`}
+            : html`
+                <nav aria-label="Documentation pages">
+                  ${this._renderNavSections()}
+                  <div class="docs-nav" style="margin-top:8px;">
+                    <button
+                      class=${this._selectedSlug === ABOUT_SLUG ? 'active' : ''}
+                      @click=${() => void this._loadPage(ABOUT_SLUG)}
+                    >
+                      About Ultra Card
+                    </button>
+                  </div>
+                </nav>
+              `}
           <div class="docs-meta">
             Synced from
             <a href=${WIKI_URL} target="_blank" rel="noopener">Ultra Card Wiki</a><br />
@@ -640,11 +666,13 @@ export class HubDocsTab extends LitElement {
               `
             : nothing}
           <article class="docs-content" aria-live="polite" @click=${this._onContentClick}>
-            ${this._loading
-              ? html`<div class="docs-empty">Loading…</div>`
-              : this._error
-                ? html`<div class="docs-error">${this._error}</div>`
-                : html`<div class="docs-markdown">${unsafeHTML(this._pageHtml)}</div>`}
+            ${this._selectedSlug === ABOUT_SLUG
+              ? html`<ultra-about-tab .hass=${this.hass}></ultra-about-tab>`
+              : this._loading
+                ? html`<div class="docs-empty">Loading…</div>`
+                : this._error
+                  ? html`<div class="docs-error">${this._error}</div>`
+                  : html`<div class="docs-markdown">${unsafeHTML(this._pageHtml)}</div>`}
           </article>
         </div>
       </div>

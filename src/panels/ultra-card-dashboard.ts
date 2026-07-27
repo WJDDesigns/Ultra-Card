@@ -8,19 +8,17 @@ import { panelStyles } from './panel-styles';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
 import { localize } from '../localize/localize';
 import type { HubProTab } from './tabs/hub-pro-tab';
-import type { HubGroup, HubTab, HubTabDef } from './ultra-card-dashboard-types';
+import type { HubTab, HubTabDef } from './ultra-card-dashboard-types';
 import {
   HUB_NAVIGATE_EVENT,
   PENDING_DOCS_SLUG_KEY,
-  tabToGroup,
   type HubNavigateDetail,
 } from './hub-navigation';
 
 const SENSOR_ENTITY = 'sensor.ultra_card_pro_cloud_authentication_status';
-const STORAGE_GROUP_KEY = 'ultra_card_hub_group';
 const STORAGE_TAB_KEY = 'ultra_card_hub_tab';
 
-export type { HubTab, HubGroup } from './ultra-card-dashboard-types';
+export type { HubTab } from './ultra-card-dashboard-types';
 
 const TAB_LOADERS: Record<HubTab, () => Promise<unknown>> = {
   dashboard: () => import('./tabs/hub-dashboard-tab'),
@@ -31,39 +29,34 @@ const TAB_LOADERS: Record<HubTab, () => Promise<unknown>> = {
   variables: () => import('./tabs/hub-variables-tab'),
   templates: () => import('./tabs/hub-templates-tab'),
   docs: () => import('./tabs/hub-docs-tab'),
-  pro: () => import('./tabs/hub-pro-tab'),
-  about: () => import('../editor/tabs/about-tab'),
 };
 
 const HUB_TABS: HubTabDef[] = [
-  { key: 'dashboard', labelKey: 'hub.tabs.dashboard', icon: 'mdi:view-dashboard', group: 'home' },
-  { key: 'favorites', labelKey: 'hub.tabs.favorites', icon: 'mdi:heart', group: 'library' },
-  { key: 'presets', labelKey: 'hub.tabs.presets', icon: 'mdi:palette', group: 'library' },
-  { key: 'colors', labelKey: 'hub.tabs.colors', icon: 'mdi:eyedropper-variant', group: 'library' },
-  { key: 'variables', labelKey: 'hub.tabs.variables', icon: 'mdi:variable', group: 'library' },
-  { key: 'templates', labelKey: 'hub.tabs.templates', icon: 'mdi:code-tags', group: 'library' },
-  { key: 'account', labelKey: 'hub.tabs.account', icon: 'mdi:account-circle', group: 'account' },
-  { key: 'pro', labelKey: 'hub.tabs.pro', icon: 'mdi:star', group: 'account' },
-  { key: 'docs', labelKey: 'hub.tabs.docs', icon: 'mdi:book-open-page-variant', group: 'help' },
-  { key: 'about', labelKey: 'hub.tabs.about', icon: 'mdi:information-outline', group: 'help' },
+  { key: 'dashboard', labelKey: 'hub.groups.home', icon: 'mdi:home' },
+  { key: 'favorites', labelKey: 'hub.tabs.favorites', icon: 'mdi:heart' },
+  { key: 'presets', labelKey: 'hub.tabs.presets', icon: 'mdi:palette' },
+  { key: 'colors', labelKey: 'hub.tabs.colors', icon: 'mdi:eyedropper-variant' },
+  { key: 'variables', labelKey: 'hub.tabs.variables', icon: 'mdi:variable' },
+  { key: 'templates', labelKey: 'hub.tabs.templates', icon: 'mdi:code-tags' },
+  { key: 'account', labelKey: 'hub.tabs.account', icon: 'mdi:account-circle' },
+  { key: 'docs', labelKey: 'hub.tabs.docs', icon: 'mdi:book-open-page-variant' },
 ];
 
-const HUB_GROUPS: { key: HubGroup; labelKey: string; icon: string }[] = [
-  { key: 'home', labelKey: 'hub.groups.home', icon: 'mdi:home' },
-  { key: 'library', labelKey: 'hub.groups.library', icon: 'mdi:bookshelf' },
-  { key: 'account', labelKey: 'hub.groups.account', icon: 'mdi:account-circle' },
-  { key: 'help', labelKey: 'hub.groups.help', icon: 'mdi:help-circle' },
-];
+/** Map legacy tab ids (pre-flattened nav) to their new home. */
+function normalizeHubTab(tab: string | null): HubTab | null {
+  if (!tab) return null;
+  if (tab === 'pro') return 'account';
+  if (tab === 'about') return 'docs';
+  return HUB_TABS.some(t => t.key === tab) ? (tab as HubTab) : null;
+}
 
 @customElement('ultra-card-panel')
 export class UltraCardPanel extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @state() private _activeGroup: HubGroup = 'home';
   @state() private _activeTab: HubTab = 'dashboard';
   @state() private _pendingDocsSlug = '';
   @state() private _proAuth: HubProTab['auth'] = null;
-  @state() private _showProTab = false;
   @state() private _cloudUser: CloudUser | null = null;
   @state() private _narrow = window.matchMedia('(max-width: 870px)').matches;
   @state() private _loadedTabs = new Set<HubTab>();
@@ -95,7 +88,7 @@ export class UltraCardPanel extends LitElement {
         background: var(--ha-card-background, var(--card-background-color));
       }
 
-      .group-strip {
+      .tab-strip {
         display: flex;
         gap: 0;
         padding: 0 16px;
@@ -103,15 +96,15 @@ export class UltraCardPanel extends LitElement {
         scrollbar-width: none;
       }
 
-      .group-strip::-webkit-scrollbar {
+      .tab-strip::-webkit-scrollbar {
         display: none;
       }
 
-      .group-strip button {
+      .tab-strip button {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 12px 18px;
+        padding: 12px 16px;
         border: none;
         background: none;
         color: var(--secondary-text-color);
@@ -125,39 +118,13 @@ export class UltraCardPanel extends LitElement {
         flex-shrink: 0;
       }
 
-      .group-strip button.active {
+      .tab-strip button.active {
         color: var(--primary-color);
         border-bottom-color: var(--primary-color);
       }
 
-      .sub-strip {
-        display: flex;
-        gap: 4px;
-        padding: 8px 16px 10px;
-        overflow-x: auto;
-        scrollbar-width: none;
-      }
-
-      .sub-strip button {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 14px;
-        border: none;
-        border-radius: 20px;
-        background: transparent;
-        color: var(--secondary-text-color);
-        font: inherit;
-        font-size: 13px;
-        cursor: pointer;
-        white-space: nowrap;
-        flex-shrink: 0;
-      }
-
-      .sub-strip button.active {
-        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.14);
-        color: var(--primary-color);
-        font-weight: 600;
+      .tab-strip button ha-icon {
+        --mdc-icon-size: 18px;
       }
 
       .mobile-menu-btn {
@@ -303,14 +270,9 @@ export class UltraCardPanel extends LitElement {
 
   private _restoreNavState(): void {
     try {
-      const tab = localStorage.getItem(STORAGE_TAB_KEY) as HubTab | null;
-      const group = localStorage.getItem(STORAGE_GROUP_KEY) as HubGroup | null;
-      if (tab && HUB_TABS.some(t => t.key === tab)) {
+      const tab = normalizeHubTab(localStorage.getItem(STORAGE_TAB_KEY));
+      if (tab) {
         this._activeTab = tab;
-        this._activeGroup = tabToGroup(tab);
-      } else if (group && HUB_GROUPS.some(g => g.key === group)) {
-        this._activeGroup = group;
-        this._activeTab = this._tabsForGroup(group)[0]?.key ?? 'dashboard';
       }
       const pendingDocs = localStorage.getItem(PENDING_DOCS_SLUG_KEY);
       if (pendingDocs) {
@@ -325,7 +287,6 @@ export class UltraCardPanel extends LitElement {
   private _persistNavState(): void {
     try {
       localStorage.setItem(STORAGE_TAB_KEY, this._activeTab);
-      localStorage.setItem(STORAGE_GROUP_KEY, this._activeGroup);
     } catch {
       /* ignore */
     }
@@ -341,31 +302,13 @@ export class UltraCardPanel extends LitElement {
     }
   }
 
-  private _tabsForGroup(group: HubGroup): HubTabDef[] {
-    return HUB_TABS.filter(t => {
-      if (t.key === 'pro' && !this._showProTab) return false;
-      return t.group === group;
-    });
-  }
-
-  private _selectGroup(group: HubGroup): void {
-    this._activeGroup = group;
-    const tabs = this._tabsForGroup(group);
-    if (!tabs.some(t => t.key === this._activeTab)) {
-      this._activeTab = tabs[0]?.key ?? 'dashboard';
-    }
-    this._persistNavState();
-    this._onTabActivated(this._activeTab);
-  }
-
   private _selectTab(tab: HubTab, options?: { docsSlug?: string }): void {
-    this._activeTab = tab;
-    this._activeGroup = tabToGroup(tab);
+    this._activeTab = normalizeHubTab(tab) ?? 'dashboard';
     if (options?.docsSlug) {
       this._pendingDocsSlug = options.docsSlug;
     }
     this._persistNavState();
-    this._onTabActivated(tab);
+    this._onTabActivated(this._activeTab);
   }
 
   private _onTabActivated(tab: HubTab): void {
@@ -412,17 +355,12 @@ export class UltraCardPanel extends LitElement {
 
   private _updateProState(): void {
     if (!this.hass?.states) {
-      this._showProTab = false;
       this._proAuth = null;
       return;
     }
     const sensor = this.hass.states[SENSOR_ENTITY];
-    this._showProTab = !!sensor;
     if (!sensor) {
       this._proAuth = null;
-      if (this._activeTab === 'pro') {
-        this._selectTab('account');
-      }
       return;
     }
     const attrs = sensor.attributes as Record<string, unknown>;
@@ -464,7 +402,7 @@ export class UltraCardPanel extends LitElement {
       return html`
         <button
           class="hub-account-chip"
-          @click=${() => this._selectGroup('account')}
+          @click=${() => this._selectTab('account')}
           title="View account"
           aria-label="View account"
         >
@@ -481,7 +419,7 @@ export class UltraCardPanel extends LitElement {
     return html`
       <button
         class="hub-sign-in-btn"
-        @click=${() => this._selectGroup('account')}
+        @click=${() => this._selectTab('account')}
         aria-label="Sign in"
       >
         <ha-icon icon="mdi:login"></ha-icon>
@@ -543,15 +481,10 @@ export class UltraCardPanel extends LitElement {
       case 'templates':
         return html`<hub-templates-tab></hub-templates-tab>`;
       case 'docs':
-        return html`<hub-docs-tab .initialSlug=${this._pendingDocsSlug}></hub-docs-tab>`;
-      case 'pro':
-        return html`<hub-pro-tab
-          .auth=${this._proAuth}
+        return html`<hub-docs-tab
           .hass=${this.hass}
-          .cloudUser=${this._cloudUser}
-        ></hub-pro-tab>`;
-      case 'about':
-        return html`<ultra-about-tab .hass=${this.hass}></ultra-about-tab>`;
+          .initialSlug=${this._pendingDocsSlug}
+        ></hub-docs-tab>`;
       default:
         return html`<hub-dashboard-tab .hass=${this.hass}></hub-dashboard-tab>`;
     }
@@ -559,7 +492,6 @@ export class UltraCardPanel extends LitElement {
 
   override render() {
     const lang = this.hass?.locale?.language ?? 'en';
-    const subTabs = this._tabsForGroup(this._activeGroup);
 
     return html`
       <div class="hub-container">
@@ -580,37 +512,21 @@ export class UltraCardPanel extends LitElement {
         </header>
 
         <nav class="hub-nav" aria-label="Hub navigation">
-          <div class="group-strip" role="tablist">
-            ${HUB_GROUPS.map(
-              group => html`
+          <div class="tab-strip" role="tablist">
+            ${HUB_TABS.map(
+              tab => html`
                 <button
                   role="tab"
-                  class=${this._activeGroup === group.key ? 'active' : ''}
-                  @click=${() => this._selectGroup(group.key)}
+                  aria-selected=${this._activeTab === tab.key ? 'true' : 'false'}
+                  class=${this._activeTab === tab.key ? 'active' : ''}
+                  @click=${() => this._selectTab(tab.key)}
                 >
-                  <ha-icon icon=${group.icon}></ha-icon>
-                  ${localize(group.labelKey, lang, group.key)}
+                  <ha-icon icon=${tab.icon}></ha-icon>
+                  ${localize(tab.labelKey, lang, tab.key)}
                 </button>
               `
             )}
           </div>
-          ${subTabs.length > 1
-            ? html`
-                <div class="sub-strip">
-                  ${subTabs.map(
-                    tab => html`
-                      <button
-                        class=${this._activeTab === tab.key ? 'active' : ''}
-                        @click=${() => this._selectTab(tab.key)}
-                      >
-                        <ha-icon icon=${tab.icon}></ha-icon>
-                        ${localize(tab.labelKey, lang, tab.key)}
-                      </button>
-                    `
-                  )}
-                </div>
-              `
-            : ''}
         </nav>
 
         <div

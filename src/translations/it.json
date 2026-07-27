@@ -1880,7 +1880,7 @@
       "card_color_desc": "Opzionale: Aggiungi una tonalità di colore a tutte le schede",
       "pro_required": "Ultra Card Pro Richiesto",
       "pro_required_desc": "Il Sfondo Video è una funzione di Pro. Installa e autentica con l'integrazione Cloud di Ultra Card Pro per sbloccare questo modulo",
-      "get_pro": "Ottieni Ultra Card Pro Cloud",
+      "get_pro": "Ottieni Ultra Card Connect",
       "active": "Sfondo Video Attivo",
       "enabled": "Abilitato",
       "disabled": "Disabilitato",
@@ -3832,7 +3832,11 @@
       "badge_ok": "Healthy",
       "badge_issues": "{count} issues",
       "tooltip": "Analyze card health",
-      "open_connect": "Open Connect"
+      "open_connect": "Open Connect",
+      "connect_not_installed": "Ultra Card Connect is not installed. Hub sidebar and Pro sync require the integration.",
+      "connect_not_authenticated": "Ultra Card Connect is installed but not signed in. Open the Hub Account tab to connect.",
+      "connect_needs_reauth": "Ultra Card Connect needs re-authentication. Open the Hub Account tab to sign in again.",
+      "connect_needs_update": "Ultra Card Connect needs updating (installed {current}, required {required}+). Update the integration so Smart Cards, media upload, and Pro sync work reliably."
     },
     "smart": {
       "title": "Smart Cards",

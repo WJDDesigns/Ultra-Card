@@ -78,20 +78,19 @@ Home Assistant aggressively caches frontend resources. To see your changes immed
 | `npm run watch`        | Watch mode (also auto-deploys if HA volume is mounted) |
 | `npm run dev`          | Dev server with hot reload (localhost:8080)            |
 | `npm run build`        | Production build                                       |
-| `npm run build:deploy` | Build and deploy using deploy.js                       |
-| `npm run sync:panel`   | Copy built panel into integration's www/ (see below)   |
+| `npm run build:deploy` | Build, sync Connect panel+hashes, deploy to HA (fast rsync) |
+| `npm run sync:panel`   | Copy built panel into Connect www/ + write panel-assets.json |
 
 ---
 
 ## Sidebar panel and integration
 
-The **Ultra Card Hub** (sidebar panel) is **served by the Ultra Card Pro Cloud integration**, not by the HACS frontend. So:
+The **Ultra Card Hub** (sidebar panel) is **served by the Ultra Card Connect integration**, not by the HACS frontend. So:
 
 - Changes to the panel (e.g. `src/panels/`) are built into `dist/ultra-card-panel.js` when you run `npm run build`.
-- To ship those changes with the integration, copy the built panel into the integration repo:  
-  **`npm run sync:panel`**  
-  (Expects the integration repo at `../Ultra Card Pro Cloud` or set `INTEGRATION_WWW_PATH`.)
-- Releasing a new integration version then delivers the updated panel (and the favorite-colors API) to users. Users need to **update the integration** to get sidebar panel fixes; updating only the card does not update the panel.
+- **`npm run build:deploy`** automatically runs panel sync into the Connect repo (`www/` + `panel-assets.json` hashes), then deploys to HA.
+- Manual sync only: **`npm run sync:panel`** (expects `../Ultra Card Pro Cloud` or `INTEGRATION_WWW_PATH`).
+- Releasing a new Connect version delivers the updated panel to users. Updating only the card does not update the Hub sidebar.
 
 ---
 

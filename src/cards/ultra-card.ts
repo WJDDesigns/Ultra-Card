@@ -3501,7 +3501,7 @@ export class UltraCard extends LitElement {
   }
 
   /**
-   * Load cloud user from integration or card auth
+   * Load cloud user from Ultra Card Connect (integration sensor only).
    */
   private _loadCloudUser(): void {
     if (!this.hass) return;
@@ -3510,15 +3510,13 @@ export class UltraCard extends LitElement {
     const sensorEntityId = 'sensor.ultra_card_pro_cloud_authentication_status';
     const sensorState = this.hass?.states?.[sensorEntityId];
 
-    // If sensor exists and is explicitly disconnected, sign out everywhere
+    // If sensor exists and is explicitly disconnected, clear local auth state
     if (sensorState && (sensorState.state === 'disconnected' || sensorState.state === 'error')) {
-      // Sign out both integration and card auth
-      ucCloudAuthService.logout();
+      void ucCloudAuthService.logout();
       this._cloudUser = null;
       return;
     }
 
-    // Priority 1: Check for integration auth
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
     if (integrationUser) {
       this._cloudUser = integrationUser;
@@ -3526,11 +3524,7 @@ export class UltraCard extends LitElement {
       return;
     }
 
-    // Priority 2: Check card-based auth
-    const cardUser = ucCloudAuthService.getCurrentUser();
-    if (cardUser) {
-      this._cloudUser = cardUser;
-    }
+    this._cloudUser = null;
   }
 
   /**

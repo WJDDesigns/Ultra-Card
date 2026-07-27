@@ -10,8 +10,6 @@ import { VERSION } from '../../version';
 import { dispatchHubNavigate } from '../hub-navigation';
 
 const SENSOR_ENTITY = 'sensor.ultra_card_pro_cloud_authentication_status';
-const DOCS_INDEX_URL = '/ultra_card_pro_cloud_panel/docs/index.json';
-const PRESETS_REFRESH_KEY = 'ultra_card_presets_last_refresh';
 
 interface DashboardStats {
   cardCount: number;
@@ -30,8 +28,6 @@ export class HubDashboardTab extends LitElement {
   @state() private _changelogLoading = true;
   @state() private _changelogError = '';
   @state() private _changelogTitle = '';
-  @state() private _docsSyncedAt = '';
-  @state() private _docsWikiCommitAt = '';
 
   static override styles = [
     panelStyles,
@@ -267,17 +263,6 @@ export class HubDashboardTab extends LitElement {
         color: #ff9800;
       }
 
-      .docs-stale-hint {
-        margin-top: 10px;
-        padding: 10px 12px;
-        border-radius: 8px;
-        font-size: 12px;
-        line-height: 1.45;
-        background: rgba(255, 152, 0, 0.1);
-        color: var(--primary-text-color);
-        border: 1px solid rgba(255, 152, 0, 0.25);
-      }
-
       .quick-links {
         display: flex;
         flex-wrap: wrap;
@@ -301,12 +286,6 @@ export class HubDashboardTab extends LitElement {
         border-color: var(--primary-color);
         color: var(--primary-color);
       }
-
-      .meta-line {
-        font-size: 12px;
-        color: var(--secondary-text-color);
-        margin-top: 8px;
-      }
     `,
   ];
 
@@ -314,19 +293,6 @@ export class HubDashboardTab extends LitElement {
     super.connectedCallback();
     this._loadStats();
     this._loadChangelog();
-    void this._loadDocsMeta();
-  }
-
-  private async _loadDocsMeta(): Promise<void> {
-    try {
-      const res = await fetch(`${DOCS_INDEX_URL}?v=1`);
-      if (!res.ok) return;
-      const data = (await res.json()) as { synced_at?: string; wiki_last_commit_at?: string };
-      this._docsSyncedAt = data.synced_at || '';
-      this._docsWikiCommitAt = data.wiki_last_commit_at || '';
-    } catch {
-      /* ignore */
-    }
   }
 
   private _connectionStatus(): {
@@ -387,27 +353,12 @@ export class HubDashboardTab extends LitElement {
     };
   }
 
-  private _docsBundleStale(): boolean {
-    if (!this._docsSyncedAt || !this._docsWikiCommitAt) return false;
-    const synced = new Date(this._docsSyncedAt).getTime();
-    const wiki = new Date(this._docsWikiCommitAt).getTime();
-    return !Number.isNaN(synced) && !Number.isNaN(wiki) && wiki > synced + 60_000;
-  }
-
   private _formatIso(iso: string): string {
     if (!iso) return 'Never';
     try {
       return new Date(iso).toLocaleString();
     } catch {
       return iso;
-    }
-  }
-
-  private _presetsLastRefresh(): string {
-    try {
-      return this._formatIso(localStorage.getItem(PRESETS_REFRESH_KEY) || '');
-    } catch {
-      return 'Never';
     }
   }
 
@@ -556,17 +507,6 @@ export class HubDashboardTab extends LitElement {
               Install guide
             </button>
           </div>
-          <div class="meta-line">Presets last refreshed: ${this._presetsLastRefresh()}</div>
-          <div class="meta-line">Docs bundle synced: ${this._formatIso(this._docsSyncedAt)}</div>
-          ${this._docsBundleStale()
-            ? html`
-                <div class="docs-stale-hint">
-                  The wiki has newer updates than this bundle. Documentation in Hub may be
-                  slightly behind until the next Connect release (maintainers: run
-                  <code>npm run docs:sync</code>).
-                </div>
-              `
-            : nothing}
         </div>
       </div>
 

@@ -11,9 +11,24 @@ import {
   CloudUser,
 } from '../../services/uc-cloud-auth-service';
 import { ucCloudSyncService, SyncStatus } from '../../services/uc-cloud-sync-service';
+import {
+  downloadDiagnosticsJson,
+  fetchConnectDiagnostics,
+  type ConnectDiagnosticsReport,
+} from '../../services/uc-connect-diagnostics';
+import { getConnectInfo } from '../../services/uc-connect-compatibility';
+import {
+  fetchBillingSummary,
+  formatBillingDate,
+  formatMoney,
+  type BillingSummary,
+} from '../../services/uc-billing-service';
+import { VERSION } from '../../version';
+import './hub-pro-tab';
 import type { ProAuthData } from './hub-pro-tab';
 
 type FormMode = 'signin' | 'register';
+type AccountView = 'overview' | 'tools' | 'diagnostics';
 
 interface SyncCounts {
   colors: number;
@@ -38,6 +53,14 @@ export class HubAccountTab extends LitElement {
   @state() private _autoConfigNote = '';
   @state() private _syncStatus: SyncStatus | null = null;
   @state() private _syncCounts: SyncCounts = { colors: 0, variables: 0, presets: 0, favorites: 0 };
+  @state() private _diagLoading = false;
+  @state() private _diagError = '';
+  @state() private _diagReport: ConnectDiagnosticsReport | null = null;
+  @state() private _billing: BillingSummary | null = null;
+  @state() private _billingLoading = false;
+  @state() private _billingError = '';
+  @state() private _view: AccountView = 'overview';
+  private _billingRequested = false;
 
   private _syncListener: ((status: SyncStatus) => void) | undefined;
 
@@ -592,6 +615,153 @@ export class HubAccountTab extends LitElement {
       .spin {
         animation: spin 0.8s linear infinite;
       }
+
+      .account-subnav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 20px;
+      }
+
+      .account-subnav button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+        border-radius: 20px;
+        background: transparent;
+        color: var(--secondary-text-color);
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .account-subnav button ha-icon {
+        --mdc-icon-size: 16px;
+      }
+
+      .account-subnav button.active {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.14);
+        border-color: rgba(var(--rgb-primary-color, 3, 169, 244), 0.3);
+        color: var(--primary-color);
+        font-weight: 600;
+      }
+
+      .billing-rows {
+        margin-bottom: 4px;
+      }
+
+      .billing-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--divider-color, rgba(0, 0, 0, 0.06));
+        font-size: 13px;
+      }
+
+      .billing-row.invoice {
+        display: grid;
+        grid-template-columns: 1.4fr auto 1fr auto;
+        justify-items: start;
+      }
+
+      .billing-row.invoice > :nth-child(3) {
+        justify-self: end;
+      }
+
+      .billing-row.invoice > :last-child {
+        justify-self: end;
+      }
+
+      .billing-label {
+        color: var(--secondary-text-color);
+      }
+
+      .billing-value {
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .billing-pill {
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: capitalize;
+        background: rgba(158, 158, 158, 0.15);
+        color: var(--secondary-text-color);
+      }
+
+      .billing-pill.ok {
+        background: rgba(76, 175, 80, 0.15);
+        color: #4caf50;
+      }
+
+      .billing-pill.warn {
+        background: rgba(255, 152, 0, 0.15);
+        color: #ff9800;
+      }
+
+      .billing-pill.bad {
+        background: rgba(244, 67, 54, 0.12);
+        color: #f44336;
+      }
+
+      .billing-invoices {
+        margin-top: 14px;
+      }
+
+      .billing-invoices-title {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
+      }
+
+      .billing-link {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--primary-color);
+        text-decoration: none;
+      }
+
+      .billing-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .billing-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 7px;
+        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.3);
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.1);
+        color: var(--primary-color);
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+      }
+
+      .billing-btn ha-icon {
+        --mdc-icon-size: 16px;
+      }
+
+      .billing-note {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        margin: 12px 0 0;
+        line-height: 1.5;
+      }
     `,
   ];
 
@@ -708,6 +878,306 @@ export class HubAccountTab extends LitElement {
     await ucCloudAuthService.logoutViaHass(this.hass);
   }
 
+  override updated(): void {
+    // Billing goes through the Connect proxy (HA-admin only); fetch once per mount
+    // as soon as the signed-in user is known.
+    if (!this._billingRequested && this._effectiveUser && this._isHaAdmin()) {
+      this._billingRequested = true;
+      void this._loadBilling();
+    }
+  }
+
+  private async _loadBilling(): Promise<void> {
+    this._billingLoading = true;
+    this._billingError = '';
+    try {
+      this._billing = await fetchBillingSummary();
+    } catch (err) {
+      this._billingError = err instanceof Error ? err.message : 'Could not load billing details';
+    } finally {
+      this._billingLoading = false;
+    }
+  }
+
+  private _billingStatusClass(status: string): string {
+    const s = (status || '').toLowerCase();
+    if (['active', 'completed', 'paid', 'processing'].includes(s)) return 'ok';
+    if (['on-hold', 'pending', 'pending-cancel'].includes(s)) return 'warn';
+    if (['cancelled', 'expired', 'failed', 'refunded'].includes(s)) return 'bad';
+    return '';
+  }
+
+  private _renderBilling(): TemplateResult | typeof nothing {
+    // Nothing billable: free account with no order history.
+    const woo = this._billing?.woocommerce;
+    const invoices = this._billing?.invoices ?? [];
+    if (!this._billingLoading && !this._billingError && !woo && invoices.length === 0) {
+      return nothing;
+    }
+
+    const period =
+      woo?.billing_interval && woo.billing_interval !== '1'
+        ? `every ${woo.billing_interval} ${woo.billing_period || 'month'}s`
+        : `/ ${woo?.billing_period || 'month'}`;
+
+    return html`
+      <div class="account-card">
+        <h3>
+          <ha-icon icon="mdi:credit-card-outline"></ha-icon>
+          Billing
+        </h3>
+        ${this._billingLoading
+          ? html`<p class="billing-note">Loading billing details…</p>`
+          : this._billingError
+            ? html`<p class="billing-note">
+                ${this._billingError} —
+                <a href="https://ultracard.io/my-account/" target="_blank" rel="noopener noreferrer">
+                  manage billing at ultracard.io
+                </a>
+              </p>`
+            : html`
+                ${woo
+                  ? html`
+                      <div class="billing-rows">
+                        <div class="billing-row">
+                          <span class="billing-label">Plan</span>
+                          <span class="billing-value">
+                            Ultra Card Pro · ${formatMoney(woo.total, woo.currency)} ${period}
+                          </span>
+                        </div>
+                        <div class="billing-row">
+                          <span class="billing-label">Status</span>
+                          <span class="billing-pill ${this._billingStatusClass(woo.status)}">
+                            ${woo.status || 'unknown'}
+                          </span>
+                        </div>
+                        <div class="billing-row">
+                          <span class="billing-label">Next payment</span>
+                          <span class="billing-value">${formatBillingDate(woo.next_payment_date)}</span>
+                        </div>
+                        <div class="billing-row">
+                          <span class="billing-label">Last payment</span>
+                          <span class="billing-value">${formatBillingDate(woo.last_payment_date)}</span>
+                        </div>
+                        ${woo.payment_method_title
+                          ? html`
+                              <div class="billing-row">
+                                <span class="billing-label">Payment method</span>
+                                <span class="billing-value">${woo.payment_method_title}</span>
+                              </div>
+                            `
+                          : nothing}
+                      </div>
+                    `
+                  : nothing}
+                ${invoices.length > 0
+                  ? html`
+                      <div class="billing-invoices">
+                        <div class="billing-invoices-title">Recent invoices</div>
+                        ${invoices.slice(0, 6).map(
+                          inv => html`
+                            <div class="billing-row invoice">
+                              <span class="billing-value">${formatBillingDate(inv.date)}</span>
+                              <span class="billing-pill ${this._billingStatusClass(inv.status)}">
+                                ${inv.status}
+                              </span>
+                              <span class="billing-value">${formatMoney(inv.total, inv.currency)}</span>
+                              ${inv.invoice_url
+                                ? html`
+                                    <a
+                                      class="billing-link"
+                                      href=${inv.invoice_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      View
+                                    </a>
+                                  `
+                                : html`<span></span>`}
+                            </div>
+                          `
+                        )}
+                      </div>
+                    `
+                  : nothing}
+                <div class="billing-actions">
+                  ${woo?.view_subscription_url
+                    ? html`
+                        <a
+                          class="billing-btn"
+                          href=${woo.view_subscription_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <ha-icon icon="mdi:autorenew"></ha-icon>
+                          Manage subscription
+                        </a>
+                      `
+                    : nothing}
+                  <a
+                    class="billing-btn"
+                    href="https://ultracard.io/my-account/payment-methods/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ha-icon icon="mdi:credit-card-edit-outline"></ha-icon>
+                    Payment methods
+                  </a>
+                </div>
+                <p class="billing-note">
+                  Payment changes and cancellations are completed securely on ultracard.io.
+                </p>
+              `}
+      </div>
+    `;
+  }
+
+  private async _runDiagnostics(download: boolean): Promise<void> {
+    if (!this._isHaAdmin()) {
+      this._diagError = 'Only Home Assistant administrators can run Connect diagnostics.';
+      return;
+    }
+    this._diagLoading = true;
+    this._diagError = '';
+    try {
+      const report = await fetchConnectDiagnostics(this.hass, { runConnectivity: true });
+      this._diagReport = report;
+      if (download) downloadDiagnosticsJson(report);
+    } catch (err) {
+      const fallback = (err as { fallback?: ConnectDiagnosticsReport })?.fallback;
+      if (fallback) {
+        this._diagReport = fallback;
+        // Still download a useful report when the API is missing (old Connect).
+        if (download) downloadDiagnosticsJson(fallback);
+      }
+      this._diagError = err instanceof Error ? err.message : 'Failed to load diagnostics';
+    } finally {
+      this._diagLoading = false;
+    }
+  }
+
+  private _renderDiagnostics(): TemplateResult {
+    const info = getConnectInfo(this.hass);
+    const liveUser = this._effectiveUser;
+    const entry = (this._diagReport?.entries?.[0] || {}) as Record<string, any>;
+    const coord = (entry.coordinator || {}) as Record<string, any>;
+    const connectivity = (entry.connectivity || {}) as Record<string, any>;
+    const signedIn =
+      typeof coord.authenticated === 'boolean' ? coord.authenticated : Boolean(liveUser);
+    const tokenLabel =
+      coord.token_present === true
+        ? 'Present (server-side)'
+        : coord.token_present === false
+          ? 'Missing'
+          : signedIn
+            ? 'Managed by Connect'
+            : 'Missing';
+
+    const tiles: Array<{ label: string; value: string; ok?: boolean }> = [
+      {
+        label: 'Connect version',
+        value:
+          info.integrationVersion ||
+          (this._diagReport?.integration_version as string) ||
+          (info.installed ? 'pre-1.6.0 (update required)' : 'not installed'),
+        ok: info.installed && !info.outdated,
+      },
+      {
+        label: 'Card version',
+        value: VERSION,
+      },
+      {
+        label: 'Signed in',
+        value: signedIn ? 'Yes' : 'No',
+        ok: signedIn,
+      },
+      {
+        label: 'Token',
+        value: tokenLabel,
+        ok: signedIn ? true : false,
+      },
+      {
+        label: 'Cloud reachability',
+        value: connectivity.api
+          ? 'OK'
+          : connectivity.errors?.length
+            ? 'Failed'
+            : this._diagReport?.source === 'api'
+              ? 'Not tested'
+              : this._diagReport
+                ? 'Unavailable (update Connect)'
+                : 'Run diagnostics',
+        ok: connectivity.api === true,
+      },
+      {
+        label: 'Last success',
+        value:
+          typeof coord.last_successful_age_seconds === 'number'
+            ? `${Math.round(coord.last_successful_age_seconds)}s ago`
+            : coord.last_poll || coord.connected_at || '—',
+      },
+    ];
+
+    return html`
+      <div class="account-card">
+        <h3>
+          <ha-icon icon="mdi:stethoscope"></ha-icon>
+          Connect diagnostics
+        </h3>
+        <p style="font-size:13px;color:var(--secondary-text-color);line-height:1.5;margin:0 0 16px;">
+          Check authentication, cloud reachability, and integration version. Downloads never include
+          passwords or JWT tokens.
+        </p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;">
+          ${tiles.map(
+            t => html`
+              <div
+                style="border:1px solid var(--divider-color);border-radius:10px;padding:10px 12px;background:var(--secondary-background-color, transparent);"
+              >
+                <div style="font-size:11px;color:var(--secondary-text-color);margin-bottom:4px;">
+                  ${t.label}
+                </div>
+                <div style="font-size:13px;font-weight:600;color:${t.ok === false
+                  ? 'var(--error-color, #f44336)'
+                  : t.ok === true
+                    ? 'var(--success-color, #4caf50)'
+                    : 'var(--primary-text-color)'};">
+                  ${t.value}
+                </div>
+              </div>
+            `
+          )}
+        </div>
+        ${this._diagError
+          ? html`<div class="error-message" style="margin-bottom:12px;">${this._diagError}</div>`
+          : ''}
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <button
+            class="sync-now-btn"
+            style="width:auto;padding:8px 14px;"
+            ?disabled=${this._diagLoading || !this._isHaAdmin()}
+            @click=${() => this._runDiagnostics(false)}
+          >
+            <ha-icon
+              icon="mdi:${this._diagLoading ? 'loading' : 'refresh'}"
+              class="${this._diagLoading ? 'spin' : ''}"
+            ></ha-icon>
+            ${this._diagLoading ? 'Running…' : 'Run diagnostics'}
+          </button>
+          <button
+            class="sync-now-btn"
+            style="width:auto;padding:8px 14px;"
+            ?disabled=${this._diagLoading || !this._isHaAdmin()}
+            @click=${() => this._runDiagnostics(true)}
+          >
+            <ha-icon icon="mdi:download"></ha-icon>
+            Download report
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   private _isHaAdmin(): boolean {
     return Boolean(this.hass?.user?.is_admin);
   }
@@ -781,15 +1251,54 @@ export class HubAccountTab extends LitElement {
           Set Up Integration
         </a>
       </div>
+      ${this._renderDiagnostics()}
     `;
   }
 
   private _renderAuthenticated(user: CloudUser): TemplateResult {
     const isPro =
       user.subscription?.tier === 'pro' && user.subscription?.status === 'active';
+    // "Pro tools" only exists for Pro users; fall back if the tier changed.
+    const view: AccountView = this._view === 'tools' && !isPro ? 'overview' : this._view;
+    const views: Array<{ key: AccountView; label: string; icon: string }> = [
+      { key: 'overview', label: 'Overview', icon: 'mdi:account-circle' },
+      ...(isPro ? [{ key: 'tools' as AccountView, label: 'Pro Tools', icon: 'mdi:tools' }] : []),
+      { key: 'diagnostics', label: 'Diagnostics', icon: 'mdi:stethoscope' },
+    ];
 
     return html`
       ${this._renderAdminNotice()}
+      <div class="account-subnav" role="tablist" aria-label="Account sections">
+        ${views.map(
+          v => html`
+            <button
+              role="tab"
+              aria-selected=${view === v.key ? 'true' : 'false'}
+              class=${view === v.key ? 'active' : ''}
+              @click=${() => {
+                this._view = v.key;
+              }}
+            >
+              <ha-icon icon=${v.icon}></ha-icon>
+              ${v.label}
+            </button>
+          `
+        )}
+      </div>
+      ${view === 'overview'
+        ? this._renderOverview(user, isPro)
+        : view === 'tools'
+          ? html`<hub-pro-tab
+              .hass=${this.hass}
+              .auth=${this.auth}
+              .cloudUser=${this.cloudUser}
+            ></hub-pro-tab>`
+          : this._renderDiagnostics()}
+    `;
+  }
+
+  private _renderOverview(user: CloudUser, isPro: boolean): TemplateResult {
+    return html`
       <div class="account-card">
         <h3>
           <ha-icon icon="mdi:account-circle"></ha-icon>
@@ -804,6 +1313,21 @@ export class HubAccountTab extends LitElement {
             <ha-icon icon="mdi:email-outline"></ha-icon>
             <span>${user.email}</span>
           </div>
+          ${this.auth?.subscription_expires != null
+            ? html`
+                <div class="user-info-row">
+                  <ha-icon icon="mdi:calendar-refresh"></ha-icon>
+                  <span>
+                    Renews
+                    ${new Date(this.auth.subscription_expires * 1000).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </span>
+                </div>
+              `
+            : nothing}
           <div class="tier-badge ${isPro ? 'pro' : 'free'}">
             ${isPro ? html`<ha-icon icon="mdi:star" style="--mdc-icon-size:14px"></ha-icon>` : ''}
             ${isPro ? 'Pro' : 'Free'}
@@ -812,34 +1336,26 @@ export class HubAccountTab extends LitElement {
 
         ${this._renderSyncStats(isPro)}
 
-        ${!isPro
+        ${isPro
           ? html`
-              <div class="upgrade-section">
-                <h4>Upgrade to Ultra Card Pro</h4>
-                <p>
-                  Unlock dashboard snapshots, auto-backups, and all Pro modules. Sync across devices.
-                </p>
-                <a
-                  class="upgrade-btn"
-                  href="https://ultracard.io/product/ultra-card-pro/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ha-icon icon="mdi:star"></ha-icon>
-                  Upgrade to Pro
-                </a>
-              </div>
-            `
-          : html`
               <div class="manage-link">
                 <a href="https://ultracard.io/dashboard/" target="_blank" rel="noopener noreferrer">
                   Manage account at ultracard.io
                 </a>
               </div>
-            `}
+            `
+          : nothing}
 
         <button class="logout-btn" @click=${this._handleLogout}>Sign out</button>
       </div>
+      ${this._renderBilling()}
+      ${!isPro
+        ? html`<hub-pro-tab
+            .hass=${this.hass}
+            .auth=${this.auth}
+            .cloudUser=${this.cloudUser}
+          ></hub-pro-tab>`
+        : nothing}
     `;
   }
 
@@ -933,6 +1449,7 @@ export class HubAccountTab extends LitElement {
 
         ${this._formMode === 'signin' ? this._renderSignInForm() : this._renderRegisterForm()}
       </div>
+      ${this._renderDiagnostics()}
     `;
   }
 

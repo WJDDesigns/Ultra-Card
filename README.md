@@ -60,6 +60,18 @@ Or add `https://github.com/WJDDesigns/Ultra-Card` as a custom Lovelace repositor
 
 If you use the Ultra Card dashboard panel or Hub features, ensure `ultra-card-panel.js` is in that same directory as well (HACS installs everything automatically).
 
+### Ultra Card Connect (recommended for Hub & Pro)
+
+Install the separate **[Ultra Card Connect](https://github.com/WJDDesigns/ultra-card-connect)** Home Assistant integration (HACS → Integrations) when you want:
+
+- The **Ultra Card Hub** sidebar (presets, account, docs)
+- Shared Pro sign-in that persists across devices (credentials stay in HA)
+- Favorite color sync, Smart Cards via Connect, media uploads through the integration
+
+The card works without Connect for building dashboards. Connect is required for Hub sidebar auth and Pro unlock via HA.
+
+Internal HA domain remains `ultra_card_pro_cloud` (entity IDs unchanged).
+
 ### Create your first card
 
 1. Edit a dashboard → **Add card** → **Custom: Ultra Card**.
@@ -68,7 +80,7 @@ If you use the Ultra Card dashboard panel or Hub features, ensure `ultra-card-pa
 
 ### Optional: Pro
 
-Visit **[UltraCard.io](https://ultracard.io)** for cloud sync, automated backups, exclusive animated modules (Clock, Weather, Forecast, Video Background), and third-party card integration.
+Visit **[UltraCard.io](https://ultracard.io)** for Pro modules, cloud sync, and backups. Sign in through Ultra Card Connect (Hub → Account) after installing the integration.
 
 ---
 

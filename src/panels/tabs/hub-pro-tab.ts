@@ -1,3 +1,8 @@
+/**
+ * Ultra Card Hub — Pro section (embedded in the Account tab).
+ * Renders dashboard tools, Pro settings/support for Pro users, or the
+ * upgrade prompt + features grid for free users. Renders nothing signed out.
+ */
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { panelStyles } from '../panel-styles';
@@ -45,8 +50,6 @@ export class HubProTab extends LitElement {
     css`
       :host {
         display: block;
-        animation: fadeSlideIn 0.3s ease-out;
-        padding-bottom: 60px;
       }
 
       @keyframes spin {
@@ -1158,198 +1161,29 @@ export class HubProTab extends LitElement {
     this._toastTimer = setTimeout(() => (this._toastMsg = ''), 2500);
   }
 
-  private _formatExpiry(ts?: number): string {
-    if (ts == null) return '—';
-    try {
-      return new Date(ts * 1000).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return '—';
-    }
-  }
-
   override render() {
-    const auth = this.auth;
-    const isIntegrationInstalled = auth != null;
-    // Treat as logged in if sensor auth OR direct cloud login is present
-    const isLoggedIn = !!auth?.authenticated || !!this.cloudUser;
+    // Embedded inside the Account tab: only render Pro tools / upgrade content.
+    // Treat as logged in if sensor auth OR direct cloud login is present.
+    const isLoggedIn = !!this.auth?.authenticated || !!this.cloudUser;
     const isPro =
-      (!!auth?.authenticated && auth?.subscription_tier === 'pro') ||
-      (!auth?.authenticated && this.cloudUser?.subscription?.tier === 'pro');
-    const isActive =
-      auth?.subscription_status === 'active' ||
-      this.cloudUser?.subscription?.status === 'active';
-    // When sensor auth isn't available, build a compatible auth object from cloudUser
-    const effectiveAuth: ProAuthData = auth ?? {
-      authenticated: true,
-      username: this.cloudUser?.username,
-      email: this.cloudUser?.email,
-      display_name: this.cloudUser?.displayName,
-      subscription_tier: this.cloudUser?.subscription?.tier || 'free',
-      subscription_status: this.cloudUser?.subscription?.status,
-    };
+      (!!this.auth?.authenticated && this.auth?.subscription_tier === 'pro') ||
+      (!this.auth?.authenticated && this.cloudUser?.subscription?.tier === 'pro');
+
+    if (!isLoggedIn) return nothing;
 
     return html`
-      <!-- Integration Status -->
-      ${this._renderIntegrationStatus(isIntegrationInstalled, isLoggedIn, isPro)}
-
-      <!-- Banner -->
-      ${this._renderBanner(isPro, isLoggedIn)}
-
-      <!-- Authenticated: show account + tools -->
-      ${isLoggedIn
+      ${isPro
         ? html`
-            ${this._renderAccount(effectiveAuth, isPro, isActive)}
-            ${isPro
-              ? html`
-                  ${this._renderDashboardTools()}
-                  ${this._renderProSettings()}
-                  ${this._renderProSupport()}
-                `
-              : this._renderUpgradePrompt()}
-            ${this._renderFeaturesGrid()}
+            ${this._renderDashboardTools()}
+            ${this._renderProSettings()}
+            ${this._renderProSupport()}
           `
-        : this._renderSignInPrompt()}
+        : html`
+            ${this._renderUpgradePrompt()}
+            ${this._renderFeaturesGrid()}
+          `}
 
       <div class="toast ${this._toastMsg ? 'show' : ''}">${this._toastMsg}</div>
-    `;
-  }
-
-  private _renderIntegrationStatus(installed: boolean, loggedIn: boolean, isPro: boolean) {
-    if (loggedIn) {
-      const auth = this.auth!;
-      return html`
-        <div class="integration-status authenticated">
-          <div class="status-icon-wrap success">
-            <ha-icon icon="mdi:check-circle"></ha-icon>
-          </div>
-          <div class="status-body">
-            <h4>Connected via Ultra Card Connect</h4>
-            <p>
-              <strong>${auth.display_name || auth.username}${auth.email ? ` · ${auth.email}` : ''}</strong>
-            </p>
-            <p>Subscription: <strong>${isPro ? 'PRO' : 'Free'}</strong> ${isPro ? '⭐' : ''}</p>
-            <p class="status-note">
-              Manage in <a href="/config/integrations/integration/ultra_card_pro_cloud" target="_top">Settings → Integrations</a>
-            </p>
-          </div>
-        </div>
-      `;
-    }
-
-
-    return nothing;
-  }
-
-  private _renderBanner(isPro: boolean, isLoggedIn: boolean) {
-    if (!isLoggedIn) {
-      return html`
-        <div class="pro-banner disconnected">
-          <div class="banner-icon-wrap"><ha-icon icon="mdi:star-circle"></ha-icon></div>
-          <div class="banner-content">
-            <h3>Ultra Card Pro</h3>
-            <p>Professional card management and cloud backups</p>
-          </div>
-        </div>
-      `;
-    }
-
-    return html`
-      <div class="pro-banner ${isPro ? 'pro' : 'free'}">
-        <div class="banner-icon-wrap"><ha-icon icon="mdi:star-circle"></ha-icon></div>
-        <div class="banner-content">
-          <h3>
-            ${isPro ? html`<ha-icon icon="mdi:star"></ha-icon>` : ''}
-            Ultra Card Pro
-          </h3>
-          <p>${isPro ? 'Thank you for being a Pro member!' : 'Upgrade to unlock all features'}</p>
-        </div>
-        <div class="banner-side">
-          <div class="banner-badge">
-            ${isPro ? html`<ha-icon icon="mdi:check-decagram"></ha-icon>` : ''}
-            ${isPro ? 'PRO' : 'FREE'}
-          </div>
-          ${!isPro
-            ? html`
-                <a
-                  class="banner-upgrade-btn"
-                  href=${ULTRA_CARD_PRO_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ha-icon icon="mdi:star"></ha-icon>
-                  Upgrade to Pro
-                </a>
-              `
-            : nothing}
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderSignInPrompt() {
-    return html`
-      <div class="install-card sign-in-prompt">
-        <div class="cta-icon">
-          <ha-icon icon="mdi:account-arrow-right-outline"></ha-icon>
-        </div>
-        <h3>Sign in to access Pro features</h3>
-        <p>
-          Use the <strong>Account</strong> tab to sign in or create an account. Once connected,
-          you can upgrade to Pro and use dashboard snapshots, cloud backups, and all Pro modules.
-        </p>
-      </div>
-    `;
-  }
-
-  private _renderAccount(auth: ProAuthData, isPro: boolean, isActive: boolean) {
-    return html`
-      <div class="account-card">
-        <div class="section-header">
-          <div class="header-icon"><ha-icon icon="mdi:account-circle"></ha-icon></div>
-          <div class="header-content">
-            <h3>Account</h3>
-            <p>Your Ultra Card Connect account details</p>
-          </div>
-        </div>
-        <div class="account-row">
-          <span class="account-label">Display Name</span>
-          <span class="account-value">${auth.display_name || auth.username || '—'}</span>
-        </div>
-        ${auth.email
-          ? html`
-              <div class="account-row">
-                <span class="account-label">Email</span>
-                <span class="account-value">${auth.email}</span>
-              </div>
-            `
-          : ''}
-        <div class="account-row">
-          <span class="account-label">Subscription</span>
-          <span class="tier-badge ${isPro ? 'pro' : 'free'}">
-            ${isPro ? html`<ha-icon icon="mdi:star" style="--mdc-icon-size:14px"></ha-icon>` : ''}
-            ${auth.subscription_tier || 'free'}
-          </span>
-        </div>
-        <div class="account-row">
-          <span class="account-label">Status</span>
-          <span class="account-value">
-            <span class="status-dot ${isActive ? 'active' : 'inactive'}"></span>
-            ${auth.subscription_status || '—'}
-          </span>
-        </div>
-        ${auth.subscription_expires != null
-          ? html`
-              <div class="account-row">
-                <span class="account-label">Renews</span>
-                <span class="account-value">${this._formatExpiry(auth.subscription_expires)}</span>
-              </div>
-            `
-          : ''}
-      </div>
     `;
   }
 

@@ -28,6 +28,7 @@ import {
   selectEntitiesForPrompt,
   type SmartSanitizeContext,
 } from './uc-smart-module-sanitizer';
+import { createOutdatedConnectError, getConnectInfo, hasCapability } from './uc-connect-compatibility';
 
 const HA_SMART_STATUS_PATH = 'ultra_card_pro_cloud/smart/connectors/status';
 const HA_SMART_GENERATE_PATH = 'ultra_card_pro_cloud/smart/generate';
@@ -71,6 +72,17 @@ class UcSmartCardsService {
   ): Promise<SmartGenerateResponse> {
     if (hass?.callApi) {
       try {
+        // Connect installed but too old / missing smart capability → do not silently
+        // fall back to Assist; tell the user to update.
+        const connect = getConnectInfo(hass);
+        if (connect.installed && (connect.outdated || !hasCapability(hass, 'smart'))) {
+          const outdatedErr = createOutdatedConnectError(hass, 'Smart Cards');
+          if (outdatedErr) throw outdatedErr;
+          throw new Error(
+            'Smart Cards require an updated Ultra Card Connect integration. Please update Connect and try again.'
+          );
+        }
+
         const result = await hass.callApi(
           'POST',
           HA_SMART_GENERATE_PATH,
@@ -84,7 +96,11 @@ class UcSmartCardsService {
           response?: { status?: number };
           body?: unknown;
           message?: string;
+          code?: string;
         };
+        if (errObj.code === 'connect_outdated') {
+          throw err;
+        }
         const status = errObj.status ?? errObj.status_code ?? errObj.response?.status;
         if (status && status !== 404) {
           const bodyError =
@@ -98,6 +114,18 @@ class UcSmartCardsService {
           );
           (error as Error & { cause?: unknown }).cause = err;
           throw error;
+        }
+
+        // 404 with Connect installed (unexpected on current builds) → outdated messaging
+        const connect = getConnectInfo(hass);
+        if (connect.installed && status === 404) {
+          const outdatedErr = createOutdatedConnectError(hass, 'Smart Cards');
+          throw (
+            outdatedErr ||
+            new Error(
+              'Smart Cards endpoint is missing. Please update Ultra Card Connect and try again.'
+            )
+          );
         }
         // 404 means the installed integration does not have the HA Assist Smart endpoint yet.
       }

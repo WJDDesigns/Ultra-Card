@@ -6826,7 +6826,11 @@ export class UltraCardEditor extends LitElement {
       ucSnapshotSchedulerService.stop();
       this._snapshotSchedulerStatus = null;
 
-      await ucCloudAuthService.logout();
+      if (this.hass && ucCloudAuthService.isIntegrationInstalled(this.hass)) {
+        await ucCloudAuthService.logoutViaHass(this.hass);
+      } else {
+        await ucCloudAuthService.logout();
+      }
       console.log('✅ Successfully logged out');
     } catch (error) {
       console.error('❌ Logout failed:', error);

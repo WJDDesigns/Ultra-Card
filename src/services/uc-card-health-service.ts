@@ -4,6 +4,8 @@ import { configValidationService } from './config-validation-service';
 import { entityDetector } from './uc-entity-detector';
 import { getModuleRegistry } from '../modules/module-registry';
 import { ucCloudAuthService } from './uc-cloud-auth-service';
+import { getConnectInfo, MIN_CONNECT_VERSION } from './uc-connect-compatibility';
+import { localize } from '../localize/localize';
 
 export type HealthSeverity = 'error' | 'warning' | 'info';
 
@@ -207,17 +209,39 @@ class UcCardHealthService {
     // Ultra Card Connect (info/warning only — Hub/Pro features may still work offline)
     if (hass) {
       try {
+        const lang = (hass as any)?.locale?.language || 'en';
         const installed = ucCloudAuthService.isIntegrationInstalled(hass);
         if (!installed) {
           issues.push({
             id: 'connect-not-installed',
             severity: 'info',
             category: 'connect',
-            message:
-              'Ultra Card Connect is not installed. Hub sidebar and Pro sync require the integration.',
+            message: localize(
+              'editor.health.connect_not_installed',
+              lang,
+              'Ultra Card Connect is not installed. Hub sidebar and Pro sync require the integration.'
+            ),
             fixAction: 'open_connect',
           });
         } else {
+          const connectInfo = getConnectInfo(hass);
+          if (connectInfo.outdated) {
+            const current = connectInfo.integrationVersion || 'unknown';
+            issues.push({
+              id: 'connect-needs-update',
+              severity: 'warning',
+              category: 'connect',
+              message: localize(
+                'editor.health.connect_needs_update',
+                lang,
+                'Ultra Card Connect needs updating (installed {current}, required {required}+). Update the integration so Smart Cards, media upload, and Pro sync work reliably.'
+              )
+                .replace('{current}', current)
+                .replace('{required}', MIN_CONNECT_VERSION),
+              fixAction: 'open_connect',
+            });
+          }
+
           const user = ucCloudAuthService.checkIntegrationAuth(hass);
           const sensor = (hass as any).states?.['sensor.ultra_card_pro_cloud_authentication_status'];
           if (!user) {
@@ -227,8 +251,16 @@ class UcCardHealthService {
               severity: 'warning',
               category: 'connect',
               message: needsReauth
-                ? 'Ultra Card Connect needs re-authentication. Open the Hub Account tab to sign in again.'
-                : 'Ultra Card Connect is installed but not signed in. Open the Hub Account tab to connect.',
+                ? localize(
+                    'editor.health.connect_needs_reauth',
+                    lang,
+                    'Ultra Card Connect needs re-authentication. Open the Hub Account tab to sign in again.'
+                  )
+                : localize(
+                    'editor.health.connect_not_authenticated',
+                    lang,
+                    'Ultra Card Connect is installed but not signed in. Open the Hub Account tab to connect.'
+                  ),
               fixAction: 'open_connect',
             });
           }
