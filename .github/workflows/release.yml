@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  # Needed to dispatch announce-release.yml when this workflow creates the release
+  actions: write
 
 jobs:
   release:
@@ -131,6 +133,22 @@ jobs:
           cat release_notes.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      # Releases created below with the default GITHUB_TOKEN do NOT fire the
+      # `release: published` event (GitHub suppresses events from GITHUB_TOKEN
+      # to prevent workflow loops), so announce-release.yml never runs for
+      # tag-push releases. Record whether the release already exists so we can
+      # dispatch the announcement manually only when this workflow creates it.
+      - name: Check if release already exists
+        id: existing_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -147,9 +165,15 @@ jobs:
             uc-*.js
             uc-*.js.LICENSE.txt
 
-      # NOTE: Discord notifications are intentionally NOT sent from this
-      # workflow. The dedicated `announce-release.yml` workflow listens on the
-      # `release` event and is the single source of truth for the Discord
-      # announcement (one message per release, color-coded by stable/pre-release).
-      # Posting from here too would produce duplicate messages in the
-      # announcements channel.
+      # `announce-release.yml` is the single source of truth for the Discord
+      # announcement. When the release was created by the local release script
+      # (user credentials), the `release: published` event fires and announces
+      # on its own; this workflow only updates that release, so we must NOT
+      # dispatch here or Discord would get a duplicate. When the release is
+      # created by THIS workflow (plain tag push), GITHUB_TOKEN suppresses the
+      # event, so we dispatch the announcement manually.
+      - name: Announce release to Discord
+        if: steps.existing_release.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run announce-release.yml --repo "${{ github.repository }}"
