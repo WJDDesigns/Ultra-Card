@@ -1,5 +1,13 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.6.1
+
+**Critical hotfix — please update immediately if you installed 3.6.0.**
+
+### 🐛 Bug Fixes
+
+- **Fixed all cards failing to load after updating to 3.6.0** - 3.6.0 split the card into separate module files that HACS does not download, so every card showed "Loading chunk failed" errors (often pointing at an unrelated resource path) and nothing rendered. Ultra Card is once again shipped as a single self-contained `ultra-card.js`, exactly like 3.5.x. After updating, hard-refresh your browser (Ctrl/Cmd+Shift+R) or clear the app cache
+
 ## Version 3.6.0
 
 The stable 3.6.0 release. This rolls up everything from the 3.6.0 betas plus a redesigned Hub, billing management, Connect diagnostics, and a set of live update fixes. Thanks to everyone who tested the betas and reported issues.
