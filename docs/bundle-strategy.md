@@ -1,34 +1,62 @@
 # Bundle size and CI policy
 
-## Current behavior
+## Current behavior (single-file, since 3.6.1)
 
-- **Production artifact:** `dist/ultra-card.js` (webpack production build) plus colocated `uc-*.js` async chunks.
-- **CI / release:** After `npm run release:check`, workflows run a **bundle size check** that measures `dist/ultra-card.js` and verifies `uc-*.js` chunks exist. Size above **8 MiB** emits a warning (does not fail by default).
-- **Rationale:** Oversize is a **signal** (mobile download, parse cost). Fail-on-budget is a deliberate product decision once remediation paths are stable.
+- **Production artifact:** `dist/ultra-card.js` — a single self-contained bundle. No async chunks.
+- **Known exception:** the dynamic-weather Web Worker emits two `uc-*.js` files
+  (workers cannot be inlined by webpack). These were separate files in 3.5.x too;
+  when the worker file is unavailable (as on HACS installs),
+  `weather-effects-engine.ts` falls back to main-thread rendering.
+- **CI / release:** After `npm run release:check`, workflows run a **bundle size check** that fails on any `uc-mod-*`/`uc-editor` chunk or more than the two worker files, and warns above **16 MiB**.
 
-## Chunk strategy
+## Why single-file is mandatory (3.6.0 post-mortem)
 
-- **Core entry** (`ultra-card.js`) loads the card shell, shared utilities, and the module **manifest** only.
-- **Editor** loads via `getConfigElement()` → `loadUltraCardEditor()` → `uc-editor.js` (not on view-only dashboards).
-- **Modules** load via `module-loaders.ts` → `uc-mod-*.js` when `ModuleRegistry.ensureModuleLoaded` runs for a layout type.
-- **`publicPath: 'auto'`** resolves chunk URLs from the script that loaded the entry (HACS `/local/community/Ultra-Card/`, manual paths, panel sync). Do **not** hardcode `/local/community/...`.
-- **Background preload** defaults to `minimal` (`uc-module-preload-scheduler`). Override with `window.__ultraCardModulePreload = 'batched'|'full'` or `localStorage['ultra-card-module-preload']`.
+3.6.0 shipped true webpack async chunks (`uc-mod-*.js`, `uc-editor.js`, numbered
+vendor chunks) and broke **every HACS install** — no cards rendered. Two independent
+reasons, both structural:
 
-## Packaging
+1. **HACS only distributes one file.** `hacs.json` declares `"filename": "ultra-card.js"`,
+   and HACS downloads exactly that single asset into
+   `www/community/Ultra-Card/`. The `uc-*.js` chunks attached to the GitHub
+   release never reach users, so every chunk request 404s.
+2. **`publicPath: 'auto'` cannot resolve the chunk base URL.** Home Assistant
+   loads Lovelace resources via dynamic `import()`, so there is no `<script>`
+   tag and `document.currentScript` is `null` inside the (non-ESM) webpack
+   runtime. Webpack's fallback scans the page's script tags and picks an
+   unrelated one — in the field this resolved chunk URLs against
+   `/hacsfiles/lovelace-auto-entities/`.
 
-- `postbuild` copies `ultra-card.js`, `ultra-card-panel.js`, and all `uc-*.js` (+ licenses) to the repo root.
-- Release workflow attaches all `uc-*.js` assets (missing chunks caused the beta13 blank-module regression).
-- `deploy.js` / webpack auto-deploy / `sync:panel` must keep copying every `uc-*.js` beside the entry that loads them.
+Fixes enforcing this:
 
-## Rollback flags
+- `webpack.config.js` sets `module.parser.javascript.dynamicImportMode: 'eager'`,
+  so **all** `import()` calls are bundled into the entry (evaluation is still
+  deferred until first call — the lazy API surface is unchanged).
+- `src/modules/module-loaders.ts` and `src/editor/load-ultra-card-editor.ts`
+  use explicit `/* webpackMode: "eager" */` comments.
+- CI fails if any `uc-*.js` chunk is emitted.
 
-| Flag | Effect |
-|------|--------|
-| `window.__ultraCardLazyEditor = false` | Eager-import editor at card bootstrap (`src/index.ts`) |
-| `localStorage['ultra-card-module-preload'] = 'full'` | Restore legacy burst preload of all modules |
+## Re-enabling code splitting later (requirements)
+
+Do **not** reintroduce async chunks unless ALL of these are solved and verified
+on a clean HACS install:
+
+1. Distribution: `hacs.json` `zip_release: true` with a stable zip asset name
+   containing the entry plus all chunks (verify HACS extracts them next to
+   `ultra-card.js`), or an equivalent mechanism that puts every chunk on disk.
+2. Chunk URL resolution: emit real ESM (`output.module` + `experiments.outputModule`)
+   so webpack's auto public path can use `import.meta.url`, or set
+   `__webpack_public_path__` at runtime from a reliable source. Script-tag
+   scanning does not work — HA loads resources via dynamic `import()`.
+3. Update the CI bundle check accordingly.
+
+## Preload / rollback flags
+
+- Background module preload defaults to `minimal` (`uc-module-preload-scheduler`);
+  with eager bundling it only affects instantiation order, not network loads.
+- `window.__ultraCardLazyEditor = false` — eager-import editor at card bootstrap
+  (`src/index.ts`); harmless either way in the single-file build.
 
 ## Changing the policy
 
 1. Edit `.github/workflows/ci.yml` — the `Bundle size check` step.
-2. To **fail** on oversize, replace `echo "::warning::..."` with `exit 1`.
-3. Keep this document in sync with the threshold and fail/warn choice.
+2. Keep this document in sync with the threshold and fail/warn choice.

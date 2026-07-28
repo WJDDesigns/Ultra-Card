@@ -1,13 +1,14 @@
 /**
  * Memoized dynamic import boundary for the visual editor.
- * Keeps layout-tab / CodeMirror / TipTap out of the view-only dashboard bundle.
+ * Eager-bundled: HACS only distributes ultra-card.js, so the editor cannot
+ * live in a separate network-loaded chunk. Keeps the async API surface.
  */
 
 let loadPromise: Promise<typeof import('./ultra-card-editor')> | undefined;
 
 export function loadUltraCardEditor(): Promise<typeof import('./ultra-card-editor')> {
   if (!loadPromise) {
-    loadPromise = import(/* webpackChunkName: "editor" */ './ultra-card-editor');
+    loadPromise = import(/* webpackMode: "eager" */ './ultra-card-editor');
   }
   return loadPromise;
 }

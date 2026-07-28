@@ -2,278 +2,278 @@ import type { UltraModule } from './base-module';
 
 /**
  * Loader: returns the module instance when needed.
- * True webpack async chunks (uc-mod-*.js) — colocated with ultra-card.js for HACS.
- * See docs/bundle-strategy.md. Rollback: window.__ultraCardLazyModules = false
- * only affects preload policy; loaders always use dynamic import.
+ * Uses eager mode so everything is bundled into ultra-card.js: HACS only
+ * distributes the single file named in hacs.json, so network-loaded chunks
+ * 404 for every HACS install (3.6.0 regression). See docs/bundle-strategy.md.
  */
 export type ModuleLoader = () => Promise<UltraModule>;
 
-/** Core module loaders — one async chunk per module type. */
+/** Core module loaders. Eager-bundled into the main file while keeping the async API surface. */
 export const coreLoaders: Record<string, ModuleLoader> = {
   text: () =>
-    import(/* webpackChunkName: "mod-text" */ './text-module').then(m => new m.UltraTextModule()),
+    import(/* webpackMode: "eager" */ './text-module').then(m => new m.UltraTextModule()),
   separator: () =>
-    import(/* webpackChunkName: "mod-separator" */ './separator-module').then(
+    import(/* webpackMode: "eager" */ './separator-module').then(
       m => new m.UltraSeparatorModule()
     ),
   image: () =>
-    import(/* webpackChunkName: "mod-image" */ './image-module').then(m => new m.UltraImageModule()),
+    import(/* webpackMode: "eager" */ './image-module').then(m => new m.UltraImageModule()),
   info: () =>
-    import(/* webpackChunkName: "mod-info" */ './info-module').then(m => new m.UltraInfoModule()),
+    import(/* webpackMode: "eager" */ './info-module').then(m => new m.UltraInfoModule()),
   bar: () =>
-    import(/* webpackChunkName: "mod-bar" */ './bar-module').then(m => new m.UltraBarModule()),
+    import(/* webpackMode: "eager" */ './bar-module').then(m => new m.UltraBarModule()),
   gauge: () =>
-    import(/* webpackChunkName: "mod-gauge" */ './gauge-module').then(m => new m.UltraGaugeModule()),
+    import(/* webpackMode: "eager" */ './gauge-module').then(m => new m.UltraGaugeModule()),
   icon: () =>
-    import(/* webpackChunkName: "mod-icon" */ './icon-module').then(m => new m.UltraIconModule()),
+    import(/* webpackMode: "eager" */ './icon-module').then(m => new m.UltraIconModule()),
   button: () =>
-    import(/* webpackChunkName: "mod-button" */ './button-module').then(
+    import(/* webpackMode: "eager" */ './button-module').then(
       m => new m.UltraButtonModule()
     ),
   spinbox: () =>
-    import(/* webpackChunkName: "mod-spinbox" */ './spinbox-module').then(
+    import(/* webpackMode: "eager" */ './spinbox-module').then(
       m => new m.UltraSpinboxModule()
     ),
   markdown: () =>
-    import(/* webpackChunkName: "mod-markdown" */ './markdown-module').then(
+    import(/* webpackMode: "eager" */ './markdown-module').then(
       m => new m.UltraMarkdownModule()
     ),
   horizontal: () =>
-    import(/* webpackChunkName: "mod-horizontal" */ './horizontal-module').then(
+    import(/* webpackMode: "eager" */ './horizontal-module').then(
       m => new m.UltraHorizontalModule()
     ),
   vertical: () =>
-    import(/* webpackChunkName: "mod-vertical" */ './vertical-module').then(
+    import(/* webpackMode: "eager" */ './vertical-module').then(
       m => new m.UltraVerticalModule()
     ),
   stack: () =>
-    import(/* webpackChunkName: "mod-stack" */ './stack-module').then(m => new m.UltraStackModule()),
+    import(/* webpackMode: "eager" */ './stack-module').then(m => new m.UltraStackModule()),
   accordion: () =>
-    import(/* webpackChunkName: "mod-accordion" */ './accordion-module').then(
+    import(/* webpackMode: "eager" */ './accordion-module').then(
       m => new m.UltraAccordionModule()
     ),
   popup: () =>
-    import(/* webpackChunkName: "mod-popup" */ './popup-module').then(m => new m.UltraPopupModule()),
+    import(/* webpackMode: "eager" */ './popup-module').then(m => new m.UltraPopupModule()),
   slider: () =>
-    import(/* webpackChunkName: "mod-slider" */ './slider-module').then(
+    import(/* webpackMode: "eager" */ './slider-module').then(
       m => new m.UltraSliderModule()
     ),
   slider_control: () =>
-    import(/* webpackChunkName: "mod-slider-control" */ './slider-control-module').then(
+    import(/* webpackMode: "eager" */ './slider-control-module').then(
       m => new m.UltraSliderControlModule()
     ),
   pagebreak: () =>
-    import(/* webpackChunkName: "mod-pagebreak" */ './pagebreak-module').then(
+    import(/* webpackMode: "eager" */ './pagebreak-module').then(
       m => new m.UltraPageBreakModule()
     ),
   camera: () =>
-    import(/* webpackChunkName: "mod-camera" */ './camera-module').then(
+    import(/* webpackMode: "eager" */ './camera-module').then(
       m => new m.UltraCameraModule()
     ),
   graphs: () =>
-    import(/* webpackChunkName: "mod-graphs" */ './graphs-module').then(
+    import(/* webpackMode: "eager" */ './graphs-module').then(
       m => new m.UltraGraphsModule()
     ),
   dropdown: () =>
-    import(/* webpackChunkName: "mod-dropdown" */ './dropdown-module').then(
+    import(/* webpackMode: "eager" */ './dropdown-module').then(
       m => new m.UltraDropdownModule()
     ),
   light: () =>
-    import(/* webpackChunkName: "mod-light" */ './light-module').then(m => new m.UltraLightModule()),
+    import(/* webpackMode: "eager" */ './light-module').then(m => new m.UltraLightModule()),
   map: () =>
-    import(/* webpackChunkName: "mod-map" */ './map-module').then(m => new m.UltraMapModule()),
+    import(/* webpackMode: "eager" */ './map-module').then(m => new m.UltraMapModule()),
   animated_clock: () =>
-    import(/* webpackChunkName: "mod-animated-clock" */ './animated-clock-module').then(
+    import(/* webpackMode: "eager" */ './animated-clock-module').then(
       m => new m.UltraAnimatedClockModule()
     ),
   animated_weather: () =>
-    import(/* webpackChunkName: "mod-animated-weather" */ './animated-weather-module').then(
+    import(/* webpackMode: "eager" */ './animated-weather-module').then(
       m => new m.UltraAnimatedWeatherModule()
     ),
   animated_forecast: () =>
-    import(/* webpackChunkName: "mod-animated-forecast" */ './animated-forecast-module').then(
+    import(/* webpackMode: "eager" */ './animated-forecast-module').then(
       m => new m.UltraAnimatedForecastModule()
     ),
   external_card: () =>
-    import(/* webpackChunkName: "mod-external-card" */ './external-card-module').then(
+    import(/* webpackMode: "eager" */ './external-card-module').then(
       m => new m.UltraExternalCardModule()
     ),
   native_card: () =>
-    import(/* webpackChunkName: "mod-native-card" */ './native-card-module').then(
+    import(/* webpackMode: "eager" */ './native-card-module').then(
       m => new m.UltraNativeCardModule()
     ),
   video_bg: () =>
-    import(/* webpackChunkName: "mod-video-bg" */ './video-bg-module').then(
+    import(/* webpackMode: "eager" */ './video-bg-module').then(
       m => new m.UltraVideoBgModule()
     ),
   climate: () =>
-    import(/* webpackChunkName: "mod-climate" */ './climate-module').then(
+    import(/* webpackMode: "eager" */ './climate-module').then(
       m => new m.UltraClimateModule()
     ),
   dynamic_weather: () =>
-    import(/* webpackChunkName: "mod-dynamic-weather" */ './dynamic-weather-module').then(
+    import(/* webpackMode: "eager" */ './dynamic-weather-module').then(
       m => new m.UltraDynamicWeatherModule()
     ),
   background: () =>
-    import(/* webpackChunkName: "mod-background" */ './background-module').then(
+    import(/* webpackMode: "eager" */ './background-module').then(
       m => new m.UltraBackgroundModule()
     ),
   status_summary: () =>
-    import(/* webpackChunkName: "mod-status-summary" */ './status-summary-module').then(
+    import(/* webpackMode: "eager" */ './status-summary-module').then(
       m => new m.UltraStatusSummaryModule()
     ),
   toggle: () =>
-    import(/* webpackChunkName: "mod-toggle" */ './toggle-module').then(
+    import(/* webpackMode: "eager" */ './toggle-module').then(
       m => new m.UltraToggleModule()
     ),
   tabs: () =>
-    import(/* webpackChunkName: "mod-tabs" */ './tabs-module').then(m => new m.UltraTabsModule()),
+    import(/* webpackMode: "eager" */ './tabs-module').then(m => new m.UltraTabsModule()),
   calendar: () =>
-    import(/* webpackChunkName: "mod-calendar" */ './calendar-module').then(
+    import(/* webpackMode: "eager" */ './calendar-module').then(
       m => new m.UltraCalendarModule()
     ),
   sports_score: () =>
-    import(/* webpackChunkName: "mod-sports-score" */ './sports-score-module').then(
+    import(/* webpackMode: "eager" */ './sports-score-module').then(
       m => new m.UltraSportsScoreModule()
     ),
   badge_of_honor: () =>
-    import(/* webpackChunkName: "mod-badge-of-honor" */ './badge-of-honor-module').then(
+    import(/* webpackMode: "eager" */ './badge-of-honor-module').then(
       m => new m.UltraBadgeOfHonorModule()
     ),
   grid: () =>
-    import(/* webpackChunkName: "mod-grid" */ './grid-module').then(m => new m.UltraGridModule()),
+    import(/* webpackMode: "eager" */ './grid-module').then(m => new m.UltraGridModule()),
   vacuum: () =>
-    import(/* webpackChunkName: "mod-vacuum" */ './vacuum-module').then(
+    import(/* webpackMode: "eager" */ './vacuum-module').then(
       m => new m.UltraVacuumModule()
     ),
   media_player: () =>
-    import(/* webpackChunkName: "mod-media-player" */ './media-player-module').then(
+    import(/* webpackMode: "eager" */ './media-player-module').then(
       m => new m.UltraMediaPlayerModule()
     ),
   people: () =>
-    import(/* webpackChunkName: "mod-people" */ './people-module').then(
+    import(/* webpackMode: "eager" */ './people-module').then(
       m => new m.UltraPeopleModule()
     ),
   navigation: () =>
-    import(/* webpackChunkName: "mod-navigation" */ './navigation-module').then(
+    import(/* webpackMode: "eager" */ './navigation-module').then(
       m => new m.UltraNavigationModule()
     ),
   timer: () =>
-    import(/* webpackChunkName: "mod-timer" */ './timer-module').then(m => new m.UltraTimerModule()),
+    import(/* webpackMode: "eager" */ './timer-module').then(m => new m.UltraTimerModule()),
   cover: () =>
-    import(/* webpackChunkName: "mod-cover" */ './cover-module').then(m => new m.UltraCoverModule()),
+    import(/* webpackMode: "eager" */ './cover-module').then(m => new m.UltraCoverModule()),
   fan: () =>
-    import(/* webpackChunkName: "mod-fan" */ './fan-module').then(m => new m.UltraFanModule()),
+    import(/* webpackMode: "eager" */ './fan-module').then(m => new m.UltraFanModule()),
   lock: () =>
-    import(/* webpackChunkName: "mod-lock" */ './lock-module').then(m => new m.UltraLockModule()),
+    import(/* webpackMode: "eager" */ './lock-module').then(m => new m.UltraLockModule()),
   'dynamic-list': () =>
-    import(/* webpackChunkName: "mod-dynamic-list" */ './dynamic-list-module').then(
+    import(/* webpackMode: "eager" */ './dynamic-list-module').then(
       m => new m.UltraDynamicListModule()
     ),
   qr_code: () =>
-    import(/* webpackChunkName: "mod-qr-code" */ './qr-code-module').then(
+    import(/* webpackMode: "eager" */ './qr-code-module').then(
       m => new m.UltraQrCodeModule()
     ),
   energy_display: () =>
-    import(/* webpackChunkName: "mod-energy-display" */ './energy-display-module').then(
+    import(/* webpackMode: "eager" */ './energy-display-module').then(
       m => new m.UltraEnergyDisplayModule()
     ),
   living_canvas: () =>
-    import(/* webpackChunkName: "mod-living-canvas" */ './living-canvas-module').then(
+    import(/* webpackMode: "eager" */ './living-canvas-module').then(
       m => new m.UltraLivingCanvasModule()
     ),
   text_input: () =>
-    import(/* webpackChunkName: "mod-text-input" */ './text-input-module').then(
+    import(/* webpackMode: "eager" */ './text-input-module').then(
       m => new m.UltraTextInputModule()
     ),
   datetime_input: () =>
-    import(/* webpackChunkName: "mod-datetime-input" */ './datetime-input-module').then(
+    import(/* webpackMode: "eager" */ './datetime-input-module').then(
       m => new m.UltraDatetimeInputModule()
     ),
   number_input: () =>
-    import(/* webpackChunkName: "mod-number-input" */ './number-input-module').then(
+    import(/* webpackMode: "eager" */ './number-input-module').then(
       m => new m.UltraNumberInputModule()
     ),
   slider_input: () =>
-    import(/* webpackChunkName: "mod-slider-input" */ './slider-input-module').then(
+    import(/* webpackMode: "eager" */ './slider-input-module').then(
       m => new m.UltraSliderInputModule()
     ),
   select_input: () =>
-    import(/* webpackChunkName: "mod-select-input" */ './select-input-module').then(
+    import(/* webpackMode: "eager" */ './select-input-module').then(
       m => new m.UltraSelectInputModule()
     ),
   boolean_input: () =>
-    import(/* webpackChunkName: "mod-boolean-input" */ './boolean-input-module').then(
+    import(/* webpackMode: "eager" */ './boolean-input-module').then(
       m => new m.UltraBooleanInputModule()
     ),
   button_input: () =>
-    import(/* webpackChunkName: "mod-button-input" */ './button-input-module').then(
+    import(/* webpackMode: "eager" */ './button-input-module').then(
       m => new m.UltraButtonInputModule()
     ),
   counter_input: () =>
-    import(/* webpackChunkName: "mod-counter-input" */ './counter-input-module').then(
+    import(/* webpackMode: "eager" */ './counter-input-module').then(
       m => new m.UltraCounterInputModule()
     ),
   color_input: () =>
-    import(/* webpackChunkName: "mod-color-input" */ './color-input-module').then(
+    import(/* webpackMode: "eager" */ './color-input-module').then(
       m => new m.UltraColorInputModule()
     ),
   activity_feed: () =>
-    import(/* webpackChunkName: "mod-activity-feed" */ './activity-feed-module').then(
+    import(/* webpackMode: "eager" */ './activity-feed-module').then(
       m => new m.UltraActivityFeedModule()
     ),
   alert_center: () =>
-    import(/* webpackChunkName: "mod-alert-center" */ './alert-center-module').then(
+    import(/* webpackMode: "eager" */ './alert-center-module').then(
       m => new m.UltraAlertCenterModule()
     ),
   area_summary: () =>
-    import(/* webpackChunkName: "mod-area-summary" */ './area-summary-module').then(
+    import(/* webpackMode: "eager" */ './area-summary-module').then(
       m => new m.UltraAreaSummaryModule()
     ),
   virtual_pet: () =>
-    import(/* webpackChunkName: "mod-virtual-pet" */ './virtual-pet-module').then(
+    import(/* webpackMode: "eager" */ './virtual-pet-module').then(
       m => new m.UltraVirtualPetModule()
     ),
   alarm_panel: () =>
-    import(/* webpackChunkName: "mod-alarm-panel" */ './alarm-panel-module').then(
+    import(/* webpackMode: "eager" */ './alarm-panel-module').then(
       m => new m.UltraAlarmPanelModule()
     ),
   solar_analytics: () =>
-    import(/* webpackChunkName: "mod-solar-analytics" */ './solar-analytics-module').then(
+    import(/* webpackMode: "eager" */ './solar-analytics-module').then(
       m => new m.UltraSolarAnalyticsModule()
     ),
   screensaver: () =>
-    import(/* webpackChunkName: "mod-screensaver" */ './screensaver-module').then(
+    import(/* webpackMode: "eager" */ './screensaver-module').then(
       m => new m.UltraScreensaverModule()
     ),
   lunar_phase: () =>
-    import(/* webpackChunkName: "mod-lunar-phase" */ './lunar-phase-module').then(
+    import(/* webpackMode: "eager" */ './lunar-phase-module').then(
       m => new m.UltraLunarPhaseModule()
     ),
   battery_monitor: () =>
-    import(/* webpackChunkName: "mod-battery-monitor" */ './battery-monitor-module').then(
+    import(/* webpackMode: "eager" */ './battery-monitor-module').then(
       m => new m.UltraBatteryMonitorModule()
     ),
   auto_entity_list: () =>
-    import(/* webpackChunkName: "mod-auto-entity-list" */ './auto-entity-list-module').then(
+    import(/* webpackMode: "eager" */ './auto-entity-list-module').then(
       m => new m.UltraAutoEntityListModule()
     ),
   update_monitor: () =>
-    import(/* webpackChunkName: "mod-update-monitor" */ './update-monitor-module').then(
+    import(/* webpackMode: "eager" */ './update-monitor-module').then(
       m => new m.UltraUpdateMonitorModule()
     ),
   clock: () =>
-    import(/* webpackChunkName: "mod-clock" */ './clock-module').then(m => new m.UltraClockModule()),
+    import(/* webpackMode: "eager" */ './clock-module').then(m => new m.UltraClockModule()),
   humidifier: () =>
-    import(/* webpackChunkName: "mod-humidifier" */ './humidifier-module').then(
+    import(/* webpackMode: "eager" */ './humidifier-module').then(
       m => new m.UltraHumidifierModule()
     ),
   todo_list: () =>
-    import(/* webpackChunkName: "mod-todo-list" */ './todo-list-module').then(
+    import(/* webpackMode: "eager" */ './todo-list-module').then(
       m => new m.UltraTodoListModule()
     ),
   weather: () =>
-    import(/* webpackChunkName: "mod-weather" */ './weather-module').then(
+    import(/* webpackMode: "eager" */ './weather-module').then(
       m => new m.UltraWeatherModule()
     ),
 };

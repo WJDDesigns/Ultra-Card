@@ -35,16 +35,22 @@ jobs:
         run: |
           SIZE=$(stat -c%s dist/ultra-card.js)
           echo "Bundle size: $SIZE bytes"
+          # HACS only distributes the single ultra-card.js file, so async chunks
+          # 404 at runtime for every HACS install (broke 3.6.0). The build must
+          # be self-contained. Only exception: the dynamic-weather Web Worker
+          # pair (workers cannot be inlined; the engine falls back to
+          # main-thread rendering when the worker file is unavailable).
+          MOD_COUNT=$(ls dist/uc-mod-*.js dist/uc-editor.js 2>/dev/null | wc -l | tr -d ' ')
           CHUNK_COUNT=$(ls dist/uc-*.js 2>/dev/null | wc -l | tr -d ' ')
-          MOD_COUNT=$(ls dist/uc-mod-*.js 2>/dev/null | wc -l | tr -d ' ')
-          echo "uc-* chunks: $CHUNK_COUNT (mod-*: $MOD_COUNT)"
-          if [ "$CHUNK_COUNT" -lt 1 ]; then
-            echo "::error::Expected uc-*.js async chunks after lazy-load build; found none."
+          echo "uc-* chunks: $CHUNK_COUNT (module/editor chunks: $MOD_COUNT)"
+          if [ "$MOD_COUNT" -gt 0 ]; then
+            echo "::error::Found uc-mod-*/uc-editor async chunks; HACS cannot distribute them (single-file only). See docs/bundle-strategy.md."
             exit 1
           fi
-          if [ ! -f dist/uc-editor.js ]; then
-            echo "::warning::uc-editor.js missing — editor may still be in the main bundle."
+          if [ "$CHUNK_COUNT" -gt 2 ]; then
+            echo "::error::Found $CHUNK_COUNT uc-*.js chunks; only the dynamic-weather worker pair is allowed. See docs/bundle-strategy.md."
+            exit 1
           fi
-          if [ "$SIZE" -gt 8388608 ]; then
-            echo "::warning::Bundle size ($SIZE bytes) exceeds 8MB. Consider lazy-loading more modules."
+          if [ "$SIZE" -gt 16777216 ]; then
+            echo "::warning::Bundle size ($SIZE bytes) exceeds 16MB."
           fi

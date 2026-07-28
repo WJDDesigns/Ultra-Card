@@ -59,6 +59,16 @@ module.exports = (env, argv) => {
       'ultra-card-panel': './src/panels/ultra-card-dashboard.ts',
     },
     module: {
+      // HACS only distributes the single file named in hacs.json (ultra-card.js),
+      // so async chunks 404 on every HACS install. Additionally, HA loads the
+      // resource via dynamic import() (no script tag), which breaks webpack's
+      // publicPath:'auto' chunk URL resolution (it falls back to an unrelated
+      // <script> tag on the page). Force ALL dynamic imports to be eager-bundled.
+      parser: {
+        javascript: {
+          dynamicImportMode: 'eager',
+        },
+      },
       rules: [
         {
           test: /\.tsx?$/,
@@ -89,8 +99,6 @@ module.exports = (env, argv) => {
       filename: '[name].js',
       path: path.resolve(__dirname, 'dist'),
       chunkFilename: 'uc-[name].js',
-      // Derive chunk base URL from the script that loaded the entry (HACS / local / subpaths).
-      publicPath: 'auto',
     },
     optimization: {
       usedExports: true,
