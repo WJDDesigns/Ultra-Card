@@ -58,6 +58,7 @@ import { UC_ULTRA_CARD_HASS_READY } from '../utils/uc-pro-banner';
 import { loadUltraCardEditor } from '../editor/load-ultra-card-editor';
 import { externalCardContainerService } from '../services/external-card-container-service';
 import { ucCardInstanceRegistry } from '../services/uc-card-instance-registry';
+import { ucTimeMachineService } from '../services/uc-time-machine-service';
 
 @customElement('ultra-card')
 export class UltraCard extends LitElement {
@@ -178,9 +179,31 @@ export class UltraCard extends LitElement {
     livingCanvasModules: Array<{ id: string; module: CardModule }>;
     backgroundModules: Array<{ id: string; module: CardModule }>;
     navigationModules: Array<{ id: string; module: CardModule }>;
+    timeMachineModules: Array<{ id: string; module: CardModule }>;
     /** When true, any hass change should re-render (markdown / Jinja not fully tracked in entity set). */
     requiresHassBroadUpdates: boolean;
   } | null = null;
+
+  /** True while a Time Machine module is scrubbed into the past (this render). */
+  private _timeTravelActive = false;
+  private _timeMachineUnsub: (() => void) | undefined;
+  private _tmFallbackKey = '';
+
+  /** Normalize the Time Machine mode (maps deprecated pre-release scope values). */
+  private _tmMode(module: CardModule): 'dashboard' | 'card' {
+    const m = module as any;
+    if (m.mode === 'card' || m.mode === 'dashboard') return m.mode;
+    return m.scope === 'independent' ? 'card' : 'dashboard';
+  }
+
+  /** Stable key identifying this card in view-wide Time Machine follower contexts. */
+  private _tmCardKey(): string {
+    if (this._instanceId) return this._instanceId;
+    if (!this._tmFallbackKey) {
+      this._tmFallbackKey = `tm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+    return this._tmFallbackKey;
+  }
 
   private _getConfigCache(): NonNullable<UltraCard['_configCache']> {
     const layout = this.config?.layout;
@@ -196,6 +219,7 @@ export class UltraCard extends LitElement {
     const livingCanvasModules: Array<{ id: string; module: CardModule }> = [];
     const backgroundModules: Array<{ id: string; module: CardModule }> = [];
     const navigationModules: Array<{ id: string; module: CardModule }> = [];
+    const timeMachineModules: Array<{ id: string; module: CardModule }> = [];
 
     if (layout?.rows) {
       for (const row of layout.rows) {
@@ -208,6 +232,7 @@ export class UltraCard extends LitElement {
             if (mod.type === 'living_canvas') livingCanvasModules.push({ id: mod.id, module: mod });
             if (mod.type === 'background') backgroundModules.push({ id: mod.id, module: mod });
             if (mod.type === 'navigation') navigationModules.push({ id: mod.id, module: mod });
+            if (mod.type === 'time_machine') timeMachineModules.push({ id: mod.id, module: mod });
           }
         }
       }
@@ -269,6 +294,7 @@ export class UltraCard extends LitElement {
       livingCanvasModules,
       backgroundModules,
       navigationModules,
+      timeMachineModules,
       requiresHassBroadUpdates,
     };
     return this._configCache;
@@ -301,6 +327,9 @@ export class UltraCard extends LitElement {
     // Register as a shared logic/template consumer so disconnecting this card does not
     // tear down WebSocket template subscriptions still needed by other ultra-cards.
     logicService.registerConsumer();
+
+    // Re-render when a Time Machine scrub/playback tick changes the timeline.
+    this._timeMachineUnsub = ucTimeMachineService.subscribe(() => this.requestUpdate());
 
     // Same pattern for animated clock intervals + tick listeners (multi-card safe).
     clockUpdateService.registerConsumer();
@@ -529,6 +558,17 @@ export class UltraCard extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     ucCardInstanceRegistry.unregister(this);
+
+    // Tear down Time Machine subscription and any active scrub contexts
+    this._timeMachineUnsub?.();
+    this._timeMachineUnsub = undefined;
+    if (this._configCache?.timeMachineModules?.length) {
+      for (const { id } of this._configCache.timeMachineModules) {
+        ucTimeMachineService.releaseModule(id);
+      }
+    }
+    ucTimeMachineService.releaseFollower(this._tmCardKey());
+    this._timeTravelActive = false;
     if (this._moduleStylesRefreshTimer != null) {
       clearTimeout(this._moduleStylesRefreshTimer);
       this._moduleStylesRefreshTimer = null;
@@ -1401,12 +1441,49 @@ export class UltraCard extends LitElement {
     const cache = this._getConfigCache();
     const { onlyInvisibleModules, onlyPopupModules, allPopupsInvisible } = cache;
 
+    // Time Machine (PRO): when a scrub is active, swap in a historical hass so
+    // every module (and logic evaluation) renders from recorder history.
+    let effectiveHass = hass;
+    if (cache.timeMachineModules.length > 0 && this._hasProAccess()) {
+      const rewindIds: string[] = [];
+      for (const { id, module } of cache.timeMachineModules) {
+        // Only 'dashboard' mode is wired here; 'card' mode registers itself
+        // from the module so it stays self-contained.
+        if (this._tmMode(module) !== 'dashboard') continue;
+        ucTimeMachineService.syncCardContext(id, hass, cache.relevantEntityIds, {
+          ...(module as any),
+          scope: 'view',
+        });
+        rewindIds.push(id);
+      }
+      effectiveHass = ucTimeMachineService.buildHass(hass, rewindIds);
+    }
+    // Follow a view-scope scrubber hosted on another card (also prefetches this
+    // card's history so the view scrubber can show its event markers).
+    if (effectiveHass === hass) {
+      effectiveHass = ucTimeMachineService.followView(
+        this._tmCardKey(),
+        hass,
+        cache.relevantEntityIds,
+        cache.timeMachineModules.map(tm => tm.id)
+      );
+    }
+    {
+      const timeTravelActive = effectiveHass !== hass;
+      if (timeTravelActive || this._timeTravelActive) {
+        // Keep visibility logic in sync with whichever hass we render from,
+        // including the render that returns to live.
+        logicService.setHass(effectiveHass);
+      }
+      this._timeTravelActive = timeTravelActive;
+    }
+
     // Use cached/cheap environment checks instead of DOM traversal on every render
     const isHaPreview = this._isEditorPreviewCard;
     const isInCardEditor = isHaPreview || !!document.querySelector('hui-dialog-edit-card');
     const isDashboardEditMode = this._getCachedDashboardEditMode();
     const breakpoint = responsiveDesignService.getCurrentBreakpoint();
-    const renderCtx: RenderContext = { isHaPreview, isDashboardEditMode, breakpoint, hass };
+    const renderCtx: RenderContext = { isHaPreview, isDashboardEditMode, breakpoint, hass: effectiveHass };
 
     // Track invisible state; parent visibility side-effects are handled in updated()
     const isNowInvisible = onlyInvisibleModules && !isInCardEditor && !isDashboardEditMode;
@@ -2752,10 +2829,20 @@ export class UltraCard extends LitElement {
           </style>`
         : '';
 
+    // While time-traveling, freeze interactions on everything except the Time
+    // Machine scrubber itself — actions must not fire against historical state.
+    const timeTravelFrozen = this._timeTravelActive && module.type !== 'time_machine';
+    const finalWrapStyles = timeTravelFrozen
+      ? `${moduleWrapStyles}${moduleWrapStyles ? '; ' : ''}pointer-events: none`
+      : moduleWrapStyles;
+
     // Return module content without forcing DOM replacement
     return html`
       ${moduleResponsiveStyleTag}
-      <div class="uc-module-wrap responsive-mod-${moduleId}" style=${moduleWrapStyles}>
+      <div
+        class="uc-module-wrap responsive-mod-${moduleId} ${timeTravelFrozen ? 'uc-tm-frozen' : ''}"
+        style=${finalWrapStyles}
+      >
         ${moduleContent}
       </div>
     `;

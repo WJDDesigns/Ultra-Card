@@ -170,6 +170,12 @@ function pruneManaged(destDir, wantedNames) {
   const wanted = new Set(wantedNames);
   if (!fs.existsSync(destDir)) return;
   for (const name of fs.readdirSync(destDir)) {
+    // HACS writes precompressed .gz siblings; HA serves those to any gzip-accepting
+    // client (i.e. every browser) INSTEAD of our freshly deployed .js. Always remove
+    // them, or browsers keep loading the stale HACS build no matter what we deploy.
+    const staleGzip =
+      name.endsWith('.js.gz') &&
+      (name.startsWith('ultra-card') || name.startsWith('uc-'));
     const managed =
       name === 'ultra-card.js' ||
       name === 'ultra-card.js.LICENSE.txt' ||
@@ -179,7 +185,7 @@ function pruneManaged(destDir, wantedNames) {
       (name.startsWith('uc-') && (name.endsWith('.js') || name.endsWith('.js.LICENSE.txt')));
     // Keep panel-assets.json; rewrite happens after sync when requested
     if (name === 'panel-assets.json') continue;
-    if (managed && !wanted.has(name)) {
+    if (staleGzip || (managed && !wanted.has(name))) {
       fs.unlinkSync(path.join(destDir, name));
     }
   }

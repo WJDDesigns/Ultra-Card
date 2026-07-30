@@ -64,11 +64,13 @@ export class UcModulesSelectorTab extends LitElement {
     const hasSearchQuery = this._moduleSearchQuery.trim() !== '';
     const standardModules = this.allModules.filter(m => !m.tags?.includes('pro'));
     const proModules = this.allModules.filter(m => m.tags?.includes('pro'));
+    // Search is scoped to the selected module type so Standard/PRO behave like
+    // two distinct libraries rather than a display filter.
+    const tierModules =
+      this._activeModuleCategoryTab === 'standard' ? standardModules : proModules;
     const filteredModules = hasSearchQuery
-      ? this._filterBySearch(this.allModules, this._moduleSearchQuery)
-      : this._activeModuleCategoryTab === 'standard'
-        ? standardModules
-        : proModules;
+      ? this._filterBySearch(tierModules, this._moduleSearchQuery)
+      : tierModules;
 
     const sortByTitle = (a: ModuleManifest, b: ModuleManifest) =>
       (a.title || '').localeCompare(b.title || '');
@@ -109,28 +111,11 @@ export class UcModulesSelectorTab extends LitElement {
 
     return html`
       <div class="modules-tab-container">
+        ${this._renderTypeSwitch(standardModules.length, proModules.length)}
         ${this._renderSearchBar()}
         ${hasSearchQuery
           ? this._renderSearchResults(filteredModules)
           : html`
-              <div class="module-category-tabs">
-                <button
-                  class="category-tab ${this._activeModuleCategoryTab === 'standard' ? 'active' : ''}"
-                  @click=${() => (this._activeModuleCategoryTab = 'standard')}
-                >
-                  <ha-icon icon="mdi:puzzle"></ha-icon>
-                  <span>Standard</span>
-                </button>
-                <button
-                  class="category-tab pro-tab ${this._activeModuleCategoryTab === 'pro' ? 'active' : ''}"
-                  @click=${() => (this._activeModuleCategoryTab = 'pro')}
-                >
-                  <ha-icon icon="mdi:star-circle"></ha-icon>
-                  <span>PRO</span>
-                  <span class="pro-badge-mini">⭐</span>
-                </button>
-              </div>
-
               ${this._activeModuleCategoryTab === 'pro' && !this.isPro
                 ? this._renderProUpgradePrompt()
                 : html`
@@ -240,7 +225,46 @@ export class UcModulesSelectorTab extends LitElement {
     `;
   }
 
+  /**
+   * Segmented Standard / PRO switcher. Rendered above the search bar so the
+   * two module libraries read as distinct types; search and category content
+   * below are always scoped to the selected type.
+   */
+  private _renderTypeSwitch(standardCount: number, proCount: number): TemplateResult {
+    const active = this._activeModuleCategoryTab;
+    return html`
+      <div class="module-type-switch" role="tablist" aria-label="Module type">
+        <button
+          class="type-option ${active === 'standard' ? 'active' : ''}"
+          role="tab"
+          aria-selected=${active === 'standard' ? 'true' : 'false'}
+          @click=${() => (this._activeModuleCategoryTab = 'standard')}
+        >
+          <ha-icon icon="mdi:puzzle"></ha-icon>
+          <span class="type-label">Standard</span>
+          <span class="type-count">${standardCount}</span>
+        </button>
+        <button
+          class="type-option pro ${active === 'pro' ? 'active' : ''}"
+          role="tab"
+          aria-selected=${active === 'pro' ? 'true' : 'false'}
+          @click=${() => (this._activeModuleCategoryTab = 'pro')}
+        >
+          <ha-icon icon="mdi:star-circle"></ha-icon>
+          <span class="type-label">PRO</span>
+          <span class="type-count">${proCount}</span>
+        </button>
+      </div>
+      <p class="type-caption">
+        ${active === 'standard'
+          ? 'Core modules included with Ultra Card'
+          : 'Premium modules included with an Ultra Card PRO subscription'}
+      </p>
+    `;
+  }
+
   private _renderSearchBar(): TemplateResult {
+    const tierLabel = this._activeModuleCategoryTab === 'pro' ? 'PRO' : 'Standard';
     return html`
       <div class="search-bar-container">
         <div class="search-bar">
@@ -248,7 +272,7 @@ export class UcModulesSelectorTab extends LitElement {
           <input
             id="module-search-input"
             type="text"
-            placeholder="Search modules..."
+            placeholder="Search ${tierLabel} modules..."
             .value=${this._moduleSearchQuery}
             @input=${(e: Event) => {
               const target = e.target as HTMLInputElement;
@@ -275,11 +299,12 @@ export class UcModulesSelectorTab extends LitElement {
   }
 
   private _renderSearchResults(modules: ModuleManifest[]): TemplateResult {
+    const tierLabel = this._activeModuleCategoryTab === 'pro' ? 'PRO' : 'Standard';
     if (modules.length === 0) {
       return html`
         <div class="search-results-empty">
           <ha-icon icon="mdi:magnify-close"></ha-icon>
-          <p>No modules found matching "${this._moduleSearchQuery}"</p>
+          <p>No ${tierLabel} modules found matching "${this._moduleSearchQuery}"</p>
           <button class="clear-search-btn-large" @click=${() => (this._moduleSearchQuery = '')}>
             Clear Search
           </button>
@@ -289,7 +314,9 @@ export class UcModulesSelectorTab extends LitElement {
     return html`
       <div class="search-results-container">
         <div class="search-results-header">
-          <span>${modules.length} module${modules.length !== 1 ? 's' : ''} found</span>
+          <span>
+            ${modules.length} ${tierLabel} module${modules.length !== 1 ? 's' : ''} found
+          </span>
         </div>
         <div class="search-results-list">
           ${modules.map(meta => {
@@ -354,45 +381,75 @@ export class UcModulesSelectorTab extends LitElement {
     .modules-tab-container {
       padding: 20px;
     }
-    .module-category-tabs {
+    .module-type-switch {
       display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-      padding: 12px;
+      gap: 4px;
+      padding: 4px;
       background: var(--secondary-background-color);
-      border-radius: 12px;
+      border-radius: 14px;
+      margin-bottom: 8px;
     }
-    .category-tab {
+    .type-option {
       flex: 1;
-      padding: 12px 16px;
-      border: 2px solid transparent;
-      border-radius: 8px;
-      background: var(--card-background-color);
-      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--secondary-text-color);
+      font-size: 14px;
       font-weight: 600;
-      transition: all 0.3s;
       font-family: inherit;
+      cursor: pointer;
+      transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        box-shadow 0.2s ease;
     }
-    .category-tab.active {
-      border-color: var(--primary-color);
-      background: linear-gradient(135deg, rgba(3, 169, 244, 0.1) 0%, rgba(3, 169, 244, 0.05) 100%);
+    .type-option ha-icon {
+      --mdc-icon-size: 20px;
     }
-    .category-tab.pro-tab {
+    .type-option:hover:not(.active) {
+      color: var(--primary-text-color);
+      background: color-mix(in srgb, var(--card-background-color) 60%, transparent);
+    }
+    .type-option.active {
+      background: var(--card-background-color);
+      color: var(--primary-color);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+    }
+    .type-option.pro.active {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      border: none;
     }
-    .category-tab.pro-tab.active {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+    .type-count {
+      min-width: 22px;
+      padding: 2px 7px;
+      border-radius: 11px;
+      background: var(--secondary-background-color);
+      color: var(--secondary-text-color);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.4;
+      text-align: center;
     }
-    .pro-badge-mini {
+    .type-option.active .type-count {
+      background: color-mix(in srgb, var(--primary-color) 15%, transparent);
+      color: var(--primary-color);
+    }
+    .type-option.pro.active .type-count {
+      background: rgba(255, 255, 255, 0.25);
+      color: white;
+    }
+    .type-caption {
+      margin: 0 0 14px 0;
+      padding: 0 6px;
       font-size: 12px;
+      color: var(--secondary-text-color);
+      text-align: center;
     }
     .pro-upgrade-prompt {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

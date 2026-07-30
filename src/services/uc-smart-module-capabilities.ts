@@ -98,6 +98,36 @@ const SMART_MODULE_OVERRIDES: Record<
     entityDomains: ['fan'],
     isContainer: false,
   },
+  washer: {
+    use: 'Animated washing machine card with cycle status, remaining time, and controls.',
+    fields: ['entity', 'layout', 'show_status', 'show_controls', 'enable_animations'],
+    entityDomains: ['select', 'sensor', 'switch', 'binary_sensor'],
+    isContainer: false,
+  },
+  dryer: {
+    use: 'Animated dryer card with cycle status, remaining time, and controls.',
+    fields: ['entity', 'layout', 'show_status', 'show_controls', 'enable_animations'],
+    entityDomains: ['select', 'sensor', 'switch', 'binary_sensor'],
+    isContainer: false,
+  },
+  dishwasher: {
+    use: 'Animated dishwasher card with cycle status, remaining time, and wash options.',
+    fields: ['entity', 'layout', 'show_status', 'show_controls', 'enable_animations'],
+    entityDomains: ['select', 'sensor', 'switch', 'binary_sensor'],
+    isContainer: false,
+  },
+  fridge: {
+    use: 'Refrigerator card with temperatures, setpoints, door alerts, and feature switches.',
+    fields: ['entity', 'layout', 'show_status', 'show_temperatures', 'enable_animations'],
+    entityDomains: ['sensor', 'binary_sensor', 'number', 'switch'],
+    isContainer: false,
+  },
+  range: {
+    use: 'Kitchen range/oven card with cooktop burner indicators, oven status and temperature, and light control.',
+    fields: ['entity', 'layout', 'show_status', 'show_temperatures', 'show_cooktop', 'enable_animations'],
+    entityDomains: ['sensor', 'binary_sensor', 'select', 'light', 'button'],
+    isContainer: false,
+  },
   climate: {
     use: 'Thermostat and climate control UI.',
     fields: ['entity'],
@@ -164,6 +194,11 @@ const SMART_MODULE_KEYWORD_OVERRIDES: Record<string, string[]> = {
   media_player: ['music', 'audio', 'speaker', 'tv'],
   status_summary: ['activity', 'history', 'timeline'],
   gauge: ['fuel', 'tank', 'meter', 'percentage'],
+  washer: ['washer', 'washing machine', 'laundry'],
+  dryer: ['dryer', 'tumble dryer', 'laundry'],
+  dishwasher: ['dishwasher', 'dish washer'],
+  fridge: ['fridge', 'refrigerator', 'freezer'],
+  range: ['range', 'oven', 'stove', 'cooktop'],
 };
 
 const SMART_ALLOWED_TYPES = new Set(Object.keys(SMART_MODULE_OVERRIDES));

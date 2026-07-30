@@ -762,6 +762,34 @@ export const supplementalSmartModuleHandlers = {
     ),
     defaultBuilder: createEntityDefaultBuilder('humidifier'),
   },
+  ...Object.fromEntries(
+    (['washer', 'dryer', 'dishwasher', 'fridge', 'range'] as const).map(applianceType => [
+      applianceType,
+      {
+        sanitize: wrapSanitize((module, hass, id) =>
+          sanitizeEntityModule(
+            applianceType,
+            ['select', 'input_select', 'sensor', 'switch', 'binary_sensor', 'number'],
+            module,
+            hass,
+            id,
+            {
+              layout: module.layout || 'standard',
+              show_title: module.show_title !== false,
+              show_status: module.show_status !== false,
+              enable_animations: module.enable_animations !== false,
+            }
+          )
+        ),
+        defaultBuilder: createEntityDefaultBuilder(applianceType, {
+          layout: 'standard',
+          show_title: true,
+          show_status: true,
+          enable_animations: true,
+        }),
+      },
+    ])
+  ),
   todo_list: {
     sanitize: wrapSanitize((module, hass, id) =>
       sanitizeEntityModule('todo_list', 'todo', module, hass, id)

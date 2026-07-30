@@ -110,6 +110,12 @@ export class UltraGraphsModule extends BaseUltraModule {
     this._persistCacheStore(store);
   }
 
+  // Time Machine integration: last seen scrub bucket + pending refetch timers.
+  // When the card is time-traveling, hass carries `__uc_tm_scrub_ms` and the
+  // chart window is re-anchored to end at that moment.
+  private _tmLastBucket: { [moduleId: string]: number } = {};
+  private _tmRefetchTimers: { [moduleId: string]: number } = {};
+
   // Click handling properties for event management
   private clickTimeout: any = null;
   private holdTimeout: any = null;
@@ -3952,9 +3958,9 @@ export class UltraGraphsModule extends BaseUltraModule {
     }
   }
 
-  private _generateTimePoints(timePeriod: string): string[] {
+  private _generateTimePoints(timePeriod: string, endMs?: number): string[] {
     const points: string[] = [];
-    const now = new Date();
+    const now = endMs != null ? new Date(endMs) : new Date();
 
     // "Today" = midnight (local) → now, bucketed hourly
     if (timePeriod === 'today') {
@@ -4123,6 +4129,12 @@ export class UltraGraphsModule extends BaseUltraModule {
     }
   }
 
+  /** Scrub timestamp stamped on hass by the Time Machine service, if any. */
+  private _tmScrubMs(hass: HomeAssistant): number | undefined {
+    const v = (hass as any)?.__uc_tm_scrub_ms;
+    return typeof v === 'number' ? v : undefined;
+  }
+
   private _loadHistoryData(module: GraphsModule, hass: HomeAssistant): void {
     if (!module.entities || module.entities.length === 0) return;
 
@@ -4132,8 +4144,27 @@ export class UltraGraphsModule extends BaseUltraModule {
       return;
     }
 
-    // Try cache first for an instant historical curve on reload
-    if (!this._historyData[module.id]) {
+    // Time Machine: when the scrub position moves (or returns to live),
+    // refetch the window anchored at the new moment. Debounced so dragging
+    // the scrubber doesn't flood the recorder with queries.
+    const scrubMs = this._tmScrubMs(hass);
+    const bucket = scrubMs == null ? -1 : Math.round(scrubMs / 60_000);
+    const prevBucket = this._tmLastBucket[module.id] ?? -1;
+    if (bucket !== prevBucket) {
+      this._tmLastBucket[module.id] = bucket;
+      if (this._tmRefetchTimers[module.id]) {
+        window.clearTimeout(this._tmRefetchTimers[module.id]);
+      }
+      this._tmRefetchTimers[module.id] = window.setTimeout(() => {
+        delete this._tmRefetchTimers[module.id];
+        this._historyLoading[module.id] = true;
+        this._fetchHistoryDataAsync(module, hass);
+      }, 350);
+    }
+
+    // Try cache first for an instant historical curve on reload (live only —
+    // cached data is anchored at fetch time, wrong while time-traveling)
+    if (!this._historyData[module.id] && scrubMs == null) {
       const cached = this._tryReadCache(module);
       if (cached) {
         this._historyData[module.id] = { ...cached, source: 'cache' };
@@ -4226,7 +4257,9 @@ export class UltraGraphsModule extends BaseUltraModule {
 
   private async _fetchHistoryDataAsync(module: GraphsModule, hass: HomeAssistant): Promise<void> {
     try {
-      const now = new Date();
+      // Anchor the window on the Time Machine scrub position when active
+      const tmScrubMs = this._tmScrubMs(hass);
+      const now = tmScrubMs != null ? new Date(tmScrubMs) : new Date();
       // debug removed
 
       // "Today" spans from local midnight to now; its lookback depends on the
@@ -4420,7 +4453,7 @@ export class UltraGraphsModule extends BaseUltraModule {
       }
 
       // Process history data
-      const timePoints = this._generateTimePoints(module.time_period);
+      const timePoints = this._generateTimePoints(module.time_period, now.getTime());
       const datasets = module.entities
         .map((entityConfig, index) => {
           if (!entityConfig.entity) {
@@ -4479,8 +4512,10 @@ export class UltraGraphsModule extends BaseUltraModule {
       // Clear loading state
       this._historyLoading[module.id] = false;
 
-      // Persist real history to cache for instant future reloads
-      this._writeCache(module, this._historyData[module.id]);
+      // Persist real history to cache for instant future reloads (live only)
+      if (tmScrubMs == null) {
+        this._writeCache(module, this._historyData[module.id]);
+      }
 
       // debug removed
 

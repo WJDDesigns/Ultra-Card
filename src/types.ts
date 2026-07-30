@@ -188,10 +188,16 @@ export interface BaseModule {
     | 'alarm_panel'
     | 'solar_analytics'
     | 'screensaver'
+    | 'time_machine'
     | 'lunar_phase'
     | 'update_monitor'
     | 'clock'
     | 'humidifier'
+    | 'washer'
+    | 'dryer'
+    | 'dishwasher'
+    | 'fridge'
+    | 'range'
     | 'todo_list'
     | 'weather';
   name?: string | undefined;
@@ -4882,6 +4888,63 @@ export interface ScreensaverModule extends BaseModule {
   display_conditions?: DisplayCondition[] | undefined;
 }
 
+// ─── Time Machine Module (PRO) ────────────────────────────────────────────────
+export interface TimeMachineModule extends BaseModule {
+  type: 'time_machine';
+
+  /**
+   * Timeline mode (default: 'dashboard').
+   * - 'dashboard': scrub the current view — every Ultra Card on screen
+   *   rewinds in real time.
+   * - 'card': independent history scrubber — pick entities and explore their
+   *   history with built-in graphs and state details; nothing else rewinds.
+   */
+  mode?: 'dashboard' | 'card' | undefined;
+
+  /** @deprecated pre-release scope field; use `mode`. */
+  scope?: 'card' | 'view' | 'independent' | undefined;
+
+  /** Timeline span shown when the scrubber opens (default: 24) */
+  default_span_hours?: number | undefined;
+
+  /**
+   * Entities to track in addition to the ones auto-discovered from the other
+   * modules in the card. Useful when the card is template-driven or when the
+   * user wants extra event markers on the timeline.
+   */
+  extra_entities?: string[] | undefined;
+
+  /** Show the 1h / 6h / 24h / 7d span preset pills (default: true) */
+  show_span_presets?: boolean | undefined;
+
+  /** Draw state-change event markers on the track (default: true) */
+  show_event_markers?: boolean | undefined;
+
+  /** Show the replay (play/pause) and step controls (default: true) */
+  show_playback?: boolean | undefined;
+
+  /** Card Timeline: show the numeric line chart (default: true) */
+  show_chart?: boolean | undefined;
+
+  /** Card Timeline: show per-entity state ribbons (default: true) */
+  show_lanes?: boolean | undefined;
+
+  /** Card Timeline: show the entity detail list (default: true) */
+  show_details?: boolean | undefined;
+
+  /** Entities temporarily hidden from the chart / lanes / markers */
+  hidden_entities?: string[] | undefined;
+
+  /**
+   * Seconds of scrubber inactivity before auto-returning to live.
+   * 0 disables auto-return (default: 120).
+   */
+  auto_return_seconds?: number | undefined;
+
+  display_mode?: 'always' | 'every' | 'any' | undefined;
+  display_conditions?: DisplayCondition[] | undefined;
+}
+
 // ─── Lunar Phase Module ───────────────────────────────────────────────────────
 
 /** Data items the Lunar Phase module can display (and hide individually) */
@@ -5043,10 +5106,12 @@ export type CardModule =
   | AlarmPanelModule
   | SolarAnalyticsModule
   | ScreensaverModule
+  | TimeMachineModule
   | LunarPhaseModule
   | UpdateMonitorModule
   | ClockModule
   | HumidifierModule
+  | ApplianceModule
   | TodoListModule
   | WeatherModule;
 
@@ -5122,6 +5187,137 @@ export interface HumidifierModule extends BaseModule {
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;
   double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// ============================================
+// APPLIANCE MODULE TYPES (Washer / Dryer / Dishwasher / Refrigerator)
+// ============================================
+
+/** Each appliance is its own free module type sharing one implementation */
+export type ApplianceCardType = 'washer' | 'dryer' | 'dishwasher' | 'fridge' | 'range';
+export type ApplianceLayout = 'hero' | 'standard' | 'compact';
+
+export interface ApplianceModule extends BaseModule {
+  type: ApplianceCardType;
+
+  /**
+   * Main appliance entity. For cycle appliances this is ideally the machine
+   * state select/sensor (e.g. select.washer with run/pause/stop); for a
+   * refrigerator any entity belonging to the device works. Related entities
+   * are auto-discovered from the shared entity-id prefix (works for
+   * SmartThings, LG ThinQ, Miele, and similar integrations) and can each be
+   * overridden below.
+   */
+  entity: string;
+  name?: string | undefined;
+
+  // ── Linked entities (blank = auto-detect from the main entity's prefix) ──
+  /** switch.<device> master power */
+  power_switch_entity?: string | undefined;
+  /** sensor.<device>_machine_state (run / pause / stop) */
+  machine_state_entity?: string | undefined;
+  /** sensor.<device>_job_state (wash, rinse, spin, drying, …) */
+  job_state_entity?: string | undefined;
+  /**
+   * Cycle end sensor: a completion timestamp (SmartThings), a remaining-time
+   * duration/minutes sensor (LG ThinQ, Miele), or similar.
+   */
+  completion_time_entity?: string | undefined;
+  /** sensor.<device>_power (W) */
+  power_entity?: string | undefined;
+  /** sensor.<device>_energy (kWh) */
+  energy_entity?: string | undefined;
+  /** binary_sensor.<device>_child_lock */
+  child_lock_entity?: string | undefined;
+  /** binary_sensor.<device>_remote_control */
+  remote_control_entity?: string | undefined;
+  /** binary_sensor.<device>_door (dishwasher / generic) */
+  door_entity?: string | undefined;
+
+  // ── Refrigerator-specific ──
+  fridge_door_entity?: string | undefined;
+  freezer_door_entity?: string | undefined;
+  fridge_temp_entity?: string | undefined;
+  freezer_temp_entity?: string | undefined;
+  /** number.* setpoints */
+  fridge_setpoint_entity?: string | undefined;
+  freezer_setpoint_entity?: string | undefined;
+  /** binary_sensor.*_filter_status (problem device class) */
+  filter_status_entity?: string | undefined;
+
+  // ── Range/oven-specific ──
+  /** sensor.<device>_oven_mode (bake, roast, …) */
+  oven_mode_entity?: string | undefined;
+  /** sensor.<device>_temperature_measurement (current oven temp) */
+  oven_temp_entity?: string | undefined;
+  /** sensor/number oven set point */
+  oven_setpoint_entity?: string | undefined;
+  /** Second oven cavity (Flex Duo etc.) */
+  second_cavity_state_entity?: string | undefined;
+  second_cavity_temp_entity?: string | undefined;
+  second_cavity_setpoint_entity?: string | undefined;
+  second_cavity_mode_entity?: string | undefined;
+  /** light.<device>_light — oven light toggle */
+  light_entity?: string | undefined;
+  /** button.<device>_stop — cancel the oven */
+  stop_button_entity?: string | undefined;
+  /**
+   * Cooktop burner indicator entities (binary_sensor/switch/sensor). Lights
+   * the burners on the graphic and shows a "burners on" chip.
+   * undefined = auto-detect (burner/cooktop/element in the id); [] = none.
+   */
+  cooktop_entities?: string[] | undefined;
+
+  /**
+   * Feature switches rendered as toggle chips (sanitize, storm wash,
+   * power cool, cubed ice, wrinkle prevent, …).
+   * undefined = auto-detect the device's switches (minus master power);
+   * an explicit array — including [] — is a user-curated list.
+   */
+  feature_switch_entities?: string[] | undefined;
+
+  /**
+   * Cycle-setting selects rendered as dropdowns (water temperature,
+   * spin level, soil level, wash zone, …).
+   * undefined = auto-detect (never for fridge); an explicit array —
+   * including [] — is a user-curated list.
+   */
+  setting_select_entities?: string[] | undefined;
+
+  layout?: ApplianceLayout | undefined;
+
+  // ── Display toggles ──
+  show_title?: boolean | undefined;
+  show_status?: boolean | undefined;
+  show_graphic?: boolean | undefined;
+  show_completion_time?: boolean | undefined;
+  show_controls?: boolean | undefined;
+  show_power_button?: boolean | undefined;
+  show_status_chips?: boolean | undefined;
+  show_feature_switches?: boolean | undefined;
+  show_settings?: boolean | undefined;
+  show_metrics?: boolean | undefined;
+  show_temperatures?: boolean | undefined;
+  show_setpoint_controls?: boolean | undefined;
+  /** Range only: burner indicators on the graphic + "burners on" chip */
+  show_cooktop?: boolean | undefined;
+  enable_animations?: boolean | undefined;
+
+  /** Appliance graphic size in px (hero/standard) */
+  appliance_size?: number | undefined;
+
+  active_color?: string | undefined;
+  done_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+
+  display_mode?: 'always' | 'every' | 'any' | undefined;
+  display_conditions?: DisplayCondition[] | undefined;
 }
 
 // To-Do List — interactive list backed by Home Assistant todo.* entities

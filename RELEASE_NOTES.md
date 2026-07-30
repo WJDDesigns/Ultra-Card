@@ -1,5 +1,24 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.7.0-beta1
+
+### 🚀 New Features
+
+- **Added Washer module** - Free animated washing machine card with live cycle status, time remaining, start/pause/stop controls, and cycle settings like water temperature, spin level, and soil level
+- **Added Dryer module** - Free animated dryer card with cycle status, time remaining, controls, and extras like wrinkle prevent
+- **Added Dishwasher module** - Free animated dishwasher card with cycle status, time remaining, door alerts, and wash options like sanitize and storm wash
+- **Added Refrigerator module** - Free fridge card with fridge and freezer temperatures, adjustable setpoints, door open alerts, water filter reminders, and quick toggles for ice and cooling features
+- **Added Range & Oven module** - Free range card that lights up cooktop burners when they are on, shows oven status with mode and temperature, supports double ovens, and includes an oven light toggle
+- **Added automatic appliance setup** - Pick a single entity and each appliance module finds the rest of the device on its own (works with SmartThings, LG ThinQ, and other brands); everything auto-detected shows up in the editor so you can remove or swap it
+- **Added appliance card layouts** - Every appliance module comes in hero, standard, and compact layouts with toggles for exactly what info to show
+- **Added Time Machine module (PRO)** - Rewind your dashboard with a draggable history timeline to see what every card looked like at any moment, complete with playback and event markers; graphs travel back in time with you
+
+### 🔧 Improvements
+
+- **Improved module browser** - Standard and PRO modules now live in two separate libraries with a cleaner switcher and module counts, and search stays inside the library you are viewing
+
+---
+
 ## Version 3.6.1
 
 **Critical hotfix — please update immediately if you installed 3.6.0.**

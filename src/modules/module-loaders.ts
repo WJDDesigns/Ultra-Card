@@ -246,6 +246,10 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     import(/* webpackMode: "eager" */ './screensaver-module').then(
       m => new m.UltraScreensaverModule()
     ),
+  time_machine: () =>
+    import(/* webpackMode: "eager" */ './time-machine-module').then(
+      m => new m.UltraTimeMachineModule()
+    ),
   lunar_phase: () =>
     import(/* webpackMode: "eager" */ './lunar-phase-module').then(
       m => new m.UltraLunarPhaseModule()
@@ -267,6 +271,26 @@ export const coreLoaders: Record<string, ModuleLoader> = {
   humidifier: () =>
     import(/* webpackMode: "eager" */ './humidifier-module').then(
       m => new m.UltraHumidifierModule()
+    ),
+  washer: () =>
+    import(/* webpackMode: "eager" */ './appliance-module').then(
+      m => new m.UltraWasherModule()
+    ),
+  dryer: () =>
+    import(/* webpackMode: "eager" */ './appliance-module').then(
+      m => new m.UltraDryerModule()
+    ),
+  dishwasher: () =>
+    import(/* webpackMode: "eager" */ './appliance-module').then(
+      m => new m.UltraDishwasherModule()
+    ),
+  range: () =>
+    import(/* webpackMode: "eager" */ './appliance-module').then(
+      m => new m.UltraRangeModule()
+    ),
+  fridge: () =>
+    import(/* webpackMode: "eager" */ './appliance-module').then(
+      m => new m.UltraFridgeModule()
     ),
   todo_list: () =>
     import(/* webpackMode: "eager" */ './todo-list-module').then(

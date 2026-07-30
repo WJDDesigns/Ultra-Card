@@ -113,15 +113,17 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'tabs-module.ts',
   'text-input-module.ts',
   'text-module.ts',
+  'time-machine-module.ts',
   'timer-module.ts',
   'toggle-module.ts',
   'vertical-module.ts',
   'video-bg-module.ts',
   'virtual-pet-module.ts',
-  // Free-tier additions (update monitor, clock, humidifier, todo, weather)
+  // Free-tier additions (update monitor, clock, humidifier, appliance, todo, weather)
   'update-monitor-module.ts',
   'clock-module.ts',
   'humidifier-module.ts',
+  'appliance-module.ts',
   'todo-list-module.ts',
   'weather-module.ts',
 ]);
