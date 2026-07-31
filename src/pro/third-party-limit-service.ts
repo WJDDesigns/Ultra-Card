@@ -228,7 +228,12 @@ class ThirdPartyLimitServiceImpl {
         module.type === 'vertical' ||
         module.type === 'stack' ||
         module.type === 'accordion' ||
-        module.type === 'popup'
+        module.type === 'popup' ||
+        module.type === 'grid_layout' ||
+        module.type === 'flip_card' ||
+        module.type === 'drawer' ||
+        module.type === 'scroll_row' ||
+        module.type === 'state_switcher'
       ) {
         const containerModule = module as any;
         if (containerModule.modules?.length) {

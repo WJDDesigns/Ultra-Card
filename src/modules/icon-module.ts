@@ -43,6 +43,9 @@ export class UltraIconModule extends BaseUltraModule {
   };
 
   private _previewCollapsed = false;
+  // Drag state for reordering icons in the editor
+  private _draggedIconIndex: number | null = null;
+  private _dragOverIconIndex: number | null = null;
   private _templateService: TemplateService | undefined;
   /** Last good unified-template icon color per key (anti-flash across WS re-subscribe). */
   private _lastUnifiedIconDisplayColorByKey = new Map<string, string>();
@@ -517,27 +520,72 @@ export class UltraIconModule extends BaseUltraModule {
 
         ${iconModule.icons.map(
           (icon, index) => html`
-            <div class="icon-settings-container">
-              <!-- Icon Row Header (number + remove) -->
+            <ha-expansion-panel
+              .outlined=${true}
+              .expanded=${iconModule.icons.length === 1}
+              class="icon-item-panel ${this._draggedIconIndex === index ? 'dragging' : ''} ${this
+                ._dragOverIconIndex === index
+                ? 'drag-over'
+                : ''}"
+            >
               <div
-                class="icon-row-header"
-                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
+                slot="header"
+                class="icon-item-header"
+                draggable="true"
+                @dragstart=${(e: DragEvent) => this._onIconDragStart(e, index)}
+                @dragover=${(e: DragEvent) => this._onIconDragOver(e, index)}
+                @dragend=${() => this._onIconDragEnd()}
+                @drop=${(e: DragEvent) => this._onIconDrop(e, index, iconModule, updateModule)}
               >
-                <div style="font-size: 14px; font-weight: 600; color: var(--primary-text-color);">
-                  ${localize('editor.icon.icon_row_title', lang, 'Icon {number}').replace(
-                    '{number}',
-                    String(index + 1)
-                  )}
+                <div class="icon-item-drag-handle" @click=${(e: Event) => e.stopPropagation()}>
+                  <ha-icon icon="mdi:drag"></ha-icon>
+                </div>
+                <div class="icon-item-badge">
+                  <ha-icon icon="${this._iconHeaderIcon(icon, hass)}"></ha-icon>
+                </div>
+                <div class="icon-item-info">
+                  <div class="icon-item-title">
+                    ${this._iconHeaderTitle(icon, index, hass, lang)}
+                  </div>
+                  <div class="icon-item-subtitle">
+                    ${this._iconHeaderSubtitle(icon, index, lang)}
+                  </div>
                 </div>
                 <button
                   class="remove-icon-btn"
                   ?disabled=${iconModule.icons.length <= 1}
-                  style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--divider-color); border-radius: 6px; background: transparent; color: var(--error-color); cursor: pointer;"
+                  style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--divider-color); border-radius: 6px; background: transparent; color: var(--error-color); cursor: pointer; flex-shrink: 0;"
                   title="${localize('editor.icon.remove_icon', lang, 'Remove Icon')}"
-                  @click=${() => this._removeIcon(iconModule, index, updateModule)}
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._removeIcon(iconModule, index, updateModule);
+                  }}
                 >
                   <ha-icon icon="mdi:delete" style="--mdc-icon-size: 18px;"></ha-icon>
                 </button>
+              </div>
+              <div class="icon-settings-container">
+              <!-- Internal Name (editor-only organizational label) -->
+              <div class="field-container" style="margin-bottom: 16px;">
+                ${this.renderFieldSection(
+                  localize('editor.icon.internal_name', lang, 'Name'),
+                  localize(
+                    'editor.icon.internal_name_desc',
+                    lang,
+                    'Editor-only label to keep icons organized. Never shown on the card.'
+                  ),
+                  hass,
+                  { internal_name: icon.internal_name || '' },
+                  [this.textField('internal_name')],
+                  (e: CustomEvent) => {
+                    this._updateIcon(
+                      iconModule,
+                      index,
+                      { internal_name: e.detail.value.internal_name },
+                      updateModule
+                    );
+                  }
+                )}
               </div>
 
               <!-- Icon Mode Selector -->
@@ -2245,7 +2293,8 @@ export class UltraIconModule extends BaseUltraModule {
                       ]
                     )}
                   `}
-            </div>
+              </div>
+            </ha-expansion-panel>
           `
         )}
 
@@ -5908,6 +5957,100 @@ export class UltraIconModule extends BaseUltraModule {
         font-size: 16px;
       }
 
+      /* Collapsible per-icon panel (mirrors people-module data-item panels) */
+      ha-expansion-panel.icon-item-panel {
+        --ha-card-border-radius: 8px;
+        --expansion-panel-summary-padding: 0;
+        /* Horizontal-only padding on the variable so the collapsed .container
+           (height: 0) does not still leak vertical padding below the row. */
+        --expansion-panel-content-padding: 0 12px;
+        margin-bottom: 8px;
+      }
+
+      ha-expansion-panel.icon-item-panel::part(summary) {
+        padding: 0;
+        min-height: unset;
+      }
+
+      ha-expansion-panel.icon-item-panel::part(content) {
+        padding: 12px;
+      }
+
+      ha-expansion-panel.icon-item-panel.dragging {
+        opacity: 0.5;
+      }
+
+      ha-expansion-panel.icon-item-panel.drag-over {
+        outline: 2px dashed var(--primary-color);
+        outline-offset: -2px;
+      }
+
+      .icon-item-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .icon-item-drag-handle {
+        cursor: grab;
+        color: var(--secondary-text-color);
+        padding: 4px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+      }
+
+      .icon-item-drag-handle:active {
+        cursor: grabbing;
+      }
+
+      .icon-item-badge {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(var(--rgb-primary-color), 0.1);
+        border-radius: 6px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+      }
+
+      .icon-item-info {
+        flex: 1;
+        min-width: 0;
+        text-align: left;
+      }
+
+      .icon-item-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .icon-item-subtitle {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* Inside the panel the container is just a content wrapper — the panel
+         itself provides the border/background chrome. */
+      ha-expansion-panel.icon-item-panel .icon-settings-container {
+        background: transparent;
+        border: none;
+        padding: 4px 0 0 0;
+        margin-bottom: 0;
+      }
+
       /* Icon settings container */
       .icon-settings-container {
         background: var(--secondary-background-color);
@@ -6312,6 +6455,93 @@ export class UltraIconModule extends BaseUltraModule {
     const updatedIcons = iconModule.icons.filter((_, i) => i !== index);
     updateModule({ icons: updatedIcons });
     this.triggerPreviewUpdate();
+  }
+
+  /** Title shown in the collapsed icon panel header. */
+  private _iconHeaderTitle(
+    icon: IconConfig,
+    index: number,
+    hass: HomeAssistant,
+    lang: string
+  ): string {
+    const fallback = localize('editor.icon.icon_row_title', lang, 'Icon {number}').replace(
+      '{number}',
+      String(index + 1)
+    );
+    if (icon.internal_name) return icon.internal_name;
+    if (icon.icon_mode === 'static') return icon.icon_inactive || fallback;
+    return (
+      icon.name ||
+      (icon.entity && hass?.states?.[icon.entity]?.attributes?.friendly_name) ||
+      icon.entity ||
+      fallback
+    );
+  }
+
+  /** Subtitle (position + source) shown in the collapsed icon panel header. */
+  private _iconHeaderSubtitle(icon: IconConfig, index: number, lang: string): string {
+    const num = localize('editor.icon.icon_row_title', lang, 'Icon {number}').replace(
+      '{number}',
+      String(index + 1)
+    );
+    if (icon.icon_mode === 'static') {
+      return `${num} · ${localize('editor.icon.icon_mode.static', lang, 'Static')}`;
+    }
+    return icon.entity ? `${num} · ${icon.entity}` : num;
+  }
+
+  /** Icon glyph shown in the collapsed panel header badge. */
+  private _iconHeaderIcon(icon: IconConfig, hass: HomeAssistant): string {
+    return (
+      icon.icon_inactive ||
+      (icon.entity && hass?.states?.[icon.entity]?.attributes?.icon) ||
+      'mdi:shape-outline'
+    );
+  }
+
+  // Drag and drop reordering of icons in the editor
+  private _onIconDragStart(e: DragEvent, index: number): void {
+    this._draggedIconIndex = index;
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(index));
+    }
+  }
+
+  private _onIconDragOver(e: DragEvent, index: number): void {
+    e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+    this._dragOverIconIndex = index;
+  }
+
+  private _onIconDragEnd(): void {
+    this._draggedIconIndex = null;
+    this._dragOverIconIndex = null;
+  }
+
+  private _onIconDrop(
+    e: DragEvent,
+    targetIndex: number,
+    iconModule: IconModule,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): void {
+    e.preventDefault();
+    const sourceIndex = this._draggedIconIndex;
+
+    if (sourceIndex === null || sourceIndex === targetIndex) {
+      this._onIconDragEnd();
+      return;
+    }
+
+    const icons = [...iconModule.icons];
+    const [moved] = icons.splice(sourceIndex, 1);
+    icons.splice(targetIndex, 0, moved);
+
+    updateModule({ icons });
+    this.triggerPreviewUpdate();
+    this._onIconDragEnd();
   }
 
   private _updateIcon(

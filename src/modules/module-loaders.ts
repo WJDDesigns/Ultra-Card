@@ -128,6 +128,26 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     ),
   tabs: () =>
     import(/* webpackMode: "eager" */ './tabs-module').then(m => new m.UltraTabsModule()),
+  grid_layout: () =>
+    import(/* webpackMode: "eager" */ './grid-layout-module').then(
+      m => new m.UltraGridLayoutModule()
+    ),
+  flip_card: () =>
+    import(/* webpackMode: "eager" */ './flip-card-module').then(
+      m => new m.UltraFlipCardModule()
+    ),
+  drawer: () =>
+    import(/* webpackMode: "eager" */ './drawer-module').then(
+      m => new m.UltraDrawerModule()
+    ),
+  scroll_row: () =>
+    import(/* webpackMode: "eager" */ './scroll-row-module').then(
+      m => new m.UltraScrollRowModule()
+    ),
+  state_switcher: () =>
+    import(/* webpackMode: "eager" */ './state-switcher-module').then(
+      m => new m.UltraStateSwitcherModule()
+    ),
   calendar: () =>
     import(/* webpackMode: "eager" */ './calendar-module').then(
       m => new m.UltraCalendarModule()

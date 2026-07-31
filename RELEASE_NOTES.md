@@ -1,5 +1,22 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.7.0-beta2
+
+### 🚀 New Features
+
+- **Added Grid Layout module** - New free layout container using true CSS grid, with fixed or auto-fit columns, per-module column and row spans, dense masonry-style packing, and its own mobile breakpoint with a separate column count
+- **Added Flip Card module** - New free layout container with a front and back face; flip it by tapping, hovering, or automatically from an entity's state, horizontally or vertically
+- **Added Drawer module** - New free layout container that puts modules in a slide-in panel opened by a button or icon; slides in from the left, right, top, or bottom (bottom works as a bottom sheet) and closes via the X button, clicking outside, or Escape
+- **Added Scroll Row module** - New free layout container that scrolls modules horizontally with snap points and a peek at the next item, plus optional scroll arrows, edge fading, and scrollbar visibility control
+- **Added State Switcher module** - New free layout container that shows exactly one of its modules at a time based on each module's Logic conditions, with fade, slide, and scale transitions between them
+
+### 🔧 Improvements
+
+- **Improved the Icon module editor** - Each icon is now a collapsible row with drag-and-drop reordering, an optional name label, and a header that shows the icon and its entity at a glance
+- **Improved the new-card experience** - Adding an Ultra Card now starts with a working card built from your own entities instead of placeholder content, and Ultra Card gets a proper showcase tile in Home Assistant's card picker
+
+---
+
 ## Version 3.7.0-beta1
 
 ### 🚀 New Features

@@ -126,6 +126,12 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'appliance-module.ts',
   'todo-list-module.ts',
   'weather-module.ts',
+  // New layout containers
+  'grid-layout-module.ts',
+  'flip-card-module.ts',
+  'drawer-module.ts',
+  'scroll-row-module.ts',
+  'state-switcher-module.ts',
 ]);
 
 /**

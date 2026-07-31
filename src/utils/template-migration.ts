@@ -652,7 +652,12 @@ function migrateModulesInList(
       mod.type === 'stack' ||
       mod.type === 'accordion' ||
       mod.type === 'popup' ||
-      mod.type === 'slider';
+      mod.type === 'slider' ||
+      mod.type === 'grid_layout' ||
+      mod.type === 'flip_card' ||
+      mod.type === 'drawer' ||
+      mod.type === 'scroll_row' ||
+      mod.type === 'state_switcher';
 
     if (MODULES_WITH_LEGACY_8PX_MARGIN.has(mod.type)) {
       const explicit = getExplicitMarginDirs(mod);

@@ -8,7 +8,8 @@ import {
   CardRow,
   CardColumn,
   TextModule,
-  ImageModule,
+  IconModule,
+  IconConfig,
   HoverEffectConfig,
   DeviceBreakpoint,
 } from '../types';
@@ -22,6 +23,7 @@ interface RenderContext {
 }
 import { getModuleRegistry } from '../modules';
 import { closePopupsForModule } from '../modules/popup-module';
+import { closeDrawersForModule } from '../modules/drawer-module';
 import { getImageUrl } from '../utils/image-upload';
 import { collectModuleTypesFromLayout, forEachNestedChildModules } from '../utils/uc-layout-module-types';
 import { logicService } from '../services/logic-service';
@@ -157,6 +159,8 @@ export class UltraCard extends LitElement {
   private _layoutModulesParsedCache = new Map<string, { raw: string; value: CardModule[] }>();
   private _limitUnsub: (() => void) | undefined;
   private _isEditorPreviewCard = false;
+  /** True when this instance is a tile inside HA's card picker grid ("Add card" dialog). */
+  private _isCardPickerPreview = false;
   private _globalTransparencyListener: (() => void) | undefined;
   private _globalTransparencyApplied = false;
   private _variablesBackupUnsub: (() => void) | undefined;
@@ -350,6 +354,14 @@ export class UltraCard extends LitElement {
     const previewContext = this._detectEditorPreviewContext();
     if (previewContext !== this._isEditorPreviewCard) {
       this._isEditorPreviewCard = previewContext;
+    }
+
+    // The picker attaches the card after setConfig, so this is the reliable
+    // place to detect the picker grid; re-render into the showcase if so.
+    const pickerContext = this._detectCardPickerContext();
+    if (pickerContext !== this._isCardPickerPreview) {
+      this._isCardPickerPreview = pickerContext;
+      this.requestUpdate();
     }
 
     // Register in the live-card registry BEFORE assigning an instance id so
@@ -1146,6 +1158,7 @@ export class UltraCard extends LitElement {
       }
 
       const isPreviewContext = this._detectEditorPreviewContext();
+      this._isCardPickerPreview = this._detectCardPickerContext();
       const uniqueIdCheck = configValidationService.validateUniqueModuleIds(
         validationResult.correctedConfig!
       );
@@ -1225,6 +1238,29 @@ export class UltraCard extends LitElement {
       let depth = 0;
       while (node && depth < 30) {
         if (isTarget(node)) return true;
+        const root = node.getRootNode?.();
+        if (root && root.host) {
+          node = root.host;
+        } else {
+          node = node.parentElement;
+        }
+        depth++;
+      }
+    } catch (_e) { /* ignore */ }
+    return false;
+  }
+
+  /**
+   * Detect the card picker grid specifically (the "Add card" dialog tiles).
+   * Unlike `_detectEditorPreviewContext`, this must NOT match the live preview
+   * inside the card editor dialog, which renders the user's real config.
+   */
+  private _detectCardPickerContext(): boolean {
+    try {
+      let node: any = this as any;
+      let depth = 0;
+      while (node && depth < 30) {
+        if (node.tagName?.toLowerCase?.() === 'hui-card-picker') return true;
         const root = node.getRootNode?.();
         if (root && root.host) {
           node = root.host;
@@ -1358,31 +1394,86 @@ export class UltraCard extends LitElement {
     }
   }
 
-  // Provide default configuration for new cards
-  public static getStubConfig(): UltraCardConfig {
+  /**
+   * Pick up to three real, available entities (one per domain, in priority
+   * order) so the starter card shows the user's own home instead of branding.
+   */
+  private static _pickStubEntities(hass?: HomeAssistant): Array<{ entity: string; icon: string }> {
+    if (!hass?.states) return [];
+    const usable = (id: string): boolean => {
+      const state = hass.states[id]?.state;
+      return !!state && state !== 'unavailable' && state !== 'unknown';
+    };
+    const domainPriority: Array<{ domain: string; icon: string }> = [
+      { domain: 'person', icon: 'mdi:account' },
+      { domain: 'light', icon: 'mdi:lightbulb' },
+      { domain: 'climate', icon: 'mdi:thermostat' },
+      { domain: 'weather', icon: 'mdi:weather-partly-cloudy' },
+      { domain: 'media_player', icon: 'mdi:speaker' },
+      { domain: 'switch', icon: 'mdi:toggle-switch' },
+    ];
+    const allIds = Object.keys(hass.states);
+    const picks: Array<{ entity: string; icon: string }> = [];
+    for (const { domain, icon } of domainPriority) {
+      if (picks.length >= 3) break;
+      const match = allIds.find(id => id.startsWith(`${domain}.`) && usable(id));
+      if (match) picks.push({ entity: match, icon });
+    }
+    if (picks.length === 0 && usable('sun.sun')) {
+      picks.push({ entity: 'sun.sun', icon: 'mdi:white-balance-sunny' });
+    }
+    return picks;
+  }
+
+  // Provide default configuration for new cards. HA calls this statically as
+  // getStubConfig(hass, unusedEntities, allEntities); we use hass to build a
+  // working starter card from the user's real entities.
+  public static getStubConfig(hass?: HomeAssistant): UltraCardConfig {
     // Check if Pro user wants empty card (no default modules)
     const skipDefaultModules = UltraCard._shouldSkipDefaultModules();
 
-    const defaultModules: CardModule[] = skipDefaultModules
-      ? []
-      : [
+    let defaultModules: CardModule[] = [];
+    if (!skipDefaultModules) {
+      const header = {
+        type: 'text',
+        text: 'Ultra Card',
+        font_size: 24,
+        color: 'var(--primary-color)',
+        alignment: 'center',
+      } as TextModule;
+
+      const stubEntities = UltraCard._pickStubEntities(hass);
+      if (stubEntities.length > 0) {
+        const iconModule = {
+          type: 'icon',
+          alignment: 'space-around',
+          columns: stubEntities.length,
+          icons: stubEntities.map(
+            ({ entity, icon }, index) =>
+              ({
+                id: `stub_icon_${index + 1}_${Math.random().toString(36).slice(2, 8)}`,
+                icon_mode: 'entity',
+                entity,
+                icon_inactive: icon,
+                icon_active: icon,
+              }) as IconConfig
+          ),
+        } as IconModule;
+        defaultModules = [header, iconModule];
+      } else {
+        // No usable entities (e.g. brand-new install) — text-only starter.
+        defaultModules = [
+          header,
           {
             type: 'text',
-            text: 'Ultra Card',
-            font_size: 24,
-            color: '#2196f3',
+            text: 'Open the editor to start building',
+            font_size: 14,
+            color: 'var(--secondary-text-color)',
             alignment: 'center',
           } as TextModule,
-          {
-            type: 'image',
-            image_type: 'default',
-            width: 100,
-            height: 200,
-            alignment: 'center',
-            border_radius: 8,
-            object_fit: 'cover',
-          } as ImageModule,
         ];
+      }
+    }
 
     return {
       type: 'custom:ultra-card',
@@ -1408,7 +1499,35 @@ export class UltraCard extends LitElement {
     };
   }
 
+  /** Compact branded hero shown only in HA's card picker grid. */
+  private _renderPickerShowcase(): TemplateResult {
+    const chips = [
+      'mdi:format-text',
+      'mdi:image-outline',
+      'mdi:chart-line',
+      'mdi:gauge',
+      'mdi:gesture-tap-button',
+    ];
+    return html`
+      <div class="uc-picker-showcase">
+        <div class="uc-picker-showcase__glow"></div>
+        <div class="uc-picker-showcase__content">
+          <div class="uc-picker-showcase__title">Ultra Card</div>
+          <div class="uc-picker-showcase__chips">
+            ${chips.map(icon => html`<div class="uc-chip"><ha-icon .icon=${icon}></ha-icon></div>`)}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   protected override render(): TemplateResult {
+    // Card picker tiles get a purpose-built showcase sized for the grid,
+    // decoupled from the stub config (which is what actually gets added).
+    if (this._isCardPickerPreview) {
+      return this._renderPickerShowcase();
+    }
+
     if (!this.config) {
       return html``;
     }
@@ -2711,10 +2830,13 @@ export class UltraCard extends LitElement {
 
     // Don't render if not visible and not animating out
     if (!isVisible && !isAnimating && !willStartAnimation) {
-      // Popup modules render into a document.body portal; tear it down here since
-      // renderPreview is skipped for hidden modules and can't clean up after itself.
+      // Popup/drawer modules render into a document.body portal; tear it down here
+      // since renderPreview is skipped for hidden modules and can't clean up after itself.
       if (module.type === 'popup' && module.id) {
         closePopupsForModule(module.id);
+      }
+      if (module.type === 'drawer' && module.id) {
+        closeDrawersForModule(module.id);
       }
       return html``;
     }
@@ -3844,6 +3966,94 @@ export class UltraCard extends LitElement {
         width: 100%;
         box-sizing: border-box;
         overflow-anchor: none; /* Prevent scroll anchoring on mobile when 3rd party cards update */
+      }
+
+      /* Card picker showcase (see _renderPickerShowcase) */
+      .uc-picker-showcase {
+        position: relative;
+        height: 150px;
+        border-radius: var(--ha-card-border-radius, 12px);
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #0d1b3d 0%, #14245c 30%, #4527a0 60%, #7b1fa2 85%, #2196f3 100%);
+        background-size: 300% 300%;
+        animation: uc-showcase-pan 18s ease-in-out infinite;
+      }
+
+      .uc-picker-showcase__glow {
+        position: absolute;
+        inset: -40%;
+        background:
+          radial-gradient(circle at 30% 30%, rgba(33, 150, 243, 0.4), transparent 55%),
+          radial-gradient(circle at 70% 65%, rgba(156, 39, 176, 0.4), transparent 55%);
+        animation: uc-showcase-drift 10s ease-in-out infinite alternate;
+      }
+
+      .uc-picker-showcase__content {
+        position: relative;
+        text-align: center;
+        color: #fff;
+        padding: 12px 16px;
+      }
+
+      .uc-picker-showcase__title {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+      }
+
+      .uc-picker-showcase__chips {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-top: 12px;
+      }
+
+      .uc-picker-showcase__chips .uc-chip {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.14);
+        --mdc-icon-size: 18px;
+        color: #fff;
+      }
+
+      @keyframes uc-showcase-pan {
+        0%,
+        100% {
+          background-position: 0% 0%;
+        }
+        25% {
+          background-position: 100% 25%;
+        }
+        50% {
+          background-position: 100% 100%;
+        }
+        75% {
+          background-position: 0% 75%;
+        }
+      }
+
+      @keyframes uc-showcase-drift {
+        from {
+          transform: translate3d(-4%, -3%, 0) scale(1);
+        }
+        to {
+          transform: translate3d(4%, 3%, 0) scale(1.08);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .uc-picker-showcase,
+        .uc-picker-showcase__glow {
+          animation: none;
+        }
       }
 
       .welcome-text {

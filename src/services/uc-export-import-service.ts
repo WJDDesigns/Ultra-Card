@@ -718,14 +718,20 @@ class UcExportImportService {
     // Generate new ID for the module itself
     module.id = `${module.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // If this is a layout module (horizontal/vertical/stack/accordion/popup/slider), regenerate IDs for all nested modules
+    // If this is a layout module (horizontal/vertical/stack/accordion/popup/slider/
+    // grid_layout/flip_card/drawer/scroll_row/state_switcher), regenerate IDs for all nested modules
     if (
       (module.type === 'horizontal' ||
         module.type === 'vertical' ||
         module.type === 'stack' ||
         module.type === 'accordion' ||
         module.type === 'popup' ||
-        module.type === 'slider') &&
+        module.type === 'slider' ||
+        module.type === 'grid_layout' ||
+        module.type === 'flip_card' ||
+        module.type === 'drawer' ||
+        module.type === 'scroll_row' ||
+        module.type === 'state_switcher') &&
       module.modules
     ) {
       module.modules.forEach((childModule: any) => {

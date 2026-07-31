@@ -25,6 +25,11 @@ const CONTAINER_TYPES = new Set([
   'tabs',
   'accordion',
   'slider',
+  'grid_layout',
+  'flip_card',
+  'drawer',
+  'scroll_row',
+  'state_switcher',
 ]);
 
 const KEYWORD_OVERRIDES: Record<string, string[]> = {
@@ -468,6 +473,11 @@ const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
   tabs: ['*'],
   accordion: ['*'],
   slider: ['*'],
+  grid_layout: ['*'],
+  flip_card: ['*'],
+  drawer: ['*'],
+  scroll_row: ['*'],
+  state_switcher: ['*'],
 };
 
 const DEVICE_CLASS_OVERRIDES: Record<string, string[]> = {

@@ -76,7 +76,16 @@ function applyChangeToModule(module: CardModule, change: PresetWizardChange): Ca
 
 function mapModuleRecursive(module: CardModule, mutator: (m: CardModule) => CardModule): CardModule {
   let m = mutator(module);
-  if (m.type === 'horizontal' || m.type === 'vertical' || m.type === 'stack') {
+  if (
+    m.type === 'horizontal' ||
+    m.type === 'vertical' ||
+    m.type === 'stack' ||
+    m.type === 'grid_layout' ||
+    m.type === 'flip_card' ||
+    m.type === 'drawer' ||
+    m.type === 'scroll_row' ||
+    m.type === 'state_switcher'
+  ) {
     const h = m as any;
     if (Array.isArray(h.modules)) {
       m = { ...h, modules: h.modules.map((child: CardModule) => mapModuleRecursive(child, mutator)) };

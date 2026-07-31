@@ -8,6 +8,11 @@ export const LAYOUT_MODULE_TYPES = [
   'popup',
   'slider',
   'tabs',
+  'grid_layout',
+  'flip_card',
+  'drawer',
+  'scroll_row',
+  'state_switcher',
 ] as const;
 
 export function isLayoutModuleType(moduleType: string | undefined | null): boolean {

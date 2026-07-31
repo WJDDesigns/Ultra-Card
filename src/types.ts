@@ -127,6 +127,11 @@ export interface BaseModule {
     | 'separator'
     | 'horizontal'
     | 'vertical'
+    | 'grid_layout'
+    | 'flip_card'
+    | 'drawer'
+    | 'scroll_row'
+    | 'state_switcher'
     | 'accordion'
     | 'popup'
     | 'slider'
@@ -1161,6 +1166,8 @@ export interface IconConfig {
   icon_mode?: 'entity' | 'static' | undefined; // 'entity' = connected to HA entity, 'static' = standalone icon
   entity: string;
   name?: string | undefined;
+  /** Editor-only label for organizing icons in the editor; never rendered on the card. */
+  internal_name?: string | undefined;
 
   // Icon states
   icon_inactive?: string | undefined;
@@ -1618,6 +1625,88 @@ export interface StackModule extends BaseModule {
     service?: string | undefined;
     service_data?: Record<string, any> | undefined;
   } | undefined;
+}
+
+// Grid Layout — true CSS-grid container with per-child column/row spans
+export interface GridLayoutModule extends BaseModule {
+  type: 'grid_layout';
+  modules: CardModule[];
+  /** 'fixed' uses `columns`; 'auto-fit' fills the row with `min_column_width` tracks */
+  column_mode?: 'fixed' | 'auto-fit' | undefined;
+  columns?: number | undefined;
+  min_column_width?: string | undefined;
+  /** Column gap in px */
+  gap?: number | undefined;
+  /** Row gap in px (defaults to `gap` when undefined) */
+  row_gap?: number | undefined;
+  /** grid-auto-flow: row dense — backfills holes left by spanning items */
+  dense_packing?: boolean | undefined;
+  item_alignment?: 'stretch' | 'start' | 'center' | 'end' | undefined;
+  /** Viewport width (px) below which the grid collapses to `mobile_columns`. 0 disables. */
+  mobile_breakpoint?: number | undefined;
+  mobile_columns?: number | undefined;
+  /** Per-child spans keyed by child module id */
+  item_spans?: Record<string, { columns?: number | undefined; rows?: number | undefined }> | undefined;
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// Flip Card — two-sided container; child 0 = front face, child 1 = back face
+export interface FlipCardModule extends BaseModule {
+  type: 'flip_card';
+  modules: CardModule[];
+  flip_trigger?: 'tap' | 'hover' | 'entity' | undefined;
+  flip_entity?: string | undefined;
+  flip_attribute?: string | undefined;
+  /** Entity state/attribute value that shows the back face */
+  flip_value?: string | undefined;
+  flip_direction?: 'horizontal' | 'vertical' | undefined;
+  /** Flip animation duration in ms */
+  flip_duration?: number | undefined;
+}
+
+// Drawer — slide-in panel (portal-rendered) opened by a trigger button
+export interface DrawerModule extends BaseModule {
+  type: 'drawer';
+  modules: CardModule[];
+  drawer_position?: 'left' | 'right' | 'top' | 'bottom' | undefined;
+  /** Panel size along its slide axis (width for left/right, height for top/bottom) */
+  drawer_size?: string | undefined;
+  drawer_title?: string | undefined;
+  drawer_background?: string | undefined;
+  show_close_button?: boolean | undefined;
+  close_on_overlay_click?: boolean | undefined;
+  trigger_style?: 'button' | 'icon' | undefined;
+  trigger_label?: string | undefined;
+  trigger_icon?: string | undefined;
+  trigger_color?: string | undefined;
+  trigger_background?: string | undefined;
+}
+
+// Scroll Row — horizontally scrollable row with CSS scroll-snap and item peek
+export interface ScrollRowModule extends BaseModule {
+  type: 'scroll_row';
+  modules: CardModule[];
+  /** CSS width of each item (e.g. '42%', '140px'); percentages create next-item peek */
+  item_width?: string | undefined;
+  /** Gap between items in px */
+  gap?: number | undefined;
+  snap_align?: 'start' | 'center' | 'none' | undefined;
+  show_scrollbar?: boolean | undefined;
+  show_arrows?: boolean | undefined;
+  fade_edges?: boolean | undefined;
+}
+
+// State Switcher — renders exactly one child: the first whose logic conditions match
+export interface StateSwitcherModule extends BaseModule {
+  type: 'state_switcher';
+  modules: CardModule[];
+  transition?: 'none' | 'fade' | 'slide_left' | 'slide_right' | 'slide_up' | 'slide_down' | 'scale' | undefined;
+  /** Transition duration in ms */
+  transition_duration?: number | undefined;
+  /** What to show when no child's conditions match */
+  fallback_mode?: 'none' | 'first' | 'last' | undefined;
 }
 
 // Accordion Layout Module
@@ -5047,6 +5136,11 @@ export type CardModule =
   | HorizontalModule
   | VerticalModule
   | StackModule
+  | GridLayoutModule
+  | FlipCardModule
+  | DrawerModule
+  | ScrollRowModule
+  | StateSwitcherModule
   | AccordionModule
   | PopupModule
   | SliderModule

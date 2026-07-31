@@ -13899,15 +13899,8 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
 
-    // Check if this child module is itself a layout module (horizontal, vertical, stack, accordion, popup, slider, or tabs)
-    const isNestedLayoutModule =
-      childModule.type === 'horizontal' ||
-      childModule.type === 'vertical' ||
-      childModule.type === 'stack' ||
-      childModule.type === 'accordion' ||
-      childModule.type === 'popup' ||
-      childModule.type === 'slider' ||
-      childModule.type === 'tabs';
+    // Check if this child module is itself a layout module (see LAYOUT_MODULE_TYPES)
+    const isNestedLayoutModule = this._isLayoutModule(childModule.type);
 
     if (isNestedLayoutModule) {
       // Render nested layout modules with full layout functionality
@@ -15967,14 +15960,7 @@ export class LayoutTab extends LitElement {
     const registry = getModuleRegistry();
 
     // Check if this child module is itself a layout module
-    const isChildLayoutModule =
-      childModule.type === 'horizontal' ||
-      childModule.type === 'vertical' ||
-      childModule.type === 'stack' ||
-      childModule.type === 'accordion' ||
-      childModule.type === 'popup' ||
-      childModule.type === 'slider' ||
-      childModule.type === 'tabs';
+    const isChildLayoutModule = this._isLayoutModule(childModule.type);
 
     // If it's a layout module, render it as a nested layout container
     if (isChildLayoutModule) {
@@ -16936,14 +16922,7 @@ export class LayoutTab extends LitElement {
     const registry = getModuleRegistry();
 
     // Check if this child module is itself a layout module
-    const isChildLayoutModule =
-      childModule.type === 'horizontal' ||
-      childModule.type === 'vertical' ||
-      childModule.type === 'stack' ||
-      childModule.type === 'accordion' ||
-      childModule.type === 'popup' ||
-      childModule.type === 'slider' ||
-      childModule.type === 'tabs';
+    const isChildLayoutModule = this._isLayoutModule(childModule.type);
 
     // If it's a layout module, render it as a deeply nested layout container
     if (isChildLayoutModule) {
@@ -20081,14 +20060,7 @@ export class LayoutTab extends LitElement {
     const lang = this.hass?.locale?.language || 'en';
 
     // Check if this child module is itself a layout module (for 3+ level nesting)
-    const isNestedLayoutModule =
-      childModule.type === 'horizontal' ||
-      childModule.type === 'vertical' ||
-      childModule.type === 'stack' ||
-      childModule.type === 'accordion' ||
-      childModule.type === 'popup' ||
-      childModule.type === 'slider' ||
-      childModule.type === 'tabs';
+    const isNestedLayoutModule = this._isLayoutModule(childModule.type);
 
     if (isNestedLayoutModule) {
       // This is a 3rd level layout module (e.g., popup inside horizontal inside slider)
@@ -21860,7 +21832,12 @@ export class LayoutTab extends LitElement {
         module.type === 'stack' ||
         module.type === 'accordion' ||
         module.type === 'popup' ||
-        module.type === 'slider') &&
+        module.type === 'slider' ||
+        module.type === 'grid_layout' ||
+        module.type === 'flip_card' ||
+        module.type === 'drawer' ||
+        module.type === 'scroll_row' ||
+        module.type === 'state_switcher') &&
       module.modules
     ) {
       module.modules.forEach((childModule: any) => {

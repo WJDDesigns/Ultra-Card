@@ -224,7 +224,12 @@ class UcEntityMapperService {
       case 'vertical':
         mappedModule = this._mapVerticalModule(module as VerticalModule, mappingMap);
         break;
-      case 'stack': {
+      case 'stack':
+      case 'grid_layout':
+      case 'flip_card':
+      case 'drawer':
+      case 'scroll_row':
+      case 'state_switcher': {
         const sm = module as any;
         mappedModule = {
           ...sm,

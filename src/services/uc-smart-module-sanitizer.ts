@@ -299,6 +299,27 @@ function sanitizeContainerModule(
     return { id, type: 'slider', pages, orientation: 'horizontal', style: 'default' };
   }
 
+  if (
+    type === 'grid_layout' ||
+    type === 'flip_card' ||
+    type === 'drawer' ||
+    type === 'scroll_row' ||
+    type === 'state_switcher'
+  ) {
+    const childModules = sanitizeSmartModules(
+      Array.isArray(module.modules) ? module.modules : [],
+      hass,
+      context,
+      id
+    );
+    if (!childModules.length) return null;
+    return {
+      id,
+      type,
+      modules: childModules,
+    };
+  }
+
   if (type === 'horizontal' || type === 'vertical') {
     const childModules = sanitizeSmartModules(
       Array.isArray(module.modules) ? module.modules : [],
@@ -1878,6 +1899,11 @@ initSmartModuleRegistry({
   tabs: { sanitize: wrapContainerSanitize('tabs') },
   accordion: { sanitize: wrapContainerSanitize('accordion') },
   slider: { sanitize: wrapContainerSanitize('slider') },
+  grid_layout: { sanitize: wrapContainerSanitize('grid_layout') },
+  flip_card: { sanitize: wrapContainerSanitize('flip_card') },
+  drawer: { sanitize: wrapContainerSanitize('drawer') },
+  scroll_row: { sanitize: wrapContainerSanitize('scroll_row') },
+  state_switcher: { sanitize: wrapContainerSanitize('state_switcher') },
   activity_feed: {
     sanitize: wrapSanitizeModule((_module, _hass, id) => ({
       id,

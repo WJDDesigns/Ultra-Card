@@ -6039,7 +6039,7 @@ export class UltraCardEditor extends LitElement {
                 ${localize(
                   'editor.pro_settings.skip_default_modules_desc',
                   lang,
-                  'When adding a new Ultra Card, start with an empty layout instead of the default text and image modules'
+                  'When adding a new Ultra Card, start with an empty layout instead of the default starter modules'
                 )}
               </p>
             </div>

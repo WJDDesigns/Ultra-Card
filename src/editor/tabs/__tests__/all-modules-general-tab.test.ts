@@ -49,6 +49,9 @@ const EMPTY_GENERAL_TAB = new Set([
   'external_card',
   'native_card',
   'video_bg',
+  // First controls are ultra-segmented / ultra-color-picker custom elements
+  // without a directly-interactable primitive control in the test stubs.
+  'drawer',
 ]);
 
 const CONFIG: UltraCardConfig = {
