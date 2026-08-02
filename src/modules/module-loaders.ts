@@ -320,4 +320,8 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     import(/* webpackMode: "eager" */ './weather-module').then(
       m => new m.UltraWeatherModule()
     ),
+  dog_duty: () =>
+    import(/* webpackMode: "eager" */ './dog-duty-module').then(
+      m => new m.UltraDogDutyModule()
+    ),
 };

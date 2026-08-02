@@ -204,7 +204,8 @@ export interface BaseModule {
     | 'fridge'
     | 'range'
     | 'todo_list'
-    | 'weather';
+    | 'weather'
+    | 'dog_duty';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -5207,7 +5208,43 @@ export type CardModule =
   | HumidifierModule
   | ApplianceModule
   | TodoListModule
-  | WeatherModule;
+  | WeatherModule
+  | DogDutyModule;
+
+/** A single pin dropped on the Dog Duty image (coordinates are percentages of the image size). */
+export interface DogDutyPin {
+  id: string;
+  x: number;
+  y: number;
+  /** Epoch ms when the pin was placed. */
+  ts: number;
+}
+
+// Dog Duty — tap a yard photo to drop pins, clear them all with one button
+export interface DogDutyModule extends BaseModule {
+  type: 'dog_duty';
+
+  /** Where the background image comes from. */
+  image_type?: 'upload' | 'url' | 'entity' | undefined;
+  /** Uploaded path or direct URL (for 'upload' and 'url' source types). */
+  image_url?: string | undefined;
+  /** Entity whose entity_picture is used (for 'entity' source type). */
+  image_entity?: string | undefined;
+
+  pin_icon?: string | undefined;
+  pin_color?: string | undefined;
+  pin_size?: number | undefined;
+  /** Tapping an existing pin removes just that pin (default true). */
+  tap_pin_to_remove?: boolean | undefined;
+
+  show_clear_button?: boolean | undefined;
+  clear_button_label?: string | undefined;
+  show_pin_count?: boolean | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
 
 // Update Monitor — auto-discover update.* entities and surface pending updates
 export interface UpdateMonitorModule extends BaseModule {

@@ -9,6 +9,7 @@ const LIBRARY_ONLY_TYPES = new Set([
   'screensaver',
   'time_machine',
   'virtual_pet',
+  'dog_duty',
   'badge_of_honor',
   'external_card',
   'native_card',
