@@ -21,6 +21,23 @@ import { resolveOverlayLayer } from '../utils/uc-overlay-host';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
+/**
+ * Unified-template keys the dropdown module reads: a top-level `options` array
+ * (or a bare JSON array) of option objects plus an optional `display` object.
+ * Option/display keys are included because the key scanner also sees nested keys.
+ */
+const DROPDOWN_TEMPLATE_KEYS = [
+  'options',
+  'display',
+  'label',
+  'name',
+  'icon',
+  'icon_color',
+  'use_state_color',
+  'mode',
+  'value',
+] as const;
+
 export class UltraDropdownModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'dropdown',
@@ -645,6 +662,11 @@ export class UltraDropdownModule extends BaseUltraModule {
                                   this.triggerPreviewUpdate();
                                 }}
                               ></ultra-template-editor>
+                              ${this.renderTemplateKeyWarning(
+                                dropdownModule.unified_template,
+                                DROPDOWN_TEMPLATE_KEYS,
+                                lang
+                              )}
                               <div class="template-help">
                                 <p><strong>Template must return a JSON array of options:</strong></p>
                                 <code

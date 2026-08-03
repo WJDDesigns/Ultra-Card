@@ -21,19 +21,22 @@ const DIST_DIR = path.join(ROOT, 'dist');
 const CONFIG = {
   instances: [
     {
-      name: 'HA Instance 1',
+      name: 'HA Instance 1 (.244)',
       url: 'http://192.168.4.244:8123/',
+      // Samba: //homeassistant@192.168.4.244/config
       path: '/Volumes/config/www/community/Ultra-Card',
     },
     {
-      name: 'HA Instance 2',
+      name: 'HA Instance 2 (.55 main)',
       url: 'http://192.168.4.55:8123/',
-      path: '/Volumes/config/www/community/Ultra-Card',
+      // Samba: //homeassistant@192.168.4.55/config (often mounts as config-1 when .244 already owns /Volumes/config)
+      path: '/Volumes/config-1/www/community/Ultra-Card',
     },
   ],
-  // Live HA integration www (sidebar Hub assets)
+  // Live HA integration www (sidebar Hub assets) — one entry per mounted instance
   integrationWwwPaths: [
     '/Volumes/config/custom_components/ultra_card_pro_cloud/www',
+    '/Volumes/config-1/custom_components/ultra_card_pro_cloud/www',
   ],
   // Sibling Connect git repo (for shipping); override with INTEGRATION_WWW_PATH
   connectRepoWww:
@@ -47,8 +50,11 @@ const CONFIG = {
     'custom_components',
     'ultra_card_pro_cloud'
   ),
-  // Live HA integration directory on the mounted config volume
-  haIntegrationPath: '/Volumes/config/custom_components/ultra_card_pro_cloud',
+  // Live HA integration directories on mounted config volumes (deploy to each that exists)
+  haIntegrationPaths: [
+    '/Volumes/config/custom_components/ultra_card_pro_cloud',
+    '/Volumes/config-1/custom_components/ultra_card_pro_cloud',
+  ],
 };
 
 const CORE_FILES = [
@@ -82,7 +88,11 @@ function hasRsync() {
 }
 
 function isVolumeMounted() {
-  return fs.existsSync('/Volumes/config');
+  return (
+    fs.existsSync('/Volumes/config') ||
+    fs.existsSync('/Volumes/config-1') ||
+    (CONFIG.instances || []).some(i => fs.existsSync(path.dirname(i.path)) || fs.existsSync(i.path))
+  );
 }
 
 function checkInstance(url) {
@@ -299,64 +309,78 @@ function copyDirRecursive(src, dest, skip) {
 
 /**
  * Deploy the full Connect integration (Python + www) from the sibling repo
- * to the live HA custom_components directory. Returns info or null if skipped.
+ * to each live HA custom_components directory that exists. Returns info or null if skipped.
  */
 function deployConnectIntegration() {
   const src = CONFIG.connectRepoIntegration;
-  const dest = CONFIG.haIntegrationPath;
+  const dests = CONFIG.haIntegrationPaths || [];
   const started = Date.now();
 
   if (!fs.existsSync(path.join(src, 'manifest.json'))) {
     console.log(`  ℹ️  Connect repo not found, skipping integration deploy: ${src}`);
     return null;
   }
-  if (!fs.existsSync(path.dirname(dest))) {
-    console.log(`  ℹ️  HA custom_components not available: ${path.dirname(dest)}`);
-    return null;
-  }
 
-  const newVersion = readManifestVersion(src);
-  const oldVersion = readManifestVersion(dest);
-  let pythonChanged = oldVersion !== newVersion;
-
-  if (hasRsync()) {
-    const result = spawnSync(
-      'rsync',
-      [
-        '-ai',
-        '--inplace',
-        '--delete',
-        '--exclude',
-        '__pycache__',
-        '--exclude',
-        '*.pyc',
-        '--exclude',
-        '.DS_Store',
-        `${src}/`,
-        `${dest}/`,
-      ],
-      { encoding: 'utf8' }
-    );
-    if (result.status !== 0) {
-      throw new Error(`rsync failed: ${result.stderr || result.stdout}`);
+  const results = [];
+  for (const dest of dests) {
+    if (!fs.existsSync(path.dirname(dest))) {
+      console.log(`  ℹ️  HA custom_components not available: ${path.dirname(dest)}`);
+      continue;
     }
-    const changed = (result.stdout || '')
-      .split('\n')
-      .filter(l => l.trim() && !l.startsWith('.d..t'));
-    if (changed.some(l => l.includes('.py'))) pythonChanged = true;
-  } else {
-    copyDirRecursive(
-      src,
+
+    const newVersion = readManifestVersion(src);
+    const oldVersion = readManifestVersion(dest);
+    let pythonChanged = oldVersion !== newVersion;
+
+    if (hasRsync()) {
+      const result = spawnSync(
+        'rsync',
+        [
+          '-ai',
+          '--inplace',
+          '--delete',
+          '--exclude',
+          '__pycache__',
+          '--exclude',
+          '*.pyc',
+          '--exclude',
+          '.DS_Store',
+          `${src}/`,
+          `${dest}/`,
+        ],
+        { encoding: 'utf8' }
+      );
+      if (result.status !== 0) {
+        throw new Error(`rsync failed (${dest}): ${result.stderr || result.stdout}`);
+      }
+      const changed = (result.stdout || '')
+        .split('\n')
+        .filter(l => l.trim() && !l.startsWith('.d..t'));
+      if (changed.some(l => l.includes('.py'))) pythonChanged = true;
+    } else {
+      copyDirRecursive(
+        src,
+        dest,
+        name => name === '__pycache__' || name.endsWith('.pyc') || name === '.DS_Store'
+      );
+    }
+
+    results.push({
       dest,
-      name => name === '__pycache__' || name.endsWith('.pyc') || name === '.DS_Store'
-    );
+      ms: Date.now() - started,
+      oldVersion,
+      newVersion,
+      pythonChanged,
+    });
   }
 
+  if (!results.length) return null;
   return {
     ms: Date.now() - started,
-    oldVersion,
-    newVersion,
-    pythonChanged,
+    results,
+    pythonChanged: results.some(r => r.pythonChanged),
+    newVersion: results[0]?.newVersion,
+    oldVersion: results[0]?.oldVersion,
   };
 }
 
@@ -422,11 +446,14 @@ function deploy() {
   try {
     connectResult = deployConnectIntegration();
     if (connectResult) {
-      const versionNote =
-        connectResult.oldVersion && connectResult.oldVersion !== connectResult.newVersion
-          ? ` (${connectResult.oldVersion} → ${connectResult.newVersion})`
-          : ` (v${connectResult.newVersion})`;
-      console.log(`  ✅ ${CONFIG.haIntegrationPath}${versionNote}, ${connectResult.ms}ms`);
+      for (const r of connectResult.results || []) {
+        const versionNote =
+          r.oldVersion && r.oldVersion !== r.newVersion
+            ? ` (${r.oldVersion} → ${r.newVersion})`
+            : ` (v${r.newVersion})`;
+        console.log(`  ✅ ${r.dest}${versionNote}`);
+      }
+      console.log(`  ⏱  ${connectResult.ms}ms`);
       deployed = true;
     }
   } catch (err) {

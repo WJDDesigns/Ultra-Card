@@ -15,6 +15,15 @@ import { sanitizeMarkdownHtml } from '../utils/html-sanitizer';
 import { marked } from 'marked';
 
 
+/** Unified-template output keys the markdown module reads (`state` is an alias for `state_text`). */
+const MARKDOWN_TEMPLATE_KEYS = [
+  'content',
+  'color',
+  'state_text',
+  'state',
+  'container_background_color',
+] as const;
+
 export class UltraMarkdownModule extends BaseUltraModule {
   private _templateService: TemplateService | null = null;
   private _renderedContentCache: Map<string, string> = new Map();
@@ -293,6 +302,11 @@ All standard markdown features are automatically enabled!`,
                       updateModule({ unified_template: e.detail.value });
                     }}
                   ></ultra-template-editor>
+                  ${this.renderTemplateKeyWarning(
+                    markdownModule.unified_template,
+                    MARKDOWN_TEMPLATE_KEYS,
+                    lang
+                  )}
                 </div>
               `
             : ''}

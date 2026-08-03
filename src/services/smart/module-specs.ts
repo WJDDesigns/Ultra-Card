@@ -45,6 +45,13 @@ const KEYWORD_OVERRIDES: Record<string, string[]> = {
   camera: ['live feed', 'surveillance', 'security camera'],
   image: ['picture', 'photo'],
   qr_code: ['qr', 'qrcode', 'wifi code'],
+  dog_duty: ['dog duty', 'dog poop', 'yard camera', 'pet waste', 'dog map'],
+  cleaning_zones: ['cleaning zones', 'room cleaning', 'chore map', 'housekeeping', 'clean rooms'],
+  battery_fleet: ['battery fleet', 'battery prediction', 'replace batteries', 'battery forecast'],
+  plant_care: ['plant care', 'water plants', 'watering schedule', 'houseplants', 'plant moisture'],
+  laundry_tracker: ['laundry tracker', 'laundry', 'wash cycle', 'forgotten laundry', 'wet clothes'],
+  vehicle_maintenance: ['vehicle maintenance', 'car maintenance', 'oil change', 'service interval', 'odometer'],
+  vampire_power: ['vampire power', 'phantom load', 'standby power', 'idle power', 'energy waste'],
   calendar: ['events', 'schedule', 'agenda'],
   battery_monitor: ['battery', 'low battery', 'phone battery'],
   area_summary: ['room summary', 'room tile', 'floor plan'],
@@ -202,6 +209,10 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
   qr_code: {
     purpose: 'QR code from text, URL, template, or entity state.',
     fields: ['content_source', 'text', 'entity'],
+  },
+  dog_duty: {
+    purpose: 'Yard map with AI-detected dog waste markers from a camera and to-do list.',
+    fields: ['camera_entity', 'todo_entity', 'lookback_hours'],
   },
   timer: {
     purpose: 'Countdown timer with optional completion action.',
@@ -405,6 +416,42 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
     fields: ['weather_entity', 'forecast_type', 'forecast_count'],
     example: { type: 'weather', weather_entity: 'weather.home', forecast_type: 'daily', forecast_count: 5 },
   },
+  cleaning_zones: {
+    purpose:
+      'Floorplan with tappable room regions that track how long since each room was cleaned. Zones and their geometry are drawn by the user in the editor, so only the storage list and display options can be set from a prompt.',
+    fields: ['todo_entity', 'view_mode', 'default_interval_days', 'staleness_style'],
+    example: { type: 'cleaning_zones', todo_entity: 'todo.cleaning', view_mode: 'both', default_interval_days: 7 },
+  },
+  battery_fleet: {
+    purpose:
+      'Auto-discovers every battery entity and ranks them by urgency, using recorder history to estimate drain rate and predict replacement dates. Needs no entity configuration.',
+    fields: ['discovery_mode', 'history_days', 'layout', 'sort_mode', 'low_threshold'],
+    example: { type: 'battery_fleet', discovery_mode: 'auto', history_days: 14, layout: 'table', sort_mode: 'urgency' },
+  },
+  plant_care: {
+    purpose:
+      'Watering and fertilizing schedules for houseplants, with optional per-plant moisture sensors. Individual plants are added by the user in the editor.',
+    fields: ['todo_entity', 'layout', 'default_water_interval_days', 'moisture_source'],
+    example: { type: 'plant_care', todo_entity: 'todo.plants', layout: 'grid', default_water_interval_days: 7 },
+  },
+  laundry_tracker: {
+    purpose:
+      'Detects washer and dryer cycles from power sensors and warns when a finished load is left sitting. Appliances and their wattage thresholds are configured by the user in the editor.',
+    fields: ['history_days', 'layout', 'energy_rate', 'show_idle_alert'],
+    example: { type: 'laundry_tracker', history_days: 7, layout: 'stack', show_idle_alert: true },
+  },
+  vehicle_maintenance: {
+    purpose:
+      'Tracks vehicle service intervals by odometer distance or elapsed time, whichever comes first, with a cost-tracked service log.',
+    fields: ['vehicle_name', 'odometer_entity', 'distance_unit', 'layout', 'todo_entity'],
+    example: { type: 'vehicle_maintenance', vehicle_name: 'Model 3', odometer_entity: 'sensor.model_3_odometer', distance_unit: 'mi', layout: 'hero' },
+  },
+  vampire_power: {
+    purpose:
+      'Analyzes recorder history for every power sensor to find always-on standby loads and ranks them by annual cost. Needs no entity configuration.',
+    fields: ['discovery_mode', 'history_days', 'energy_rate', 'cost_period', 'layout'],
+    example: { type: 'vampire_power', discovery_mode: 'auto', history_days: 7, energy_rate: 0.15, cost_period: 'year' },
+  },
 };
 
 const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
@@ -451,6 +498,13 @@ const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
   lunar_phase: ['*'],
   sports_score: ['*'],
   qr_code: ['*'],
+  dog_duty: ['camera', 'todo'],
+  cleaning_zones: ['todo'],
+  battery_fleet: ['sensor', 'binary_sensor'],
+  plant_care: ['todo', 'sensor'],
+  laundry_tracker: ['sensor', 'binary_sensor'],
+  vehicle_maintenance: ['sensor', 'input_number', 'todo'],
+  vampire_power: ['sensor'],
   animated_weather: ['weather'],
   animated_forecast: ['weather'],
   animated_clock: ['*'],
@@ -484,6 +538,9 @@ const DEVICE_CLASS_OVERRIDES: Record<string, string[]> = {
   bar: ['battery', 'fuel', 'moisture', 'humidity'],
   gauge: ['battery', 'fuel'],
   battery_monitor: ['battery'],
+  battery_fleet: ['battery'],
+  vampire_power: ['power'],
+  laundry_tracker: ['power'],
 };
 
 const UNIT_HINT_OVERRIDES: Record<string, string[]> = {

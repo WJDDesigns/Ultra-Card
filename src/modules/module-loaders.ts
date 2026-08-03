@@ -320,4 +320,32 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     import(/* webpackMode: "eager" */ './weather-module').then(
       m => new m.UltraWeatherModule()
     ),
+  dog_duty: () =>
+    import(/* webpackMode: "eager" */ './dog-duty-module').then(
+      m => new m.UltraDogDutyModule()
+    ),
+  cleaning_zones: () =>
+    import(/* webpackMode: "eager" */ './cleaning-zones-module').then(
+      m => new m.UltraCleaningZonesModule()
+    ),
+  battery_fleet: () =>
+    import(/* webpackMode: "eager" */ './battery-fleet-module').then(
+      m => new m.UltraBatteryFleetModule()
+    ),
+  plant_care: () =>
+    import(/* webpackMode: "eager" */ './plant-care-module').then(
+      m => new m.UltraPlantCareModule()
+    ),
+  laundry_tracker: () =>
+    import(/* webpackMode: "eager" */ './laundry-tracker-module').then(
+      m => new m.UltraLaundryTrackerModule()
+    ),
+  vehicle_maintenance: () =>
+    import(/* webpackMode: "eager" */ './vehicle-maintenance-module').then(
+      m => new m.UltraVehicleMaintenanceModule()
+    ),
+  vampire_power: () =>
+    import(/* webpackMode: "eager" */ './vampire-power-module').then(
+      m => new m.UltraVampirePowerModule()
+    ),
 };

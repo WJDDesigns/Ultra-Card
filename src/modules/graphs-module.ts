@@ -26,6 +26,9 @@ import { Z_INDEX } from '../utils/uc-z-index';
 import { escapeHtml } from '../utils/html-sanitizer';
 import { resolveOverlayLayer } from '../utils/uc-overlay-host';
 
+/** Unified-template output keys the graphs module reads. */
+const GRAPHS_TEMPLATE_KEYS = ['colors', 'global_color', 'fill_area', 'pie_fill'] as const;
+
 export class UltraGraphsModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'graphs',
@@ -2009,6 +2012,11 @@ export class UltraGraphsModule extends BaseUltraModule {
                     @value-changed=${(e: CustomEvent) =>
                       updateModule({ unified_template: e.detail.value })}
                   ></ultra-template-editor>
+                  ${this.renderTemplateKeyWarning(
+                    graphsModule.unified_template,
+                    GRAPHS_TEMPLATE_KEYS,
+                    lang
+                  )}
                 </div>
               `
             : ''}

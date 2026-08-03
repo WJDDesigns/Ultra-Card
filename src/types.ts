@@ -9,7 +9,15 @@ declare global {
      * Optional module chunk preload policy (see `uc-module-preload-scheduler.ts`).
      * `localStorage['ultra-card-module-preload']` accepts the same strings if this is unset.
      */
-    __ultraCardModulePreload?: 'batched' | 'full' | 'minimal' | 'off' | 'none' | 'parallel' | 'default' | undefined;
+    __ultraCardModulePreload?:
+      | 'batched'
+      | 'full'
+      | 'minimal'
+      | 'off'
+      | 'none'
+      | 'parallel'
+      | 'default'
+      | undefined;
     /** Rollback: set false to eagerly import the editor at card bootstrap. */
     __ultraCardLazyEditor?: boolean | string | undefined;
     /** Rollback hint for docs / tooling (loaders always use dynamic import). */
@@ -204,7 +212,14 @@ export interface BaseModule {
     | 'fridge'
     | 'range'
     | 'todo_list'
-    | 'weather';
+    | 'weather'
+    | 'dog_duty'
+    | 'cleaning_zones'
+    | 'battery_fleet'
+    | 'plant_care'
+    | 'laundry_tracker'
+    | 'vehicle_maintenance'
+    | 'vampire_power';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -309,54 +324,60 @@ export interface TextModule extends BaseModule {
   link?: string | undefined;
   hide_if_no_link?: boolean | undefined;
   // Global link configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
   icon?: string | undefined;
   icon_color?: string | undefined;
   icon_position?: 'before' | 'after' | 'none' | undefined;
@@ -395,7 +416,14 @@ export interface TextModule extends BaseModule {
 // Separator Module
 export interface SeparatorModule extends BaseModule {
   type: 'separator';
-  separator_style?: 'line' | 'double_line' | 'dotted' | 'double_dotted' | 'shadow' | 'blank' | undefined;
+  separator_style?:
+    | 'line'
+    | 'double_line'
+    | 'dotted'
+    | 'double_dotted'
+    | 'shadow'
+    | 'blank'
+    | undefined;
   orientation?: 'horizontal' | 'vertical' | undefined;
   thickness?: number | undefined;
   width_percent?: number | string | undefined; // Percentage (e.g., "100%") or pixels (e.g., "200px")
@@ -411,54 +439,60 @@ export interface SeparatorModule extends BaseModule {
   title_strikethrough?: boolean | undefined;
   title_underline?: boolean | undefined;
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
   // Hover configuration
   enable_hover_effect?: boolean | undefined;
   hover_background_color?: string | undefined;
@@ -474,7 +508,14 @@ export interface ImageModule extends BaseModule {
   image_width?: number | undefined;
   image_height?: number | undefined;
   image_fit?: 'cover' | 'contain' | 'fill' | 'none' | undefined;
-  single_click_action?: 'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service' | undefined;
+  single_click_action?:
+    | 'none'
+    | 'more-info'
+    | 'toggle'
+    | 'navigate'
+    | 'url'
+    | 'service'
+    | undefined;
   single_entity?: string | undefined;
   single_navigation_path?: string | undefined;
   single_url?: string | undefined;
@@ -497,54 +538,60 @@ export interface ImageModule extends BaseModule {
   link_url?: string | undefined;
   link_target?: '_self' | '_blank' | undefined;
   // Ultra Link Configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
   // Alignment
   alignment?: 'left' | 'center' | 'right' | undefined;
   // CSS Filters
@@ -637,54 +684,60 @@ export interface InfoModule extends BaseModule {
   gap?: number | undefined;
   allow_wrap?: boolean | undefined;
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
   // Size configuration (General tab controls)
   text_size?: number | undefined; // Text size in pixels
   icon_size?: number | undefined; // Icon size in pixels
@@ -701,7 +754,14 @@ export interface BarModule extends BaseModule {
   name?: string | undefined;
 
   // Percentage Calculation
-  percentage_type?: 'entity' | 'attribute' | 'difference' | 'template' | 'time_progress' | 'range' | undefined;
+  percentage_type?:
+    | 'entity'
+    | 'attribute'
+    | 'difference'
+    | 'template'
+    | 'time_progress'
+    | 'range'
+    | undefined;
   percentage_entity?: string | undefined;
 
   // Entity Attribute mode
@@ -911,54 +971,60 @@ export interface BarModule extends BaseModule {
     | undefined;
 
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
   // Hover configuration
   enable_hover_effect?: boolean | undefined;
   hover_background_color?: string | undefined;
@@ -1106,54 +1172,60 @@ export interface GaugeModule extends BaseModule {
   ignore_entity_state_config?: boolean | undefined;
 
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 
   // Hover configuration
   enable_hover_effect?: boolean | undefined;
@@ -1319,58 +1391,71 @@ export interface IconConfig {
   container_background_color?: string | undefined;
 
   // Link/Action Configuration (using UltraLink pattern)
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 
   // Legacy actions (for backward compatibility)
   click_action?: 'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service' | undefined;
-  double_click_action?: 'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service' | undefined;
+  double_click_action?:
+    | 'none'
+    | 'more-info'
+    | 'toggle'
+    | 'navigate'
+    | 'url'
+    | 'service'
+    | undefined;
   hold_action_legacy?: 'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service' | undefined;
   navigation_path?: string | undefined;
   url?: string | undefined;
@@ -1393,54 +1478,60 @@ export interface IconModule extends BaseModule {
   gap?: number | undefined;
   allow_wrap?: boolean | undefined; // Allow grid items to wrap to new rows
   // Global action configuration (for the module container)
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
   // Size configuration (General tab controls)
   text_size?: number | undefined; // Text size in pixels
   icon_size?: number | undefined; // Icon size in pixels
@@ -1453,60 +1544,73 @@ export interface IconModule extends BaseModule {
 export interface HorizontalModule extends BaseModule {
   type: 'horizontal';
   modules: CardModule[];
-  alignment?: 'left' | 'center' | 'right' | 'space-between' | 'space-around' | 'justify' | undefined;
+  alignment?:
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'space-between'
+    | 'space-around'
+    | 'justify'
+    | undefined;
   vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch' | 'baseline' | undefined;
   gap?: number | undefined;
   gap_unit?: 'px' | 'rem' | 'em' | '%' | 'vw' | 'vh' | undefined;
   wrap?: boolean | undefined;
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 }
 
 // Vertical Layout Module
@@ -1520,54 +1624,60 @@ export interface VerticalModule extends BaseModule {
   gap?: number | undefined;
   gap_unit?: 'px' | 'rem' | 'em' | '%' | 'vw' | 'vh' | undefined;
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 }
 
 // Stack Overlay layout — layers children with absolute positioning / anchors
@@ -1577,54 +1687,60 @@ export interface StackModule extends BaseModule {
   aspect_ratio?: '16:9' | '4:3' | '3:2' | '1:1' | '2:3' | 'auto' | undefined;
   height?: string | undefined;
   clip_overflow?: boolean | undefined;
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 }
 
 // Grid Layout — true CSS-grid container with per-child column/row spans
@@ -1646,7 +1762,9 @@ export interface GridLayoutModule extends BaseModule {
   mobile_breakpoint?: number | undefined;
   mobile_columns?: number | undefined;
   /** Per-child spans keyed by child module id */
-  item_spans?: Record<string, { columns?: number | undefined; rows?: number | undefined }> | undefined;
+  item_spans?:
+    | Record<string, { columns?: number | undefined; rows?: number | undefined }>
+    | undefined;
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;
   double_tap_action?: ModuleActionConfig | undefined;
@@ -1702,7 +1820,15 @@ export interface ScrollRowModule extends BaseModule {
 export interface StateSwitcherModule extends BaseModule {
   type: 'state_switcher';
   modules: CardModule[];
-  transition?: 'none' | 'fade' | 'slide_left' | 'slide_right' | 'slide_up' | 'slide_down' | 'scale' | undefined;
+  transition?:
+    | 'none'
+    | 'fade'
+    | 'slide_left'
+    | 'slide_right'
+    | 'slide_up'
+    | 'slide_down'
+    | 'scale'
+    | undefined;
   /** Transition duration in ms */
   transition_duration?: number | undefined;
   /** What to show when no child's conditions match */
@@ -1736,54 +1862,60 @@ export interface AccordionModule extends BaseModule {
   open_conditions?: DisplayCondition[] | undefined;
 
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 }
 
 // Tab Section for Tabs Module
@@ -1856,54 +1988,60 @@ export interface TabsModule extends BaseModule {
   transition_duration?: string | undefined;
 
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 }
 
 // Popup Layout Module
@@ -1956,7 +2094,14 @@ export interface PopupModule extends BaseModule {
   trigger_button_state_colors?: { [state: string]: string } | undefined;
 
   // Layout settings
-  layout?: 'default' | 'full_screen' | 'left_panel' | 'right_panel' | 'top_panel' | 'bottom_panel' | undefined;
+  layout?:
+    | 'default'
+    | 'full_screen'
+    | 'left_panel'
+    | 'right_panel'
+    | 'top_panel'
+    | 'bottom_panel'
+    | undefined;
   animation?:
     | 'fade'
     | 'scale_up'
@@ -2083,54 +2228,60 @@ export interface SliderModule extends BaseModule {
   vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch' | undefined;
 
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 }
 
 // Slider Control Module (Entity Control)
@@ -2178,7 +2329,7 @@ export interface SliderBar {
 
   // Unified content positioning for all layout modes (deprecated, use individual positions below)
   content_position?: // Horizontal Overlay: Left, Center, Right
-  | 'left'
+    | 'left'
     | 'center'
     | 'right'
     // Vertical Overlay: Bottom, Center, Top
@@ -2461,54 +2612,60 @@ export interface SliderControlModule extends BaseModule {
   control_attribute?: string | undefined; // Deprecated
 
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
   // Hover configuration
   enable_hover_effect?: boolean | undefined;
   hover_background_color?: string | undefined;
@@ -2541,54 +2698,60 @@ export interface ButtonModule extends BaseModule {
   background_color?: string | undefined;
   text_color?: string | undefined;
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
   // Hover configuration
   enable_hover_effect?: boolean | undefined;
   hover_background_color?: string | undefined;
@@ -2642,54 +2805,60 @@ export interface SpinboxModule extends BaseModule {
   unified_template?: string | undefined;
   ignore_entity_state_config?: boolean | undefined;
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 }
 
 // Markdown Module
@@ -2716,54 +2885,60 @@ export interface MarkdownModule extends BaseModule {
   max_height?: string | undefined;
   overflow_behavior?: 'scroll' | 'hidden' | 'visible' | undefined;
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
   // Hover configuration
   enable_hover_effect?: boolean | undefined;
   hover_background_color?: string | undefined;
@@ -2831,54 +3006,60 @@ export interface CameraModule extends BaseModule {
   fallback_image?: string | undefined;
 
   // Link actions
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 
   // Unified template system
   unified_template_mode?: boolean | undefined;
@@ -3076,7 +3257,16 @@ export interface GraphsModule extends BaseModule {
 
   // Heatmap
   cell_padding?: number | undefined;
-  color_scheme?: 'viridis' | 'plasma' | 'inferno' | 'magma' | 'blues' | 'reds' | 'greens' | 'greys' | undefined;
+  color_scheme?:
+    | 'viridis'
+    | 'plasma'
+    | 'inferno'
+    | 'magma'
+    | 'blues'
+    | 'reds'
+    | 'greens'
+    | 'greys'
+    | undefined;
   show_values?: boolean | undefined;
   value_format?: string | undefined;
 
@@ -3101,54 +3291,60 @@ export interface GraphsModule extends BaseModule {
   ignore_entity_state_config?: boolean | undefined;
 
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 
   // Hover configuration
   enable_hover_effect?: boolean | undefined;
@@ -3204,54 +3400,60 @@ export interface DropdownModule extends BaseModule {
   // Visual Configuration (label removed)
 
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 
   // Hover configuration
   enable_hover_effect?: boolean | undefined;
@@ -3320,54 +3522,60 @@ export interface LightModule extends BaseModule {
   show_feedback?: boolean | undefined; // Show visual feedback when presets are applied
 
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 
   // Hover effects
   enable_hover_effect?: boolean | undefined;
@@ -3428,54 +3636,60 @@ export interface MapModule extends BaseModule {
   aspect_ratio?: '16:9' | '4:3' | '1:1' | 'custom' | undefined;
 
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 }
 
 // Animated Clock Module (PRO)
@@ -3899,7 +4113,14 @@ export interface QrCodeModule extends BaseModule {
   error_correction?: 'L' | 'M' | 'Q' | 'H' | undefined; // Default 'M'
   qr_margin?: number | undefined; // Quiet zone in modules (0–10), default 1; named to avoid BaseModule.margin
   // Style (qr-code-styling)
-  dot_style?: 'square' | 'dots' | 'rounded' | 'extra-rounded' | 'classy' | 'classy-rounded' | undefined;
+  dot_style?:
+    | 'square'
+    | 'dots'
+    | 'rounded'
+    | 'extra-rounded'
+    | 'classy'
+    | 'classy-rounded'
+    | undefined;
   corner_square_style?: 'square' | 'extra-rounded' | 'dot' | undefined;
   corner_dot_style?: 'square' | 'dot' | undefined;
   // Logo overlay
@@ -4963,7 +5184,18 @@ export interface ScreensaverModule extends BaseModule {
    * Visual style of the screensaver overlay.
    * classic | minimal | neon | retro | frosted | photo_corner | sunrise | dark_luxe | split | ambient
    */
-  overlay_style?: 'classic' | 'minimal' | 'neon' | 'retro' | 'frosted' | 'photo_corner' | 'sunrise' | 'dark_luxe' | 'split' | 'ambient' | undefined;
+  overlay_style?:
+    | 'classic'
+    | 'minimal'
+    | 'neon'
+    | 'retro'
+    | 'frosted'
+    | 'photo_corner'
+    | 'sunrise'
+    | 'dark_luxe'
+    | 'split'
+    | 'ambient'
+    | undefined;
 
   /** Background overlay opacity 0–100 (default: 85) */
   overlay_opacity?: number | undefined;
@@ -5207,7 +5439,98 @@ export type CardModule =
   | HumidifierModule
   | ApplianceModule
   | TodoListModule
-  | WeatherModule;
+  | WeatherModule
+  | DogDutyModule
+  | CleaningZonesModule
+  | BatteryFleetModule
+  | PlantCareModule
+  | LaundryTrackerModule
+  | VehicleMaintenanceModule
+  | VampirePowerModule;
+
+// Dog Duty (Pro) — yard map with AI-detected dog waste markers
+/** Normalized detect-zone rectangle (full-frame coordinates, 0–1). */
+export interface DogDutyDetectRoi {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface DogDutyModule extends BaseModule {
+  type: 'dog_duty';
+
+  /** Camera entity used for the yard view / scans */
+  camera_entity: string;
+  /** To-do list entity that stores detection events */
+  todo_entity: string;
+  /** Optional binary_sensor (dog / motion) used by the generated automation */
+  trigger_entity?: string | undefined;
+  /** LLM Vision provider config entry id */
+  provider_id?: string | undefined;
+  /** Created automation entity / unique id from the setup wizard */
+  automation_id?: string | undefined;
+  /** Whether the one-click setup wizard finished */
+  setup_complete?: boolean | undefined;
+
+  /** Lookback window in hours (6 / 24 / 48 / 168) */
+  lookback_hours: number;
+  /** Marker glyph style */
+  marker_style: 'x' | 'emoji' | 'pin';
+  /** Show translucent density heatmap overlay */
+  show_heatmap: boolean;
+  /** Show cleaned (completed) markers faded */
+  show_cleaned: boolean;
+  /** Map background source */
+  background_mode: 'live_snapshot' | 'reference';
+  /** Uploaded / URL reference yard photo when background_mode === 'reference' */
+  reference_image?: string | undefined;
+
+  /** Minimum minutes between Scan Now / automation runs */
+  scan_cooldown_minutes: number;
+  /**
+   * Scheduled-mode interval (minutes) used by the generated automation when no
+   * trigger sensor is set. 15 / 30 / 60 / 120 / 240. Default 30.
+   */
+  scan_interval_minutes?: number | undefined;
+  /** Scheduled-mode active window start (HH:MM). Default 07:00. */
+  scan_active_start?: string | undefined;
+  /** Scheduled-mode active window end (HH:MM). Default 21:00. */
+  scan_active_end?: string | undefined;
+  show_status_bar?: boolean | undefined;
+  show_scrubber?: boolean | undefined;
+  show_scan_now?: boolean | undefined;
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+
+  /**
+   * Detection tuning (never exposes the raw system prompt).
+   * strict = fewer high-confidence only; lenient = more permissive.
+   */
+  detection_sensitivity?: 'strict' | 'balanced' | 'lenient' | undefined;
+  /** Mark when a dog is clearly squatting / defecating (Scan Now / single-frame). */
+  detect_squatting?: boolean | undefined;
+  /** Drop spots below this confidence (0–1). Default 0.45. */
+  min_confidence?: number | undefined;
+  /** Yard-specific tips appended into the hidden detection message (max ~400 chars). */
+  extra_tips?: string | undefined;
+  /** Up to 3 example photos of waste in this yard (media paths). */
+  example_images?: string[] | undefined;
+  /** Soft detect zone; unset = full frame. */
+  detect_roi?: DogDutyDetectRoi | undefined;
+
+  /**
+   * Extra camera entities beyond `camera_entity`.
+   * Each camera gets its own map; chips combine detections across all.
+   */
+  camera_entities?: string[] | undefined;
+  /** How multiple cameras are laid out on the card. Default stack. */
+  cameras_layout?: 'stack' | 'grid' | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
 
 // Update Monitor — auto-discover update.* entities and surface pending updates
 export interface UpdateMonitorModule extends BaseModule {
@@ -5773,8 +6096,30 @@ export interface AreaSummaryModule extends BaseModule {
 }
 
 // Virtual Pet Module - Pro module with a digital pet driven by smart home data
-export type PetSpecies = 'cat' | 'dog' | 'fox' | 'rabbit' | 'owl' | 'penguin' | 'robot' | 'shrimp' | 'snail' | 'snake' | 'turtle' | 'frog';
-export type PetMood = 'ecstatic' | 'happy' | 'content' | 'neutral' | 'bored' | 'sad' | 'sleepy' | 'cold' | 'hot' | 'alert';
+export type PetSpecies =
+  | 'cat'
+  | 'dog'
+  | 'fox'
+  | 'rabbit'
+  | 'owl'
+  | 'penguin'
+  | 'robot'
+  | 'shrimp'
+  | 'snail'
+  | 'snake'
+  | 'turtle'
+  | 'frog';
+export type PetMood =
+  | 'ecstatic'
+  | 'happy'
+  | 'content'
+  | 'neutral'
+  | 'bored'
+  | 'sad'
+  | 'sleepy'
+  | 'cold'
+  | 'hot'
+  | 'alert';
 
 export interface PetEntityBinding {
   id: string;
@@ -6397,11 +6742,13 @@ export interface SmartGenerateRequest {
   tier: 'free' | 'pro';
   connector_preference?: SmartConnectorPreference | undefined;
   context?: Record<string, unknown> | undefined;
-  constraints?: {
-    style?: string | undefined;
-    max_modules?: number | undefined;
-    allow_pro_modules?: boolean | undefined;
-  } | undefined;
+  constraints?:
+    | {
+        style?: string | undefined;
+        max_modules?: number | undefined;
+        allow_pro_modules?: boolean | undefined;
+      }
+    | undefined;
 }
 
 export interface SmartGenerateResponse {
@@ -6409,12 +6756,14 @@ export interface SmartGenerateResponse {
   presets?: SmartPreset[] | undefined;
   tier_access?: SmartTierAccess | undefined;
   limits?: SmartConnectorStatus['limits'] | undefined;
-  generation?: {
-    connector_used?: SmartConnectorPreference | string | undefined;
-    tier_required?: 'free' | 'pro' | undefined;
-    warnings?: string[] | undefined;
-    fallback?: boolean | undefined;
-  } | undefined;
+  generation?:
+    | {
+        connector_used?: SmartConnectorPreference | string | undefined;
+        tier_required?: 'free' | 'pro' | undefined;
+        warnings?: string[] | undefined;
+        fallback?: boolean | undefined;
+      }
+    | undefined;
   error?: string | undefined;
 }
 
@@ -6521,7 +6870,7 @@ export interface CustomCard {
 export interface LovelaceCard {
   hass?: HomeAssistant | undefined;
   config?: UltraCardConfig | undefined;
-  requestUpdate?: (() => void ) | undefined;
+  requestUpdate?: (() => void) | undefined;
 }
 
 // Event types
@@ -6589,54 +6938,60 @@ export interface ClimateModule extends BaseModule {
   humidity_color?: string | undefined;
 
   // Global action configuration
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 
   // Hover configuration (reuse standard flag)
   enable_hover_effect?: boolean | undefined;
@@ -7168,10 +7523,12 @@ export interface SportsGameData {
   broadcast?: string | undefined; // e.g., "ESPN", "FOX"
 
   // Odds (if available)
-  odds?: {
-    spread?: string | undefined;
-    overUnder?: string | undefined;
-  } | undefined;
+  odds?:
+    | {
+        spread?: string | undefined;
+        overUnder?: string | undefined;
+      }
+    | undefined;
 
   // Metadata
   lastUpdated: Date;
@@ -7571,54 +7928,60 @@ export interface MediaPlayerModule extends BaseModule {
   album_art_border_radius?: string | undefined;
 
   // Standard Ultra Card properties
-  tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  hold_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
-  double_tap_action?: {
-    action:
-      | 'default'
-      | 'more-info'
-      | 'toggle'
-      | 'navigate'
-      | 'url'
-      | 'perform-action'
-      | 'assist'
-      | 'nothing';
-    entity?: string | undefined;
-    navigation_path?: string | undefined;
-    url_path?: string | undefined;
-    service?: string | undefined;
-    service_data?: Record<string, any> | undefined;
-  } | undefined;
+  tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  hold_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
+  double_tap_action?:
+    | {
+        action:
+          | 'default'
+          | 'more-info'
+          | 'toggle'
+          | 'navigate'
+          | 'url'
+          | 'perform-action'
+          | 'assist'
+          | 'nothing';
+        entity?: string | undefined;
+        navigation_path?: string | undefined;
+        url_path?: string | undefined;
+        service?: string | undefined;
+        service_data?: Record<string, any> | undefined;
+      }
+    | undefined;
 }
 
 // ============================================
@@ -7812,4 +8175,413 @@ export interface PeopleModule extends BaseModule {
   template?: string | undefined;
   unified_template_mode?: boolean | undefined;
   unified_template?: string | undefined;
+}
+
+/* ========================================================================== */
+/* Pro household modules                                                      */
+/*                                                                            */
+/* Cleaning Zones, Battery Fleet, Plant Care, Laundry Tracker, Vehicle        */
+/* Maintenance and Vampire Power. They share two building blocks: the         */
+/* recorder-history helpers in `services/uc-history-service.ts` for anything  */
+/* that needs the past, and `services/uc-record-store.ts` for anything that   */
+/* has to persist user-entered records in a to-do list.                       */
+/* ========================================================================== */
+
+// -------------------------------------------------------------------------
+// Cleaning Zones (Pro) — floorplan with per-room cleaning schedules
+// -------------------------------------------------------------------------
+
+/** One tappable room region drawn on the floorplan. Coordinates are normalized 0–1. */
+export interface CleaningZoneRegion {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /**
+   * Clockwise rotation in degrees (0–359) about the zone's center, for rooms
+   * that aren't square to the image — an isometric floorplan, for instance.
+   */
+  rotation?: number | undefined;
+  /** Days between cleanings. Falls back to the module default when omitted. */
+  interval_days?: number | undefined;
+  icon?: string | undefined;
+  /** Overrides the staleness gradient for this zone when set. */
+  color?: string | undefined;
+  /** Optional entity that marks the zone clean automatically (e.g. a vacuum). */
+  auto_clean_entity?: string | undefined;
+  /** State of `auto_clean_entity` that counts as a completed clean. */
+  auto_clean_state?: string | undefined;
+  notes?: string | undefined;
+}
+
+export interface CleaningZonesModule extends BaseModule {
+  type: 'cleaning_zones';
+
+  /** To-do list entity used to persist clean events. */
+  todo_entity: string;
+  /** Floorplan image path/URL drawn under the zones. */
+  floorplan_image?: string | undefined;
+  zones: CleaningZoneRegion[];
+
+  view_mode: 'map' | 'list' | 'both';
+  default_interval_days: number;
+  /** Extra days past the interval before a zone counts as overdue. */
+  overdue_grace_days?: number | undefined;
+  sort_mode: 'staleness' | 'name' | 'interval';
+
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  show_summary_bar?: boolean | undefined;
+  show_legend?: boolean | undefined;
+  show_zone_labels?: boolean | undefined;
+  /** How staleness is expressed on the map. */
+  staleness_style: 'heat' | 'outline' | 'badge';
+  /** Opacity of the zone overlays, 0–1. */
+  zone_opacity?: number | undefined;
+
+  /** Ask before recording a clean, to guard against stray taps on a wall tablet. */
+  require_confirm?: boolean | undefined;
+  /** Record who marked the zone clean, resolved from `person_entity` when set. */
+  log_cleaner?: boolean | undefined;
+  person_entity?: string | undefined;
+  /** Keep at most this many history entries per zone. */
+  history_limit?: number | undefined;
+
+  fresh_color?: string | undefined;
+  due_color?: string | undefined;
+  overdue_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// Battery Fleet (Pro) — ranked battery health with drain-based predictions
+// -------------------------------------------------------------------------
+
+export interface BatteryFleetEntity {
+  id: string;
+  entity: string;
+  label?: string | undefined;
+  icon?: string | undefined;
+  /** Free-text note, e.g. "CR2032 x2". Shown in the detail row. */
+  battery_type?: string | undefined;
+}
+
+export interface BatteryFleetModule extends BaseModule {
+  type: 'battery_fleet';
+
+  discovery_mode: 'auto' | 'manual' | 'both';
+  entities: BatteryFleetEntity[];
+  /** Substring patterns filtered out of auto-discovery. */
+  exclude_patterns: string[];
+  /** Auto-discovered entity ids the user dismissed. */
+  hidden_entities: string[];
+  include_battery_level_attribute?: boolean | undefined;
+  include_binary_sensors?: boolean | undefined;
+  /** Restrict auto-discovery to these HA areas. Empty means all areas. */
+  area_filter?: string[] | undefined;
+
+  /** Recorder lookback used for the drain estimate, in days. */
+  history_days: number;
+  predict_replacement: boolean;
+  /** Percentage treated as depleted when projecting a replacement date. */
+  replacement_floor: number;
+  /** Minimum hours of observed discharge before an ETA is shown. */
+  min_confidence_hours?: number | undefined;
+
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  layout: 'table' | 'cards' | 'compact';
+  sort_mode: 'urgency' | 'level' | 'name' | 'drain_rate';
+  max_items: number;
+  group_by_area?: boolean | undefined;
+  show_summary_bar?: boolean | undefined;
+  show_sparkline?: boolean | undefined;
+  show_drain_rate?: boolean | undefined;
+  show_eta?: boolean | undefined;
+  show_charging_indicator?: boolean | undefined;
+  show_only_problems?: boolean | undefined;
+
+  critical_threshold: number;
+  low_threshold: number;
+  /** A projected replacement within this many days is flagged urgent. */
+  urgent_days: number;
+
+  critical_color?: string | undefined;
+  low_color?: string | undefined;
+  ok_color?: string | undefined;
+  charging_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// Plant Care (Pro) — watering/fertilizing schedules with optional sensors
+// -------------------------------------------------------------------------
+
+export interface PlantCareEntry {
+  id: string;
+  name: string;
+  icon?: string | undefined;
+  /** Photo shown in grid/map layouts. */
+  image?: string | undefined;
+  location?: string | undefined;
+  /** Normalized position on `map_image`, 0–1. Only used by the map layout. */
+  x?: number | undefined;
+  y?: number | undefined;
+
+  water_interval_days?: number | undefined;
+  /** 0 or omitted disables fertilizing reminders for this plant. */
+  fertilize_interval_days?: number | undefined;
+
+  moisture_entity?: string | undefined;
+  /** Moisture percentage below which the plant is considered thirsty. */
+  moisture_threshold?: number | undefined;
+  temperature_entity?: string | undefined;
+  illuminance_entity?: string | undefined;
+  notes?: string | undefined;
+}
+
+export interface PlantCareModule extends BaseModule {
+  type: 'plant_care';
+
+  /** To-do list entity used to persist watering/fertilizing events. */
+  todo_entity: string;
+  plants: PlantCareEntry[];
+
+  layout: 'grid' | 'list' | 'map';
+  /** Background image for the map layout. */
+  map_image?: string | undefined;
+  columns: number;
+
+  default_water_interval_days: number;
+  default_fertilize_interval_days: number;
+  /** Whether thirst comes from the schedule, a moisture sensor, or both. */
+  moisture_source: 'schedule' | 'sensor' | 'both';
+
+  /** Scale watering intervals by season — plants drink less in winter. */
+  seasonal_adjust?: boolean | undefined;
+  summer_factor?: number | undefined;
+  winter_factor?: number | undefined;
+
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  show_summary_bar?: boolean | undefined;
+  show_photos?: boolean | undefined;
+  show_moisture?: boolean | undefined;
+  show_next_due?: boolean | undefined;
+  show_fertilize?: boolean | undefined;
+  overdue_first?: boolean | undefined;
+  history_limit?: number | undefined;
+
+  thirsty_color?: string | undefined;
+  happy_color?: string | undefined;
+  overdue_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// Laundry Tracker (Pro) — power-sensor cycle detection + unload nagging
+// -------------------------------------------------------------------------
+
+export interface LaundryApplianceConfig {
+  id: string;
+  kind: 'washer' | 'dryer';
+  name: string;
+  icon?: string | undefined;
+
+  /** Power sensor in watts. Primary cycle-detection source. */
+  power_entity?: string | undefined;
+  /** Alternative source: a machine-state entity from a smart-appliance integration. */
+  state_entity?: string | undefined;
+  /** States of `state_entity` that mean "running". */
+  running_states?: string[] | undefined;
+  /** Door/lid sensor — opening it counts as unloading. */
+  door_entity?: string | undefined;
+
+  /** Watts above which a cycle is considered started. */
+  start_threshold_w?: number | undefined;
+  /** Watts below which a cycle is considered finishing. */
+  stop_threshold_w?: number | undefined;
+  /** Minutes the machine must stay below the stop threshold before the cycle closes. */
+  settle_minutes?: number | undefined;
+  /** Runs shorter than this are treated as noise, not cycles. */
+  min_cycle_minutes?: number | undefined;
+  /** Minutes after a cycle ends before the load counts as forgotten. */
+  unload_grace_minutes?: number | undefined;
+}
+
+export interface LaundryTrackerModule extends BaseModule {
+  type: 'laundry_tracker';
+
+  appliances: LaundryApplianceConfig[];
+  /** Recorder lookback for cycle history, in days. */
+  history_days: number;
+
+  layout: 'stack' | 'row';
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  show_status_cards?: boolean | undefined;
+  show_timeline?: boolean | undefined;
+  show_history_stats?: boolean | undefined;
+  show_energy?: boolean | undefined;
+  show_idle_alert?: boolean | undefined;
+  /** Suggest moving the load when a washer finishes and the dryer is free. */
+  show_handoff_hint?: boolean | undefined;
+  /** Let users tap "unloaded" to silence the forgotten-load alert. */
+  acknowledge_enabled?: boolean | undefined;
+
+  /** Cost per kWh used for the energy readout. */
+  energy_rate?: number | undefined;
+  currency_symbol?: string | undefined;
+
+  /** `notify.x` service called when a load is left sitting. Empty disables it. */
+  notify_service?: string | undefined;
+
+  running_color?: string | undefined;
+  done_color?: string | undefined;
+  idle_color?: string | undefined;
+  alert_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// Vehicle Maintenance (Pro) — odometer + time based service intervals
+// -------------------------------------------------------------------------
+
+export interface VehicleServiceItem {
+  id: string;
+  name: string;
+  icon?: string | undefined;
+  /** Distance between services in the module's unit. 0 disables distance triggering. */
+  interval_distance?: number | undefined;
+  /** Months between services. 0 disables time triggering. */
+  interval_months?: number | undefined;
+  /** Odometer reading at the last service. */
+  last_distance?: number | undefined;
+  /** ISO date (YYYY-MM-DD) of the last service. */
+  last_date?: string | undefined;
+  estimated_cost?: number | undefined;
+  notes?: string | undefined;
+}
+
+export interface VehicleMaintenanceModule extends BaseModule {
+  type: 'vehicle_maintenance';
+
+  vehicle_name: string;
+  vehicle_image?: string | undefined;
+  /** Odometer sensor. Readings drive every distance-based interval. */
+  odometer_entity?: string | undefined;
+  /** Added to the odometer reading when the sensor resets or starts from zero. */
+  odometer_offset?: number | undefined;
+  distance_unit: 'mi' | 'km';
+  fuel_entity?: string | undefined;
+  battery_entity?: string | undefined;
+  /** To-do list entity used to persist the service log. */
+  todo_entity?: string | undefined;
+
+  services: VehicleServiceItem[];
+
+  layout: 'hero' | 'list' | 'compact';
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  show_vehicle_image?: boolean | undefined;
+  show_odometer?: boolean | undefined;
+  show_fuel?: boolean | undefined;
+  show_next_service?: boolean | undefined;
+  show_service_log?: boolean | undefined;
+  show_costs?: boolean | undefined;
+  show_progress_bars?: boolean | undefined;
+
+  /** Remaining distance at which a service starts warning. */
+  due_soon_distance: number;
+  /** Remaining days at which a service starts warning. */
+  due_soon_days: number;
+  log_limit?: number | undefined;
+  currency_symbol?: string | undefined;
+
+  ok_color?: string | undefined;
+  due_soon_color?: string | undefined;
+  overdue_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// Vampire Power (Pro) — standby-load discovery and cost ranking
+// -------------------------------------------------------------------------
+
+export interface VampirePowerModule extends BaseModule {
+  type: 'vampire_power';
+
+  discovery_mode: 'auto' | 'manual' | 'both';
+  /** Manually chosen power sensors. */
+  entities: string[];
+  exclude_patterns: string[];
+  hidden_entities: string[];
+
+  /** Recorder lookback used to compute the standby floor, in days. */
+  history_days: number;
+  /** Percentile of held time treated as the standby floor, 0–1. */
+  baseline_percentile: number;
+  /** Loads under this many watts are ignored as measurement noise. */
+  min_standby_watts: number;
+  /** Loads over this many watts are treated as genuinely active, not standby. */
+  max_standby_watts: number;
+
+  energy_rate: number;
+  currency_symbol?: string | undefined;
+  cost_period: 'day' | 'month' | 'year';
+
+  layout: 'ranked' | 'cards' | 'compact';
+  sort_mode: 'cost' | 'watts' | 'name';
+  max_items: number;
+
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+  show_total_bar?: boolean | undefined;
+  show_bars?: boolean | undefined;
+  show_cost?: boolean | undefined;
+  show_savings_hint?: boolean | undefined;
+  /** Standby loads at or above this wattage are highlighted as offenders. */
+  highlight_threshold_watts?: number | undefined;
+
+  bar_color?: string | undefined;
+  offender_color?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
+  card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
 }

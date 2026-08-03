@@ -532,6 +532,207 @@ function sanitizeWeatherModule(module: SmartModule, hass: SmartSanitizeHass, id:
   };
 }
 
+/* -------------------------------------------------------------------------- */
+/* Pro household modules                                                       */
+/*                                                                             */
+/* These are configuration-heavy (floorplan geometry, per-appliance wattage    */
+/* thresholds, service intervals), so the planner can only ever produce a      */
+/* sensible skeleton. Each sanitizer therefore keeps the analysis knobs at     */
+/* their safe defaults and only carries across what a prompt can plausibly     */
+/* specify. Battery Fleet and Vampire Power are the exceptions: they           */
+/* auto-discover their own entities, so an empty config is already useful.     */
+/* -------------------------------------------------------------------------- */
+
+function sanitizeCleaningZonesModule(
+  module: SmartModule,
+  hass: SmartSanitizeHass,
+  id: string
+): SmartModule | null {
+  const todoEntity = String(module.todo_entity || '');
+  if (todoEntity && !entityExists(hass, todoEntity)) return null;
+  return {
+    id,
+    type: 'cleaning_zones',
+    todo_entity: todoEntity,
+    floorplan_image: String(module.floorplan_image || ''),
+    zones: Array.isArray(module.zones) ? module.zones : [],
+    view_mode: oneOf(module.view_mode, ['map', 'list', 'both'] as const, 'both'),
+    default_interval_days: numberInRange(module.default_interval_days, 1, 365, 7),
+    overdue_grace_days: numberInRange(module.overdue_grace_days, 0, 30, 1),
+    sort_mode: oneOf(module.sort_mode, ['staleness', 'name', 'interval'] as const, 'staleness'),
+    staleness_style: oneOf(module.staleness_style, ['heat', 'outline', 'badge'] as const, 'heat'),
+    zone_opacity: numberInRange(module.zone_opacity, 0.1, 1, 0.55),
+    show_title: module.show_title !== false,
+    show_summary_bar: module.show_summary_bar !== false,
+    show_legend: module.show_legend !== false,
+    show_zone_labels: module.show_zone_labels !== false,
+    ...defaultDisplayActions(),
+  };
+}
+
+function sanitizeBatteryFleetModule(module: SmartModule, id: string): SmartModule | null {
+  return {
+    id,
+    type: 'battery_fleet',
+    discovery_mode: oneOf(module.discovery_mode, ['auto', 'manual', 'both'] as const, 'auto'),
+    entities: Array.isArray(module.entities) ? module.entities : [],
+    exclude_patterns: Array.isArray(module.exclude_patterns) ? module.exclude_patterns : [],
+    hidden_entities: [],
+    include_battery_level_attribute: module.include_battery_level_attribute !== false,
+    include_binary_sensors: Boolean(module.include_binary_sensors),
+    area_filter: [],
+    history_days: numberInRange(module.history_days, 1, 30, 14),
+    predict_replacement: module.predict_replacement !== false,
+    replacement_floor: numberInRange(module.replacement_floor, 0, 50, 5),
+    min_confidence_hours: numberInRange(module.min_confidence_hours, 1, 72, 12),
+    layout: oneOf(module.layout, ['table', 'cards', 'compact'] as const, 'table'),
+    sort_mode: oneOf(
+      module.sort_mode,
+      ['urgency', 'level', 'name', 'drain_rate'] as const,
+      'urgency'
+    ),
+    max_items: numberInRange(module.max_items, 1, 100, 25),
+    critical_threshold: numberInRange(module.critical_threshold, 0, 50, 10),
+    low_threshold: numberInRange(module.low_threshold, 0, 75, 25),
+    urgent_days: numberInRange(module.urgent_days, 1, 90, 14),
+    show_title: module.show_title !== false,
+    show_summary_bar: module.show_summary_bar !== false,
+    show_sparkline: module.show_sparkline !== false,
+    show_drain_rate: module.show_drain_rate !== false,
+    show_eta: module.show_eta !== false,
+    show_charging_indicator: module.show_charging_indicator !== false,
+    show_only_problems: Boolean(module.show_only_problems),
+    ...defaultDisplayActions(),
+  };
+}
+
+function sanitizePlantCareModule(
+  module: SmartModule,
+  hass: SmartSanitizeHass,
+  id: string
+): SmartModule | null {
+  const todoEntity = String(module.todo_entity || '');
+  if (todoEntity && !entityExists(hass, todoEntity)) return null;
+  return {
+    id,
+    type: 'plant_care',
+    todo_entity: todoEntity,
+    plants: Array.isArray(module.plants) ? module.plants : [],
+    layout: oneOf(module.layout, ['grid', 'list', 'map'] as const, 'grid'),
+    map_image: String(module.map_image || ''),
+    columns: numberInRange(module.columns, 1, 6, 3),
+    default_water_interval_days: numberInRange(module.default_water_interval_days, 1, 365, 7),
+    default_fertilize_interval_days: numberInRange(
+      module.default_fertilize_interval_days,
+      0,
+      365,
+      30
+    ),
+    moisture_source: oneOf(
+      module.moisture_source,
+      ['schedule', 'sensor', 'both'] as const,
+      'both'
+    ),
+    seasonal_adjust: Boolean(module.seasonal_adjust),
+    show_title: module.show_title !== false,
+    show_summary_bar: module.show_summary_bar !== false,
+    show_photos: module.show_photos !== false,
+    show_moisture: module.show_moisture !== false,
+    show_next_due: module.show_next_due !== false,
+    show_fertilize: module.show_fertilize !== false,
+    overdue_first: module.overdue_first !== false,
+    ...defaultDisplayActions(),
+  };
+}
+
+function sanitizeLaundryTrackerModule(module: SmartModule, id: string): SmartModule | null {
+  return {
+    id,
+    type: 'laundry_tracker',
+    appliances: Array.isArray(module.appliances) ? module.appliances : [],
+    history_days: numberInRange(module.history_days, 1, 30, 7),
+    layout: oneOf(module.layout, ['stack', 'row'] as const, 'stack'),
+    energy_rate: numberInRange(module.energy_rate, 0, 10, 0.15),
+    currency_symbol: String(module.currency_symbol || '$'),
+    notify_service: '',
+    show_title: module.show_title !== false,
+    show_status_cards: module.show_status_cards !== false,
+    show_timeline: module.show_timeline !== false,
+    show_history_stats: module.show_history_stats !== false,
+    show_energy: module.show_energy !== false,
+    show_idle_alert: module.show_idle_alert !== false,
+    show_handoff_hint: module.show_handoff_hint !== false,
+    acknowledge_enabled: module.acknowledge_enabled !== false,
+    ...defaultDisplayActions(),
+  };
+}
+
+function sanitizeVehicleMaintenanceModule(
+  module: SmartModule,
+  hass: SmartSanitizeHass,
+  id: string
+): SmartModule | null {
+  const odometerEntity = String(module.odometer_entity || '');
+  if (odometerEntity && !entityExists(hass, odometerEntity)) return null;
+  const todoEntity = String(module.todo_entity || '');
+  if (todoEntity && !entityExists(hass, todoEntity)) return null;
+  return {
+    id,
+    type: 'vehicle_maintenance',
+    vehicle_name: String(module.vehicle_name || module.name || 'My Vehicle'),
+    vehicle_image: String(module.vehicle_image || ''),
+    odometer_entity: odometerEntity,
+    odometer_offset: numberInRange(module.odometer_offset, -1000000, 1000000, 0),
+    distance_unit: oneOf(module.distance_unit, ['mi', 'km'] as const, 'mi'),
+    fuel_entity: '',
+    battery_entity: '',
+    todo_entity: todoEntity,
+    services: Array.isArray(module.services) ? module.services : [],
+    layout: oneOf(module.layout, ['hero', 'list', 'compact'] as const, 'hero'),
+    due_soon_distance: numberInRange(module.due_soon_distance, 0, 5000, 500),
+    due_soon_days: numberInRange(module.due_soon_days, 0, 180, 14),
+    log_limit: numberInRange(module.log_limit, 5, 100, 25),
+    currency_symbol: String(module.currency_symbol || '$'),
+    show_title: module.show_title !== false,
+    show_vehicle_image: module.show_vehicle_image !== false,
+    show_odometer: module.show_odometer !== false,
+    show_fuel: module.show_fuel !== false,
+    show_next_service: module.show_next_service !== false,
+    show_service_log: module.show_service_log !== false,
+    show_costs: module.show_costs !== false,
+    show_progress_bars: module.show_progress_bars !== false,
+    ...defaultDisplayActions(),
+  };
+}
+
+function sanitizeVampirePowerModule(module: SmartModule, id: string): SmartModule | null {
+  return {
+    id,
+    type: 'vampire_power',
+    discovery_mode: oneOf(module.discovery_mode, ['auto', 'manual', 'both'] as const, 'auto'),
+    entities: Array.isArray(module.entities) ? module.entities : [],
+    exclude_patterns: Array.isArray(module.exclude_patterns) ? module.exclude_patterns : [],
+    hidden_entities: [],
+    history_days: numberInRange(module.history_days, 1, 30, 7),
+    baseline_percentile: numberInRange(module.baseline_percentile, 0.01, 0.5, 0.1),
+    min_standby_watts: numberInRange(module.min_standby_watts, 0, 20, 0.5),
+    max_standby_watts: numberInRange(module.max_standby_watts, 10, 500, 100),
+    energy_rate: numberInRange(module.energy_rate, 0, 10, 0.15),
+    currency_symbol: String(module.currency_symbol || '$'),
+    cost_period: oneOf(module.cost_period, ['day', 'month', 'year'] as const, 'year'),
+    layout: oneOf(module.layout, ['ranked', 'cards', 'compact'] as const, 'ranked'),
+    sort_mode: oneOf(module.sort_mode, ['cost', 'watts', 'name'] as const, 'cost'),
+    max_items: numberInRange(module.max_items, 1, 50, 15),
+    highlight_threshold_watts: numberInRange(module.highlight_threshold_watts, 0, 50, 5),
+    show_title: module.show_title !== false,
+    show_total_bar: module.show_total_bar !== false,
+    show_bars: module.show_bars !== false,
+    show_cost: module.show_cost !== false,
+    show_savings_hint: module.show_savings_hint !== false,
+    ...defaultDisplayActions(),
+  };
+}
+
 export const supplementalSmartModuleHandlers = {
   bar: {
     sanitize: wrapSanitize(sanitizeBarModule),
@@ -605,6 +806,148 @@ export const supplementalSmartModuleHandlers = {
       ...(ctx.entity ? { entity: ctx.entity.entityId } : { text: 'wifi-password' }),
       ...defaultDisplayActions(),
     }),
+  },
+  dog_duty: {
+    sanitize: wrapSanitize((module, hass, id) => {
+      const cameraEntity = String(
+        (module as any).camera_entity ||
+          (String(module.entity || '').startsWith('camera.') ? module.entity : '') ||
+          ''
+      );
+      const todoEntity = String((module as any).todo_entity || '');
+      if (cameraEntity && !entityExists(hass, cameraEntity)) return null;
+      if (todoEntity && !entityExists(hass, todoEntity)) return null;
+      return {
+        id,
+        type: 'dog_duty',
+        camera_entity: cameraEntity,
+        todo_entity: todoEntity,
+        lookback_hours: numberInRange((module as any).lookback_hours, 6, 168, 48),
+        marker_style: oneOf((module as any).marker_style, ['x', 'emoji', 'pin'] as const, 'x'),
+        show_heatmap: !!(module as any).show_heatmap,
+        show_cleaned: !!(module as any).show_cleaned,
+        background_mode: oneOf(
+          (module as any).background_mode,
+          ['live_snapshot', 'reference'] as const,
+          'live_snapshot'
+        ),
+        scan_cooldown_minutes: numberInRange((module as any).scan_cooldown_minutes, 1, 60, 10),
+        show_status_bar: true,
+        show_scrubber: true,
+        show_scan_now: true,
+        show_title: true,
+        ...defaultDisplayActions(),
+      };
+    }),
+    defaultBuilder: (ctx: SmartBuildContext) => ({
+      id: ctx.id,
+      type: 'dog_duty',
+      camera_entity: ctx.entity?.entityId?.startsWith('camera.') ? ctx.entity.entityId : '',
+      todo_entity: '',
+      lookback_hours: 48,
+      marker_style: 'x',
+      show_heatmap: false,
+      show_cleaned: false,
+      background_mode: 'live_snapshot',
+      scan_cooldown_minutes: 10,
+      show_status_bar: true,
+      show_scrubber: true,
+      show_scan_now: true,
+      show_title: true,
+      ...defaultDisplayActions(),
+    }),
+  },
+  cleaning_zones: {
+    sanitize: wrapSanitize(sanitizeCleaningZonesModule),
+    defaultBuilder: (ctx: SmartBuildContext) => ({
+      id: ctx.id,
+      type: 'cleaning_zones',
+      todo_entity: ctx.entity?.entityId?.startsWith('todo.') ? ctx.entity.entityId : '',
+      floorplan_image: '',
+      zones: [],
+      view_mode: 'both',
+      default_interval_days: 7,
+      overdue_grace_days: 1,
+      sort_mode: 'staleness',
+      staleness_style: 'heat',
+      zone_opacity: 0.55,
+      show_title: true,
+      show_summary_bar: true,
+      show_legend: true,
+      show_zone_labels: true,
+      ...defaultDisplayActions(),
+    }),
+  },
+  battery_fleet: {
+    sanitize: wrapSanitize((module, _hass, id) => sanitizeBatteryFleetModule(module, id)),
+    // Auto-discovery means no entity context is required to produce a useful card.
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      sanitizeBatteryFleetModule({ type: 'battery_fleet' } as SmartModule, ctx.id),
+  },
+  plant_care: {
+    sanitize: wrapSanitize(sanitizePlantCareModule),
+    defaultBuilder: (ctx: SmartBuildContext) => ({
+      id: ctx.id,
+      type: 'plant_care',
+      todo_entity: ctx.entity?.entityId?.startsWith('todo.') ? ctx.entity.entityId : '',
+      plants: [],
+      layout: 'grid',
+      map_image: '',
+      columns: 3,
+      default_water_interval_days: 7,
+      default_fertilize_interval_days: 30,
+      moisture_source: 'both',
+      seasonal_adjust: false,
+      show_title: true,
+      show_summary_bar: true,
+      show_photos: true,
+      show_moisture: true,
+      show_next_due: true,
+      show_fertilize: true,
+      overdue_first: true,
+      ...defaultDisplayActions(),
+    }),
+  },
+  laundry_tracker: {
+    sanitize: wrapSanitize((module, _hass, id) => sanitizeLaundryTrackerModule(module, id)),
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      sanitizeLaundryTrackerModule({ type: 'laundry_tracker' } as SmartModule, ctx.id),
+  },
+  vehicle_maintenance: {
+    sanitize: wrapSanitize(sanitizeVehicleMaintenanceModule),
+    defaultBuilder: (ctx: SmartBuildContext) => ({
+      id: ctx.id,
+      type: 'vehicle_maintenance',
+      vehicle_name: 'My Vehicle',
+      vehicle_image: '',
+      odometer_entity: ctx.entity?.entityId?.startsWith('sensor.') ? ctx.entity.entityId : '',
+      odometer_offset: 0,
+      distance_unit: 'mi',
+      fuel_entity: '',
+      battery_entity: '',
+      todo_entity: '',
+      services: [],
+      layout: 'hero',
+      due_soon_distance: 500,
+      due_soon_days: 14,
+      log_limit: 25,
+      currency_symbol: '$',
+      show_title: true,
+      show_vehicle_image: true,
+      show_odometer: true,
+      show_fuel: true,
+      show_next_service: true,
+      show_service_log: true,
+      show_costs: true,
+      show_progress_bars: true,
+      ...defaultDisplayActions(),
+    }),
+  },
+  vampire_power: {
+    sanitize: wrapSanitize((module, _hass, id) => sanitizeVampirePowerModule(module, id)),
+    // Auto-discovery means no entity context is required to produce a useful card.
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      sanitizeVampirePowerModule({ type: 'vampire_power' } as SmartModule, ctx.id),
   },
   animated_weather: {
     sanitize: wrapSanitize(sanitizeAnimatedWeatherModule),

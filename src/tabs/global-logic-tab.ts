@@ -4,7 +4,11 @@ import { FormUtils } from '../utils/form-utils';
 import { UcFormUtils } from '../utils/uc-form-utils';
 import type { CardModule, CardColumn, CardRow, DeviceBreakpoint } from '../types';
 import { localize } from '../localize/localize';
+import { renderTemplateKeyWarning } from '../utils/template-key-warning';
 import '../components/ultra-template-editor';
+
+/** Unified-template output keys row/column visibility templates read. */
+const LAYOUT_VISIBILITY_TEMPLATE_KEYS = ['visible', 'active', 'is_active'] as const;
 
 export type GlobalLogicTarget = 'module' | 'row' | 'column';
 
@@ -149,6 +153,11 @@ export class GlobalLogicTab {
                               unified_template: e.detail.value,
                             } as unknown as Partial<M>)}
                         ></ultra-template-editor>
+                        ${renderTemplateKeyWarning(
+                          rowCol.unified_template,
+                          LAYOUT_VISIBILITY_TEMPLATE_KEYS,
+                          lang
+                        )}
                       </div>
                     `
                   : ''}

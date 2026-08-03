@@ -149,4 +149,11 @@ export class UltraCardTodoService {
     }
     this._callbacksByEntity.delete(entityId);
   }
+
+  /** Drop cached items so the next getItems() hits the API again. */
+  invalidateCache(hass: HomeAssistant | null | undefined, entityId: string): void {
+    if (!hass || !entityId) return;
+    const cache = (hass as any)[CACHE_KEY];
+    if (cache && entityId in cache) delete cache[entityId];
+  }
 }

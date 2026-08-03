@@ -25,6 +25,19 @@ import {
 } from '../components/uc-gradient-editor';
 import { build3dTransformStyles } from '../utils/transform-3d-utils';
 
+/** Unified-template output keys the bar module reads (position/label/color also appear inside `ticks` entries). */
+const BAR_TEMPLATE_KEYS = [
+  'value',
+  'label',
+  'color',
+  'left_label',
+  'right_label',
+  'value_min',
+  'value_max',
+  'ticks',
+  'position',
+] as const;
+
 export class UltraBarModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'bar',
@@ -2517,7 +2530,7 @@ export class UltraBarModule extends BaseUltraModule {
             ${localize(
               'editor.bar.unified_template.desc',
               lang,
-              'One Jinja template returning JSON: value, label, color, left_label, right_label, value_min, value_max, container_background_color.'
+              'One Jinja template returning JSON: value, label, color, left_label, right_label, value_min, value_max, ticks.'
             )}
           </div>
           ${barModule.unified_template_mode
@@ -2543,6 +2556,11 @@ export class UltraBarModule extends BaseUltraModule {
                     @value-changed=${(e: CustomEvent) =>
                       updateModule({ unified_template: e.detail.value })}
                   ></ultra-template-editor>
+                  ${this.renderTemplateKeyWarning(
+                    barModule.unified_template,
+                    BAR_TEMPLATE_KEYS,
+                    lang
+                  )}
                 </div>
               `
             : ''}

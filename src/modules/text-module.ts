@@ -19,6 +19,17 @@ import '../components/ultra-template-editor';
 import '../components/ultra-wysiwyg-editor';
 
 
+/** Unified-template output keys the text module reads (`state` is an alias for `state_text`). */
+const TEXT_TEMPLATE_KEYS = [
+  'content',
+  'color',
+  'icon',
+  'icon_color',
+  'state_text',
+  'state',
+  'container_background_color',
+] as const;
+
 export class UltraTextModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'text',
@@ -482,6 +493,11 @@ export class UltraTextModule extends BaseUltraModule {
                       updateModule({ unified_template: e.detail.value });
                     }}
                   ></ultra-template-editor>
+                  ${this.renderTemplateKeyWarning(
+                    textModule.unified_template,
+                    TEXT_TEMPLATE_KEYS,
+                    lang
+                  )}
                 </div>
               `
             : ''}

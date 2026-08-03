@@ -30,6 +30,20 @@ import { parseLocaleNumber } from '../utils/parse-locale-number';
 type IconAnimation = NonNullable<IconConfig['active_icon_animation']>;
 type IconBackgroundShape = NonNullable<IconConfig['active_icon_background']>;
 
+/** Unified-template output keys the icon module reads (`state` is an alias for `state_text`). */
+const ICON_TEMPLATE_KEYS = [
+  'icon',
+  'icon_color',
+  'name',
+  'name_color',
+  'state_text',
+  'state',
+  'state_color',
+  'container_background_color',
+  'active',
+  'is_active',
+] as const;
+
 export class UltraIconModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'icon',
@@ -2048,6 +2062,11 @@ export class UltraIconModule extends BaseUltraModule {
                                   );
                                 }}
                               ></ultra-template-editor>
+                              ${this.renderTemplateKeyWarning(
+                                icon.unified_template,
+                                ICON_TEMPLATE_KEYS,
+                                lang
+                              )}
                               <div class="template-help">
                                 <p><strong>Return simple string for icon-only:</strong></p>
                                 <ul>
@@ -2065,7 +2084,11 @@ export class UltraIconModule extends BaseUltraModule {
                                     <code>{ "icon": "mdi:fire", "icon_color": "#FF0000" }</code>
                                   </li>
                                   <li>
-                                    Available properties: <code>icon</code>, <code>icon_color</code>
+                                    Available properties: <code>icon</code>,
+                                    <code>icon_color</code>, <code>name</code>,
+                                    <code>name_color</code>, <code>state_text</code>,
+                                    <code>state_color</code>,
+                                    <code>container_background_color</code>, <code>active</code>
                                   </li>
                                 </ul>
                                 <p>

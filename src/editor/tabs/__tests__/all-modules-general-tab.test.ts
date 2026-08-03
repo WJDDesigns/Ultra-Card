@@ -52,6 +52,15 @@ const EMPTY_GENERAL_TAB = new Set([
   // First controls are ultra-segmented / ultra-color-picker custom elements
   // without a directly-interactable primitive control in the test stubs.
   'drawer',
+  // Pro-gated general tabs. `mockHass` has no Ultra Card Connect sensor, so these
+  // render the upgrade lock card, which intentionally has no config controls.
+  'dog_duty',
+  'cleaning_zones',
+  'battery_fleet',
+  'plant_care',
+  'laundry_tracker',
+  'vehicle_maintenance',
+  'vampire_power',
 ]);
 
 const CONFIG: UltraCardConfig = {

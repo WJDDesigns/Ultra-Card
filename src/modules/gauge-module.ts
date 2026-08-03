@@ -21,6 +21,9 @@ import {
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 
+/** Unified-template output keys the gauge module reads. */
+const GAUGE_TEMPLATE_KEYS = ['value', 'gauge_color'] as const;
+
 export class UltraGaugeModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'gauge',
@@ -361,7 +364,7 @@ export class UltraGaugeModule extends BaseUltraModule {
             ${localize(
               'editor.gauge.unified_template.desc',
               hass?.locale?.language || 'en',
-              'Use Jinja2 templates to dynamically set gauge value, gauge_color, and container_background_color.'
+              'Use Jinja2 templates to dynamically set gauge value and gauge_color.'
             )}
           </div>
           ${unifiedTemplateEnabled
@@ -389,6 +392,11 @@ export class UltraGaugeModule extends BaseUltraModule {
                       setTimeout(() => this.triggerPreviewUpdate(), 50);
                     }}
                   ></ultra-template-editor>
+                  ${this.renderTemplateKeyWarning(
+                    gaugeModule.unified_template,
+                    GAUGE_TEMPLATE_KEYS,
+                    hass?.locale?.language || 'en'
+                  )}
                 </div>
               `
             : ''}

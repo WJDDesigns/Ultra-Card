@@ -23,6 +23,18 @@ import {
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 
+/** Unified-template output keys the info module reads (`state` is an alias for `state_text`). */
+const INFO_TEMPLATE_KEYS = [
+  'icon',
+  'icon_color',
+  'name',
+  'name_color',
+  'state_text',
+  'state',
+  'state_color',
+  'container_background_color',
+] as const;
+
 export class UltraInfoModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'info',
@@ -743,6 +755,11 @@ export class UltraInfoModule extends BaseUltraModule {
                       );
                     }}
                   ></ultra-template-editor>
+                  ${this.renderTemplateKeyWarning(
+                    entity.unified_template,
+                    INFO_TEMPLATE_KEYS,
+                    lang
+                  )}
                   <div class="template-help">
                     <p><strong>Entity context variables available:</strong></p>
                     <ul>
@@ -752,13 +769,21 @@ export class UltraInfoModule extends BaseUltraModule {
                       </li>
                     </ul>
                     <p><strong>Return JSON for multiple properties:</strong></p>
+                    <ul>
+                      <li>
+                        Supported keys: <code>icon</code>, <code>icon_color</code>,
+                        <code>name</code>, <code>name_color</code>, <code>state_text</code>,
+                        <code>state_color</code>, <code>container_background_color</code>
+                      </li>
+                    </ul>
                     <code
                       style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-size: 11px;"
                     >
                       {<br />
                       &nbsp;&nbsp;"icon": "{% if state|int > 25 %}mdi:fire{% else %}mdi:snowflake{%
                       endif %}",<br />
-                      &nbsp;&nbsp;"icon_color": "red"<br />
+                      &nbsp;&nbsp;"icon_color": "red",<br />
+                      &nbsp;&nbsp;"state_text": "{{ state }} {{ unit }}"<br />
                       }
                     </code>
                   </div>

@@ -17,6 +17,14 @@ import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
+/** Unified-template output keys the spinbox module reads. */
+const SPINBOX_TEMPLATE_KEYS = [
+  'value',
+  'value_color',
+  'button_background_color',
+  'button_text_color',
+] as const;
+
 export class UltraSpinboxModule extends BaseUltraModule {
   private _templateService: TemplateService | undefined;
   private _templateInputDebounce: any = null;
@@ -603,6 +611,11 @@ export class UltraSpinboxModule extends BaseUltraModule {
                     @value-changed=${(e: CustomEvent) =>
                       updateModule({ unified_template: e.detail.value })}
                   ></ultra-template-editor>
+                  ${this.renderTemplateKeyWarning(
+                    spinboxModule.unified_template,
+                    SPINBOX_TEMPLATE_KEYS,
+                    lang
+                  )}
                 </div>
               `
             : ''}

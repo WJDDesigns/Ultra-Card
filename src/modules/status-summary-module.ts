@@ -22,6 +22,9 @@ function dispatchStatusSummaryTemplateUpdate(): void {
   );
 }
 
+/** Unified-template output keys the status summary module reads. */
+const STATUS_SUMMARY_TEMPLATE_KEYS = ['color', 'content'] as const;
+
 export class UltraStatusSummaryModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'status_summary',
@@ -815,6 +818,11 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
                       @value-changed=${(e: CustomEvent) =>
                         updateModule({ unified_template: e.detail.value })}
                     ></ultra-template-editor>
+                    ${this.renderTemplateKeyWarning(
+                      summaryModule.unified_template,
+                      STATUS_SUMMARY_TEMPLATE_KEYS,
+                      lang
+                    )}
                   </div>
                 </div>
               `
@@ -1277,6 +1285,11 @@ export class UltraStatusSummaryModule extends BaseUltraModule {
                               updateModule
                             )}
                         ></ultra-template-editor>
+                        ${this.renderTemplateKeyWarning(
+                          entity.unified_template,
+                          STATUS_SUMMARY_TEMPLATE_KEYS,
+                          lang
+                        )}
                       </div>
                     </div>
                   `

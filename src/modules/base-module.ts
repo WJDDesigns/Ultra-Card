@@ -9,6 +9,7 @@ import { UltraLinkComponent, TapActionConfig } from '../components/ultra-link';
 import { ucGestureService, GestureConfig } from '../services/uc-gesture-service';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { getImageUrl, SUPPORTED_IMAGE_ACCEPT } from '../utils/image-upload';
+import { renderTemplateKeyWarning } from '../utils/template-key-warning';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { build3dTransformStyles } from '../utils/transform-3d-utils';
 import '../components/ultra-file-picker';
@@ -581,6 +582,24 @@ export abstract class BaseUltraModule implements UltraModule {
         <div class="conditional-fields-content">${content}</div>
       </div>
     `;
+  }
+
+  /**
+   * Inline warning for unified-template JSON keys the module doesn't support.
+   * Unsupported keys are silently ignored at render time, which users mistake
+   * for "the template doesn't work" — surface them while editing instead.
+   *
+   * Render directly below the module's `<ultra-template-editor>`:
+   * ```
+   * ${this.renderTemplateKeyWarning(entity.unified_template, ['icon', 'icon_color', ...], lang)}
+   * ```
+   */
+  protected renderTemplateKeyWarning(
+    template: string | undefined,
+    validKeys: readonly string[],
+    lang: string
+  ): TemplateResult | '' {
+    return renderTemplateKeyWarning(template, validKeys, lang);
   }
 
   // ======== ULTRA CARD FORM UTILITIES ========

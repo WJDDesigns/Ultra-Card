@@ -1,5 +1,30 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.7.0-beta3
+
+Seven new PRO modules for keeping track of the house — cleaning, plants, laundry, the car, batteries, standby power, and the dog. None of them need an LLM except Dog Duty; they work from the sensors and to-do lists you already have. Please report anything odd on GitHub or Discord — this is a pre-release for testing.
+
+### 🚀 New Features
+
+- **Added Dog Duty module (PRO)** - Points your yard camera at the lawn and uses AI vision to mark where the dog went, on a map you can scrub back through in time, with cleanup tracking so you know what you've already picked up
+- **Added Cleaning Zones module (PRO)** - Draw your rooms on a floorplan and give each one a cleaning interval; rooms shade from fresh to overdue as time passes and you tap one to log that it's been cleaned. Zones can be dragged, resized, and rotated to line up with rooms that aren't square to the image, and a robot vacuum can mark rooms clean on its own
+- **Added Battery Fleet module (PRO)** - Finds every battery in your home on its own and ranks them by how urgently they need attention, working out each one's drain rate from history to estimate how many days it has left. Devices without enough history say so instead of showing a made-up number
+- **Added Plant Care module (PRO)** - Watering and fertilizing schedules for your houseplants with photos, an optional moisture sensor per plant, and a seasonal adjustment that waters less in summer and more in winter. One tap to log a watering, with an undo
+- **Added Laundry Tracker module (PRO)** - Watches your washer and dryer power sensors to work out when a cycle starts and finishes, then reminds you about the load still sitting in the machine. Includes a cycle history timeline, running costs, and optional notifications
+- **Added Vehicle Maintenance module (PRO)** - Service intervals tracked by both mileage and time, with twelve ready-made presets (oil, tires, brakes, filters and more), a service log with costs, and a projection of how many days away the next service is based on how much you actually drive
+- **Added Vampire Power module (PRO)** - Finds the devices quietly drawing power around the clock and ranks them by what they cost you per year. It measures each device's true standby floor rather than its average, so a TV that's genuinely idle at 43 W isn't reported as 66 W
+
+### 🔧 Improvements
+
+- **Improved template editing across every module** - Templates that return a JSON key the module doesn't actually use now show a warning right under the editor, with a suggestion for the key you probably meant. Previously those keys were silently ignored, which looked like the template was broken. This covers the Icon, Info, Bar, Gauge, Graphs, Camera, Dropdown, Markdown, QR Code, Spinbox, Status Summary, Text, and Toggle modules, plus card appearance templates and row and column visibility templates
+- **Improved the template cheatsheet and inline help** - The Icon and Info modules now list every property they support instead of only the first couple, so you don't have to guess what's available
+
+### 🐛 Bug Fixes
+
+- **Fixed templates returning `state` doing nothing** - The template context calls the entity's value `state`, so returning `{ "state": "..." }` was the natural thing to write — but only `state_text` was read, and the result was silently dropped. Both now work
+
+---
+
 ## Version 3.7.0-beta2
 
 ### 🚀 New Features

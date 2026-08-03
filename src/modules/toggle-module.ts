@@ -14,6 +14,9 @@ import { buildEntityContext, computeEntitySignature } from '../utils/template-co
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
+/** Unified-template output keys a toggle point reads (plain true/false strings also work). */
+const TOGGLE_TEMPLATE_KEYS = ['match'] as const;
+
 export class UltraToggleModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'toggle',
@@ -925,6 +928,11 @@ export class UltraToggleModule extends BaseUltraModule {
                         updateModule
                       )}
                   ></ultra-template-editor>
+                  ${this.renderTemplateKeyWarning(
+                    point.unified_template,
+                    TOGGLE_TEMPLATE_KEYS,
+                    lang
+                  )}
                 </div>
               </div>
             `

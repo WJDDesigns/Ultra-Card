@@ -165,6 +165,9 @@ function cacheKey(module: QrCodeModule, content: string, hass?: HomeAssistant): 
  * Generates QR codes from static text/URL, HA template, or entity state.
  * Simple for basic use; advanced options for colors, error correction, and quiet zone.
  */
+/** Unified-template output keys the QR code module reads (plain strings also work). */
+const QR_TEMPLATE_KEYS = ['qr_content', 'content'] as const;
+
 export class UltraQrCodeModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'qr_code',
@@ -349,6 +352,11 @@ export class UltraQrCodeModule extends BaseUltraModule {
                   setTimeout(() => this.triggerPreviewUpdate(), 50);
                 }}
               ></ultra-template-editor>
+              ${this.renderTemplateKeyWarning(
+                qrModule.unified_template,
+                QR_TEMPLATE_KEYS,
+                lang
+              )}
             </div>
             </div>
           `

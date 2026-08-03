@@ -37,7 +37,7 @@ const RETURN_PROPERTIES: CheatsheetEntry[] = [
   { key: 'container_background_color', type: 'string', description: 'Container background color', snippet: '"container_background_color": "rgba(255,0,0,0.1)"', modules: ['icon', 'info', 'markdown', 'text'] },
   { key: 'name', type: 'string', description: 'Display name text', snippet: '"name": "{{ friendly_name }}"', modules: ['icon', 'info'] },
   { key: 'name_color', type: 'string', description: 'Name text color', snippet: '"name_color": "var(--primary-color)"', modules: ['icon', 'info'] },
-  { key: 'state_text', type: 'string', description: 'State value text', snippet: '"state_text": "{{ state }} {{ unit }}"', modules: ['icon', 'info'] },
+  { key: 'state_text', type: 'string', description: 'State value text ("state" also works as an alias)', snippet: '"state_text": "{{ state }} {{ unit }}"', modules: ['icon', 'info'] },
   { key: 'state_color', type: 'string', description: 'State text color', snippet: '"state_color": "green"', modules: ['icon', 'info'] },
   { key: 'content', type: 'string', description: 'Text or markdown body', snippet: '"content": "{{ state }}"', modules: ['text', 'markdown'] },
   {

@@ -33,6 +33,9 @@ const CAMERA_PLAYER_SELECTORS = new Set([
   'ha-camera-viewer',
 ]);
 
+/** Unified-template output keys the camera module reads (plain entity_id strings also work). */
+const CAMERA_TEMPLATE_KEYS = ['entity', 'visible', 'overlay_text', 'overlay_color'] as const;
+
 export class UltraCameraModule extends BaseUltraModule {
   private _templateInputDebounce: any = null;
   private _templateService: TemplateService | undefined;
@@ -849,6 +852,11 @@ export class UltraCameraModule extends BaseUltraModule {
                       updateModule({ unified_template: e.detail.value });
                     }}
                   ></ultra-template-editor>
+                  ${this.renderTemplateKeyWarning(
+                    cameraModule.unified_template,
+                    CAMERA_TEMPLATE_KEYS,
+                    lang
+                  )}
                 </div>
               `
             : ''}

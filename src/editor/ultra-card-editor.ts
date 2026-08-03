@@ -23,6 +23,7 @@ import {
 import { UcConfigEncoder } from '../utils/uc-config-encoder';
 import { uploadImage, SUPPORTED_IMAGE_ACCEPT } from '../utils/image-upload';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { renderTemplateKeyWarning } from '../utils/template-key-warning';
 import { safeGetItem, safeSetItem } from '../utils/safe-storage';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
@@ -42,6 +43,21 @@ import { localize } from '../localize/localize';
 import { ucToastService } from '../services/uc-toast-service';
 
 type EditorTab = 'layout' | 'settings';
+
+/** Unified-template output keys the card appearance template reads (plain color strings also work). */
+const CARD_APPEARANCE_TEMPLATE_KEYS = [
+  'card_background',
+  'card_border_color',
+  'card_border_radius',
+  'card_border_width',
+  'card_padding',
+  'card_shadow_enabled',
+  'card_shadow_color',
+  'card_shadow_horizontal',
+  'card_shadow_vertical',
+  'card_shadow_blur',
+  'card_shadow_spread',
+] as const;
 
 @customElement('ultra-card-editor')
 export class UltraCardEditor extends LitElement {
@@ -1195,6 +1211,11 @@ export class UltraCardEditor extends LitElement {
                                 @value-changed=${(e: CustomEvent) =>
                                   this._updateConfig({ card_unified_template: e.detail.value })}
                               ></ultra-template-editor>
+                              ${renderTemplateKeyWarning(
+                                this.config.card_unified_template,
+                                CARD_APPEARANCE_TEMPLATE_KEYS,
+                                lang
+                              )}
                             </div>
                           `
                         : ''}

@@ -126,6 +126,14 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'appliance-module.ts',
   'todo-list-module.ts',
   'weather-module.ts',
+  'dog-duty-module.ts',
+  // Pro household modules
+  'cleaning-zones-module.ts',
+  'battery-fleet-module.ts',
+  'plant-care-module.ts',
+  'laundry-tracker-module.ts',
+  'vehicle-maintenance-module.ts',
+  'vampire-power-module.ts',
   // New layout containers
   'grid-layout-module.ts',
   'flip-card-module.ts',

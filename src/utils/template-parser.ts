@@ -180,6 +180,10 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
       result.name_color = String(templateResult.name_color).trim();
     if (templateResult.state_text !== undefined)
       result.state_text = String(templateResult.state_text).trim();
+    // Friendly alias: accept "state" for "state_text" (common mistake — the input
+    // context variable is called `state`, so users naturally return it under that key)
+    if (result.state_text === undefined && templateResult.state !== undefined)
+      result.state_text = String(templateResult.state).trim();
     if (templateResult.state_color !== undefined)
       result.state_color = String(templateResult.state_color).trim();
 
@@ -280,6 +284,9 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
       if (parsed.name !== undefined) result.name = String(parsed.name).trim();
       if (parsed.name_color !== undefined) result.name_color = String(parsed.name_color).trim();
       if (parsed.state_text !== undefined) result.state_text = String(parsed.state_text).trim();
+      // Friendly alias: accept "state" for "state_text" (see object path above)
+      if (result.state_text === undefined && parsed.state !== undefined)
+        result.state_text = String(parsed.state).trim();
       if (parsed.state_color !== undefined) result.state_color = String(parsed.state_color).trim();
 
       // Text/content module properties
@@ -443,6 +450,91 @@ export function getTemplateError(result: UnifiedTemplateResult): string | null {
  */
 export function isStringResult(result: UnifiedTemplateResult): boolean {
   return result._isString === true;
+}
+
+/** Unknown-key warning produced by {@link findUnknownTemplateKeys} */
+export interface UnknownTemplateKeyWarning {
+  key: string;
+  suggestion?: string | undefined;
+}
+
+/**
+ * Common wrong-key → right-key hints, applied when the wrong key is not valid
+ * for the calling module. Keys valid for the module are never flagged.
+ */
+const TEMPLATE_KEY_SUGGESTIONS: Record<string, string> = {
+  state: 'state_text',
+  text: 'state_text',
+  value_text: 'state_text',
+  label: 'name',
+  title: 'name',
+  colour: 'color',
+  icon_colour: 'icon_color',
+  name_colour: 'name_color',
+  state_colour: 'state_color',
+};
+
+/** Simple Levenshtein distance for near-miss key suggestions (e.g. "state_txt") */
+function editDistance(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  const row: number[] = Array.from({ length: n + 1 }, (_, i) => i);
+  for (let i = 1; i <= m; i++) {
+    let prev = row[0];
+    row[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const tmp = row[j];
+      row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = tmp;
+    }
+  }
+  return row[n];
+}
+
+/**
+ * Scan a unified template's source for JSON output keys ("key": ...) that the
+ * calling module does not support. Unsupported keys are silently ignored at
+ * render time, which users often mistake for a bug — editors surface these
+ * as a warning instead.
+ *
+ * This is a static source scan (no template rendering needed), so keys inside
+ * Jinja expressions/values are not matched — only quoted keys followed by `:`.
+ *
+ * @param template Raw template source as typed by the user
+ * @param validKeys Output keys the calling module actually reads
+ * @returns Unknown keys (deduped, in source order) with optional suggestions
+ */
+export function findUnknownTemplateKeys(
+  template: string | undefined | null,
+  validKeys: readonly string[]
+): UnknownTemplateKeyWarning[] {
+  if (!template || !template.includes(':')) return [];
+  const valid = new Set(validKeys);
+  const seen = new Set<string>();
+  const warnings: UnknownTemplateKeyWarning[] = [];
+  const keyRegex = /"([a-zA-Z_][a-zA-Z0-9_]*)"\s*:/g;
+  let match: RegExpExecArray | null;
+  while ((match = keyRegex.exec(template)) !== null) {
+    const key = match[1];
+    if (valid.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    let suggestion: string | undefined = TEMPLATE_KEY_SUGGESTIONS[key];
+    if (suggestion && !valid.has(suggestion)) suggestion = undefined;
+    if (!suggestion && key.length > 3) {
+      let best: string | undefined;
+      let bestDist = 3; // only suggest for distance <= 2
+      for (const candidate of valid) {
+        const dist = editDistance(key, candidate);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = candidate;
+        }
+      }
+      suggestion = best;
+    }
+    warnings.push({ key, suggestion });
+  }
+  return warnings;
 }
 
 /**
