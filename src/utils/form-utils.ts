@@ -13,6 +13,16 @@ export class FormUtils {
   private static cleanupQueue = new Set<string>();
 
   /**
+   * Look up a form by id. Cleanup is deferred via timers that can outlive the
+   * document (e.g. a test environment torn down before the 100ms pass runs),
+   * so callers must go through this instead of touching `document` directly.
+   */
+  private static findForm(formId: string): HTMLElement | null {
+    if (typeof document === 'undefined') return null;
+    return document.getElementById(formId);
+  }
+
+  /**
    * Renders a clean ha-form without redundant labels
    * @param hass Home Assistant instance
    * @param data Form data object
@@ -31,7 +41,7 @@ export class FormUtils {
 
     // Schedule immediate cleanup
     setTimeout(() => {
-      const formElement = document.getElementById(formId);
+      const formElement = FormUtils.findForm(formId);
       if (formElement) {
         FormUtils.setupFormObserver(formElement, formId);
         FormUtils.aggressiveCleanup(formElement);
@@ -40,7 +50,7 @@ export class FormUtils {
 
     // Also schedule delayed cleanup for dynamic content
     setTimeout(() => {
-      const formElement = document.getElementById(formId);
+      const formElement = FormUtils.findForm(formId);
       if (formElement) {
         FormUtils.aggressiveCleanup(formElement);
       }
@@ -123,7 +133,7 @@ export class FormUtils {
 
     // Clean up observer when container is removed
     setTimeout(() => {
-      if (!document.contains(container)) {
+      if (typeof document === 'undefined' || !document.contains(container)) {
         observer.disconnect();
         FormUtils.activeObservers.delete(formId);
       }
@@ -270,6 +280,7 @@ export class FormUtils {
 
     // Method 5: Remove any remaining standalone redundant text
     setTimeout(() => {
+      if (typeof document === 'undefined') return;
       const finalWalker = document.createTreeWalker(haForm, NodeFilter.SHOW_TEXT, null);
 
       const finalTextNodes: Text[] = [];
