@@ -220,9 +220,10 @@ export function createDemoStates(): Record<string, any> {
     // ---- media player ----
     'media_player.kitchen_speaker': st('media_player.kitchen_speaker', 'playing', {
       friendly_name: 'Kitchen Speaker',
-      media_title: 'Midnight City',
-      media_artist: 'M83',
-      media_album_name: 'Hurry Up, We’re Dreaming',
+      media_title: 'Dandelion',
+      media_artist: 'Ella Langley',
+      media_album_name: 'Hungover',
+      entity_picture: 'https://i.scdn.co/image/ab67616d0000b2738606848da949bbaddf447d87',
       media_duration: 243,
       media_position: 84,
       media_position_updated_at: now(),
@@ -285,6 +286,15 @@ export function createDemoStates(): Record<string, any> {
     }),
 
     // ---- presence ----
+    'person.tony': st('person.tony', 'home', {
+      friendly_name: 'Tony Stark',
+      entity_picture:
+        'https://mediaproxy.tvtropes.org/width/1200/https://static.tvtropes.org/pmwiki/pub/images/tony_stark.png',
+      latitude: 34.03,
+      longitude: -118.49,
+      gps_accuracy: 8,
+      source: 'device_tracker.mark_42',
+    }),
     'person.wayne': st('person.wayne', 'home', {
       friendly_name: 'Wayne',
       latitude: 40.0,
@@ -367,10 +377,15 @@ export function createDemoStates(): Record<string, any> {
     }),
 
     // ---- inputs ----
-    'input_text.guest_wifi': st('input_text.guest_wifi', 'SunsetHouse-Guest', {
+    'input_text.guest_wifi': st('input_text.guest_wifi', '', {
       friendly_name: 'Guest Wi-Fi Name',
       mode: 'text',
       icon: 'mdi:wifi',
+    }),
+    'input_text.accent_color': st('input_text.accent_color', '#8017A2', {
+      friendly_name: 'Accent Color',
+      mode: 'text',
+      icon: 'mdi:palette',
     }),
     'input_number.ev_charge_limit': st('input_number.ev_charge_limit', '80', {
       friendly_name: 'EV Charge Limit',
@@ -395,6 +410,79 @@ export function createDemoStates(): Record<string, any> {
     'input_button.doorbell_test': st('input_button.doorbell_test', now(), {
       friendly_name: 'Doorbell Test',
       icon: 'mdi:bell-ring',
+    }),
+
+    // ---- appliances (SmartThings-style demo sensors) ----
+    'switch.washer_power': st('switch.washer_power', 'on', { friendly_name: 'Washer Power' }),
+    'sensor.washer_machine_state': st('sensor.washer_machine_state', 'run', { friendly_name: 'Washer State' }),
+    'sensor.washer_job_state': st('sensor.washer_job_state', 'wash', { friendly_name: 'Washer Job' }),
+    'sensor.washer_completion_time': st('sensor.washer_completion_time', inHour(0.57), {
+      friendly_name: 'Washer Completion Time',
+      device_class: 'timestamp',
+    }),
+    'sensor.washer_energy': st('sensor.washer_energy', '0.8', {
+      friendly_name: 'Washer Energy',
+      unit_of_measurement: 'kWh',
+      device_class: 'energy',
+    }),
+    'binary_sensor.washer_door': st('binary_sensor.washer_door', 'off', {
+      friendly_name: 'Washer Door',
+      device_class: 'door',
+    }),
+    'switch.dryer_power': st('switch.dryer_power', 'on', { friendly_name: 'Dryer Power' }),
+    'sensor.dryer_machine_state': st('sensor.dryer_machine_state', 'run', { friendly_name: 'Dryer State' }),
+    'sensor.dryer_job_state': st('sensor.dryer_job_state', 'drying', { friendly_name: 'Dryer Job' }),
+    'sensor.dryer_completion_time': st('sensor.dryer_completion_time', inHour(0.37), {
+      friendly_name: 'Dryer Completion Time',
+      device_class: 'timestamp',
+    }),
+    'sensor.dryer_power_w': st('sensor.dryer_power_w', '2900', {
+      friendly_name: 'Dryer Power',
+      unit_of_measurement: 'W',
+      device_class: 'power',
+    }),
+    'switch.dishwasher_power': st('switch.dishwasher_power', 'on', { friendly_name: 'Dishwasher Power' }),
+    'sensor.dishwasher_machine_state': st('sensor.dishwasher_machine_state', 'run', { friendly_name: 'Dishwasher State' }),
+    'sensor.dishwasher_job_state': st('sensor.dishwasher_job_state', 'rinse', { friendly_name: 'Dishwasher Job' }),
+    'sensor.dishwasher_completion_time': st('sensor.dishwasher_completion_time', inHour(0.78), {
+      friendly_name: 'Dishwasher Completion Time',
+      device_class: 'timestamp',
+    }),
+    'binary_sensor.fridge_door': st('binary_sensor.fridge_door', 'off', {
+      friendly_name: 'Fridge Door',
+      device_class: 'door',
+    }),
+    'binary_sensor.freezer_door': st('binary_sensor.freezer_door', 'off', {
+      friendly_name: 'Freezer Door',
+      device_class: 'door',
+    }),
+    'sensor.fridge_temp': st('sensor.fridge_temp', '37', {
+      friendly_name: 'Fridge Temperature',
+      unit_of_measurement: '°F',
+      device_class: 'temperature',
+    }),
+    'sensor.freezer_temp': st('sensor.freezer_temp', '0', {
+      friendly_name: 'Freezer Temperature',
+      unit_of_measurement: '°F',
+      device_class: 'temperature',
+    }),
+    'sensor.fridge_setpoint': st('sensor.fridge_setpoint', '37', {
+      friendly_name: 'Fridge Setpoint',
+      unit_of_measurement: '°F',
+    }),
+    'sensor.freezer_setpoint': st('sensor.freezer_setpoint', '0', {
+      friendly_name: 'Freezer Setpoint',
+      unit_of_measurement: '°F',
+    }),
+    'sensor.oven_mode': st('sensor.oven_mode', 'bake', { friendly_name: 'Oven Mode' }),
+    'sensor.oven_temp': st('sensor.oven_temp', '348', {
+      friendly_name: 'Oven Temperature',
+      unit_of_measurement: '°F',
+      device_class: 'temperature',
+    }),
+    'sensor.oven_setpoint': st('sensor.oven_setpoint', '425', {
+      friendly_name: 'Oven Setpoint',
+      unit_of_measurement: '°F',
     }),
 
     // ---- Ultra Card Connect (demo Pro subscription so PRO modules render unlocked) ----
@@ -511,6 +599,15 @@ export function createDemoHass() {
         data?.entity_id || _target?.entity_id || (Array.isArray(data?.entity_id) && data.entity_id[0]);
       const entity = id && states[id];
       const d = (v: any, f: any) => (v === undefined ? f : v);
+      if (domain === 'todo' && service === 'get_items') {
+        const items = [
+          { uid: '1', summary: 'Milk', status: 'completed' },
+          { uid: '2', summary: 'Coffee beans', status: 'completed' },
+          { uid: '3', summary: 'Dog food', status: 'needs_action' },
+          { uid: '4', summary: 'Batteries AA', status: 'needs_action' },
+        ];
+        return { response: { [id || 'todo.groceries']: { items } } };
+      }
       switch (`${domain}.${service}`) {
         case 'light.toggle':
         case 'switch.toggle':
@@ -676,6 +773,26 @@ export function createDemoHass() {
     },
 
     async callWS(msg: any) {
+      if (msg?.type === 'config/area_registry/list') {
+        return [
+          { area_id: 'living_room', name: 'Living Room', icon: 'mdi:sofa', picture: null },
+          { area_id: 'kitchen', name: 'Kitchen', icon: 'mdi:silverware-fork-knife', picture: null },
+          { area_id: 'bedroom', name: 'Bedroom', icon: 'mdi:bed', picture: null },
+        ];
+      }
+      if (msg?.type === 'config/device_registry/list') return [];
+      if (msg?.type === 'config/entity_registry/list') {
+        return [
+          { entity_id: 'light.living_room', area_id: 'living_room', device_id: null, disabled_by: null, hidden_by: null },
+          { entity_id: 'light.porch', area_id: 'living_room', device_id: null, disabled_by: null, hidden_by: null },
+          { entity_id: 'sensor.living_room_temperature', area_id: 'living_room', device_id: null, disabled_by: null, hidden_by: null },
+          { entity_id: 'sensor.living_room_humidity', area_id: 'living_room', device_id: null, disabled_by: null, hidden_by: null },
+          { entity_id: 'binary_sensor.garage_motion', area_id: 'living_room', device_id: null, disabled_by: null, hidden_by: null },
+          { entity_id: 'media_player.kitchen_speaker', area_id: 'kitchen', device_id: null, disabled_by: null, hidden_by: null },
+          { entity_id: 'light.kitchen', area_id: 'kitchen', device_id: null, disabled_by: null, hidden_by: null },
+          { entity_id: 'cover.living_room_blinds', area_id: 'living_room', device_id: null, disabled_by: null, hidden_by: null },
+        ];
+      }
       if (msg?.type === 'todo/item/list') {
         return {
           items: [

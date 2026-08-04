@@ -72,17 +72,29 @@ class HaSliderShim extends HTMLElement {
   private _input?: HTMLInputElement;
   connectedCallback() {
     if (this._input) return;
+    const sr = this.attachShadow({ mode: 'open' });
+    const style = document.createElement('style');
+    style.textContent = `
+      :host{display:inline-block;width:100%;min-width:80px}
+      input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:20px;background:transparent;outline:none;margin:0}
+      input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;
+        background:var(--slider-track-color, rgba(255,255,255,.22))}
+      input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+        background:var(--slider-color, var(--primary-color,#03a9f4));margin-top:-5px;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+      input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--slider-track-color, rgba(255,255,255,.22))}
+      input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:var(--slider-color, var(--primary-color,#03a9f4))}
+    `;
+    sr.appendChild(style);
     const i = (this._input = document.createElement('input'));
     i.type = 'range';
     ['min', 'max', 'step', 'value'].forEach(a => {
       if (this.hasAttribute(a)) i.setAttribute(a, this.getAttribute(a)!);
     });
-    i.style.width = '100%';
     i.addEventListener('input', () => {
       this.dispatchEvent(new CustomEvent('change', { bubbles: true }));
       this.dispatchEvent(new CustomEvent('value-changed', { detail: { value: Number(i.value) }, bubbles: true }));
     });
-    this.appendChild(i);
+    sr.appendChild(i);
   }
   set value(v: any) {
     if (this._input) this._input.value = String(v);
@@ -154,18 +166,54 @@ class HaProgressShim extends HTMLElement {
 }
 define('ha-circular-progress', HaProgressShim);
 
-/* ---- ha-camera-stream: demo placeholder feed ---- */
+/* ---- ha-camera-stream: real HLS demo feed (San Diego Zoo koala cam) ---- */
+const DEMO_HLS = 'https://zssd-koala.hls.camzonecdn.com/CamzoneStreams/zssd-koala/Playlist.m3u8';
+let hlsLibPromise: Promise<any> | null = null;
+function loadHlsLib(): Promise<any> {
+  if (!hlsLibPromise) {
+    hlsLibPromise = new Promise((resolve, reject) => {
+      if ((window as any).Hls) return resolve((window as any).Hls);
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.20/dist/hls.min.js';
+      s.onload = () => resolve((window as any).Hls);
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+  return hlsLibPromise;
+}
 class HaCameraStreamShim extends HTMLElement {
   connectedCallback() {
-    this.style.cssText += 'display:block;width:100%;height:100%;min-height:120px;position:relative;background:linear-gradient(160deg,#2a3440,#151a22 60%,#0d1117);border-radius:inherit;overflow:hidden';
-    this.innerHTML = `
-      <span style="position:absolute;top:8px;left:10px;font-size:10px;font-weight:800;color:#ff5252;letter-spacing:.1em">● REC</span>
-      <span style="position:absolute;bottom:8px;right:10px;font-size:10px;color:#cfe3ff;font-family:monospace" class="ucd-cam-ts"></span>
-      <span style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(41,182,246,.8),transparent);animation:ucdScan 5s ease-in-out infinite"></span>`;
-    const ts = this.querySelector('.ucd-cam-ts') as HTMLElement;
-    const tick = () => (ts.textContent = new Date().toLocaleTimeString('en-US', { hour12: false }));
-    tick();
-    setInterval(tick, 1000);
+    if (this.querySelector('video')) return;
+    this.style.cssText +=
+      'display:block;width:100%;height:100%;min-height:120px;position:relative;background:#0d1117;border-radius:inherit;overflow:hidden';
+    const video = document.createElement('video');
+    video.muted = true;
+    video.autoplay = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+    this.appendChild(video);
+    const badge = document.createElement('span');
+    badge.style.cssText =
+      'position:absolute;top:8px;left:10px;font-size:10px;font-weight:800;color:#ff5252;letter-spacing:.1em;background:rgba(0,0,0,.45);padding:2px 8px;border-radius:99px';
+    badge.textContent = '● LIVE';
+    this.appendChild(badge);
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = DEMO_HLS;
+      video.play().catch(() => {});
+    } else {
+      loadHlsLib()
+        .then(Hls => {
+          if (Hls && Hls.isSupported()) {
+            const hls = new Hls({ maxBufferLength: 10 });
+            hls.loadSource(DEMO_HLS);
+            hls.attachMedia(video);
+            video.play().catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
   }
 }
 define('ha-camera-stream', HaCameraStreamShim);

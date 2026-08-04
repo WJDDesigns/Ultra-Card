@@ -17,6 +17,15 @@ import { VERSION } from '../version';
 const registry = getModuleRegistry();
 const demoHass = createDemoHass();
 
+/**
+ * Register every module implementation up front. The bundle is eager, so this
+ * is instant — and it guarantees child modules inside layout containers render
+ * for real instead of as loading skeletons.
+ */
+const allModulesReady: Promise<void> = Promise.all(
+  registry.getAllModuleMetadata().map(m => registry.ensureModuleLoaded(m.type).catch(() => {}))
+).then(() => undefined);
+
 // Alias entities some modules reference by hard-coded default id.
 demoHass.states['weather.forecast_home'] = {
   ...demoHass.states['weather.home'],
@@ -35,6 +44,9 @@ function mk(type: string, extra: Record<string, any> = {}): any {
   DEMO_TWEAKS[type]?.(base);
   return Object.assign(base, extra);
 }
+
+const CAR_IMG = 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=640&q=80';
+const EARTH_GIF = 'https://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif';
 
 const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
   gauge: c => (c.entity = c.entity || 'sensor.speed_test'),
@@ -80,7 +92,11 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     c.modules = [mk('text', { text: 'Living Room', font_size: 16 }), mk('bar'), mk('button', { label: 'Scene' })];
   },
   stack: c => {
-    c.modules = [mk('image'), mk('text', { text: 'Backyard cam', font_size: 14 })];
+    c.modules = [
+      mk('image', { image_type: 'url', image_url: CAR_IMG, height: '190px' }),
+      mk('text', { text: 'Garage · Model S', font_size: 16, color: '#ffffff' }),
+    ];
+    c.aspect_ratio = '16:9';
   },
   grid_layout: c => {
     c.modules = [mk('icon'), mk('icon'), mk('icon'), mk('icon')];
@@ -104,14 +120,17 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     c.trigger_button_text = 'Open climate popup';
   },
   flip_card: c => {
-    c.modules = [mk('text', { text: '72.4° — tap to flip', font_size: 18 }), mk('markdown')];
+    c.modules = [mk('text', { text: 'Living Room · 72.4°', font_size: 18 }), mk('markdown')];
   },
   drawer: c => {
     c.modules = [mk('text', { text: 'Quick actions', font_size: 15 }), mk('button', { label: 'Good Night' })];
     c.trigger_label = 'Open drawer';
   },
   scroll_row: c => {
-    c.modules = [mk('icon'), mk('icon'), mk('icon'), mk('icon')];
+    c.modules = [mk('icon'), mk('icon'), mk('icon'), mk('icon'), mk('icon'), mk('icon')];
+    c.item_width = '38%';
+    c.fade_edges = true;
+    c.show_arrows = true;
   },
   state_switcher: c => {
     c.modules = [mk('text', { text: 'Everyone home — comfort mode', font_size: 15 })];
@@ -128,12 +147,145 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     if (Array.isArray(c.bars) && c.bars.length) c.bars[0].entity = c.bars[0].entity || 'sensor.phone_battery';
     if ('entity' in c && !c.entity) c.entity = 'sensor.phone_battery';
   },
-  light: c => (c.entity = c.entity || 'light.living_room'),
-  slider_control: c => (c.entity = c.entity || 'light.living_room'),
+  light: c => {
+    // Show real preset control buttons, not the unconfigured state.
+    const mk3 = (name: string, icon: string, extra: any) => ({
+      id: 'demo_preset_' + name.toLowerCase().replace(/\s/g, '_'),
+      name,
+      icon,
+      action: 'turn_on',
+      entities: ['light.living_room', 'light.kitchen'],
+      brightness: 255,
+      rgb_color: [255, 255, 255],
+      text_color: 'var(--text-primary-color)',
+      icon_color: 'var(--primary-color)',
+      button_color: 'var(--primary-color)',
+      use_light_color_for_button: true,
+      ...extra,
+    });
+    c.presets = [
+      mk3('Bright', 'mdi:brightness-7', { brightness: 255, rgb_color: [255, 244, 224] }),
+      mk3('Movie', 'mdi:movie-open', { brightness: 90, rgb_color: [128, 23, 162] }),
+      mk3('All Off', 'mdi:power', { action: 'turn_off' }),
+    ];
+  },
+  slider_control: c => {
+    c.auto_contrast = true;
+    c.name_color = '#0d1117';
+    c.value_color = '#0d1117';
+    if (Array.isArray(c.bars)) c.bars.forEach((b: any) => (b.entity = b.entity || 'light.living_room'));
+  },
+  camera: c => {
+    c.entity = c.entity || 'camera.front_door';
+    c.view_mode = 'live';
+    c.camera_name = 'Koala Cam';
+    c.show_name = true;
+  },
+  graphs: c => {
+    c.entities = [
+      { id: 'demo_g1', entity: 'sensor.living_room_temperature', name: 'Living Room', color: '#29b6f6' },
+      { id: 'demo_g2', entity: 'sensor.living_room_humidity', name: 'Humidity', color: '#b44ce0' },
+    ];
+    c.title = 'Temperature · 24h';
+    c.chart_height = 170;
+  },
+  background: c => {
+    c.background_type = 'image';
+    c.background_image = EARTH_GIF;
+    c.background_size = 'cover';
+    c.background_position = 'center';
+  },
+  status_summary: c => {
+    c.enable_auto_filter = false;
+    c.entities = [
+      { id: 'demo_ss1', entity: 'binary_sensor.front_door' },
+      { id: 'demo_ss2', entity: 'binary_sensor.garage_motion' },
+      { id: 'demo_ss3', entity: 'lock.front_door' },
+      { id: 'demo_ss4', entity: 'switch.washer_power' },
+    ];
+    c.max_items_to_show = 4;
+  },
+  navigation: c => {
+    c.nav_routes = [
+      { id: 'demo_n1', icon: 'mdi:home', label: 'Home', selected: true },
+      { id: 'demo_n2', icon: 'mdi:lightbulb', label: 'Lights' },
+      { id: 'demo_n3', icon: 'mdi:thermostat', label: 'Climate' },
+      { id: 'demo_n4', icon: 'mdi:shield-home', label: 'Security' },
+      { id: 'demo_n5', icon: 'mdi:cog', label: 'More' },
+    ];
+  },
+  people: c => (c.person_entity = 'person.tony'),
+  'dynamic-list': c => {
+    c.source_type = 'todo';
+    c.todo_entity = 'todo.groceries';
+  },
+  area_summary: c => {
+    c.area_id = 'living_room';
+    c.temperature_entity = 'sensor.living_room_temperature';
+    c.humidity_entity = 'sensor.living_room_humidity';
+  },
+  auto_entity_list: c => {
+    c.include_domains = ['light'];
+    c.max_items = 3;
+  },
+  washer: c => {
+    Object.assign(c, {
+      entity: 'sensor.washer_machine_state',
+      name: 'Washer',
+      power_switch_entity: 'switch.washer_power',
+      machine_state_entity: 'sensor.washer_machine_state',
+      job_state_entity: 'sensor.washer_job_state',
+      completion_time_entity: 'sensor.washer_completion_time',
+      power_entity: 'sensor.washer_power',
+      energy_entity: 'sensor.washer_energy',
+      door_entity: 'binary_sensor.washer_door',
+    });
+  },
+  dryer: c => {
+    Object.assign(c, {
+      entity: 'sensor.dryer_machine_state',
+      name: 'Dryer',
+      power_switch_entity: 'switch.dryer_power',
+      machine_state_entity: 'sensor.dryer_machine_state',
+      job_state_entity: 'sensor.dryer_job_state',
+      completion_time_entity: 'sensor.dryer_completion_time',
+      power_entity: 'sensor.dryer_power_w',
+    });
+  },
+  dishwasher: c => {
+    Object.assign(c, {
+      entity: 'sensor.dishwasher_machine_state',
+      name: 'Dishwasher',
+      power_switch_entity: 'switch.dishwasher_power',
+      machine_state_entity: 'sensor.dishwasher_machine_state',
+      job_state_entity: 'sensor.dishwasher_job_state',
+      completion_time_entity: 'sensor.dishwasher_completion_time',
+    });
+  },
+  fridge: c => {
+    Object.assign(c, {
+      entity: 'sensor.fridge_temp',
+      name: 'Refrigerator',
+      fridge_door_entity: 'binary_sensor.fridge_door',
+      freezer_door_entity: 'binary_sensor.freezer_door',
+      fridge_temp_entity: 'sensor.fridge_temp',
+      freezer_temp_entity: 'sensor.freezer_temp',
+      fridge_setpoint_entity: 'sensor.fridge_setpoint',
+      freezer_setpoint_entity: 'sensor.freezer_setpoint',
+    });
+  },
+  range: c => {
+    Object.assign(c, {
+      entity: 'sensor.oven_temp',
+      name: 'Range',
+      oven_mode_entity: 'sensor.oven_mode',
+      oven_temp_entity: 'sensor.oven_temp',
+      oven_setpoint_entity: 'sensor.oven_setpoint',
+    });
+  },
   climate: c => (c.entity = c.entity || 'climate.downstairs'),
   humidifier: c => (c.entity = c.entity || 'humidifier.bedroom'),
   media_player: c => (c.entity = c.entity || 'media_player.kitchen_speaker'),
-  camera: c => (c.entity = c.entity || 'camera.front_door'),
   cover: c => (c.entity = c.entity || 'cover.living_room_blinds'),
   fan: c => (c.entity = c.entity || 'fan.ceiling_fan'),
   lock: c => (c.entity = c.entity || 'lock.front_door'),
@@ -141,7 +293,7 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
   alarm_panel: c => (c.entity = c.entity || 'alarm_control_panel.home'),
   timer: c => (c.entity = c.entity || 'timer.pizza'),
   todo_list: c => (c.entity = c.entity || 'todo.groceries'),
-  weather: c => (c.entity = c.entity || 'weather.home'),
+  weather: c => (c.weather_entity = c.weather_entity || 'weather.home'),
   animated_weather: c => (c.weather_entity = c.weather_entity || c.entity || 'weather.home'),
   animated_forecast: c => (c.weather_entity = c.weather_entity || c.entity || 'weather.home'),
   dynamic_weather: c => (c.weather_entity = c.weather_entity || c.entity || 'weather.home'),
@@ -163,7 +315,11 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
       c.calendars[0].name = 'Family';
     }
   },
-  text_input: c => (c.entity = c.entity || 'input_text.guest_wifi'),
+  text_input: c => {
+    c.entity = c.entity || 'input_text.guest_wifi';
+    c.placeholder = 'Enter text here';
+    c.label = 'Guest Wi-Fi Name';
+  },
   number_input: c => (c.entity = c.entity || 'input_number.ev_charge_limit'),
   slider_input: c => (c.entity = c.entity || 'input_number.ev_charge_limit'),
   datetime_input: c => (c.entity = c.entity || 'input_datetime.wake_up'),
@@ -171,7 +327,78 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
   boolean_input: c => (c.entity = c.entity || 'input_boolean.guest'),
   button_input: c => (c.entity = c.entity || 'input_button.doorbell_test'),
   counter_input: c => (c.entity = c.entity || 'counter.coffee'),
-  color_input: c => (c.entity = c.entity || 'light.kitchen'),
+  color_input: c => {
+    c.entity = 'input_text.accent_color';
+    c.show_hex_input = true;
+    c.show_preview = true;
+  },
+};
+
+/**
+ * Post-render staging: put certain modules into their "open"/mid-action state
+ * so a static (non-interactive) preview still shows what they do.
+ * Runs once per element, ~400ms after first render.
+ */
+function clickFirst(holder: HTMLElement, selectors: string[]): boolean {
+  for (const sel of selectors) {
+    const el = holder.querySelector(sel) as HTMLElement | null;
+    if (el) {
+      el.click();
+      return true;
+    }
+  }
+  return false;
+}
+
+const DEMO_STAGE: Record<string, (holder: HTMLElement) => void> = {
+  dropdown: holder => {
+    clickFirst(holder, ['.dropdown-selected', '.custom-dropdown', 'select', 'button']);
+  },
+  drawer: holder => {
+    clickFirst(holder, ['.drawer-trigger-btn', '[class*="trigger"]', 'button', '[role="button"]']);
+    // The drawer portals a fixed full-viewport overlay to document.body —
+    // pull it into the preview card so it displays inline and cannot block the page.
+    setTimeout(() => {
+      const portal = document.querySelector('.ultra-drawer-portal') as HTMLElement;
+      if (portal && !holder.contains(portal)) {
+        holder.style.position = 'relative';
+        holder.style.minHeight = '170px';
+        holder.appendChild(portal);
+        portal.style.position = 'absolute';
+        portal.style.inset = '0';
+        portal.style.zIndex = '5';
+        portal.style.pointerEvents = 'none';
+      }
+    }, 300);
+  },
+  popup: holder => {
+    clickFirst(holder, ['[class*="trigger"]', 'button', '[role="button"]']);
+    // The popup portals a fixed-position overlay to document.body — pull it
+    // into the preview so it displays inside the card instead of the page.
+    setTimeout(() => {
+      const overlay = document.querySelector('.ultra-popup-overlay') as HTMLElement;
+      if (overlay && !holder.contains(overlay)) {
+        holder.style.position = 'relative';
+        holder.appendChild(overlay);
+        overlay.style.position = 'absolute';
+        overlay.style.inset = '0';
+        overlay.style.zIndex = '5';
+        const dialog = overlay.firstElementChild as HTMLElement;
+        if (dialog) {
+          dialog.style.maxWidth = '92%';
+          dialog.style.maxHeight = '92%';
+        }
+      }
+    }, 250);
+  },
+  flip_card: holder => {
+    const flipper = holder.querySelector('.flip-card-inner, [style*="preserve-3d"]') as HTMLElement;
+    if (flipper) {
+      flipper.style.transition = 'none';
+      flipper.style.transform = 'rotateY(38deg)';
+      (holder.style as any).perspective = '700px';
+    }
+  },
 };
 
 /** HA default dark-theme variables so modules look like a real dashboard. */
@@ -263,7 +490,7 @@ class UcModuleDemo extends HTMLElement {
     if (!type) return;
     try {
       const [, sheet] = await Promise.all([
-        registry.ensureModuleLoaded(type),
+        allModulesReady,
         getMdiSheet().catch(() => null),
       ]);
       if (sheet) this._root.adoptedStyleSheets = [sheet];
@@ -284,6 +511,9 @@ class UcModuleDemo extends HTMLElement {
       this._unsub?.();
       this._unsub = demoHass.__subscribe(() => this._scheduleRender());
       this._renderNow();
+
+      const stage = DEMO_STAGE[type];
+      if (stage) setTimeout(() => { try { stage(this._holder); } catch (e) { /* staging is best-effort */ } }, 400);
     } catch (err) {
       this._holder.innerHTML = `<div class="ucd-error">Preview unavailable — see this module live on your own dashboard.</div>`;
       // eslint-disable-next-line no-console
@@ -298,12 +528,65 @@ class UcModuleDemo extends HTMLElement {
 
   private _renderNow() {
     if (!this._handler || !this._module) return;
+    const type = this.getAttribute('type') || '';
+    // Navigation and Background produce view-wide chrome that is invisible
+    // inside a single card, so their demos stage the module's EFFECT: a mini
+    // dashboard view with the navbar dock / view background applied, built
+    // from the module's real config.
+    if (type === 'navigation') {
+      const routes: any[] = (this._module.nav_routes || []).slice(0, 5);
+      this._holder.innerHTML = `
+        <div style="position:relative;height:150px;border-radius:10px;overflow:hidden;background:var(--primary-background-color)">
+          <div style="position:absolute;inset:10px 10px 58px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="background:var(--card-background-color);border-radius:10px"></div>
+            <div style="background:var(--card-background-color);border-radius:10px"></div>
+          </div>
+          <div style="position:absolute;left:12px;right:12px;bottom:10px;display:flex;justify-content:space-around;align-items:center;
+            padding:7px 6px;background:rgba(28,28,28,.85);border-radius:14px;border:1px solid rgba(255,255,255,.08);
+            backdrop-filter:blur(16px) saturate(180%);box-shadow:0 8px 24px rgba(0,0,0,.16)">
+            ${routes
+              .map(
+                (r, i) => `
+              <div style="text-align:center;color:${i === 0 ? 'var(--primary-color)' : 'var(--secondary-text-color)'}">
+                <ha-icon icon="${r.icon || 'mdi:circle'}" style="--mdc-icon-size:20px"></ha-icon>
+                <div style="font-size:9px;font-weight:600">${r.label || ''}</div>
+              </div>`
+              )
+              .join('')}
+          </div>
+        </div>`;
+      return;
+    }
+    if (type === 'background') {
+      this._holder.innerHTML = `
+        <div style="position:relative;height:160px;border-radius:10px;overflow:hidden;
+          background-image:url('${EARTH_GIF}');background-size:cover;background-position:center">
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,.25)"></div>
+          <div style="position:absolute;left:12px;top:12px;right:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="background:rgba(28,28,28,.82);border-radius:10px;padding:10px;color:var(--primary-text-color);font-size:12px">
+              <b>Living Room</b><br><span style="color:var(--secondary-text-color)">72.4 °F · 41 %</span></div>
+            <div style="background:rgba(28,28,28,.82);border-radius:10px;padding:10px;color:var(--primary-text-color);font-size:12px">
+              <b>3 lights on</b><br><span style="color:var(--secondary-text-color)">house locked</span></div>
+          </div>
+          <div style="position:absolute;bottom:8px;right:10px;font-size:9.5px;color:rgba(255,255,255,.8);background:rgba(0,0,0,.4);padding:2px 8px;border-radius:99px">
+            View background · applied behind your cards</div>
+        </div>`;
+      return;
+    }
     try {
+      // A few other modules render view-wide effects on the dashboard, so they
+      // use the 'live' editor representation instead.
+      const ctxOverrides: Record<string, 'live' | 'dashboard'> = {
+        video_bg: 'live',
+        screensaver: 'live',
+        dynamic_weather: 'live',
+        living_canvas: 'live',
+      };
       const tpl: TemplateResult = this._handler.renderPreview(
         this._module,
         demoHass,
         undefined,
-        'live'
+        ctxOverrides[type] || 'dashboard'
       );
       render(html`${tpl}`, this._holder);
     } catch (err) {

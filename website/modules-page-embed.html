@@ -1,4 +1,4 @@
-<script src="https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@1bbfa655459edaab11770c5f8467597a8f6f93af/dist-demo/ultra-card-demo.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@main/dist-demo/ultra-card-demo.js" defer></script>
 <style>
 /* full-bleed + neutralize Impreza section padding on the Modules page */
 .ucm{margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}
@@ -15,13 +15,13 @@
   <header class="ucm-hero">
     <div class="ucm-hero-glow" aria-hidden="true"></div>
     <div class="ucm-wrap">
-      <div class="ucm-eyebrow"><span class="ucm-pulse"></span> Module Library · Updated for <b>v3.7.0&#8209;beta3</b></div>
+      <div class="ucm-eyebrow"><span class="ucm-pulse"></span> Module Library · Updated for <b id="ucm-version">v3.7.0&#8209;beta3</b></div>
       <h1 class="ucm-h1">Every module.<br><span class="ucm-grad-text">Running live.</span></h1>
       <p class="ucm-sub">Ultra Card ships <b class="ucm-count" data-count="total">93</b> drag&#8209;and&#8209;drop modules for your Home Assistant dashboard.
-      Every preview below is the <b>real module</b> &mdash; the same code that runs on your dashboard, live with sample data. Tap, drag and toggle away.</p>
+      Every preview below is the <b>real module</b>, running the same code as your dashboard with live sample data.</p>
       <div class="ucm-search-hero">
         <i class="mdi mdi-magnify"></i>
-        <input type="search" id="ucm-search" placeholder="Search 93 modules &mdash; try &ldquo;weather&rdquo;, &ldquo;battery&rdquo;, &ldquo;slider&rdquo;&hellip;" aria-label="Search modules">
+        <input type="search" id="ucm-search" placeholder="Search modules: weather, battery, slider&hellip;" aria-label="Search modules">
         <button class="ucm-search-clear" id="ucm-search-clear" aria-label="Clear search" hidden><i class="mdi mdi-close"></i></button>
       </div>
       <div class="ucm-stats">
@@ -64,7 +64,7 @@
       <div class="ucm-sec-head">
         <span class="ucm-tier-pill ucm-tier-free">Free</span>
         <h2>Free forever. No account needed.</h2>
-        <p>Install Ultra Card from HACS and all <b data-count="free">66</b> of these modules are yours &mdash; layouts, gauges, graphs, controls and more.</p>
+        <p>Install Ultra Card from HACS and all <b data-count="free">66</b> of these modules are yours: layouts, gauges, graphs, controls and more.</p>
       </div>
       <div class="ucm-grid" id="ucm-grid-free"></div>
     </div>
@@ -76,7 +76,7 @@
       <div class="ucm-proband-copy">
         <span class="ucm-tier-pill ucm-tier-pro"><i class="mdi mdi-star"></i> Ultra Card PRO</span>
         <h2>The flagship modules live here.</h2>
-        <p>Animated weather, a circular thermostat, solar analytics, a security panel, even a virtual pet powered by your smart home. <b data-count="pro">27</b> PRO modules &mdash; plus cloud backups, presets and priority support.</p>
+        <p>Animated weather, a circular thermostat, solar analytics, a security panel, even a virtual pet powered by your smart home. <b data-count="pro">27</b> PRO modules, plus cloud backups, presets and priority support.</p>
         <ul class="ucm-pro-perks">
           <li><i class="mdi mdi-check-circle"></i> All <b data-count="pro">27</b> PRO modules below</li>
           <li><i class="mdi mdi-check-circle"></i> Cloud backup &amp; sync of your cards</li>
@@ -95,7 +95,7 @@
       <div class="ucm-sec-head">
         <span class="ucm-tier-pill ucm-tier-pro"><i class="mdi mdi-star"></i> PRO</span>
         <h2>PRO modules</h2>
-        <p>Every preview is the real experience &mdash; explore them all, then make them yours.</p>
+        <p>Every preview is the real experience. Explore them all, then make them yours.</p>
       </div>
       <div class="ucm-grid" id="ucm-grid-pro"></div>
     </div>
@@ -108,7 +108,7 @@
       <div class="ucm-grid" id="ucm-grid-results"></div>
       <div class="ucm-noresults" id="ucm-noresults" hidden>
         <i class="mdi mdi-magnify-remove-outline"></i>
-        <p>No modules match. Try a different word &mdash; or tell us what&rsquo;s missing in the <a href="https://github.com/WJDDesigns/Ultra-Card/discussions" target="_blank" rel="noopener">community</a>.</p>
+        <p>No modules match. Try a different word, or tell us what&rsquo;s missing in the <a href="https://github.com/WJDDesigns/Ultra-Card/discussions" target="_blank" rel="noopener">community</a>.</p>
       </div>
     </div>
   </section>
@@ -178,7 +178,7 @@
 @keyframes ucmPulse{70%{box-shadow:0 0 0 9px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
 .ucm-h1{position:relative;font-size:clamp(38px,6vw,68px);font-weight:800;margin:22px 0 16px;letter-spacing:-.02em}
 .ucm-grad-text{background:linear-gradient(92deg,var(--uc-blue),#b44ce0 55%,var(--uc-pink));-webkit-background-clip:text;background-clip:text;color:transparent}
-.ucm-sub{position:relative;max-width:660px;margin:0 auto;color:var(--uc-dim);font-size:17px}
+.ucm-sub{position:relative;max-width:660px;margin:0 auto;color:var(--uc-dim);font-size:17px;text-align:center!important}
 .ucm-search-hero{position:relative;display:flex;align-items:center;max-width:620px;margin:30px auto 0;
   background:var(--uc-card);border:1px solid var(--uc-line);border-radius:999px;padding:4px 8px 4px 20px;
   box-shadow:0 12px 40px rgba(0,0,0,.45);transition:border-color .2s}
@@ -278,8 +278,8 @@
 .ucm-pro-perks .mdi{color:var(--uc-gold);font-size:19px}
 .ucm-pro-note{margin-top:12px;font-size:12.5px;color:#a695bd;letter-spacing:.03em}
 .ucm-proband-art{display:grid;grid-template-columns:1fr 1fr;gap:14px;perspective:900px}
-.ucm-proband-art .ucm-pv{height:150px;border:1px solid rgba(255,255,255,.12);border-radius:var(--uc-r);
-  transform:rotateY(-8deg) rotateX(3deg);box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.ucm-proband-art .ucm-pv{height:200px;border:1px solid rgba(255,255,255,.12);border-radius:var(--uc-r);
+  transform:rotateY(-8deg) rotateX(3deg);box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden;position:relative}
 .ucm-section-pro{background:linear-gradient(180deg,var(--uc-bg2),var(--uc-bg))}
 
 /* ---------- bottom cta ---------- */
@@ -339,10 +339,12 @@
 /* ===== preview engine primitives (scoped under .ucm) ===== */
 .ucm .pv{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:34px 14px 12px;position:relative;overflow:hidden}
 .ucm-modal-pv .pv{padding:14px}
-.ucm .ucm-realpv{align-items:center;justify-content:center;padding:28px 12px 12px}
-.ucm .ucm-realpv uc-module-demo{width:min(92%,340px);max-width:100%}
-.ucm-modal-pv .ucm-realpv{padding:16px}
-.ucm-modal-pv .ucm-realpv uc-module-demo{width:min(94%,480px)}
+.ucm .ucm-realpv{align-items:flex-start;justify-content:center;padding:34px 12px 10px;pointer-events:none}
+.ucm .ucm-realpv uc-module-demo{width:320px;max-width:none;flex-shrink:0}
+.ucm-modal-pv .ucm-realpv{padding:20px 16px 14px}
+.ucm-modal-pv .ucm-realpv uc-module-demo{width:460px}
+/* previews are display-only on this page */
+.ucm-pv .pv, .ucm-modal-pv .pv{pointer-events:none}
 .ucm .pv-card{background:#1c2028;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 14px;
   box-shadow:0 6px 18px rgba(0,0,0,.35);max-width:100%;font-size:12.5px;color:#dfe5ee}
 .ucm .pv-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8d97a8;margin-bottom:8px}
@@ -502,7 +504,7 @@ function destroyPreview(el){ (timers.get(el)||[]).forEach(clearInterval); timers
 /* ---------- card factory ---------- */
 const CAT_LABEL = {layout:'Layout',content:'Content',data:'Data',interactive:'Controls',input:'Inputs',media:'Media'};
 function cardHTML(m){
-  return `<article class="ucm-card ${m.pro?'ucm-card-pro':''}" data-type="${m.type}" tabindex="0" role="button" aria-label="${m.title} — open preview">
+  return `<article class="ucm-card ${m.pro?'ucm-card-pro':''}" data-type="${m.type}" tabindex="0" role="button" aria-label="${m.title}: open details">
     <div class="ucm-pv" data-pv="${m.type}">
       <span class="ucm-pv-live">LIVE</span>
       <span class="ucm-card-badge">${m.pro?'<span class="ucm-badge ucm-badge-pro"><i class="mdi mdi-star"></i>PRO</span>':'<span class="ucm-badge ucm-badge-free">Free</span>'}</span>
@@ -512,7 +514,7 @@ function cardHTML(m){
       <p class="ucm-card-desc">${m.description}</p>
       <div class="ucm-card-foot">
         <span class="ucm-cat-tag">${CAT_LABEL[m.category]||m.category}</span>
-        <span class="ucm-card-try"><i class="mdi mdi-cursor-default-click-outline"></i> Try it</span>
+        <span class="ucm-card-try"><i class="mdi mdi-arrow-expand"></i> Details</span>
       </div>
     </div>
   </article>`;
@@ -603,14 +605,23 @@ function mountReal(pv, type){
   const demo = document.createElement('uc-module-demo');
   demo.setAttribute('type', type);
   wrap.appendChild(demo); pv.appendChild(wrap);
-  // Scale oversized modules down to fit the preview window.
+  // Modules render at a fixed dashboard-like width, then scale gently to fit.
+  // Never shrink below 0.72x — very tall modules crop at the bottom instead of
+  // becoming unreadably small.
+  const inModal = !!pv.closest('.ucm-modal');
+  const MIN_SCALE = inModal ? 0.8 : 0.72;
   const fit = ()=>{
     demo.style.transform='';
-    const cw = wrap.clientWidth - 24, ch = wrap.clientHeight - 40;
+    const cw = wrap.clientWidth - 24, ch = wrap.clientHeight - 44;
     const w = demo.offsetWidth, h = demo.offsetHeight;
-    if(!w||!h) return;
-    const s = Math.min(1, cw/w, ch/h);
-    if(s<1){ demo.style.transform=`scale(${s})`; demo.style.transformOrigin='center center'; }
+    if(!w||!h||cw<=0) return;
+    let s = Math.min(1, cw/w, ch/h);
+    s = Math.max(s, MIN_SCALE);
+    demo.style.transformOrigin='top center';
+    demo.style.transform = s<1 ? `scale(${s})` : '';
+    // vertically center when it fits with room to spare
+    const usedH = h*s;
+    wrap.style.paddingTop = usedH < ch ? Math.max(30,(wrap.clientHeight-usedH)/2)+'px' : '';
   };
   const ro = new ResizeObserver(()=>fit());
   ro.observe(demo); ro.observe(wrap);
@@ -645,7 +656,7 @@ function openModal(m){
   const ic=$('#ucm-modal-icon'); ic.className='ucm-modal-icon mdi '+mdi(m.icon)+(m.pro?' pro':'');
   $('#ucm-modal-badges').innerHTML=(m.pro?'<span class="ucm-badge ucm-badge-pro"><i class="mdi mdi-star"></i>PRO</span>':'<span class="ucm-badge ucm-badge-free">Free</span>')
     +`<span class="ucm-badge" style="background:rgba(255,255,255,.1);color:#aeb7c5">${CAT_LABEL[m.category]||m.category}</span>`;
-  $('#ucm-modal-desc').textContent=m.description.replace(/\.?\s*$/,'. ')+'Everything you see above is running live with sample data — on your dashboard it binds to your own entities in a couple of clicks.';
+  $('#ucm-modal-desc').textContent=m.description.replace(/\.?\s*$/,'. ')+'The preview above is the real module running live sample data. On your own dashboard it binds to your entities in a couple of clicks.';
   $('#ucm-modal-tags').innerHTML=(m.tags||[]).filter(t=>!['pro','premium'].includes(t)).slice(0,8).map(t=>`<span>${t}</span>`).join('');
   $('#ucm-modal-ctas').innerHTML = m.pro
     ? `<a class="ucm-btn ucm-btn-pro" href="${PRO_URL}"><i class="mdi mdi-star"></i> Unlock with PRO</a>
@@ -659,6 +670,7 @@ function closeModal(){ modal.hidden=true; document.documentElement.style.overflo
 modal.addEventListener('click',e=>{ if(Date.now()-modalOpenedAt<350) return; if(e.target.closest('[data-close]')) closeModal(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!modal.hidden) closeModal(); });
 root.addEventListener('click',e=>{
+  if(!e.isTrusted) return; /* staged demo clicks must not open the modal */
   const card=e.target.closest('.ucm-card'); if(!card) return;
   const m=CATALOG.find(x=>x.type===card.dataset.type); if(m) openModal(m);
 });
@@ -678,8 +690,34 @@ function bootProArt(){
 }
 
 /* ---------- boot ---------- */
-function boot(){ renderAll(); applyFilters(); bootProArt(); }
+function boot(){ renderAll(); applyFilters(); bootProArt(); watchBundle(); }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+
+/* ---------- self-updating catalog ----------
+   Once the demo bundle loads, rebuild the catalog from ITS manifest so a new
+   Ultra Card release (rebuild bundle + push to main) updates this page
+   automatically: new modules, counts and the version badge. */
+function watchBundle(){
+  customElements.whenDefined('uc-module-demo').then(()=>{
+    const UC = window.UCDemo; if(!UC || !UC.types) return;
+    try{
+      const manifests = UC.types(); if(!Array.isArray(manifests) || manifests.length < 10) return;
+      const fresh = manifests.map(m=>({ type:m.type, title:m.title, description:m.description,
+        icon:m.icon, category:m.category, tags:m.tags||[], pro:(m.tags||[]).includes('pro') }));
+      const changed = fresh.length !== CATALOG.length ||
+        fresh.some(f=>!CATALOG.find(c=>c.type===f.type));
+      if(UC.version){ const v=$('#ucm-version'); if(v) v.textContent = 'v'+UC.version; }
+      if(!changed) return;
+      CATALOG.length = 0; CATALOG.push(...fresh);
+      counts.total = CATALOG.length;
+      counts.free  = CATALOG.filter(m=>!m.pro).length;
+      counts.pro   = CATALOG.filter(m=> m.pro).length;
+      $$('[data-count]',root).forEach(el=>{ el.textContent = counts[el.dataset.count] ?? el.textContent; });
+      $$('.ucm-pv[data-ready="1"]',root).forEach(destroyPreview);
+      renderAll(); applyFilters();
+    }catch(e){ /* keep baked catalog on any mismatch */ }
+  });
+}
 
 /* ============================================================
    PREVIEW RENDERERS — sample data, animated, interactive
