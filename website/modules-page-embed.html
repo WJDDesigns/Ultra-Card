@@ -251,7 +251,10 @@
 .ucm-card-badge{position:absolute;top:10px;right:10px;z-index:5}
 .ucm-card-body{display:flex;flex-direction:column;gap:8px;padding:16px 18px 18px;flex:1}
 .ucm-card-title{display:flex;align-items:center;gap:10px}
-.ucm-card-title .mdi{font-size:22px;color:var(--uc-blue);flex-shrink:0}
+.ucm-card-title .mdi{font-size:22px;color:var(--uc-blue);flex-shrink:0;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.ucm-card-title h3{line-height:1.2}
+.ucm .mdi{line-height:1;vertical-align:middle}
+.ucm-chip .mdi,.ucm-seg-btn .mdi,.ucm-card-try .mdi,.ucm-tier-pill .mdi{display:inline-flex;align-items:center}
 .ucm-card-pro .ucm-card-title .mdi{color:var(--uc-gold)}
 .ucm-card-title h3{font-size:17px;font-weight:700}
 .ucm-card-desc{font-size:13.5px;color:var(--uc-dim);flex:1}
@@ -506,7 +509,6 @@ const CAT_LABEL = {layout:'Layout',content:'Content',data:'Data',interactive:'Co
 function cardHTML(m){
   return `<article class="ucm-card ${m.pro?'ucm-card-pro':''}" data-type="${m.type}" tabindex="0" role="button" aria-label="${m.title}: open details">
     <div class="ucm-pv" data-pv="${m.type}">
-      <span class="ucm-pv-live">LIVE</span>
       <span class="ucm-card-badge">${m.pro?'<span class="ucm-badge ucm-badge-pro"><i class="mdi mdi-star"></i>PRO</span>':'<span class="ucm-badge ucm-badge-free">Free</span>'}</span>
     </div>
     <div class="ucm-card-body">
@@ -567,8 +569,7 @@ const io = new IntersectionObserver(entries=>{
 },{rootMargin:'160px 0px'});
 function rebadge(pv){
   const m = CATALOG.find(x=>x.type===pv.dataset.pv); if(!m) return;
-  pv.insertAdjacentHTML('afterbegin',`<span class="ucm-pv-live">LIVE</span>
-    <span class="ucm-card-badge">${m.pro?'<span class="ucm-badge ucm-badge-pro"><i class="mdi mdi-star"></i>PRO</span>':'<span class="ucm-badge ucm-badge-free">Free</span>'}</span>`);
+  pv.insertAdjacentHTML('afterbegin',`<span class="ucm-card-badge">${m.pro?'<span class="ucm-badge ucm-badge-pro"><i class="mdi mdi-star"></i>PRO</span>':'<span class="ucm-badge ucm-badge-free">Free</span>'}</span>`);
 }
 function observeGrids(){ $$('.ucm-pv',root).forEach(pv=>{ if(!pv.closest('.ucm-modal')) io.observe(pv); }); }
 
@@ -578,7 +579,7 @@ function observeGrids(){ $$('.ucm-pv',root).forEach(pv=>{ if(!pv.closest('.ucm-m
    Fallback (only while the bundle loads or for modules that cannot exist
    outside Home Assistant): lightweight illustrative mock. */
 const PREVIEWS = {};
-const NO_REAL_PREVIEW = new Set(['native_card','external_card','screensaver']);
+const NO_REAL_PREVIEW = new Set(['native_card','external_card']);
 function realPreviewReady(){ return !!customElements.get('uc-module-demo'); }
 function renderPreview(pv, type, interactive){
   const m = CATALOG.find(x=>x.type===type);
@@ -609,7 +610,12 @@ function mountReal(pv, type){
   // Never shrink below 0.72x — very tall modules crop at the bottom instead of
   // becoming unreadably small.
   const inModal = !!pv.closest('.ucm-modal');
-  const MIN_SCALE = inModal ? 0.8 : 0.72;
+  /* Taller modules get a lower floor so more of them is visible in the card;
+     wide modules render at a larger design width so nothing scrunches. */
+  const MIN_HINTS = { media_player:0.5, vacuum:0.5, activity_feed:0.5, calendar:0.62, lunar_phase:0.6, alarm_panel:0.6, laundry_tracker:0.55, plant_care:0.6 };
+  const W_HINTS = { animated_weather:380, animated_forecast:360, media_player:340, weather:340, solar_analytics:340 };
+  const MIN_SCALE = inModal ? 0.8 : (MIN_HINTS[type] || 0.72);
+  if(!inModal && W_HINTS[type]) demo.style.width = W_HINTS[type]+'px';
   const fit = ()=>{
     demo.style.transform='';
     const cw = wrap.clientWidth - 24, ch = wrap.clientHeight - 44;

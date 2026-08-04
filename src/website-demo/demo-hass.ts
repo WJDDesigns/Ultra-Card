@@ -412,6 +412,23 @@ export function createDemoStates(): Record<string, any> {
       icon: 'mdi:bell-ring',
     }),
 
+    // ---- plants ----
+    'sensor.monstera_moisture': st('sensor.monstera_moisture', '44', {
+      friendly_name: 'Monstera Moisture',
+      unit_of_measurement: '%',
+      device_class: 'moisture',
+    }),
+    'sensor.snake_plant_moisture': st('sensor.snake_plant_moisture', '31', {
+      friendly_name: 'Snake Plant Moisture',
+      unit_of_measurement: '%',
+      device_class: 'moisture',
+    }),
+    'sensor.basil_moisture': st('sensor.basil_moisture', '12', {
+      friendly_name: 'Basil Moisture',
+      unit_of_measurement: '%',
+      device_class: 'moisture',
+    }),
+
     // ---- appliances (SmartThings-style demo sensors) ----
     'switch.washer_power': st('switch.washer_power', 'on', { friendly_name: 'Washer Power' }),
     'sensor.washer_machine_state': st('sensor.washer_machine_state', 'run', { friendly_name: 'Washer State' }),
@@ -773,6 +790,24 @@ export function createDemoHass() {
     },
 
     async callWS(msg: any) {
+      if (msg?.type === 'history/history_during_period') {
+        // Synthesize a plausible 24h wave per entity (WS compressed format).
+        const ids: string[] = msg.entity_ids || [];
+        const out: Record<string, any[]> = {};
+        const nowS = Date.now() / 1000;
+        for (const eid of ids) {
+          const cur = states[eid];
+          const base = cur ? parseFloat(cur.state) || 70 : 70;
+          const rows: any[] = [];
+          for (let i = 48; i >= 0; i--) {
+            const v =
+              base + Math.sin(i / 4.5) * Math.max(2, base * 0.12) + (Math.random() - 0.5) * Math.max(0.6, base * 0.03);
+            rows.push({ s: v.toFixed(1), a: cur?.attributes || {}, lu: nowS - i * 30 * 60 });
+          }
+          out[eid] = rows;
+        }
+        return out;
+      }
       if (msg?.type === 'config/area_registry/list') {
         return [
           { area_id: 'living_room', name: 'Living Room', icon: 'mdi:sofa', picture: null },
