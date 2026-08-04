@@ -6,7 +6,10 @@
 
 **Build professional Home Assistant dashboards without writing YAML.** Ultra Card is a modular card builder that turns dashboard creation into an intuitive visual design experience. Drag-and-drop layouts, a rich set of modules, and a powerful editor put full creative control in your hands—whether you're new to Home Assistant or a power user.
 
-[![preview-uc](https://github.com/user-attachments/assets/869c8d8d-e51f-4c30-b626-b820e4dd5fae)](https://github.com/WJDDesigns/Ultra-Card)
+
+https://github.com/user-attachments/assets/e9f28eee-e587-4bc0-ad0b-cea53a3fa5a6
+
+
 
 **[UltraCard.io](https://ultracard.io)** · **[Discord](https://discord.gg/6xVgHxzzBV)** · **[Documentation](https://github.com/WJDDesigns/Ultra-Card/wiki)**
 
