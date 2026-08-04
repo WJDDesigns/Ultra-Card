@@ -285,8 +285,8 @@ s.defer=true;document.head.appendChild(s);})();
 .ucm-pro-perks .mdi{color:var(--uc-gold);font-size:19px}
 .ucm-pro-note{margin-top:12px;font-size:12.5px;color:#a695bd;letter-spacing:.03em}
 .ucm-proband-art{display:grid;grid-template-columns:1fr 1fr;gap:14px;perspective:900px}
-.ucm-proband-art .ucm-pv{height:200px;border:1px solid rgba(255,255,255,.12);border-radius:var(--uc-r);
-  transform:rotateY(-8deg) rotateX(3deg);box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden;position:relative}
+.ucm-proband-art .ucm-pv{height:215px;border:1px solid rgba(255,255,255,.12);border-radius:var(--uc-r);
+  transform:rotateY(-8deg) rotateX(3deg);box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden;position:relative;background:#101318}
 .ucm-section-pro{background:linear-gradient(180deg,var(--uc-bg2),var(--uc-bg))}
 
 /* ---------- bottom cta ---------- */
@@ -614,11 +614,13 @@ function mountReal(pv, type){
   // Never shrink below 0.72x — very tall modules crop at the bottom instead of
   // becoming unreadably small.
   const inModal = !!pv.closest('.ucm-modal');
+  const inBand  = !!pv.closest('.ucm-proband-art');
   /* Taller modules get a lower floor so more of them is visible in the card;
-     wide modules render at a larger design width so nothing scrunches. */
+     wide modules render at a larger design width so nothing scrunches.
+     Flagship-band tiles always scale to fit completely. */
   const MIN_HINTS = { media_player:0.5, vacuum:0.5, activity_feed:0.5, calendar:0.62, lunar_phase:0.6, alarm_panel:0.6, laundry_tracker:0.55, plant_care:0.6 };
   const W_HINTS = { animated_weather:380, animated_forecast:360, media_player:340, weather:340, solar_analytics:340 };
-  const MIN_SCALE = inModal ? 0.8 : (MIN_HINTS[type] || 0.72);
+  const MIN_SCALE = inBand ? 0.3 : inModal ? 0.8 : (MIN_HINTS[type] || 0.72);
   if(!inModal && W_HINTS[type]) demo.style.width = W_HINTS[type]+'px';
   const fit = ()=>{
     demo.style.transform='';

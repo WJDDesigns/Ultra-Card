@@ -323,7 +323,7 @@ export function createDemoStates(): Record<string, any> {
     }),
 
     // ---- weather ----
-    'weather.home': st('weather.home', 'partlycloudy', {
+    'weather.home': st('weather.home', 'cloudy', {
       friendly_name: 'Home',
       temperature: 74,
       temperature_unit: '°F',
@@ -427,6 +427,26 @@ export function createDemoStates(): Record<string, any> {
       friendly_name: 'Basil Moisture',
       unit_of_measurement: '%',
       device_class: 'moisture',
+    }),
+
+    // ---- standby loads (vampire power) ----
+    'sensor.tv_standby': st('sensor.tv_standby', '22', {
+      friendly_name: 'TV + Soundbar Power',
+      unit_of_measurement: 'W',
+      device_class: 'power',
+      state_class: 'measurement',
+    }),
+    'sensor.console_standby': st('sensor.console_standby', '14', {
+      friendly_name: 'Game Console Power',
+      unit_of_measurement: 'W',
+      device_class: 'power',
+      state_class: 'measurement',
+    }),
+    'sensor.desktop_standby': st('sensor.desktop_standby', '9', {
+      friendly_name: 'Old Desktop Power',
+      unit_of_measurement: 'W',
+      device_class: 'power',
+      state_class: 'measurement',
     }),
 
     // ---- appliances (SmartThings-style demo sensors) ----

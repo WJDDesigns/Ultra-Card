@@ -184,19 +184,20 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
       ...extra,
     });
     c.presets = [
-      mk3('Bright', 'mdi:brightness-7', { brightness: 255, rgb_color: [255, 244, 224] }),
-      mk3('Movie', 'mdi:movie-open', { brightness: 90, rgb_color: [128, 23, 162] }),
-      mk3('All Off', 'mdi:power', { action: 'turn_off' }),
+      mk3('Bright', 'mdi:brightness-7', { brightness: 255, rgb_color: [255, 244, 224], text_color: '#1a1a1a', icon_color: '#1a1a1a' }),
+      mk3('Movie', 'mdi:movie-open', { brightness: 90, rgb_color: [128, 23, 162], text_color: '#ffffff', icon_color: '#ffffff' }),
+      mk3('All Off', 'mdi:power', { action: 'turn_off', text_color: '#1a1a1a', icon_color: '#1a1a1a' }),
     ];
   },
   slider_control: c => {
-    c.auto_contrast = true;
-    c.name_color = '#0d1117';
-    c.value_color = '#0d1117';
+    c.auto_contrast = false;
+    c.name_color = '#1c1c1c';
+    c.value_color = '#1c1c1c';
+    (c as any).icon_color = '#1c1c1c';
     if (Array.isArray(c.bars) && c.bars.length) {
-      c.bars = [c.bars[0]];
-      c.bars[0].entity = c.bars[0].entity || 'light.living_room';
-      c.bars[0].type = 'brightness';
+      const pick = c.bars.find((b: any) => b.type === 'color_temp') || c.bars[0];
+      pick.entity = pick.entity || 'light.living_room';
+      c.bars = [pick];
     }
   },
   camera: c => {
@@ -247,9 +248,11 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     c.area_id = 'living_room';
     c.temperature_entity = 'sensor.living_room_temperature';
     c.humidity_entity = 'sensor.living_room_humidity';
+    c.style_preset = 'photo_overlay';
     c.room_background_type = 'url';
+    (c as any).room_background_url = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=75';
     c.room_background_image = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=75';
-    c.room_background_overlay = 0.6;
+    c.room_background_overlay = 65;
   },
   auto_entity_list: c => {
     c.include_domains = ['light'];
@@ -266,10 +269,15 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     c.plants = [
       { id: 'demo_p1', name: 'Monstera', icon: 'mdi:leaf', location: 'Living Room', moisture_entity: 'sensor.monstera_moisture', water_interval_days: 7 },
       { id: 'demo_p2', name: 'Snake Plant', icon: 'mdi:sprout', location: 'Office', moisture_entity: 'sensor.snake_plant_moisture', water_interval_days: 14 },
-      { id: 'demo_p3', name: 'Basil', icon: 'mdi:flower', location: 'Kitchen', moisture_entity: 'sensor.basil_moisture', water_interval_days: 3 },
+      { id: 'demo_p3', name: 'Basil', icon: 'mdi:flower', location: 'Kitchen', moisture_entity: 'sensor.basil_moisture', water_interval_days: 30 },
     ];
     c.columns = 3;
     c.show_photos = false;
+  },
+  vampire_power: c => {
+    c.discovery_mode = 'manual';
+    c.entities = ['sensor.tv_standby', 'sensor.console_standby', 'sensor.desktop_standby'];
+    c.max_items = 3;
   },
   washer: c => {
     Object.assign(c, {
@@ -328,7 +336,10 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
   },
   climate: c => (c.entity = c.entity || 'climate.downstairs'),
   humidifier: c => (c.entity = c.entity || 'humidifier.bedroom'),
-  media_player: c => (c.entity = c.entity || 'media_player.kitchen_speaker'),
+  media_player: c => {
+    c.entity = c.entity || 'media_player.kitchen_speaker';
+    c.card_size = 150;
+  },
   cover: c => (c.entity = c.entity || 'cover.living_room_blinds'),
   fan: c => (c.entity = c.entity || 'fan.ceiling_fan'),
   lock: c => (c.entity = c.entity || 'lock.front_door'),
@@ -431,7 +442,7 @@ const DEMO_STAGE: Record<string, (holder: HTMLElement) => void> = {
       }
     }, 4000);
   },
-  popup: holder => {
+  __unused_popup: holder => {
     clickFirst(holder, ['[class*="trigger"]', 'button', '[role="button"]']);
     // The popup portals a fixed-position overlay to document.body — pull it
     // into the preview so it displays inside the card instead of the page.
@@ -470,9 +481,29 @@ const DEMO_STAGE: Record<string, (holder: HTMLElement) => void> = {
     const flipper = holder.querySelector('.flip-card-inner, [style*="preserve-3d"]') as HTMLElement;
     if (flipper) {
       flipper.style.transition = 'none';
-      flipper.style.transform = 'rotateY(38deg)';
-      (holder.style as any).perspective = '700px';
+      flipper.style.animation = 'ucdFlip 9s ease-in-out infinite';
+      (holder.style as any).perspective = '800px';
+      holder.querySelectorAll('.flip-card-front, .flip-card-back').forEach(el => {
+        const f = el as HTMLElement;
+        f.style.display = 'flex';
+        f.style.alignItems = 'center';
+        f.style.justifyContent = 'center';
+      });
     }
+  },
+  stack: holder => {
+    // Darken the photo layer so overlaid text stays readable.
+    const img = holder.querySelector('img') as HTMLElement | null;
+    if (img) img.style.filter = 'brightness(.55)';
+  },
+  slider: holder => {
+    // Cycle pages so the slideshow is visibly working.
+    let i = 1;
+    const id = setInterval(() => {
+      if (!holder.isConnected) { clearInterval(id); return; }
+      const dots = holder.querySelectorAll('.pagination-dot, [class*="pagination"] button, [class*="dot"]');
+      if (dots.length >= 2) { (dots[i % dots.length] as HTMLElement).click(); i++; }
+    }, 3500);
   },
 };
 
@@ -508,6 +539,7 @@ function startDemoLoop() {
   demoLoopStarted = true;
   let phase = 0;
   const cycle = () => {
+    if (document.hidden || !((window as any).__ucdVisible > 0)) return;
     const up = phase % 2 === 0;
     tween('sensor.phone_battery', { from: up ? 82 : 58, to: up ? 58 : 82, ms: 2600 });
     tween('sensor.speed_test', { from: up ? 62 : 85, to: up ? 85 : 62, ms: 2600 });
@@ -593,6 +625,11 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radiu
 @keyframes ucdAurora{0%,100%{transform:translateX(-10%) skewX(-5deg) scale(1)}50%{transform:translateX(10%) skewX(5deg) scale(1.08)}}
 @keyframes ucdFogA{0%,100%{transform:translateX(0)}50%{transform:translateX(26%)}}
 @keyframes ucdFogB{0%,100%{transform:translateX(0)}50%{transform:translateX(-24%)}}
+@keyframes ucdFogBigA{0%,100%{transform:translate(-14%,0) scale(1)}50%{transform:translate(34%,-8%) scale(1.15)}}
+@keyframes ucdFogBigB{0%,100%{transform:translate(10%,4%) scale(1.1)}50%{transform:translate(-30%,-4%) scale(1)}}
+@keyframes ucdAuroraBig{0%,100%{transform:translate(-16%,-4%) rotate(-4deg) scale(1)}50%{transform:translate(16%,6%) rotate(5deg) scale(1.18)}}
+@keyframes ucdDrawerSlide{0%,12%{transform:translateX(105%)}26%,72%{transform:translateX(0)}86%,100%{transform:translateX(105%)}}
+@keyframes ucdFlip{0%,32%{transform:rotateY(0)}45%,82%{transform:rotateY(180deg)}95%,100%{transform:rotateY(360deg)}}
 `;
 
 class UcModuleDemo extends HTMLElement {
@@ -605,6 +642,8 @@ class UcModuleDemo extends HTMLElement {
   private _module?: any;
   private _handler?: any;
   private _raf = 0;
+  private _visible = true;
+  private _vio?: IntersectionObserver;
   private _tplListener = () => this._scheduleRender();
 
   constructor() {
@@ -623,6 +662,14 @@ class UcModuleDemo extends HTMLElement {
     // window event — same mechanism the real card listens to.
     window.addEventListener('ultra-card-template-update', this._tplListener);
     window.addEventListener('uc-qr-data-ready', this._tplListener);
+    this._vio = new IntersectionObserver(entries => {
+      const was = this._visible;
+      this._visible = entries[0]?.isIntersecting ?? true;
+      const w = window as any;
+      w.__ucdVisible = (w.__ucdVisible || 0) + (this._visible ? 1 : 0) - (was ? 1 : 0);
+      if (this._visible && !was) this._scheduleRender();
+    }, { rootMargin: '120px' });
+    this._vio.observe(this);
     startDemoLoop();
     this._boot();
   }
@@ -632,6 +679,12 @@ class UcModuleDemo extends HTMLElement {
   disconnectedCallback() {
     window.removeEventListener('ultra-card-template-update', this._tplListener);
     window.removeEventListener('uc-qr-data-ready', this._tplListener);
+    if (this._visible) {
+      const w = window as any;
+      w.__ucdVisible = Math.max(0, (w.__ucdVisible || 0) - 1);
+      this._visible = false;
+    }
+    this._vio?.disconnect();
     this._unsub?.();
     this._unsub = undefined;
   }
@@ -673,6 +726,7 @@ class UcModuleDemo extends HTMLElement {
   }
 
   private _scheduleRender() {
+    if (!this._visible) return;
     cancelAnimationFrame(this._raf);
     this._raf = requestAnimationFrame(() => this._renderNow());
   }
@@ -708,6 +762,26 @@ class UcModuleDemo extends HTMLElement {
         </div>`;
       return;
     }
+    if (type === 'popup') {
+      // Inline sample: the real popup portals a fixed overlay over the page.
+      this._holder.innerHTML = `
+        <div style="position:relative;height:170px;border-radius:10px;overflow:hidden;background:var(--primary-background-color)">
+          <div style="position:absolute;inset:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;filter:brightness(.45)">
+            <div style="background:var(--card-background-color);border-radius:10px"></div>
+            <div style="background:var(--card-background-color);border-radius:10px"></div>
+          </div>
+          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:76%;background:var(--card-background-color);
+            border:1px solid rgba(255,255,255,.12);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.6);padding:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;color:var(--primary-text-color);font-size:13px;font-weight:700">
+              Climate <ha-icon icon="mdi:close" style="--mdc-icon-size:16px;color:var(--secondary-text-color)"></ha-icon></div>
+            <div style="display:flex;gap:10px;align-items:center;color:var(--primary-text-color);font-size:12px">
+              <ha-icon icon="mdi:thermometer" style="--mdc-icon-size:18px;color:var(--primary-color)"></ha-icon>
+              <div><b>Living Room</b><div style="color:var(--secondary-text-color);font-size:11px">Heating to 72°F</div></div>
+              <b style="margin-left:auto;font-size:15px">73.3°F</b></div>
+          </div>
+        </div>`;
+      return;
+    }
     if (type === 'drawer') {
       // The real drawer portals a full-viewport overlay — stage its effect
       // inline instead so it never covers the page.
@@ -718,7 +792,8 @@ class UcModuleDemo extends HTMLElement {
             <div style="background:var(--card-background-color);border-radius:10px"></div>
           </div>
           <div style="position:absolute;top:0;right:0;bottom:0;width:58%;background:var(--card-background-color);
-            border-left:1px solid rgba(255,255,255,.1);box-shadow:-12px 0 30px rgba(0,0,0,.45);padding:12px;display:flex;flex-direction:column;gap:8px">
+            border-left:1px solid rgba(255,255,255,.1);box-shadow:-12px 0 30px rgba(0,0,0,.45);padding:12px;display:flex;flex-direction:column;gap:8px;
+            animation:ucdDrawerSlide 7s ease-in-out infinite">
             <div style="display:flex;justify-content:space-between;align-items:center;color:var(--primary-text-color);font-size:13px;font-weight:700">
               Quick actions <ha-icon icon="mdi:close" style="--mdc-icon-size:16px;color:var(--secondary-text-color)"></ha-icon></div>
             <div style="display:flex;gap:8px;align-items:center;background:rgba(255,255,255,.05);border-radius:8px;padding:8px;color:var(--primary-text-color);font-size:12px">
@@ -758,14 +833,12 @@ class UcModuleDemo extends HTMLElement {
       return;
     }
     if (type === 'dynamic_weather') {
-      const drops = Array.from({ length: 22 }, () =>
-        `<span style="position:absolute;left:${Math.round(Math.random() * 96)}%;top:${-Math.round(Math.random() * 40)}%;width:2px;height:11px;border-radius:2px;background:rgba(120,190,255,.75);animation:ucdRain ${(0.8 + Math.random() * 0.7).toFixed(2)}s linear ${(Math.random() * 1.2).toFixed(2)}s infinite"></span>`
+      const drops = Array.from({ length: 44 }, () =>
+        `<span style="position:absolute;left:${Math.round(Math.random() * 98)}%;top:${-Math.round(Math.random() * 100) - 10}%;width:2px;height:${10 + Math.round(Math.random() * 8)}px;border-radius:2px;background:rgba(140,200,255,.7);animation:ucdRain ${(0.7 + Math.random() * 0.7).toFixed(2)}s linear ${(Math.random() * 1.4).toFixed(2)}s infinite"></span>`
       ).join('');
       this._holder.innerHTML = `
-        <div style="position:relative;height:170px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#1a2636,#0d1420)">
+        <div style="position:relative;height:170px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#141d2b,#0b111c)">
           ${drops}
-          <span style="position:absolute;left:10%;top:8%;width:64px;height:20px;border-radius:99px;background:#7e8ba0;filter:blur(1px);animation:ucdDrift 6s ease-in-out infinite"></span>
-          <span style="position:absolute;left:55%;top:5%;width:80px;height:24px;border-radius:99px;background:#6b7890;filter:blur(1px);animation:ucdDrift 7s 1s ease-in-out infinite"></span>
           <div style="position:absolute;left:12px;right:12px;bottom:10px;display:flex;justify-content:space-between;align-items:center;background:rgba(15,20,28,.6);backdrop-filter:blur(3px);border-radius:9px;padding:8px 12px;color:var(--primary-text-color);font-size:11.5px">
             <span>Rain effect · view-wide</span><b style="color:#6fd4ff">66°</b></div>
         </div>`;
@@ -774,10 +847,10 @@ class UcModuleDemo extends HTMLElement {
     if (type === 'video_bg') {
       this._holder.innerHTML = `
         <div style="position:relative;height:170px;border-radius:10px;overflow:hidden;background:#05070d">
-          <div style="position:absolute;inset:-35%;filter:blur(26px);opacity:.9;animation:ucdAurora 9s ease-in-out infinite;
-            background:radial-gradient(40% 55% at 30% 40%,rgba(41,182,246,.6),transparent 65%),
-                       radial-gradient(45% 50% at 72% 55%,rgba(128,23,162,.65),transparent 65%),
-                       radial-gradient(30% 45% at 50% 25%,rgba(255,45,120,.4),transparent 60%)"></div>
+          <div style="position:absolute;inset:-45%;filter:blur(22px);opacity:.95;animation:ucdAuroraBig 6s ease-in-out infinite;
+            background:radial-gradient(40% 55% at 30% 40%,rgba(41,182,246,.7),transparent 65%),
+                       radial-gradient(45% 50% at 72% 55%,rgba(128,23,162,.75),transparent 65%),
+                       radial-gradient(30% 45% at 50% 25%,rgba(255,45,120,.5),transparent 60%)"></div>
           <div style="position:absolute;top:10px;left:12px;display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.8);font-size:10.5px">
             <ha-icon icon="mdi:play-circle-outline" style="--mdc-icon-size:16px"></ha-icon> ambient_loop.mp4 · when weather = rain</div>
           <div style="position:absolute;bottom:10px;left:12px;right:12px;background:rgba(15,20,28,.55);backdrop-filter:blur(4px);border-radius:9px;padding:8px 12px;color:var(--primary-text-color);font-size:11.5px">
@@ -788,9 +861,9 @@ class UcModuleDemo extends HTMLElement {
     if (type === 'living_canvas') {
       this._holder.innerHTML = `
         <div style="position:relative;height:170px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#0c1118,#05070d)">
-          <span style="position:absolute;left:-30%;top:30%;width:90%;height:60%;border-radius:50%;background:rgba(200,215,235,.10);filter:blur(22px);animation:ucdFogA 11s ease-in-out infinite"></span>
-          <span style="position:absolute;left:20%;top:45%;width:85%;height:55%;border-radius:50%;background:rgba(180,200,225,.08);filter:blur(26px);animation:ucdFogB 14s ease-in-out infinite"></span>
-          <span style="position:absolute;left:-10%;top:60%;width:80%;height:50%;border-radius:50%;background:rgba(220,230,245,.07);filter:blur(20px);animation:ucdFogA 9s 2s ease-in-out infinite"></span>
+          <span style="position:absolute;left:-30%;top:30%;width:90%;height:60%;border-radius:50%;background:rgba(200,215,235,.10);filter:blur(22px);animation:ucdFogBigA 8s ease-in-out infinite"></span>
+          <span style="position:absolute;left:20%;top:45%;width:85%;height:55%;border-radius:50%;background:rgba(180,200,225,.08);filter:blur(26px);animation:ucdFogBigB 10s ease-in-out infinite"></span>
+          <span style="position:absolute;left:-10%;top:60%;width:80%;height:50%;border-radius:50%;background:rgba(220,230,245,.07);filter:blur(20px);animation:ucdFogBigA 7s 2s ease-in-out infinite"></span>
           <div style="position:absolute;top:10px;left:12px;color:rgba(255,255,255,.7);font-size:10.5px">WebGL · preset: Fog</div>
           <div style="position:absolute;bottom:10px;left:12px;right:12px;background:rgba(15,20,28,.5);backdrop-filter:blur(3px);border-radius:9px;padding:8px 12px;color:var(--primary-text-color);font-size:11.5px">
             Full-view canvas · reacts to time and weather</div>
@@ -880,6 +953,12 @@ class UcModuleDemo extends HTMLElement {
     }
   }
 }
+
+setInterval(() => {
+  document
+    .querySelectorAll('body > .ultra-popup-portal, body > .ultra-drawer-portal')
+    .forEach(el => el.remove());
+}, 1500);
 
 if (!customElements.get('uc-module-demo')) {
   customElements.define('uc-module-demo', UcModuleDemo);
