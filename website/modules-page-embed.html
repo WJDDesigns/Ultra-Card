@@ -1,0 +1,1539 @@
+<script src="https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@1bbfa655459edaab11770c5f8467597a8f6f93af/dist-demo/ultra-card-demo.js" defer></script>
+<style>
+/* full-bleed + neutralize Impreza section padding on the Modules page */
+.ucm{margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}
+.page-id-1242 .l-section.wpb_row{padding-top:0!important;padding-bottom:0!important}
+.page-id-1242 .l-main{background:#0e1015}
+</style>
+<!-- ======================= UCM:EMBED-START =======================
+     Everything between EMBED-START and EMBED-END goes into the
+     WPBakery Raw HTML element on ultracard.io/modules (page 1242).
+     ================================================================ -->
+<div class="ucm" id="ucm">
+
+  <!-- ================= HERO ================= -->
+  <header class="ucm-hero">
+    <div class="ucm-hero-glow" aria-hidden="true"></div>
+    <div class="ucm-wrap">
+      <div class="ucm-eyebrow"><span class="ucm-pulse"></span> Module Library · Updated for <b>v3.7.0&#8209;beta3</b></div>
+      <h1 class="ucm-h1">Every module.<br><span class="ucm-grad-text">Running live.</span></h1>
+      <p class="ucm-sub">Ultra Card ships <b class="ucm-count" data-count="total">93</b> drag&#8209;and&#8209;drop modules for your Home Assistant dashboard.
+      Every preview below is the <b>real module</b> &mdash; the same code that runs on your dashboard, live with sample data. Tap, drag and toggle away.</p>
+      <div class="ucm-search-hero">
+        <i class="mdi mdi-magnify"></i>
+        <input type="search" id="ucm-search" placeholder="Search 93 modules &mdash; try &ldquo;weather&rdquo;, &ldquo;battery&rdquo;, &ldquo;slider&rdquo;&hellip;" aria-label="Search modules">
+        <button class="ucm-search-clear" id="ucm-search-clear" aria-label="Clear search" hidden><i class="mdi mdi-close"></i></button>
+      </div>
+      <div class="ucm-stats">
+        <div class="ucm-stat"><b data-count="total">93</b><span>Modules</span></div>
+        <div class="ucm-stat"><b data-count="free">66</b><span>Free forever</span></div>
+        <div class="ucm-stat ucm-stat-pro"><b data-count="pro">27</b><span>PRO exclusives</span></div>
+        <div class="ucm-stat"><b>6</b><span>Categories</span></div>
+      </div>
+      <div class="ucm-hero-ctas">
+        <a class="ucm-btn ucm-btn-ghost" href="https://github.com/WJDDesigns/Ultra-Card" target="_blank" rel="noopener"><i class="mdi mdi-github"></i> Get Ultra Card free</a>
+        <a class="ucm-btn ucm-btn-pro" href="https://ultracard.io/product/ultra-card-pro/"><i class="mdi mdi-star"></i> Unlock PRO modules</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= FILTER BAR ================= -->
+  <nav class="ucm-controls" id="ucm-controls" aria-label="Module filters">
+    <div class="ucm-wrap ucm-controls-in">
+      <div class="ucm-seg" role="tablist" aria-label="Tier">
+        <button class="ucm-seg-btn active" data-tier="all" role="tab">All</button>
+        <button class="ucm-seg-btn" data-tier="free" role="tab">Free</button>
+        <button class="ucm-seg-btn" data-tier="pro" role="tab"><i class="mdi mdi-star"></i> PRO</button>
+      </div>
+      <div class="ucm-chips" id="ucm-chips">
+        <button class="ucm-chip active" data-cat="all">All categories</button>
+        <button class="ucm-chip" data-cat="layout"><i class="mdi mdi-view-dashboard-outline"></i> Layout</button>
+        <button class="ucm-chip" data-cat="content"><i class="mdi mdi-text-box-outline"></i> Content</button>
+        <button class="ucm-chip" data-cat="data"><i class="mdi mdi-chart-box-outline"></i> Data</button>
+        <button class="ucm-chip" data-cat="interactive"><i class="mdi mdi-gesture-tap"></i> Controls</button>
+        <button class="ucm-chip" data-cat="input"><i class="mdi mdi-form-textbox"></i> Inputs</button>
+        <button class="ucm-chip" data-cat="media"><i class="mdi mdi-image-multiple-outline"></i> Media</button>
+      </div>
+      <div class="ucm-result-count" id="ucm-count"></div>
+    </div>
+  </nav>
+
+  <!-- ================= FREE SECTION ================= -->
+  <section class="ucm-section" id="ucm-free-section">
+    <div class="ucm-wrap">
+      <div class="ucm-sec-head">
+        <span class="ucm-tier-pill ucm-tier-free">Free</span>
+        <h2>Free forever. No account needed.</h2>
+        <p>Install Ultra Card from HACS and all <b data-count="free">66</b> of these modules are yours &mdash; layouts, gauges, graphs, controls and more.</p>
+      </div>
+      <div class="ucm-grid" id="ucm-grid-free"></div>
+    </div>
+  </section>
+
+  <!-- ================= PRO PROMO BAND ================= -->
+  <section class="ucm-proband" id="ucm-proband">
+    <div class="ucm-wrap ucm-proband-in">
+      <div class="ucm-proband-copy">
+        <span class="ucm-tier-pill ucm-tier-pro"><i class="mdi mdi-star"></i> Ultra Card PRO</span>
+        <h2>The flagship modules live here.</h2>
+        <p>Animated weather, a circular thermostat, solar analytics, a security panel, even a virtual pet powered by your smart home. <b data-count="pro">27</b> PRO modules &mdash; plus cloud backups, presets and priority support.</p>
+        <ul class="ucm-pro-perks">
+          <li><i class="mdi mdi-check-circle"></i> All <b data-count="pro">27</b> PRO modules below</li>
+          <li><i class="mdi mdi-check-circle"></i> Cloud backup &amp; sync of your cards</li>
+          <li><i class="mdi mdi-check-circle"></i> New PRO modules in every release</li>
+        </ul>
+        <a class="ucm-btn ucm-btn-pro ucm-btn-lg" href="https://ultracard.io/product/ultra-card-pro/"><i class="mdi mdi-star"></i> Get Ultra Card PRO</a>
+        <div class="ucm-pro-note">One subscription &middot; every device &middot; cancel anytime</div>
+      </div>
+      <div class="ucm-proband-art" id="ucm-proband-art" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- ================= PRO SECTION ================= -->
+  <section class="ucm-section ucm-section-pro" id="ucm-pro-section">
+    <div class="ucm-wrap">
+      <div class="ucm-sec-head">
+        <span class="ucm-tier-pill ucm-tier-pro"><i class="mdi mdi-star"></i> PRO</span>
+        <h2>PRO modules</h2>
+        <p>Every preview is the real experience &mdash; explore them all, then make them yours.</p>
+      </div>
+      <div class="ucm-grid" id="ucm-grid-pro"></div>
+    </div>
+  </section>
+
+  <!-- ================= SEARCH RESULTS (flat) ================= -->
+  <section class="ucm-section" id="ucm-results-section" hidden>
+    <div class="ucm-wrap">
+      <div class="ucm-sec-head"><h2 id="ucm-results-title">Results</h2></div>
+      <div class="ucm-grid" id="ucm-grid-results"></div>
+      <div class="ucm-noresults" id="ucm-noresults" hidden>
+        <i class="mdi mdi-magnify-remove-outline"></i>
+        <p>No modules match. Try a different word &mdash; or tell us what&rsquo;s missing in the <a href="https://github.com/WJDDesigns/Ultra-Card/discussions" target="_blank" rel="noopener">community</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= BOTTOM CTA ================= -->
+  <section class="ucm-bottom-cta">
+    <div class="ucm-wrap">
+      <h2>Build the dashboard you actually want.</h2>
+      <p>Start free with <b data-count="free">66</b> modules. Go PRO when you&rsquo;re ready for the showstoppers.</p>
+      <div class="ucm-hero-ctas">
+        <a class="ucm-btn ucm-btn-ghost" href="https://github.com/WJDDesigns/Ultra-Card" target="_blank" rel="noopener"><i class="mdi mdi-github"></i> Install free via HACS</a>
+        <a class="ucm-btn ucm-btn-pro" href="https://ultracard.io/product/ultra-card-pro/"><i class="mdi mdi-star"></i> Get Ultra Card PRO</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= DETAIL MODAL ================= -->
+  <div class="ucm-modal" id="ucm-modal" hidden>
+    <div class="ucm-modal-backdrop" data-close></div>
+    <div class="ucm-modal-card" role="dialog" aria-modal="true" aria-labelledby="ucm-modal-title">
+      <button class="ucm-modal-x" data-close aria-label="Close"><i class="mdi mdi-close"></i></button>
+      <div class="ucm-modal-pv" id="ucm-modal-pv"></div>
+      <div class="ucm-modal-body">
+        <div class="ucm-modal-head">
+          <i class="ucm-modal-icon mdi" id="ucm-modal-icon"></i>
+          <div>
+            <h3 id="ucm-modal-title"></h3>
+            <div class="ucm-modal-badges" id="ucm-modal-badges"></div>
+          </div>
+        </div>
+        <p class="ucm-modal-desc" id="ucm-modal-desc"></p>
+        <div class="ucm-modal-tags" id="ucm-modal-tags"></div>
+        <div class="ucm-modal-ctas" id="ucm-modal-ctas"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<style id="ucm-css">
+/* Ultra Card Module Directory — fully scoped under .ucm */
+@import url("https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css");
+
+.ucm{--uc-blue:#29b6f6;--uc-purple:#8017A2;--uc-teal:#1992a6;--uc-pink:#ff2d78;
+  --uc-gold:#ffc233;--uc-bg:#0e1015;--uc-bg2:#14171d;--uc-card:#1a1e26;--uc-card2:#20242e;
+  --uc-line:rgba(255,255,255,.09);--uc-txt:#eef1f6;--uc-dim:#9aa3b2;--uc-r:14px;
+  background:var(--uc-bg);color:var(--uc-txt);font-family:'Open Sans',system-ui,sans-serif;
+  line-height:1.55;overflow-x:clip}
+.ucm *,.ucm *::before,.ucm *::after{box-sizing:border-box}
+.ucm .ucm-wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.ucm h1,.ucm h2,.ucm h3{margin:0;color:#fff;line-height:1.15}
+.ucm p{margin:0}
+.ucm a{text-decoration:none}
+.ucm button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.ucm input{font-family:inherit}
+.ucm b{color:#fff}
+
+/* ---------- hero ---------- */
+.ucm-hero{position:relative;padding:84px 0 56px;text-align:center;overflow:hidden}
+.ucm-hero-glow{position:absolute;inset:-40% -20% auto;height:130%;pointer-events:none;
+  background:radial-gradient(45% 60% at 30% 20%,rgba(41,182,246,.28),transparent 70%),
+             radial-gradient(45% 60% at 72% 15%,rgba(128,23,162,.38),transparent 70%),
+             radial-gradient(30% 40% at 55% 45%,rgba(255,45,120,.12),transparent 70%)}
+.ucm-eyebrow{position:relative;display:inline-flex;align-items:center;gap:9px;font-size:13px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--uc-dim);border:1px solid var(--uc-line);border-radius:999px;
+  padding:7px 16px;background:rgba(255,255,255,.04);backdrop-filter:blur(4px)}
+.ucm-pulse{width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 0 rgba(74,222,128,.6);animation:ucmPulse 2s infinite}
+@keyframes ucmPulse{70%{box-shadow:0 0 0 9px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
+.ucm-h1{position:relative;font-size:clamp(38px,6vw,68px);font-weight:800;margin:22px 0 16px;letter-spacing:-.02em}
+.ucm-grad-text{background:linear-gradient(92deg,var(--uc-blue),#b44ce0 55%,var(--uc-pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.ucm-sub{position:relative;max-width:660px;margin:0 auto;color:var(--uc-dim);font-size:17px}
+.ucm-search-hero{position:relative;display:flex;align-items:center;max-width:620px;margin:30px auto 0;
+  background:var(--uc-card);border:1px solid var(--uc-line);border-radius:999px;padding:4px 8px 4px 20px;
+  box-shadow:0 12px 40px rgba(0,0,0,.45);transition:border-color .2s}
+.ucm-search-hero:focus-within{border-color:var(--uc-blue)}
+.ucm-search-hero .mdi-magnify{font-size:22px;color:var(--uc-dim)}
+.ucm-search-hero input{flex:1;background:none;border:0;outline:0;color:#fff;font-size:16px;padding:13px 12px}
+.ucm-search-hero input::placeholder{color:#5f6877}
+.ucm-search-clear{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.08);color:#fff;font-size:17px}
+.ucm-stats{position:relative;display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:32px}
+.ucm-stat{min-width:118px;padding:14px 20px;border:1px solid var(--uc-line);border-radius:var(--uc-r);background:rgba(255,255,255,.03)}
+.ucm-stat b{display:block;font-size:26px;font-weight:800}
+.ucm-stat span{font-size:12.5px;color:var(--uc-dim);text-transform:uppercase;letter-spacing:.05em}
+.ucm-stat-pro{border-color:rgba(255,194,51,.35);background:linear-gradient(180deg,rgba(255,194,51,.08),rgba(255,194,51,.02))}
+.ucm-stat-pro b{color:var(--uc-gold)}
+.ucm-hero-ctas{position:relative;display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+
+/* ---------- buttons ---------- */
+.ucm-btn{display:inline-flex;align-items:center;gap:9px;font-weight:700;font-size:15.5px;border-radius:12px;
+  padding:13px 26px;transition:transform .15s,box-shadow .15s,background .15s;color:#fff}
+.ucm-btn:hover{transform:translateY(-2px)}
+.ucm-btn .mdi{font-size:19px}
+.ucm-btn-ghost{border:1.5px solid rgba(255,255,255,.28);background:rgba(255,255,255,.05)}
+.ucm-btn-ghost:hover{background:rgba(255,255,255,.1);color:#fff}
+.ucm-btn-pro{background:linear-gradient(92deg,#ff2d78,#c2258f);box-shadow:0 8px 26px rgba(255,45,120,.35)}
+.ucm-btn-pro:hover{box-shadow:0 12px 34px rgba(255,45,120,.5);color:#fff}
+.ucm-btn-blue{background:linear-gradient(92deg,var(--uc-blue),var(--uc-purple));box-shadow:0 8px 26px rgba(41,182,246,.3)}
+.ucm-btn-blue:hover{color:#fff}
+.ucm-btn-lg{font-size:17px;padding:15px 32px}
+
+/* ---------- controls bar ---------- */
+.ucm-controls{position:sticky;top:0;z-index:40;background:rgba(14,16,21,.82);backdrop-filter:blur(14px);
+  border-block:1px solid var(--uc-line);padding:12px 0}
+.ucm-controls-in{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.ucm-seg{display:flex;background:var(--uc-card);border:1px solid var(--uc-line);border-radius:999px;padding:4px}
+.ucm-seg-btn{padding:8px 20px;border-radius:999px;font-weight:700;font-size:14px;color:var(--uc-dim);display:flex;align-items:center;gap:6px}
+.ucm-seg-btn.active{background:linear-gradient(92deg,var(--uc-blue),var(--uc-purple));color:#fff}
+.ucm-seg-btn[data-tier="pro"].active{background:linear-gradient(92deg,#ff9d2d,#ff2d78)}
+.ucm-chips{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+.ucm-chip{display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:999px;font-size:13.5px;font-weight:600;
+  color:var(--uc-dim);border:1px solid var(--uc-line);background:rgba(255,255,255,.03);transition:all .15s}
+.ucm-chip:hover{color:#fff;border-color:rgba(255,255,255,.3)}
+.ucm-chip.active{color:#fff;border-color:var(--uc-blue);background:rgba(41,182,246,.14)}
+.ucm-chip .mdi{font-size:16px}
+.ucm-result-count{font-size:13px;color:var(--uc-dim);white-space:nowrap}
+
+/* ---------- sections ---------- */
+.ucm-section{padding:64px 0 30px}
+.ucm-sec-head{max-width:720px;margin-bottom:34px}
+.ucm-sec-head h2{font-size:clamp(26px,3.4vw,38px);font-weight:800;margin:14px 0 10px;letter-spacing:-.01em}
+.ucm-sec-head p{color:var(--uc-dim);font-size:16px}
+.ucm-tier-pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;letter-spacing:.08em;
+  text-transform:uppercase;border-radius:999px;padding:6px 14px}
+.ucm-tier-free{background:rgba(41,182,246,.15);color:#6fd4ff;border:1px solid rgba(41,182,246,.4)}
+.ucm-tier-pro{background:rgba(255,194,51,.13);color:var(--uc-gold);border:1px solid rgba(255,194,51,.45)}
+
+/* ---------- grid + cards ---------- */
+.ucm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:20px}
+.ucm-card{position:relative;display:flex;flex-direction:column;background:var(--uc-card);border:1px solid var(--uc-line);
+  border-radius:var(--uc-r);overflow:hidden;transition:transform .18s,border-color .18s,box-shadow .18s;cursor:pointer}
+.ucm-card:hover{transform:translateY(-4px);border-color:rgba(41,182,246,.55);box-shadow:0 18px 44px rgba(0,0,0,.5)}
+.ucm-card-pro:hover{border-color:rgba(255,194,51,.6)}
+.ucm-card:focus-visible{outline:2px solid var(--uc-blue);outline-offset:2px}
+.ucm-pv{position:relative;height:190px;background:#101318;border-bottom:1px solid var(--uc-line);overflow:hidden;
+  display:flex;align-items:center;justify-content:center;contain:layout paint style;isolation:isolate}
+.ucm-card-pro .ucm-pv{background:linear-gradient(160deg,#171310,#101318 60%)}
+.ucm-pv-live{position:absolute;top:10px;left:10px;z-index:5;display:inline-flex;align-items:center;gap:5px;
+  font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#4ade80;background:rgba(10,12,16,.7);
+  border:1px solid rgba(74,222,128,.35);padding:3px 9px;border-radius:999px;backdrop-filter:blur(3px)}
+.ucm-pv-live::before{content:"";width:6px;height:6px;border-radius:50%;background:#4ade80;animation:ucmPulse 2s infinite}
+.ucm-card-badge{position:absolute;top:10px;right:10px;z-index:5}
+.ucm-card-body{display:flex;flex-direction:column;gap:8px;padding:16px 18px 18px;flex:1}
+.ucm-card-title{display:flex;align-items:center;gap:10px}
+.ucm-card-title .mdi{font-size:22px;color:var(--uc-blue);flex-shrink:0}
+.ucm-card-pro .ucm-card-title .mdi{color:var(--uc-gold)}
+.ucm-card-title h3{font-size:17px;font-weight:700}
+.ucm-card-desc{font-size:13.5px;color:var(--uc-dim);flex:1}
+.ucm-card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.ucm-cat-tag{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7f8a9b}
+.ucm-card-try{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:var(--uc-blue)}
+.ucm-card-pro .ucm-card-try{color:var(--uc-gold)}
+.ucm-badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;letter-spacing:.07em;
+  border-radius:999px;padding:4px 10px;text-transform:uppercase}
+.ucm-badge-free{background:rgba(41,182,246,.9);color:#04121c}
+.ucm-badge-pro{background:linear-gradient(92deg,#ffc233,#ff9d2d);color:#231500}
+
+/* ---------- PRO band ---------- */
+.ucm-proband{margin:70px 0 10px;padding:64px 0;position:relative;overflow:hidden;
+  background:linear-gradient(120deg,#1b1030,#2a1140 45%,#3d0f33);border-block:1px solid rgba(255,194,51,.25)}
+.ucm-proband::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(40% 70% at 85% 20%,rgba(255,45,120,.25),transparent 70%),
+             radial-gradient(35% 60% at 10% 90%,rgba(41,182,246,.18),transparent 70%)}
+.ucm-proband-in{position:relative;display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center}
+.ucm-proband-copy h2{font-size:clamp(28px,3.6vw,42px);font-weight:800;margin:16px 0 12px}
+.ucm-proband-copy p{color:#cfc6dd;font-size:16.5px;max-width:520px}
+.ucm-pro-perks{list-style:none;margin:20px 0 26px;padding:0;display:grid;gap:10px}
+.ucm-pro-perks li{display:flex;align-items:center;gap:10px;font-size:15px;color:#e8e2f2}
+.ucm-pro-perks .mdi{color:var(--uc-gold);font-size:19px}
+.ucm-pro-note{margin-top:12px;font-size:12.5px;color:#a695bd;letter-spacing:.03em}
+.ucm-proband-art{display:grid;grid-template-columns:1fr 1fr;gap:14px;perspective:900px}
+.ucm-proband-art .ucm-pv{height:150px;border:1px solid rgba(255,255,255,.12);border-radius:var(--uc-r);
+  transform:rotateY(-8deg) rotateX(3deg);box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.ucm-section-pro{background:linear-gradient(180deg,var(--uc-bg2),var(--uc-bg))}
+
+/* ---------- bottom cta ---------- */
+.ucm-bottom-cta{text-align:center;padding:80px 0 90px;border-top:1px solid var(--uc-line);margin-top:50px;
+  background:radial-gradient(50% 90% at 50% 100%,rgba(128,23,162,.22),transparent 70%)}
+.ucm-bottom-cta h2{font-size:clamp(26px,3.4vw,40px);font-weight:800;margin-bottom:12px}
+.ucm-bottom-cta p{color:var(--uc-dim);font-size:16.5px;margin-bottom:26px}
+
+/* ---------- no results ---------- */
+.ucm-noresults{text-align:center;color:var(--uc-dim);padding:50px 0}
+.ucm-noresults .mdi{font-size:52px;opacity:.5}
+.ucm-noresults a{color:var(--uc-blue)}
+
+/* ---------- modal ---------- */
+.ucm-modal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px}
+.ucm-modal[hidden]{display:none}
+.ucm-modal-backdrop{position:absolute;inset:0;background:rgba(5,6,9,.78);backdrop-filter:blur(6px)}
+.ucm-modal-card{position:relative;width:min(880px,100%);max-height:92vh;overflow:auto;background:var(--uc-bg2);
+  border:1px solid rgba(255,255,255,.14);border-radius:20px;box-shadow:0 40px 120px rgba(0,0,0,.7);
+  animation:ucmModalIn .25s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes ucmModalIn{from{opacity:0;transform:translateY(22px) scale(.97)}}
+.ucm-modal-x{position:absolute;top:14px;right:14px;z-index:6;width:40px;height:40px;border-radius:50%;
+  background:rgba(0,0,0,.5);color:#fff;font-size:20px;border:1px solid var(--uc-line)}
+.ucm-modal-pv{position:relative;height:320px;background:#101318;border-bottom:1px solid var(--uc-line);
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+.ucm-modal-body{padding:26px 30px 30px}
+.ucm-modal-head{display:flex;align-items:center;gap:16px;margin-bottom:14px}
+.ucm-modal-icon{font-size:34px;color:var(--uc-blue);background:rgba(41,182,246,.12);border-radius:14px;padding:12px}
+.ucm-modal-icon.pro{color:var(--uc-gold);background:rgba(255,194,51,.12)}
+.ucm-modal-head h3{font-size:24px;font-weight:800}
+.ucm-modal-badges{display:flex;gap:8px;margin-top:6px}
+.ucm-modal-desc{color:var(--uc-dim);font-size:15.5px;margin-bottom:16px}
+.ucm-modal-tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:22px}
+.ucm-modal-tags span{font-size:12px;color:#8d97a8;border:1px solid var(--uc-line);border-radius:999px;padding:4px 12px}
+.ucm-modal-ctas{display:flex;gap:12px;flex-wrap:wrap}
+
+/* ---------- responsive ---------- */
+@media (max-width:900px){
+  .ucm-proband-in{grid-template-columns:1fr}
+  .ucm-proband-art{display:none}
+  .ucm-controls-in{gap:10px}
+  .ucm-result-count{display:none}
+}
+@media (max-width:600px){
+  .ucm-hero{padding:56px 0 40px}
+  .ucm-grid{grid-template-columns:1fr}
+  .ucm-stats{gap:8px}
+  .ucm-stat{min-width:calc(50% - 8px)}
+  .ucm-modal-pv{height:240px}
+  .ucm-modal-body{padding:20px}
+}
+@media (prefers-reduced-motion:reduce){
+  .ucm *,.ucm *::before,.ucm *::after{animation-duration:.01s!important;transition-duration:.01s!important}
+}
+</style>
+<style id="ucm-preview-css">
+/* ===== preview engine primitives (scoped under .ucm) ===== */
+.ucm .pv{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:34px 14px 12px;position:relative;overflow:hidden}
+.ucm-modal-pv .pv{padding:14px}
+.ucm .ucm-realpv{align-items:center;justify-content:center;padding:28px 12px 12px}
+.ucm .ucm-realpv uc-module-demo{width:min(92%,340px);max-width:100%}
+.ucm-modal-pv .ucm-realpv{padding:16px}
+.ucm-modal-pv .ucm-realpv uc-module-demo{width:min(94%,480px)}
+.ucm .pv-card{background:#1c2028;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 14px;
+  box-shadow:0 6px 18px rgba(0,0,0,.35);max-width:100%;font-size:12.5px;color:#dfe5ee}
+.ucm .pv-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8d97a8;margin-bottom:8px}
+.ucm .pv-row{display:flex;align-items:center;gap:9px;padding:3.5px 0}
+.ucm .pv-ico{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  background:rgba(41,182,246,.13);color:#29b6f6;font-size:16px;flex-shrink:0}
+.ucm .pv-ico.warn{background:rgba(255,171,64,.15);color:#ffab40}
+.ucm .pv-ico.ok{background:rgba(74,222,128,.13);color:#4ade80}
+.ucm .pv-ico.bad{background:rgba(255,82,82,.15);color:#ff5252}
+.ucm .pv-ico.gold{background:rgba(255,194,51,.14);color:#ffc233}
+.ucm .pv-lbl{flex:1;min-width:0}
+.ucm .pv-lbl b{display:block;font-size:12.5px;font-weight:700;color:#eef1f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ucm .pv-lbl span{font-size:10.5px;color:#8d97a8}
+.ucm .pv-val{font-weight:800;font-size:13px;color:#fff;font-variant-numeric:tabular-nums}
+.ucm .pv-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;border-radius:999px;
+  padding:3px 8px;background:rgba(255,255,255,.07);color:#aeb7c5}
+.ucm .pv-chip.on{background:rgba(74,222,128,.15);color:#4ade80}
+/* progress bars */
+.ucm .pv-bar{height:8px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;flex:1}
+.ucm .pv-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#29b6f6,#8017A2);
+  width:var(--w,60%);transition:width 1s cubic-bezier(.3,.8,.3,1)}
+.ucm .pv-bar.g i{background:linear-gradient(90deg,#4ade80,#16a34a)}
+.ucm .pv-bar.o i{background:linear-gradient(90deg,#ffab40,#ff7043)}
+.ucm .pv-bar.r i{background:linear-gradient(90deg,#ff5252,#d32f2f)}
+/* toggle switch */
+.ucm .pv-switch{width:40px;height:22px;border-radius:99px;background:rgba(255,255,255,.14);position:relative;
+  cursor:pointer;transition:background .2s;flex-shrink:0;border:0}
+.ucm .pv-switch::after{content:"";position:absolute;top:2.5px;left:3px;width:17px;height:17px;border-radius:50%;
+  background:#fff;transition:transform .2s}
+.ucm .pv-switch.on{background:#29b6f6}
+.ucm .pv-switch.on::after{transform:translateX(17px)}
+/* buttons in previews */
+.ucm .pv-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(92deg,#29b6f6,#8017A2);
+  color:#fff;font-weight:700;font-size:12px;border-radius:9px;padding:8px 14px;border:0;cursor:pointer;transition:filter .15s}
+.ucm .pv-btn:active{filter:brightness(1.3)}
+.ucm .pv-btn.ghost{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15)}
+/* range slider */
+.ucm .pv-range{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:99px;outline:0;
+  background:linear-gradient(90deg,#29b6f6 var(--p,60%),rgba(255,255,255,.12) var(--p,60%));cursor:pointer}
+.ucm .pv-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.5);cursor:grab}
+/* compact sizing for card-grid previews (modal keeps full size) */
+.ucm .ucm-pv .pv-card{padding:9px 12px;font-size:11.5px}
+.ucm .ucm-pv .pv-title{font-size:10px;margin-bottom:5px}
+.ucm .ucm-pv .pv-row{padding:2.5px 0;gap:8px}
+.ucm .ucm-pv .pv-ico{width:25px;height:25px;font-size:13.5px;border-radius:7px}
+.ucm .ucm-pv .pv-lbl b{font-size:11.5px}
+.ucm .ucm-pv .pv-lbl span{font-size:9.5px}
+.ucm .ucm-pv .pv-val{font-size:12px}
+/* keyframes */
+@keyframes ucmSpin{to{transform:rotate(360deg)}}
+@keyframes ucmDrift{0%,100%{transform:translate(0,0)}50%{transform:translate(6px,-5px)}}
+@keyframes ucmFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes ucmShimmer{to{background-position:200% 0}}
+@keyframes ucmScan{0%{top:8%}50%{top:88%}100%{top:8%}}
+@keyframes ucmRain{to{transform:translateY(190px)}}
+@keyframes ucmDraw{to{stroke-dashoffset:0}}
+@keyframes ucmBlink{50%{opacity:.25}}
+@keyframes ucmWave{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+@keyframes ucmRipple{to{transform:scale(2.6);opacity:0}}
+@keyframes ucmPetHop{0%,100%{transform:translateY(0) scaleX(1)}25%{transform:translateY(-10px) scaleX(1)}50%{transform:translateY(0) scaleX(1)}75%{transform:translateY(-4px) scaleX(-1)}}
+@keyframes ucmAurora{0%,100%{transform:translateX(-12%) skewX(-6deg)}50%{transform:translateX(12%) skewX(6deg)}}
+@keyframes ucmFlipTop{from{transform:rotateX(0)}to{transform:rotateX(-90deg)}}
+@keyframes ucmSteam{0%{transform:translateY(0);opacity:0}30%{opacity:.7}100%{transform:translateY(-26px);opacity:0}}
+@keyframes ucmOrbit{from{transform:rotate(0) translateX(46px) rotate(0)}to{transform:rotate(360deg) translateX(46px) rotate(-360deg)}}
+@keyframes ucmSlideIn{from{transform:translateX(30px);opacity:0}}
+.ucm .pv-anim-spin{animation:ucmSpin 1.6s linear infinite}
+.ucm .pv-anim-float{animation:ucmFloat 3s ease-in-out infinite}
+/* camera */
+.ucm .pv-cam{position:relative;width:88%;height:82%;border-radius:10px;overflow:hidden;
+  background:linear-gradient(160deg,#2a3440,#151a22 60%,#0d1117)}
+.ucm .pv-cam::before{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px)}
+.ucm .pv-cam-scan{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(41,182,246,.8),transparent);animation:ucmScan 5s ease-in-out infinite}
+.ucm .pv-cam-rec{position:absolute;top:8px;left:10px;font-size:9.5px;font-weight:800;color:#ff5252;letter-spacing:.1em;display:flex;gap:5px;align-items:center}
+.ucm .pv-cam-rec::before{content:"";width:7px;height:7px;border-radius:50%;background:#ff5252;animation:ucmBlink 1.2s infinite}
+.ucm .pv-cam-ts{position:absolute;bottom:8px;right:10px;font-size:9.5px;color:#cfe3ff;font-variant-numeric:tabular-nums}
+/* flip clock */
+.ucm .pv-flip{display:flex;gap:6px;align-items:center}
+.ucm .pv-flip .fc{position:relative;width:44px;height:56px;border-radius:8px;background:#20242e;
+  border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;
+  font-size:29px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.ucm .pv-flip .fc::after{content:"";position:absolute;left:0;right:0;top:50%;height:1.5px;background:rgba(0,0,0,.55)}
+.ucm .pv-flip .fsep{font-size:24px;font-weight:800;color:#556;animation:ucmBlink 2s infinite}
+/* weather art */
+.ucm .pv-sun{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe082,#ffab40);
+  box-shadow:0 0 24px rgba(255,171,64,.55);animation:ucmDrift 5s ease-in-out infinite}
+.ucm .pv-cloud{width:58px;height:20px;background:#aebacb;border-radius:99px;position:relative;animation:ucmDrift 6s ease-in-out infinite}
+.ucm .pv-cloud::before{content:"";position:absolute;left:10px;top:-11px;width:22px;height:22px;border-radius:50%;background:#aebacb}
+.ucm .pv-cloud::after{content:"";position:absolute;right:10px;top:-8px;width:17px;height:17px;border-radius:50%;background:#9fabbd}
+.ucm .pv-drop{position:absolute;width:2px;height:9px;border-radius:2px;background:rgba(120,190,255,.75);animation:ucmRain 1.1s linear infinite}
+/* thermostat dial */
+.ucm .pv-dial{position:relative;width:128px;height:128px}
+.ucm .pv-dial svg{transform:rotate(135deg)}
+.ucm .pv-dial-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ucm .pv-dial-c b{font-size:27px;font-weight:800;color:#fff}
+.ucm .pv-dial-c span{font-size:10px;color:#8d97a8;text-transform:uppercase;letter-spacing:.08em}
+.ucm .pv-dial-btns{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+.ucm .pv-dial-btns button{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.09);color:#fff;
+  border:1px solid rgba(255,255,255,.15);font-size:14px;display:flex;align-items:center;justify-content:center}
+/* moon */
+.ucm .pv-moon{width:56px;height:56px;border-radius:50%;background:#e8e4d8;position:relative;overflow:hidden;
+  box-shadow:0 0 26px rgba(232,228,216,.35), inset -6px -5px 12px rgba(0,0,0,.22)}
+.ucm .pv-moon::after{content:"";position:absolute;inset:0;border-radius:50%;background:#0e1015;
+  transform:translateX(var(--ph,38%));transition:transform 1s}
+/* qr */
+.ucm .pv-qr{display:grid;grid-template-columns:repeat(11,7px);grid-auto-rows:7px;gap:1.5px;background:#fff;padding:8px;border-radius:8px}
+.ucm .pv-qr i{background:#111}.ucm .pv-qr i.o{background:#fff}
+/* pin pad */
+.ucm .pv-pad{display:grid;grid-template-columns:repeat(3,34px);gap:5px}
+.ucm .pv-pad button{height:26px;border-radius:7px;background:rgba(255,255,255,.08);color:#fff;font-weight:700;font-size:12px;border:1px solid rgba(255,255,255,.1)}
+.ucm .pv-pad button:active{background:rgba(41,182,246,.3)}
+/* vacuum map */
+.ucm .pv-vmap{position:relative;width:88%;height:80%;border-radius:10px;background:#141922;overflow:hidden;
+  border:1px solid rgba(255,255,255,.08)}
+.ucm .pv-vroom{position:absolute;border-radius:5px;background:rgba(41,182,246,.1);border:1px solid rgba(41,182,246,.25)}
+.ucm .pv-vbot{position:absolute;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#6fd4ff,#1976d2);
+  box-shadow:0 0 12px rgba(41,182,246,.8)}
+/* generic dashboard mock rows for layout previews */
+.ucm .pv-blk{border-radius:7px;background:linear-gradient(110deg,rgba(255,255,255,.1) 30%,rgba(255,255,255,.2) 45%,rgba(255,255,255,.1) 60%);
+  background-size:200% 100%;animation:ucmShimmer 2.2s linear infinite}
+/* eq bars for media */
+.ucm .pv-eq{display:flex;gap:2.5px;align-items:flex-end;height:16px}
+.ucm .pv-eq i{width:3.5px;background:#29b6f6;border-radius:2px;height:100%;transform-origin:bottom;animation:ucmWave 1s ease-in-out infinite}
+/* fan blades */
+.ucm .pv-fanblades{width:56px;height:56px;position:relative}
+.ucm .pv-fanblades i{position:absolute;left:50%;top:50%;width:20px;height:30px;background:linear-gradient(#6fd4ff,#1976d2);
+  border-radius:50% 50% 6px 6px;transform-origin:50% 100%;margin:-30px 0 0 -10px}
+/* moving energy dots */
+.ucm .pv-edot{fill:#ffd54f}
+</style>
+<script id="ucm-app">
+(function(){
+"use strict";
+/* ============ CATALOG (generated from Ultra Card v3.7.0-beta3 source) ============ */
+const CATALOG = [{"type":"text","title":"Text","description":"Display custom text content","icon":"mdi:format-text","category":"content","tags":["text","content","typography","template"],"pro":false},{"type":"separator","title":"Separator","description":"Visual dividers and spacing","icon":"mdi:minus","category":"content","tags":["separator","divider","spacing","layout"],"pro":false},{"type":"image","title":"Images","description":"Display images and photos","icon":"mdi:image","category":"media","tags":["image","picture","media","photo"],"pro":false},{"type":"info","title":"Info Items","description":"Show entity information values","icon":"mdi:information","category":"data","tags":["info","entity","data","sensors"],"pro":false},{"type":"bar","title":"Bars","description":"Progress bars for values","icon":"mdi:chart-bar","category":"data","tags":["bar","progress","chart","value","sensor"],"pro":false},{"type":"gauge","title":"Gauge","description":"Display sensor values as customizable gauges with various styles and pointer options","icon":"mdi:gauge","category":"content","tags":["gauge","sensor","value","indicator","speedometer","meter"],"pro":false},{"type":"icon","title":"Icons","description":"Interactive icon buttons","icon":"mdi:circle","category":"interactive","tags":["icon","button","interactive","control"],"pro":false},{"type":"button","title":"Button","description":"Interactive buttons with actions","icon":"mdi:gesture-tap-button","category":"interactive","tags":["button","action","click","interactive"],"pro":false},{"type":"spinbox","title":"Spinbox","description":"Number input with increment/decrement buttons","icon":"mdi:numeric","category":"interactive","tags":["spinbox","number","increment","decrement","input","stepper"],"pro":false},{"type":"markdown","title":"Markdown","description":"Display rich markdown content","icon":"mdi:language-markdown","category":"content","tags":["markdown","content","rich-text","formatting","template"],"pro":false},{"type":"horizontal","title":"Horizontal Layout","description":"Arrange modules in rows with flexible horizontal and vertical alignment and spacing","icon":"mdi:view-column","category":"layout","tags":["layout","horizontal","vertical","alignment","container","flexbox"],"pro":false},{"type":"vertical","title":"Vertical Layout","description":"Arrange modules in columns with flexible alignment and spacing","icon":"mdi:view-agenda","category":"layout","tags":["layout","vertical","alignment","container","flexbox"],"pro":false},{"type":"stack","title":"Stack Overlay","description":"Layer modules on top of each other with anchor-based absolute positioning","icon":"mdi:layers","category":"layout","tags":["layout","stack","overlay","absolute","layer","z-index","anchor","hero"],"pro":false},{"type":"accordion","title":"Accordion","description":"Collapsible container with customizable header for organizing modules","icon":"mdi:chevron-down","category":"layout","tags":["layout","accordion","collapsible","container","organization"],"pro":false},{"type":"popup","title":"Popup","description":"Modal popup container with customizable trigger and content","icon":"mdi:window-maximize","category":"layout","tags":["layout","popup","modal","overlay","container"],"pro":false},{"type":"slider","title":"Slider Layout","description":"Create interactive slideshows with multiple pages of modules","icon":"mdi:view-carousel","category":"layout","tags":["layout","slider","carousel","slideshow","pages","swipe"],"pro":false},{"type":"slider_control","title":"Slider Control","description":"Interactive slider for controlling entity values","icon":"mdi:tune-vertical","category":"interactive","tags":["slider","control","light","cover","fan","interactive","entity"],"pro":false},{"type":"pagebreak","title":"Page Break","description":"Separates slider content into pages","icon":"mdi:format-page-break","category":"layout","tags":["slider","page","break","separator","divider"],"pro":false},{"type":"camera","title":"Camera","description":"Display live camera feeds with comprehensive control options","icon":"mdi:camera","category":"content","tags":["camera","live","feed","security","surveillance"],"pro":false},{"type":"graphs","title":"Graphs","description":"Display interactive charts and graphs with Home Assistant data","icon":"mdi:chart-line","category":"data","tags":["charts","graphs","data","visualization","statistics","analytics"],"pro":false},{"type":"dropdown","title":"Dropdown","description":"Interactive dropdown selector with Home Assistant actions","icon":"mdi:menu-down","category":"interactive","tags":["dropdown","select","menu","scene","service","interactive"],"pro":false},{"type":"light","title":"Light Control","description":"Advanced light control with color, brightness, and effects","icon":"mdi:lightbulb","category":"interactive","tags":["light","color","brightness","control","smart"],"pro":false},{"type":"map","title":"Map","description":"Interactive map with custom markers and location tracking","icon":"mdi:map","category":"content","tags":["map","location","tracking","markers","gps"],"pro":false},{"type":"animated_clock","title":"Animated Clock","description":"Beautiful flip clock with smooth animations","icon":"mdi:clock-outline","category":"content","tags":["clock","time","pro","premium","animated","flip"],"pro":true},{"type":"animated_weather","title":"Animated Weather","description":"Current weather display with animated icons","icon":"mdi:weather-partly-cloudy","category":"content","tags":["weather","current","pro","premium","animated"],"pro":true},{"type":"animated_forecast","title":"Animated Forecast","description":"Multi-day weather forecast with animated icons","icon":"mdi:weather-cloudy","category":"content","tags":["weather","forecast","pro","premium","animated"],"pro":true},{"type":"external_card","title":"3rd Party Card","description":"Embed any 3rd party Home Assistant card","icon":"mdi:card-bulleted","category":"interactive","tags":["external","integration","3rd-party"],"pro":false},{"type":"native_card","title":"Native HA Card","description":"Native Home Assistant card","icon":"mdi:home-assistant","category":"content","tags":["native","home-assistant","card"],"pro":false},{"type":"video_bg","title":"Video Background","description":"Add dynamic, conditional video backgrounds to your dashboard view.","icon":"mdi:video-box","category":"media","tags":["video","background","pro","youtube","vimeo","dynamic","conditional"],"pro":true},{"type":"climate","title":"Climate Control","description":"Interactive circular thermostat control for climate entities","icon":"mdi:thermostat","category":"interactive","tags":["climate","thermostat","temperature","hvac","heating","cooling","pro"],"pro":true},{"type":"dynamic_weather","title":"Dynamic Weather","description":"Add animated weather effects (rain, snow, fog, sun beams) to your dashboard view.","icon":"mdi:weather-partly-rainy","category":"media","tags":["weather","effects","pro","premium","animated","rain","snow","fog"],"pro":true},{"type":"background","title":"Background","description":"Add custom background images to your dashboard view","icon":"mdi:image-outline","category":"media","tags":["background","image","view"],"pro":false},{"type":"status_summary","title":"Status Summary","description":"Display entity activity with timestamps and customizable color coding","icon":"mdi:format-list-bulleted-square","category":"data","tags":["status","activity","monitor","summary","entities","tracking"],"pro":false},{"type":"toggle","title":"Toggle","description":"Interactive toggles and multi-state switchers with custom actions","icon":"mdi:toggle-switch","category":"interactive","tags":["toggle","switch","button","state","control","interactive"],"pro":false},{"type":"tabs","title":"Tabs","description":"Tabbed container for organizing modules into switchable sections","icon":"mdi:tab","category":"layout","tags":["layout","tabs","organization","container","sections"],"pro":false},{"type":"grid_layout","title":"Grid Layout","description":"True CSS-grid container with per-child column and row spans","icon":"mdi:view-grid-plus","category":"layout","tags":["layout","grid","container","span","columns","responsive","masonry"],"pro":false},{"type":"flip_card","title":"Flip Card","description":"Two-sided container that flips between a front and back face","icon":"mdi:rotate-3d-variant","category":"layout","tags":["layout","flip","card","container","3d","front","back","reveal"],"pro":false},{"type":"drawer","title":"Drawer","description":"Slide-in panel (side drawer or bottom sheet) opened by a trigger button","icon":"mdi:page-layout-sidebar-left","category":"layout","tags":["layout","drawer","bottom-sheet","panel","slide","overlay","container"],"pro":false},{"type":"scroll_row","title":"Scroll Row","description":"Horizontally scrollable row with snap points and next-item peek","icon":"mdi:gesture-swipe-horizontal","category":"layout","tags":["layout","scroll","row","snap","carousel","swipe","horizontal","container"],"pro":false},{"type":"state_switcher","title":"State Switcher","description":"Shows exactly one child at a time — the first whose logic conditions match","icon":"mdi:swap-horizontal-bold","category":"layout","tags":["layout","switcher","conditional","state","container","transition"],"pro":false},{"type":"calendar","title":"Calendar","description":"Display calendar events with multiple view options","icon":"mdi:calendar-month","category":"data","tags":["calendar","events","schedule","agenda","planner","pro"],"pro":true},{"type":"sports_score","title":"Sports Score","description":"Display live sports scores, upcoming games, and team info for your favorite teams","icon":"mdi:scoreboard","category":"data","tags":["sports","scores","nfl","nba","mlb","nhl","soccer","football","pro"],"pro":true},{"type":"badge_of_honor","title":"Badge of Honor","description":"Animated Pro membership badge with rotating text and gradient effects","icon":"mdi:certificate","category":"content","tags":["badge","pro","premium","certificate","animated"],"pro":true},{"type":"grid","title":"Grid","description":"Display entities in a customizable grid layout with multiple styles","icon":"mdi:view-grid","category":"data","tags":["grid","entities","dashboard","tiles","display"],"pro":false},{"type":"vacuum","title":"Vacuum Control","description":"Interactive vacuum cleaner control with map, stats, and animations","icon":"mdi:robot-vacuum","category":"interactive","tags":["vacuum","cleaning","robot","pro"],"pro":true},{"type":"media_player","title":"Media Player","description":"Control media players with album art, progress bar, and playback controls","icon":"mdi:music","category":"interactive","tags":["media","music","player","audio","video","spotify","chromecast","interactive"],"pro":false},{"type":"people","title":"People","description":"Display person information with customizable data items","icon":"mdi:account","category":"data","tags":["people","person","presence","location","avatar","user"],"pro":false},{"type":"navigation","title":"Navigation","description":"Add a global navigation bar with routes, popups, and media player controls","icon":"mdi:compass-outline","category":"layout","tags":["navigation","navbar","menu","routes","layout"],"pro":false},{"type":"timer","title":"Timer","description":"Countdown timer with optional action when time runs out","icon":"mdi:timer-outline","category":"interactive","tags":["timer","countdown","kitchen","automation"],"pro":false},{"type":"cover","title":"Cover Control","description":"Control blinds, garage doors, and shutters","icon":"mdi:blinds","category":"interactive","tags":["cover","blinds","garage","shutters"],"pro":false},{"type":"fan","title":"Fan Control","description":"Modern fan control with speed, presets, oscillation, and direction","icon":"mdi:fan","category":"interactive","tags":["fan","speed","hvac","air","ventilation","interactive"],"pro":false},{"type":"lock","title":"Lock Control","description":"Modern lock control with lock, unlock, and open when supported","icon":"mdi:lock","category":"interactive","tags":["lock","security","door","interactive"],"pro":false},{"type":"dynamic-list","title":"Dynamic List","description":"Generate a list of modules dynamically using a Jinja2 template","icon":"mdi:code-braces","category":"data","tags":["dynamic","template","jinja2","list","loop","advanced"],"pro":false},{"type":"qr_code","title":"QR Code","description":"Generate QR codes from URL, text, template, or entity state","icon":"mdi:qrcode","category":"content","tags":["qr","qrcode","pro","premium","barcode"],"pro":true},{"type":"energy_display","title":"Energy Display","description":"Visualize energy flow between grid, solar, battery, home and devices","icon":"mdi:lightning-bolt","category":"data","tags":["pro","premium","energy","solar","grid","battery","power","flow","sankey"],"pro":true},{"type":"living_canvas","title":"Living Canvas","description":"Full-view WebGL background (like Dynamic Weather) with presets and optional entity drivers","icon":"mdi:palette-swatch","category":"media","tags":["pro","premium","canvas","webgl","animated","art","ambient","three","background"],"pro":true},{"type":"text_input","title":"Text Input","description":"Text input field linked to input_text helpers","icon":"mdi:form-textbox","category":"input","tags":["text","input","form","helper","interactive"],"pro":false},{"type":"datetime_input","title":"Date/Time Input","description":"Date and time picker linked to input_datetime helpers","icon":"mdi:calendar-clock","category":"input","tags":["date","time","datetime","input","form","helper","interactive","calendar"],"pro":false},{"type":"number_input","title":"Number Input","description":"Number input field with stepper linked to input_number helpers","icon":"mdi:numeric","category":"input","tags":["number","input","form","helper","interactive","stepper"],"pro":false},{"type":"slider_input","title":"Slider Input","description":"Range slider linked to input_number helpers","icon":"mdi:tune-variant","category":"input","tags":["slider","range","number","input","form","helper","interactive"],"pro":false},{"type":"select_input","title":"Select Input","description":"Dropdown or chip selector linked to input_select helpers","icon":"mdi:form-dropdown","category":"input","tags":["select","dropdown","input","form","helper","interactive","options"],"pro":false},{"type":"boolean_input","title":"Boolean Input","description":"Toggle switch linked to input_boolean and switch entities","icon":"mdi:toggle-switch-outline","category":"input","tags":["boolean","toggle","switch","input","form","helper","interactive"],"pro":false},{"type":"button_input","title":"Button Input","description":"Press button linked to input_button helpers","icon":"mdi:gesture-tap-button","category":"input","tags":["button","press","input","form","helper","interactive","trigger"],"pro":false},{"type":"counter_input","title":"Counter Input","description":"Counter with increment, decrement, and reset linked to counter helpers","icon":"mdi:counter","category":"input","tags":["counter","increment","decrement","input","form","helper","interactive"],"pro":false},{"type":"color_input","title":"Color Input","description":"Color picker linked to input_text or light entities","icon":"mdi:palette","category":"input","tags":["color","picker","input","form","helper","interactive","rgb","hex"],"pro":false},{"type":"activity_feed","title":"Activity Feed","description":"Real-time home activity feed with timeline and social views","icon":"mdi:timeline-text","category":"data","tags":["activity","feed","timeline","history","events","pro","premium"],"pro":true},{"type":"alert_center","title":"Alert Center","description":"Monitor and prioritize active Home Assistant alerts in one place","icon":"mdi:alert-decagram-outline","category":"data","tags":["alerts","warnings","security","monitoring","safety","status"],"pro":false},{"type":"area_summary","title":"Area / Room Summary","description":"Smart room tile that auto-pulls lights, climate, motion, doors, media, humidity, and presence by Home Assistant area","icon":"mdi:floor-plan","category":"data","tags":["area","room","summary","floor-plan","climate","presence","lights","dashboard"],"pro":false},{"type":"virtual_pet","title":"Virtual Pet","description":"A digital pet whose mood is driven by your smart home data","icon":"mdi:paw","category":"interactive","tags":["pet","fun","tamagotchi","animated","interactive","pro","premium"],"pro":true},{"type":"alarm_panel","title":"Alarm Panel","description":"Arm, disarm, and monitor your security alarm with a PIN pad and status ring","icon":"mdi:shield-home","category":"interactive","tags":["alarm","security","panel","keypad","pro","premium","arm","disarm"],"pro":true},{"type":"solar_analytics","title":"Solar Analytics","description":"Live solar power, grid balance, battery state, and daily energy totals in one glanceable widget","icon":"mdi:solar-power-variant","category":"data","tags":["solar","energy","analytics","grid","battery","power","pro","premium"],"pro":true},{"type":"screensaver","title":"Screensaver","description":"Kiosk screensaver that activates after idle with clock, weather, and image slideshow","icon":"mdi:television-play","category":"media","tags":["screensaver","kiosk","clock","slideshow","idle","pro","premium"],"pro":true},{"type":"time_machine","title":"Time Machine","description":"Rewind the entire card with a draggable history timeline and replay","icon":"mdi:history","category":"data","tags":["time","history","scrubber","rewind","timeline","replay","pro","premium"],"pro":true},{"type":"lunar_phase","title":"Lunar Phase","description":"Animated lunar phase tracker with live moon data, month calendar, and horizon graph","icon":"mdi:moon-waxing-crescent","category":"content","tags":["moon","lunar","phase","astronomy","calendar","animated","pro","premium"],"pro":true},{"type":"battery_monitor","title":"Battery Monitor","description":"Auto-discover battery sensors and highlight low / critical devices with 5 visual styles","icon":"mdi:battery-alert","category":"data","tags":["battery","monitor","low","critical","devices","health","auto"],"pro":false},{"type":"auto_entity_list","title":"Auto Entities List","description":"Dynamically list entities using domain, device_class, state, and keyword filters","icon":"mdi:format-list-bulleted-type","category":"data","tags":["auto","entities","list","filter","dynamic","domain"],"pro":false},{"type":"update_monitor","title":"Update Monitor","description":"Auto-discover update entities and surface pending updates with install actions","icon":"mdi:update","category":"data","tags":["update","monitor","version","firmware","devices","maintenance","auto"],"pro":false},{"type":"clock","title":"Digital Clock","description":"Clean digital clock with date, 12/24h formats, and timezone support","icon":"mdi:clock-digital","category":"content","tags":["clock","time","date","digital","timezone"],"pro":false},{"type":"humidifier","title":"Humidifier Control","description":"Control humidifiers and dehumidifiers with target humidity, power, and modes","icon":"mdi:air-humidifier","category":"interactive","tags":["humidifier","dehumidifier","humidity","control","interactive"],"pro":false},{"type":"washer","title":"Washer","description":"Animated washing machine card with cycle status, remaining time, controls, and energy use","icon":"mdi:washing-machine","category":"interactive","tags":["washer","washing machine","laundry","appliance","smartthings","cycle","animated","interactive"],"pro":false},{"type":"dryer","title":"Dryer","description":"Animated dryer card with cycle status, remaining time, controls, and energy use","icon":"mdi:tumble-dryer","category":"interactive","tags":["dryer","tumble dryer","laundry","appliance","smartthings","cycle","animated","interactive"],"pro":false},{"type":"dishwasher","title":"Dishwasher","description":"Animated dishwasher card with cycle status, remaining time, controls, and wash options","icon":"mdi:dishwasher","category":"interactive","tags":["dishwasher","kitchen","appliance","smartthings","cycle","animated","interactive"],"pro":false},{"type":"fridge","title":"Refrigerator","description":"Refrigerator card with temperatures, setpoints, door alerts, and ice/cooling controls","icon":"mdi:fridge-outline","category":"interactive","tags":["fridge","refrigerator","freezer","kitchen","appliance","smartthings","animated","interactive"],"pro":false},{"type":"range","title":"Range & Oven","description":"Range card with live cooktop burner indicators, oven status and temperature, dual-oven support, and light control","icon":"mdi:stove","category":"interactive","tags":["range","oven","stove","cooktop","kitchen","appliance","smartthings","animated","interactive"],"pro":false},{"type":"todo_list","title":"To-Do List","description":"Show, check off, and add items on Home Assistant to-do lists","icon":"mdi:checkbox-marked-outline","category":"data","tags":["todo","tasks","shopping","list","checklist","interactive"],"pro":false},{"type":"weather","title":"Weather","description":"Current conditions and a simple forecast with clean static icons","icon":"mdi:weather-partly-cloudy","category":"data","tags":["weather","forecast","temperature","conditions"],"pro":false},{"type":"dog_duty","title":"Dog Duty","description":"Yard map with AI-detected dog waste markers, time scrubber, and cleanup tracking","icon":"mdi:dog","category":"data","tags":["pro","premium","camera","ai","pets","dog","yard","vision"],"pro":true},{"type":"cleaning_zones","title":"Cleaning Zones","description":"Floorplan with per-room cleaning schedules and staleness heatmap","icon":"mdi:spray-bottle","category":"data","tags":["pro","premium","cleaning","chores","floorplan","rooms","schedule","housekeeping"],"pro":true},{"type":"battery_fleet","title":"Battery Fleet","description":"Ranked battery health with drain-rate analysis and replacement predictions","icon":"mdi:battery-heart-variant","category":"data","tags":["pro","premium","battery","fleet","prediction","maintenance","devices","forecast"],"pro":true},{"type":"plant_care","title":"Plant Care","description":"Watering and fertilizing schedules with optional moisture sensors","icon":"mdi:sprout","category":"data","tags":["pro","premium","plants","garden","watering","schedule","moisture","houseplants"],"pro":true},{"type":"laundry_tracker","title":"Laundry Tracker","description":"Detects wash and dry cycles from power sensors and nags about forgotten loads","icon":"mdi:washing-machine","category":"data","tags":["pro","premium","laundry","washer","dryer","cycle","power","appliance"],"pro":true},{"type":"vehicle_maintenance","title":"Vehicle Maintenance","description":"Odometer and time based service intervals with a cost-tracked service log","icon":"mdi:car-wrench","category":"data","tags":["pro","premium","vehicle","car","maintenance","service","odometer","garage"],"pro":true},{"type":"vampire_power","title":"Vampire Power","description":"Finds always-on standby loads and ranks them by what they cost you","icon":"mdi:power-plug-off","category":"data","tags":["pro","premium","energy","standby","phantom","power","cost","savings"],"pro":true}];
+
+const $  = (s,el)=> (el||document).querySelector(s);
+const $$ = (s,el)=> Array.from((el||document).querySelectorAll(s));
+const root = $('#ucm');
+if(!root) return;
+
+const state = { tier:'all', cat:'all', q:'' };
+const PRO_URL  = 'https://ultracard.io/product/ultra-card-pro/';
+const FREE_URL = 'https://github.com/WJDDesigns/Ultra-Card';
+
+/* ---------- live counts ---------- */
+const counts = { total:CATALOG.length, free:CATALOG.filter(m=>!m.pro).length, pro:CATALOG.filter(m=>m.pro).length };
+$$('[data-count]',root).forEach(el=>{ el.textContent = counts[el.dataset.count] ?? el.textContent; });
+
+/* ---------- timer registry (previews clean up when off-screen) ---------- */
+const timers = new Map();
+function addTimer(el, id){ if(!timers.has(el)) timers.set(el,[]); timers.get(el).push(id); }
+function every(el, fn, ms){ fn(); const id=setInterval(fn,ms); addTimer(el,id); return id; }
+function destroyPreview(el){ (timers.get(el)||[]).forEach(clearInterval); timers.delete(el); el.innerHTML=''; el.dataset.ready=''; }
+
+/* ---------- card factory ---------- */
+const CAT_LABEL = {layout:'Layout',content:'Content',data:'Data',interactive:'Controls',input:'Inputs',media:'Media'};
+function cardHTML(m){
+  return `<article class="ucm-card ${m.pro?'ucm-card-pro':''}" data-type="${m.type}" tabindex="0" role="button" aria-label="${m.title} — open preview">
+    <div class="ucm-pv" data-pv="${m.type}">
+      <span class="ucm-pv-live">LIVE</span>
+      <span class="ucm-card-badge">${m.pro?'<span class="ucm-badge ucm-badge-pro"><i class="mdi mdi-star"></i>PRO</span>':'<span class="ucm-badge ucm-badge-free">Free</span>'}</span>
+    </div>
+    <div class="ucm-card-body">
+      <div class="ucm-card-title"><i class="mdi ${mdi(m.icon)}"></i><h3>${m.title}</h3></div>
+      <p class="ucm-card-desc">${m.description}</p>
+      <div class="ucm-card-foot">
+        <span class="ucm-cat-tag">${CAT_LABEL[m.category]||m.category}</span>
+        <span class="ucm-card-try"><i class="mdi mdi-cursor-default-click-outline"></i> Try it</span>
+      </div>
+    </div>
+  </article>`;
+}
+function mdi(name){ return 'mdi-'+String(name||'mdi:cube-outline').replace(/^mdi:/,''); }
+
+/* ---------- rendering ---------- */
+const gridFree = $('#ucm-grid-free'), gridPro = $('#ucm-grid-pro'), gridRes = $('#ucm-grid-results');
+function renderAll(){
+  gridFree.innerHTML = CATALOG.filter(m=>!m.pro).map(cardHTML).join('');
+  gridPro.innerHTML  = CATALOG.filter(m=> m.pro).map(cardHTML).join('');
+  observeGrids();
+}
+function matches(m){
+  if(state.tier!=='all' && (state.tier==='pro')!==m.pro) return false;
+  if(state.cat!=='all' && m.category!==state.cat) return false;
+  if(state.q){
+    const h=(m.title+' '+m.description+' '+m.type+' '+(m.tags||[]).join(' ')).toLowerCase();
+    if(!state.q.toLowerCase().split(/\s+/).every(w=>h.includes(w))) return false;
+  }
+  return true;
+}
+function applyFilters(){
+  const filtered = state.tier!=='all' || state.cat!=='all' || state.q;
+  $('#ucm-free-section').hidden = filtered;
+  $('#ucm-proband').hidden      = filtered;
+  $('#ucm-pro-section').hidden  = filtered;
+  $('#ucm-results-section').hidden = !filtered;
+  if(filtered){
+    const list = CATALOG.filter(matches);
+    $$('.ucm-pv[data-ready="1"]', gridRes).forEach(destroyPreview);
+    gridRes.innerHTML = list.map(cardHTML).join('');
+    $('#ucm-noresults').hidden = list.length>0;
+    $('#ucm-results-title').textContent = state.q ? `Results for “${state.q}”` :
+      `${state.tier==='pro'?'PRO':state.tier==='free'?'Free':'All'} ${state.cat!=='all'?CAT_LABEL[state.cat]+' ':''}modules`;
+    $('#ucm-count').textContent = `${list.length} of ${counts.total} modules`;
+    observeGrids();
+  } else {
+    $('#ucm-count').textContent = `${counts.total} modules`;
+  }
+}
+
+/* ---------- lazy preview boot ---------- */
+const io = new IntersectionObserver(entries=>{
+  for(const e of entries){
+    const pv=e.target;
+    if(e.isIntersecting && !pv.dataset.ready){ pv.dataset.ready='1'; renderPreview(pv, pv.dataset.pv, false); }
+    else if(!e.isIntersecting && pv.dataset.ready && !pv.closest('.ucm-modal')){ destroyPreview(pv); rebadge(pv); }
+  }
+},{rootMargin:'160px 0px'});
+function rebadge(pv){
+  const m = CATALOG.find(x=>x.type===pv.dataset.pv); if(!m) return;
+  pv.insertAdjacentHTML('afterbegin',`<span class="ucm-pv-live">LIVE</span>
+    <span class="ucm-card-badge">${m.pro?'<span class="ucm-badge ucm-badge-pro"><i class="mdi mdi-star"></i>PRO</span>':'<span class="ucm-badge ucm-badge-free">Free</span>'}</span>`);
+}
+function observeGrids(){ $$('.ucm-pv',root).forEach(pv=>{ if(!pv.closest('.ucm-modal')) io.observe(pv); }); }
+
+/* ---------- preview dispatch ----------
+   Primary: <uc-module-demo> — the REAL Ultra Card module code compiled from
+   the repo, rendering with sample data (pixel-identical to a dashboard).
+   Fallback (only while the bundle loads or for modules that cannot exist
+   outside Home Assistant): lightweight illustrative mock. */
+const PREVIEWS = {};
+const NO_REAL_PREVIEW = new Set(['native_card','external_card','screensaver']);
+function realPreviewReady(){ return !!customElements.get('uc-module-demo'); }
+function renderPreview(pv, type, interactive){
+  const m = CATALOG.find(x=>x.type===type);
+  if(!NO_REAL_PREVIEW.has(type)){
+    if(realPreviewReady()){ mountReal(pv, type); return; }
+    // bundle still loading: show shimmer, upgrade when ready
+    const wait = document.createElement('div'); wait.className='pv';
+    wait.innerHTML = '<div class="pv-blk" style="width:78%;height:64%;border-radius:10px"></div>';
+    pv.appendChild(wait);
+    customElements.whenDefined('uc-module-demo').then(()=>{
+      if(wait.isConnected){ wait.remove(); mountReal(pv, type); }
+    });
+    return;
+  }
+  const fn = PREVIEWS[type] || PREVIEWS['__'+(m?m.category:'data')] || PREVIEWS.__data;
+  const holder = document.createElement('div'); holder.className='pv';
+  pv.appendChild(holder);
+  try{ fn(holder, {interactive, m});
+    holder.insertAdjacentHTML('beforeend','<span style="position:absolute;bottom:6px;right:9px;font-size:8.5px;letter-spacing:.06em;color:#5a6373;text-transform:uppercase">Concept illustration</span>');
+  }catch(err){ holder.innerHTML='<div class="pv-card">'+ (m?m.title:type) +'</div>'; }
+}
+function mountReal(pv, type){
+  const wrap = document.createElement('div'); wrap.className='pv ucm-realpv';
+  const demo = document.createElement('uc-module-demo');
+  demo.setAttribute('type', type);
+  wrap.appendChild(demo); pv.appendChild(wrap);
+  // Scale oversized modules down to fit the preview window.
+  const fit = ()=>{
+    demo.style.transform='';
+    const cw = wrap.clientWidth - 24, ch = wrap.clientHeight - 40;
+    const w = demo.offsetWidth, h = demo.offsetHeight;
+    if(!w||!h) return;
+    const s = Math.min(1, cw/w, ch/h);
+    if(s<1){ demo.style.transform=`scale(${s})`; demo.style.transformOrigin='center center'; }
+  };
+  const ro = new ResizeObserver(()=>fit());
+  ro.observe(demo); ro.observe(wrap);
+  addTimer(pv, setInterval(fit, 1200));
+}
+
+/* ---------- filters wiring ---------- */
+$$('.ucm-seg-btn',root).forEach(b=>b.addEventListener('click',()=>{
+  $$('.ucm-seg-btn',root).forEach(x=>x.classList.toggle('active',x===b));
+  state.tier=b.dataset.tier; applyFilters();
+}));
+$$('.ucm-chip',root).forEach(b=>b.addEventListener('click',()=>{
+  $$('.ucm-chip',root).forEach(x=>x.classList.toggle('active',x===b));
+  state.cat=b.dataset.cat; applyFilters();
+}));
+const searchEl = $('#ucm-search'), clearEl = $('#ucm-search-clear');
+let debounce;
+searchEl.addEventListener('input',()=>{
+  clearTimeout(debounce);
+  debounce=setTimeout(()=>{ state.q=searchEl.value.trim(); clearEl.hidden=!state.q; applyFilters();
+    if(state.q) $('#ucm-controls').scrollIntoView({behavior:'smooth',block:'start'}); },220);
+});
+clearEl.addEventListener('click',()=>{ searchEl.value=''; state.q=''; clearEl.hidden=true; applyFilters(); });
+
+/* ---------- modal ---------- */
+const modal=$('#ucm-modal'), modalPv=$('#ucm-modal-pv');
+let modalOpenedAt=0;
+function openModal(m){
+  modalOpenedAt=Date.now();
+  destroyPreview(modalPv);
+  $('#ucm-modal-title').textContent=m.title;
+  const ic=$('#ucm-modal-icon'); ic.className='ucm-modal-icon mdi '+mdi(m.icon)+(m.pro?' pro':'');
+  $('#ucm-modal-badges').innerHTML=(m.pro?'<span class="ucm-badge ucm-badge-pro"><i class="mdi mdi-star"></i>PRO</span>':'<span class="ucm-badge ucm-badge-free">Free</span>')
+    +`<span class="ucm-badge" style="background:rgba(255,255,255,.1);color:#aeb7c5">${CAT_LABEL[m.category]||m.category}</span>`;
+  $('#ucm-modal-desc').textContent=m.description.replace(/\.?\s*$/,'. ')+'Everything you see above is running live with sample data — on your dashboard it binds to your own entities in a couple of clicks.';
+  $('#ucm-modal-tags').innerHTML=(m.tags||[]).filter(t=>!['pro','premium'].includes(t)).slice(0,8).map(t=>`<span>${t}</span>`).join('');
+  $('#ucm-modal-ctas').innerHTML = m.pro
+    ? `<a class="ucm-btn ucm-btn-pro" href="${PRO_URL}"><i class="mdi mdi-star"></i> Unlock with PRO</a>
+       <a class="ucm-btn ucm-btn-ghost" href="${FREE_URL}" target="_blank" rel="noopener"><i class="mdi mdi-github"></i> Start free first</a>`
+    : `<a class="ucm-btn ucm-btn-blue" href="${FREE_URL}" target="_blank" rel="noopener"><i class="mdi mdi-download"></i> Install free via HACS</a>
+       <a class="ucm-btn ucm-btn-ghost" href="${PRO_URL}"><i class="mdi mdi-star"></i> See what PRO adds</a>`;
+  modal.hidden=false; document.documentElement.style.overflow='hidden';
+  renderPreview(modalPv, m.type, true);
+}
+function closeModal(){ modal.hidden=true; document.documentElement.style.overflow=''; destroyPreview(modalPv); }
+modal.addEventListener('click',e=>{ if(Date.now()-modalOpenedAt<350) return; if(e.target.closest('[data-close]')) closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!modal.hidden) closeModal(); });
+root.addEventListener('click',e=>{
+  const card=e.target.closest('.ucm-card'); if(!card) return;
+  const m=CATALOG.find(x=>x.type===card.dataset.type); if(m) openModal(m);
+});
+root.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ') return;
+  const card=e.target.closest('.ucm-card'); if(!card) return;
+  e.preventDefault(); const m=CATALOG.find(x=>x.type===card.dataset.type); if(m) openModal(m);
+});
+
+/* ---------- PRO band art: three rotating PRO previews ---------- */
+function bootProArt(){
+  const art=$('#ucm-proband-art'); if(!art) return;
+  ['climate','animated_weather','energy_display','virtual_pet'].forEach(t=>{
+    const d=document.createElement('div'); d.className='ucm-pv'; d.dataset.pv=t; art.appendChild(d);
+    renderPreview(d,t,false);
+  });
+}
+
+/* ---------- boot ---------- */
+function boot(){ renderAll(); applyFilters(); bootProArt(); }
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+
+/* ============================================================
+   PREVIEW RENDERERS — sample data, animated, interactive
+   ============================================================ */
+function reg(types,fn){ types.forEach(t=>PREVIEWS[t]=fn); }
+const pad=n=>String(n).padStart(2,'0');
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const ri=(a,b)=>Math.round(rnd(a,b));
+
+/* ---- text ---- */
+reg(['text'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="text-align:center;min-width:75%">
+    <div style="font-size:15px;font-weight:800;background:linear-gradient(92deg,#29b6f6,#b44ce0);-webkit-background-clip:text;background-clip:text;color:transparent">Good evening, Wayne</div>
+    <div id="tw" style="font-size:11.5px;color:#8d97a8;min-height:16px;margin-top:4px"></div></div>`;
+  const msgs=['3 lights on · house locked','Nest set to 72° · away at 9:00','Templates, entities & styles built in'];
+  let mi=0,ci=0; const tw=$('#tw',el)||el.querySelector('#tw');
+  every(el,()=>{ const msg=msgs[mi]; ci++;
+    tw.textContent=msg.slice(0,ci)+(ci<msg.length?'▍':'');
+    if(ci>msg.length+14){ci=0;mi=(mi+1)%msgs.length;} },70);
+});
+/* ---- separator ---- */
+reg(['separator'],(el)=>{
+  el.innerHTML=`<div style="width:80%;display:grid;gap:16px">
+    <div style="height:2px;background:linear-gradient(90deg,transparent,#29b6f6,transparent)"></div>
+    <div style="height:1px;border-top:2px dashed rgba(255,255,255,.25)"></div>
+    <div style="display:flex;align-items:center;gap:10px;color:#8d97a8;font-size:10px;letter-spacing:.1em"><i style="flex:1;height:1px;background:rgba(255,255,255,.2)"></i>LIVING ROOM<i style="flex:1;height:1px;background:rgba(255,255,255,.2)"></i></div>
+    <div style="height:6px;border-radius:99px;background:linear-gradient(90deg,#29b6f6,#8017A2,#ff2d78);opacity:.8"></div></div>`;
+});
+/* ---- image ---- */
+reg(['image'],(el)=>{
+  el.innerHTML=`<div style="width:86%;height:80%;border-radius:10px;overflow:hidden;position:relative">
+    <div id="img" style="position:absolute;inset:-12%;background:
+      radial-gradient(60% 60% at 70% 30%,#ffb74d 0%,transparent 60%),
+      radial-gradient(50% 60% at 30% 70%,#8017A2 0%,transparent 65%),
+      linear-gradient(160deg,#1a2b4a,#0d1524);transform:scale(1)"></div>
+    <div style="position:absolute;bottom:8px;left:10px;font-size:10px;color:#fff;background:rgba(0,0,0,.45);padding:3px 8px;border-radius:99px">sunset_cam.jpg · slideshow</div></div>`;
+  const img=el.querySelector('#img'); let s=1;
+  every(el,()=>{ s=s>=1.16?1:s+0.004; img.style.transform=`scale(${s})`; },50);
+});
+/* ---- info ---- */
+reg(['info'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:82%"><div class="pv-title">Info Items</div>
+    <div class="pv-row"><span class="pv-ico"><i class="mdi mdi-thermometer"></i></span><span class="pv-lbl"><b>Living Room</b><span>temperature</span></span><span class="pv-val" id="t">72.4°</span></div>
+    <div class="pv-row"><span class="pv-ico ok"><i class="mdi mdi-water-percent"></i></span><span class="pv-lbl"><b>Humidity</b><span>sensor.humidity</span></span><span class="pv-val" id="h">41%</span></div>
+    <div class="pv-row"><span class="pv-ico warn"><i class="mdi mdi-flash"></i></span><span class="pv-lbl"><b>Power</b><span>live usage</span></span><span class="pv-val" id="w">1.24 kW</span></div></div>`;
+  every(el,()=>{ el.querySelector('#t').textContent=(72+rnd(-.6,.6)).toFixed(1)+'°';
+    el.querySelector('#h').textContent=ri(39,44)+'%';
+    el.querySelector('#w').textContent=(1.1+rnd(0,.5)).toFixed(2)+' kW'; },1500);
+});
+/* ---- bar ---- */
+reg(['bar'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:82%"><div class="pv-title">Bars</div>
+    ${[['Battery','g',82,'mdi-battery-80'],['Disk','',63,'mdi-harddisk'],['CPU','o',38,'mdi-chip']].map(([n,c,v,ic],i)=>`
+    <div class="pv-row"><span class="pv-ico"><i class="mdi ${ic}"></i></span><span class="pv-lbl" style="flex:0 0 52px"><b>${n}</b></span>
+      <span class="pv-bar ${c}"><i data-b="${i}" style="--w:${v}%"></i></span><span class="pv-val" data-v="${i}">${v}%</span></div>`).join('')}</div>`;
+  every(el,()=>{ el.querySelectorAll('[data-b]').forEach((b,i)=>{ const v=[82,63,38][i]+ri(-6,6);
+    b.style.setProperty('--w',v+'%'); el.querySelector(`[data-v="${i}"]`).textContent=v+'%'; }); },1800);
+});
+/* ---- gauge ---- */
+reg(['gauge'],(el)=>{
+  el.innerHTML=`<div style="position:relative;width:132px;height:100px">
+    <svg viewBox="0 0 120 75" style="width:100%">
+      <path d="M10 70 A50 50 0 0 1 110 70" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="10" stroke-linecap="round"/>
+      <path id="arc" d="M10 70 A50 50 0 0 1 110 70" fill="none" stroke="url(#ug)" stroke-width="10" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="60"/>
+      <defs><linearGradient id="ug"><stop offset="0" stop-color="#29b6f6"/><stop offset="1" stop-color="#ff2d78"/></linearGradient></defs></svg>
+    <div style="position:absolute;inset:auto 0 6px;text-align:center"><b id="gv" style="font-size:22px;color:#fff">62</b><div style="font-size:9.5px;color:#8d97a8;letter-spacing:.08em">MPH · SPEED</div></div></div>`;
+  every(el,()=>{ const v=ri(38,88); el.querySelector('#gv').textContent=v;
+    el.querySelector('#arc').style.strokeDashoffset=157-(157*v/100); },1600);
+});
+/* ---- icon ---- */
+reg(['icon'],(el,{interactive})=>{
+  el.innerHTML=`<div class="pv-card"><div class="pv-title">Icons — tap them</div>
+    <div style="display:flex;gap:10px">${[['mdi-lightbulb','on'],['mdi-television',''],['mdi-fan','on'],['mdi-shield-home',''],['mdi-garage','']].map(([ic,on],i)=>`
+    <button data-i class="pv-ico ${on?'ok':''}" style="width:40px;height:40px;font-size:20px;border:0;cursor:pointer;transition:all .2s"><i class="mdi ${ic}"></i></button>`).join('')}</div></div>`;
+  el.querySelectorAll('[data-i]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();b.classList.toggle('ok');}));
+});
+/* ---- button ---- */
+reg(['button'],(el)=>{
+  el.innerHTML=`<div style="display:grid;gap:10px;width:78%">
+    <button class="pv-btn" data-r><i class="mdi mdi-weather-night"></i> Good Night scene</button>
+    <div style="display:flex;gap:8px"><button class="pv-btn ghost" data-r style="flex:1"><i class="mdi mdi-lock"></i> Lock up</button>
+    <button class="pv-btn ghost" data-r style="flex:1"><i class="mdi mdi-lightbulb-off"></i> All off</button></div></div>`;
+  el.querySelectorAll('[data-r]').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation(); const r=document.createElement('span');
+    r.style.cssText='position:absolute;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.35);animation:ucmRipple .5s ease-out forwards;pointer-events:none';
+    const rect=b.getBoundingClientRect(); r.style.left=(e.clientX-rect.left-15)+'px'; r.style.top=(e.clientY-rect.top-15)+'px';
+    b.style.position='relative'; b.style.overflow='hidden'; b.appendChild(r); setTimeout(()=>r.remove(),500); }));
+});
+/* ---- spinbox ---- */
+reg(['spinbox'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="text-align:center"><div class="pv-title">Target temperature</div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <button data-d="-1" class="pv-btn ghost" style="width:38px;height:38px;border-radius:50%;font-size:17px;padding:0">−</button>
+      <b id="sv" style="font-size:30px;color:#fff;min-width:74px">72°</b>
+      <button data-d="1" class="pv-btn ghost" style="width:38px;height:38px;border-radius:50%;font-size:17px;padding:0">+</button></div></div>`;
+  let v=72; el.querySelectorAll('[data-d]').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation(); v=Math.min(85,Math.max(55,v+ +b.dataset.d)); el.querySelector('#sv').textContent=v+'°'; }));
+});
+/* ---- markdown ---- */
+reg(['markdown'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:80%;font-size:11.5px;line-height:1.6">
+    <div style="font-size:14px;font-weight:800;color:#fff;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:5px;margin-bottom:7px"># Morning briefing</div>
+    <div>Today: <b style="color:#6fd4ff">sunny, 74°</b> · AQI <code style="background:rgba(255,255,255,.1);padding:1px 5px;border-radius:4px">42</code></div>
+    <div>• Trash pickup <i>tomorrow</i></div><div>• EV charged to <b style="color:#4ade80">100%</b> ✓</div></div>`;
+});
+/* ---- clock ---- */
+reg(['clock'],(el)=>{
+  el.innerHTML=`<div style="text-align:center"><b id="ck" style="font-size:37px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:.02em"></b>
+    <div id="cd" style="font-size:11.5px;color:#8d97a8;margin-top:2px"></div></div>`;
+  every(el,()=>{ const d=new Date();
+    el.querySelector('#ck').textContent=`${((d.getHours()+11)%12+1)}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    el.querySelector('#cd').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}); },1000);
+});
+/* ---- camera ---- */
+reg(['camera'],(el)=>{
+  el.innerHTML=`<div class="pv-cam"><div class="pv-cam-scan"></div><div class="pv-cam-rec">REC</div>
+    <div style="position:absolute;top:8px;right:10px;font-size:9.5px;color:#9fb3cc">FRONT DOOR</div>
+    <i class="mdi mdi-walk" style="position:absolute;bottom:18%;left:22%;font-size:30px;color:rgba(180,210,255,.5);animation:ucmDrift 4s ease-in-out infinite"></i>
+    <div style="position:absolute;bottom:14%;left:16%;width:56px;height:52px;border:1.5px solid rgba(41,182,246,.8);border-radius:5px"><span style="position:absolute;top:-15px;left:0;font-size:8.5px;color:#6fd4ff;background:rgba(0,0,0,.55);padding:1px 5px;border-radius:3px">PERSON 98%</span></div>
+    <div class="pv-cam-ts" id="ts"></div></div>`;
+  every(el,()=>{ const d=new Date(); el.querySelector('#ts').textContent=d.toLocaleTimeString('en-US',{hour12:false}); },1000);
+});
+/* ---- graphs ---- */
+reg(['graphs'],(el)=>{
+  const pts=Array.from({length:24},(_,i)=>30+22*Math.sin(i/3.4)+rnd(-4,4));
+  const line=pts.map((p,i)=>`${8+i*(184/23)},${64-p*0.62}`).join(' ');
+  el.innerHTML=`<div class="pv-card" style="min-width:84%"><div class="pv-title" style="display:flex;justify-content:space-between">Energy — today <b id="gnow" style="color:#6fd4ff">2.1 kW</b></div>
+    <svg viewBox="0 0 200 70" style="width:100%">
+      <polyline points="${line}" fill="none" stroke="#29b6f6" stroke-width="2.5" stroke-linecap="round"
+        stroke-dasharray="420" stroke-dashoffset="420" style="animation:ucmDraw 2.2s ease forwards"/>
+      <polygon points="8,64 ${line} 192,64" fill="url(#gfill)" opacity=".35"/>
+      <defs><linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#29b6f6"/><stop offset="1" stop-color="transparent"/></linearGradient></defs></svg></div>`;
+  every(el,()=>{ el.querySelector('#gnow').textContent=(1.6+rnd(0,1.2)).toFixed(1)+' kW'; },2000);
+});
+/* ---- dropdown ---- */
+reg(['dropdown'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:70%"><div class="pv-title">Scene selector</div>
+    <button id="dd" class="pv-btn ghost" style="width:100%;justify-content:space-between"><span id="ddv"><i class="mdi mdi-movie-open"></i> Movie Night</span><i class="mdi mdi-chevron-down"></i></button>
+    <div id="ddl" hidden style="margin-top:6px;border:1px solid rgba(255,255,255,.12);border-radius:9px;overflow:hidden">
+      ${[['mdi-movie-open','Movie Night'],['mdi-weather-sunset','Evening Warm'],['mdi-party-popper','Party Mode'],['mdi-weather-night','Sleep']].map(([i,n])=>`
+      <button data-o style="display:flex;gap:8px;width:100%;padding:8px 12px;font-size:12px;color:#dfe5ee;background:none;text-align:left"><i class="mdi ${i}" style="color:#29b6f6"></i>${n}</button>`).join('')}</div></div>`;
+  const l=el.querySelector('#ddl');
+  el.querySelector('#dd').addEventListener('click',e=>{e.stopPropagation();l.hidden=!l.hidden;});
+  el.querySelectorAll('[data-o]').forEach(o=>o.addEventListener('click',e=>{
+    e.stopPropagation(); el.querySelector('#ddv').innerHTML=o.innerHTML; l.hidden=true; }));
+});
+/* ---- light ---- */
+reg(['light'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:78%;text-align:center">
+    <button id="bulb" style="background:none;border:0;cursor:pointer;font-size:44px;color:#ffd54f;text-shadow:0 0 26px rgba(255,213,79,.9);transition:all .25s"><i class="mdi mdi-lightbulb"></i></button>
+    <div style="font-size:12px;font-weight:700;color:#fff;margin:2px 0 8px">Living Room <span id="lst" style="color:#4ade80">· on</span></div>
+    <input type="range" class="pv-range" id="lr" min="5" max="100" value="70" style="--p:70%">
+    <div style="display:flex;justify-content:center;gap:7px;margin-top:10px">${['#ffd54f','#ff8a65','#4fc3f7','#b39ddb','#fff'].map(c=>`<button data-c="${c}" style="width:18px;height:18px;border-radius:50%;background:${c};border:2px solid rgba(255,255,255,.25);cursor:pointer"></button>`).join('')}</div></div>`;
+  const bulb=el.querySelector('#bulb'),lr=el.querySelector('#lr'),lst=el.querySelector('#lst'); let on=true,color='#ffd54f';
+  const paint=()=>{ const v=lr.value; lr.style.setProperty('--p',v+'%');
+    bulb.style.color=on?color:'#4a5261'; bulb.style.textShadow=on?`0 0 ${8+v*0.3}px ${color}`:'none';
+    lst.textContent=on?`· on ${v}%`:'· off'; lst.style.color=on?'#4ade80':'#8d97a8'; };
+  bulb.addEventListener('click',e=>{e.stopPropagation();on=!on;paint();});
+  lr.addEventListener('input',e=>{e.stopPropagation();on=true;paint();});
+  lr.addEventListener('click',e=>e.stopPropagation());
+  el.querySelectorAll('[data-c]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();color=b.dataset.c;on=true;paint();}));
+  paint();
+});
+/* ---- map ---- */
+reg(['map'],(el)=>{
+  el.innerHTML=`<div style="position:relative;width:88%;height:82%;border-radius:10px;overflow:hidden;background:#131b26">
+    ${[[18,20,60],[55,10,40],[30,65,50],[70,55,70],[8,70,30]].map(([x,y,w])=>`<div style="position:absolute;left:${x}%;top:${y}%;width:${w}px;height:2px;background:rgba(120,150,190,.28);transform:rotate(${ri(-40,40)}deg)"></div>`).join('')}
+    <div style="position:absolute;left:20%;top:30%;width:34%;height:40%;border:1px solid rgba(120,150,190,.2);border-radius:4px"></div>
+    <div style="position:absolute;left:64%;top:34%"><span style="position:absolute;width:26px;height:26px;margin:-13px;border-radius:50%;background:rgba(41,182,246,.25);animation:ucmPulse 2s infinite"></span><i class="mdi mdi-home" style="color:#29b6f6;font-size:19px"></i></div>
+    <div id="car" style="position:absolute;left:22%;top:66%;transition:all 1.4s linear"><i class="mdi mdi-car" style="color:#ffab40;font-size:17px"></i></div>
+    <div style="position:absolute;left:40%;top:22%"><i class="mdi mdi-account-circle" style="color:#4ade80;font-size:17px"></i></div>
+    <div style="position:absolute;bottom:7px;left:9px;font-size:9.5px;color:#8fa3bd;background:rgba(0,0,0,.4);padding:2px 8px;border-radius:99px">Sarah · arriving in 8 min</div></div>`;
+  let i=0; const path=[[22,66],[34,58],[45,48],[55,42],[60,38]];
+  every(el,()=>{ i=(i+1)%path.length; const c=el.querySelector('#car'); c.style.left=path[i][0]+'%'; c.style.top=path[i][1]+'%'; },1500);
+});
+/* ---- toggle ---- */
+reg(['toggle'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:78%">
+    ${[['mdi-lightbulb-group','All Lights',1],['mdi-shield-home','Alarm',0],['mdi-sprinkler-variant','Sprinklers',0]].map(([ic,n,on])=>`
+    <div class="pv-row"><span class="pv-ico ${on?'ok':''}"><i class="mdi ${ic}"></i></span><span class="pv-lbl"><b>${n}</b></span>
+      <button class="pv-switch ${on?'on':''}" data-t></button></div>`).join('')}</div>`;
+  el.querySelectorAll('[data-t]').forEach(t=>t.addEventListener('click',e=>{
+    e.stopPropagation(); t.classList.toggle('on');
+    t.closest('.pv-row').querySelector('.pv-ico').classList.toggle('ok',t.classList.contains('on')); }));
+});
+/* ---- status_summary ---- */
+reg(['status_summary'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:84%"><div class="pv-title">Status summary</div>
+    <div class="pv-row"><span class="pv-ico ok"><i class="mdi mdi-door"></i></span><span class="pv-lbl"><b>Front door</b><span>closed</span></span><span class="pv-chip on" data-ago="2">2m ago</span></div>
+    <div class="pv-row"><span class="pv-ico warn"><i class="mdi mdi-motion-sensor"></i></span><span class="pv-lbl"><b>Garage motion</b><span>detected</span></span><span class="pv-chip" data-ago="0">now</span></div>
+    <div class="pv-row"><span class="pv-ico"><i class="mdi mdi-washing-machine"></i></span><span class="pv-lbl"><b>Washer</b><span>finished</span></span><span class="pv-chip" data-ago="34">34m ago</span></div></div>`;
+  let tick=0; every(el,()=>{ tick++; el.querySelectorAll('[data-ago]').forEach(c=>{
+    const base=+c.dataset.ago; const m=base+Math.floor(tick/4); c.textContent=m===0?'now':m+'m ago'; }); },15000);
+});
+/* ---- grid (entity grid) ---- */
+reg(['grid'],(el)=>{
+  el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,72px);gap:8px">
+    ${[['mdi-sofa','Living','2 on','ok'],['mdi-bed-empty','Bedroom','off',''],['mdi-silverware-fork-knife','Kitchen','1 on','ok'],['mdi-desk','Office','on','ok'],['mdi-garage','Garage','closed',''],['mdi-flower','Garden','auto','warn']].map(([ic,n,s,c])=>`
+    <div style="background:#1c2028;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;text-align:center">
+      <i class="mdi ${ic}" style="font-size:18px;color:${c==='ok'?'#4ade80':c==='warn'?'#ffab40':'#8d97a8'}"></i>
+      <div style="font-size:10px;font-weight:700;color:#fff;margin-top:2px">${n}</div><div style="font-size:9px;color:#8d97a8">${s}</div></div>`).join('')}</div>`;
+});
+/* ---- people ---- */
+reg(['people'],(el)=>{
+  el.innerHTML=`<div style="display:flex;gap:12px">
+    ${[['W','Wayne','Home','#4ade80'],['S','Sarah','Work','#29b6f6'],['E','Emma','School','#ffab40']].map(([i,n,l,c])=>`
+    <div class="pv-card" style="text-align:center;padding:12px 16px">
+      <div style="width:40px;height:40px;margin:0 auto 6px;border-radius:50%;background:linear-gradient(135deg,#29b6f6,#8017A2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff;border:2px solid ${c}">${i}</div>
+      <div style="font-size:11.5px;font-weight:700;color:#fff">${n}</div><div style="font-size:10px;color:${c}">● ${l}</div></div>`).join('')}</div>`;
+});
+/* ---- timer ---- */
+reg(['timer'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="text-align:center;min-width:65%"><div class="pv-title">Pizza timer</div>
+    <b id="tv" style="font-size:31px;color:#fff;font-variant-numeric:tabular-nums">12:00</b>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:10px">
+      <button id="tgo" class="pv-btn" style="padding:7px 16px"><i class="mdi mdi-play"></i> Start</button>
+      <button id="trs" class="pv-btn ghost" style="padding:7px 16px"><i class="mdi mdi-restart"></i></button></div></div>`;
+  let s=720,run=false; const tv=el.querySelector('#tv'),go=el.querySelector('#tgo');
+  every(el,()=>{ if(run&&s>0){s--; tv.textContent=`${Math.floor(s/60)}:${pad(s%60)}`; tv.style.color=s<60?'#ff5252':'#fff';} },1000);
+  go.addEventListener('click',e=>{e.stopPropagation();run=!run;go.innerHTML=run?'<i class="mdi mdi-pause"></i> Pause':'<i class="mdi mdi-play"></i> Start';});
+  el.querySelector('#trs').addEventListener('click',e=>{e.stopPropagation();s=720;run=false;tv.textContent='12:00';tv.style.color='#fff';go.innerHTML='<i class="mdi mdi-play"></i> Start';});
+});
+/* ---- cover ---- */
+reg(['cover'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="display:flex;gap:16px;align-items:center">
+    <div style="width:74px;height:92px;border:2px solid rgba(255,255,255,.2);border-radius:6px;position:relative;overflow:hidden;background:linear-gradient(180deg,#2c3e5d,#7fb2e5)">
+      <div id="bl" style="position:absolute;left:0;right:0;top:0;height:40%;background:repeating-linear-gradient(180deg,#39404d 0 7px,#262c36 7px 9px);transition:height .6s"></div></div>
+    <div style="display:grid;gap:7px">
+      ${[['mdi-arrow-up','100'],['mdi-stop','40'],['mdi-arrow-down','0']].map(([i,v])=>`<button data-cv="${v}" class="pv-btn ghost" style="width:42px;height:34px;padding:0"><i class="mdi ${i}"></i></button>`).join('')}
+      <div style="font-size:10px;color:#8d97a8;text-align:center" id="cvl">40% open</div></div></div>`;
+  el.querySelectorAll('[data-cv]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation();
+    const v=+b.dataset.cv; el.querySelector('#bl').style.height=(100-v)+'%'; el.querySelector('#cvl').textContent=v+'% open'; }));
+});
+/* ---- fan ---- */
+reg(['fan'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="display:flex;gap:18px;align-items:center">
+    <div class="pv-fanblades" id="fb"><i style="transform:rotate(0)"></i><i style="transform:rotate(120deg)"></i><i style="transform:rotate(240deg)"></i></div>
+    <div><div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:7px">Ceiling fan</div>
+      <div style="display:flex;gap:6px">${['Off','Low','Med','High'].map((n,i)=>`<button data-f="${i}" class="pv-chip" style="cursor:pointer;border:1px solid rgba(255,255,255,.14);${i===2?'background:rgba(41,182,246,.2);color:#6fd4ff':''}">${n}</button>`).join('')}</div></div></div>`;
+  const fb=el.querySelector('#fb'); const spd=[0,4,1.7,0.7]; let cur=2;
+  const apply=()=>{ fb.style.animation=cur?`ucmSpin ${spd[cur]}s linear infinite`:'none'; };
+  fb.style.transformOrigin='center'; apply();
+  el.querySelectorAll('[data-f]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); cur=+b.dataset.f;
+    el.querySelectorAll('[data-f]').forEach(x=>{x.style.background='';x.style.color='';});
+    b.style.background='rgba(41,182,246,.2)'; b.style.color='#6fd4ff'; apply(); }));
+});
+/* ---- lock ---- */
+reg(['lock'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="text-align:center;min-width:62%">
+    <button id="lk" style="background:none;border:0;cursor:pointer;font-size:42px;color:#4ade80;transition:all .25s"><i class="mdi mdi-lock"></i></button>
+    <div id="lks" style="font-size:12.5px;font-weight:700;color:#4ade80">Front door · Locked</div>
+    <button id="lkb" class="pv-btn ghost" style="margin-top:10px;padding:7px 18px">Unlock</button></div>`;
+  let locked=true; const paint=()=>{ el.querySelector('#lk').innerHTML=`<i class="mdi mdi-lock${locked?'':'-open-variant'}"></i>`;
+    el.querySelector('#lk').style.color=locked?'#4ade80':'#ffab40';
+    el.querySelector('#lks').textContent='Front door · '+(locked?'Locked':'Unlocked');
+    el.querySelector('#lks').style.color=locked?'#4ade80':'#ffab40';
+    el.querySelector('#lkb').textContent=locked?'Unlock':'Lock'; };
+  ['#lk','#lkb'].forEach(s=>el.querySelector(s).addEventListener('click',e=>{e.stopPropagation();locked=!locked;paint();}));
+});
+/* ---- media_player ---- */
+reg(['media_player'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:84%;display:flex;gap:12px;align-items:center">
+    <div style="width:56px;height:56px;border-radius:9px;background:conic-gradient(from 210deg,#ff2d78,#8017A2,#29b6f6,#ff2d78);flex-shrink:0;display:flex;align-items:center;justify-content:center"><i class="mdi mdi-music" style="color:#fff;font-size:22px"></i></div>
+    <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Midnight City</div>
+      <div style="font-size:10.5px;color:#8d97a8">M83 · Kitchen speaker</div>
+      <div style="display:flex;align-items:center;gap:7px;margin-top:6px"><span style="font-size:9px;color:#8d97a8" id="mt">1:24</span>
+        <span class="pv-bar" style="height:5px"><i id="mp" style="--w:34%"></i></span><span style="font-size:9px;color:#8d97a8">4:03</span></div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <button id="pp" class="pv-btn" style="width:36px;height:36px;border-radius:50%;padding:0;font-size:16px"><i class="mdi mdi-pause"></i></button>
+      <span class="pv-eq" id="eq"><i style="animation-delay:0s"></i><i style="animation-delay:.2s"></i><i style="animation-delay:.1s"></i><i style="animation-delay:.3s"></i></span></div></div>`;
+  let sec=84,playing=true;
+  every(el,()=>{ if(!playing)return; sec=(sec+1)%243;
+    el.querySelector('#mt').textContent=`${Math.floor(sec/60)}:${pad(sec%60)}`;
+    el.querySelector('#mp').style.setProperty('--w',(sec/243*100)+'%'); },1000);
+  el.querySelector('#pp').addEventListener('click',e=>{ e.stopPropagation(); playing=!playing;
+    el.querySelector('#pp').innerHTML=`<i class="mdi mdi-${playing?'pause':'play'}"></i>`;
+    el.querySelector('#eq').style.opacity=playing?'1':'.25';
+    el.querySelectorAll('#eq i').forEach(i=>i.style.animationPlayState=playing?'running':'paused'); });
+});
+/* ---- humidifier ---- */
+reg(['humidifier'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="display:flex;gap:16px;align-items:center;min-width:72%">
+    <div style="position:relative;width:44px;height:60px;background:linear-gradient(180deg,#2b3442,#1a212c);border-radius:10px 10px 14px 14px;flex-shrink:0">
+      <span style="position:absolute;top:-4px;left:50%;width:3px;height:10px;background:rgba(160,210,255,.5);border-radius:3px;animation:ucmSteam 2s ease-out infinite;margin-left:-6px"></span>
+      <span style="position:absolute;top:-4px;left:50%;width:3px;height:10px;background:rgba(160,210,255,.5);border-radius:3px;animation:ucmSteam 2s .7s ease-out infinite;margin-left:3px"></span>
+      <div style="position:absolute;bottom:6px;left:6px;right:6px;height:18px;border-radius:6px;background:rgba(79,195,247,.35)"></div></div>
+    <div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">Humidifier <span style="color:#4ade80;font-size:10px">· auto</span></div>
+      <div style="font-size:10.5px;color:#8d97a8;margin:2px 0 8px">Current <b style="color:#6fd4ff" id="hcur">41%</b> → target <b id="htar">45%</b></div>
+      <input type="range" class="pv-range" id="hr" min="30" max="70" value="45" style="--p:43%"></div></div>`;
+  const hr=el.querySelector('#hr');
+  hr.addEventListener('input',e=>{ e.stopPropagation(); hr.style.setProperty('--p',((hr.value-30)/40*100)+'%');
+    el.querySelector('#htar').textContent=hr.value+'%'; });
+  hr.addEventListener('click',e=>e.stopPropagation());
+  every(el,()=>{ el.querySelector('#hcur').textContent=ri(39,43)+'%'; },2200);
+});
+/* ---- todo_list ---- */
+reg(['todo_list'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:76%"><div class="pv-title">Groceries · 2 of 4 done</div>
+    ${[['Milk',1],['Coffee beans',1],['Dog food',0],['Batteries AA',0]].map(([n,d])=>`
+    <button data-td style="display:flex;gap:9px;align-items:center;width:100%;background:none;border:0;padding:4px 0;cursor:pointer;text-align:left">
+      <i class="mdi ${d?'mdi-checkbox-marked':'mdi-checkbox-blank-outline'}" style="font-size:17px;color:${d?'#4ade80':'#8d97a8'}"></i>
+      <span style="font-size:12px;color:${d?'#6b7484':'#dfe5ee'};${d?'text-decoration:line-through':''}">${n}</span></button>`).join('')}</div>`;
+  el.querySelectorAll('[data-td]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation();
+    const i=b.querySelector('i'),s=b.querySelector('span'),done=i.classList.contains('mdi-checkbox-marked');
+    i.className=`mdi ${done?'mdi-checkbox-blank-outline':'mdi-checkbox-marked'}`; i.style.color=done?'#8d97a8':'#4ade80';
+    s.style.textDecoration=done?'none':'line-through'; s.style.color=done?'#dfe5ee':'#6b7484'; }));
+});
+/* ---- weather (free) ---- */
+reg(['weather'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:84%"><div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+    <i class="mdi mdi-weather-partly-cloudy" style="font-size:34px;color:#ffd54f"></i>
+    <div><b style="font-size:22px;color:#fff">74°</b><div style="font-size:10.5px;color:#8d97a8">Partly cloudy · feels 76°</div></div></div>
+    <div style="display:flex;gap:6px">${[['Tue','mdi-weather-sunny','78'],['Wed','mdi-weather-rainy','66'],['Thu','mdi-weather-partly-cloudy','71'],['Fri','mdi-weather-sunny','80']].map(([d,i,t])=>`
+    <div style="flex:1;text-align:center;background:rgba(255,255,255,.04);border-radius:8px;padding:6px 2px">
+      <div style="font-size:9.5px;color:#8d97a8">${d}</div><i class="mdi ${i}" style="font-size:15px;color:#aeb7c5"></i><div style="font-size:10.5px;font-weight:700;color:#fff">${t}°</div></div>`).join('')}</div></div>`;
+});
+/* ---- battery_monitor ---- */
+reg(['battery_monitor'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:82%"><div class="pv-title">Battery monitor · 2 low</div>
+    ${[['Front door lock',8,'r','mdi-battery-alert'],['Motion sensor',21,'o','mdi-battery-20'],['Remote',86,'g','mdi-battery-90']].map(([n,v,c,i])=>`
+    <div class="pv-row"><span class="pv-ico ${c==='r'?'bad':c==='o'?'warn':'ok'}"><i class="mdi ${i}"></i></span>
+      <span class="pv-lbl"><b>${n}</b></span><span class="pv-bar ${c}" style="max-width:70px"><i style="--w:${v}%"></i></span><span class="pv-val">${v}%</span></div>`).join('')}</div>`;
+});
+/* ---- auto_entity_list ---- */
+reg(['auto_entity_list'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:82%"><div class="pv-title">domain: light · state: on</div><div id="ael"></div></div>`;
+  const items=[['Kitchen spots','mdi-spotlight-beam'],['Desk lamp','mdi-lamp'],['Hall strip','mdi-led-strip-variant'],['Porch light','mdi-outdoor-lamp']];
+  let n=0; const list=el.querySelector('#ael');
+  every(el,()=>{ n=(n%items.length)+1;
+    list.innerHTML=items.slice(0,n).map(([t,i])=>`<div class="pv-row" style="animation:ucmSlideIn .3s ease"><span class="pv-ico ok"><i class="mdi ${i}"></i></span><span class="pv-lbl"><b>${t}</b></span><span class="pv-chip on">on</span></div>`).join(''); },1400);
+});
+/* ---- update_monitor ---- */
+reg(['update_monitor'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:82%"><div class="pv-title">Updates · 2 pending</div>
+    <div class="pv-row"><span class="pv-ico"><i class="mdi mdi-home-assistant"></i></span><span class="pv-lbl"><b>Home Assistant</b><span>2026.7 → 2026.8</span></span><button class="pv-btn" data-u style="padding:5px 12px;font-size:10.5px">Install</button></div>
+    <div class="pv-row"><span class="pv-ico"><i class="mdi mdi-zigbee"></i></span><span class="pv-lbl"><b>Zigbee2MQTT</b><span>2.5.1 → 2.6.0</span></span><button class="pv-btn" data-u style="padding:5px 12px;font-size:10.5px">Install</button></div>
+    <div class="pv-row"><span class="pv-ico ok"><i class="mdi mdi-check"></i></span><span class="pv-lbl"><b>ESPHome</b><span>up to date</span></span></div></div>`;
+  el.querySelectorAll('[data-u]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation();
+    b.outerHTML='<span class="pv-chip on">✓ queued</span>'; }));
+});
+/* ---- alert_center ---- */
+reg(['alert_center'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:82%"><div class="pv-title" style="display:flex;justify-content:space-between">Alert center <span class="pv-chip" style="background:rgba(255,82,82,.18);color:#ff8a80">3 active</span></div>
+    <div class="pv-row"><span class="pv-ico bad"><i class="mdi mdi-water-alert"></i></span><span class="pv-lbl"><b>Leak — laundry room</b><span>critical · 4m</span></span></div>
+    <div class="pv-row"><span class="pv-ico warn"><i class="mdi mdi-door-open"></i></span><span class="pv-lbl"><b>Garage left open</b><span>warning · 18m</span></span></div>
+    <div class="pv-row"><span class="pv-ico"><i class="mdi mdi-battery-30"></i></span><span class="pv-lbl"><b>3 batteries under 30%</b><span>info</span></span></div></div>`;
+});
+/* ---- area_summary ---- */
+reg(['area_summary'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:80%">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span class="pv-ico ok" style="width:36px;height:36px;font-size:19px"><i class="mdi mdi-sofa"></i></span>
+      <div><b style="font-size:14px;color:#fff">Living Room</b><div style="font-size:10.5px;color:#8d97a8">72° · 41% · occupied</div></div></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <span class="pv-chip on"><i class="mdi mdi-lightbulb"></i> 2 lights</span>
+      <span class="pv-chip"><i class="mdi mdi-television"></i> TV off</span>
+      <span class="pv-chip on"><i class="mdi mdi-motion-sensor"></i> motion</span>
+      <span class="pv-chip"><i class="mdi mdi-window-closed-variant"></i> closed</span></div></div>`;
+});
+/* ---- dynamic-list ---- */
+reg(['dynamic-list'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:82%"><div class="pv-title">{% for light in lights %} …</div><div id="dl"></div></div>`;
+  const rows=[['Kitchen spots','on','ok'],['Desk lamp','on','ok'],['Bedroom','off',''],['Porch','on','ok']];
+  let k=0; every(el,()=>{ k=(k+1)%(rows.length+1);
+    el.querySelector('#dl').innerHTML=rows.slice(0,k||rows.length).map(([n,s,c])=>`<div class="pv-row" style="animation:ucmSlideIn .3s ease"><span class="pv-ico ${c}"><i class="mdi mdi-lightbulb"></i></span><span class="pv-lbl"><b>${n}</b></span><span class="pv-chip ${s==='on'?'on':''}">${s}</span></div>`).join(''); },1300);
+});
+/* ---- layout family: animated block diagrams ---- */
+function blocks(el,html){ el.innerHTML=`<div style="width:82%;height:78%;border:1px dashed rgba(255,255,255,.18);border-radius:10px;padding:9px;display:flex;gap:8px;position:relative">${html}</div>`; }
+reg(['horizontal'],(el)=>{ blocks(el,`<div class="pv-blk" style="flex:1"></div><div class="pv-blk" style="flex:1;animation-delay:.3s"></div><div class="pv-blk" style="flex:1;animation-delay:.6s"></div>`); });
+reg(['vertical'],(el)=>{ blocks(el,`<div style="display:flex;flex-direction:column;gap:8px;flex:1"><div class="pv-blk" style="flex:1"></div><div class="pv-blk" style="flex:1.4;animation-delay:.3s"></div><div class="pv-blk" style="flex:.8;animation-delay:.6s"></div></div>`); });
+reg(['stack'],(el)=>{
+  el.innerHTML=`<div style="position:relative;width:78%;height:76%">
+    <div class="pv-blk" style="position:absolute;inset:0;border-radius:10px"></div>
+    <div style="position:absolute;left:10px;bottom:10px;background:rgba(10,12,16,.85);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:6px 11px;font-size:11px;color:#fff;animation:ucmFloat 3s ease-in-out infinite"><b>Overlay</b> · bottom-left</div>
+    <div style="position:absolute;right:10px;top:10px;background:rgba(41,182,246,.9);border-radius:99px;padding:4px 10px;font-size:10px;font-weight:800;color:#04121c;animation:ucmFloat 3s .8s ease-in-out infinite">badge</div></div>`;
+});
+reg(['grid_layout'],(el)=>{
+  el.innerHTML=`<div style="width:82%;height:78%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;gap:8px">
+    <div class="pv-blk" style="grid-column:span 2"></div><div class="pv-blk" style="grid-row:span 2;animation-delay:.3s"></div>
+    <div class="pv-blk" style="animation-delay:.5s"></div><div class="pv-blk" style="animation-delay:.7s"></div></div>`;
+});
+reg(['accordion'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:76%;padding:0;overflow:hidden">
+    ${[['Climate',1],['Security',0],['Media',0]].map(([n,open],i)=>`
+    <div><button data-a="${i}" style="display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:0;padding:10px 14px;color:#fff;font-weight:700;font-size:12.5px;cursor:pointer;border-top:${i?'1px solid rgba(255,255,255,.08)':'0'}">${n}<i class="mdi mdi-chevron-down" style="transition:transform .25s;${open?'transform:rotate(180deg)':''}"></i></button>
+    <div data-ac style="max-height:${open?'46px':'0'};overflow:hidden;transition:max-height .3s;padding:0 14px"><div class="pv-blk" style="height:34px;border-radius:7px;margin-bottom:10px"></div></div></div>`).join('')}</div>`;
+  el.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation();
+    const c=b.nextElementSibling,open=c.style.maxHeight!=='0px'&&c.style.maxHeight!=='';
+    el.querySelectorAll('[data-ac]').forEach(x=>x.style.maxHeight='0'); el.querySelectorAll('[data-a] i').forEach(x=>x.style.transform='');
+    if(!open){ c.style.maxHeight='46px'; b.querySelector('i').style.transform='rotate(180deg)'; } }));
+});
+reg(['popup'],(el)=>{
+  el.innerHTML=`<button id="po" class="pv-btn"><i class="mdi mdi-open-in-new"></i> Open climate popup</button>
+    <div id="pm" hidden style="position:absolute;inset:0;background:rgba(5,6,9,.72);display:flex;align-items:center;justify-content:center;z-index:6">
+      <div class="pv-card" style="width:76%;animation:ucmModalIn .25s ease"><div style="display:flex;justify-content:space-between;align-items:center"><b style="color:#fff;font-size:13px">Climate</b><button id="px" style="background:none;border:0;color:#8d97a8;cursor:pointer;font-size:16px"><i class="mdi mdi-close"></i></button></div>
+      <div class="pv-row"><span class="pv-ico"><i class="mdi mdi-thermostat"></i></span><span class="pv-lbl"><b>Downstairs</b><span>heat · 72°</span></span><span class="pv-val">68.9°</span></div></div></div>`;
+  el.querySelector('#po').addEventListener('click',e=>{e.stopPropagation();el.querySelector('#pm').hidden=false;});
+  el.querySelector('#px').addEventListener('click',e=>{e.stopPropagation();el.querySelector('#pm').hidden=true;});
+});
+reg(['slider'],(el)=>{
+  el.innerHTML=`<div style="width:82%"><div style="position:relative;height:104px;overflow:hidden;border-radius:10px">
+    <div id="sl" style="display:flex;height:100%;transition:transform .5s ease">
+      ${['#29b6f6','#8017A2','#ff2d78'].map((c,i)=>`<div style="flex:0 0 100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(140deg,${c}33,#161a22);border:1px solid rgba(255,255,255,.08);border-radius:10px"><b style="color:#fff;font-size:13px">Page ${i+1}</b></div>`).join('')}</div></div>
+    <div style="display:flex;gap:6px;justify-content:center;margin-top:9px">${[0,1,2].map(i=>`<button data-s="${i}" style="width:8px;height:8px;border-radius:50%;border:0;cursor:pointer;background:${i===0?'#29b6f6':'rgba(255,255,255,.25)'}"></button>`).join('')}</div></div>`;
+  let cur=0; const go=n=>{ cur=n; el.querySelector('#sl').style.transform=`translateX(-${n*100}%)`;
+    el.querySelectorAll('[data-s]').forEach((d,i)=>d.style.background=i===n?'#29b6f6':'rgba(255,255,255,.25)'); };
+  el.querySelectorAll('[data-s]').forEach(d=>d.addEventListener('click',e=>{e.stopPropagation();go(+d.dataset.s);}));
+  every(el,()=>go((cur+1)%3),2600);
+});
+reg(['pagebreak'],(el)=>{
+  el.innerHTML=`<div style="width:80%;display:grid;gap:10px">
+    <div class="pv-blk" style="height:34px"></div>
+    <div style="display:flex;align-items:center;gap:8px;color:#6fd4ff;font-size:10px;font-weight:800;letter-spacing:.12em"><i style="flex:1;height:2px;background:repeating-linear-gradient(90deg,#29b6f6 0 8px,transparent 8px 14px)"></i>PAGE BREAK<i style="flex:1;height:2px;background:repeating-linear-gradient(90deg,#29b6f6 0 8px,transparent 8px 14px)"></i></div>
+    <div class="pv-blk" style="height:34px;animation-delay:.4s"></div></div>`;
+});
+reg(['tabs'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:78%;padding:0;overflow:hidden">
+    <div style="display:flex;border-bottom:1px solid rgba(255,255,255,.1)">
+      ${['Home','Energy','Security'].map((n,i)=>`<button data-tb="${i}" style="flex:1;padding:9px 0;background:none;border:0;color:${i?'#8d97a8':'#fff'};font-weight:700;font-size:11.5px;cursor:pointer;border-bottom:2px solid ${i?'transparent':'#29b6f6'}">${n}</button>`).join('')}</div>
+    <div style="padding:12px 14px" id="tbc"></div></div>`;
+  const content=[`<div class="pv-row"><span class="pv-ico ok"><i class="mdi mdi-home"></i></span><span class="pv-lbl"><b>All quiet</b><span>3 lights on</span></span></div>`,
+    `<div class="pv-row"><span class="pv-ico warn"><i class="mdi mdi-flash"></i></span><span class="pv-lbl"><b>1.4 kW</b><span>solar exporting</span></span></div>`,
+    `<div class="pv-row"><span class="pv-ico"><i class="mdi mdi-shield-check"></i></span><span class="pv-lbl"><b>Armed home</b><span>all sensors clear</span></span></div>`];
+  const paint=n=>{ el.querySelector('#tbc').innerHTML=content[n];
+    el.querySelectorAll('[data-tb]').forEach((b,i)=>{ b.style.color=i===n?'#fff':'#8d97a8'; b.style.borderBottomColor=i===n?'#29b6f6':'transparent'; }); };
+  el.querySelectorAll('[data-tb]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();paint(+b.dataset.tb);})); paint(0);
+});
+reg(['flip_card'],(el)=>{
+  el.innerHTML=`<div id="fc3" style="width:170px;height:110px;perspective:600px;cursor:pointer">
+    <div id="fci" style="position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .6s">
+      <div class="pv-card" style="position:absolute;inset:0;backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center"><i class="mdi mdi-thermometer" style="font-size:24px;color:#29b6f6"></i><b style="color:#fff;font-size:19px">72.4°</b><span style="font-size:10px;color:#8d97a8">tap to flip</span></div>
+      <div class="pv-card" style="position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;justify-content:center;background:#232b3a"><span style="font-size:10px;color:#8d97a8">24h graph</span><svg viewBox="0 0 100 30" style="width:80%"><polyline points="0,22 15,18 30,20 45,10 60,13 75,6 100,9" fill="none" stroke="#29b6f6" stroke-width="2"/></svg></div></div></div>`;
+  let f=false; el.querySelector('#fc3').addEventListener('click',e=>{ e.stopPropagation(); f=!f;
+    el.querySelector('#fci').style.transform=f?'rotateY(180deg)':''; });
+});
+reg(['drawer'],(el)=>{
+  el.innerHTML=`<button id="dw" class="pv-btn ghost"><i class="mdi mdi-menu"></i> Open drawer</button>
+    <div id="dwp" style="position:absolute;top:0;bottom:0;left:-46%;width:44%;background:#1c2028;border-right:1px solid rgba(255,255,255,.12);transition:left .35s ease;z-index:6;padding:12px;display:grid;gap:8px;align-content:start">
+      <b style="color:#fff;font-size:12px">Quick actions</b>
+      <div class="pv-blk" style="height:22px"></div><div class="pv-blk" style="height:22px;animation-delay:.2s"></div><div class="pv-blk" style="height:22px;animation-delay:.4s"></div></div>`;
+  let open=false; el.querySelector('#dw').addEventListener('click',e=>{ e.stopPropagation(); open=!open;
+    el.querySelector('#dwp').style.left=open?'0':'-46%'; });
+});
+reg(['scroll_row'],(el)=>{
+  el.innerHTML=`<div style="width:86%;overflow:hidden"><div id="sr" style="display:flex;gap:10px;transition:transform .6s ease">
+    ${['Lights','Climate','Media','Security','Energy'].map((n,i)=>`<div class="pv-card" style="flex:0 0 44%;text-align:center;padding:14px 8px"><i class="mdi ${['mdi-lightbulb','mdi-thermostat','mdi-speaker','mdi-shield-home','mdi-flash'][i]}" style="font-size:19px;color:#29b6f6"></i><div style="font-size:11px;font-weight:700;color:#fff;margin-top:3px">${n}</div></div>`).join('')}</div></div>`;
+  let x=0; every(el,()=>{ x=(x+1)%4; el.querySelector('#sr').style.transform=`translateX(calc(-${x} * (44% + 10px)))`; },1800);
+});
+reg(['state_switcher'],(el)=>{
+  el.innerHTML=`<div style="width:80%"><div style="display:flex;gap:6px;justify-content:center;margin-bottom:10px" id="ssb"></div><div id="ssc"></div></div>`;
+  const states=[['Home','mdi-home','#4ade80','<b style="color:#fff">Everyone home</b> · comfort mode'],['Away','mdi-exit-run','#ffab40','<b style="color:#fff">Away</b> · eco + armed'],['Night','mdi-weather-night','#b39ddb','<b style="color:#fff">Night</b> · lights off, doors locked']];
+  let cur=0;
+  const paint=()=>{ el.querySelector('#ssb').innerHTML=states.map(([n,,c],i)=>`<span class="pv-chip" style="${i===cur?`background:${c}22;color:${c}`:''}">${n}</span>`).join('');
+    const s=states[cur]; el.querySelector('#ssc').innerHTML=`<div class="pv-card" style="text-align:center;animation:ucmSlideIn .35s ease"><i class="mdi ${s[1]}" style="font-size:26px;color:${s[2]}"></i><div style="font-size:11.5px;margin-top:4px">${s[3]}</div></div>`; };
+  every(el,()=>{ paint(); cur=(cur+1)%states.length; },2200);
+});
+reg(['navigation'],(el)=>{
+  el.innerHTML=`<div style="width:86%"><div class="pv-blk" style="height:64px;border-radius:10px;margin-bottom:10px"></div>
+    <div class="pv-card" style="display:flex;justify-content:space-around;padding:8px 6px">
+      ${[['mdi-home','Home',1],['mdi-lightbulb','Lights',0],['mdi-thermostat','Climate',0],['mdi-shield','Security',0],['mdi-dots-horizontal','More',0]].map(([ic,n,a],i)=>`
+      <button data-n="${i}" style="background:none;border:0;cursor:pointer;text-align:center;color:${a?'#29b6f6':'#8d97a8'}"><i class="mdi ${ic}" style="font-size:18px"></i><div style="font-size:8.5px;font-weight:700">${n}</div></button>`).join('')}</div></div>`;
+  el.querySelectorAll('[data-n]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation();
+    el.querySelectorAll('[data-n]').forEach(x=>x.style.color='#8d97a8'); b.style.color='#29b6f6'; }));
+});
+reg(['background'],(el)=>{
+  el.innerHTML=`<div id="bgp" style="width:84%;height:70%;border-radius:10px;position:relative;overflow:hidden;transition:background 1s;background:linear-gradient(140deg,#0f2a43,#0c1626)">
+    <div class="pv-card" style="position:absolute;left:10px;top:10px;padding:7px 10px;font-size:10.5px">Your dashboard</div>
+    <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:7px">
+      ${['linear-gradient(140deg,#0f2a43,#0c1626)','linear-gradient(140deg,#3a0f35,#12060f)','linear-gradient(140deg,#0f3a2a,#06120c)','linear-gradient(140deg,#43310f,#150e04)'].map(g=>`<button data-bg="${g}" style="width:20px;height:20px;border-radius:6px;border:2px solid rgba(255,255,255,.3);cursor:pointer;background:${g}"></button>`).join('')}</div></div>`;
+  el.querySelectorAll('[data-bg]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation();
+    el.querySelector('#bgp').style.background=b.dataset.bg; }));
+});
+reg(['external_card','native_card'],(el,{m})=>{
+  el.innerHTML=`<div style="width:82%;border:1.5px dashed rgba(41,182,246,.5);border-radius:12px;padding:10px;text-align:center">
+    <div class="pv-chip" style="margin-bottom:8px">${m.type==='external_card'?'type: custom:mushroom-card':'type: entities'}</div>
+    <div class="pv-card" style="text-align:left"><div class="pv-row"><span class="pv-ico"><i class="mdi mdi-puzzle"></i></span><span class="pv-lbl"><b>${m.type==='external_card'?'Any 3rd-party card':'Any native HA card'}</b><span>rendered inside Ultra Card</span></span><span class="pv-chip on">embedded</span></div></div></div>`;
+});
+reg(['slider_control'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:78%">
+    <div class="pv-row" style="padding-bottom:2px"><span class="pv-ico" id="sci" style="color:#ffd54f;background:rgba(255,213,79,.13)"><i class="mdi mdi-lightbulb"></i></span>
+      <span class="pv-lbl"><b>Bedroom lamp</b><span id="scv">60% brightness</span></span></div>
+    <input type="range" class="pv-range" id="scr" min="0" max="100" value="60" style="--p:60%">
+    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9.5px;color:#6b7484"><span>off</span><span>100%</span></div></div>`;
+  const r=el.querySelector('#scr');
+  const paint=()=>{ r.style.setProperty('--p',r.value+'%');
+    el.querySelector('#scv').textContent=r.value==0?'off':r.value+'% brightness';
+    el.querySelector('#sci').style.opacity=r.value==0?.4:1; };
+  r.addEventListener('input',e=>{e.stopPropagation();paint();}); r.addEventListener('click',e=>e.stopPropagation());
+});
+/* ---- inputs family ---- */
+reg(['text_input'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:76%"><div class="pv-title">input_text.guest_wifi</div>
+    <input id="ti" value="SunsetHouse-Guest" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:9px;color:#fff;font-size:12.5px;padding:9px 12px;outline:0">
+    <div style="font-size:10px;color:#4ade80;margin-top:6px" id="tis">✓ synced</div></div>`;
+  const ti=el.querySelector('#ti'),s=el.querySelector('#tis');
+  ti.addEventListener('click',e=>e.stopPropagation());
+  ti.addEventListener('input',()=>{ s.textContent='saving…'; s.style.color='#ffab40';
+    clearTimeout(ti._t); ti._t=setTimeout(()=>{s.textContent='✓ synced';s.style.color='#4ade80';},600); });
+});
+reg(['datetime_input'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:72%"><div class="pv-title">Wake-up alarm</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="pv-ico"><i class="mdi mdi-alarm"></i></span>
+      <input id="dt" type="time" value="06:45" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:9px;color:#fff;font-size:14px;padding:8px 10px;outline:0;color-scheme:dark">
+      <span class="pv-chip on">weekdays</span></div></div>`;
+  el.querySelector('#dt').addEventListener('click',e=>e.stopPropagation());
+});
+reg(['number_input'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:70%"><div class="pv-title">EV charge limit</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button data-d="-5" class="pv-btn ghost" style="width:32px;height:32px;padding:0">−</button>
+      <div style="flex:1;text-align:center"><b id="nv" style="font-size:22px;color:#fff">80</b><span style="color:#8d97a8;font-size:11px"> %</span></div>
+      <button data-d="5" class="pv-btn ghost" style="width:32px;height:32px;padding:0">+</button></div></div>`;
+  let v=80; el.querySelectorAll('[data-d]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation();
+    v=Math.min(100,Math.max(50,v+ +b.dataset.d)); el.querySelector('#nv').textContent=v; }));
+});
+reg(['slider_input'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:78%"><div class="pv-title" style="display:flex;justify-content:space-between">Thermostat setback <b id="si" style="color:#6fd4ff">4°</b></div>
+    <input type="range" class="pv-range" id="sir" min="0" max="10" value="4" style="--p:40%"></div>`;
+  const r=el.querySelector('#sir'); r.addEventListener('click',e=>e.stopPropagation());
+  r.addEventListener('input',e=>{ e.stopPropagation(); r.style.setProperty('--p',r.value*10+'%'); el.querySelector('#si').textContent=r.value+'°'; });
+});
+reg(['select_input'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:76%"><div class="pv-title">House mode</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${['Home','Away','Guest','Vacation'].map((n,i)=>`<button data-sel class="pv-chip" style="cursor:pointer;border:1px solid rgba(255,255,255,.14);padding:6px 13px;${i===0?'background:rgba(41,182,246,.2);color:#6fd4ff':''}">${n}</button>`).join('')}</div></div>`;
+  el.querySelectorAll('[data-sel]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation();
+    el.querySelectorAll('[data-sel]').forEach(x=>{x.style.background='';x.style.color='';});
+    b.style.background='rgba(41,182,246,.2)'; b.style.color='#6fd4ff'; }));
+});
+reg(['boolean_input'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:76%">
+    <div class="pv-row"><span class="pv-ico ok"><i class="mdi mdi-account-check"></i></span><span class="pv-lbl"><b>Guest mode</b><span>input_boolean.guest</span></span><button class="pv-switch on" data-t></button></div>
+    <div class="pv-row"><span class="pv-ico"><i class="mdi mdi-bell-off"></i></span><span class="pv-lbl"><b>Quiet hours</b><span>input_boolean.quiet</span></span><button class="pv-switch" data-t></button></div></div>`;
+  el.querySelectorAll('[data-t]').forEach(t=>t.addEventListener('click',e=>{ e.stopPropagation(); t.classList.toggle('on');
+    t.closest('.pv-row').querySelector('.pv-ico').classList.toggle('ok',t.classList.contains('on')); }));
+});
+reg(['button_input'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="text-align:center;min-width:64%"><div class="pv-title">input_button.doorbell_test</div>
+    <button id="bi" class="pv-btn" style="width:76px;height:76px;border-radius:50%;font-size:26px;padding:0;box-shadow:0 8px 24px rgba(41,182,246,.35)"><i class="mdi mdi-bell-ring"></i></button>
+    <div id="bis" style="font-size:10px;color:#8d97a8;margin-top:8px">last pressed: never</div></div>`;
+  el.querySelector('#bi').addEventListener('click',e=>{ e.stopPropagation();
+    el.querySelector('#bis').textContent='last pressed: just now';
+    el.querySelector('#bi').animate([{transform:'scale(1)'},{transform:'scale(.9)'},{transform:'scale(1)'}],{duration:200}); });
+});
+reg(['counter_input'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:72%"><div class="pv-title">Coffee counter ☕</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button data-c="-1" class="pv-btn ghost" style="width:32px;height:32px;padding:0">−</button>
+      <b id="cv" style="flex:1;text-align:center;font-size:24px;color:#fff">3</b>
+      <button data-c="1" class="pv-btn ghost" style="width:32px;height:32px;padding:0">+</button>
+      <button data-c="0" class="pv-btn ghost" style="height:32px;font-size:10px">reset</button></div></div>`;
+  let v=3; el.querySelectorAll('[data-c]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation();
+    v=b.dataset.c==='0'?0:Math.max(0,v+ +b.dataset.c); el.querySelector('#cv').textContent=v; }));
+});
+reg(['color_input'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:76%"><div class="pv-title">Accent color → light.strip</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div id="cw" style="width:44px;height:44px;border-radius:50%;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);position:relative;cursor:pointer;flex-shrink:0"><span style="position:absolute;inset:13px;border-radius:50%;background:#1c2028"></span></div>
+      <div style="flex:1"><div id="cc" style="height:14px;border-radius:99px;background:#8017A2;transition:background .3s"></div>
+      <div id="ch" style="font-size:10px;color:#8d97a8;margin-top:5px">#8017A2</div></div></div></div>`;
+  const cols=['#8017A2','#ff2d78','#29b6f6','#4ade80','#ffd54f','#ff7043'];
+  let i=0; el.querySelector('#cw').addEventListener('click',e=>{ e.stopPropagation(); i=(i+1)%cols.length;
+    el.querySelector('#cc').style.background=cols[i]; el.querySelector('#ch').textContent=cols[i]; });
+});
+/* ---- appliances ---- */
+function appliance(el,{icon,name,cycle,mins,spin}){
+  el.innerHTML=`<div class="pv-card" style="display:flex;gap:14px;align-items:center;min-width:78%">
+    <div style="position:relative;width:62px;height:62px;border-radius:12px;background:#242b36;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <div style="width:42px;height:42px;border-radius:50%;border:3px solid rgba(120,190,255,.35);display:flex;align-items:center;justify-content:center;${spin?'animation:ucmSpin 2.4s linear infinite':''}">
+        <i class="mdi ${icon}" style="font-size:19px;color:#6fd4ff"></i></div>
+      <span style="position:absolute;top:4px;right:5px;width:6px;height:6px;border-radius:50%;background:#4ade80;animation:ucmBlink 1.4s infinite"></span></div>
+    <div style="flex:1"><div style="font-size:12.5px;font-weight:700;color:#fff">${name}</div>
+      <div style="font-size:10.5px;color:#8d97a8;margin:1px 0 7px">${cycle} · <b id="apm" style="color:#6fd4ff">${mins} min left</b></div>
+      <span class="pv-bar"><i id="apb" style="--w:52%"></i></span>
+      <div style="display:flex;gap:6px;margin-top:8px"><span class="pv-chip on">running</span><span class="pv-chip">0.8 kWh</span></div></div></div>`;
+  let m=mins; every(el,()=>{ m=m>1?m-1:mins; el.querySelector('#apm').textContent=m+' min left';
+    el.querySelector('#apb').style.setProperty('--w',(100-m/mins*100)+'%'); },2500);
+}
+reg(['washer'],(el)=>appliance(el,{icon:'mdi-washing-machine',name:'Washer',cycle:'Normal wash',mins:34,spin:true}));
+reg(['dryer'],(el)=>appliance(el,{icon:'mdi-tumble-dryer',name:'Dryer',cycle:'Low heat',mins:22,spin:true}));
+reg(['dishwasher'],(el)=>appliance(el,{icon:'mdi-dishwasher',name:'Dishwasher',cycle:'Eco 50°',mins:47,spin:false}));
+reg(['fridge'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:80%"><div class="pv-title">Refrigerator</div>
+    <div style="display:flex;gap:10px">
+      <div style="flex:1;text-align:center;background:rgba(41,182,246,.08);border-radius:9px;padding:8px"><i class="mdi mdi-fridge-outline" style="color:#6fd4ff"></i><div style="font-size:16px;font-weight:800;color:#fff" id="ft">37°</div><div style="font-size:9px;color:#8d97a8">FRIDGE</div></div>
+      <div style="flex:1;text-align:center;background:rgba(120,140,255,.08);border-radius:9px;padding:8px"><i class="mdi mdi-snowflake" style="color:#9fa8ff"></i><div style="font-size:16px;font-weight:800;color:#fff" id="fz">0°</div><div style="font-size:9px;color:#8d97a8">FREEZER</div></div></div>
+    <div style="display:flex;gap:6px;margin-top:9px"><span class="pv-chip on"><i class="mdi mdi-door"></i> door closed</span><span class="pv-chip"><i class="mdi mdi-snowflake-variant"></i> ice on</span></div></div>`;
+  every(el,()=>{ el.querySelector('#ft').textContent=ri(36,38)+'°'; el.querySelector('#fz').textContent=ri(-1,1)+'°'; },2600);
+});
+reg(['range'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:78%"><div class="pv-title">Range &amp; oven</div>
+    <div style="display:flex;gap:14px;align-items:center">
+      <div style="display:grid;grid-template-columns:repeat(2,26px);gap:8px">
+        ${[1,0,0,1].map(on=>`<span style="width:26px;height:26px;border-radius:50%;border:2px solid ${on?'#ff7043':'rgba(255,255,255,.18)'};${on?'box-shadow:0 0 12px rgba(255,112,67,.7);background:radial-gradient(circle,#ff8a65,#bf360c)':''};${on?'animation:ucmBlink 2.2s infinite':''}"></span>`).join('')}</div>
+      <div style="flex:1"><div style="font-size:11px;color:#8d97a8">Oven · bake</div>
+        <b style="font-size:19px;color:#fff"><span id="ov">348</span>° <span style="font-size:11px;color:#8d97a8">/ 425°</span></b>
+        <span class="pv-bar o" style="margin-top:5px"><i id="ovb" style="--w:82%"></i></span></div></div></div>`;
+  let t=348; every(el,()=>{ t=Math.min(425,t+ri(4,9)); if(t>=425)t=348;
+    el.querySelector('#ov').textContent=t; el.querySelector('#ovb').style.setProperty('--w',(t/425*100)+'%'); },1600);
+});
+/* ---- category fallbacks ---- */
+reg(['__content','__data'],(el,{m})=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:74%;text-align:center">
+    <i class="mdi ${mdi(m.icon)}" class2 style="font-size:30px;color:#29b6f6"></i>
+    <div style="font-size:12.5px;font-weight:700;color:#fff;margin-top:4px">${m.title}</div>
+    <div style="font-size:10.5px;color:#8d97a8">${m.description.slice(0,60)}</div></div>`;
+});
+reg(['__interactive','__input','__layout','__media'],(el,{m})=>PREVIEWS.__content(el,{m}));
+/* ================= PRO RENDERERS ================= */
+reg(['animated_clock'],(el)=>{
+  el.innerHTML=`<div class="pv-flip"><div class="fc" id="fh1">0</div><div class="fc" id="fh2">0</div><span class="fsep">:</span><div class="fc" id="fm1">0</div><div class="fc" id="fm2">0</div></div>`;
+  let last='';
+  every(el,()=>{ const d=new Date(); const h=((d.getHours()+11)%12+1); const s=pad(h)+pad(d.getMinutes());
+    ['fh1','fh2','fm1','fm2'].forEach((id,i)=>{ const c=el.querySelector('#'+id);
+      if(c.textContent!==s[i]){ c.animate([{transform:'rotateX(0)'},{transform:'rotateX(-80deg)',offset:.5},{transform:'rotateX(0)'}],{duration:350}); c.textContent=s[i]; } }); },1000);
+});
+reg(['animated_weather'],(el)=>{
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:18px">
+    <div style="position:relative;width:70px;height:60px"><div class="pv-sun" style="position:absolute;left:0;top:0"></div>
+      <div class="pv-cloud" style="position:absolute;left:14px;top:26px"></div></div>
+    <div><b style="font-size:30px;color:#fff" id="awt">74°</b>
+      <div style="font-size:11px;color:#8d97a8">Partly cloudy</div>
+      <div style="font-size:10px;color:#6b7484;margin-top:2px"><i class="mdi mdi-water-percent"></i> 41% · <i class="mdi mdi-weather-windy"></i> 6 mph</div></div></div>`;
+  every(el,()=>{ el.querySelector('#awt').textContent=(74+ri(-1,1))+'°'; },3000);
+});
+reg(['animated_forecast'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="display:flex;gap:8px;min-width:84%">
+    ${[['Mon','sun','78°','62°'],['Tue','cloud','71°','58°'],['Wed','rain','66°','55°'],['Thu','sun','75°','60°'],['Fri','sun','80°','64°']].map(([d,t,hi,lo],i)=>`
+    <div style="flex:1;text-align:center;padding:6px 2px;background:rgba(255,255,255,.03);border-radius:9px">
+      <div style="font-size:9.5px;color:#8d97a8;font-weight:700">${d}</div>
+      <div style="height:30px;display:flex;align-items:center;justify-content:center;position:relative">
+        ${t==='sun'?`<span class="pv-sun" style="width:20px;height:20px;animation-delay:${i*.4}s"></span>`
+        :t==='cloud'?`<span class="pv-cloud" style="width:26px;height:10px;animation-delay:${i*.4}s"></span>`
+        :`<span class="pv-cloud" style="width:26px;height:10px"></span><span class="pv-drop" style="left:46%;top:60%"></span><span class="pv-drop" style="left:58%;top:58%;animation-delay:.4s"></span>`}</div>
+      <div style="font-size:10.5px;font-weight:800;color:#fff">${hi}</div><div style="font-size:9px;color:#6b7484">${lo}</div></div>`).join('')}</div>`;
+});
+reg(['video_bg'],(el)=>{
+  el.innerHTML=`<div style="position:relative;width:86%;height:78%;border-radius:10px;overflow:hidden">
+    <div style="position:absolute;inset:-25%;background:linear-gradient(120deg,#0a2a3d,#123a5c,#0e4d64,#123a5c,#0a2a3d);background-size:300% 300%;animation:ucmAurora 7s ease-in-out infinite"></div>
+    <div style="position:absolute;inset:0;background:radial-gradient(50% 60% at 70% 30%,rgba(41,182,246,.25),transparent)"></div>
+    <i class="mdi mdi-play-circle-outline" style="position:absolute;left:12px;top:10px;color:rgba(255,255,255,.75);font-size:18px"></i>
+    <span style="position:absolute;left:36px;top:12px;font-size:9.5px;color:rgba(255,255,255,.7)">ocean_loop.mp4 · when weather = rain</span>
+    <div class="pv-card" style="position:absolute;bottom:10px;left:12px;right:12px;background:rgba(15,20,28,.6);backdrop-filter:blur(3px);padding:8px 12px;font-size:10.5px">Your modules float above the video ↑</div></div>`;
+});
+reg(['climate'],(el)=>{
+  el.innerHTML=`<div class="pv-dial">
+    <svg viewBox="0 0 120 120" width="128" height="128">
+      <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="9" stroke-dasharray="235 314"/>
+      <circle id="cla" cx="60" cy="60" r="50" fill="none" stroke="url(#clg)" stroke-width="9" stroke-linecap="round" stroke-dasharray="150 314"/>
+      <defs><linearGradient id="clg"><stop offset="0" stop-color="#ffab40"/><stop offset="1" stop-color="#ff5252"/></linearGradient></defs></svg>
+    <div class="pv-dial-c"><b id="clt">72°</b><span id="clm">heating</span></div>
+    <div class="pv-dial-btns"><button data-d="-1">−</button><button data-d="1">+</button></div></div>`;
+  let t=72; const paint=()=>{ el.querySelector('#clt').textContent=t+'°';
+    el.querySelector('#cla').setAttribute('stroke-dasharray',`${((t-55)/30)*235} 314`);
+    el.querySelector('#clm').textContent=t>73?'heating':t<69?'cooling':'idle'; };
+  el.querySelectorAll('[data-d]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation();
+    t=Math.min(85,Math.max(55,t+ +b.dataset.d)); paint(); })); paint();
+});
+reg(['dynamic_weather'],(el)=>{
+  el.innerHTML=`<div style="position:relative;width:86%;height:80%;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#1a2636,#0d1420)">
+    ${Array.from({length:16},()=>`<span class="pv-drop" style="left:${ri(2,96)}%;top:${ri(-40,-5)}%;animation-duration:${rnd(.8,1.5)}s;animation-delay:${rnd(0,1.2)}s"></span>`).join('')}
+    <div class="pv-cloud" style="position:absolute;left:12%;top:10%"></div><div class="pv-cloud" style="position:absolute;left:55%;top:6%;animation-delay:1.2s"></div>
+    <div class="pv-card" style="position:absolute;bottom:10px;left:12px;right:12px;background:rgba(15,20,28,.55);backdrop-filter:blur(2px);padding:7px 12px;font-size:10.5px;display:flex;justify-content:space-between"><span>Rain overlay · auto from weather.home</span><b style="color:#6fd4ff">66°</b></div></div>`;
+});
+reg(['calendar'],(el)=>{
+  const today=new Date().getDate();
+  el.innerHTML=`<div class="pv-card" style="min-width:82%"><div class="pv-title" style="display:flex;justify-content:space-between"><span>${new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'})}</span><span style="color:#6fd4ff">3 events</span></div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:9px;color:#6b7484">
+      ${['S','M','T','W','T','F','S'].map(d=>`<span style="font-weight:700">${d}</span>`).join('')}
+      ${Array.from({length:28},(_,i)=>{ const d=i+1; const ev=[today,today+2,today+5].includes(d);
+        return `<span style="padding:2.5px 0;border-radius:5px;color:${d===today?'#04121c':'#aeb7c5'};${d===today?'background:#29b6f6;font-weight:800':''};position:relative">${d}${ev&&d!==today?'<i style="position:absolute;left:50%;bottom:-1px;width:3px;height:3px;margin-left:-1.5px;border-radius:50%;background:#ff2d78"></i>':''}</span>`;}).join('')}</div>
+    <div class="pv-row" style="margin-top:6px;padding-top:7px;border-top:1px solid rgba(255,255,255,.08)"><span style="width:3px;height:24px;border-radius:3px;background:#ff2d78"></span><span class="pv-lbl"><b>Dentist — Emma</b><span>Today · 3:30 PM</span></span></div></div>`;
+});
+reg(['sports_score'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:80%;text-align:center">
+    <div class="pv-chip" style="background:rgba(255,82,82,.15);color:#ff8a80;margin-bottom:8px">● LIVE · Q4 <span id="ssk">2:41</span></div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:16px">
+      <div><div style="width:38px;height:38px;margin:0 auto;border-radius:50%;background:linear-gradient(135deg,#1d428a,#c8102e);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:12px">PHI</div><b id="s1" style="font-size:22px;color:#fff">98</b></div>
+      <span style="color:#6b7484;font-weight:800">–</span>
+      <div><div style="width:38px;height:38px;margin:0 auto;border-radius:50%;background:linear-gradient(135deg,#007a33,#ba9653);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:12px">BOS</div><b id="s2" style="font-size:22px;color:#fff">101</b></div></div></div>`;
+  let t=161; every(el,()=>{ t=Math.max(0,t-2); el.querySelector('#ssk').textContent=`${Math.floor(t/60)}:${pad(t%60)}`;
+    if(Math.random()<.3) el.querySelector(Math.random()<.5?'#s1':'#s2').textContent=(+el.querySelector(Math.random()<.5?'#s1':'#s2').textContent)+(Math.random()<.3?3:2); },2000);
+});
+reg(['badge_of_honor'],(el)=>{
+  el.innerHTML=`<div style="position:relative;width:104px;height:104px;display:flex;align-items:center;justify-content:center">
+    <div style="position:absolute;inset:0;border-radius:50%;background:conic-gradient(#ffc233,#ff9d2d,#ff2d78,#8017A2,#29b6f6,#ffc233);animation:ucmSpin 6s linear infinite"></div>
+    <div style="position:absolute;inset:5px;border-radius:50%;background:#14171d"></div>
+    <div style="position:relative;text-align:center"><i class="mdi mdi-star" style="font-size:26px;color:#ffc233"></i>
+      <div style="font-size:9px;font-weight:800;letter-spacing:.12em;color:#ffc233">PRO MEMBER</div>
+      <div style="font-size:8px;color:#8d97a8">since 2025</div></div></div>`;
+});
+reg(['vacuum'],(el)=>{
+  el.innerHTML=`<div class="pv-vmap">
+    <div class="pv-vroom" style="left:6%;top:8%;width:38%;height:44%"></div>
+    <div class="pv-vroom" style="left:48%;top:8%;width:46%;height:30%"></div>
+    <div class="pv-vroom" style="left:48%;top:44%;width:46%;height:48%;background:rgba(74,222,128,.08);border-color:rgba(74,222,128,.3)"></div>
+    <div class="pv-vroom" style="left:6%;top:58%;width:38%;height:34%"></div>
+    <div id="vb" class="pv-vbot" style="left:20%;top:20%;transition:all 1.2s linear"></div>
+    <div style="position:absolute;bottom:6px;left:8px;font-size:9px;color:#9fb3cc;background:rgba(0,0,0,.5);padding:2px 8px;border-radius:99px">Cleaning · Kitchen · 64%</div></div>`;
+  const path=[[20,20],[34,26],[30,64],[58,72],[76,58],[66,20],[52,14]]; let i=0;
+  every(el,()=>{ i=(i+1)%path.length; const b=el.querySelector('#vb'); b.style.left=path[i][0]+'%'; b.style.top=path[i][1]+'%'; },1200);
+});
+reg(['qr_code'],(el)=>{
+  const cells=Array.from({length:121},(_,i)=>{ const r=Math.floor(i/11),c=i%11;
+    const eye=(r<3&&c<3)||(r<3&&c>7)||(r>7&&c<3);
+    return eye?((r%3===1&&c%3===1)||(r%3!==1&&c%3!==1)?'':'o'):(Math.random()<.45?'':'o'); });
+  el.innerHTML=`<div style="text-align:center"><div class="pv-qr">${cells.map(c=>`<i class="${c}"></i>`).join('')}</div>
+    <div style="font-size:10px;color:#8d97a8;margin-top:7px">Guest Wi-Fi · regenerates from entity</div></div>`;
+});
+reg(['energy_display'],(el)=>{
+  el.innerHTML=`<svg viewBox="0 0 220 130" style="width:88%;max-height:92%">
+    <defs><path id="p1" d="M55 35 C 85 35 95 62 110 65"/><path id="p2" d="M165 35 C 135 35 125 62 110 65"/><path id="p3" d="M110 65 C 110 85 110 95 110 105"/></defs>
+    ${[['55','35','#ffd54f','mdi-solar-power','2.8 kW'],['165','35','#29b6f6','mdi-transmission-tower','0.4 kW'],['110','105','#4ade80','mdi-home-lightning-bolt','3.1 kW']].map(([x,y,c,i,v])=>``).join('')}
+    <path d="M55 35 C 85 35 95 62 110 65" stroke="rgba(255,213,79,.4)" fill="none" stroke-width="2"/>
+    <path d="M165 35 C 135 35 125 62 110 65" stroke="rgba(41,182,246,.4)" fill="none" stroke-width="2"/>
+    <path d="M110 65 C 110 85 110 95 110 105" stroke="rgba(74,222,128,.4)" fill="none" stroke-width="2"/>
+    <circle r="3" class="pv-edot"><animateMotion dur="2s" repeatCount="indefinite"><mpath href="#p1"/></animateMotion></circle>
+    <circle r="3" fill="#29b6f6"><animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#p2"/></animateMotion></circle>
+    <circle r="3" fill="#4ade80"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#p3"/></animateMotion></circle>
+    <g font-family="Open Sans,sans-serif" text-anchor="middle">
+      <circle cx="55" cy="30" r="17" fill="rgba(255,213,79,.12)" stroke="#ffd54f"/><text x="55" y="34" font-size="9" fill="#ffd54f">☀ 2.8</text>
+      <circle cx="165" cy="30" r="17" fill="rgba(41,182,246,.12)" stroke="#29b6f6"/><text x="165" y="34" font-size="9" fill="#6fd4ff">⚡ 0.4</text>
+      <circle cx="110" cy="108" r="17" fill="rgba(74,222,128,.12)" stroke="#4ade80"/><text x="110" y="112" font-size="9" fill="#4ade80">⌂ 3.1</text>
+    </g></svg>`;
+});
+reg(['living_canvas'],(el)=>{
+  el.innerHTML=`<div style="position:relative;width:88%;height:80%;border-radius:10px;overflow:hidden;background:#05070d">
+    <div style="position:absolute;inset:-30%;background:radial-gradient(40% 55% at 30% 40%,rgba(41,182,246,.5),transparent 65%),radial-gradient(45% 50% at 70% 55%,rgba(128,23,162,.55),transparent 65%),radial-gradient(30% 45% at 50% 30%,rgba(255,45,120,.35),transparent 60%);filter:blur(14px);animation:ucmAurora 8s ease-in-out infinite"></div>
+    <span style="position:absolute;left:12px;top:10px;font-size:9.5px;color:rgba(255,255,255,.65)">WebGL · preset: Aurora</span>
+    <div class="pv-card" style="position:absolute;bottom:10px;left:12px;padding:6px 11px;background:rgba(10,14,20,.55);backdrop-filter:blur(3px);font-size:10.5px">Reacts to time &amp; weather</div></div>`;
+});
+reg(['activity_feed'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:84%"><div class="pv-title">Home activity</div><div id="af" style="max-height:110px;overflow:hidden"></div></div>`;
+  const evts=[['mdi-door','Front door unlocked','Sarah','ok'],['mdi-lightbulb','Kitchen lights on','motion','warn'],['mdi-car','Tesla plugged in','garage','ok'],['mdi-cctv','Person at driveway','camera','bad'],['mdi-thermostat','Heat set to 72°','schedule','']];
+  let i=0; every(el,()=>{ const [ic,t,by,c]=evts[i%evts.length]; i++;
+    const row=document.createElement('div'); row.className='pv-row'; row.style.animation='ucmSlideIn .4s ease';
+    row.innerHTML=`<span class="pv-ico ${c}"><i class="mdi ${ic}"></i></span><span class="pv-lbl"><b>${t}</b><span>${by} · just now</span></span>`;
+    const af=el.querySelector('#af'); af.prepend(row); while(af.children.length>3) af.lastChild.remove(); },1800);
+});
+reg(['virtual_pet'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="text-align:center;min-width:66%">
+    <div id="pet" style="font-size:42px;animation:ucmPetHop 2.4s ease-in-out infinite;cursor:pointer;display:inline-block">🐕</div>
+    <div style="font-size:12px;font-weight:700;color:#fff">Biscuit <span id="pmood" style="color:#4ade80">· happy</span></div>
+    <div style="display:flex;gap:5px;justify-content:center;margin-top:7px">
+      <span class="pv-chip on">❤ 92</span><span class="pv-chip">🍖 fed</span><span class="pv-chip" id="pxp">✨ lvl 7</span></div>
+    <div style="font-size:9.5px;color:#6b7484;margin-top:6px">Mood follows your smart home — pet me!</div></div>`;
+  const moods=[['· happy','#4ade80','🐕'],['· zoomies!','#29b6f6','🐕‍🦺'],['· sleepy','#b39ddb','🐶']]; let mi=0;
+  el.querySelector('#pet').addEventListener('click',e=>{ e.stopPropagation(); mi=(mi+1)%moods.length;
+    const [t,c,e2]=moods[mi]; const md=el.querySelector('#pmood'); md.textContent=t; md.style.color=c; el.querySelector('#pet').textContent=e2;
+    el.querySelector('#pet').animate([{transform:'scale(1)'},{transform:'scale(1.25)'},{transform:'scale(1)'}],{duration:300}); });
+});
+reg(['alarm_panel'],(el,{interactive})=>{
+  el.innerHTML=`<div class="pv-card" style="display:flex;gap:16px;align-items:center">
+    <div style="text-align:center"><i id="ash" class="mdi mdi-shield-check" style="font-size:34px;color:#4ade80"></i>
+      <div id="ast" style="font-size:11px;font-weight:800;color:#4ade80">DISARMED</div>
+      <div id="apin" style="font-size:12px;color:#8d97a8;letter-spacing:.3em;min-height:16px;margin-top:3px"></div></div>
+    <div class="pv-pad">${[1,2,3,4,5,6,7,8,9,'✕',0,'✓'].map(k=>`<button data-k="${k}">${k}</button>`).join('')}</div></div>`;
+  let pin=''; el.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation();
+    const k=b.dataset.k;
+    if(k==='✕'){pin='';} else if(k==='✓'){ if(pin.length>=4){ const armed=el.querySelector('#ast').textContent!=='ARMED';
+        el.querySelector('#ast').textContent=armed?'ARMED':'DISARMED'; el.querySelector('#ast').style.color=armed?'#ff5252':'#4ade80';
+        el.querySelector('#ash').className=`mdi mdi-shield-${armed?'lock':'check'}`; el.querySelector('#ash').style.color=armed?'#ff5252':'#4ade80'; } pin=''; }
+    else pin=(pin+k).slice(0,4);
+    el.querySelector('#apin').textContent='●'.repeat(pin.length); }));
+});
+reg(['solar_analytics'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:84%"><div class="pv-title" style="display:flex;justify-content:space-between">Solar today <span style="color:#ffd54f">☀ producing</span></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      ${[['Now','2.8 kW','#ffd54f'],['Today','18.4 kWh','#4ade80'],['Battery','84%','#29b6f6']].map(([l,v,c])=>`
+      <div style="flex:1;background:rgba(255,255,255,.04);border-radius:8px;padding:7px;text-align:center"><div style="font-size:9px;color:#8d97a8">${l}</div><b style="font-size:12.5px;color:${c}">${v}</b></div>`).join('')}</div>
+    <svg viewBox="0 0 200 44" style="width:100%">
+      <path d="M0 40 Q 50 40 70 18 T 130 10 T 200 38" fill="none" stroke="rgba(255,213,79,.25)" stroke-width="2"/>
+      <path d="M0 40 Q 50 40 70 18 T 130 10 T 200 38" fill="url(#sg)" opacity=".3"/>
+      <circle id="sun2" cx="110" cy="12" r="5" fill="#ffd54f"><animate attributeName="cx" values="30;170;30" dur="14s" repeatCount="indefinite"/><animate attributeName="cy" values="34;8;34" dur="14s" repeatCount="indefinite"/></circle>
+      <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd54f"/><stop offset="1" stop-color="transparent"/></linearGradient></defs></svg></div>`;
+});
+reg(['screensaver'],(el)=>{
+  el.innerHTML=`<div style="position:relative;width:88%;height:82%;border-radius:10px;background:#04060a;overflow:hidden">
+    <div id="scr2" style="position:absolute;left:16%;top:22%;transition:all 3s ease-in-out;text-align:center">
+      <b id="sct" style="font-size:24px;color:rgba(255,255,255,.9);font-variant-numeric:tabular-nums"></b>
+      <div style="font-size:9.5px;color:rgba(255,255,255,.45)">74° partly cloudy · 3 lights on</div></div>
+    <span style="position:absolute;right:10px;bottom:8px;font-size:8.5px;color:rgba(255,255,255,.3)">idle 5:00 → screensaver</span></div>`;
+  every(el,()=>{ const d=new Date(); el.querySelector('#sct').textContent=`${((d.getHours()+11)%12+1)}:${pad(d.getMinutes())}`; },1000);
+  every(el,()=>{ const s=el.querySelector('#scr2'); s.style.left=ri(6,42)+'%'; s.style.top=ri(10,50)+'%'; },3200);
+});
+reg(['time_machine'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:84%"><div class="pv-title" style="display:flex;justify-content:space-between">Time machine <span id="tml" style="color:#b44ce0">now</span></div>
+    <div class="pv-row"><span class="pv-ico"><i class="mdi mdi-thermometer"></i></span><span class="pv-lbl"><b>Living room</b></span><span class="pv-val" id="tm1">72.4°</span></div>
+    <div class="pv-row"><span class="pv-ico warn"><i class="mdi mdi-flash"></i></span><span class="pv-lbl"><b>Power</b></span><span class="pv-val" id="tm2">1.2 kW</span></div>
+    <input type="range" class="pv-range" id="tmr" min="0" max="24" value="24" style="--p:100%;margin-top:8px">
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:#6b7484"><span>−24h</span><span>now</span></div></div>`;
+  const r=el.querySelector('#tmr');
+  const paint=()=>{ const h=24-r.value; r.style.setProperty('--p',(r.value/24*100)+'%');
+    el.querySelector('#tml').textContent=h===0?'now':`−${h}h`;
+    el.querySelector('#tm1').textContent=(72.4-Math.sin(h/3.8)*4).toFixed(1)+'°';
+    el.querySelector('#tm2').textContent=(1.2+Math.abs(Math.sin(h/2.6))*1.8).toFixed(1)+' kW'; };
+  r.addEventListener('input',e=>{e.stopPropagation();paint();}); r.addEventListener('click',e=>e.stopPropagation());
+});
+reg(['lunar_phase'],(el)=>{
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:18px">
+    <div class="pv-moon" id="moon" style="--ph:38%"></div>
+    <div><b style="font-size:14px;color:#fff">Waxing Gibbous</b>
+      <div style="font-size:10.5px;color:#8d97a8">Illumination <b id="lil" style="color:#e8e4d8">62%</b></div>
+      <div style="font-size:10px;color:#6b7484;margin-top:3px">Full moon in 4 days · rises 7:42 PM</div></div></div>`;
+  let ph=38; every(el,()=>{ ph=ph<=2?38:ph-3; el.querySelector('#moon').style.setProperty('--ph',ph+'%');
+    el.querySelector('#lil').textContent=Math.round(100-ph*1.6)+'%'; },900);
+});
+reg(['dog_duty'],(el)=>{
+  el.innerHTML=`<div class="pv-vmap" style="background:linear-gradient(160deg,#12240f,#0a1408)">
+    <div style="position:absolute;left:8%;top:10%;width:84%;height:74%;border:1.5px dashed rgba(140,200,120,.3);border-radius:8px"></div>
+    ${[[28,34],[62,52],[44,68]].map(([x,y],i)=>`<div style="position:absolute;left:${x}%;top:${y}%"><span style="position:absolute;width:20px;height:20px;margin:-10px;border-radius:50%;background:rgba(255,171,64,.3);animation:ucmPulse 2s ${i*.5}s infinite"></span><i class="mdi mdi-alert-circle" style="color:#ffab40;font-size:14px"></i></div>`).join('')}
+    <i class="mdi mdi-dog-side" style="position:absolute;left:70%;top:22%;color:#cbd5c0;font-size:20px;animation:ucmDrift 4s ease-in-out infinite"></i>
+    <div style="position:absolute;bottom:6px;left:8px;font-size:9px;color:#b8ccb0;background:rgba(0,0,0,.5);padding:2px 8px;border-radius:99px">3 spots detected · last cleanup 2d ago</div></div>`;
+});
+reg(['cleaning_zones'],(el)=>{
+  el.innerHTML=`<div class="pv-vmap">
+    ${[['6%','8%','40%','40%','rgba(255,82,82,.22)','Kitchen · 6d'],['50%','8%','44%','40%','rgba(255,171,64,.18)','Living · 3d'],['6%','54%','40%','38%','rgba(74,222,128,.15)','Bath · today'],['50%','54%','44%','38%','rgba(74,222,128,.1)','Bed · 1d']].map(([l,t,w,h,bg,n])=>`
+    <div style="position:absolute;left:${l};top:${t};width:${w};height:${h};background:${bg};border:1px solid rgba(255,255,255,.12);border-radius:6px;display:flex;align-items:flex-end;padding:4px"><span style="font-size:8.5px;color:#dfe5ee;background:rgba(0,0,0,.45);padding:1px 6px;border-radius:99px">${n}</span></div>`).join('')}
+    <div style="position:absolute;top:6px;right:8px;font-size:8.5px;color:#ffab40">heatmap: days since cleaned</div></div>`;
+});
+reg(['battery_fleet'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:84%"><div class="pv-title" style="display:flex;justify-content:space-between">Battery fleet · 14 devices <span style="color:#ff8a80">2 critical</span></div>
+    ${[['Door lock',8,'r','~5 days left'],['Motion hall',21,'o','~2 wks left'],['Remote',64,'g','healthy'],['Sensor attic',88,'g','healthy']].map(([n,v,c,p])=>`
+    <div class="pv-row" style="padding:3px 0"><span class="pv-lbl" style="flex:0 0 74px"><b style="font-size:11px">${n}</b></span>
+      <span class="pv-bar ${c}"><i style="--w:${v}%"></i></span><span style="font-size:9px;color:#8d97a8;flex:0 0 66px;text-align:right">${p}</span></div>`).join('')}</div>`;
+});
+reg(['plant_care'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:82%"><div class="pv-title">Plant care · 1 thirsty</div>
+    ${[['🌿','Monstera','moisture 44%','water in 3d','g',44],['🌵','Cactus','moisture 18%','all good','g',18],['🌱','Basil','moisture 12%','water now!','r',12]].map(([e2,n,m,s,c,v])=>`
+    <div class="pv-row"><span style="font-size:18px">${e2}</span><span class="pv-lbl"><b>${n}</b><span>${m} · ${s}</span></span>
+      <span class="pv-bar ${c==='r'?'r':''}" style="max-width:56px"><i style="--w:${v}%"></i></span></div>`).join('')}</div>`;
+});
+reg(['laundry_tracker'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:84%"><div class="pv-title">Laundry tracker · via power sensor</div>
+    <svg viewBox="0 0 200 36" style="width:100%"><polyline points="0,32 20,32 28,8 40,14 52,6 64,16 76,9 88,30 200,31" fill="none" stroke="#29b6f6" stroke-width="2"/>
+      <rect x="24" y="2" width="68" height="32" fill="rgba(41,182,246,.08)" stroke="rgba(41,182,246,.3)" stroke-dasharray="3 3"/>
+      <text x="58" y="12" font-size="8" fill="#6fd4ff" text-anchor="middle">wash cycle</text></svg>
+    <div class="pv-row" style="margin-top:4px"><span class="pv-ico warn"><i class="mdi mdi-washing-machine-alert"></i></span>
+      <span class="pv-lbl"><b>Load finished 48 min ago</b><span>don't forget to move it!</span></span><span class="pv-chip" style="background:rgba(255,171,64,.16);color:#ffab40">nag on</span></div></div>`;
+});
+reg(['vehicle_maintenance'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:84%"><div class="pv-title" style="display:flex;justify-content:space-between"><span><i class="mdi mdi-car" style="color:#29b6f6"></i> Model Y · 34,218 mi</span></div>
+    ${[['Oil / fluids',82,'g','1,800 mi'],['Tire rotation',94,'o','450 mi'],['Brake pads',31,'g','12,000 mi']].map(([n,v,c,d])=>`
+    <div class="pv-row" style="padding:3px 0"><span class="pv-lbl" style="flex:0 0 82px"><b style="font-size:11px">${n}</b></span>
+      <span class="pv-bar ${c}"><i style="--w:${v}%"></i></span><span style="font-size:9px;color:#8d97a8;flex:0 0 58px;text-align:right">in ${d}</span></div>`).join('')}
+    <div style="font-size:9.5px;color:#6b7484;margin-top:5px">Service log: 12 entries · $1,431 lifetime</div></div>`;
+});
+reg(['vampire_power'],(el)=>{
+  el.innerHTML=`<div class="pv-card" style="min-width:84%"><div class="pv-title" style="display:flex;justify-content:space-between">Vampire power 🧛 <b style="color:#ff8a80">$14.20/mo wasted</b></div>
+    ${[['TV + soundbar',22,'$6.10'],['Game console',14,'$3.90'],['Old desktop',9,'$2.60'],['Chargers',6,'$1.60']].map(([n,w,c])=>`
+    <div class="pv-row" style="padding:3px 0"><span class="pv-lbl" style="flex:0 0 88px"><b style="font-size:11px">${n}</b></span>
+      <span class="pv-bar r"><i style="--w:${w*4}%"></i></span><span style="font-size:9.5px;color:#ff8a80;flex:0 0 44px;text-align:right">${c}</span></div>`).join('')}</div>`;
+});
+/*__RENDERERS_END__*/
+
+})();
+</script>
+<!--APPEND-->
