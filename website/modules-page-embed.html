@@ -789,7 +789,7 @@ reg(['gauge'],(el)=>{
 });
 /* ---- icon ---- */
 reg(['icon'],(el,{interactive})=>{
-  el.innerHTML=`<div class="pv-card"><div class="pv-title">Icons — tap them</div>
+  el.innerHTML=`<div class="pv-card"><div class="pv-title">Icons</div>
     <div style="display:flex;gap:10px">${[['mdi-lightbulb','on'],['mdi-television',''],['mdi-fan','on'],['mdi-shield-home',''],['mdi-garage','']].map(([ic,on],i)=>`
     <button data-i class="pv-ico ${on?'ok':''}" style="width:40px;height:40px;font-size:20px;border:0;cursor:pointer;transition:all .2s"><i class="mdi ${ic}"></i></button>`).join('')}</div></div>`;
   el.querySelectorAll('[data-i]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();b.classList.toggle('ok');}));
@@ -1061,7 +1061,7 @@ reg(['update_monitor'],(el)=>{
 /* ---- alert_center ---- */
 reg(['alert_center'],(el)=>{
   el.innerHTML=`<div class="pv-card" style="min-width:82%"><div class="pv-title" style="display:flex;justify-content:space-between">Alert center <span class="pv-chip" style="background:rgba(255,82,82,.18);color:#ff8a80">3 active</span></div>
-    <div class="pv-row"><span class="pv-ico bad"><i class="mdi mdi-water-alert"></i></span><span class="pv-lbl"><b>Leak — laundry room</b><span>critical · 4m</span></span></div>
+    <div class="pv-row"><span class="pv-ico bad"><i class="mdi mdi-water-alert"></i></span><span class="pv-lbl"><b>Leak: laundry room</b><span>critical · 4m</span></span></div>
     <div class="pv-row"><span class="pv-ico warn"><i class="mdi mdi-door-open"></i></span><span class="pv-lbl"><b>Garage left open</b><span>warning · 18m</span></span></div>
     <div class="pv-row"><span class="pv-ico"><i class="mdi mdi-battery-30"></i></span><span class="pv-lbl"><b>3 batteries under 30%</b><span>info</span></span></div></div>`;
 });
@@ -1462,7 +1462,7 @@ reg(['virtual_pet'],(el)=>{
     <div style="font-size:12px;font-weight:700;color:#fff">Biscuit <span id="pmood" style="color:#4ade80">· happy</span></div>
     <div style="display:flex;gap:5px;justify-content:center;margin-top:7px">
       <span class="pv-chip on">❤ 92</span><span class="pv-chip">🍖 fed</span><span class="pv-chip" id="pxp">✨ lvl 7</span></div>
-    <div style="font-size:9.5px;color:#6b7484;margin-top:6px">Mood follows your smart home — pet me!</div></div>`;
+    <div style="font-size:9.5px;color:#6b7484;margin-top:6px">Mood follows your smart home</div></div>`;
   const moods=[['· happy','#4ade80','🐕'],['· zoomies!','#29b6f6','🐕‍🦺'],['· sleepy','#b39ddb','🐶']]; let mi=0;
   el.querySelector('#pet').addEventListener('click',e=>{ e.stopPropagation(); mi=(mi+1)%moods.length;
     const [t,c,e2]=moods[mi]; const md=el.querySelector('#pmood'); md.textContent=t; md.style.color=c; el.querySelector('#pet').textContent=e2;
