@@ -21,7 +21,7 @@ function readStoredDensity(): 'gallery' | 'list' {
   }
 }
 
-
+@customElement('uc-modules-selector-tab')
 export class UcModulesSelectorTab extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public allModules: ModuleManifest[] = [];
@@ -144,24 +144,14 @@ export class UcModulesSelectorTab extends LitElement {
                                 ? 'Add layout or content modules at any nesting level'
                                 : 'Create containers to organize your modules'}
                             </p>
-                            <div class="module-types layout-modules">
-                              ${allowedLayoutModules.map(meta => {
-                                const isHorizontal = meta.type === 'horizontal';
-                                const isVertical = meta.type === 'vertical';
-                                return html`
-                                  <button
-                                    class="module-type-btn layout-module ${isHorizontal ? 'horizontal-layout' : ''} ${isVertical ? 'vertical-layout' : ''}"
-                                    @click=${() => this._emitModuleSelected(meta.type)}
-                                    title="${meta.description}"
-                                  >
-                                    <ha-icon icon="${meta.icon}"></ha-icon>
-                                    <div class="module-info">
-                                      <span class="module-title">${meta.title}</span>
-                                      <span class="module-description">${meta.description}</span>
-                                    </div>
-                                  </button>
-                                `;
-                              })}
+                            <div
+                              class="module-types layout-modules ${this._density === 'gallery'
+                                ? 'gallery'
+                                : ''}"
+                            >
+                              ${allowedLayoutModules.map(meta =>
+                                this._renderModuleTile(meta, 'layout')
+                              )}
                             </div>
                           </div>
                         `
@@ -221,54 +211,74 @@ export class UcModulesSelectorTab extends LitElement {
         </h4>
         <p class="category-description">${description}</p>
         <div class="module-types content-modules ${this._density === 'gallery' ? 'gallery' : ''}">
-          ${modules.map(meta =>
-            this._density === 'gallery'
-              ? html`
-                  <button
-                    class="module-tile"
-                    @click=${() => this._emitModuleSelected(meta.type)}
-                    title="${meta.description}"
-                  >
-                    <span class="tile-shot">
-                      <img
-                        loading="lazy"
-                        src="${UC_PREVIEW_BASE}${meta.type}.png"
-                        alt=""
-                        @error=${(e: Event) => {
-                          // No screenshot yet (e.g. a brand-new module): fall
-                          // back to the icon rather than an empty frame.
-                          const img = e.target as HTMLImageElement;
-                          img.style.display = 'none';
-                          (img.parentElement as HTMLElement)?.classList.add('no-shot');
-                        }}
-                      />
-                      <ha-icon class="tile-shot-fallback" icon="${meta.icon}"></ha-icon>
-                    </span>
-                    <span class="tile-meta">
-                      <ha-icon icon="${meta.icon}"></ha-icon>
-                      <span class="module-info">
-                        <span class="module-title">${meta.title}</span>
-                        <span class="module-description">${meta.description}</span>
-                      </span>
-                    </span>
-                  </button>
-                `
-              : html`
-                  <button
-                    class="module-type-btn content-module"
-                    @click=${() => this._emitModuleSelected(meta.type)}
-                    title="${meta.description}"
-                  >
-                    <ha-icon icon="${meta.icon}"></ha-icon>
-                    <div class="module-info">
-                      <span class="module-title">${meta.title}</span>
-                      <span class="module-description">${meta.description}</span>
-                    </div>
-                  </button>
-                `
-          )}
+          ${modules.map(meta => this._renderModuleTile(meta, 'content'))}
         </div>
       </div>
+    `;
+  }
+
+  /**
+   * One pickable module. Gallery leads with the screenshot; list keeps the
+   * original compact row. Layout containers carry their green accent in both
+   * views so the two libraries stay visually distinct.
+   */
+  private _renderModuleTile(
+    meta: ModuleManifest,
+    variant: 'layout' | 'content'
+  ): TemplateResult {
+    const isLayout = variant === 'layout';
+
+    if (this._density === 'gallery') {
+      return html`
+        <button
+          class="module-tile ${isLayout ? 'layout-tile' : ''}"
+          @click=${() => this._emitModuleSelected(meta.type)}
+          title="${meta.description}"
+        >
+          <span class="tile-shot">
+            <img
+              loading="lazy"
+              src="${UC_PREVIEW_BASE}${meta.type}.png"
+              alt=""
+              @error=${(e: Event) => {
+                // No screenshot yet (e.g. a brand-new module): fall back to
+                // the icon rather than an empty frame.
+                const img = e.target as HTMLImageElement;
+                img.style.display = 'none';
+                (img.parentElement as HTMLElement)?.classList.add('no-shot');
+              }}
+            />
+            <ha-icon class="tile-shot-fallback" icon="${meta.icon}"></ha-icon>
+          </span>
+          <span class="tile-meta">
+            <ha-icon icon="${meta.icon}"></ha-icon>
+            <span class="module-info">
+              <span class="module-title">${meta.title}</span>
+              <span class="module-description">${meta.description}</span>
+            </span>
+          </span>
+        </button>
+      `;
+    }
+
+    const isHorizontal = meta.type === 'horizontal';
+    const isVertical = meta.type === 'vertical';
+    const listClasses = isLayout
+      ? `layout-module ${isHorizontal ? 'horizontal-layout' : ''} ${isVertical ? 'vertical-layout' : ''}`
+      : 'content-module';
+
+    return html`
+      <button
+        class="module-type-btn ${listClasses}"
+        @click=${() => this._emitModuleSelected(meta.type)}
+        title="${meta.description}"
+      >
+        <ha-icon icon="${meta.icon}"></ha-icon>
+        <div class="module-info">
+          <span class="module-title">${meta.title}</span>
+          <span class="module-description">${meta.description}</span>
+        </div>
+      </button>
     `;
   }
 
@@ -324,14 +334,18 @@ export class UcModulesSelectorTab extends LitElement {
       <button
         class="density-btn ${this._density === mode ? 'active' : ''}"
         @click=${() => this._setDensity(mode)}
-        title="${label} view"
         aria-pressed="${this._density === mode}"
       >
         <ha-icon icon="${icon}"></ha-icon>
+        <span class="density-label">${label}</span>
       </button>
     `;
-    return html`<div class="density-toggle">
-      ${opt('gallery', 'mdi:view-grid-outline', 'Gallery')}${opt('list', 'mdi:view-list-outline', 'List')}
+    return html`<div class="density-toggle" role="group" aria-label="Module layout">
+      ${opt('gallery', 'mdi:view-grid-outline', 'Gallery View')}${opt(
+        'list',
+        'mdi:view-list-outline',
+        'List View'
+      )}
     </div>`;
   }
 
@@ -610,12 +624,12 @@ export class UcModulesSelectorTab extends LitElement {
        card picker does. Screenshots are generated in CI, so nothing is
        rendered live here and the grid stays cheap to scroll. */
     .module-types.gallery {
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
     }
-    @media (max-width: 700px) {
+    @media (max-width: 500px) {
       .module-types.gallery {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
       }
     }
     .module-tile {
@@ -642,20 +656,27 @@ export class UcModulesSelectorTab extends LitElement {
       outline: 2px solid var(--primary-color);
       outline-offset: 2px;
     }
+    /* Wider tiles at two per row, so the shot gets the height to match and
+       more of each module is actually visible before it crops. */
     .tile-shot {
       position: relative;
       display: block;
-      height: 104px;
+      aspect-ratio: 16 / 9;
       background: var(--primary-background-color, #111);
       border-bottom: 1px solid var(--divider-color);
       overflow: hidden;
     }
+    /* Screenshots share a width but not a height (a bar is ~5:1, an accordion
+       ~1.7:1), so cover magnified the short ones to fill the frame. contain
+       shows each module whole and letterboxes the difference instead. */
     .tile-shot img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      object-position: top center;
+      object-fit: contain;
+      object-position: center;
       display: block;
+      padding: 8px;
+      box-sizing: border-box;
     }
     /* The icon only appears if the screenshot is missing. */
     .tile-shot-fallback {
@@ -706,6 +727,18 @@ export class UcModulesSelectorTab extends LitElement {
       overflow: hidden;
     }
 
+    /* Layout containers keep their green accent in the gallery too. */
+    .module-tile.layout-tile {
+      border-color: var(--success-color, #4caf50);
+    }
+    .module-tile.layout-tile:hover {
+      border-color: var(--success-color, #4caf50);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+    .module-tile.layout-tile .tile-meta ha-icon {
+      color: var(--success-color, #4caf50);
+    }
+
     /* ── Gallery / list toggle ── */
     .density-toggle {
       display: inline-flex;
@@ -713,21 +746,29 @@ export class UcModulesSelectorTab extends LitElement {
       border: 1px solid var(--divider-color);
       border-radius: 8px;
       overflow: hidden;
-      margin-left: 8px;
+      margin-top: 12px;
     }
     .density-btn {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 34px;
+      gap: 7px;
       height: 34px;
+      padding: 0 14px;
       border: 0;
       background: transparent;
       color: var(--secondary-text-color);
       cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
       transition:
         background 0.2s ease,
         color 0.2s ease;
+    }
+    .density-btn + .density-btn {
+      border-left: 1px solid var(--divider-color);
     }
     .density-btn ha-icon {
       --mdc-icon-size: 18px;

@@ -28,7 +28,17 @@ const args = process.argv.slice(2);
 const STRICT = args.includes('--strict');
 const ONLY = (args.find(a => a.startsWith('--only=')) || '').replace('--only=', '');
 
+/**
+ * The MDI webfont must be linked here, at document level. The ha-icon shim
+ * adopts the same stylesheet into its shadow root, but @font-face rules are
+ * ignored inside a shadow tree, so without this link every icon captures blank.
+ * ultracard.io gets this from its own page CSS, which is why icons look right
+ * there and were missing only in the screenshots.
+ */
+const MDI_CSS = 'https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css';
+
 const HOST_PAGE = `<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="${MDI_CSS}">
 <style>
   html,body{margin:0;background:#0f1216}
   #stage{width:420px;padding:18px}
@@ -65,6 +75,9 @@ async function main() {
   const page = await browser.newPage({ viewport: { width: 460, height: 900 }, deviceScaleFactor: 2 });
   await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' });
   await page.waitForFunction(() => !!window.UCDemo, null, { timeout: 60000 });
+  // Glyphs are drawn from the webfont; capturing before it lands yields blanks.
+  await page.evaluate(() => document.fonts.load('24px "Material Design Icons"'));
+  await page.evaluate(() => document.fonts.ready);
 
   const manifests = await page.evaluate(() => window.UCDemo.types());
   const version = await page.evaluate(() => window.UCDemo.version);
