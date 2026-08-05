@@ -452,6 +452,11 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
  * so a static (non-interactive) preview still shows what they do.
  * Runs once per element, ~400ms after first render.
  */
+/** Modules render controls as <button> OR <ha-button> — collect both. */
+function controls(holder: HTMLElement): HTMLElement[] {
+  return Array.from(holder.querySelectorAll('button, ha-button, [role="button"]')) as HTMLElement[];
+}
+
 function clickFirst(holder: HTMLElement, selectors: string[]): boolean {
   for (const sel of selectors) {
     const el = holder.querySelector(sel) as HTMLElement | null;
@@ -505,28 +510,27 @@ const DEMO_STAGE: Record<string, (holder: HTMLElement, el: any) => void> = {
     holder.style.overflow = 'hidden';
     let open = false;
     el._addTimer(setInterval(() => {
-      clickFirst(holder, ['.dropdown-selected', '.custom-dropdown', 'select', 'button']);
+      clickFirst(holder, ['.dropdown-selected', '.custom-dropdown', 'select', 'button', 'ha-button']);
       open = !open;
     }, 2600));
   },
   accordion: (holder, el) => {
-    el._addTimer(setInterval(() => {
-      (holder.querySelector('button') as HTMLElement | null)?.click();
-    }, 3000));
+    el._addTimer(setInterval(() => { controls(holder)[0]?.click(); }, 3000));
   },
   tabs: (holder, el) => {
     let idx = 1;
     el._addTimer(setInterval(() => {
-      const tabBtns = Array.from(holder.querySelectorAll('button')).slice(0, 2) as HTMLElement[];
+      const tabBtns = controls(holder).slice(0, 2);
       if (tabBtns.length >= 2) { tabBtns[idx % 2].click(); idx++; }
     }, 3200));
   },
   timer: (holder, el) => {
     // Press start so the countdown runs; restart it when it winds down.
     const press = () => {
-      const btns = Array.from(holder.querySelectorAll('button')) as HTMLElement[];
-      const start = btns.find(b => /start|play/i.test(b.className + b.textContent + (b.getAttribute('aria-label') || '')));
-      (start || btns[0])?.click();
+      const btns = controls(holder);
+      const start = btns.find(b => /^(start|resume|play)$/i.test((b.textContent || '').trim()))
+        || btns.find(b => /start|play/i.test(b.className + (b.getAttribute('aria-label') || '')));
+      (start || btns[btns.length - 1])?.click();
     };
     setTimeout(press, 300);
     el._addTimer(setInterval(press, 30000));
@@ -573,7 +577,7 @@ const DEMO_STAGE: Record<string, (holder: HTMLElement, el: any) => void> = {
     // Tap a few keypad digits, then arm/disarm, on a loop.
     let step = 0;
     el._addTimer(setInterval(() => {
-      const btns = Array.from(holder.querySelectorAll('button')) as HTMLElement[];
+      const btns = controls(holder);
       if (!btns.length) return;
       const digits = btns.filter(b => /^[0-9]$/.test((b.textContent || '').trim()));
       const action = btns.find(b => /arm|disarm/i.test(b.textContent || ''));
