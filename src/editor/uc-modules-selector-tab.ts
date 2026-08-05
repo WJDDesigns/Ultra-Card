@@ -7,7 +7,21 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import type { ModuleManifest } from '../modules/module-registry';
 
-@customElement('uc-modules-selector-tab')
+const UC_DENSITY_KEY = 'ultra-card-module-picker-density';
+
+/** Module screenshots are generated in CI and published with the repo. */
+const UC_PREVIEW_BASE =
+  'https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@main/docs/previews/';
+
+function readStoredDensity(): 'gallery' | 'list' {
+  try {
+    return localStorage.getItem(UC_DENSITY_KEY) === 'list' ? 'list' : 'gallery';
+  } catch {
+    return 'gallery';
+  }
+}
+
+
 export class UcModulesSelectorTab extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public allModules: ModuleManifest[] = [];
@@ -18,6 +32,8 @@ export class UcModulesSelectorTab extends LitElement {
 
   @state() private _moduleSearchQuery = '';
   @state() private _activeModuleCategoryTab: 'standard' | 'pro' = 'standard';
+  /** Gallery shows a picture of each module; list is the original compact rows. */
+  @state() private _density: 'gallery' | 'list' = readStoredDensity();
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -204,21 +220,52 @@ export class UcModulesSelectorTab extends LitElement {
           ${title}
         </h4>
         <p class="category-description">${description}</p>
-        <div class="module-types content-modules">
-          ${modules.map(
-            meta => html`
-              <button
-                class="module-type-btn content-module"
-                @click=${() => this._emitModuleSelected(meta.type)}
-                title="${meta.description}"
-              >
-                <ha-icon icon="${meta.icon}"></ha-icon>
-                <div class="module-info">
-                  <span class="module-title">${meta.title}</span>
-                  <span class="module-description">${meta.description}</span>
-                </div>
-              </button>
-            `
+        <div class="module-types content-modules ${this._density === 'gallery' ? 'gallery' : ''}">
+          ${modules.map(meta =>
+            this._density === 'gallery'
+              ? html`
+                  <button
+                    class="module-tile"
+                    @click=${() => this._emitModuleSelected(meta.type)}
+                    title="${meta.description}"
+                  >
+                    <span class="tile-shot">
+                      <img
+                        loading="lazy"
+                        src="${UC_PREVIEW_BASE}${meta.type}.png"
+                        alt=""
+                        @error=${(e: Event) => {
+                          // No screenshot yet (e.g. a brand-new module): fall
+                          // back to the icon rather than an empty frame.
+                          const img = e.target as HTMLImageElement;
+                          img.style.display = 'none';
+                          (img.parentElement as HTMLElement)?.classList.add('no-shot');
+                        }}
+                      />
+                      <ha-icon class="tile-shot-fallback" icon="${meta.icon}"></ha-icon>
+                    </span>
+                    <span class="tile-meta">
+                      <ha-icon icon="${meta.icon}"></ha-icon>
+                      <span class="module-info">
+                        <span class="module-title">${meta.title}</span>
+                        <span class="module-description">${meta.description}</span>
+                      </span>
+                    </span>
+                  </button>
+                `
+              : html`
+                  <button
+                    class="module-type-btn content-module"
+                    @click=${() => this._emitModuleSelected(meta.type)}
+                    title="${meta.description}"
+                  >
+                    <ha-icon icon="${meta.icon}"></ha-icon>
+                    <div class="module-info">
+                      <span class="module-title">${meta.title}</span>
+                      <span class="module-description">${meta.description}</span>
+                    </div>
+                  </button>
+                `
           )}
         </div>
       </div>
@@ -263,6 +310,31 @@ export class UcModulesSelectorTab extends LitElement {
     `;
   }
 
+  private _setDensity(mode: 'gallery' | 'list'): void {
+    this._density = mode;
+    try {
+      localStorage.setItem(UC_DENSITY_KEY, mode);
+    } catch {
+      /* private browsing — the choice just won't persist */
+    }
+  }
+
+  private _renderDensityToggle(): TemplateResult {
+    const opt = (mode: 'gallery' | 'list', icon: string, label: string) => html`
+      <button
+        class="density-btn ${this._density === mode ? 'active' : ''}"
+        @click=${() => this._setDensity(mode)}
+        title="${label} view"
+        aria-pressed="${this._density === mode}"
+      >
+        <ha-icon icon="${icon}"></ha-icon>
+      </button>
+    `;
+    return html`<div class="density-toggle">
+      ${opt('gallery', 'mdi:view-grid-outline', 'Gallery')}${opt('list', 'mdi:view-list-outline', 'List')}
+    </div>`;
+  }
+
   private _renderSearchBar(): TemplateResult {
     const tierLabel = this._activeModuleCategoryTab === 'pro' ? 'PRO' : 'Standard';
     return html`
@@ -294,6 +366,7 @@ export class UcModulesSelectorTab extends LitElement {
               `
             : ''}
         </div>
+        ${this._renderDensityToggle()}
       </div>
     `;
   }
@@ -530,6 +603,141 @@ export class UcModulesSelectorTab extends LitElement {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 12px;
+    }
+
+    /* ── Gallery view ──────────────────────────────────────────────
+       Leads with a picture of the module, the way Home Assistant's own
+       card picker does. Screenshots are generated in CI, so nothing is
+       rendered live here and the grid stays cheap to scroll. */
+    .module-types.gallery {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 700px) {
+      .module-types.gallery {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .module-tile {
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      border: 1px solid var(--divider-color);
+      border-radius: 10px;
+      background: var(--card-background-color);
+      cursor: pointer;
+      overflow: hidden;
+      text-align: left;
+      width: 100%;
+      font-family: inherit;
+      transition:
+        border-color 0.2s ease,
+        transform 0.15s ease;
+    }
+    .module-tile:hover {
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+    .module-tile:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+    .tile-shot {
+      position: relative;
+      display: block;
+      height: 104px;
+      background: var(--primary-background-color, #111);
+      border-bottom: 1px solid var(--divider-color);
+      overflow: hidden;
+    }
+    .tile-shot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      display: block;
+    }
+    /* The icon only appears if the screenshot is missing. */
+    .tile-shot-fallback {
+      display: none;
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 34px;
+      height: 34px;
+      --mdc-icon-size: 34px;
+      color: var(--primary-color);
+      opacity: 0.55;
+    }
+    .tile-shot.no-shot .tile-shot-fallback {
+      display: block;
+    }
+    .tile-meta {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      padding: 10px 11px 12px;
+    }
+    .tile-meta ha-icon {
+      flex-shrink: 0;
+      --mdc-icon-size: 18px;
+      color: var(--primary-color);
+      margin-top: 1px;
+    }
+    .module-tile .module-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .module-tile .module-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--primary-text-color);
+      line-height: 1.25;
+    }
+    .module-tile .module-description {
+      font-size: 11.5px;
+      color: var(--secondary-text-color);
+      line-height: 1.35;
+      margin-top: 2px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* ── Gallery / list toggle ── */
+    .density-toggle {
+      display: inline-flex;
+      flex-shrink: 0;
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-left: 8px;
+    }
+    .density-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border: 0;
+      background: transparent;
+      color: var(--secondary-text-color);
+      cursor: pointer;
+      transition:
+        background 0.2s ease,
+        color 0.2s ease;
+    }
+    .density-btn ha-icon {
+      --mdc-icon-size: 18px;
+    }
+    .density-btn:hover {
+      color: var(--primary-text-color);
+    }
+    .density-btn.active {
+      background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+      color: var(--primary-color);
     }
     .module-type-btn {
       display: flex;
