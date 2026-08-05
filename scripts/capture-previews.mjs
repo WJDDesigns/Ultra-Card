@@ -140,15 +140,30 @@ async function main() {
   server.close();
 
   // ── manifest: the contract every consumer reads ──
+  // A partial run (--only) must not drop the modules it did not capture, so
+  // fold this run's results into whatever the manifest already describes.
+  let entries = results;
+  if (wanted) {
+    let previous = [];
+    try {
+      const existing = JSON.parse(await fs.readFile(path.join(OUT_DIR, 'manifest.json'), 'utf8'));
+      previous = Array.isArray(existing.modules) ? existing.modules : [];
+    } catch {
+      /* no manifest yet — this run is all we know about */
+    }
+    const captured = new Set(results.map(r => r.type));
+    entries = [...previous.filter(p => !captured.has(p.type)), ...results];
+  }
+
   const manifest = {
     generatedAt: new Date().toISOString(),
     ultraCardVersion: version,
     counts: {
-      total: results.length,
-      free: results.filter(r => !r.pro).length,
-      pro: results.filter(r => r.pro).length,
+      total: entries.length,
+      free: entries.filter(r => !r.pro).length,
+      pro: entries.filter(r => r.pro).length,
     },
-    modules: results.sort((a, b) => a.title.localeCompare(b.title)),
+    modules: entries.sort((a, b) => a.title.localeCompare(b.title)),
   };
   await fs.writeFile(path.join(OUT_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 

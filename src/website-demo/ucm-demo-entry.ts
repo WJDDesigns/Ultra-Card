@@ -152,6 +152,9 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     ];
     c.columns = 2;
     c.gap = 8;
+    // The module collapses to mobile_columns below a 600px breakpoint, and the
+    // capture stage is 420px wide, so the grid read as a plain stack.
+    c.mobile_columns = 2;
   },
   accordion: c => {
     c.modules = [mk('info')];
@@ -448,6 +451,12 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
   select_input: c => (c.entity = c.entity || 'input_select.house_mode'),
   toggle: c => {
     c.tracking_entity = 'input_boolean.guest';
+    // The module defaults to the IEC power symbols, a bare circle and a bare
+    // bar, which read as punctuation at thumbnail size rather than as icons.
+    if (Array.isArray(c.toggle_points) && c.toggle_points.length >= 2) {
+      c.toggle_points[0].icon = 'mdi:toggle-switch-off-outline';
+      c.toggle_points[1].icon = 'mdi:toggle-switch';
+    }
   },
   boolean_input: c => (c.entity = c.entity || 'input_boolean.guest'),
   button_input: c => (c.entity = c.entity || 'input_button.doorbell_test'),

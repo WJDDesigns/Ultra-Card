@@ -288,8 +288,10 @@ export function createDemoStates(): Record<string, any> {
     // ---- presence ----
     'person.tony': st('person.tony', 'home', {
       friendly_name: 'Tony Stark',
+      // tvtropes blocks hotlinking (403), which rendered as a broken avatar.
+      // Wikimedia serves freely-licensed media and is already used elsewhere here.
       entity_picture:
-        'https://mediaproxy.tvtropes.org/width/1200/https://static.tvtropes.org/pmwiki/pub/images/tony_stark.png',
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Robert_Downey_Jr_2014_Comic_Con_%28cropped%29.jpg/500px-Robert_Downey_Jr_2014_Comic_Con_%28cropped%29.jpg',
       latitude: 34.03,
       longitude: -118.49,
       gps_accuracy: 8,
