@@ -361,6 +361,11 @@ export function createDemoStates(): Record<string, any> {
       friendly_name: 'Groceries',
       supported_features: 15,
     }),
+    // Plant care stores its history as namespaced JSON in a to-do list.
+    'todo.plant_care': st('todo.plant_care', '0', {
+      friendly_name: 'Plant Care Log',
+      supported_features: 79, // includes SET_DESCRIPTION_ON_ITEM (64)
+    }),
 
     // ---- timer / counter ----
     'timer.pizza': st('timer.pizza', 'active', {
@@ -398,12 +403,23 @@ export function createDemoStates(): Record<string, any> {
       unit_of_measurement: '%',
       icon: 'mdi:ev-station',
     }),
-    'input_datetime.wake_up': st('input_datetime.wake_up', '06:45:00', {
-      friendly_name: 'Wake-up Alarm',
-      has_date: false,
-      has_time: true,
-      icon: 'mdi:alarm',
-    }),
+    'input_datetime.wake_up': st(
+      'input_datetime.wake_up',
+      new Date(Date.now() + 36e5).toISOString().slice(0, 19).replace('T', ' '),
+      {
+        friendly_name: 'Next Alarm',
+        has_date: true,
+        has_time: true,
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
+        day: new Date().getDate(),
+        hour: new Date().getHours(),
+        minute: 0,
+        second: 0,
+        timestamp: Math.floor((Date.now() + 36e5) / 1000),
+        icon: 'mdi:alarm',
+      }
+    ),
     'input_select.house_mode': st('input_select.house_mode', 'Home', {
       friendly_name: 'House Mode',
       options: ['Home', 'Away', 'Guest', 'Vacation'],
@@ -640,6 +656,31 @@ export function createDemoHass() {
       const entity = id && states[id];
       const d = (v: any, f: any) => (v === undefined ? f : v);
       if (domain === 'todo' && service === 'get_items') {
+        if (id === 'todo.plant_care') {
+          const ago = (h: number) => new Date(Date.now() - h * 36e5).toISOString();
+          const rec = (uid: string, plant: string, kind: string, hrs: number) => ({
+            uid,
+            summary: `${kind === 'water' ? 'Watered' : 'Fertilised'} ${plant}`,
+            status: 'completed',
+            description: JSON.stringify({
+              _ns: 'plant_care',
+              _v: 1,
+              data: { plant_id: plant, kind, at: ago(hrs) },
+            }),
+          });
+          return {
+            response: {
+              'todo.plant_care': {
+                items: [
+                  rec('pc1', 'demo_p1', 'water', 30),
+                  rec('pc2', 'demo_p2', 'water', 90),
+                  rec('pc3', 'demo_p3', 'water', 8),
+                  rec('pc4', 'demo_p1', 'fertilize', 260),
+                ],
+              },
+            },
+          };
+        }
         const items = [
           { uid: '1', summary: 'Milk', status: 'completed' },
           { uid: '2', summary: 'Coffee beans', status: 'completed' },

@@ -307,7 +307,7 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     ];
   },
   plant_care: c => {
-    c.todo_entity = 'todo.groceries';
+    c.todo_entity = 'todo.plant_care';
     c.plants = [
       { id: 'demo_p1', name: 'Monstera', icon: 'mdi:leaf', location: 'Living Room', moisture_entity: 'sensor.monstera_moisture', water_interval_days: 7 },
       { id: 'demo_p2', name: 'Snake Plant', icon: 'mdi:sprout', location: 'Office', moisture_entity: 'sensor.snake_plant_moisture', water_interval_days: 14 },
@@ -440,6 +440,9 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
   slider_input: c => (c.entity = c.entity || 'input_number.ev_charge_limit'),
   datetime_input: c => (c.entity = c.entity || 'input_datetime.wake_up'),
   select_input: c => (c.entity = c.entity || 'input_select.house_mode'),
+  toggle: c => {
+    c.tracking_entity = 'input_boolean.guest';
+  },
   boolean_input: c => (c.entity = c.entity || 'input_boolean.guest'),
   button_input: c => (c.entity = c.entity || 'input_button.doorbell_test'),
   counter_input: c => (c.entity = c.entity || 'counter.coffee'),
@@ -509,8 +512,20 @@ const DEMO_ANIMATE: Record<string, (el: any) => void> = {
 
 const DEMO_STAGE: Record<string, (holder: HTMLElement, el: any) => void> = {
   dropdown: (holder, el) => {
-    // Open, pause, close, pause — and keep the option list clipped in-card.
+    // Open downward, clipped inside the card, with a solid list background.
     holder.style.overflow = 'hidden';
+    const style = document.createElement('style');
+    style.textContent = `
+      .dropdown-options, [class*="dropdown-options"], [class*="dropdown-list"]{
+        background: var(--card-background-color, #1c1c1c) !important;
+        border: 1px solid var(--divider-color, rgba(255,255,255,.14)) !important;
+        border-radius: 10px !important;
+        box-shadow: 0 12px 30px rgba(0,0,0,.55) !important;
+        top: 100% !important; bottom: auto !important; margin-top: 4px !important;
+        max-height: 92px !important; overflow: hidden !important; z-index: 4 !important;
+      }
+      .custom-dropdown{ position: relative !important; }`;
+    holder.appendChild(style);
     let open = false;
     el._addTimer(setInterval(() => {
       clickFirst(holder, ['.dropdown-selected', '.custom-dropdown', 'select', 'button', 'ha-button']);
@@ -530,7 +545,8 @@ const DEMO_STAGE: Record<string, (holder: HTMLElement, el: any) => void> = {
   scroll_row: (holder, el) => {
     let dir = 1;
     el._addTimer(setInterval(() => {
-      const track = holder.querySelector('[class*="scroll"], [style*="overflow"]') as HTMLElement | null;
+      const track = (Array.from(holder.querySelectorAll('*')) as HTMLElement[])
+        .find(n => n.scrollWidth > n.clientWidth + 8) || null;
       if (!track) return;
       const max = track.scrollWidth - track.clientWidth;
       if (max <= 4) return;
@@ -637,13 +653,20 @@ const DEMO_STAGE: Record<string, (holder: HTMLElement, el: any) => void> = {
     let i = 0, dir = 1;
     el._addTimer(setInterval(() => {
       const dots = Array.from(
-        holder.querySelectorAll('.pagination-dot, [class*="pagination"] button, [class*="dot"]')
+        holder.querySelectorAll('.pagination-dot, [class*="pagination"] button, [class*="pagination"] span, [class*="dot"]')
       ) as HTMLElement[];
-      if (dots.length < 2) return;
-      i += dir;
-      if (i >= dots.length - 1) dir = -1;
-      if (i <= 0) dir = 1;
-      dots[Math.max(0, Math.min(dots.length - 1, i))].click();
+      if (dots.length >= 2) {
+        i += dir;
+        if (i >= dots.length - 1) dir = -1;
+        if (i <= 0) dir = 1;
+        dots[Math.max(0, Math.min(dots.length - 1, i))].click();
+        return;
+      }
+      // No dots: use the next/prev arrows instead.
+      const arrows = controls(holder).filter(b =>
+        /arrow|next|prev|chevron/i.test(b.className + (b.getAttribute('aria-label') || '') + b.innerHTML)
+      );
+      if (arrows.length >= 2) { arrows[dir > 0 ? 1 : 0].click(); i += dir; if (i > 1) dir = -1; if (i < 1) dir = 1; }
     }, 2800));
   },
   state_switcher: (holder, el) => {
