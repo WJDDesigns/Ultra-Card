@@ -642,7 +642,7 @@ class UcModuleDemo extends HTMLElement {
   private _module?: any;
   private _handler?: any;
   private _raf = 0;
-  private _visible = true;
+  private _visible = false;
   private _vio?: IntersectionObserver;
   private _tplListener = () => this._scheduleRender();
 
@@ -663,11 +663,16 @@ class UcModuleDemo extends HTMLElement {
     window.addEventListener('ultra-card-template-update', this._tplListener);
     window.addEventListener('uc-qr-data-ready', this._tplListener);
     this._vio = new IntersectionObserver(entries => {
+      // Count only real transitions — elements must start uncounted or the
+      // global visible-counter drifts negative and the ambient loop never runs.
       const was = this._visible;
-      this._visible = entries[0]?.isIntersecting ?? true;
-      const w = window as any;
-      w.__ucdVisible = (w.__ucdVisible || 0) + (this._visible ? 1 : 0) - (was ? 1 : 0);
-      if (this._visible && !was) this._scheduleRender();
+      const now = entries[0]?.isIntersecting ?? true;
+      if (now !== was) {
+        const w = window as any;
+        w.__ucdVisible = Math.max(0, (w.__ucdVisible || 0) + (now ? 1 : -1));
+        this._visible = now;
+        if (now) this._scheduleRender();
+      }
     }, { rootMargin: '120px' });
     this._vio.observe(this);
     startDemoLoop();
