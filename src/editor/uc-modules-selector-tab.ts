@@ -6,12 +6,25 @@ import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import type { ModuleManifest } from '../modules/module-registry';
+import { VERSION } from '../version';
 
 const UC_DENSITY_KEY = 'ultra-card-module-picker-density';
 
 /** Module screenshots are generated in CI and published with the repo. */
 const UC_PREVIEW_BASE =
   'https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@main/docs/previews/';
+
+/**
+ * jsDelivr serves these with a seven-day max-age, and the tiles lazy-load long
+ * after page load, so a browser that cached an old screenshot keeps showing it
+ * even through a hard refresh. Stamping the version onto the URL retires those
+ * copies whenever the card updates.
+ */
+const UC_PREVIEW_CACHE_KEY = `?v=${encodeURIComponent(VERSION)}`;
+
+function previewUrl(type: string, ext: 'png' | 'webp'): string {
+  return `${UC_PREVIEW_BASE}${type}.${ext}${UC_PREVIEW_CACHE_KEY}`;
+}
 
 function readStoredDensity(): 'gallery' | 'list' {
   try {
@@ -264,7 +277,7 @@ export class UcModulesSelectorTab extends LitElement {
           <span class="tile-shot">
             <img
               loading="lazy"
-              src="${UC_PREVIEW_BASE}${meta.type}.png"
+              src="${previewUrl(meta.type, 'png')}"
               alt=""
               @error=${(e: Event) => {
                 // No screenshot yet (e.g. a brand-new module): fall back to
@@ -277,7 +290,7 @@ export class UcModulesSelectorTab extends LitElement {
             <img
               class="tile-anim"
               alt=""
-              data-src="${UC_PREVIEW_BASE}${meta.type}.webp"
+              data-src="${previewUrl(meta.type, 'webp')}"
               @error=${(e: Event) => {
                 // Module captured before animations existed: keep the still.
                 const img = e.target as HTMLImageElement;
