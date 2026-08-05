@@ -78,7 +78,21 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
   },
   icon: c => {
     if (Array.isArray(c.icons) && c.icons.length) {
-      c.icons[0].entity = 'light.living_room';
+      const base = c.icons[0];
+      const make = (entity: string, on: string, off: string, name: string) => ({
+        ...base,
+        id: 'demo_icon_' + entity.replace(/\W/g, '_'),
+        icon_mode: 'entity',
+        entity,
+        name,
+        icon_active: on,
+        icon_inactive: off,
+      });
+      c.icons = [
+        make('light.living_room', 'mdi:lightbulb', 'mdi:lightbulb-outline', 'Living Room'),
+        make('light.kitchen', 'mdi:ceiling-light', 'mdi:ceiling-light-outline', 'Kitchen'),
+        make('lock.front_door', 'mdi:lock', 'mdi:lock-open-variant', 'Front Door'),
+      ];
     }
   },
   horizontal: c => {
@@ -243,6 +257,10 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
   'dynamic-list': c => {
     c.source_type = 'todo';
     c.todo_entity = 'todo.groceries';
+    c.direction = 'vertical';
+    c.columns = 1;
+    c.gap = 6;
+    c.limit = 4;
   },
   area_summary: c => {
     c.area_id = 'living_room';
@@ -265,7 +283,7 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     ];
   },
   plant_care: c => {
-    c.todo_entity = 'todo.groceries';
+    c.todo_entity = '';
     c.plants = [
       { id: 'demo_p1', name: 'Monstera', icon: 'mdi:leaf', location: 'Living Room', moisture_entity: 'sensor.monstera_moisture', water_interval_days: 7 },
       { id: 'demo_p2', name: 'Snake Plant', icon: 'mdi:sprout', location: 'Office', moisture_entity: 'sensor.snake_plant_moisture', water_interval_days: 14 },
@@ -358,6 +376,12 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     c.home_entity = 'sensor.power_usage';
     c.solar_energy_entity = 'sensor.energy_today';
   },
+  clock: c => {
+    c.show_seconds = true;
+  },
+  animated_clock: c => {
+    c.show_seconds = true;
+  },
   screensaver: c => {
     c.weather_entity = 'weather.home';
     c.overlay_style = 'classic';
@@ -411,36 +435,124 @@ function clickFirst(holder: HTMLElement, selectors: string[]): boolean {
   return false;
 }
 
-const DEMO_STAGE: Record<string, (holder: HTMLElement) => void> = {
-  dropdown: holder => {
-    clickFirst(holder, ['.dropdown-selected', '.custom-dropdown', 'select', 'button']);
+/** Hand-staged HTML previews: render ONCE so their CSS animations keep running
+ *  (re-rendering resets every animation to 0% and looks frozen). */
+const STATIC_DEMOS = new Set([
+  'navigation','background','drawer','popup','dynamic_weather','video_bg',
+  'living_canvas','dog_duty','cleaning_zones','pagebreak',
+]);
+
+/** Visuals that depend on wall-clock time: re-render every second. */
+const TIME_MODULES = new Set(['clock','animated_clock','screensaver','media_player','calendar']);
+
+/** Config-level animators: mutate the module's own config on a loop. */
+const DEMO_ANIMATE: Record<string, (el: any) => void> = {
+  text: el => {
+    const phrases = ['Good evening, Wayne', 'House is locked', '3 lights on', 'Nest set to 72°'];
+    let pi = 0, ci = 0, holdFor = 0;
+    el._addTimer(setInterval(() => {
+      const full = phrases[pi % phrases.length];
+      if (holdFor > 0) { holdFor--; if (holdFor === 0) { pi++; ci = 0; } return; }
+      ci++;
+      el._module.text = full.slice(0, ci) + (ci < full.length ? '▍' : '');
+      if (ci >= full.length) holdFor = 18;
+      el._scheduleRender();
+    }, 90));
   },
-  accordion: holder => {
-    // Open and close on a relaxed loop.
-    const header = holder.querySelector('button') as HTMLElement | null;
-    if (header) {
-      const id = setInterval(() => {
-        if (!holder.isConnected) {
-          clearInterval(id);
-          return;
-        }
-        (holder.querySelector('button') as HTMLElement | null)?.click();
-      }, 3600);
-    }
+  spinbox: el => {
+    let v = 50, dir = 1;
+    el._addTimer(setInterval(() => {
+      v += dir * 2;
+      if (v >= 74) dir = -1;
+      if (v <= 30) dir = 1;
+      el._module.value = v;
+      el._scheduleRender();
+    }, 700));
   },
-  tabs: holder => {
+};
+
+const DEMO_STAGE: Record<string, (holder: HTMLElement, el: any) => void> = {
+  dropdown: (holder, el) => {
+    // Open, pause, close, pause — and keep the option list clipped in-card.
+    holder.style.overflow = 'hidden';
+    let open = false;
+    el._addTimer(setInterval(() => {
+      clickFirst(holder, ['.dropdown-selected', '.custom-dropdown', 'select', 'button']);
+      open = !open;
+    }, 2600));
+  },
+  accordion: (holder, el) => {
+    el._addTimer(setInterval(() => {
+      (holder.querySelector('button') as HTMLElement | null)?.click();
+    }, 3000));
+  },
+  tabs: (holder, el) => {
     let idx = 1;
-    const id = setInterval(() => {
-      if (!holder.isConnected) {
-        clearInterval(id);
-        return;
-      }
+    el._addTimer(setInterval(() => {
       const tabBtns = Array.from(holder.querySelectorAll('button')).slice(0, 2) as HTMLElement[];
-      if (tabBtns.length >= 2) {
-        tabBtns[idx % 2].click();
-        idx++;
-      }
-    }, 4000);
+      if (tabBtns.length >= 2) { tabBtns[idx % 2].click(); idx++; }
+    }, 3200));
+  },
+  timer: (holder, el) => {
+    // Press start so the countdown runs; restart it when it winds down.
+    const press = () => {
+      const btns = Array.from(holder.querySelectorAll('button')) as HTMLElement[];
+      const start = btns.find(b => /start|play/i.test(b.className + b.textContent + (b.getAttribute('aria-label') || '')));
+      (start || btns[0])?.click();
+    };
+    setTimeout(press, 300);
+    el._addTimer(setInterval(press, 30000));
+  },
+  scroll_row: (holder, el) => {
+    let dir = 1;
+    el._addTimer(setInterval(() => {
+      const track = holder.querySelector('[class*="scroll"], [style*="overflow"]') as HTMLElement | null;
+      if (!track) return;
+      const max = track.scrollWidth - track.clientWidth;
+      if (max <= 4) return;
+      const next = track.scrollLeft + dir * Math.max(60, track.clientWidth * 0.45);
+      if (next >= max - 2) dir = -1;
+      if (next <= 2) dir = 1;
+      track.scrollTo({ left: Math.max(0, Math.min(max, next)), behavior: 'smooth' });
+    }, 2200));
+  },
+  graphs: holder => {
+    // Draw the series in each time the card scrolls into view.
+    holder.querySelectorAll('svg path, svg polyline').forEach(node => {
+      const el2 = node as SVGPathElement;
+      if (!el2.getAttribute('stroke') || el2.getAttribute('stroke') === 'none') return;
+      let len = 600;
+      try { len = (el2 as any).getTotalLength() || 600; } catch (e) { /* ignore */ }
+      el2.style.strokeDasharray = String(len);
+      el2.style.strokeDashoffset = String(len);
+      el2.style.animation = 'ucdDraw 1.6s ease-out forwards';
+    });
+  },
+  time_machine: (holder, el) => {
+    let v = 24, dir = -1;
+    el._addTimer(setInterval(() => {
+      const r = holder.querySelector('input[type="range"]') as HTMLInputElement | null;
+      if (!r) return;
+      v += dir * 2;
+      if (v <= 2) dir = 1;
+      if (v >= 24) dir = -1;
+      r.value = String(v);
+      r.dispatchEvent(new Event('input', { bubbles: true }));
+      r.dispatchEvent(new Event('change', { bubbles: true }));
+    }, 900));
+  },
+  alarm_panel: (holder, el) => {
+    // Tap a few keypad digits, then arm/disarm, on a loop.
+    let step = 0;
+    el._addTimer(setInterval(() => {
+      const btns = Array.from(holder.querySelectorAll('button')) as HTMLElement[];
+      if (!btns.length) return;
+      const digits = btns.filter(b => /^[0-9]$/.test((b.textContent || '').trim()));
+      const action = btns.find(b => /arm|disarm/i.test(b.textContent || ''));
+      if (step < 4 && digits.length) digits[(step * 3) % digits.length].click();
+      else if (action) action.click();
+      step = (step + 1) % 6;
+    }, 1100));
   },
   __unused_popup: holder => {
     clickFirst(holder, ['[class*="trigger"]', 'button', '[role="button"]']);
@@ -496,14 +608,27 @@ const DEMO_STAGE: Record<string, (holder: HTMLElement) => void> = {
     const img = holder.querySelector('img') as HTMLElement | null;
     if (img) img.style.filter = 'brightness(.55)';
   },
-  slider: holder => {
-    // Cycle pages so the slideshow is visibly working.
-    let i = 1;
-    const id = setInterval(() => {
-      if (!holder.isConnected) { clearInterval(id); return; }
-      const dots = holder.querySelectorAll('.pagination-dot, [class*="pagination"] button, [class*="dot"]');
-      if (dots.length >= 2) { (dots[i % dots.length] as HTMLElement).click(); i++; }
-    }, 3500);
+  slider: (holder, el) => {
+    // Page back and forth so the slideshow is visibly working.
+    let i = 0, dir = 1;
+    el._addTimer(setInterval(() => {
+      const dots = Array.from(
+        holder.querySelectorAll('.pagination-dot, [class*="pagination"] button, [class*="dot"]')
+      ) as HTMLElement[];
+      if (dots.length < 2) return;
+      i += dir;
+      if (i >= dots.length - 1) dir = -1;
+      if (i <= 0) dir = 1;
+      dots[Math.max(0, Math.min(dots.length - 1, i))].click();
+    }, 2800));
+  },
+  state_switcher: (holder, el) => {
+    const modes = ['Home', 'Away', 'Guest', 'Vacation'];
+    let i = 0;
+    el._addTimer(setInterval(() => {
+      i = (i + 1) % modes.length;
+      demoHass.__setState('input_select.house_mode', modes[i]);
+    }, 2600));
   },
 };
 
@@ -563,10 +688,56 @@ function startDemoLoop() {
       const next = options[(options.indexOf(sel.state) + 1) % options.length];
       if (next) demoHass.__setState('input_select.house_mode', next);
     }
+
+    // On/off state changes: icons, toggles, grid tiles, alert center.
+    const flip = (id: string, a = 'on', b = 'off') => {
+      const st2 = demoHass.states[id];
+      if (st2) demoHass.__setState(id, st2.state === a ? b : a);
+    };
+    flip('light.kitchen');
+    flip('switch.guest_mode');
+    if (phase % 2 === 0) flip('light.desk_lamp');
+    if (phase % 2 === 1) flip('binary_sensor.garage_motion');
+    if (phase % 3 === 0) flip('binary_sensor.front_door');
+    if (phase % 3 === 1) flip('binary_sensor.leak_laundry');
+    if (phase % 4 === 0) {
+      const lk = demoHass.states['lock.front_door'];
+      if (lk) demoHass.__setState('lock.front_door', lk.state === 'locked' ? 'unlocked' : 'locked');
+    }
+
+    // People move between home and away.
+    const per = demoHass.states['person.tony'];
+    if (per) demoHass.__setState('person.tony', per.state === 'home' ? 'not_home' : 'home');
+
+    // Alarm cycles through its states.
+    const alarmStates = ['disarmed', 'arming', 'armed_home', 'armed_away'];
+    const al = demoHass.states['alarm_control_panel.home'];
+    if (al) demoHass.__setState('alarm_control_panel.home', alarmStates[phase % alarmStates.length]);
+
+    // Colour input walks the brand palette.
+    const palette = ['#8017A2', '#29b6f6', '#ff2d78', '#4ade80', '#ffc233'];
+    demoHass.__setState('input_text.accent_color', palette[phase % palette.length]);
+
+    // Oven heats and settles.
+    tween('sensor.oven_temp', { from: up ? 348 : 425, to: up ? 425 : 348, ms: 2600 });
+
     phase++;
   };
   setTimeout(cycle, 1200);
   setInterval(cycle, 4200);
+
+  // Media playback position advances in real time.
+  setInterval(() => {
+    if (document.hidden || !((window as any).__ucdVisible > 0)) return;
+    const mp = demoHass.states['media_player.kitchen_speaker'];
+    if (!mp) return;
+    const dur = mp.attributes.media_duration || 243;
+    const pos = ((mp.attributes.media_position || 0) + 1) % dur;
+    demoHass.__setState('media_player.kitchen_speaker', mp.state, {
+      media_position: pos,
+      media_position_updated_at: new Date().toISOString(),
+    });
+  }, 1000);
 }
 
 /** HA default dark-theme variables so modules look like a real dashboard. */
@@ -613,7 +784,8 @@ const THEME_CSS = `
 .ucd-error{color:#9b9b9b;font-size:12px;text-align:center;padding:18px 10px}
 /* Fallback range-input styling so slider tracks are always visible outside HA.
    Module-provided styles load after this sheet and win where they exist. */
-input[type=range]{-webkit-appearance:none;appearance:none;height:18px;background:transparent}
+input[type=range]{-webkit-appearance:none;appearance:none;height:18px;background:transparent;
+  display:block;margin:0;vertical-align:middle;align-self:center}
 input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:rgba(255,255,255,.22)}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
   background:var(--primary-color,#03a9f4);margin-top:-5px;box-shadow:0 1px 4px rgba(0,0,0,.4)}
@@ -630,6 +802,13 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radiu
 @keyframes ucdAuroraBig{0%,100%{transform:translate(-16%,-4%) rotate(-4deg) scale(1)}50%{transform:translate(16%,6%) rotate(5deg) scale(1.18)}}
 @keyframes ucdDrawerSlide{0%,12%{transform:translateX(105%)}26%,72%{transform:translateX(0)}86%,100%{transform:translateX(105%)}}
 @keyframes ucdFlip{0%,32%{transform:rotateY(0)}45%,82%{transform:rotateY(180deg)}95%,100%{transform:rotateY(360deg)}}
+@keyframes ucdDraw{to{stroke-dashoffset:0}}
+@keyframes ucdNavActive{0%,4%{color:var(--primary-color);transform:translateY(-2px)}22%,100%{color:var(--secondary-text-color);transform:none}}
+@keyframes ucdScrub{0%{left:0}92%,100%{left:calc(100% - 12px)}}
+@keyframes ucdSpotIn{0%,8%{opacity:0;transform:scale(.5)}14%,92%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.5)}}
+@keyframes ucdZonePulse{0%,100%{filter:brightness(1)}45%{filter:brightness(1.75)}}
+@keyframes ucdBotPath{0%{left:14%;top:22%}25%{left:34%;top:34%}50%{left:62%;top:66%}75%{left:80%;top:36%}100%{left:14%;top:22%}}
+@keyframes ucdPopup{0%,8%{opacity:0;transform:translate(-50%,-38%) scale(.92)}18%,72%{opacity:1;transform:translate(-50%,-50%) scale(1)}86%,100%{opacity:0;transform:translate(-50%,-38%) scale(.92)}}
 `;
 
 class UcModuleDemo extends HTMLElement {
@@ -642,6 +821,8 @@ class UcModuleDemo extends HTMLElement {
   private _module?: any;
   private _handler?: any;
   private _raf = 0;
+  private _timers: number[] = [];
+  private _staticDone = false;
   private _visible = false;
   private _vio?: IntersectionObserver;
   private _tplListener = () => this._scheduleRender();
@@ -690,13 +871,25 @@ class UcModuleDemo extends HTMLElement {
       this._visible = false;
     }
     this._vio?.disconnect();
+    this._clearTimers();
     this._unsub?.();
     this._unsub = undefined;
+  }
+
+  /** Register an interval owned by this element (auto-cleared on reboot/unmount). */
+  _addTimer(id: any) {
+    this._timers.push(id as number);
+  }
+  private _clearTimers() {
+    this._timers.forEach(t => clearInterval(t));
+    this._timers = [];
   }
 
   private async _boot() {
     const type = this.getAttribute('type');
     if (!type) return;
+    this._clearTimers();
+    this._staticDone = false;
     try {
       const [, sheet] = await Promise.all([
         allModulesReady,
@@ -722,7 +915,14 @@ class UcModuleDemo extends HTMLElement {
       this._renderNow();
 
       const stage = DEMO_STAGE[type];
-      if (stage) setTimeout(() => { try { stage(this._holder); } catch (e) { /* staging is best-effort */ } }, 400);
+      if (stage) setTimeout(() => { try { stage(this._holder, this); } catch (e) { /* staging is best-effort */ } }, 400);
+
+      // Wall-clock modules tick every second so the time is always real.
+      if (TIME_MODULES.has(type)) this._addTimer(setInterval(() => this._scheduleRender(), 1000));
+
+      // Config-level animators (typewriter text, stepper values, ...).
+      const animate = DEMO_ANIMATE[type];
+      if (animate) setTimeout(() => { try { animate(this); } catch (e) { /* best-effort */ } }, 500);
     } catch (err) {
       this._holder.innerHTML = `<div class="ucd-error">Preview unavailable — see this module live on your own dashboard.</div>`;
       // eslint-disable-next-line no-console
@@ -739,6 +939,11 @@ class UcModuleDemo extends HTMLElement {
   private _renderNow() {
     if (!this._handler || !this._module) return;
     const type = this.getAttribute('type') || '';
+    // Staged HTML demos paint once — re-painting restarts their CSS animations.
+    if (STATIC_DEMOS.has(type)) {
+      if (this._staticDone) return;
+      this._staticDone = true;
+    }
     // Navigation and Background produce view-wide chrome that is invisible
     // inside a single card, so their demos stage the module's EFFECT: a mini
     // dashboard view with the navbar dock / view background applied, built
@@ -757,13 +962,28 @@ class UcModuleDemo extends HTMLElement {
             ${routes
               .map(
                 (r, i) => `
-              <div style="text-align:center;color:${i === 0 ? 'var(--primary-color)' : 'var(--secondary-text-color)'}">
+              <div style="text-align:center;color:var(--secondary-text-color);
+                animation:ucdNavActive ${routes.length * 1.6}s ease-in-out ${(i * 1.6).toFixed(1)}s infinite">
                 <ha-icon icon="${r.icon || 'mdi:circle'}" style="--mdc-icon-size:20px"></ha-icon>
                 <div style="font-size:9px;font-weight:600">${r.label || ''}</div>
               </div>`
               )
               .join('')}
           </div>
+        </div>`;
+      return;
+    }
+    if (type === 'pagebreak') {
+      this._holder.innerHTML = `
+        <div style="height:170px;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:0 8px">
+          <div style="background:var(--card-background-color);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px;color:var(--primary-text-color);font-size:12px">
+            <b>Page 1</b><div style="color:var(--secondary-text-color);font-size:11px">Living room controls</div></div>
+          <div style="display:flex;align-items:center;gap:8px;color:#6fd4ff;font-size:9.5px;font-weight:800;letter-spacing:.14em">
+            <span style="flex:1;height:2px;background:repeating-linear-gradient(90deg,#29b6f6 0 8px,transparent 8px 15px)"></span>
+            PAGE BREAK
+            <span style="flex:1;height:2px;background:repeating-linear-gradient(90deg,#29b6f6 0 8px,transparent 8px 15px)"></span></div>
+          <div style="background:var(--card-background-color);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px;color:var(--primary-text-color);font-size:12px">
+            <b>Page 2</b><div style="color:var(--secondary-text-color);font-size:11px">Energy &amp; climate</div></div>
         </div>`;
       return;
     }
@@ -775,8 +995,9 @@ class UcModuleDemo extends HTMLElement {
             <div style="background:var(--card-background-color);border-radius:10px"></div>
             <div style="background:var(--card-background-color);border-radius:10px"></div>
           </div>
-          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:76%;background:var(--card-background-color);
-            border:1px solid rgba(255,255,255,.12);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.6);padding:12px">
+          <div style="position:absolute;left:50%;top:50%;width:76%;background:var(--card-background-color);
+            border:1px solid rgba(255,255,255,.12);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.6);padding:12px;
+            animation:ucdPopup 6s ease-in-out infinite">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;color:var(--primary-text-color);font-size:13px;font-weight:700">
               Climate <ha-icon icon="mdi:close" style="--mdc-icon-size:16px;color:var(--secondary-text-color)"></ha-icon></div>
             <div style="display:flex;gap:10px;align-items:center;color:var(--primary-text-color);font-size:12px">
@@ -838,13 +1059,17 @@ class UcModuleDemo extends HTMLElement {
       return;
     }
     if (type === 'dynamic_weather') {
-      const drops = Array.from({ length: 44 }, () =>
-        `<span style="position:absolute;left:${Math.round(Math.random() * 98)}%;top:${-Math.round(Math.random() * 100) - 10}%;width:2px;height:${10 + Math.round(Math.random() * 8)}px;border-radius:2px;background:rgba(140,200,255,.7);animation:ucdRain ${(0.7 + Math.random() * 0.7).toFixed(2)}s linear ${(Math.random() * 1.4).toFixed(2)}s infinite"></span>`
-      ).join('');
+      const drops = Array.from({ length: 60 }, () => {
+        const dur = (0.75 + Math.random() * 0.6).toFixed(2);
+        return `<span style="position:absolute;left:${(Math.random() * 99).toFixed(1)}%;top:-14px;z-index:2;
+          width:2px;height:${11 + Math.round(Math.random() * 9)}px;border-radius:2px;
+          background:linear-gradient(rgba(150,205,255,0),rgba(165,215,255,.95));
+          animation:ucdRain ${dur}s linear ${(Math.random() * 1.6).toFixed(2)}s infinite"></span>`;
+      }).join('');
       this._holder.innerHTML = `
         <div style="position:relative;height:170px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#141d2b,#0b111c)">
           ${drops}
-          <div style="position:absolute;left:12px;right:12px;bottom:10px;display:flex;justify-content:space-between;align-items:center;background:rgba(15,20,28,.6);backdrop-filter:blur(3px);border-radius:9px;padding:8px 12px;color:var(--primary-text-color);font-size:11.5px">
+          <div style="position:absolute;z-index:3;left:12px;right:12px;bottom:10px;display:flex;justify-content:space-between;align-items:center;background:rgba(15,20,28,.6);backdrop-filter:blur(3px);border-radius:9px;padding:8px 12px;color:var(--primary-text-color);font-size:11.5px">
             <span>Rain effect · view-wide</span><b style="color:#6fd4ff">66°</b></div>
         </div>`;
       return;
@@ -876,28 +1101,47 @@ class UcModuleDemo extends HTMLElement {
       return;
     }
     if (type === 'dog_duty') {
+      const YARD = 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=800&q=70';
+      // Each marker fades in as the scrubber sweeps past its position.
+      const spots = [
+        { x: 26, y: 46, at: 1.4 },
+        { x: 58, y: 62, at: 3.2 },
+        { x: 42, y: 74, at: 5.0 },
+      ];
+      const markers = spots.map(sp => `
+        <span style="position:absolute;left:${sp.x}%;top:${sp.y}%;z-index:3;font-size:19px;opacity:0;
+          filter:drop-shadow(0 2px 4px rgba(0,0,0,.7));
+          animation:ucdSpotIn 8s ease-out ${sp.at}s infinite">💩</span>`).join('');
       this._holder.innerHTML = `
-        <div style="position:relative;height:180px;border-radius:10px;overflow:hidden;background:linear-gradient(165deg,#2c4a22,#1c3316 55%,#142610)">
-          <div style="position:absolute;inset:0;background:repeating-linear-gradient(100deg,rgba(255,255,255,.03) 0 26px,transparent 26px 52px)"></div>
-          <div style="position:absolute;left:6%;top:10%;right:6%;bottom:24%;border:1.5px dashed rgba(160,220,140,.35);border-radius:8px"></div>
-          <span class="dog-duty-emoji" style="position:absolute;left:24%;top:34%;font-size:20px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))">💩</span>
-          <span class="dog-duty-emoji" style="position:absolute;left:58%;top:52%;font-size:20px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))">💩</span>
-          <span class="dog-duty-emoji" style="position:absolute;left:40%;top:62%;font-size:17px;opacity:.85;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))">💩</span>
-          <span style="position:absolute;right:14%;top:22%;font-size:22px;animation:ucdDrift 5s ease-in-out infinite">🐕</span>
-          <div style="position:absolute;left:10px;top:8px;display:flex;gap:6px">
-            <span style="background:rgba(0,0,0,.5);border-radius:99px;padding:3px 9px;font-size:10px;color:#ffd28a;font-weight:700">3 active</span>
-            <span style="background:rgba(0,0,0,.5);border-radius:99px;padding:3px 9px;font-size:10px;color:#cbe6c0">this week</span>
+        <div style="position:relative;height:180px;border-radius:10px;overflow:hidden;
+          background:linear-gradient(rgba(8,20,6,.45),rgba(8,20,6,.55)),url('${YARD}') center/cover">
+          <div style="position:absolute;left:6%;top:9%;right:6%;bottom:26%;border:1.5px dashed rgba(190,240,170,.45);border-radius:8px"></div>
+          ${markers}
+          <div style="position:absolute;left:10px;top:8px;z-index:4;display:flex;gap:6px">
+            <span style="background:rgba(0,0,0,.55);border-radius:99px;padding:3px 9px;font-size:10px;color:#ffd28a;font-weight:700">3 detected</span>
+            <span style="background:rgba(0,0,0,.55);border-radius:99px;padding:3px 9px;font-size:10px;color:#cbe6c0">last 7 days</span>
           </div>
-          <div style="position:absolute;left:12px;right:12px;bottom:8px;display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.5);border-radius:9px;padding:6px 10px">
+          <div style="position:absolute;z-index:4;left:12px;right:12px;bottom:8px;display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.55);border-radius:9px;padding:6px 10px">
             <ha-icon icon="mdi:history" style="--mdc-icon-size:14px;color:#cbe6c0"></ha-icon>
-            <div style="flex:1;height:4px;border-radius:99px;background:rgba(255,255,255,.2);position:relative">
-              <span style="position:absolute;left:70%;top:-4px;width:12px;height:12px;border-radius:50%;background:#fff"></span></div>
+            <div style="flex:1;height:4px;border-radius:99px;background:rgba(255,255,255,.22);position:relative">
+              <span style="position:absolute;top:-4px;left:0;width:12px;height:12px;border-radius:50%;background:#fff;
+                box-shadow:0 0 8px rgba(255,255,255,.6);animation:ucdScrub 8s linear infinite"></span></div>
             <span style="font-size:9.5px;color:#cbe6c0">now</span>
           </div>
         </div>`;
       return;
     }
     if (type === 'cleaning_zones') {
+      const zones = [
+        ['7%','11%','38%','38%','rgba(255,82,82,.22)','#ff8a80','Kitchen · 6d','0s'],
+        ['50%','11%','20%','38%','rgba(255,171,64,.22)','#ffcf86','Bath · 3d','1.6s'],
+        ['7%','56%','55%','32%','rgba(74,222,128,.18)','#9de8b4','Living · today','3.2s'],
+        ['74%','11%','19%','77%','rgba(41,182,246,.17)','#8fd4ff','Bed · 1d','4.8s'],
+      ].map(([l,t2,w,h,bg,tc,n,delay]) => `
+        <div style="position:absolute;left:${l};top:${t2};width:${w};height:${h};background:${bg};
+          border:1px solid ${tc}55;display:flex;align-items:flex-end;padding:4px;
+          animation:ucdZonePulse 6.4s ease-in-out ${delay} infinite">
+          <span style="font-size:9px;color:${tc};background:rgba(0,0,0,.5);padding:1px 6px;border-radius:99px">${n}</span></div>`).join('');
       this._holder.innerHTML = `
         <div style="position:relative;height:180px;border-radius:10px;overflow:hidden;background:#0e1626">
           <div style="position:absolute;inset:0;background:
@@ -906,19 +1150,10 @@ class UcModuleDemo extends HTMLElement {
           <div style="position:absolute;left:5%;top:8%;width:44%;height:46%;border-right:2px solid rgba(140,180,235,.5);border-bottom:2px solid rgba(140,180,235,.5)"></div>
           <div style="position:absolute;left:49%;top:8%;width:23%;height:46%;border-right:2px solid rgba(140,180,235,.5)"></div>
           <div style="position:absolute;left:5%;bottom:8%;width:60%;height:38%;border-right:2px solid rgba(140,180,235,.5)"></div>
-          ${[
-            ['7%','11%','38%','38%','rgba(255,82,82,.20)','#ff8a80','Kitchen · 6d'],
-            ['50%','11%','20%','38%','rgba(255,171,64,.20)','#ffcf86','Bath · 3d'],
-            ['7%','56%','55%','32%','rgba(74,222,128,.16)','#9de8b4','Living · today'],
-            ['74%','11%','19%','77%','rgba(41,182,246,.15)','#8fd4ff','Bed · 1d'],
-          ]
-            .map(
-              ([l, t2, w, h, bg, tc, n]) => `
-            <div style="position:absolute;left:${l};top:${t2};width:${w};height:${h};background:${bg};border:1px solid ${tc}55;display:flex;align-items:flex-end;padding:4px">
-              <span style="font-size:9px;color:${tc};background:rgba(0,0,0,.5);padding:1px 6px;border-radius:99px">${n}</span></div>`
-            )
-            .join('')}
-          <div style="position:absolute;top:6px;right:8px;font-size:9px;color:#ffcf86;background:rgba(0,0,0,.5);padding:2px 8px;border-radius:99px">heatmap: days since cleaned</div>
+          ${zones}
+          <span style="position:absolute;width:11px;height:11px;border-radius:50%;background:#fff;
+            box-shadow:0 0 10px rgba(255,255,255,.85);animation:ucdBotPath 9s ease-in-out infinite"></span>
+          <div style="position:absolute;top:6px;right:8px;font-size:9px;color:#ffcf86;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:99px">heatmap: days since cleaned</div>
         </div>`;
       return;
     }

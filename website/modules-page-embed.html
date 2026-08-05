@@ -266,7 +266,7 @@
 .ucm-card-body{display:flex;flex-direction:column;gap:8px;padding:16px 18px 18px;flex:1}
 .ucm-card-title{display:flex;align-items:center;gap:10px}
 .ucm-card-title .mdi{font-size:22px;color:var(--uc-blue);flex-shrink:0;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px}
-.ucm-card-title h3{margin:0!important;padding:0!important;line-height:1.2!important}
+.ucm-card-title h3{margin:0!important;padding:0!important;line-height:26px!important;display:flex;align-items:center}
 .ucm .mdi{line-height:1;vertical-align:middle}
 .ucm-chip .mdi,.ucm-seg-btn .mdi,.ucm-card-try .mdi,.ucm-tier-pill .mdi{display:inline-flex;align-items:center}
 .ucm-card-pro .ucm-card-title .mdi{color:var(--uc-gold)}
@@ -704,8 +704,9 @@ root.addEventListener('keydown',e=>{
 
 /* ---------- PRO band art: three rotating PRO previews ---------- */
 function bootProArt(){
-  const art=$('#ucm-proband-art'); if(!art) return;
-  ['climate','animated_weather','energy_display','virtual_pet'].forEach(t=>{
+  const art=$('#ucm-proband-art'); if(!art || art.dataset.booted) return;
+  art.dataset.booted='1'; art.innerHTML='';
+  ['climate','animated_weather','solar_analytics','virtual_pet'].forEach(t=>{
     const d=document.createElement('div'); d.className='ucm-pv'; d.dataset.pv=t; art.appendChild(d);
     renderPreview(d,t,false);
   });
