@@ -1,19 +1,22 @@
 /**
- * Renders every Ultra Card module headlessly and captures a PNG per module.
+ * Renders every Ultra Card module headlessly and captures a PNG per module,
+ * plus a short animated WebP the picker plays on hover.
  *
  * Outputs (all committed, so they can be linked from anywhere):
  *   docs/previews/<type>.png     one screenshot per module
+ *   docs/previews/<type>.webp    ~2s animation loop, played on hover
  *   docs/previews/manifest.json  machine-readable index (the sharing contract)
  *   docs/MODULES.md              human-readable gallery
  *
  * It doubles as a smoke test: any module that throws, renders empty, or shows a
  * "configure me" state is reported and (with --strict) fails the build.
  *
- *   node scripts/capture-previews.mjs [--strict] [--only=gauge,text]
+ *   node scripts/capture-previews.mjs [--strict] [--only=gauge,text] [--no-anim]
  *
  * Prereq: npx webpack -c webpack.demo.config.js   (builds dist-demo/)
  */
 import { chromium } from 'playwright';
+import sharp from 'sharp';
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -26,7 +29,20 @@ const PORT = 8791;
 
 const args = process.argv.slice(2);
 const STRICT = args.includes('--strict');
+const NO_ANIM = args.includes('--no-anim');
 const ONLY = (args.find(a => a.startsWith('--only=')) || '').replace('--only=', '');
+
+/* Hover animation. Frames are captured at whatever rate the browser can manage
+ * and the playback delay is derived from the measured elapsed time, so the loop
+ * runs at true speed rather than a guessed frame rate. Width is halved from the
+ * still because these ship to every editor session that hovers a tile. */
+const ANIM_FRAMES = 24;
+const ANIM_WIDTH = 456;
+const ANIM_QUALITY = 50;
+/* Spacing between frames. Back-to-back screenshots cover barely a second, which
+ * is too short a window for the slower modules (a clock ticking once a second
+ * looked frozen). This stretches the loop to roughly three seconds. */
+const ANIM_INTERVAL_MS = 70;
 
 /**
  * The MDI webfont must be linked here, at document level. The ha-icon shim
@@ -119,6 +135,43 @@ async function main() {
 
     const target = page.locator('#stage');
     await target.screenshot({ path: outFile });
+
+    if (!NO_ANIM) {
+      // Every frame must share one clip box: modules whose content shifts mid
+      // animation would otherwise yield frames of differing size, which cannot
+      // be joined.
+      const box = await target.boundingBox();
+      if (box) {
+        const clip = {
+          x: Math.round(box.x),
+          y: Math.round(box.y),
+          width: Math.round(box.width),
+          height: Math.round(box.height),
+        };
+        const frames = [];
+        const startedAt = Date.now();
+        for (let i = 0; i < ANIM_FRAMES; i++) {
+          frames.push(await page.screenshot({ clip }));
+          if (i < ANIM_FRAMES - 1) await page.waitForTimeout(ANIM_INTERVAL_MS);
+        }
+        const delay = Math.max(40, Math.round((Date.now() - startedAt) / ANIM_FRAMES));
+
+        try {
+          // Each frame is scaled before joining: resizing the joined strip
+          // collapses it back to a single page.
+          const scaled = await Promise.all(
+            frames.map(f => sharp(f).resize({ width: ANIM_WIDTH }).png().toBuffer())
+          );
+          await sharp(scaled, { join: { animated: true } })
+            .webp({ loop: 0, delay, quality: ANIM_QUALITY, effort: 4 })
+            .toFile(path.join(OUT_DIR, `${type}.webp`));
+        } catch (err) {
+          // A module that resizes itself mid-loop just loses its animation; the
+          // still is what the picker falls back to anyway.
+          console.log(`  · ${type}: animation skipped (${err.message.split('\n')[0]})`);
+        }
+      }
+    }
 
     const status = !health.ok || health.errored ? 'error' : health.empty ? 'empty' : health.needsConfig ? 'needs-config' : 'ok';
     results.push({

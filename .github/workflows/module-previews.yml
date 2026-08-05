@@ -2,8 +2,9 @@ name: Module previews
 
 # Keeps the module gallery and the website's demo bundle current, automatically.
 #
-#  push to main   -> rebuild bundle, recapture every module, commit changed PNGs,
-#                    regenerate docs/MODULES.md + docs/previews/manifest.json
+#  push to main   -> rebuild bundle, recapture every module, commit changed
+#                    stills and hover animations, regenerate docs/MODULES.md
+#                    + docs/previews/manifest.json
 #  pull request   -> same capture, but nothing is committed; the run FAILS if any
 #                    module throws or renders empty (a real regression gate)
 #
@@ -35,7 +36,8 @@ concurrency:
 jobs:
   capture:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # Capturing an animation loop per module adds a few minutes on top of the stills.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:

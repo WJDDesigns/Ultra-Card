@@ -107,6 +107,7 @@
     "openai": "6.35.0",
     "playwright": "1.62.1",
     "prettier": "^3.8.3",
+    "sharp": "0.35.3",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.4.2",
     "typescript": "^5.3.3",

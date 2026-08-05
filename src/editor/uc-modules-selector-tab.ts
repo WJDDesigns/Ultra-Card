@@ -35,6 +35,11 @@ export class UcModulesSelectorTab extends LitElement {
   /** Gallery shows a picture of each module; list is the original compact rows. */
   @state() private _density: 'gallery' | 'list' = readStoredDensity();
 
+  private readonly _reducedMotion =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   override connectedCallback(): void {
     super.connectedCallback();
   }
@@ -218,6 +223,23 @@ export class UcModulesSelectorTab extends LitElement {
   }
 
   /**
+   * Hovering a gallery tile plays that module's animation loop. The WebP is
+   * only fetched on the first hover, so a full grid costs nothing to scroll.
+   */
+  private _playPreview = (e: Event): void => {
+    if (this._reducedMotion) return;
+    const shot = (e.currentTarget as HTMLElement).querySelector('.tile-shot');
+    const anim = shot?.querySelector('.tile-anim') as HTMLImageElement | null;
+    if (!anim || anim.dataset.failed) return;
+    if (!anim.getAttribute('src')) anim.src = anim.dataset.src || '';
+    shot?.classList.add('playing');
+  };
+
+  private _stopPreview = (e: Event): void => {
+    (e.currentTarget as HTMLElement).querySelector('.tile-shot')?.classList.remove('playing');
+  };
+
+  /**
    * One pickable module. Gallery leads with the screenshot; list keeps the
    * original compact row. Layout containers carry their green accent in both
    * views so the two libraries stay visually distinct.
@@ -233,6 +255,10 @@ export class UcModulesSelectorTab extends LitElement {
         <button
           class="module-tile ${isLayout ? 'layout-tile' : ''}"
           @click=${() => this._emitModuleSelected(meta.type)}
+          @pointerenter=${this._playPreview}
+          @pointerleave=${this._stopPreview}
+          @focus=${this._playPreview}
+          @blur=${this._stopPreview}
           title="${meta.description}"
         >
           <span class="tile-shot">
@@ -246,6 +272,17 @@ export class UcModulesSelectorTab extends LitElement {
                 const img = e.target as HTMLImageElement;
                 img.style.display = 'none';
                 (img.parentElement as HTMLElement)?.classList.add('no-shot');
+              }}
+            />
+            <img
+              class="tile-anim"
+              alt=""
+              data-src="${UC_PREVIEW_BASE}${meta.type}.webp"
+              @error=${(e: Event) => {
+                // Module captured before animations existed: keep the still.
+                const img = e.target as HTMLImageElement;
+                img.dataset.failed = '1';
+                (img.parentElement as HTMLElement)?.classList.remove('playing');
               }}
             />
             <ha-icon class="tile-shot-fallback" icon="${meta.icon}"></ha-icon>
@@ -678,6 +715,19 @@ export class UcModulesSelectorTab extends LitElement {
       padding: 8px;
       box-sizing: border-box;
     }
+    /* The animation sits over the still and fades in on hover. Its src stays
+       empty until then, so nothing downloads while the grid is just scrolled. */
+    .tile-anim {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.18s ease;
+      pointer-events: none;
+    }
+    .tile-shot.playing .tile-anim {
+      opacity: 1;
+    }
+
     /* The icon only appears if the screenshot is missing. */
     .tile-shot-fallback {
       display: none;
