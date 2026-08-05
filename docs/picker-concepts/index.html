@@ -1,0 +1,200 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Add Module — preview concepts</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+<style>
+  :root{
+    --card-background-color:#1c1c1c; --primary-background-color:#111;
+    --secondary-background-color:#282828; --primary-text-color:#e1e1e1;
+    --secondary-text-color:#9b9b9b; --primary-color:#03a9f4;
+    --divider-color:rgba(225,225,225,.12);
+  }
+  body{margin:0;background:#0b0d10;font-family:Roboto,system-ui,sans-serif;color:var(--primary-text-color)}
+  .lab{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+  .lab > h1{font-size:19px;font-weight:500;color:#fff;margin:0 0 4px}
+  .lab > p{color:var(--secondary-text-color);font-size:13.5px;margin:0 0 26px}
+  .opt{margin:0 0 40px}
+  .opt-h{display:flex;align-items:baseline;gap:10px;margin:0 0 4px}
+  .opt-h b{font-size:15px;color:#fff}
+  .opt-h span{font-size:12.5px;color:var(--primary-color)}
+  .opt-note{color:var(--secondary-text-color);font-size:12.5px;margin:0 0 12px;max-width:760px;line-height:1.5}
+
+  /* ---- shared modal chrome (matches the real Add Module dialog) ---- */
+  .modal{background:#121417;border:1px solid var(--divider-color);border-radius:14px;overflow:hidden}
+  .modal-top{padding:16px 18px 0}
+  .modal-top h2{margin:0 0 12px;font-size:20px;font-weight:500;color:#fff}
+  .tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .tab{display:flex;align-items:center;gap:7px;padding:9px 15px;border-radius:9px;font-size:13.5px;
+    border:1px solid var(--divider-color);color:var(--secondary-text-color);background:transparent}
+  .tab.on{background:rgba(3,169,244,.16);border-color:rgba(3,169,244,.5);color:#7fd3ff}
+  .sect{padding:6px 18px 0}
+  .sect h3{display:flex;align-items:center;gap:8px;margin:14px 0 2px;font-size:14.5px;color:#fff;font-weight:500}
+  .sect p{margin:0 0 12px;font-size:12.5px;color:var(--secondary-text-color)}
+  .body{padding:0 18px 18px}
+
+  /* ---- A: gallery grid ---- */
+  .grid-a{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .tile-a{border:1px solid var(--divider-color);border-radius:12px;background:var(--card-background-color);
+    overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s}
+  .tile-a:hover{border-color:rgba(3,169,244,.6);transform:translateY(-2px)}
+  .shot{height:104px;background:#0f1216;border-bottom:1px solid var(--divider-color);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+  .shot img{width:100%;height:100%;object-fit:cover;object-position:top center}
+  .tile-a .meta{padding:9px 11px 11px;display:flex;gap:9px;align-items:flex-start}
+  .tile-a .ic{width:26px;height:26px;border-radius:7px;background:var(--primary-color);color:#04121c;
+    display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:15px}
+  .tile-a .tx b{display:block;font-size:13.5px;font-weight:500;color:#fff;line-height:1.25}
+  .tile-a .tx span{display:block;font-size:11.5px;color:var(--secondary-text-color);line-height:1.35;margin-top:2px}
+  .pro{position:absolute;top:7px;right:7px;background:linear-gradient(92deg,#ffc233,#ff9d2d);color:#231500;
+    font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;letter-spacing:.05em}
+
+  /* ---- B: split master/detail ---- */
+  .split{display:grid;grid-template-columns:300px 1fr;gap:0;height:430px}
+  .list{border-right:1px solid var(--divider-color);overflow:auto;padding:8px}
+  .row{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:9px;cursor:pointer}
+  .row:hover{background:rgba(255,255,255,.04)}
+  .row.on{background:rgba(3,169,244,.14);outline:1px solid rgba(3,169,244,.4)}
+  .row .ic{width:24px;height:24px;border-radius:6px;background:var(--primary-color);color:#04121c;
+    display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:14px}
+  .row b{font-size:13px;font-weight:500;color:#fff;display:block;line-height:1.25}
+  .row span{font-size:11px;color:var(--secondary-text-color);display:block;line-height:1.3}
+  .detail{padding:18px;display:flex;flex-direction:column;gap:12px;overflow:auto}
+  .detail .stage{background:#0f1216;border:1px solid var(--divider-color);border-radius:12px;padding:16px;
+    display:flex;align-items:center;justify-content:center;min-height:210px}
+  .detail h4{margin:0;font-size:17px;color:#fff;font-weight:500}
+  .detail .desc{margin:0;font-size:13px;color:var(--secondary-text-color);line-height:1.5}
+  .cta{display:flex;gap:10px;align-items:center;margin-top:auto}
+  .btn{background:var(--primary-color);color:#04121c;border:0;border-radius:9px;padding:10px 20px;
+    font-size:14px;font-weight:500;cursor:pointer}
+  .btn.ghost{background:transparent;color:var(--secondary-text-color);border:1px solid var(--divider-color)}
+  .livechip{font-size:11px;color:#7fd3ff;background:rgba(3,169,244,.13);border:1px solid rgba(3,169,244,.35);
+    padding:3px 9px;border-radius:99px}
+
+  /* ---- C: current + peek ---- */
+  .grid-c{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .tile-c{border:1px solid var(--divider-color);border-radius:12px;background:var(--card-background-color);
+    padding:13px;display:flex;gap:12px;align-items:flex-start;position:relative}
+  .tile-c .ic{width:44px;height:44px;border-radius:10px;background:var(--primary-color);color:#04121c;
+    display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:22px}
+  .tile-c b{font-size:14.5px;font-weight:500;color:#fff;display:block}
+  .tile-c span{font-size:12.5px;color:var(--secondary-text-color);display:block;line-height:1.4;margin-top:3px}
+  .peek{position:absolute;top:9px;right:9px;width:28px;height:28px;border-radius:8px;
+    background:rgba(255,255,255,.06);border:1px solid var(--divider-color);color:var(--secondary-text-color);
+    display:flex;align-items:center;justify-content:center;font-size:15px}
+  .tile-c:hover .peek{background:rgba(3,169,244,.18);border-color:rgba(3,169,244,.5);color:#7fd3ff}
+  .density{margin-left:auto;display:flex;border:1px solid var(--divider-color);border-radius:8px;overflow:hidden}
+  .density button{background:transparent;border:0;color:var(--secondary-text-color);font-size:12px;padding:6px 12px;cursor:pointer}
+  .density button.on{background:rgba(3,169,244,.16);color:#7fd3ff}
+</style></head>
+<body>
+<div class="lab">
+  <h1>Add Module — three ways to show a preview</h1>
+  <p>Rendered with the real modules and the real generated screenshots, in the dialog's own styling.</p>
+
+  <!-- ══════════ OPTION A ══════════ -->
+  <div class="opt">
+    <div class="opt-h"><b>A · Gallery grid</b><span>closest to Home Assistant's own “Add card” dialog</span></div>
+    <p class="opt-note">Each tile leads with the module's picture, exactly like HA's card picker and every app store.
+      Adding stays one click. Uses the CI screenshots, so it costs nothing to render; tiles get taller, so a
+      3-up grid keeps the same density the 2-up list has today.</p>
+    <div class="modal">
+      <div class="modal-top">
+        <h2>Add Module</h2>
+        <div class="tabs">
+          <div class="tab on"><i class="mdi mdi-puzzle"></i> Modules</div>
+          <div class="tab"><i class="mdi mdi-card-outline"></i> Cards</div>
+          <div class="tab"><i class="mdi mdi-palette"></i> Presets</div>
+          <div class="tab"><i class="mdi mdi-creation"></i> Smart</div>
+          <div class="tab"><i class="mdi mdi-heart"></i> Favorites</div>
+          <div class="density"><button class="on">Gallery</button><button>List</button></div>
+        </div>
+      </div>
+      <div class="sect"><h3><i class="mdi mdi-chart-box-outline"></i> Data &amp; Sensors</h3>
+        <p>Live values, history and status from your entities</p></div>
+      <div class="body"><div class="grid-a" id="gridA"></div></div>
+    </div>
+  </div>
+
+  <!-- ══════════ OPTION B ══════════ -->
+  <div class="opt">
+    <div class="opt-h"><b>B · Split view</b><span>keeps today's density, adds a big live preview</span></div>
+    <p class="opt-note">The compact list stays on the left; picking a module previews it large on the right,
+      running on the user's own entities. Best for browsing 93 modules and the natural home for the description,
+      category and PRO badge. Costs one extra click to add, and needs a stacked fallback on narrow screens.</p>
+    <div class="modal">
+      <div class="modal-top"><h2>Add Module</h2>
+        <div class="tabs">
+          <div class="tab on"><i class="mdi mdi-puzzle"></i> Modules</div>
+          <div class="tab"><i class="mdi mdi-card-outline"></i> Cards</div>
+          <div class="tab"><i class="mdi mdi-palette"></i> Presets</div>
+        </div>
+      </div>
+      <div class="split">
+        <div class="list" id="listB"></div>
+        <div class="detail">
+          <div class="stage"><uc-module-demo type="gauge" id="stageB"></uc-module-demo></div>
+          <h4 id="titleB">Gauge</h4>
+          <p class="desc" id="descB">Display sensor values as customizable gauges with various styles and pointer options</p>
+          <div class="cta">
+            <button class="btn">Add module</button>
+            <span class="livechip"><i class="mdi mdi-flash"></i> Live with your entities</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ OPTION C ══════════ -->
+  <div class="opt">
+    <div class="opt-h"><b>C · Peek button</b><span>smallest change — today's grid, untouched</span></div>
+    <p class="opt-note">The current layout is unchanged; an eye button on each tile opens the preview.
+      Zero risk and zero added friction, but it is the least discoverable: users who never hover never learn
+      previews exist, which is the problem we set out to solve.</p>
+    <div class="modal">
+      <div class="modal-top"><h2>Add Module</h2></div>
+      <div class="body"><div class="grid-c" id="gridC"></div></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@main/dist-demo/ultra-card-demo.js"></script>
+<script>
+const PICKS = [
+  ['gauge','Gauge','Display sensor values as customizable gauges','mdi-gauge',false],
+  ['graphs','Graphs','Interactive charts and graphs from HA data','mdi-chart-line',false],
+  ['bar','Bars','Progress bars for values','mdi-chart-bar',false],
+  ['solar_analytics','Solar Analytics','Production, self-sufficiency and battery','mdi-solar-power',true],
+  ['weather','Weather','Current conditions and a simple forecast','mdi-weather-partly-cloudy',false],
+  ['media_player','Media Player','Now playing with artwork and controls','mdi-music',false],
+];
+const BASE='https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@main/docs/previews/';
+
+// A — gallery tiles using the generated screenshots
+document.getElementById('gridA').innerHTML = PICKS.map(([t,n,d,i,pro])=>`
+  <div class="tile-a">
+    <div class="shot">${pro?'<span class="pro">PRO</span>':''}<img loading="lazy" src="${BASE}${t}.png" alt="${n}"></div>
+    <div class="meta"><div class="ic"><i class="mdi ${i}"></i></div>
+      <div class="tx"><b>${n}</b><span>${d}</span></div></div>
+  </div>`).join('');
+
+// B — list + live preview pane
+document.getElementById('listB').innerHTML = PICKS.map(([t,n,d,i],ix)=>`
+  <div class="row ${ix===0?'on':''}" data-t="${t}" data-n="${n}" data-d="${d}">
+    <div class="ic"><i class="mdi ${i}"></i></div><div><b>${n}</b><span>${d}</span></div>
+  </div>`).join('');
+document.getElementById('listB').addEventListener('click',e=>{
+  const r=e.target.closest('.row'); if(!r) return;
+  document.querySelectorAll('#listB .row').forEach(x=>x.classList.remove('on'));
+  r.classList.add('on');
+  document.getElementById('stageB').setAttribute('type', r.dataset.t);
+  document.getElementById('titleB').textContent = r.dataset.n;
+  document.getElementById('descB').textContent = r.dataset.d;
+});
+
+// C — today's grid with a peek affordance
+document.getElementById('gridC').innerHTML = PICKS.slice(0,4).map(([t,n,d,i])=>`
+  <div class="tile-c"><div class="ic"><i class="mdi ${i}"></i></div>
+    <div><b>${n}</b><span>${d}</span></div>
+    <div class="peek"><i class="mdi mdi-eye-outline"></i></div></div>`).join('');
+</script>
+</body></html>
