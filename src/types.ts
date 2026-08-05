@@ -314,6 +314,8 @@ export interface BaseModule {
   confirm_action_show_cancel_button?: boolean | undefined;
   confirm_action_confirm_text?: string | undefined;
   confirm_action_cancel_text?: string | undefined;
+  // When enabled, running an action also closes the popup this module sits in
+  close_popup_after_action?: boolean | undefined;
 }
 
 // Text Module

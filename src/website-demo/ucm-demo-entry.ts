@@ -378,12 +378,10 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
   },
   range: c => {
     Object.assign(c, {
-      entity: 'sensor.range_machine_state',
+      entity: 'sensor.oven_temp',
       name: 'Range',
       machine_state_entity: 'sensor.range_machine_state',
       job_state_entity: 'sensor.oven_mode',
-      entity: 'sensor.oven_temp',
-      name: 'Range',
       oven_mode_entity: 'sensor.oven_mode',
       oven_temp_entity: 'sensor.oven_temp',
       oven_setpoint_entity: 'sensor.oven_setpoint',
@@ -896,7 +894,7 @@ class UcModuleDemo extends HTMLElement {
   }
   private _root: ShadowRoot;
   private _holder: HTMLDivElement;
-  private _unsub?: () => void;
+  private _unsub: (() => void) | undefined;
   private _module?: any;
   private _handler?: any;
   private _raf = 0;

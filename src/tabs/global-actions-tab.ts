@@ -118,6 +118,7 @@ export class GlobalActionsTab extends LitElement {
           (this.module as any).confirm_action_show_cancel_button !== false,
         confirm_action_confirm_text: (this.module as any).confirm_action_confirm_text || 'Yes',
         confirm_action_cancel_text: (this.module as any).confirm_action_cancel_text || 'Cancel',
+        close_popup_after_action: (this.module as any).close_popup_after_action || false,
       };
     }
   }
@@ -555,6 +556,41 @@ export class GlobalActionsTab extends LitElement {
                 </div>
               `
             : html``}
+        </div>
+
+        <!-- Close Popup After Action Toggle -->
+        <div
+          style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);"
+        >
+          ${UcFormUtils.renderFieldSection(
+            localize('editor.actions.close_popup_after_action', lang, 'Close Popup After Action'),
+            localize(
+              'editor.actions.close_popup_after_action_desc',
+              lang,
+              'When this module is inside a Popup, running its action (tap, hold, or double tap) also closes that popup. Has no effect outside a popup.'
+            ),
+            this.hass,
+            { close_popup_after_action: (this.module as any).close_popup_after_action || false },
+            [
+              {
+                name: 'close_popup_after_action',
+                selector: { boolean: {} },
+              },
+            ],
+            (e: CustomEvent) => {
+              const closePopup = e.detail.value?.close_popup_after_action || false;
+              this._config = { ...this._config, close_popup_after_action: closePopup };
+              this.requestUpdate();
+              this.dispatchEvent(
+                new CustomEvent('module-changed', {
+                  detail: { updates: { close_popup_after_action: closePopup } },
+                  bubbles: true,
+                  composed: true,
+                })
+              );
+              this._triggerPreviewUpdate();
+            }
+          )}
         </div>
       </div>
 

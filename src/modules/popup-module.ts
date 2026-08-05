@@ -2950,6 +2950,29 @@ export class UltraPopupModule extends BaseUltraModule {
       handleClose(e);
     };
 
+    // Register external popup close listener (for modules that close the popup
+    // they live in after running their action). Registered after handleClose is
+    // defined, and keyed by module ID so listeners don't accumulate when
+    // cardInstanceId changes during editing - same pattern as the open listener.
+    const closeListenerKey = `__ultraPopupCloseListener_${popupModule.id}`;
+    if (w[closeListenerKey]) {
+      window.removeEventListener('ultra-popup-close', w[closeListenerKey]);
+      delete w[closeListenerKey];
+    }
+
+    const handleExternalClose = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {};
+      // A store key targets one card's instance; a bare ID targets them all
+      const matchesThisPopup = detail.popupKey
+        ? detail.popupKey === uniquePopupKey
+        : detail.popupId === popupModule.id;
+      if (matchesThisPopup) {
+        handleClose(e);
+      }
+    };
+    window.addEventListener('ultra-popup-close', handleExternalClose);
+    w[closeListenerKey] = handleExternalClose;
+
     // Determine title text
     let titleText = '';
     if (popupModule.show_title) {

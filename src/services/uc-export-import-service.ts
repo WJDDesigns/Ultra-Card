@@ -532,6 +532,7 @@ class UcExportImportService {
         if (key === 'hidden_on_devices' && Array.isArray(value) && value.length === 0) continue;
         if (key === 'design' && value !== null && typeof value === 'object' && Object.keys(value as object).length === 0) continue;
         if (key === 'confirm_action' && value === false) continue;
+        if (key === 'close_popup_after_action' && value === false) continue;
         if (key === 'name' && (value === '' || value === undefined || value === null)) continue;
         if (
           (key === 'tap_action' || key === 'hold_action' || key === 'double_tap_action') &&

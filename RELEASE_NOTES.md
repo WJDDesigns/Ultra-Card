@@ -1,5 +1,24 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.7.0-beta4
+
+The Add Module picker now shows you what each module looks like instead of asking you to recognise it by name. Hover any tile and it plays. Please report anything odd on GitHub or Discord — this is a pre-release for testing.
+
+### 🚀 New Features
+
+- **Added a gallery view to the Add Module picker** - Every module now shows a real screenshot of itself, so you can find what you want by looking instead of reading through a list of names. Hovering a tile plays a short loop of that module in motion, so animated ones show what they actually do before you add them. Layout containers get the same treatment rather than appearing as plain buttons, and a Gallery / List switch above the grid remembers whichever you prefer. If your system asks for reduced motion, the animations stay off
+- **Added a Close Popup After Action option** - For a module sitting inside a Popup, turning this on makes its tap, hold, or double tap action close that popup too. It also applies when the action is set to Nothing, so a plain Close button needs no action at all
+
+### 🔧 Improvements
+
+- **Improved the module previews on ultracard.io/modules** - The demos on the website now animate on their own instead of sitting frozen, and a long list of individual modules had their demo data corrected so each one shows a realistic example
+
+### 🐛 Bug Fixes
+
+- **Fixed an error when a card was removed mid-edit** - Cleaning up a form after its document had already been torn down could throw, which showed up as a broken editor after certain dashboard changes
+
+---
+
 ## Version 3.7.0-beta3
 
 Seven new PRO modules for keeping track of the house — cleaning, plants, laundry, the car, batteries, standby power, and the dog. None of them need an LLM except Dog Duty; they work from the sensors and to-do lists you already have. Please report anything odd on GitHub or Discord — this is a pre-release for testing.

@@ -69,6 +69,10 @@ hacs-default-temp/
 hacs-default-submission/
 .tmp-wiki-work/
 
+# Video artifacts (trailers, screen recordings) — too large to carry in history
+*.mp4
+*.mov
+
 # Miscellaneous development files
 *.sql
 forum-post.md

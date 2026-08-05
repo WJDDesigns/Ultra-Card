@@ -3,7 +3,12 @@ import { HomeAssistant, forwardHaptic } from 'custom-card-helpers';
 import { localize } from '../localize/localize';
 import { UltraCardConfig, CardModule } from '../types';
 import { ucActionConfirmationService } from '../services/uc-action-confirmation-service';
-import { getPopupForModule, openPopupById } from '../services/popup-trigger-registry';
+import {
+  closePopupById,
+  getContainingPopupKey,
+  getPopupForModule,
+  openPopupById,
+} from '../services/popup-trigger-registry';
 import {
   containsTemplate,
   renderActionTemplate,
@@ -991,6 +996,16 @@ export class UltraLinkComponent {
       }
     }
 
+    // Resolve the containing popup up front: the action itself can re-render
+    // the popup content and detach `element` before we get a chance to look.
+    const popupKeyToClose =
+      module?.close_popup_after_action === true ? getContainingPopupKey(element) : undefined;
+    const closeContainingPopup = () => {
+      if (popupKeyToClose) {
+        closePopupById(popupKeyToClose);
+      }
+    };
+
     // If action is undefined or missing, or explicitly set to 'default', use smart resolution
     let resolvedAction: TapActionConfig;
 
@@ -1007,8 +1022,10 @@ export class UltraLinkComponent {
       resolvedAction = action;
     }
 
-    // Skip confirmation and execution for 'nothing' or 'none' actions
+    // Skip confirmation and execution for 'nothing' or 'none' actions.
+    // Closing still applies, so a plain "Close" button needs no action at all.
     if (resolvedAction.action === 'nothing' || resolvedAction.action === 'none') {
+      closeContainingPopup();
       return;
     }
 
@@ -1199,5 +1216,7 @@ export class UltraLinkComponent {
         // Do nothing (including 'nothing' action which is already handled above)
         break;
     }
+
+    closeContainingPopup();
   }
 }

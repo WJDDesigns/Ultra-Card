@@ -121,6 +121,92 @@ export const openPopupById = (popupId: string): void => {
   );
 };
 
+const PORTAL_ID_PREFIX = 'ultra-popup-portal-';
+
+/**
+ * Resolve the store key of the popup a DOM element is rendered inside.
+ *
+ * Popups render into a portal on document.body, so DOM ancestry is the only
+ * link a child module has back to the popup containing it. Walks out of shadow
+ * roots because some modules render their content inside a custom element.
+ *
+ * @param element An element rendered somewhere inside a popup
+ * @returns The popup's store key (`${cardInstanceId}:${moduleId}` or the bare
+ *          module ID), or undefined when the element isn't inside a popup
+ */
+export const getContainingPopupKey = (element?: Element | null): string | undefined => {
+  let current: Element | null = element || null;
+
+  while (current) {
+    const portal = current.closest('.ultra-popup-portal');
+    if (portal) {
+      return portal.id.startsWith(PORTAL_ID_PREFIX)
+        ? portal.id.slice(PORTAL_ID_PREFIX.length)
+        : undefined;
+    }
+    const root = current.getRootNode();
+    current = root instanceof ShadowRoot ? root.host : null;
+  }
+
+  return undefined;
+};
+
+/**
+ * Close a popup by dispatching a custom event
+ *
+ * Counterpart to openPopupById. Accepts either a bare popup module ID (closes
+ * that popup on every card) or a full store key from getContainingPopupKey
+ * (closes only that card's instance).
+ *
+ * @param popupIdOrKey The ID of the popup to close, or its store key
+ */
+export const closePopupById = (popupIdOrKey: string): void => {
+  if (!popupIdOrKey) return;
+
+  // Store keys are `${cardInstanceId}:${moduleId}`; neither instance IDs nor
+  // module IDs contain a colon, so the trailing segment is the module ID.
+  const separatorIndex = popupIdOrKey.lastIndexOf(':');
+  const isStoreKey = separatorIndex !== -1;
+  const popupId = isStoreKey ? popupIdOrKey.slice(separatorIndex + 1) : popupIdOrKey;
+
+  const w = window as any;
+  const store = w.__ultraPopupStore__;
+
+  if (store) {
+    // A bare ID targets every card's copy of the popup, the same way
+    // openPopupById does; a store key targets one card instance only.
+    const matchingKeys: string[] = [];
+    store.states.forEach((_value: boolean, key: string) => {
+      const matches = isStoreKey
+        ? key === popupIdOrKey
+        : key === popupId || key.endsWith(`:${popupId}`);
+      if (matches) {
+        matchingKeys.push(key);
+      }
+    });
+    for (const key of matchingKeys) {
+      store.states.set(key, false);
+      // Manual-open is sticky by design and forces the popup back open on the
+      // next render, so it has to be cleared for the close to hold.
+      store.manuallyOpened.delete(key);
+      const timerId = store.timers?.get(key);
+      if (timerId !== undefined) {
+        window.clearTimeout(timerId);
+        store.timers.delete(key);
+      }
+    }
+  }
+
+  // Dispatch event to notify popup module, which owns portal teardown
+  window.dispatchEvent(
+    new CustomEvent('ultra-popup-close', {
+      detail: { popupId, popupKey: isStoreKey ? popupIdOrKey : undefined },
+      bubbles: true,
+      composed: true,
+    })
+  );
+};
+
 /**
  * Get all registered popup triggers (for debugging)
  * @returns Array of [moduleId, popupId] pairs
@@ -145,6 +231,8 @@ export const popupTriggerRegistry = {
   unregister: unregisterPopupTrigger,
   getPopupForModule,
   openPopup: openPopupById,
+  closePopup: closePopupById,
+  getContainingPopupKey,
   getAllTriggers: getAllRegisteredTriggers,
   clearAll: clearAllTriggers,
 };
