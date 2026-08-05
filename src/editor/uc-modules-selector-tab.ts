@@ -10,20 +10,42 @@ import { VERSION } from '../version';
 
 const UC_DENSITY_KEY = 'ultra-card-module-picker-density';
 
-/** Module screenshots are generated in CI and published with the repo. */
-const UC_PREVIEW_BASE =
-  'https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@main/docs/previews/';
+const UC_PREVIEW_REPO = 'https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card';
 
 /**
- * jsDelivr serves these with a seven-day max-age, and the tiles lazy-load long
- * after page load, so a browser that cached an old screenshot keeps showing it
- * even through a hard refresh. Stamping the version onto the URL retires those
- * copies whenever the card updates.
+ * Module screenshots are generated in CI and published with the repo, read
+ * from the tag this build was cut at. A tagged path never changes, so the
+ * browser can hold it forever and still be right, and every release moves the
+ * whole gallery to fresh URLs. Reading from a branch instead meant a stale
+ * screenshot stuck around for jsDelivr's seven-day max-age, which a refresh
+ * could not clear because the tiles lazy-load after the page settles.
  */
-const UC_PREVIEW_CACHE_KEY = `?v=${encodeURIComponent(VERSION)}`;
+const UC_PREVIEW_TAG_BASE = `${UC_PREVIEW_REPO}@v${VERSION}/docs/previews/`;
+
+/**
+ * Builds whose tag predates the screenshots, or which run ahead of a release,
+ * read from the branch instead. That path is mutable, so it carries the
+ * version to keep a cached copy from outliving the build that requested it.
+ */
+const UC_PREVIEW_BRANCH_BASE = `${UC_PREVIEW_REPO}@main/docs/previews/`;
 
 function previewUrl(type: string, ext: 'png' | 'webp'): string {
-  return `${UC_PREVIEW_BASE}${type}.${ext}${UC_PREVIEW_CACHE_KEY}`;
+  return `${UC_PREVIEW_TAG_BASE}${type}.${ext}`;
+}
+
+function previewFallbackUrl(type: string, ext: 'png' | 'webp'): string {
+  return `${UC_PREVIEW_BRANCH_BASE}${type}.${ext}?v=${encodeURIComponent(VERSION)}`;
+}
+
+/**
+ * Retries a preview against the branch once before giving up, so a release
+ * tagged without screenshots still shows a gallery.
+ */
+function retryFromBranch(img: HTMLImageElement, type: string, ext: 'png' | 'webp'): boolean {
+  if (img.dataset.fallback) return false;
+  img.dataset.fallback = '1';
+  img.src = previewFallbackUrl(type, ext);
+  return true;
 }
 
 function readStoredDensity(): 'gallery' | 'list' {
@@ -282,6 +304,7 @@ export class UcModulesSelectorTab extends LitElement {
               @error=${(e: Event) => {
                 // No screenshot yet (e.g. a brand-new module): fall back to
                 // the icon rather than an empty frame.
+                if (retryFromBranch(e.target as HTMLImageElement, meta.type, 'png')) return;
                 const img = e.target as HTMLImageElement;
                 img.style.display = 'none';
                 (img.parentElement as HTMLElement)?.classList.add('no-shot');
@@ -294,6 +317,7 @@ export class UcModulesSelectorTab extends LitElement {
               @error=${(e: Event) => {
                 // Module captured before animations existed: keep the still.
                 const img = e.target as HTMLImageElement;
+                if (retryFromBranch(img, meta.type, 'webp')) return;
                 img.dataset.failed = '1';
                 (img.parentElement as HTMLElement)?.classList.remove('playing');
               }}
