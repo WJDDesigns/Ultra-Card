@@ -511,6 +511,7 @@ export function createDemoStates(): Record<string, any> {
       friendly_name: 'Freezer Setpoint',
       unit_of_measurement: '°F',
     }),
+    'sensor.range_machine_state': st('sensor.range_machine_state', 'run', { friendly_name: 'Range State' }),
     'sensor.oven_mode': st('sensor.oven_mode', 'bake', { friendly_name: 'Oven Mode' }),
     'sensor.oven_temp': st('sensor.oven_temp', '348', {
       friendly_name: 'Oven Temperature',

@@ -45,6 +45,15 @@ function mk(type: string, extra: Record<string, any> = {}): any {
   return Object.assign(base, extra);
 }
 
+/** One icon tile bound to one entity — layout containers use these as children
+ *  (the standalone Icons module shows three, which looked duplicated nested). */
+function mkIcon(entity: string, on: string, off: string, name: string): any {
+  const base = mk('icon');
+  const proto = (base.icons && base.icons[0]) || {};
+  base.icons = [{ ...proto, id: 'demo_i_' + entity.replace(/\W/g, '_'), icon_mode: 'entity', entity, name, icon_active: on, icon_inactive: off }];
+  return base;
+}
+
 const CAR_IMG = 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=640&q=80';
 const EARTH_GIF = 'https://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif';
 
@@ -97,13 +106,15 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
   },
   horizontal: c => {
     c.modules = [
-      mk('icon'),
-      mk('text', { text: 'Living Room', font_size: 16 }),
-      mk('button', { label: 'All off', icon: 'mdi:lightbulb-off' }),
+      mkIcon('light.living_room', 'mdi:lightbulb', 'mdi:lightbulb-outline', 'Living'),
+      mkIcon('light.kitchen', 'mdi:ceiling-light', 'mdi:ceiling-light-outline', 'Kitchen'),
+      mkIcon('lock.front_door', 'mdi:lock', 'mdi:lock-open-variant', 'Door'),
     ];
+    c.gap = 6;
   },
   vertical: c => {
-    c.modules = [mk('text', { text: 'Living Room', font_size: 16 }), mk('bar'), mk('button', { label: 'Scene' })];
+    c.modules = [mk('text', { text: 'Living Room', font_size: 15 }), mk('bar'), mk('button', { label: 'Scene' })];
+    c.gap = 6;
   },
   stack: c => {
     const batteryBar = mk('bar');
@@ -133,8 +144,14 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     c.columns = 3;
   },
   grid_layout: c => {
-    c.modules = [mk('icon'), mk('icon'), mk('icon'), mk('icon')];
+    c.modules = [
+      mkIcon('light.living_room', 'mdi:lightbulb', 'mdi:lightbulb-outline', 'Living'),
+      mkIcon('light.kitchen', 'mdi:ceiling-light', 'mdi:ceiling-light-outline', 'Kitchen'),
+      mkIcon('lock.front_door', 'mdi:lock', 'mdi:lock-open-variant', 'Door'),
+      mkIcon('fan.ceiling_fan', 'mdi:fan', 'mdi:fan-off', 'Fan'),
+    ];
     c.columns = 2;
+    c.gap = 8;
   },
   accordion: c => {
     c.modules = [mk('info')];
@@ -161,8 +178,15 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     c.trigger_label = 'Open drawer';
   },
   scroll_row: c => {
-    c.modules = [mk('icon'), mk('icon'), mk('icon'), mk('icon'), mk('icon'), mk('icon')];
-    c.item_width = '38%';
+    c.modules = [
+      mkIcon('light.living_room', 'mdi:lightbulb', 'mdi:lightbulb-outline', 'Living'),
+      mkIcon('light.kitchen', 'mdi:ceiling-light', 'mdi:ceiling-light-outline', 'Kitchen'),
+      mkIcon('lock.front_door', 'mdi:lock', 'mdi:lock-open-variant', 'Door'),
+      mkIcon('fan.ceiling_fan', 'mdi:fan', 'mdi:fan-off', 'Fan'),
+      mkIcon('switch.guest_mode', 'mdi:account-check', 'mdi:account-off', 'Guest'),
+      mkIcon('cover.living_room_blinds', 'mdi:blinds-open', 'mdi:blinds', 'Blinds'),
+    ];
+    c.item_width = '34%';
     c.fade_edges = true;
     c.show_arrows = true;
   },
@@ -283,7 +307,7 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     ];
   },
   plant_care: c => {
-    c.todo_entity = '';
+    c.todo_entity = 'todo.groceries';
     c.plants = [
       { id: 'demo_p1', name: 'Monstera', icon: 'mdi:leaf', location: 'Living Room', moisture_entity: 'sensor.monstera_moisture', water_interval_days: 7 },
       { id: 'demo_p2', name: 'Snake Plant', icon: 'mdi:sprout', location: 'Office', moisture_entity: 'sensor.snake_plant_moisture', water_interval_days: 14 },
@@ -345,6 +369,10 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
   },
   range: c => {
     Object.assign(c, {
+      entity: 'sensor.range_machine_state',
+      name: 'Range',
+      machine_state_entity: 'sensor.range_machine_state',
+      job_state_entity: 'sensor.oven_mode',
       entity: 'sensor.oven_temp',
       name: 'Range',
       oven_mode_entity: 'sensor.oven_mode',
@@ -443,7 +471,7 @@ const STATIC_DEMOS = new Set([
 ]);
 
 /** Visuals that depend on wall-clock time: re-render every second. */
-const TIME_MODULES = new Set(['clock','animated_clock','screensaver','media_player','calendar']);
+const TIME_MODULES = new Set(['clock','animated_clock','screensaver','media_player','calendar','timer','laundry_tracker']);
 
 /** Config-level animators: mutate the module's own config on a loop. */
 const DEMO_ANIMATE: Record<string, (el: any) => void> = {
@@ -720,6 +748,9 @@ function startDemoLoop() {
 
     // Oven heats and settles.
     tween('sensor.oven_temp', { from: up ? 348 : 425, to: up ? 425 : 348, ms: 2600 });
+    tween('light.living_room', { attr: 'color_temp_kelvin', from: up ? 2700 : 5200, to: up ? 5200 : 2700, ms: 2600 });
+    const rng = demoHass.states['sensor.range_machine_state'];
+    if (rng) demoHass.__setState('sensor.range_machine_state', phase % 3 === 0 ? 'idle' : 'run');
 
     phase++;
   };
@@ -806,8 +837,9 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radiu
 @keyframes ucdNavActive{0%,4%{color:var(--primary-color);transform:translateY(-2px)}22%,100%{color:var(--secondary-text-color);transform:none}}
 @keyframes ucdScrub{0%{left:0}92%,100%{left:calc(100% - 12px)}}
 @keyframes ucdSpotIn{0%,8%{opacity:0;transform:scale(.5)}14%,92%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.5)}}
-@keyframes ucdZonePulse{0%,100%{filter:brightness(1)}45%{filter:brightness(1.75)}}
-@keyframes ucdBotPath{0%{left:14%;top:22%}25%{left:34%;top:34%}50%{left:62%;top:66%}75%{left:80%;top:36%}100%{left:14%;top:22%}}
+@keyframes ucdZoneAge{0%,6%{background:rgba(74,222,128,.20)}40%{background:rgba(255,171,64,.20)}75%,100%{background:rgba(255,82,82,.22)}}
+@keyframes ucdLabelFresh{0%,10%{opacity:1}22%,100%{opacity:0}}
+@keyframes ucdLabelStale{0%,20%{opacity:0}34%,100%{opacity:1}}
 @keyframes ucdPopup{0%,8%{opacity:0;transform:translate(-50%,-38%) scale(.92)}18%,72%{opacity:1;transform:translate(-50%,-50%) scale(1)}86%,100%{opacity:0;transform:translate(-50%,-38%) scale(.92)}}
 `;
 
@@ -883,6 +915,7 @@ class UcModuleDemo extends HTMLElement {
   private _clearTimers() {
     this._timers.forEach(t => clearInterval(t));
     this._timers = [];
+    if (this._pending) { clearTimeout(this._pending); this._pending = 0; }
   }
 
   private async _boot() {
@@ -930,10 +963,25 @@ class UcModuleDemo extends HTMLElement {
     }
   }
 
+  private _lastRender = 0;
+  private _pending = 0;
+  /** Repaint at most ~4x/sec: state tweens fire every 90ms, and repainting that
+   *  often restarts CSS animations inside modules (the "flashing"). */
   private _scheduleRender() {
     if (!this._visible) return;
-    cancelAnimationFrame(this._raf);
-    this._raf = requestAnimationFrame(() => this._renderNow());
+    const MIN_MS = 260;
+    const since = Date.now() - this._lastRender;
+    if (since >= MIN_MS) {
+      cancelAnimationFrame(this._raf);
+      this._raf = requestAnimationFrame(() => { this._lastRender = Date.now(); this._renderNow(); });
+      return;
+    }
+    if (this._pending) return;
+    this._pending = setTimeout(() => {
+      this._pending = 0;
+      this._lastRender = Date.now();
+      this._renderNow();
+    }, MIN_MS - since) as any;
   }
 
   private _renderNow() {
@@ -1132,16 +1180,22 @@ class UcModuleDemo extends HTMLElement {
       return;
     }
     if (type === 'cleaning_zones') {
+      // Each zone ages from fresh to stale on its own schedule; the label
+      // cross-fades between "just cleaned" and its staleness.
       const zones = [
-        ['7%','11%','38%','38%','rgba(255,82,82,.22)','#ff8a80','Kitchen · 6d','0s'],
-        ['50%','11%','20%','38%','rgba(255,171,64,.22)','#ffcf86','Bath · 3d','1.6s'],
-        ['7%','56%','55%','32%','rgba(74,222,128,.18)','#9de8b4','Living · today','3.2s'],
-        ['74%','11%','19%','77%','rgba(41,182,246,.17)','#8fd4ff','Bed · 1d','4.8s'],
-      ].map(([l,t2,w,h,bg,tc,n,delay]) => `
-        <div style="position:absolute;left:${l};top:${t2};width:${w};height:${h};background:${bg};
-          border:1px solid ${tc}55;display:flex;align-items:flex-end;padding:4px;
-          animation:ucdZonePulse 6.4s ease-in-out ${delay} infinite">
-          <span style="font-size:9px;color:${tc};background:rgba(0,0,0,.5);padding:1px 6px;border-radius:99px">${n}</span></div>`).join('');
+        ['7%','11%','38%','38%','Kitchen','0s'],
+        ['50%','11%','20%','38%','Bath','2.1s'],
+        ['7%','56%','55%','32%','Living','4.2s'],
+        ['74%','11%','19%','77%','Bedroom','6.3s'],
+      ].map(([l,t2,w,h,name,delay]) => `
+        <div style="position:absolute;left:${l};top:${t2};width:${w};height:${h};
+          border:1px solid rgba(255,255,255,.14);display:flex;align-items:flex-end;padding:4px;
+          animation:ucdZoneAge 8.4s ease-in-out ${delay} infinite">
+          <span style="position:relative;font-size:9px;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:99px;color:#dfe5ee">
+            ${name} ·
+            <span style="animation:ucdLabelFresh 8.4s ease-in-out ${delay} infinite">today</span><span
+              style="position:absolute;right:6px;animation:ucdLabelStale 8.4s ease-in-out ${delay} infinite">6d</span>
+          </span></div>`).join('');
       this._holder.innerHTML = `
         <div style="position:relative;height:180px;border-radius:10px;overflow:hidden;background:#0e1626">
           <div style="position:absolute;inset:0;background:
@@ -1151,8 +1205,6 @@ class UcModuleDemo extends HTMLElement {
           <div style="position:absolute;left:49%;top:8%;width:23%;height:46%;border-right:2px solid rgba(140,180,235,.5)"></div>
           <div style="position:absolute;left:5%;bottom:8%;width:60%;height:38%;border-right:2px solid rgba(140,180,235,.5)"></div>
           ${zones}
-          <span style="position:absolute;width:11px;height:11px;border-radius:50%;background:#fff;
-            box-shadow:0 0 10px rgba(255,255,255,.85);animation:ucdBotPath 9s ease-in-out infinite"></span>
           <div style="position:absolute;top:6px;right:8px;font-size:9px;color:#ffcf86;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:99px">heatmap: days since cleaned</div>
         </div>`;
       return;
