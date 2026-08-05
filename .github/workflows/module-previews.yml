@@ -24,6 +24,10 @@ on:
       - 'src/website-demo/**'
   workflow_dispatch:
 
+# The capture job commits refreshed PNGs back to main.
+permissions:
+  contents: write
+
 concurrency:
   group: module-previews-${{ github.ref }}
   cancel-in-progress: true
@@ -34,6 +38,9 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Needed so the follow-up push is authenticated as the workflow.
+          persist-credentials: true
 
       - uses: actions/setup-node@v4
         with:
