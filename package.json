@@ -34,7 +34,10 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "audit:module-tabs": "node scripts/audit-module-tabs.cjs"
+    "audit:module-tabs": "node scripts/audit-module-tabs.cjs",
+    "previews": "node scripts/capture-previews.mjs",
+    "previews:check": "node scripts/capture-previews.mjs --strict",
+    "build:demo": "webpack -c webpack.demo.config.js"
   },
   "keywords": [
     "home-assistant",
@@ -102,6 +105,7 @@
     "globals": "^17.6.0",
     "jsdom": "29.1.0",
     "openai": "6.35.0",
+    "playwright": "1.62.1",
     "prettier": "^3.8.3",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.4.2",

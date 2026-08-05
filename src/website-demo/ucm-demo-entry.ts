@@ -316,6 +316,12 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     c.columns = 3;
     c.show_photos = false;
   },
+  vehicle_maintenance: c => {
+    c.vehicle_name = 'Model Y';
+    c.odometer_entity = 'sensor.ev_odometer';
+    c.battery_entity = 'sensor.home_battery_soc';
+    c.todo_entity = 'todo.plant_care';
+  },
   vampire_power: c => {
     c.discovery_mode = 'manual';
     c.entities = ['sensor.tv_standby', 'sensor.console_standby', 'sensor.desktop_standby'];

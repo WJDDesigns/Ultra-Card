@@ -1,0 +1,74 @@
+name: Module previews
+
+# Keeps the module gallery and the website's demo bundle current, automatically.
+#
+#  push to main   -> rebuild bundle, recapture every module, commit changed PNGs,
+#                    regenerate docs/MODULES.md + docs/previews/manifest.json
+#  pull request   -> same capture, but nothing is committed; the run FAILS if any
+#                    module throws or renders empty (a real regression gate)
+#
+# The website reads the bundle straight from this repo via jsDelivr, so a green
+# run on main is all it takes for ultracard.io/modules to be up to date.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'webpack.demo.config.js'
+      - 'scripts/capture-previews.mjs'
+      - '.github/workflows/module-previews.yml'
+  pull_request:
+    paths:
+      - 'src/modules/**'
+      - 'src/website-demo/**'
+  workflow_dispatch:
+
+concurrency:
+  group: module-previews-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build demo bundle
+        run: npx webpack -c webpack.demo.config.js
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Pull requests gate on health; main records the current state.
+      - name: Capture module previews
+        run: node scripts/capture-previews.mjs ${{ github.event_name == 'pull_request' && '--strict' || '' }}
+
+      - name: Upload previews artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: module-previews
+          path: docs/previews
+          retention-days: 14
+
+      - name: Commit refreshed gallery and bundle
+        if: github.event_name != 'pull_request'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/previews docs/MODULES.md dist-demo/ultra-card-demo.js
+          if git diff --cached --quiet; then
+            echo "No preview changes."
+          else
+            git commit -m "chore(previews): refresh module gallery and demo bundle [skip ci]"
+            git push
+          fi

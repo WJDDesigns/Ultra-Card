@@ -1,0 +1,1704 @@
+{
+  "generatedAt": "2026-08-05T18:26:59.732Z",
+  "ultraCardVersion": "3.7.0-beta3",
+  "counts": {
+    "total": 93,
+    "free": 66,
+    "pro": 27
+  },
+  "modules": [
+    {
+      "type": "external_card",
+      "title": "3rd Party Card",
+      "description": "Embed any 3rd party Home Assistant card",
+      "category": "interactive",
+      "icon": "mdi:card-bulleted",
+      "pro": false,
+      "tags": [
+        "external",
+        "integration",
+        "3rd-party"
+      ],
+      "preview": "previews/external_card.png",
+      "status": "needs-config"
+    },
+    {
+      "type": "accordion",
+      "title": "Accordion",
+      "description": "Collapsible container with customizable header for organizing modules",
+      "category": "layout",
+      "icon": "mdi:chevron-down",
+      "pro": false,
+      "tags": [
+        "layout",
+        "accordion",
+        "collapsible",
+        "container",
+        "organization"
+      ],
+      "preview": "previews/accordion.png",
+      "status": "ok"
+    },
+    {
+      "type": "activity_feed",
+      "title": "Activity Feed",
+      "description": "Real-time home activity feed with timeline and social views",
+      "category": "data",
+      "icon": "mdi:timeline-text",
+      "pro": true,
+      "tags": [
+        "activity",
+        "feed",
+        "timeline",
+        "history",
+        "events",
+        "pro",
+        "premium"
+      ],
+      "preview": "previews/activity_feed.png",
+      "status": "ok"
+    },
+    {
+      "type": "alarm_panel",
+      "title": "Alarm Panel",
+      "description": "Arm, disarm, and monitor your security alarm with a PIN pad and status ring",
+      "category": "interactive",
+      "icon": "mdi:shield-home",
+      "pro": true,
+      "tags": [
+        "alarm",
+        "security",
+        "panel",
+        "keypad",
+        "pro",
+        "premium",
+        "arm",
+        "disarm"
+      ],
+      "preview": "previews/alarm_panel.png",
+      "status": "ok"
+    },
+    {
+      "type": "alert_center",
+      "title": "Alert Center",
+      "description": "Monitor and prioritize active Home Assistant alerts in one place",
+      "category": "data",
+      "icon": "mdi:alert-decagram-outline",
+      "pro": false,
+      "tags": [
+        "alerts",
+        "warnings",
+        "security",
+        "monitoring",
+        "safety",
+        "status"
+      ],
+      "preview": "previews/alert_center.png",
+      "status": "ok"
+    },
+    {
+      "type": "animated_clock",
+      "title": "Animated Clock",
+      "description": "Beautiful flip clock with smooth animations",
+      "category": "content",
+      "icon": "mdi:clock-outline",
+      "pro": true,
+      "tags": [
+        "clock",
+        "time",
+        "pro",
+        "premium",
+        "animated",
+        "flip"
+      ],
+      "preview": "previews/animated_clock.png",
+      "status": "ok"
+    },
+    {
+      "type": "animated_forecast",
+      "title": "Animated Forecast",
+      "description": "Multi-day weather forecast with animated icons",
+      "category": "content",
+      "icon": "mdi:weather-cloudy",
+      "pro": true,
+      "tags": [
+        "weather",
+        "forecast",
+        "pro",
+        "premium",
+        "animated"
+      ],
+      "preview": "previews/animated_forecast.png",
+      "status": "ok"
+    },
+    {
+      "type": "animated_weather",
+      "title": "Animated Weather",
+      "description": "Current weather display with animated icons",
+      "category": "content",
+      "icon": "mdi:weather-partly-cloudy",
+      "pro": true,
+      "tags": [
+        "weather",
+        "current",
+        "pro",
+        "premium",
+        "animated"
+      ],
+      "preview": "previews/animated_weather.png",
+      "status": "ok"
+    },
+    {
+      "type": "area_summary",
+      "title": "Area / Room Summary",
+      "description": "Smart room tile that auto-pulls lights, climate, motion, doors, media, humidity, and presence by Home Assistant area",
+      "category": "data",
+      "icon": "mdi:floor-plan",
+      "pro": false,
+      "tags": [
+        "area",
+        "room",
+        "summary",
+        "climate",
+        "lights",
+        "presence",
+        "dashboard"
+      ],
+      "preview": "previews/area_summary.png",
+      "status": "ok"
+    },
+    {
+      "type": "auto_entity_list",
+      "title": "Auto Entities List",
+      "description": "Dynamically list entities using domain, device_class, state, and keyword filters",
+      "category": "data",
+      "icon": "mdi:format-list-bulleted-type",
+      "pro": false,
+      "tags": [
+        "auto",
+        "entities",
+        "list",
+        "filter",
+        "dynamic",
+        "domain"
+      ],
+      "preview": "previews/auto_entity_list.png",
+      "status": "ok"
+    },
+    {
+      "type": "background",
+      "title": "Background",
+      "description": "Add custom background images to your dashboard view",
+      "category": "media",
+      "icon": "mdi:image-outline",
+      "pro": false,
+      "tags": [
+        "background",
+        "image",
+        "view"
+      ],
+      "preview": "previews/background.png",
+      "status": "ok"
+    },
+    {
+      "type": "badge_of_honor",
+      "title": "Badge of Honor",
+      "description": "Animated Pro membership badge with rotating text and gradient effects",
+      "category": "content",
+      "icon": "mdi:certificate",
+      "pro": true,
+      "tags": [
+        "badge",
+        "pro",
+        "premium",
+        "certificate",
+        "animated"
+      ],
+      "preview": "previews/badge_of_honor.png",
+      "status": "ok"
+    },
+    {
+      "type": "bar",
+      "title": "Bars",
+      "description": "Progress bars for values",
+      "category": "data",
+      "icon": "mdi:chart-bar",
+      "pro": false,
+      "tags": [
+        "bar",
+        "progress",
+        "chart",
+        "value",
+        "sensor"
+      ],
+      "preview": "previews/bar.png",
+      "status": "ok"
+    },
+    {
+      "type": "battery_fleet",
+      "title": "Battery Fleet",
+      "description": "Ranked battery health with drain-rate analysis and replacement predictions",
+      "category": "data",
+      "icon": "mdi:battery-heart-variant",
+      "pro": true,
+      "tags": [
+        "pro",
+        "premium",
+        "battery",
+        "fleet",
+        "prediction",
+        "maintenance",
+        "devices",
+        "forecast"
+      ],
+      "preview": "previews/battery_fleet.png",
+      "status": "ok"
+    },
+    {
+      "type": "battery_monitor",
+      "title": "Battery Monitor",
+      "description": "Auto-discover battery sensors and highlight low / critical devices with 5 visual styles",
+      "category": "data",
+      "icon": "mdi:battery-alert",
+      "pro": false,
+      "tags": [
+        "battery",
+        "monitor",
+        "low",
+        "critical",
+        "devices",
+        "health",
+        "auto"
+      ],
+      "preview": "previews/battery_monitor.png",
+      "status": "ok"
+    },
+    {
+      "type": "boolean_input",
+      "title": "Boolean Input",
+      "description": "Toggle switch linked to input_boolean and switch entities",
+      "category": "input",
+      "icon": "mdi:toggle-switch-outline",
+      "pro": false,
+      "tags": [
+        "boolean",
+        "toggle",
+        "switch",
+        "input",
+        "form",
+        "helper",
+        "interactive"
+      ],
+      "preview": "previews/boolean_input.png",
+      "status": "ok"
+    },
+    {
+      "type": "button",
+      "title": "Button",
+      "description": "Interactive buttons with actions",
+      "category": "interactive",
+      "icon": "mdi:gesture-tap-button",
+      "pro": false,
+      "tags": [
+        "button",
+        "action",
+        "click",
+        "interactive"
+      ],
+      "preview": "previews/button.png",
+      "status": "ok"
+    },
+    {
+      "type": "button_input",
+      "title": "Button Input",
+      "description": "Press button linked to input_button helpers",
+      "category": "input",
+      "icon": "mdi:gesture-tap-button",
+      "pro": false,
+      "tags": [
+        "button",
+        "press",
+        "input",
+        "form",
+        "helper",
+        "interactive",
+        "trigger"
+      ],
+      "preview": "previews/button_input.png",
+      "status": "ok"
+    },
+    {
+      "type": "calendar",
+      "title": "Calendar",
+      "description": "Display calendar events with multiple view options",
+      "category": "data",
+      "icon": "mdi:calendar-month",
+      "pro": true,
+      "tags": [
+        "calendar",
+        "events",
+        "schedule",
+        "agenda",
+        "planner",
+        "pro"
+      ],
+      "preview": "previews/calendar.png",
+      "status": "ok"
+    },
+    {
+      "type": "camera",
+      "title": "Camera",
+      "description": "Display live camera feeds with comprehensive control options",
+      "category": "content",
+      "icon": "mdi:camera",
+      "pro": false,
+      "tags": [
+        "camera",
+        "live",
+        "feed",
+        "security",
+        "surveillance"
+      ],
+      "preview": "previews/camera.png",
+      "status": "ok"
+    },
+    {
+      "type": "cleaning_zones",
+      "title": "Cleaning Zones",
+      "description": "Floorplan with per-room cleaning schedules and staleness heatmap",
+      "category": "data",
+      "icon": "mdi:spray-bottle",
+      "pro": true,
+      "tags": [
+        "pro",
+        "premium",
+        "cleaning",
+        "chores",
+        "floorplan",
+        "rooms",
+        "schedule",
+        "housekeeping"
+      ],
+      "preview": "previews/cleaning_zones.png",
+      "status": "ok"
+    },
+    {
+      "type": "climate",
+      "title": "Climate Control",
+      "description": "Interactive circular thermostat control for climate entities",
+      "category": "interactive",
+      "icon": "mdi:thermostat",
+      "pro": true,
+      "tags": [
+        "climate",
+        "thermostat",
+        "temperature",
+        "hvac",
+        "heating",
+        "cooling",
+        "pro"
+      ],
+      "preview": "previews/climate.png",
+      "status": "ok"
+    },
+    {
+      "type": "color_input",
+      "title": "Color Input",
+      "description": "Color picker linked to input_text or light entities",
+      "category": "input",
+      "icon": "mdi:palette",
+      "pro": false,
+      "tags": [
+        "color",
+        "picker",
+        "input",
+        "form",
+        "helper",
+        "interactive",
+        "rgb",
+        "hex"
+      ],
+      "preview": "previews/color_input.png",
+      "status": "ok"
+    },
+    {
+      "type": "counter_input",
+      "title": "Counter Input",
+      "description": "Counter with increment, decrement, and reset linked to counter helpers",
+      "category": "input",
+      "icon": "mdi:counter",
+      "pro": false,
+      "tags": [
+        "counter",
+        "increment",
+        "decrement",
+        "input",
+        "form",
+        "helper",
+        "interactive"
+      ],
+      "preview": "previews/counter_input.png",
+      "status": "ok"
+    },
+    {
+      "type": "cover",
+      "title": "Cover Control",
+      "description": "Control blinds, garage doors, and shutters",
+      "category": "interactive",
+      "icon": "mdi:blinds",
+      "pro": false,
+      "tags": [
+        "cover",
+        "blinds",
+        "garage",
+        "shutters"
+      ],
+      "preview": "previews/cover.png",
+      "status": "ok"
+    },
+    {
+      "type": "datetime_input",
+      "title": "Date/Time Input",
+      "description": "Date and time picker linked to input_datetime helpers",
+      "category": "input",
+      "icon": "mdi:calendar-clock",
+      "pro": false,
+      "tags": [
+        "date",
+        "time",
+        "datetime",
+        "input",
+        "form",
+        "helper",
+        "interactive",
+        "calendar"
+      ],
+      "preview": "previews/datetime_input.png",
+      "status": "ok"
+    },
+    {
+      "type": "clock",
+      "title": "Digital Clock",
+      "description": "Clean digital clock with date, 12/24h formats, and timezone support",
+      "category": "content",
+      "icon": "mdi:clock-digital",
+      "pro": false,
+      "tags": [
+        "clock",
+        "time",
+        "date",
+        "digital",
+        "timezone"
+      ],
+      "preview": "previews/clock.png",
+      "status": "ok"
+    },
+    {
+      "type": "dishwasher",
+      "title": "Dishwasher",
+      "description": "Animated dishwasher card with cycle status, remaining time, controls, and wash options",
+      "category": "interactive",
+      "icon": "mdi:dishwasher",
+      "pro": false,
+      "tags": [
+        "dishwasher",
+        "kitchen",
+        "appliance",
+        "smartthings",
+        "cycle",
+        "animated",
+        "interactive"
+      ],
+      "preview": "previews/dishwasher.png",
+      "status": "ok"
+    },
+    {
+      "type": "dog_duty",
+      "title": "Dog Duty",
+      "description": "Yard map with AI-detected dog waste markers, time scrubber, and cleanup tracking",
+      "category": "data",
+      "icon": "mdi:dog",
+      "pro": true,
+      "tags": [
+        "pro",
+        "premium",
+        "camera",
+        "ai",
+        "pets",
+        "dog",
+        "yard",
+        "vision"
+      ],
+      "preview": "previews/dog_duty.png",
+      "status": "ok"
+    },
+    {
+      "type": "drawer",
+      "title": "Drawer",
+      "description": "Slide-in panel (side drawer or bottom sheet) opened by a trigger button",
+      "category": "layout",
+      "icon": "mdi:page-layout-sidebar-left",
+      "pro": false,
+      "tags": [
+        "layout",
+        "drawer",
+        "bottom-sheet",
+        "panel",
+        "slide",
+        "overlay",
+        "container"
+      ],
+      "preview": "previews/drawer.png",
+      "status": "ok"
+    },
+    {
+      "type": "dropdown",
+      "title": "Dropdown",
+      "description": "Interactive dropdown selector with Home Assistant actions",
+      "category": "interactive",
+      "icon": "mdi:menu-down",
+      "pro": false,
+      "tags": [
+        "dropdown",
+        "select",
+        "menu",
+        "scene",
+        "service",
+        "interactive"
+      ],
+      "preview": "previews/dropdown.png",
+      "status": "ok"
+    },
+    {
+      "type": "dryer",
+      "title": "Dryer",
+      "description": "Animated dryer card with cycle status, remaining time, controls, and energy use",
+      "category": "interactive",
+      "icon": "mdi:tumble-dryer",
+      "pro": false,
+      "tags": [
+        "dryer",
+        "tumble dryer",
+        "laundry",
+        "appliance",
+        "smartthings",
+        "cycle",
+        "animated",
+        "interactive"
+      ],
+      "preview": "previews/dryer.png",
+      "status": "ok"
+    },
+    {
+      "type": "dynamic-list",
+      "title": "Dynamic List",
+      "description": "Generate a list of modules dynamically using a Jinja2 template",
+      "category": "data",
+      "icon": "mdi:code-braces",
+      "pro": false,
+      "tags": [
+        "dynamic",
+        "template",
+        "jinja2",
+        "list",
+        "loop",
+        "advanced"
+      ],
+      "preview": "previews/dynamic-list.png",
+      "status": "ok"
+    },
+    {
+      "type": "dynamic_weather",
+      "title": "Dynamic Weather",
+      "description": "Add animated weather effects (rain, snow, fog, sun beams) to your dashboard view.",
+      "category": "media",
+      "icon": "mdi:weather-partly-rainy",
+      "pro": true,
+      "tags": [
+        "weather",
+        "effects",
+        "pro",
+        "premium",
+        "animated",
+        "rain",
+        "snow",
+        "fog"
+      ],
+      "preview": "previews/dynamic_weather.png",
+      "status": "ok"
+    },
+    {
+      "type": "energy_display",
+      "title": "Energy Display",
+      "description": "Visualize energy flow between grid, solar, battery, home and devices",
+      "category": "data",
+      "icon": "mdi:lightning-bolt",
+      "pro": true,
+      "tags": [
+        "pro",
+        "premium",
+        "energy",
+        "solar",
+        "grid",
+        "battery",
+        "power",
+        "flow",
+        "sankey"
+      ],
+      "preview": "previews/energy_display.png",
+      "status": "ok"
+    },
+    {
+      "type": "fan",
+      "title": "Fan Control",
+      "description": "Modern fan control with speed, presets, oscillation, and direction",
+      "category": "interactive",
+      "icon": "mdi:fan",
+      "pro": false,
+      "tags": [
+        "fan",
+        "speed",
+        "hvac",
+        "air",
+        "interactive"
+      ],
+      "preview": "previews/fan.png",
+      "status": "ok"
+    },
+    {
+      "type": "flip_card",
+      "title": "Flip Card",
+      "description": "Two-sided container that flips between a front and back face",
+      "category": "layout",
+      "icon": "mdi:rotate-3d-variant",
+      "pro": false,
+      "tags": [
+        "layout",
+        "flip",
+        "card",
+        "container",
+        "3d",
+        "front",
+        "back",
+        "reveal"
+      ],
+      "preview": "previews/flip_card.png",
+      "status": "ok"
+    },
+    {
+      "type": "gauge",
+      "title": "Gauge",
+      "description": "Display sensor values as customizable gauges with various styles and pointer options",
+      "category": "content",
+      "icon": "mdi:gauge",
+      "pro": false,
+      "tags": [
+        "gauge",
+        "sensor",
+        "value",
+        "indicator",
+        "speedometer",
+        "meter"
+      ],
+      "preview": "previews/gauge.png",
+      "status": "ok"
+    },
+    {
+      "type": "graphs",
+      "title": "Graphs",
+      "description": "Display interactive charts and graphs with Home Assistant data",
+      "category": "data",
+      "icon": "mdi:chart-line",
+      "pro": false,
+      "tags": [
+        "charts",
+        "graphs",
+        "data",
+        "visualization",
+        "statistics",
+        "analytics"
+      ],
+      "preview": "previews/graphs.png",
+      "status": "ok"
+    },
+    {
+      "type": "grid",
+      "title": "Grid",
+      "description": "Display entities in a customizable grid layout with multiple styles",
+      "category": "data",
+      "icon": "mdi:view-grid",
+      "pro": false,
+      "tags": [
+        "grid",
+        "entities",
+        "dashboard",
+        "tiles",
+        "display"
+      ],
+      "preview": "previews/grid.png",
+      "status": "ok"
+    },
+    {
+      "type": "grid_layout",
+      "title": "Grid Layout",
+      "description": "True CSS-grid container with per-child column and row spans",
+      "category": "layout",
+      "icon": "mdi:view-grid-plus",
+      "pro": false,
+      "tags": [
+        "layout",
+        "grid",
+        "container",
+        "span",
+        "columns",
+        "responsive",
+        "masonry"
+      ],
+      "preview": "previews/grid_layout.png",
+      "status": "ok"
+    },
+    {
+      "type": "horizontal",
+      "title": "Horizontal Layout",
+      "description": "Arrange modules in rows with flexible horizontal and vertical alignment and spacing",
+      "category": "layout",
+      "icon": "mdi:view-column",
+      "pro": false,
+      "tags": [
+        "layout",
+        "horizontal",
+        "vertical",
+        "alignment",
+        "container",
+        "flexbox"
+      ],
+      "preview": "previews/horizontal.png",
+      "status": "ok"
+    },
+    {
+      "type": "humidifier",
+      "title": "Humidifier Control",
+      "description": "Control humidifiers and dehumidifiers with target humidity, power, and modes",
+      "category": "interactive",
+      "icon": "mdi:air-humidifier",
+      "pro": false,
+      "tags": [
+        "humidifier",
+        "dehumidifier",
+        "humidity",
+        "control",
+        "interactive"
+      ],
+      "preview": "previews/humidifier.png",
+      "status": "ok"
+    },
+    {
+      "type": "icon",
+      "title": "Icons",
+      "description": "Interactive icon buttons",
+      "category": "interactive",
+      "icon": "mdi:circle",
+      "pro": false,
+      "tags": [
+        "icon",
+        "button",
+        "interactive",
+        "control"
+      ],
+      "preview": "previews/icon.png",
+      "status": "ok"
+    },
+    {
+      "type": "image",
+      "title": "Images",
+      "description": "Display images and photos",
+      "category": "media",
+      "icon": "mdi:image",
+      "pro": false,
+      "tags": [
+        "image",
+        "picture",
+        "media",
+        "photo"
+      ],
+      "preview": "previews/image.png",
+      "status": "ok"
+    },
+    {
+      "type": "info",
+      "title": "Info Items",
+      "description": "Show entity information values",
+      "category": "data",
+      "icon": "mdi:information",
+      "pro": false,
+      "tags": [
+        "info",
+        "entity",
+        "data",
+        "sensors"
+      ],
+      "preview": "previews/info.png",
+      "status": "ok"
+    },
+    {
+      "type": "laundry_tracker",
+      "title": "Laundry Tracker",
+      "description": "Detects wash and dry cycles from power sensors and nags about forgotten loads",
+      "category": "data",
+      "icon": "mdi:washing-machine",
+      "pro": true,
+      "tags": [
+        "pro",
+        "premium",
+        "laundry",
+        "washer",
+        "dryer",
+        "cycle",
+        "power",
+        "appliance"
+      ],
+      "preview": "previews/laundry_tracker.png",
+      "status": "ok"
+    },
+    {
+      "type": "light",
+      "title": "Light Control",
+      "description": "Advanced light control with color, brightness, and effects",
+      "category": "interactive",
+      "icon": "mdi:lightbulb",
+      "pro": false,
+      "tags": [
+        "light",
+        "color",
+        "brightness",
+        "control",
+        "smart"
+      ],
+      "preview": "previews/light.png",
+      "status": "ok"
+    },
+    {
+      "type": "living_canvas",
+      "title": "Living Canvas",
+      "description": "View-wide WebGL background art (like Dynamic Weather), with presets and optional entity drivers",
+      "category": "media",
+      "icon": "mdi:palette-swatch",
+      "pro": true,
+      "tags": [
+        "pro",
+        "premium",
+        "canvas",
+        "webgl",
+        "animated",
+        "art",
+        "ambient",
+        "three"
+      ],
+      "preview": "previews/living_canvas.png",
+      "status": "ok"
+    },
+    {
+      "type": "lock",
+      "title": "Lock Control",
+      "description": "Modern lock control with lock, unlock, and open when supported",
+      "category": "interactive",
+      "icon": "mdi:lock",
+      "pro": false,
+      "tags": [
+        "lock",
+        "security",
+        "door",
+        "interactive"
+      ],
+      "preview": "previews/lock.png",
+      "status": "ok"
+    },
+    {
+      "type": "lunar_phase",
+      "title": "Lunar Phase",
+      "description": "Animated lunar phase tracker with live moon data, month calendar, and horizon graph",
+      "category": "content",
+      "icon": "mdi:moon-waxing-crescent",
+      "pro": true,
+      "tags": [
+        "moon",
+        "lunar",
+        "phase",
+        "astronomy",
+        "calendar",
+        "animated",
+        "pro",
+        "premium"
+      ],
+      "preview": "previews/lunar_phase.png",
+      "status": "ok"
+    },
+    {
+      "type": "map",
+      "title": "Map",
+      "description": "Interactive map with custom markers and location tracking",
+      "category": "content",
+      "icon": "mdi:map",
+      "pro": false,
+      "tags": [
+        "map",
+        "location",
+        "tracking",
+        "markers",
+        "gps"
+      ],
+      "preview": "previews/map.png",
+      "status": "ok"
+    },
+    {
+      "type": "markdown",
+      "title": "Markdown",
+      "description": "Display rich markdown content",
+      "category": "content",
+      "icon": "mdi:language-markdown",
+      "pro": false,
+      "tags": [
+        "markdown",
+        "content",
+        "rich-text",
+        "formatting",
+        "template"
+      ],
+      "preview": "previews/markdown.png",
+      "status": "ok"
+    },
+    {
+      "type": "media_player",
+      "title": "Media Player",
+      "description": "Control media players with album art, progress bar, and playback controls",
+      "category": "interactive",
+      "icon": "mdi:music",
+      "pro": false,
+      "tags": [
+        "media",
+        "music",
+        "player",
+        "audio",
+        "video",
+        "spotify",
+        "chromecast",
+        "interactive"
+      ],
+      "preview": "previews/media_player.png",
+      "status": "ok"
+    },
+    {
+      "type": "native_card",
+      "title": "Native HA Card",
+      "description": "Native Home Assistant card",
+      "category": "content",
+      "icon": "mdi:home-assistant",
+      "pro": false,
+      "tags": [
+        "native",
+        "home-assistant",
+        "card"
+      ],
+      "preview": "previews/native_card.png",
+      "status": "ok"
+    },
+    {
+      "type": "navigation",
+      "title": "Navigation",
+      "description": "Add a global navigation bar with routes, popups, and media player controls",
+      "category": "layout",
+      "icon": "mdi:compass-outline",
+      "pro": false,
+      "tags": [
+        "navigation",
+        "navbar",
+        "menu",
+        "routes",
+        "layout"
+      ],
+      "preview": "previews/navigation.png",
+      "status": "ok"
+    },
+    {
+      "type": "number_input",
+      "title": "Number Input",
+      "description": "Number input field linked to input_number helpers",
+      "category": "input",
+      "icon": "mdi:numeric",
+      "pro": false,
+      "tags": [
+        "number",
+        "input",
+        "form",
+        "helper",
+        "interactive",
+        "stepper"
+      ],
+      "preview": "previews/number_input.png",
+      "status": "ok"
+    },
+    {
+      "type": "pagebreak",
+      "title": "Page Break",
+      "description": "Separates slider content into pages",
+      "category": "layout",
+      "icon": "mdi:format-page-break",
+      "pro": false,
+      "tags": [
+        "slider",
+        "page",
+        "break",
+        "separator",
+        "divider"
+      ],
+      "preview": "previews/pagebreak.png",
+      "status": "ok"
+    },
+    {
+      "type": "people",
+      "title": "People",
+      "description": "Display person information with customizable data items",
+      "category": "data",
+      "icon": "mdi:account",
+      "pro": false,
+      "tags": [
+        "people",
+        "person",
+        "presence",
+        "location",
+        "avatar",
+        "user"
+      ],
+      "preview": "previews/people.png",
+      "status": "ok"
+    },
+    {
+      "type": "plant_care",
+      "title": "Plant Care",
+      "description": "Watering and fertilizing schedules with optional moisture sensors",
+      "category": "data",
+      "icon": "mdi:sprout",
+      "pro": true,
+      "tags": [
+        "pro",
+        "premium",
+        "plants",
+        "garden",
+        "watering",
+        "schedule",
+        "moisture",
+        "houseplants"
+      ],
+      "preview": "previews/plant_care.png",
+      "status": "ok"
+    },
+    {
+      "type": "popup",
+      "title": "Popup",
+      "description": "Modal popup container with customizable trigger and content",
+      "category": "layout",
+      "icon": "mdi:window-maximize",
+      "pro": false,
+      "tags": [
+        "layout",
+        "popup",
+        "modal",
+        "overlay",
+        "container"
+      ],
+      "preview": "previews/popup.png",
+      "status": "ok"
+    },
+    {
+      "type": "qr_code",
+      "title": "QR Code",
+      "description": "Generate QR codes from URL, text, template, or entity state",
+      "category": "content",
+      "icon": "mdi:qrcode",
+      "pro": true,
+      "tags": [
+        "qr",
+        "qrcode",
+        "pro",
+        "premium",
+        "barcode"
+      ],
+      "preview": "previews/qr_code.png",
+      "status": "ok"
+    },
+    {
+      "type": "range",
+      "title": "Range & Oven",
+      "description": "Range card with live cooktop burner indicators, oven status and temperature, dual-oven support, and light control",
+      "category": "interactive",
+      "icon": "mdi:stove",
+      "pro": false,
+      "tags": [
+        "range",
+        "oven",
+        "stove",
+        "cooktop",
+        "kitchen",
+        "appliance",
+        "smartthings",
+        "animated",
+        "interactive"
+      ],
+      "preview": "previews/range.png",
+      "status": "ok"
+    },
+    {
+      "type": "fridge",
+      "title": "Refrigerator",
+      "description": "Refrigerator card with temperatures, setpoints, door alerts, and ice/cooling controls",
+      "category": "interactive",
+      "icon": "mdi:fridge-outline",
+      "pro": false,
+      "tags": [
+        "fridge",
+        "refrigerator",
+        "freezer",
+        "kitchen",
+        "appliance",
+        "smartthings",
+        "animated",
+        "interactive"
+      ],
+      "preview": "previews/fridge.png",
+      "status": "ok"
+    },
+    {
+      "type": "screensaver",
+      "title": "Screensaver",
+      "description": "Kiosk screensaver that activates after idle with clock, weather, and image slideshow",
+      "category": "media",
+      "icon": "mdi:television-play",
+      "pro": true,
+      "tags": [
+        "screensaver",
+        "kiosk",
+        "clock",
+        "slideshow",
+        "idle",
+        "pro",
+        "premium"
+      ],
+      "preview": "previews/screensaver.png",
+      "status": "ok"
+    },
+    {
+      "type": "scroll_row",
+      "title": "Scroll Row",
+      "description": "Horizontally scrollable row with snap points and next-item peek",
+      "category": "layout",
+      "icon": "mdi:gesture-swipe-horizontal",
+      "pro": false,
+      "tags": [
+        "layout",
+        "scroll",
+        "row",
+        "snap",
+        "carousel",
+        "swipe",
+        "horizontal",
+        "container"
+      ],
+      "preview": "previews/scroll_row.png",
+      "status": "ok"
+    },
+    {
+      "type": "select_input",
+      "title": "Select Input",
+      "description": "Dropdown or chip selector linked to input_select helpers",
+      "category": "input",
+      "icon": "mdi:form-dropdown",
+      "pro": false,
+      "tags": [
+        "select",
+        "dropdown",
+        "input",
+        "form",
+        "helper",
+        "interactive",
+        "options"
+      ],
+      "preview": "previews/select_input.png",
+      "status": "ok"
+    },
+    {
+      "type": "separator",
+      "title": "Separator",
+      "description": "Visual dividers and spacing",
+      "category": "content",
+      "icon": "mdi:minus",
+      "pro": false,
+      "tags": [
+        "separator",
+        "divider",
+        "spacing",
+        "layout"
+      ],
+      "preview": "previews/separator.png",
+      "status": "ok"
+    },
+    {
+      "type": "slider_control",
+      "title": "Slider Control",
+      "description": "Interactive slider for controlling entity values",
+      "category": "interactive",
+      "icon": "mdi:tune-vertical",
+      "pro": false,
+      "tags": [
+        "slider",
+        "control",
+        "light",
+        "cover",
+        "fan",
+        "interactive",
+        "entity"
+      ],
+      "preview": "previews/slider_control.png",
+      "status": "ok"
+    },
+    {
+      "type": "slider_input",
+      "title": "Slider Input",
+      "description": "Range slider linked to input_number helpers",
+      "category": "input",
+      "icon": "mdi:tune-variant",
+      "pro": false,
+      "tags": [
+        "slider",
+        "range",
+        "number",
+        "input",
+        "form",
+        "helper",
+        "interactive"
+      ],
+      "preview": "previews/slider_input.png",
+      "status": "ok"
+    },
+    {
+      "type": "slider",
+      "title": "Slider Layout",
+      "description": "Create interactive slideshows with multiple pages of modules",
+      "category": "layout",
+      "icon": "mdi:view-carousel",
+      "pro": false,
+      "tags": [
+        "layout",
+        "slider",
+        "carousel",
+        "slideshow",
+        "pages",
+        "swipe"
+      ],
+      "preview": "previews/slider.png",
+      "status": "ok"
+    },
+    {
+      "type": "solar_analytics",
+      "title": "Solar Analytics",
+      "description": "Live solar power, grid balance, battery state, and daily energy totals in one glanceable widget",
+      "category": "data",
+      "icon": "mdi:solar-power-variant",
+      "pro": true,
+      "tags": [
+        "solar",
+        "energy",
+        "analytics",
+        "grid",
+        "battery",
+        "power",
+        "pro",
+        "premium"
+      ],
+      "preview": "previews/solar_analytics.png",
+      "status": "ok"
+    },
+    {
+      "type": "spinbox",
+      "title": "Spinbox",
+      "description": "Number input with increment/decrement buttons",
+      "category": "interactive",
+      "icon": "mdi:numeric",
+      "pro": false,
+      "tags": [
+        "spinbox",
+        "number",
+        "increment",
+        "decrement",
+        "input",
+        "stepper"
+      ],
+      "preview": "previews/spinbox.png",
+      "status": "ok"
+    },
+    {
+      "type": "sports_score",
+      "title": "Sports Score",
+      "description": "Display live sports scores, upcoming games, and team info for your favorite teams",
+      "category": "data",
+      "icon": "mdi:scoreboard",
+      "pro": true,
+      "tags": [
+        "sports",
+        "scores",
+        "nfl",
+        "nba",
+        "mlb",
+        "nhl",
+        "soccer",
+        "football",
+        "pro"
+      ],
+      "preview": "previews/sports_score.png",
+      "status": "ok"
+    },
+    {
+      "type": "stack",
+      "title": "Stack Overlay",
+      "description": "Layer modules on top of each other with anchor-based absolute positioning",
+      "category": "layout",
+      "icon": "mdi:layers",
+      "pro": false,
+      "tags": [
+        "layout",
+        "stack",
+        "overlay",
+        "absolute",
+        "layer",
+        "z-index",
+        "anchor",
+        "hero"
+      ],
+      "preview": "previews/stack.png",
+      "status": "ok"
+    },
+    {
+      "type": "state_switcher",
+      "title": "State Switcher",
+      "description": "Shows exactly one child at a time — the first whose logic conditions match",
+      "category": "layout",
+      "icon": "mdi:swap-horizontal-bold",
+      "pro": false,
+      "tags": [
+        "layout",
+        "switcher",
+        "conditional",
+        "state",
+        "container",
+        "transition"
+      ],
+      "preview": "previews/state_switcher.png",
+      "status": "ok"
+    },
+    {
+      "type": "status_summary",
+      "title": "Status Summary",
+      "description": "Display entity activity with timestamps and customizable color coding",
+      "category": "data",
+      "icon": "mdi:format-list-bulleted-square",
+      "pro": false,
+      "tags": [
+        "status",
+        "activity",
+        "monitor",
+        "summary",
+        "entities",
+        "tracking"
+      ],
+      "preview": "previews/status_summary.png",
+      "status": "ok"
+    },
+    {
+      "type": "tabs",
+      "title": "Tabs",
+      "description": "Tabbed container for organizing modules into switchable sections",
+      "category": "layout",
+      "icon": "mdi:tab",
+      "pro": false,
+      "tags": [
+        "layout",
+        "tabs",
+        "organization",
+        "container",
+        "sections"
+      ],
+      "preview": "previews/tabs.png",
+      "status": "ok"
+    },
+    {
+      "type": "text",
+      "title": "Text",
+      "description": "Display custom text content",
+      "category": "content",
+      "icon": "mdi:format-text",
+      "pro": false,
+      "tags": [
+        "text",
+        "content",
+        "typography",
+        "template"
+      ],
+      "preview": "previews/text.png",
+      "status": "ok"
+    },
+    {
+      "type": "text_input",
+      "title": "Text Input",
+      "description": "Text input field linked to input_text helpers",
+      "category": "input",
+      "icon": "mdi:form-textbox",
+      "pro": false,
+      "tags": [
+        "text",
+        "input",
+        "form",
+        "helper",
+        "interactive"
+      ],
+      "preview": "previews/text_input.png",
+      "status": "ok"
+    },
+    {
+      "type": "time_machine",
+      "title": "Time Machine",
+      "description": "Rewind the entire card with a draggable history timeline",
+      "category": "data",
+      "icon": "mdi:history",
+      "pro": true,
+      "tags": [
+        "time",
+        "history",
+        "scrubber",
+        "rewind",
+        "timeline",
+        "replay",
+        "pro",
+        "premium"
+      ],
+      "preview": "previews/time_machine.png",
+      "status": "ok"
+    },
+    {
+      "type": "timer",
+      "title": "Timer",
+      "description": "Countdown timer with optional action when time runs out",
+      "category": "interactive",
+      "icon": "mdi:timer-outline",
+      "pro": false,
+      "tags": [
+        "timer",
+        "countdown",
+        "kitchen",
+        "automation"
+      ],
+      "preview": "previews/timer.png",
+      "status": "ok"
+    },
+    {
+      "type": "todo_list",
+      "title": "To-Do List",
+      "description": "Show, check off, and add items on Home Assistant to-do lists",
+      "category": "data",
+      "icon": "mdi:checkbox-marked-outline",
+      "pro": false,
+      "tags": [
+        "todo",
+        "tasks",
+        "shopping",
+        "list",
+        "checklist",
+        "interactive"
+      ],
+      "preview": "previews/todo_list.png",
+      "status": "ok"
+    },
+    {
+      "type": "toggle",
+      "title": "Toggle",
+      "description": "Interactive toggles and multi-state switchers with custom actions",
+      "category": "interactive",
+      "icon": "mdi:toggle-switch",
+      "pro": false,
+      "tags": [
+        "toggle",
+        "switch",
+        "button",
+        "state",
+        "control",
+        "interactive"
+      ],
+      "preview": "previews/toggle.png",
+      "status": "ok"
+    },
+    {
+      "type": "update_monitor",
+      "title": "Update Monitor",
+      "description": "Auto-discover update entities and surface pending updates with install actions",
+      "category": "data",
+      "icon": "mdi:update",
+      "pro": false,
+      "tags": [
+        "update",
+        "monitor",
+        "version",
+        "firmware",
+        "devices",
+        "maintenance",
+        "auto"
+      ],
+      "preview": "previews/update_monitor.png",
+      "status": "ok"
+    },
+    {
+      "type": "vacuum",
+      "title": "Vacuum Control",
+      "description": "Interactive vacuum cleaner control with map, stats, and animations",
+      "category": "interactive",
+      "icon": "mdi:robot-vacuum",
+      "pro": true,
+      "tags": [
+        "vacuum",
+        "cleaning",
+        "robot",
+        "pro"
+      ],
+      "preview": "previews/vacuum.png",
+      "status": "ok"
+    },
+    {
+      "type": "vampire_power",
+      "title": "Vampire Power",
+      "description": "Finds always-on standby loads and ranks them by what they cost you",
+      "category": "data",
+      "icon": "mdi:power-plug-off",
+      "pro": true,
+      "tags": [
+        "pro",
+        "premium",
+        "energy",
+        "standby",
+        "phantom",
+        "power",
+        "cost",
+        "savings"
+      ],
+      "preview": "previews/vampire_power.png",
+      "status": "ok"
+    },
+    {
+      "type": "vehicle_maintenance",
+      "title": "Vehicle Maintenance",
+      "description": "Odometer and time based service intervals with a cost-tracked service log",
+      "category": "data",
+      "icon": "mdi:car-wrench",
+      "pro": true,
+      "tags": [
+        "pro",
+        "premium",
+        "vehicle",
+        "car",
+        "maintenance",
+        "service",
+        "odometer",
+        "garage"
+      ],
+      "preview": "previews/vehicle_maintenance.png",
+      "status": "ok"
+    },
+    {
+      "type": "vertical",
+      "title": "Vertical Layout",
+      "description": "Arrange modules in columns with flexible alignment and spacing",
+      "category": "layout",
+      "icon": "mdi:view-agenda",
+      "pro": false,
+      "tags": [
+        "layout",
+        "vertical",
+        "alignment",
+        "container",
+        "flexbox"
+      ],
+      "preview": "previews/vertical.png",
+      "status": "ok"
+    },
+    {
+      "type": "video_bg",
+      "title": "Video Background",
+      "description": "Add dynamic, conditional video backgrounds to your dashboard view.",
+      "category": "media",
+      "icon": "mdi:video-box",
+      "pro": true,
+      "tags": [
+        "video",
+        "background",
+        "pro",
+        "youtube",
+        "vimeo",
+        "dynamic",
+        "conditional"
+      ],
+      "preview": "previews/video_bg.png",
+      "status": "ok"
+    },
+    {
+      "type": "virtual_pet",
+      "title": "Virtual Pet",
+      "description": "A digital pet whose mood is driven by your smart home data",
+      "category": "interactive",
+      "icon": "mdi:paw",
+      "pro": true,
+      "tags": [
+        "pet",
+        "fun",
+        "tamagotchi",
+        "animated",
+        "interactive",
+        "pro",
+        "premium"
+      ],
+      "preview": "previews/virtual_pet.png",
+      "status": "ok"
+    },
+    {
+      "type": "washer",
+      "title": "Washer",
+      "description": "Animated washing machine card with cycle status, remaining time, controls, and energy use",
+      "category": "interactive",
+      "icon": "mdi:washing-machine",
+      "pro": false,
+      "tags": [
+        "washer",
+        "washing machine",
+        "laundry",
+        "appliance",
+        "smartthings",
+        "cycle",
+        "animated",
+        "interactive"
+      ],
+      "preview": "previews/washer.png",
+      "status": "ok"
+    },
+    {
+      "type": "weather",
+      "title": "Weather",
+      "description": "Current conditions and a simple forecast with clean static icons",
+      "category": "data",
+      "icon": "mdi:weather-partly-cloudy",
+      "pro": false,
+      "tags": [
+        "weather",
+        "forecast",
+        "temperature",
+        "conditions"
+      ],
+      "preview": "previews/weather.png",
+      "status": "ok"
+    }
+  ]
+}
