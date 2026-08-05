@@ -363,9 +363,11 @@ export function createDemoStates(): Record<string, any> {
     }),
 
     // ---- timer / counter ----
-    'timer.pizza': st('timer.pizza', 'idle', {
+    'timer.pizza': st('timer.pizza', 'active', {
       friendly_name: 'Pizza Timer',
-      duration: '0:12:00',
+      duration: '0:03:00',
+      remaining: '0:03:00',
+      finishes_at: new Date(Date.now() + 180000).toISOString(),
       icon: 'mdi:pizza',
     }),
     'counter.coffee': st('counter.coffee', '3', {

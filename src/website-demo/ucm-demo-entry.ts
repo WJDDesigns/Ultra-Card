@@ -391,7 +391,10 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
   lock: c => (c.entity = c.entity || 'lock.front_door'),
   vacuum: c => (c.entity = c.entity || 'vacuum.robot'),
   alarm_panel: c => (c.entity = c.entity || 'alarm_control_panel.home'),
-  timer: c => (c.entity = c.entity || 'timer.pizza'),
+  timer: c => {
+    c.timer_entity = 'timer.pizza';
+    c.duration_seconds = 180;
+  },
   todo_list: c => (c.entity = c.entity || 'todo.groceries'),
   weather: c => (c.weather_entity = c.weather_entity || 'weather.home'),
   animated_weather: c => (c.weather_entity = c.weather_entity || c.entity || 'weather.home'),
@@ -523,17 +526,6 @@ const DEMO_STAGE: Record<string, (holder: HTMLElement, el: any) => void> = {
       const tabBtns = controls(holder).slice(0, 2);
       if (tabBtns.length >= 2) { tabBtns[idx % 2].click(); idx++; }
     }, 3200));
-  },
-  timer: (holder, el) => {
-    // Press start so the countdown runs; restart it when it winds down.
-    const press = () => {
-      const btns = controls(holder);
-      const start = btns.find(b => /^(start|resume|play)$/i.test((b.textContent || '').trim()))
-        || btns.find(b => /start|play/i.test(b.className + (b.getAttribute('aria-label') || '')));
-      (start || btns[btns.length - 1])?.click();
-    };
-    setTimeout(press, 300);
-    el._addTimer(setInterval(press, 30000));
   },
   scroll_row: (holder, el) => {
     let dir = 1;
@@ -760,6 +752,19 @@ function startDemoLoop() {
   };
   setTimeout(cycle, 1200);
   setInterval(cycle, 4200);
+
+  // Restart the pizza timer whenever it winds down, so it always counts.
+  setInterval(() => {
+    const t = demoHass.states['timer.pizza'];
+    if (!t) return;
+    const started = new Date(t.last_changed).getTime();
+    if (Date.now() - started > 175000) {
+      demoHass.__setState('timer.pizza', 'active', {
+        remaining: '0:03:00',
+        finishes_at: new Date(Date.now() + 180000).toISOString(),
+      });
+    }
+  }, 5000);
 
   // Media playback position advances in real time.
   setInterval(() => {
