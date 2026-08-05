@@ -585,7 +585,7 @@ function rebadge(pv){
   const m = CATALOG.find(x=>x.type===pv.dataset.pv); if(!m) return;
   pv.insertAdjacentHTML('afterbegin',`<span class="ucm-card-badge">${m.pro?'<span class="ucm-badge ucm-badge-pro"><i class="mdi mdi-star"></i>PRO</span>':'<span class="ucm-badge ucm-badge-free">Free</span>'}</span>`);
 }
-function observeGrids(){ $$('.ucm-pv',root).forEach(pv=>{ if(!pv.closest('.ucm-modal')) io.observe(pv); }); }
+function observeGrids(){ $$('.ucm-pv',root).forEach(pv=>{ if(!pv.closest('.ucm-modal') && !pv.closest('.ucm-proband-art')) io.observe(pv); }); }
 
 /* ---------- preview dispatch ----------
    Primary: <uc-module-demo> — the REAL Ultra Card module code compiled from
@@ -616,6 +616,7 @@ function renderPreview(pv, type, interactive){
   }catch(err){ holder.innerHTML='<div class="pv-card">'+ (m?m.title:type) +'</div>'; }
 }
 function mountReal(pv, type){
+  if(pv.querySelector('uc-module-demo')) return;   /* already mounted */
   const wrap = document.createElement('div'); wrap.className='pv ucm-realpv';
   const demo = document.createElement('uc-module-demo');
   demo.setAttribute('type', type);
