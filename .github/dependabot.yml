@@ -7,3 +7,8 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - dependencies
+    ignore:
+      # @types/node must track the Node.js runtime we build against, not latest.
+      - dependency-name: '@types/node'
+        update-types:
+          - version-update:semver-major
