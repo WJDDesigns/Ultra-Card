@@ -1,6 +1,6 @@
 import { html, TemplateResult } from 'lit';
-import { cache } from 'lit/directives/cache.js';
-import { createRef, ref, Ref } from 'lit/directives/ref.js';
+import { keyed } from 'lit/directives/keyed.js';
+import { ref } from 'lit/directives/ref.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { ucToastService } from '../services/uc-toast-service';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
@@ -20,37 +20,51 @@ import {
   unifiedTemplateEntityId,
 } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
-import { escapeHtml } from '../utils/html-sanitizer';
 import { resolveOverlayLayer } from '../utils/uc-overlay-host';
 import '../components/ultra-template-editor';
-
-const CAMERA_PLAYER_SELECTORS = new Set([
-  'ha-web-rtc-player',
-  'ha-hls-player',
-  'ha-camera-stream',
-  'ha-camera-websocket',
-  'ha-camera-player',
-  'ha-camera-viewer',
-]);
 
 /** Unified-template output keys the camera module reads (plain entity_id strings also work). */
 const CAMERA_TEMPLATE_KEYS = ['entity', 'visible', 'overlay_text', 'overlay_color'] as const;
 
+type CameraViewMode = 'auto' | 'live' | 'snapshot';
+
+/** `object-fit` values Home Assistant's players understand. */
+type CameraFitMode = 'cover' | 'contain' | 'fill';
+
+const DEFAULT_ASPECT_RATIO = 16 / 9;
+
+/**
+ * Runtime state for a single camera instance.
+ *
+ * The module registry keeps one `UltraCameraModule` for every camera on every dashboard, so
+ * anything that varies per placed module has to be keyed by module id rather than stored on the
+ * class. Sharing these fields made two cameras fight over one stream.
+ */
+interface CameraRuntimeState {
+  player?: Element | undefined;
+  renderedEntity?: string | undefined;
+  appliedEntity?: string | undefined;
+  appliedLive?: boolean | undefined;
+  pendingProps?: { entity: string; live: boolean } | undefined;
+  updateTimer?: any;
+  snapshotTimer?: any;
+  snapshotIntervalMs?: number | undefined;
+  snapshotSrc?: string | undefined;
+  snapshotEntity?: string | undefined;
+  snapshotInFlight?: boolean | undefined;
+  audioOverride?: boolean | undefined;
+  clickTimeout?: any;
+  holdTimeout?: any;
+  isHolding?: boolean | undefined;
+}
+
 export class UltraCameraModule extends BaseUltraModule {
-  private _templateInputDebounce: any = null;
   private _templateService: TemplateService | undefined;
-  private _lastRenderedEntity: string | null = null;
-  private _renderDebounce: any = null;
-  private _webrtcUpdateTimer: any = null;
-  private _pendingCameraProps: { entity: string | undefined; live: boolean } | undefined;
-  private _lastAppliedEntity: string | undefined;
-  private _lastAppliedLive: boolean | undefined;
-  private _huiImageRef: Ref<any> = createRef();
-  private _cameraStableKeys: Map<string, string> = new Map(); // Store stable keys by module ID
-  private _audioOverrides: Map<string, boolean> = new Map();
-  private _lastAudioStates: Map<string, boolean> = new Map();
-  private _audioObservers: Map<string, { observer: MutationObserver; target: Node }> = new Map();
-  private _snapshotRefreshTimers: Map<string, any> = new Map();
+  private _runtime: Map<string, CameraRuntimeState> = new Map();
+  private _playerRefs: Map<string, (element: Element | undefined) => void> = new Map();
+  private _visibilityListener: (() => void) | undefined;
+  /** Latest `hass` seen by any render, used by timers that outlive a render pass. */
+  private _hass: HomeAssistant | undefined;
 
   metadata: ModuleMetadata = {
     type: 'camera',
@@ -62,10 +76,6 @@ export class UltraCameraModule extends BaseUltraModule {
     category: 'content',
     tags: ['camera', 'live', 'feed', 'security', 'surveillance'],
   };
-
-  private clickTimeout: any = null;
-  private holdTimeout: any = null;
-  private isHolding = false;
 
   createDefault(id?: string, hass?: HomeAssistant): CameraModule {
     return {
@@ -94,11 +104,12 @@ export class UltraCameraModule extends BaseUltraModule {
 
       // Camera controls
       show_controls: false,
+      show_audio_button: true,
 
       // Stream mode - controls camera feed behavior:
-      // 'auto': HA default - lightweight snapshots with tap-to-live upgrade (low data usage)
+      // 'auto': HA default - still images polled every 10s by hui-image (low data usage)
       // 'live': Always streaming live feed (high data usage, real-time)
-      // 'snapshot': Manual refresh only at specified interval (lowest data usage)
+      // 'snapshot': Still images on the configured refresh interval (lowest data usage)
       view_mode: 'auto',
       refresh_interval: 10, // Seconds between refreshes (only used in 'snapshot' mode, range: 1-300)
       audio_enabled: false, // Only applies in 'live' mode
@@ -157,8 +168,14 @@ export class UltraCameraModule extends BaseUltraModule {
         )}
         <div style="margin-bottom: 24px;">
           ${this.renderEntityPickerWithVariables(
-            hass, config, 'entity', cameraModule.entity || '',
-            (value: string) => { updateModule({ entity: value }); this.triggerPreviewUpdate(); },
+            hass,
+            config,
+            'entity',
+            cameraModule.entity || '',
+            (value: string) => {
+              updateModule({ entity: value });
+              this.triggerPreviewUpdate();
+            },
             ['camera'],
             localize('editor.camera.entity', lang, 'Camera Entity')
           )}
@@ -180,7 +197,6 @@ export class UltraCameraModule extends BaseUltraModule {
               this.triggerPreviewUpdate();
             }
           )}
-
           ${cameraModule.show_name !== false
             ? html`
                 <div class="field-group" style="margin-bottom: 16px;">
@@ -341,7 +357,7 @@ export class UltraCameraModule extends BaseUltraModule {
               localize(
                 'editor.camera.view_mode.desc',
                 lang,
-                'Control how the camera feed is displayed. Auto: snapshot with tap-to-live (like HA default). Live: always streaming. Snapshot: manual refresh only.'
+                'Auto: still images refreshed every 10 seconds, exactly like Home Assistant picture cards. Live: a continuous stream. Snapshot: still images on your own refresh interval.'
               ),
               hass,
               { view_mode: cameraModule.view_mode || 'auto' },
@@ -378,7 +394,7 @@ export class UltraCameraModule extends BaseUltraModule {
             )}
           </div>
 
-          <!-- Audio Enable (only for Live mode) -->
+          <!-- Live stream options -->
           ${(cameraModule.view_mode || 'auto') === 'live'
             ? html`
                 <div style="margin-bottom: 16px;">
@@ -387,16 +403,91 @@ export class UltraCameraModule extends BaseUltraModule {
                     localize(
                       'editor.camera.audio_enabled.desc',
                       lang,
-                      'Enable audio for live camera streams. Audio is only available in Live mode.'
+                      'Start the stream unmuted where the browser allows it. Browsers block unmuted autoplay until you interact with the page, so the stream may start muted until you use the sound button.'
                     ),
                     hass,
                     { audio_enabled: cameraModule.audio_enabled === true },
                     [this.booleanField('audio_enabled')],
-                    (e: CustomEvent) => updateModule(e.detail.value)
+                    (e: CustomEvent) => {
+                      updateModule(e.detail.value);
+                      this.triggerPreviewUpdate();
+                    }
+                  )}
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                  ${this.renderFieldSection(
+                    localize('editor.camera.show_audio_button.title', lang, 'Sound Button'),
+                    localize(
+                      'editor.camera.show_audio_button.desc',
+                      lang,
+                      'Show a mute/unmute button over the stream.'
+                    ),
+                    hass,
+                    { show_audio_button: cameraModule.show_audio_button !== false },
+                    [this.booleanField('show_audio_button')],
+                    (e: CustomEvent) => {
+                      updateModule(e.detail.value);
+                      this.triggerPreviewUpdate();
+                    }
+                  )}
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                  ${this.renderFieldSection(
+                    localize('editor.camera.show_controls.title', lang, 'Player Controls'),
+                    localize(
+                      'editor.camera.show_controls.desc',
+                      lang,
+                      "Show the browser's native video controls on the stream."
+                    ),
+                    hass,
+                    { show_controls: cameraModule.show_controls === true },
+                    [this.booleanField('show_controls')],
+                    (e: CustomEvent) => {
+                      updateModule(e.detail.value);
+                      this.triggerPreviewUpdate();
+                    }
                   )}
                 </div>
               `
             : ''}
+
+          <!-- Image Fit -->
+          <div style="margin-bottom: 16px;">
+            ${this.renderFieldSection(
+              localize('editor.camera.image_fit.title', lang, 'Image Fit'),
+              localize(
+                'editor.camera.image_fit.desc',
+                lang,
+                'How the feed fills the frame. Cover crops to fill, Contain shows the whole frame with bars, Fill stretches to the frame.'
+              ),
+              hass,
+              { image_fit: cameraModule.image_fit || 'cover' },
+              [
+                this.selectField('image_fit', [
+                  {
+                    value: 'cover',
+                    label: localize('editor.camera.image_fit.options.cover', lang, 'Cover'),
+                  },
+                  {
+                    value: 'contain',
+                    label: localize('editor.camera.image_fit.options.contain', lang, 'Contain'),
+                  },
+                  {
+                    value: 'fill',
+                    label: localize('editor.camera.image_fit.options.fill', lang, 'Fill'),
+                  },
+                ]),
+              ],
+              (e: CustomEvent) => {
+                const next = e.detail.value.image_fit;
+                if (next === (cameraModule.image_fit || 'cover')) return;
+                updateModule(e.detail.value);
+                this.triggerPreviewUpdate();
+              }
+            )}
+          </div>
 
           <!-- Refresh Interval (only for Snapshot mode) -->
           ${(cameraModule.view_mode || 'auto') === 'snapshot'
@@ -516,10 +607,18 @@ export class UltraCameraModule extends BaseUltraModule {
               <div class="dimension-group">
                 ${this.renderSliderField(
                   localize('editor.camera.width', lang, 'Width'),
-                  localize('editor.camera.width_desc', lang, 'Set the width of the camera display. Range: 100–1000px'),
+                  localize(
+                    'editor.camera.width_desc',
+                    lang,
+                    'Set the width of the camera display. Range: 100–1000px'
+                  ),
                   cameraModule.width || 320,
-                  320, 100, 1000, 1,
-                  (v: number) => this._handleDimensionChange(cameraModule, 'width', v, updateModule),
+                  320,
+                  100,
+                  1000,
+                  1,
+                  (v: number) =>
+                    this._handleDimensionChange(cameraModule, 'width', v, updateModule),
                   'px'
                 )}
               </div>
@@ -558,10 +657,18 @@ export class UltraCameraModule extends BaseUltraModule {
               <div class="dimension-group">
                 ${this.renderSliderField(
                   localize('editor.camera.height', lang, 'Height'),
-                  localize('editor.camera.height_desc', lang, 'Set the height of the camera display. Range: 100–1000px'),
+                  localize(
+                    'editor.camera.height_desc',
+                    lang,
+                    'Set the height of the camera display. Range: 100–1000px'
+                  ),
                   cameraModule.height || 180,
-                  180, 100, 1000, 1,
-                  (v: number) => this._handleDimensionChange(cameraModule, 'height', v, updateModule),
+                  180,
+                  100,
+                  1000,
+                  1,
+                  (v: number) =>
+                    this._handleDimensionChange(cameraModule, 'height', v, updateModule),
                   'px'
                 )}
               </div>
@@ -629,10 +736,19 @@ export class UltraCameraModule extends BaseUltraModule {
           <div class="dimension-group" style="margin-top: 16px;">
             ${this.renderSliderField(
               localize('editor.camera.rotation', lang, 'Rotation'),
-              localize('editor.camera.rotation_desc', lang, 'Rotate the camera image clockwise (0–360 degrees).'),
+              localize(
+                'editor.camera.rotation_desc',
+                lang,
+                'Rotate the camera image clockwise (0–360 degrees).'
+              ),
               cameraModule.rotation || 0,
-              0, 0, 360, 1,
-              (v: number) => { updateModule({ rotation: v }); },
+              0,
+              0,
+              360,
+              1,
+              (v: number) => {
+                updateModule({ rotation: v });
+              },
               '°'
             )}
           </div>
@@ -664,40 +780,76 @@ export class UltraCameraModule extends BaseUltraModule {
             <!-- Left Crop -->
             ${this.renderSliderField(
               localize('editor.camera.crop.left_title', lang, 'Left Crop'),
-              localize('editor.camera.crop.left_desc', lang, 'Crop from the left edge. Higher values show less of the left side.'),
+              localize(
+                'editor.camera.crop.left_desc',
+                lang,
+                'Crop from the left edge. Higher values show less of the left side.'
+              ),
               cameraModule.crop_left || 0,
-              0, 0, 50, 1,
-              (v: number) => { updateModule({ crop_left: v }); },
+              0,
+              0,
+              50,
+              1,
+              (v: number) => {
+                updateModule({ crop_left: v });
+              },
               '%'
             )}
 
             <!-- Right Crop -->
             ${this.renderSliderField(
               localize('editor.camera.crop.right_title', lang, 'Right Crop'),
-              localize('editor.camera.crop.right_desc', lang, 'Crop from the right edge. Higher values show less of the right side.'),
+              localize(
+                'editor.camera.crop.right_desc',
+                lang,
+                'Crop from the right edge. Higher values show less of the right side.'
+              ),
               cameraModule.crop_right || 0,
-              0, 0, 50, 1,
-              (v: number) => { updateModule({ crop_right: v }); },
+              0,
+              0,
+              50,
+              1,
+              (v: number) => {
+                updateModule({ crop_right: v });
+              },
               '%'
             )}
 
             <!-- Top Crop -->
             ${this.renderSliderField(
               localize('editor.camera.crop.top_title', lang, 'Top Crop'),
-              localize('editor.camera.crop.top_desc', lang, 'Crop from the top edge. Higher values show less of the top area.'),
+              localize(
+                'editor.camera.crop.top_desc',
+                lang,
+                'Crop from the top edge. Higher values show less of the top area.'
+              ),
               cameraModule.crop_top || 0,
-              0, 0, 50, 1,
-              (v: number) => { updateModule({ crop_top: v }); },
+              0,
+              0,
+              50,
+              1,
+              (v: number) => {
+                updateModule({ crop_top: v });
+              },
               '%'
             )}
 
             <!-- Bottom Crop -->
             ${this.renderSliderField(
               localize('editor.camera.crop.bottom_title', lang, 'Bottom Crop'),
-              localize('editor.camera.crop.bottom_desc', lang, 'Crop from the bottom edge. Higher values show less of the bottom area.'),
+              localize(
+                'editor.camera.crop.bottom_desc',
+                lang,
+                'Crop from the bottom edge. Higher values show less of the bottom area.'
+              ),
               cameraModule.crop_bottom || 0,
-              0, 0, 50, 1,
-              (v: number) => { updateModule({ crop_bottom: v }); },
+              0,
+              0,
+              50,
+              1,
+              (v: number) => {
+                updateModule({ crop_bottom: v });
+              },
               '%'
             )}
           </div>
@@ -827,10 +979,7 @@ export class UltraCameraModule extends BaseUltraModule {
                   class="template-content"
                   @mousedown=${(e: Event) => {
                     const target = e.target as HTMLElement;
-                    if (
-                      !target.closest('ultra-template-editor') &&
-                      !target.closest('.cm-editor')
-                    ) {
+                    if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
                       e.stopPropagation();
                     }
                   }}
@@ -845,7 +994,7 @@ export class UltraCameraModule extends BaseUltraModule {
                   <ultra-template-editor
                     .hass=${hass}
                     .value=${cameraModule.unified_template || ''}
-                    .placeholder=${'{\n  "entity": "{{ \'camera.outdoor\' if is_state(\'weather.home\', \'sunny\') else \'camera.indoor\' }}"\n}'}
+                    .placeholder=${"{\n  \"entity\": \"{{ 'camera.outdoor' if is_state('weather.home', 'sunny') else 'camera.indoor' }}\"\n}"}
                     .minHeight=${100}
                     .maxHeight=${300}
                     @value-changed=${(e: CustomEvent) => {
@@ -883,6 +1032,8 @@ export class UltraCameraModule extends BaseUltraModule {
     const cameraModule = module as CameraModule;
     const moduleWithDesign = cameraModule as any;
     const lang = hass.locale?.language || 'en';
+    // Timers outlive a render pass, so keep the newest connection handy for them.
+    this._hass = hass;
 
     // GRACEFUL RENDERING: Check for incomplete configuration
     const unifiedOn =
@@ -892,7 +1043,11 @@ export class UltraCameraModule extends BaseUltraModule {
     if (!unifiedOn && (!cameraModule.entity || cameraModule.entity.trim() === '')) {
       return this.renderGradientErrorState(
         localize('editor.camera.error_no_entity', lang, 'Select Camera Entity'),
-        localize('editor.camera.error_no_entity_desc', lang, 'Choose a camera entity in the General tab'),
+        localize(
+          'editor.camera.error_no_entity_desc',
+          lang,
+          'Choose a camera entity in the General tab'
+        ),
         'mdi:camera-outline'
       );
     }
@@ -900,7 +1055,11 @@ export class UltraCameraModule extends BaseUltraModule {
     if (unifiedOn && !String(cameraModule.unified_template).trim()) {
       return this.renderGradientErrorState(
         localize('editor.camera.error_no_template', lang, 'Configure Template'),
-        localize('editor.camera.error_no_template_desc', lang, 'Enter unified template in the General tab'),
+        localize(
+          'editor.camera.error_no_template_desc',
+          lang,
+          'Enter unified template in the General tab'
+        ),
         'mdi:camera-outline'
       );
     }
@@ -925,11 +1084,7 @@ export class UltraCameraModule extends BaseUltraModule {
         if (!hass.__uvc_template_strings) {
           hass.__uvc_template_strings = {};
         }
-        const processed = preprocessTemplateVariables(
-          cameraModule.unified_template,
-          hass,
-          config
-        );
+        const processed = preprocessTemplateVariables(cameraModule.unified_template, hass, config);
         const templateHash = this._hashString(processed);
         const templateKey = `unified_camera_${cameraModule.id}_${templateHash}`;
 
@@ -988,65 +1143,29 @@ export class UltraCameraModule extends BaseUltraModule {
     // Get camera entity - use template entity if provided, otherwise use module entity
     let cameraEntity = templateEntity || cameraModule.entity;
 
-    // Determine camera view mode based on view_mode setting
-    const viewMode = cameraModule.view_mode || 'auto';
-    let desiredCameraView: 'auto' | 'live';
+    const state = this._runtimeFor(cameraModule.id);
+    const viewMode: CameraViewMode = (cameraModule.view_mode as CameraViewMode) || 'auto';
+    const isLiveMode = viewMode === 'live';
 
-    if (viewMode === 'live') {
-      // Always live streaming
-      desiredCameraView = 'live';
-    } else {
-      // 'auto' or 'snapshot' both use 'auto' for hui-image (snapshot with tap-to-live capability)
-      desiredCameraView = 'auto';
-    }
-
-    // When editor is open, keep live but serialize updates to avoid overlapping negotiations
-    // We render using last applied props and schedule a debounced apply for desired props
-    if ((this as any)._isEditorOpen()) {
-      const effectiveEntity = this._lastAppliedEntity ?? cameraEntity;
-      const effectiveCameraView = this._lastAppliedLive ?? desiredCameraView === 'live';
-      // Schedule an atomic update to desired props (200ms debounce)
+    // While the editor is open the entity changes on every keystroke, so swaps are serialised to
+    // avoid starting a second stream negotiation before the first one settles.
+    if (this._isEditorOpen()) {
       if (cameraEntity) {
-        (this as any)._scheduleCameraUpdate(
-          cameraEntity,
-          desiredCameraView === 'live',
-          cameraModule,
-          hass
-        );
+        this._scheduleCameraUpdate(cameraEntity, isLiveMode, cameraModule, hass);
       }
-      cameraEntity = effectiveEntity || '';
-      // Note: We will pass desired camera view to hui-image below via effectiveCameraView
-      // but we also record it to avoid churn
-      this._lastAppliedLive = effectiveCameraView;
-    } else {
-      // Outside editor: apply immediately
-      // Validate the entity before applying to avoid renegotiation on bad values
-      const isValid = cameraEntity ? (this as any)._isValidCameraEntity(hass, cameraEntity) : false;
-      this._lastAppliedEntity = isValid ? cameraEntity : this._lastAppliedEntity;
-      this._lastAppliedLive = desiredCameraView === 'live';
+      cameraEntity = state.appliedEntity ?? cameraEntity;
+    } else if (cameraEntity && this._isValidCameraEntity(hass, cameraEntity)) {
+      state.appliedEntity = cameraEntity;
+      state.appliedLive = isLiveMode;
     }
 
     const entity = cameraEntity ? hass.states[cameraEntity] : null;
     const isUnavailable = !entity || entity.state === 'unavailable';
+    state.renderedEntity = cameraEntity;
 
-    // CRITICAL FIX: Prevent WebRTC re-initialization when template is being edited
-    // Only re-render camera if the evaluated entity actually changed
-    // Store stable keys in instance Map to avoid "object is not extensible" errors
-    // Include audio_enabled in key to ensure audio updates trigger re-render when needed
-    const audioEnabled = this._isAudioActive(cameraModule);
-    let stableKey: string;
-    if (cameraModule.unified_template_mode && cameraEntity === this._lastRenderedEntity && cameraEntity) {
-      // Same entity - use stable key to prevent Lit from recreating hui-image
-      // This prevents WebRTC SDP errors during template editing
-      // But include audio state to allow audio changes to update
-      stableKey = `camera_${cameraModule.id}_${cameraEntity}_audio_${audioEnabled}`;
-    } else {
-      // Entity changed - allow re-render and update cache
-      this._lastRenderedEntity = cameraEntity;
-      stableKey = `camera_${cameraModule.id}_${cameraEntity || 'none'}_audio_${audioEnabled}_${Date.now()}`;
-    }
-    // Store the stable key for this module
-    this._cameraStableKeys.set(cameraModule.id, stableKey);
+    // The player is only rebuilt when something it genuinely depends on changes. Re-keying it on
+    // unrelated state updates tears the stream down and restarts the handshake.
+    const playerKey = `${cameraModule.id}|${cameraEntity || 'none'}|${viewMode}`;
 
     // Get camera name - use template overlay text if provided
     const cameraName =
@@ -1082,57 +1201,57 @@ export class UltraCameraModule extends BaseUltraModule {
       textShadow: designProperties.text_shadow || undefined,
     };
 
-    // Calculate crop positioning for true cropping with container resizing
-    const cropLeft = cameraModule.crop_left || 0;
-    const cropRight = cameraModule.crop_right || 0;
-    const cropTop = cameraModule.crop_top || 0;
-    const cropBottom = cameraModule.crop_bottom || 0;
+    // Crop is a percentage of each edge, so both the visible window and the scale-up needed to
+    // fill it stay percentages. That keeps cropping responsive instead of pinning the media to
+    // the fallback pixel dimensions.
+    const cropLeft = this._clampCrop(cameraModule.crop_left);
+    const cropRight = this._clampCrop(cameraModule.crop_right);
+    const cropTop = this._clampCrop(cameraModule.crop_top);
+    const cropBottom = this._clampCrop(cameraModule.crop_bottom);
+    const visibleWidth = Math.max(1, 100 - cropLeft - cropRight);
+    const visibleHeight = Math.max(1, 100 - cropTop - cropBottom);
+    const hasCropping = cropLeft > 0 || cropRight > 0 || cropTop > 0 || cropBottom > 0;
 
     // Get dimensions - prioritize global design properties over module properties
-    const hasGlobalWidth = designProperties.width && designProperties.width !== '';
-    const hasGlobalHeight = designProperties.height && designProperties.height !== '';
+    const hasGlobalHeight =
+      designProperties.height &&
+      designProperties.height !== '' &&
+      designProperties.height !== 'auto';
 
     // Use fallback pixel dimensions only when no global design dimensions are set
     const fallbackWidth = cameraModule.width || 320;
     const fallbackHeight = cameraModule.height || 180;
+    const sourceRatio =
+      (cameraModule.aspect_ratio_linked !== false && (cameraModule.aspect_ratio_value || 0) > 0
+        ? (cameraModule.aspect_ratio_value as number)
+        : fallbackWidth / fallbackHeight) || DEFAULT_ASPECT_RATIO;
+    // Reserving the frame's shape up front is what stops the dashboard from jumping while a
+    // stream negotiates, and it gives the video a definite height to fill.
+    const stageRatio = (sourceRatio * visibleWidth) / visibleHeight;
 
-    // For cropping calculations, we need pixel values - convert or use fallbacks
-    const originalWidth = hasGlobalWidth ? fallbackWidth : fallbackWidth; // Use fallback for crop calculations
-    const originalHeight = hasGlobalHeight ? fallbackHeight : fallbackHeight; // Use fallback for crop calculations
-
-    // Reduce container size based on crop percentages (only affects fallback sizing)
-    const croppedWidth = (originalWidth * (100 - cropLeft - cropRight)) / 100;
-    const croppedHeight = (originalHeight * (100 - cropTop - cropBottom)) / 100;
-
-    // Calculate image positioning to show the correct portion (only when cropping is applied)
-    const hasCropping = cropLeft > 0 || cropRight > 0 || cropTop > 0 || cropBottom > 0;
-    const imageOffsetX = hasCropping ? -((originalWidth * cropLeft) / 100) : 0;
-    const imageOffsetY = hasCropping ? -((originalHeight * cropTop) / 100) : 0;
-
-    // Build rotation transform
+    const fitMode = this._resolveFitMode(cameraModule.image_fit);
     const rotation = cameraModule.rotation || 0;
-    const rotationCSS = rotation !== 0 ? `rotate(${rotation}deg)` : '';
 
-    // Camera image styles - responsive when no cropping, positioned when cropping
-    const imageStyles = {
-      objectFit: 'cover',
-      width: hasCropping ? `${originalWidth}px` : '100%', // Responsive unless cropping
-      height: hasCropping ? `${originalHeight}px` : '100%', // Responsive unless cropping
+    // Media fills the stage; when cropping it is scaled up and offset so the kept region lands
+    // exactly on the stage bounds.
+    const mediaStyles: Record<string, string | undefined> = {
       display: 'block',
-      position: hasCropping ? 'absolute' : 'static', // Only absolute positioning when cropping
-      left: hasCropping ? `${imageOffsetX}px` : 'auto', // Offset only when cropping
-      top: hasCropping ? `${imageOffsetY}px` : 'auto', // Offset only when cropping
-      transform: rotationCSS,
-      transition: 'all 0.3s ease',
-      borderRadius: designProperties.border_radius || '0px', // Match container border radius
+      position: 'absolute',
+      top: hasCropping ? `${(-(cropTop / visibleHeight) * 100).toFixed(4)}%` : '0',
+      left: hasCropping ? `${(-(cropLeft / visibleWidth) * 100).toFixed(4)}%` : '0',
+      width: hasCropping ? `${(10000 / visibleWidth).toFixed(4)}%` : '100%',
+      height: hasCropping ? `${(10000 / visibleHeight).toFixed(4)}%` : '100%',
+      transform: rotation !== 0 ? `rotate(${rotation}deg)` : undefined,
+      objectFit: fitMode,
     };
 
     // Container styling - prioritize global design properties completely
     const containerImageStyles = {
       width:
-        designProperties.width || (hasGlobalWidth ? '100%' : `${Math.max(50, croppedWidth)}px`),
-      height:
-        designProperties.height || (hasGlobalHeight ? 'auto' : `${Math.max(50, croppedHeight)}px`),
+        designProperties.width ||
+        `${Math.max(50, (fallbackWidth * visibleWidth) / 100).toFixed(0)}px`,
+      height: hasGlobalHeight ? designProperties.height : undefined,
+      aspectRatio: hasGlobalHeight ? undefined : stageRatio.toFixed(4),
       maxWidth: designProperties.max_width || undefined,
       minWidth: designProperties.min_width || undefined,
       maxHeight: designProperties.max_height || undefined,
@@ -1149,6 +1268,9 @@ export class UltraCameraModule extends BaseUltraModule {
       boxShadow: designProperties.box_shadow || undefined,
       backdropFilter: designProperties.backdrop_filter || undefined,
       clipPath: designProperties.clip_path || undefined,
+      // ha-hls-player caps the video at `calc(100vh - 97px)` by default, which shrinks the frame
+      // inside a card-sized container.
+      '--video-max-height': '100%',
     };
 
     // Get camera name position styles with design properties priority
@@ -1160,33 +1282,44 @@ export class UltraCameraModule extends BaseUltraModule {
       templateOverlayColor
     );
 
-    // Camera content
-    const isDashboardView = previewContext === 'dashboard';
-    const isLiveMode = (cameraModule.view_mode || 'auto') === 'live';
+    // Audio only exists on a live stream
+    const audioActive = isLiveMode && this._isAudioActive(cameraModule);
+    const showAudioToggle = isLiveMode && cameraModule.show_audio_button !== false;
 
-    const handleUserInteraction = (event: Event) => {
-      // Only handle audio in live mode
-      if (!isLiveMode) {
-        return;
-      }
+    const nameOverlay =
+      cameraModule.show_name !== false
+        ? html`<div
+            class="camera-name-overlay"
+            style="${this.buildStyleString(namePositionStyles)}"
+          >
+            ${cameraName}
+          </div>`
+        : '';
 
-      const isAudioActive = this._isAudioActive(cameraModule, isDashboardView);
-      if (!isAudioActive) {
-        return;
-      }
-
-      const container =
-        (event.currentTarget as HTMLElement) ||
-        (event.target as HTMLElement).closest('.camera-image-container');
-      const huiImage = container?.querySelector('hui-image') as any;
-
-      if (huiImage) {
-        this._ensureAudioState(huiImage, cameraModule, isAudioActive);
-      }
-    };
-
-    // Audio is active in live mode only (not auto mode in preview)
-    const audioActive = isLiveMode ? this._isAudioActive(cameraModule, isDashboardView) : false;
+    const primaryTextStyle = `font-weight: ${designProperties.font_weight || this.getTextWeight(moduleWithDesign)}; font-size: ${
+      designProperties.font_size
+        ? typeof designProperties.font_size === 'number'
+          ? `${designProperties.font_size}px`
+          : designProperties.font_size
+        : this.getTextSize(moduleWithDesign)
+    };`;
+    const secondaryTextStyle = `font-size: ${
+      typeof designProperties.font_size === 'number'
+        ? `${Math.max(10, designProperties.font_size - 2)}px`
+        : this.getSmallTextSize(moduleWithDesign)
+    }; margin-top: 4px; opacity: 0.9;`;
+    const placeholderStyle = (background: string) =>
+      this.buildStyleString({
+        position: 'absolute',
+        inset: '0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        backgroundColor: background,
+        color: designProperties.color || this.getTextColor(moduleWithDesign),
+        fontFamily: designProperties.font_family || this.getTextFont(moduleWithDesign),
+      });
 
     const cameraContent = html`
       <div
@@ -1194,182 +1327,46 @@ export class UltraCameraModule extends BaseUltraModule {
         data-uc-camera-id="${cameraModule.id}"
         style="${this.buildStyleString(containerStyles)}"
       >
-        <div
-          class="camera-image-container"
-          style="${this.buildStyleString(containerImageStyles)}"
-          @click=${handleUserInteraction}
-          @touchstart=${handleUserInteraction}
-        >
+        <div class="camera-image-container" style="${this.buildStyleString(containerImageStyles)}">
           ${!cameraEntity
             ? html`
                 <div
                   class="camera-unavailable"
-                  style="${this.buildStyleString({
-                    ...imageStyles,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexDirection: 'column',
-                    backgroundColor: 'var(--warning-color, #ff9800)',
-                    color: designProperties.color || this.getTextColor(moduleWithDesign),
-                    position: 'static', // Don't apply crop positioning to unavailable state
-                    left: 'auto',
-                    top: 'auto',
-                    fontFamily: designProperties.font_family || this.getTextFont(moduleWithDesign),
-                  })}"
+                  style="${placeholderStyle('var(--warning-color, #ff9800)')}"
                 >
                   <ha-icon
                     icon="mdi:camera-plus"
                     style="font-size: 48px; margin-bottom: 8px;"
                   ></ha-icon>
-                  <span
-                    style="font-weight: ${designProperties.font_weight ||
-                    this.getTextWeight(moduleWithDesign)}; font-size: ${designProperties.font_size
-                      ? typeof designProperties.font_size === 'number'
-                        ? `${designProperties.font_size}px`
-                        : designProperties.font_size
-                      : this.getTextSize(moduleWithDesign)};"
-                    >No Camera Selected</span
+                  <span style="${primaryTextStyle}"
+                    >${localize(
+                      'editor.camera.error_no_entity',
+                      lang,
+                      'Select Camera Entity'
+                    )}</span
                   >
-                  <span
-                    style="font-size: ${designProperties.font_size
-                      ? typeof designProperties.font_size === 'number'
-                        ? `${Math.max(10, designProperties.font_size - 2)}px`
-                        : this.getSmallTextSize(moduleWithDesign)
-                      : this.getSmallTextSize(moduleWithDesign)}; margin-top: 4px; opacity: 0.9;"
-                    >Choose a camera entity below</span
+                  <span style="${secondaryTextStyle}"
+                    >${localize(
+                      'editor.camera.error_no_entity_desc',
+                      lang,
+                      'Choose a camera entity in the General tab'
+                    )}</span
                   >
                 </div>
-                ${cameraModule.show_name !== false
-                  ? html`
-                      <div
-                        class="camera-name-overlay"
-                        style="${this.buildStyleString(namePositionStyles)}"
-                      >
-                        ${cameraName}
-                      </div>
-                    `
-                  : ''}
+                ${nameOverlay}
               `
-            : !isUnavailable
-              ? cache(
-                  isLiveMode && entity
-                    ? html`
-                        <!-- Live mode: use ha-camera-stream directly so muted/controls reach ha-web-rtc-player -->
-                        <ha-camera-stream
-                          ${ref(this._huiImageRef)}
-                          data-camera-key=${this._cameraStableKeys.get(cameraModule.id) || cameraEntity}
-                          .hass=${hass}
-                          .stateObj=${entity as any}
-                          .muted=${!audioActive}
-                          .controls=${cameraModule.show_controls === true}
-                          style="${this.buildStyleString(imageStyles)}"
-                          class="camera-image"
-                          @load=${(e: Event) => {
-                            const imageElement = e.target as HTMLElement;
-                            const container = imageElement.closest('.camera-image-container') as HTMLElement;
-                            if (container) {
-                              const nameOverlay = container.querySelector('.camera-name-overlay') as HTMLElement;
-                              const fullscreenIcon = container.querySelector('.camera-fullscreen-icon') as HTMLElement;
-                              setTimeout(() => {
-                                this.repositionPreviewOverlays(imageElement, nameOverlay, fullscreenIcon, container);
-                              }, 100);
-                            }
-                            this._ensureAudioState(e.target as any, cameraModule, audioActive);
-                          }}
-                        ></ha-camera-stream>
-                        ${cameraModule.show_name !== false
-                          ? html`
-                              <div
-                                class="camera-name-overlay"
-                                style="${this.buildStyleString(namePositionStyles)}"
-                              >
-                                ${cameraName}
-                              </div>
-                            `
-                          : ''}
-                      `
-                    : html`
-                        <!-- Auto/snapshot mode: use hui-image for snapshot + tap-to-live behaviour -->
-                        <hui-image
-                          ${ref(this._huiImageRef)}
-                          data-camera-key=${this._cameraStableKeys.get(cameraModule.id) || cameraEntity}
-                          .hass=${hass}
-                          .cameraImage=${cameraEntity}
-                          .cameraView=${'auto'}
-                          style="${this.buildStyleString(imageStyles)}"
-                          class="camera-image"
-                          @error=${() => {}}
-                          @load=${(e: Event) => {
-                            // Reposition overlays to video area after image loads
-                            const imageElement = e.target as HTMLElement;
-                            const container = imageElement.closest(
-                              '.camera-image-container'
-                            ) as HTMLElement;
-                            if (container) {
-                              const nameOverlay = container.querySelector(
-                                '.camera-name-overlay'
-                              ) as HTMLElement;
-                              const fullscreenIcon = container.querySelector(
-                                '.camera-fullscreen-icon'
-                              ) as HTMLElement;
-
-                              // Use setTimeout to ensure DOM is updated
-                              setTimeout(() => {
-                                this.repositionPreviewOverlays(
-                                  imageElement,
-                                  nameOverlay,
-                                  fullscreenIcon,
-                                  container
-                                );
-                              }, 100);
-                            }
-
-                            // Setup snapshot refresh timer for snapshot mode
-                            if ((cameraModule.view_mode || 'auto') === 'snapshot') {
-                              this._setupSnapshotRefresh(cameraModule, cameraEntity || '', hass);
-                            } else {
-                              // Clear any existing timer when not in snapshot mode
-                              this._clearSnapshotRefresh(cameraModule.id);
-                            }
-                          }}
-                        ></hui-image>
-                        ${cameraModule.show_name !== false
-                          ? html`
-                              <div
-                                class="camera-name-overlay"
-                                style="${this.buildStyleString(namePositionStyles)}"
-                              >
-                                ${cameraName}
-                              </div>
-                            `
-                          : ''}
-                      `
-                )
-              : html`
+            : isUnavailable
+              ? html`
                   <div
                     class="camera-unavailable"
-                    style="${this.buildStyleString({
-                      ...imageStyles,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexDirection: 'column',
-                      backgroundColor: 'var(--error-color, #f44336)',
-                      color: designProperties.color || this.getTextColor(moduleWithDesign),
-                      position: 'static', // Don't apply crop positioning to unavailable state
-                      left: 'auto',
-                      top: 'auto',
-                      fontFamily:
-                        designProperties.font_family || this.getTextFont(moduleWithDesign),
-                    })}"
+                    style="${placeholderStyle('var(--error-color, #f44336)')}"
                   >
                     ${cameraModule.fallback_image
                       ? html`
                           <img
                             src=${cameraModule.fallback_image}
                             alt="Fallback"
-                            style="max-width: 100%; max-height: 100%; object-fit: cover;"
+                            style="width: 100%; height: 100%; object-fit: ${fitMode};"
                           />
                         `
                       : html`
@@ -1377,37 +1374,52 @@ export class UltraCameraModule extends BaseUltraModule {
                             icon="mdi:camera-off"
                             style="font-size: 48px; margin-bottom: 8px;"
                           ></ha-icon>
-                          <span
-                            style="font-weight: ${designProperties.font_weight ||
-                            this.getTextWeight(
-                              moduleWithDesign
-                            )}; font-size: ${designProperties.font_size
-                              ? typeof designProperties.font_size === 'number'
-                                ? `${designProperties.font_size}px`
-                                : designProperties.font_size
-                              : this.getTextSize(moduleWithDesign)};"
-                            >Camera Unavailable</span
+                          <span style="${primaryTextStyle}"
+                            >${localize(
+                              'editor.camera.unavailable',
+                              lang,
+                              'Camera Unavailable'
+                            )}</span
                           >
-                          <span
-                            style="font-size: ${designProperties.font_size
-                              ? typeof designProperties.font_size === 'number'
-                                ? `${Math.max(10, designProperties.font_size - 2)}px`
-                                : this.getSmallTextSize(moduleWithDesign)
-                              : this.getSmallTextSize(
-                                  moduleWithDesign
-                                )}; margin-top: 4px; opacity: 0.9;"
-                            >Entity: ${cameraEntity}</span
-                          >
+                          <span style="${secondaryTextStyle}">${cameraEntity}</span>
                         `}
                   </div>
-                  ${cameraModule.show_name !== false
+                  ${nameOverlay}
+                `
+              : html`
+                  ${keyed(
+                    playerKey,
+                    this._renderPlayer(cameraModule, hass, {
+                      cameraEntity: cameraEntity as string,
+                      stateObj: entity,
+                      viewMode,
+                      mediaStyles,
+                      fitMode,
+                      sourceRatio,
+                      audioActive,
+                      state,
+                    })
+                  )}
+                  ${nameOverlay}
+                  ${showAudioToggle
                     ? html`
-                        <div
-                          class="camera-name-overlay"
-                          style="${this.buildStyleString(namePositionStyles)}"
+                        <button
+                          type="button"
+                          class="camera-audio-toggle ${audioActive ? 'active' : 'muted'}"
+                          title="${audioActive
+                            ? localize('editor.camera.audio.mute', lang, 'Mute')
+                            : localize('editor.camera.audio.unmute', lang, 'Unmute')}"
+                          aria-label="${audioActive
+                            ? localize('editor.camera.audio.mute', lang, 'Mute')
+                            : localize('editor.camera.audio.unmute', lang, 'Unmute')}"
+                          @mousedown=${(e: Event) => e.stopPropagation()}
+                          @touchstart=${(e: Event) => e.stopPropagation()}
+                          @click=${(e: Event) => this._toggleAudio(e, cameraModule)}
                         >
-                          ${cameraName}
-                        </div>
+                          <ha-icon
+                            icon="${audioActive ? 'mdi:volume-high' : 'mdi:volume-off'}"
+                          ></ha-icon>
+                        </button>
                       `
                     : ''}
                 `}
@@ -1416,7 +1428,6 @@ export class UltraCameraModule extends BaseUltraModule {
     `;
 
     // Get hover effect configuration from module design
-    const hoverEffect = (cameraModule as any).design?.hover_effect;
     const hoverEffectClass = this.getHoverEffectClass(module);
     const designStyles = this.buildStyleString(this.buildDesignStyles(module, hass));
 
@@ -1434,9 +1445,340 @@ export class UltraCameraModule extends BaseUltraModule {
         >
           ${cameraContent}
         </div>`
-      : html`<div class="camera-module-container ${hoverEffectClass}" style="${designStyles}">${cameraContent}</div>`;
+      : html`<div class="camera-module-container ${hoverEffectClass}" style="${designStyles}">
+          ${cameraContent}
+        </div>`;
 
     return this.wrapWithAnimation(cameraWrapper, module, hass);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Playback
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Renders the media element for the configured stream mode.
+   *
+   * `live` hands off to `ha-camera-stream`, which is the same component Home Assistant's own
+   * picture cards use and which negotiates WebRTC/HLS/MJPEG with fallbacks. `auto` uses
+   * `hui-image` for HA's polled-snapshot behaviour. `snapshot` drives its own still image so the
+   * configured refresh interval is actually honoured.
+   */
+  private _renderPlayer(
+    cameraModule: CameraModule,
+    hass: HomeAssistant,
+    options: {
+      cameraEntity: string;
+      stateObj: any;
+      viewMode: CameraViewMode;
+      mediaStyles: Record<string, string | undefined>;
+      fitMode: CameraFitMode;
+      sourceRatio: number;
+      audioActive: boolean;
+      state: CameraRuntimeState;
+    }
+  ): TemplateResult {
+    const { cameraEntity, stateObj, viewMode, mediaStyles, fitMode, sourceRatio, audioActive } =
+      options;
+    const mediaStyle = this.buildStyleString(mediaStyles);
+    const playerRef = this._playerRef(cameraModule.id);
+
+    if (viewMode === 'live') {
+      return html`
+        <ha-camera-stream
+          ${ref(playerRef)}
+          class="camera-image"
+          style="${mediaStyle}"
+          .hass=${hass}
+          .stateObj=${stateObj}
+          .fitMode=${fitMode}
+          .muted=${!audioActive}
+          .controls=${cameraModule.show_controls === true}
+          @load=${() => this._syncAudio(cameraModule)}
+        ></ha-camera-stream>
+      `;
+    }
+
+    if (viewMode === 'snapshot') {
+      this._ensureSnapshot(cameraModule, cameraEntity);
+      return html`
+        <img
+          ${ref(playerRef)}
+          class="camera-image"
+          style="${mediaStyle}"
+          alt=${cameraEntity}
+          src=${options.state.snapshotSrc || ''}
+          @error=${() => this._onSnapshotError(cameraModule, cameraEntity)}
+        />
+      `;
+    }
+
+    return html`
+      <hui-image
+        ${ref(playerRef)}
+        class="camera-image"
+        style="${mediaStyle}"
+        .hass=${hass}
+        .cameraImage=${cameraEntity}
+        .cameraView=${'auto'}
+        .fitMode=${fitMode}
+        .aspectRatio=${`${sourceRatio.toFixed(4)}:1`}
+      ></hui-image>
+    `;
+  }
+
+  private _runtimeFor(moduleId: string): CameraRuntimeState {
+    let state = this._runtime.get(moduleId);
+    if (!state) {
+      state = {};
+      this._runtime.set(moduleId, state);
+    }
+    return state;
+  }
+
+  /**
+   * Stable `ref` callback per module. Lit treats a new callback identity as a detach/attach cycle,
+   * so these must be cached or the player would be torn down on every render.
+   */
+  private _playerRef(moduleId: string): (element: Element | undefined) => void {
+    let callback = this._playerRefs.get(moduleId);
+    if (!callback) {
+      callback = (element?: Element) => {
+        const state = this._runtimeFor(moduleId);
+        state.player = element;
+        if (element) return;
+        // A mode switch detaches the old element before attaching the new one, so only tear the
+        // timers down once we know nothing took its place.
+        setTimeout(() => {
+          if (this._runtime.get(moduleId)?.player) return;
+          this._clearTimers(moduleId);
+          this._runtime.delete(moduleId);
+          this._playerRefs.delete(moduleId);
+        }, 0);
+      };
+      this._playerRefs.set(moduleId, callback);
+    }
+    return callback;
+  }
+
+  private _clearTimers(moduleId: string): void {
+    const state = this._runtime.get(moduleId);
+    if (!state) return;
+    if (state.snapshotTimer) {
+      clearInterval(state.snapshotTimer);
+      state.snapshotTimer = undefined;
+    }
+    if (state.updateTimer) {
+      clearTimeout(state.updateTimer);
+      state.updateTimer = undefined;
+    }
+    if (state.clickTimeout) {
+      clearTimeout(state.clickTimeout);
+      state.clickTimeout = undefined;
+    }
+    if (state.holdTimeout) {
+      clearTimeout(state.holdTimeout);
+      state.holdTimeout = undefined;
+    }
+  }
+
+  private _clampCrop(value: number | undefined): number {
+    if (typeof value !== 'number' || !isFinite(value)) return 0;
+    return Math.min(49, Math.max(0, value));
+  }
+
+  /** Home Assistant's players only accept these three `object-fit` values. */
+  private _resolveFitMode(fit: CameraModule['image_fit']): CameraFitMode {
+    switch (fit) {
+      case 'contain':
+      case 'scale-down':
+        return 'contain';
+      case 'fill':
+        return 'fill';
+      default:
+        return 'cover';
+    }
+  }
+
+  private _isEditorOpen(): boolean {
+    try {
+      return !!document.querySelector('hui-dialog-edit-card, hui-card-edit-mode');
+    } catch {
+      return false;
+    }
+  }
+
+  private _isValidCameraEntity(hass: HomeAssistant, entityId: string): boolean {
+    if (!hass || !entityId) return false;
+    const stateObj = hass.states?.[entityId];
+    if (!stateObj) return false;
+    if (entityId.split('.')[0] !== 'camera') return false;
+    return stateObj.state !== 'unavailable' && stateObj.state !== 'unknown';
+  }
+
+  /**
+   * Debounces entity swaps while the editor is open so a burst of keystrokes results in a single
+   * stream negotiation instead of one per character.
+   */
+  private _scheduleCameraUpdate(
+    entity: string,
+    live: boolean,
+    cameraModule: CameraModule,
+    hass: HomeAssistant
+  ): void {
+    const state = this._runtimeFor(cameraModule.id);
+    if (state.appliedEntity === entity && state.appliedLive === live) {
+      return;
+    }
+
+    state.pendingProps = { entity, live };
+    if (state.updateTimer) {
+      clearTimeout(state.updateTimer);
+    }
+    state.updateTimer = setTimeout(() => {
+      state.updateTimer = undefined;
+      const pending = state.pendingProps;
+      if (!pending || !this._isValidCameraEntity(hass, pending.entity)) {
+        return;
+      }
+      state.appliedEntity = pending.entity;
+      state.appliedLive = pending.live;
+      state.pendingProps = undefined;
+      this.triggerPreviewUpdate();
+    }, 200);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Snapshot mode
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Snapshot mode owns its refresh cycle. `hui-image` polls on a hard-coded 10s timer, so routing
+   * this mode through it silently ignored the configured interval.
+   */
+  private _ensureSnapshot(cameraModule: CameraModule, entityId: string): void {
+    const state = this._runtimeFor(cameraModule.id);
+    const intervalMs = Math.min(300, Math.max(1, cameraModule.refresh_interval || 10)) * 1000;
+
+    if (state.snapshotEntity !== entityId) {
+      state.snapshotEntity = entityId;
+      state.snapshotSrc = undefined;
+      if (state.snapshotTimer) {
+        clearInterval(state.snapshotTimer);
+        state.snapshotTimer = undefined;
+      }
+    }
+
+    if (!state.snapshotSrc) {
+      this._refreshSnapshot(cameraModule.id, entityId, false);
+    }
+
+    if (state.snapshotTimer && state.snapshotIntervalMs !== intervalMs) {
+      clearInterval(state.snapshotTimer);
+      state.snapshotTimer = undefined;
+    }
+
+    if (!state.snapshotTimer) {
+      state.snapshotIntervalMs = intervalMs;
+      state.snapshotTimer = setInterval(
+        () => this._refreshSnapshot(cameraModule.id, entityId, true),
+        intervalMs
+      );
+    }
+
+    this._ensureVisibilityListener();
+  }
+
+  /**
+   * Points the snapshot at a fresh frame.
+   *
+   * `entity_picture` already carries the camera's signed access token, so this needs no round trip;
+   * `applyToElement` writes straight to the `<img>` to avoid re-rendering every card on the
+   * dashboard on each tick.
+   */
+  private _refreshSnapshot(moduleId: string, entityId: string, applyToElement: boolean): void {
+    const state = this._runtime.get(moduleId);
+    const hass = this._hass;
+    if (!state || !hass) return;
+    if (applyToElement && typeof document !== 'undefined' && document.hidden) return;
+
+    const stateObj = hass.states?.[entityId] as any;
+    const picture: string | undefined = stateObj?.attributes?.entity_picture;
+    if (!picture) {
+      void this._resolveSignedSnapshot(moduleId, entityId);
+      return;
+    }
+
+    const base =
+      typeof (hass as any).hassUrl === 'function' ? (hass as any).hassUrl(picture) : picture;
+    const src = `${base}${base.includes('?') ? '&' : '?'}_uc=${Date.now()}`;
+    state.snapshotSrc = src;
+
+    const element = state.player as HTMLImageElement | undefined;
+    if (applyToElement) {
+      if (element instanceof HTMLImageElement) {
+        element.src = src;
+      } else {
+        this.triggerPreviewUpdate();
+      }
+    }
+  }
+
+  /** Cameras without an `entity_picture` (no access token yet) need a signed proxy path. */
+  private async _resolveSignedSnapshot(moduleId: string, entityId: string): Promise<void> {
+    const state = this._runtime.get(moduleId);
+    const hass = this._hass;
+    if (!state || !hass || state.snapshotInFlight) return;
+
+    state.snapshotInFlight = true;
+    try {
+      const signed = await (hass as any).callWS({
+        type: 'auth/sign_path',
+        path: `/api/camera_proxy/${entityId}`,
+      });
+      if (!signed?.path) return;
+      const base =
+        typeof (hass as any).hassUrl === 'function'
+          ? (hass as any).hassUrl(signed.path)
+          : signed.path;
+      state.snapshotSrc = `${base}${base.includes('?') ? '&' : '?'}_uc=${Date.now()}`;
+      const element = state.player as HTMLImageElement | undefined;
+      if (element instanceof HTMLImageElement) {
+        element.src = state.snapshotSrc;
+      } else {
+        this.triggerPreviewUpdate();
+      }
+    } catch {
+      // Leave the previous frame in place; the next tick retries.
+    } finally {
+      state.snapshotInFlight = false;
+    }
+  }
+
+  private _onSnapshotError(cameraModule: CameraModule, entityId: string): void {
+    const state = this._runtimeFor(cameraModule.id);
+    if (cameraModule.fallback_image) {
+      const element = state.player as HTMLImageElement | undefined;
+      if (element instanceof HTMLImageElement && element.src !== cameraModule.fallback_image) {
+        element.src = cameraModule.fallback_image;
+      }
+      return;
+    }
+    void this._resolveSignedSnapshot(cameraModule.id, entityId);
+  }
+
+  /** Background tabs skip refreshes; this catches them up the moment the tab is shown again. */
+  private _ensureVisibilityListener(): void {
+    if (this._visibilityListener || typeof document === 'undefined') return;
+    this._visibilityListener = () => {
+      if (document.hidden) return;
+      this._runtime.forEach((state, moduleId) => {
+        if (state.snapshotTimer && state.snapshotEntity) {
+          this._refreshSnapshot(moduleId, state.snapshotEntity, true);
+        }
+      });
+    };
+    document.addEventListener('visibilitychange', this._visibilityListener);
   }
 
   // Explicit Logic tab renderer (some editors call this directly)
@@ -1503,9 +1845,20 @@ export class UltraCameraModule extends BaseUltraModule {
     config?: UltraCardConfig
   ): void {
     event.preventDefault();
-    if (this.clickTimeout) clearTimeout(this.clickTimeout);
+    const state = this._runtimeFor(module.id);
+    if (state.clickTimeout) clearTimeout(state.clickTimeout);
 
-    this.clickTimeout = setTimeout(() => {
+    // Only pay the double-tap wait when a double-tap action exists; otherwise a tap that opens
+    // fullscreen or more-info feels sluggish for no reason.
+    const hasDoubleTap =
+      !!module.double_tap_action && module.double_tap_action.action !== 'nothing';
+    if (!hasDoubleTap) {
+      this.handleTapAction(event, module, hass, config);
+      return;
+    }
+
+    state.clickTimeout = setTimeout(() => {
+      state.clickTimeout = undefined;
       this.handleTapAction(event, module, hass, config);
     }, 300);
   }
@@ -1517,9 +1870,10 @@ export class UltraCameraModule extends BaseUltraModule {
     config?: UltraCardConfig
   ): void {
     event.preventDefault();
-    if (this.clickTimeout) {
-      clearTimeout(this.clickTimeout);
-      this.clickTimeout = null;
+    const state = this._runtimeFor(module.id);
+    if (state.clickTimeout) {
+      clearTimeout(state.clickTimeout);
+      state.clickTimeout = undefined;
     }
     this.handleDoubleAction(event, module, hass, config);
   }
@@ -1530,26 +1884,29 @@ export class UltraCameraModule extends BaseUltraModule {
     hass: HomeAssistant,
     config?: UltraCardConfig
   ): void {
-    this.isHolding = false;
-    this.holdTimeout = setTimeout(() => {
-      this.isHolding = true;
+    const state = this._runtimeFor(module.id);
+    state.isHolding = false;
+    state.holdTimeout = setTimeout(() => {
+      state.isHolding = true;
       this.handleHoldAction(event, module, hass, config);
     }, 500);
   }
 
   private handleMouseUp(event: Event, module: CameraModule, hass: HomeAssistant): void {
-    if (this.holdTimeout) {
-      clearTimeout(this.holdTimeout);
-      this.holdTimeout = null;
+    const state = this._runtimeFor(module.id);
+    if (state.holdTimeout) {
+      clearTimeout(state.holdTimeout);
+      state.holdTimeout = undefined;
     }
   }
 
   private handleMouseLeave(event: Event, module: CameraModule, hass: HomeAssistant): void {
-    if (this.holdTimeout) {
-      clearTimeout(this.holdTimeout);
-      this.holdTimeout = null;
+    const state = this._runtimeFor(module.id);
+    if (state.holdTimeout) {
+      clearTimeout(state.holdTimeout);
+      state.holdTimeout = undefined;
     }
-    this.isHolding = false;
+    state.isHolding = false;
   }
 
   private handleTouchStart(
@@ -1571,7 +1928,7 @@ export class UltraCameraModule extends BaseUltraModule {
     hass: HomeAssistant,
     config?: UltraCardConfig
   ): void {
-    if (this.isHolding) return;
+    if (this._runtimeFor(module.id).isHolding) return;
 
     // Check if tap opens fullscreen is enabled
     if ((module as any).tap_opens_fullscreen === true) {
@@ -1663,32 +2020,45 @@ export class UltraCameraModule extends BaseUltraModule {
     this.createFullscreenModal(module, anchor);
   }
 
+  /**
+   * Picks where the fullscreen overlay is mounted.
+   *
+   * `ha-camera-stream` reads its API and connection from Lit contexts provided by the
+   * `<home-assistant>` element, so an overlay parked on `document.body` would never resolve them
+   * and the player would stay blank. Mounting inside that element's shadow root keeps the context
+   * chain intact while `position: fixed` still covers the viewport.
+   */
+  private _resolveFullscreenHost(anchor?: HTMLElement): {
+    host: HTMLElement | ShadowRoot;
+    zIndex: number;
+  } {
+    const insidePortal = !!anchor?.closest?.('.ultra-popup-portal');
+    const zIndex = insidePortal ? Z_INDEX.GRAPH_TOOLTIP : Z_INDEX.CAMERA_FULLSCREEN_OVERLAY;
+    const appRoot = document.querySelector('home-assistant');
+    if (appRoot?.shadowRoot) {
+      return { host: appRoot.shadowRoot, zIndex };
+    }
+    return { host: resolveOverlayLayer(anchor, zIndex).host, zIndex };
+  }
+
   // Create a bulletproof fullscreen modal
   private createFullscreenModal(module: CameraModule, anchor?: HTMLElement): void {
     // Remove any existing fullscreen modals first
-    const existingModals = document.querySelectorAll('[id^="ultra-camera-fullscreen-"]');
-    existingModals.forEach(modal => modal.remove());
-    const { host: overlayHost, zIndex: overlayZIndex } = resolveOverlayLayer(
-      anchor,
-      Z_INDEX.CAMERA_FULLSCREEN_OVERLAY
-    );
+    document
+      .querySelectorAll('[id^="ultra-camera-fullscreen-"]')
+      .forEach(existing => (existing as any)._ultraClose?.() ?? existing.remove());
+    const appRoot = document.querySelector('home-assistant');
+    appRoot?.shadowRoot
+      ?.querySelectorAll('[id^="ultra-camera-fullscreen-"]')
+      .forEach(existing => (existing as any)._ultraClose?.() ?? existing.remove());
+
+    const { host: overlayHost, zIndex: overlayZIndex } = this._resolveFullscreenHost(anchor);
     const closeButtonZIndex =
       overlayZIndex >= Z_INDEX.GRAPH_TOOLTIP ? overlayZIndex : overlayZIndex + 1;
 
-    // Get camera entity
-    let cameraEntity = module.entity;
-    if (module.unified_template_mode && module.unified_template) {
-      try {
-        const hass = (document.querySelector('home-assistant') as any)?.hass;
-        if (hass) {
-          const template = module.unified_template;
-          const entityMatch = template.match(/['"]([^'"]+)['"]/);
-          if (entityMatch) {
-            cameraEntity = entityMatch[1];
-          }
-        }
-      } catch (e) {}
-    }
+    // Prefer the entity the module is actually rendering; a template can resolve to something the
+    // raw template text does not contain.
+    const cameraEntity = this._runtime.get(module.id)?.renderedEntity || module.entity;
 
     if (!cameraEntity) {
       ucToastService.error('No camera entity available');
@@ -1803,10 +2173,15 @@ export class UltraCameraModule extends BaseUltraModule {
         restoreViewport();
       }
 
+      // Emptying the container first disconnects the player, which is what actually stops the
+      // stream; removing the modal alone can leave the connection alive long enough to matter.
+      observer.disconnect();
+      cameraContainer.replaceChildren();
       modal.remove();
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = '';
     };
+    (modal as any)._ultraClose = closeModal;
 
     // Force remove inert attribute and add event handlers
     const setupInteractions = () => {
@@ -1862,72 +2237,87 @@ export class UltraCameraModule extends BaseUltraModule {
     observer.observe(closeButton, { attributes: true });
 
     // Insert camera into the container
-    setTimeout(() => {
-      const modal = document.getElementById(modalId);
-      const cameraContainer = document.getElementById(modalId + '-camera-container');
+    const hass = this._hass || (document.querySelector('home-assistant') as any)?.hass;
+    // Fullscreen is always a live stream regardless of the tile's mode - that is the point of
+    // opening it - and it always starts muted so autoplay is never blocked.
+    let fullscreenAudio = false;
 
-      if (modal && cameraContainer) {
-        const hass = (document.querySelector('home-assistant') as any)?.hass;
-        const isLiveMode = (module.view_mode || 'auto') === 'live';
-        // In fullscreen, enable audio if audio_enabled is true (for both auto and live modes)
-        const fullscreenAudioActive = module.audio_enabled === true;
+    if (hass) {
+      const streamEl = document.createElement('ha-camera-stream') as any;
+      streamEl.setAttribute('data-camera-fullscreen', cameraEntity);
+      streamEl.hass = hass;
+      streamEl.stateObj = hass.states?.[cameraEntity];
+      streamEl.fitMode = 'contain';
+      streamEl.muted = true;
+      streamEl.controls = module.show_controls === true;
+      streamEl.style.cssText = `
+        width: 100vw !important;
+        height: 100vh !important;
+        display: block !important;
+        --video-max-height: 100vh !important;
+        transition: transform 0.2s ease !important;
+        cursor: grab !important;
+        touch-action: none !important;
+      `;
 
-        if (hass) {
-          // Fullscreen always uses ha-camera-stream directly for live/WebRTC with correct muted wiring
-          const stateObj = hass.states?.[cameraEntity || ''];
-          const streamEl = document.createElement('ha-camera-stream') as any;
-          streamEl.setAttribute('data-camera-fullscreen', cameraEntity || '');
-          streamEl.hass = hass;
-          streamEl.stateObj = stateObj;
-          streamEl.muted = !fullscreenAudioActive;
-          streamEl.controls = false;
+      cameraContainer.replaceChildren(streamEl);
+      this.addPinchZoomToCamera(streamEl, cameraContainer);
 
-          // Ensure audio state is applied after element is added to DOM
-          streamEl.addEventListener('load', () => {
-            (this as any)._ensureAudioState(streamEl, module, fullscreenAudioActive);
-          });
-
-          // Also try after a delay to catch video element creation
-          setTimeout(() => {
-            (this as any)._ensureAudioState(streamEl, module, fullscreenAudioActive);
-          }, 200);
-
-          streamEl.style.cssText = `
-            width: 100vw !important;
-            height: 100vh !important;
-            display: block !important;
-            object-fit: contain !important;
-            transition: transform 0.2s ease !important;
-            cursor: grab !important;
-            touch-action: none !important;
-          `;
-
-          cameraContainer.innerHTML = '';
-          cameraContainer.appendChild(streamEl);
-
-          // Add pinch-to-zoom functionality
-          this.addPinchZoomToCamera(streamEl, cameraContainer);
-        } else {
-          // Fallback to img if no hass
-          const fallbackImg = document.createElement('img');
-          fallbackImg.src = `/api/camera_proxy/${cameraEntity}?t=${Date.now()}`;
-          fallbackImg.style.cssText = `
-            width: 100vw !important;
-            height: 100vh !important;
-            display: block !important;
-            object-fit: contain !important;
-            cursor: grab !important;
-            touch-action: none !important;
-          `;
-
-          cameraContainer.innerHTML = '';
-          cameraContainer.appendChild(fallbackImg);
-
-          // Add pinch-to-zoom to fallback image too
-          this.addPinchZoomToCamera(fallbackImg, cameraContainer);
+      const audioButton = document.createElement('button');
+      audioButton.type = 'button';
+      audioButton.className = 'camera-fullscreen-audio';
+      audioButton.textContent = '🔇';
+      audioButton.setAttribute('aria-label', 'Toggle audio');
+      audioButton.style.cssText = `
+        position: absolute !important;
+        top: 20px !important;
+        right: 84px !important;
+        width: 50px !important;
+        height: 50px !important;
+        border: 3px solid rgba(255,255,255,0.7) !important;
+        background: rgba(0,0,0,0.8) !important;
+        color: white !important;
+        font-size: 22px !important;
+        cursor: pointer !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: ${closeButtonZIndex} !important;
+        backdrop-filter: blur(4px) !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.6) !important;
+        line-height: 1 !important;
+      `;
+      audioButton.addEventListener('click', event => {
+        event.stopPropagation();
+        event.preventDefault();
+        fullscreenAudio = !fullscreenAudio;
+        streamEl.muted = !fullscreenAudio;
+        audioButton.textContent = fullscreenAudio ? '🔊' : '🔇';
+        const video = this._findVideoElement(streamEl);
+        if (video) {
+          video.muted = !fullscreenAudio;
+          video.volume = fullscreenAudio ? 1 : 0;
+          if (video.paused) void video.play().catch(() => {});
         }
-      }
-    }, 50);
+      });
+      cameraWrapper.appendChild(audioButton);
+    } else {
+      const stateObj = this._hass?.states?.[cameraEntity] as any;
+      const fallbackImg = document.createElement('img');
+      fallbackImg.src = stateObj?.attributes?.entity_picture || '';
+      fallbackImg.style.cssText = `
+        width: 100vw !important;
+        height: 100vh !important;
+        display: block !important;
+        object-fit: contain !important;
+        cursor: grab !important;
+        touch-action: none !important;
+      `;
+
+      cameraContainer.replaceChildren(fallbackImg);
+      this.addPinchZoomToCamera(fallbackImg, cameraContainer);
+    }
 
     // Add ESC key handler
     const handleEscape = (e: KeyboardEvent) => {
@@ -2263,714 +2653,6 @@ export class UltraCameraModule extends BaseUltraModule {
     });
   }
 
-  // Legacy methods - keeping for fallback compatibility
-  private trySimpleModal(container: HTMLElement, module: CameraModule): boolean {
-    try {
-      // Get camera entity first
-      let cameraEntity = module.entity;
-      if (module.unified_template_mode && module.unified_template) {
-        try {
-          const hass = (document.querySelector('home-assistant') as any)?.hass;
-          if (hass) {
-            const template = module.unified_template;
-            const entityMatch = template.match(/['"]([^'"]+)['"]/);
-            if (entityMatch) {
-              cameraEntity = entityMatch[1];
-            }
-          }
-        } catch (e) {}
-      }
-
-      if (!cameraEntity) return false;
-
-      // Create modal with simple innerHTML approach
-      const modalId = 'camera-fullscreen-' + Date.now();
-      const cameraName = module.camera_name || cameraEntity;
-
-      const modalHTML = `
-        <div id="${modalId}" style="
-          position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          background: rgba(0,0,0,0.95) !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
-          backdrop-filter: blur(10px) !important;
-        " onclick="if(event.target === this) this.remove()">
-          <div style="
-            position: relative !important;
-            max-width: 95vw !important;
-            max-height: 95vh !important;
-            background: black !important;
-            border-radius: 12px !important;
-            overflow: hidden !important;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5) !important;
-          ">
-            <img src="/api/camera_proxy/${cameraEntity}?t=${Date.now()}" style="
-              max-width: 95vw !important;
-              max-height: 95vh !important;
-              width: auto !important;
-              height: auto !important;
-              display: block !important;
-              object-fit: contain !important;
-              border-radius: 12px !important;
-            " />
-            <button onclick="document.getElementById('${modalId}').remove()" style="
-              position: absolute !important;
-              top: 16px !important;
-              right: 16px !important;
-              width: 48px !important;
-              height: 48px !important;
-              border: 2px solid rgba(255,255,255,0.5) !important;
-              background: rgba(0,0,0,0.8) !important;
-              color: white !important;
-              font-size: 28px !important;
-              cursor: pointer !important;
-              border-radius: 50% !important;
-              display: flex !important;
-              align-items: center !important;
-              justify-content: center !important;
-              z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
-              backdrop-filter: blur(4px) !important;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
-              font-family: monospace !important;
-              line-height: 1 !important;
-            " onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(0,0,0,0.8)'; this.style.transform='scale(1)'">
-              ✕
-            </button>
-            ${
-              module.show_name !== false
-                ? `
-              <div style="
-                position: absolute !important;
-                top: 16px !important;
-                left: 16px !important;
-                padding: 8px 16px !important;
-                background: rgba(0,0,0,0.7) !important;
-                color: white !important;
-                border-radius: 6px !important;
-                font-size: 16px !important;
-                font-weight: 500 !important;
-                backdrop-filter: blur(4px) !important;
-                text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
-                z-index: 10 !important;
-              ">
-                ${cameraName}
-              </div>
-            `
-                : ''
-            }
-          </div>
-        </div>
-      `;
-
-      // Insert modal
-      document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-      // Add ESC handler
-      const escHandler = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          const modal = document.getElementById(modalId);
-          if (modal) {
-            modal.remove();
-            document.removeEventListener('keydown', escHandler);
-          }
-        }
-      };
-      document.addEventListener('keydown', escHandler);
-
-      return true;
-    } catch (error) {
-      console.warn('Simple modal failed:', error);
-      return false;
-    }
-  }
-
-  // Try to use native browser fullscreen API
-  private tryNativeFullscreen(container: HTMLElement, module: CameraModule): boolean {
-    try {
-      // Create a fullscreen wrapper
-      const fullscreenWrapper = document.createElement('div');
-      fullscreenWrapper.style.cssText = `
-        width: 100vw;
-        height: 100vh;
-        background: black;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-      `;
-
-      // Clone the camera content
-      const cameraClone = container.cloneNode(true) as HTMLElement;
-      cameraClone.style.cssText = `
-        max-width: 100vw;
-        max-height: 100vh;
-        width: auto;
-        height: auto;
-        object-fit: contain;
-      `;
-
-      // Add exit button for native fullscreen
-      const exitButton = document.createElement('button');
-      exitButton.innerHTML = '✕';
-      exitButton.style.cssText = `
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: rgba(0,0,0,0.7);
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: 20px;
-        z-index: ${Z_INDEX.DIALOG_CONTENT};
-      `;
-
-      exitButton.onclick = () => {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if ((document as any).webkitExitFullscreen) {
-          (document as any).webkitExitFullscreen();
-        } else if ((document as any).mozCancelFullScreen) {
-          (document as any).mozCancelFullScreen();
-        } else if ((document as any).msExitFullscreen) {
-          (document as any).msExitFullscreen();
-        }
-      };
-
-      fullscreenWrapper.appendChild(cameraClone);
-      fullscreenWrapper.appendChild(exitButton);
-      document.body.appendChild(fullscreenWrapper);
-
-      // Request fullscreen
-      const requestFullscreen =
-        fullscreenWrapper.requestFullscreen ||
-        (fullscreenWrapper as any).webkitRequestFullscreen ||
-        (fullscreenWrapper as any).mozRequestFullScreen ||
-        (fullscreenWrapper as any).msRequestFullscreen;
-
-      if (requestFullscreen) {
-        requestFullscreen.call(fullscreenWrapper);
-
-        // Clean up when fullscreen exits
-        const cleanup = () => {
-          if (fullscreenWrapper.parentNode) {
-            fullscreenWrapper.parentNode.removeChild(fullscreenWrapper);
-          }
-          document.removeEventListener('fullscreenchange', cleanup);
-          document.removeEventListener('webkitfullscreenchange', cleanup);
-          document.removeEventListener('mozfullscreenchange', cleanup);
-          document.removeEventListener('MSFullscreenChange', cleanup);
-        };
-
-        document.addEventListener('fullscreenchange', cleanup);
-        document.addEventListener('webkitfullscreenchange', cleanup);
-        document.addEventListener('mozfullscreenchange', cleanup);
-        document.addEventListener('MSFullscreenChange', cleanup);
-
-        return true;
-      }
-    } catch (error) {
-      console.warn('Native fullscreen failed:', error);
-    }
-    return false;
-  }
-
-  private enterFullscreen(container: HTMLElement, module: CameraModule): void {
-    // Create fullscreen overlay
-    const fullscreenOverlay = document.createElement('div');
-    fullscreenOverlay.className = 'camera-fullscreen-overlay';
-    fullscreenOverlay.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.95);
-      z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT};
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(10px);
-      animation: fadeIn 0.3s ease;
-      pointer-events: auto;
-    `;
-
-    // Create a fresh camera container instead of cloning problematic elements
-    const fullscreenContainer = document.createElement('div');
-    fullscreenContainer.className = 'camera-fullscreen-container';
-    fullscreenContainer.style.cssText = `
-      max-width: 95vw;
-      max-height: 95vh;
-      width: auto;
-      height: auto;
-      border-radius: 12px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      position: relative;
-      animation: scaleIn 0.3s ease;
-      background: transparent;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-    `;
-
-    // Get the camera entity
-    let cameraEntity = module.entity;
-
-    if (module.unified_template_mode && module.unified_template) {
-      try {
-        const hass = (document.querySelector('home-assistant') as any)?.hass;
-        if (hass) {
-          let evaluatedTemplate = module.unified_template;
-
-          // Replace state() function calls
-          const stateMatches = evaluatedTemplate.match(/states\(['"]([^'"]+)['"]\)/g);
-          if (stateMatches) {
-            stateMatches.forEach(match => {
-              const entityId = match.match(/states\(['"]([^'"]+)['"]\)/)?.[1];
-              if (!entityId) return;
-              const entity = hass?.states[entityId];
-              const value = entity ? entity.state : 'unknown';
-              evaluatedTemplate = evaluatedTemplate.replace(match, `'${value}'`);
-            });
-          }
-
-          // Replace is_state() function calls
-          const isStateMatches = evaluatedTemplate.match(
-            /is_state\(['"]([^'"]+)['"],\s*['"]([^'"]+)['"]\)/g
-          );
-          if (isStateMatches) {
-            isStateMatches.forEach(match => {
-              const m = match.match(/is_state\(['"]([^'"]+)['"],\s*['"]([^'"]+)['"]\)/);
-              if (!m) return;
-              const [, entityId, expectedState] = m;
-              const entity = hass?.states[entityId];
-              const isMatch = entity && entity.state === expectedState;
-              evaluatedTemplate = evaluatedTemplate.replace(match, isMatch ? 'True' : 'False');
-            });
-          }
-
-          // Simple if-else evaluation
-          const ifElseMatch = evaluatedTemplate.match(
-            /['"]([^'"]+)['"] if (.+?) else ['"]([^'"]+)['"]/
-          );
-          if (ifElseMatch) {
-            const [, trueEntity, condition, falseEntity] = ifElseMatch;
-            const conditionResult = condition.includes('True');
-            cameraEntity = conditionResult ? trueEntity : falseEntity;
-          } else {
-            const entityMatch = evaluatedTemplate.match(/['"]([^'"]+)['"]/);
-            if (entityMatch) {
-              cameraEntity = entityMatch[1];
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Template evaluation error:', error);
-        cameraEntity = module.entity;
-      }
-    }
-
-    // Create the camera image element directly
-    if (cameraEntity) {
-      const hass = (document.querySelector('home-assistant') as any)?.hass;
-
-      if (hass) {
-        const cameraImg = document.createElement('hui-image');
-        (cameraImg as any).hass = hass;
-        (cameraImg as any).cameraImage = cameraEntity;
-        (cameraImg as any).cameraView = module.live_view ? 'live' : 'auto';
-        // In fullscreen, enable audio if audio_enabled is true (for both auto and live modes)
-        const fullscreenAudioActive = module.audio_enabled === true;
-        (cameraImg as any).muted = !fullscreenAudioActive;
-
-        // Ensure audio state is applied after element is added to DOM
-        cameraImg.addEventListener('load', () => {
-          (this as any)._ensureAudioState(cameraImg, module, fullscreenAudioActive);
-        });
-
-        // Also try after a delay to catch video element creation
-        setTimeout(() => {
-          (this as any)._ensureAudioState(cameraImg, module, fullscreenAudioActive);
-        }, 200);
-
-        cameraImg.style.cssText = `
-          width: 100%;
-          height: 100%;
-          max-width: 95vw;
-          max-height: 95vh;
-          object-fit: contain;
-          border-radius: 12px;
-          pointer-events: auto;
-        `;
-
-        fullscreenContainer.appendChild(cameraImg);
-
-        // Add camera name overlay if enabled - positioned within actual video area
-        if (module.show_name !== false) {
-          const cameraName =
-            module.camera_name ||
-            hass.states[cameraEntity]?.attributes?.friendly_name ||
-            cameraEntity;
-          const nameOverlay = document.createElement('div');
-          nameOverlay.className = 'camera-name-overlay-fullscreen';
-          nameOverlay.style.cssText = `
-              position: absolute;
-              top: 16px;
-              left: 16px;
-              padding: 8px 16px;
-              background: rgba(0, 0, 0, 0.7);
-              color: white;
-              border-radius: 6px;
-              font-size: 16px;
-              font-weight: 500;
-              backdrop-filter: blur(4px);
-              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-              z-index: 10;
-            `;
-          nameOverlay.textContent = cameraName;
-
-          // Wait for image to load to get actual dimensions and reposition
-          cameraImg.addEventListener('load', () => {
-            this.repositionOverlaysToVideoArea(cameraImg, nameOverlay, fullscreenContainer);
-          });
-
-          fullscreenContainer.appendChild(nameOverlay);
-        }
-      } else {
-        // No hass available - show error
-        const errorDiv = document.createElement('div');
-        errorDiv.style.cssText = `
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-direction: column;
-          color: white;
-          font-size: 20px;
-          text-align: center;
-          padding: 40px;
-        `;
-        errorDiv.innerHTML = `
-          <ha-icon icon="mdi:camera-off" style="font-size: 64px; margin-bottom: 16px;"></ha-icon>
-          <div>Home Assistant not available</div>
-        `;
-        fullscreenContainer.appendChild(errorDiv);
-      }
-    } else {
-      // No camera entity - show no camera message
-      const noCameraDiv = document.createElement('div');
-      noCameraDiv.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        color: white;
-        font-size: 20px;
-        text-align: center;
-        padding: 40px;
-      `;
-      noCameraDiv.innerHTML = `
-        <ha-icon icon="mdi:camera-off" style="font-size: 64px; margin-bottom: 16px;"></ha-icon>
-        <div>No Camera Available</div>
-      `;
-      fullscreenContainer.appendChild(noCameraDiv);
-    }
-
-    // Add minimize button (X icon in top-right) - clean white icon style
-    const minimizeButton = document.createElement('div');
-    minimizeButton.className = 'camera-minimize-icon';
-    minimizeButton.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 6px;
-      background: transparent;
-      color: white;
-      font-size: 32px;
-      cursor: pointer;
-      z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT};
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.6);
-      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
-      pointer-events: auto;
-    `;
-    minimizeButton.innerHTML = '<ha-icon icon="mdi:close" style="pointer-events: none;"></ha-icon>';
-    minimizeButton.title = 'Exit fullscreen';
-
-    // Add hover effects - clean white icon style
-    minimizeButton.addEventListener('mouseenter', () => {
-      minimizeButton.style.transform = 'scale(1.15)';
-      minimizeButton.style.textShadow = '0 1px 4px rgba(0, 0, 0, 0.9), 0 0 12px rgba(0, 0, 0, 0.7)';
-      minimizeButton.style.filter = 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9))';
-    });
-
-    minimizeButton.addEventListener('mouseleave', () => {
-      minimizeButton.style.transform = 'scale(1)';
-      minimizeButton.style.textShadow = '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.6)';
-      minimizeButton.style.filter = 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8))';
-    });
-
-    // Add click handler for minimize
-    minimizeButton.addEventListener('click', (e: Event) => {
-      e.stopPropagation();
-      e.preventDefault();
-      this.exitFullscreen(fullscreenOverlay);
-    });
-
-    // Add ESC key handler
-    const escHandler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        this.exitFullscreen(fullscreenOverlay);
-        document.removeEventListener('keydown', escHandler);
-      }
-    };
-    document.addEventListener('keydown', escHandler);
-
-    // Click outside to close - simplified approach
-    fullscreenOverlay.addEventListener('click', (e: Event) => {
-      const target = e.target as HTMLElement;
-
-      // If we clicked directly on the overlay (not on the camera or buttons)
-      if (target === fullscreenOverlay) {
-        this.exitFullscreen(fullscreenOverlay);
-        document.removeEventListener('keydown', escHandler);
-      }
-    });
-
-    // Assemble and show - add overlay first, then button directly to body
-    fullscreenOverlay.appendChild(fullscreenContainer);
-    document.body.appendChild(fullscreenOverlay);
-    document.body.appendChild(minimizeButton); // Add button directly to body for highest z-index
-
-    // Prevent body scroll and disable HA context menus during fullscreen
-    document.body.style.overflow = 'hidden';
-
-    // Temporarily disable right-click context menus
-    const disableContextMenu = (e: Event) => {
-      e.preventDefault();
-      e.stopPropagation();
-      return false;
-    };
-    document.addEventListener('contextmenu', disableContextMenu, true);
-
-    // Add class to body to help with CSS overrides
-    document.body.classList.add('camera-fullscreen-active');
-
-    // Store reference for cleanup
-    (fullscreenOverlay as any)._escHandler = escHandler;
-    (fullscreenOverlay as any)._minimizeButton = minimizeButton;
-    (fullscreenOverlay as any)._contextMenuHandler = disableContextMenu;
-  }
-
-  private exitFullscreen(overlay: HTMLElement): void {
-    // Restore body scroll and remove fullscreen class
-    document.body.style.overflow = '';
-    document.body.classList.remove('camera-fullscreen-active');
-
-    // Clean up event listeners
-    const escHandler = (overlay as any)._escHandler;
-    if (escHandler) {
-      document.removeEventListener('keydown', escHandler);
-    }
-
-    // Re-enable context menus
-    const contextMenuHandler = (overlay as any)._contextMenuHandler;
-    if (contextMenuHandler) {
-      document.removeEventListener('contextmenu', contextMenuHandler, true);
-    }
-
-    // Remove minimize button immediately
-    const minimizeButton = (overlay as any)._minimizeButton;
-    if (minimizeButton && minimizeButton.parentNode) {
-      minimizeButton.parentNode.removeChild(minimizeButton);
-    }
-
-    // Animate out
-    overlay.style.animation = 'fadeOut 0.2s ease';
-
-    setTimeout(() => {
-      if (overlay.parentNode) {
-        overlay.parentNode.removeChild(overlay);
-      }
-    }, 200);
-  }
-
-  // Reposition overlays in preview mode to stay within the actual video area
-  private repositionPreviewOverlays(
-    imageElement: HTMLElement,
-    nameOverlay: HTMLElement | null,
-    fullscreenIcon: HTMLElement | null,
-    container: HTMLElement
-  ): void {
-    try {
-      const containerRect = container.getBoundingClientRect();
-
-      // Get the actual video dimensions from the image element
-      const img = imageElement.querySelector('img') || imageElement;
-      if (!img || !(img as HTMLImageElement).naturalWidth) return;
-
-      const naturalWidth = (img as HTMLImageElement).naturalWidth;
-      const naturalHeight = (img as HTMLImageElement).naturalHeight;
-      const videoAspect = naturalWidth / naturalHeight;
-      const containerAspect = containerRect.width / containerRect.height;
-
-      let actualVideoWidth = containerRect.width;
-      let actualVideoHeight = containerRect.height;
-      let videoOffsetX = 0;
-      let videoOffsetY = 0;
-
-      if (videoAspect > containerAspect) {
-        // Video is wider - letterboxing (black bars top/bottom)
-        actualVideoHeight = containerRect.width / videoAspect;
-        videoOffsetY = (containerRect.height - actualVideoHeight) / 2;
-      } else if (videoAspect < containerAspect) {
-        // Video is taller - pillarboxing (black bars left/right)
-        actualVideoWidth = containerRect.height * videoAspect;
-        videoOffsetX = (containerRect.width - actualVideoWidth) / 2;
-      }
-
-      // Only reposition if there's significant letterboxing/pillarboxing (more than 5px in preview)
-      if (videoOffsetX > 5 || videoOffsetY > 5) {
-        const minOffset = 8; // Minimum distance from video edge
-
-        // Reposition name overlay
-        if (nameOverlay) {
-          this.repositionOverlayElement(
-            nameOverlay,
-            videoOffsetX,
-            videoOffsetY,
-            actualVideoWidth,
-            actualVideoHeight,
-            minOffset
-          );
-        }
-
-        // Reposition fullscreen icon
-        if (fullscreenIcon) {
-          this.repositionOverlayElement(
-            fullscreenIcon,
-            videoOffsetX,
-            videoOffsetY,
-            actualVideoWidth,
-            actualVideoHeight,
-            minOffset
-          );
-        }
-      }
-    } catch (error) {
-      // If calculation fails, keep default positioning
-      console.warn('Failed to calculate video area for preview overlay positioning:', error);
-    }
-  }
-
-  // Helper method to reposition individual overlay elements within video bounds
-  private repositionOverlayElement(
-    element: HTMLElement,
-    videoOffsetX: number,
-    videoOffsetY: number,
-    videoWidth: number,
-    videoHeight: number,
-    minOffset: number
-  ): void {
-    const elementRect = element.getBoundingClientRect();
-    const containerRect = element.parentElement?.getBoundingClientRect();
-    if (!containerRect) return;
-
-    // Calculate maximum positions to keep element within video area
-    const maxLeft = videoOffsetX + videoWidth - elementRect.width - minOffset;
-    const maxTop = videoOffsetY + videoHeight - elementRect.height - minOffset;
-    const maxRight = videoOffsetX + videoWidth - elementRect.width - minOffset;
-    const maxBottom = videoOffsetY + videoHeight - elementRect.height - minOffset;
-
-    // Adjust positioning based on current position, ensuring it stays within video bounds
-    if (element.style.left && element.style.left !== '') {
-      const currentLeft = parseInt(element.style.left);
-      element.style.left = `${Math.min(Math.max(videoOffsetX + minOffset, currentLeft), maxLeft)}px`;
-    }
-    if (element.style.right && element.style.right !== '') {
-      const currentRight = parseInt(element.style.right);
-      element.style.right = `${Math.min(Math.max(videoOffsetX + minOffset, currentRight), maxRight)}px`;
-    }
-    if (element.style.top && element.style.top !== '') {
-      const currentTop = parseInt(element.style.top);
-      element.style.top = `${Math.min(Math.max(videoOffsetY + minOffset, currentTop), maxTop)}px`;
-    }
-    if (element.style.bottom && element.style.bottom !== '') {
-      const currentBottom = parseInt(element.style.bottom);
-      element.style.bottom = `${Math.min(Math.max(videoOffsetY + minOffset, currentBottom), maxBottom)}px`;
-    }
-  }
-
-  // Reposition overlays to stay within the actual video area when using object-fit: contain
-  private repositionOverlaysToVideoArea(
-    imageElement: HTMLElement,
-    nameOverlay: HTMLElement,
-    container: HTMLElement
-  ): void {
-    try {
-      const containerRect = container.getBoundingClientRect();
-      const imageRect = imageElement.getBoundingClientRect();
-
-      // Calculate if the image has letterboxing/pillarboxing due to object-fit: contain
-      const containerAspect = containerRect.width / containerRect.height;
-
-      // Get the actual video dimensions from the image element
-      let actualVideoWidth = imageRect.width;
-      let actualVideoHeight = imageRect.height;
-
-      // For hui-image elements, try to get the actual video dimensions
-      const img = imageElement.querySelector('img') || imageElement;
-      if (img && (img as HTMLImageElement).naturalWidth) {
-        const naturalWidth = (img as HTMLImageElement).naturalWidth;
-        const naturalHeight = (img as HTMLImageElement).naturalHeight;
-        const videoAspect = naturalWidth / naturalHeight;
-
-        if (videoAspect > containerAspect) {
-          // Video is wider - letterboxing (black bars top/bottom)
-          actualVideoWidth = containerRect.width;
-          actualVideoHeight = containerRect.width / videoAspect;
-        } else {
-          // Video is taller - pillarboxing (black bars left/right)
-          actualVideoHeight = containerRect.height;
-          actualVideoWidth = containerRect.height * videoAspect;
-        }
-      }
-
-      // Calculate the offset to center the video within the container
-      const videoOffsetX = (containerRect.width - actualVideoWidth) / 2;
-      const videoOffsetY = (containerRect.height - actualVideoHeight) / 2;
-
-      // Only reposition if there's significant letterboxing/pillarboxing (more than 20px)
-      if (videoOffsetX > 20 || videoOffsetY > 20) {
-        // Reposition name overlay to be within the actual video area
-        nameOverlay.style.left = `${videoOffsetX + 16}px`;
-        nameOverlay.style.top = `${videoOffsetY + 16}px`;
-
-        // Also reposition any fullscreen icon if it exists in fullscreen mode
-        const fullscreenIcon = container.querySelector('.camera-fullscreen-icon');
-        if (fullscreenIcon) {
-          const iconElement = fullscreenIcon as HTMLElement;
-          // Position in top-right of actual video area
-          iconElement.style.right = `${videoOffsetX + 16}px`;
-          iconElement.style.top = `${videoOffsetY + 16}px`;
-        }
-      }
-    } catch (error) {
-      // If calculation fails, keep default positioning
-      console.warn('Failed to calculate video area for overlay positioning:', error);
-    }
-  }
-
   // Dimension handling with aspect ratio linking (fallback dimensions only)
   private _handleDimensionChange(
     cameraModule: CameraModule,
@@ -3011,96 +2693,6 @@ export class UltraCameraModule extends BaseUltraModule {
     }
 
     updateModule(updates);
-  }
-
-  // Fullscreen icon positioning with global design integration
-  private getFullscreenIconPositionStyles(
-    position: string,
-    moduleWithDesign: any,
-    designProperties: any = {},
-    namePosition?: string
-  ): Record<string, string> {
-    const baseStyles = {
-      position: 'absolute',
-      padding: '6px',
-      background: 'transparent',
-      color: 'white',
-      fontSize: '22px',
-      cursor: 'pointer',
-      zIndex: '5', // Lower z-index to not interfere with dropdowns
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      transition: 'all 0.2s ease',
-      textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.6)',
-      filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8))',
-    };
-
-    // Check for collision with camera name and adjust position if needed
-    const adjustedPosition = this.getAdjustedPositionForCollision(position, namePosition);
-
-    // Calculate offset if name and fullscreen are in same position (stack them)
-    const hasNameInSamePosition = namePosition === position;
-    const stackOffset = hasNameInSamePosition ? '40px' : '8px'; // Offset for stacking
-
-    switch (adjustedPosition) {
-      case 'top-left':
-        return {
-          ...baseStyles,
-          top: hasNameInSamePosition ? stackOffset : '8px',
-          left: '8px',
-        };
-      case 'top-middle':
-        return {
-          ...baseStyles,
-          top: hasNameInSamePosition ? stackOffset : '8px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-        };
-      case 'top-right':
-        return {
-          ...baseStyles,
-          top: hasNameInSamePosition ? stackOffset : '8px',
-          right: '8px',
-        };
-      case 'center':
-        return {
-          ...baseStyles,
-          top: hasNameInSamePosition ? 'calc(50% + 20px)' : '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-        };
-      case 'bottom-left':
-        return {
-          ...baseStyles,
-          bottom: hasNameInSamePosition ? stackOffset : '8px',
-          left: '8px',
-        };
-      case 'bottom-middle':
-        return {
-          ...baseStyles,
-          bottom: hasNameInSamePosition ? stackOffset : '8px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-        };
-      case 'bottom-right':
-        return {
-          ...baseStyles,
-          bottom: hasNameInSamePosition ? stackOffset : '8px',
-          right: '8px',
-        };
-      default:
-        return { ...baseStyles, top: '8px', right: '8px' };
-    }
-  }
-
-  // Collision detection and adjustment - now returns original position to allow stacking
-  private getAdjustedPositionForCollision(
-    fullscreenPosition: string,
-    namePosition?: string
-  ): string {
-    // Allow same position - we'll handle stacking in the positioning logic
-    return fullscreenPosition;
   }
 
   // Camera name positioning with global design integration
@@ -3235,567 +2827,89 @@ export class UltraCameraModule extends BaseUltraModule {
     return hasTapAction || hasHoldAction || hasDoubleAction || hasFullscreenTap || !!module.entity; // Default tap for camera
   }
 
-  private _isAudioActive(cameraModule: CameraModule, isDashboardView = false): boolean {
-    if (this._audioOverrides.has(cameraModule.id)) {
-      return this._audioOverrides.get(cameraModule.id)!;
+  // ---------------------------------------------------------------------------
+  // Audio
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Whether the stream should currently play with sound.
+   *
+   * Browsers refuse to autoplay unmuted media until the page has been interacted with, and a
+   * blocked play() leaves the viewer staring at a frozen first frame. So `audio_enabled` only
+   * takes effect once the page has user activation; before that the toggle is the way in.
+   */
+  private _isAudioActive(cameraModule: CameraModule): boolean {
+    const state = this._runtimeFor(cameraModule.id);
+    if (state.audioOverride !== undefined) {
+      return state.audioOverride;
     }
-    if (isDashboardView) {
+    if (cameraModule.audio_enabled !== true) {
       return false;
     }
-    return cameraModule.audio_enabled === true;
+    const activation = (navigator as any)?.userActivation;
+    return activation ? activation.hasBeenActive === true : false;
   }
 
-  private _toggleDashboardAudio(event: Event, cameraModule: CameraModule): void {
+  private _toggleAudio(event: Event, cameraModule: CameraModule): void {
     event.preventDefault();
     event.stopPropagation();
 
-    // Only allow audio toggle in live mode
-    if ((cameraModule.view_mode || 'auto') !== 'live') {
-      return;
-    }
+    if ((cameraModule.view_mode || 'auto') !== 'live') return;
 
-    const current = this._isAudioActive(cameraModule, true);
-    const next = !current;
-    const base = cameraModule.audio_enabled === true;
-
-    if (next === base) {
-      this._audioOverrides.delete(cameraModule.id);
-    } else {
-      this._audioOverrides.set(cameraModule.id, next);
-    }
-
-    const container =
-      (event.currentTarget as HTMLElement)?.closest('.camera-image-container') ||
-      (event.target as HTMLElement).closest('.camera-image-container');
-    const huiImage = container?.querySelector('hui-image') as any;
-
-    if (huiImage) {
-      this._ensureAudioState(huiImage, cameraModule, next);
-    }
-
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('ultra-card-template-update', {
-          bubbles: true,
-          composed: true,
-          detail: {
-            timestamp: Date.now(),
-            source: 'camera-audio-toggle',
-            moduleId: cameraModule.id,
-          },
-        })
-      );
-    }
+    const state = this._runtimeFor(cameraModule.id);
+    state.audioOverride = !this._isAudioActive(cameraModule);
+    this._syncAudio(cameraModule);
+    this.triggerPreviewUpdate(true);
   }
 
-  // Ensure audio state is correctly applied to video element inside hui-image
-  private _ensureAudioState(
-    huiImage: any,
-    cameraModule: CameraModule,
-    forcedState?: boolean
-  ): void {
-    if (!huiImage || (cameraModule.view_mode || 'auto') !== 'live') return;
+  /**
+   * Pushes the desired mute state onto the player.
+   *
+   * `ha-camera-stream` forwards `muted` down to the `<video>`, so the property is enough for the
+   * common case; the direct video write is only there to resume playback after an unmute, which
+   * some browsers require an explicit `play()` for.
+   */
+  private _syncAudio(cameraModule: CameraModule): void {
+    if ((cameraModule.view_mode || 'auto') !== 'live') return;
 
-    const audioEnabled =
-      forcedState !== undefined ? forcedState : this._isAudioActive(cameraModule);
+    const state = this._runtime.get(cameraModule.id);
+    const player = state?.player as any;
+    if (!player) return;
 
-    this._lastAudioStates.set(cameraModule.id, audioEnabled);
+    const audioActive = this._isAudioActive(cameraModule);
+    player.muted = !audioActive;
 
-    if (huiImage.muted !== undefined) {
-      huiImage.muted = !audioEnabled;
-    }
+    const video = this._findVideoElement(player);
+    if (!video) return;
 
-    this._applyAudioState(huiImage, audioEnabled);
-    this._watchAudioTargets(huiImage, cameraModule);
-  }
-
-  private _applyAudioState(huiImage: any, audioEnabled: boolean): void {
-    const players: HTMLElement[] = [];
-
-    const findVideoElement = (): HTMLVideoElement | null => {
-      players.length = 0;
-      const visited = new Set<Node>();
-      const stack: Array<Element | ShadowRoot> = [];
-
-      const pushNode = (node?: Element | ShadowRoot | null) => {
-        if (!node || visited.has(node)) return;
-        visited.add(node);
-        stack.push(node);
-      };
-
-      pushNode(huiImage.shadowRoot || null);
-      pushNode(huiImage);
-
-      while (stack.length) {
-        const node = stack.pop();
-        if (!node) continue;
-
-        if (node instanceof HTMLElement) {
-          const tagName = node.tagName.toLowerCase();
-          if (CAMERA_PLAYER_SELECTORS.has(tagName)) {
-            players.push(node);
-          }
-        }
-
-        if (node instanceof HTMLVideoElement) {
-          return node;
-        }
-
-        const childElements =
-          node instanceof ShadowRoot
-            ? Array.from(node.children)
-            : node instanceof Element
-              ? Array.from(node.children)
-              : [];
-
-        for (const child of childElements) {
-          if (child instanceof HTMLVideoElement) {
-            return child;
-          }
-          const childWithShadow = child as HTMLElement & { shadowRoot?: ShadowRoot };
-          if (childWithShadow.shadowRoot) {
-            pushNode(childWithShadow.shadowRoot);
-          }
-          pushNode(child);
-        }
-      }
-
-      // Fallback: if component exposes internal video reference
-      const fallbackVideo = (huiImage as any).video;
-      if (fallbackVideo instanceof HTMLVideoElement) {
-        return fallbackVideo;
-      }
-
-      return null;
-    };
-
-    const attempts = [0, 150, 400, 1000, 2000];
-    attempts.forEach(delay => {
-      setTimeout(() => {
-        const video = findVideoElement();
-        if (!video && players.length === 0) {
-          return;
-        }
-
-        const applyVideoState = (targetVideo: HTMLVideoElement) => {
-          targetVideo.muted = !audioEnabled;
-          targetVideo.volume = audioEnabled ? 1 : 0;
-          targetVideo.playsInline = true;
-
-          if (audioEnabled && targetVideo.paused && !targetVideo.muted) {
-            targetVideo.play().catch(() => {});
-          }
-        };
-
-        if (video) {
-          applyVideoState(video);
-        }
-
-        players.forEach(player => {
-          try {
-            if ('muted' in player) {
-              (player as any).muted = !audioEnabled;
-            }
-            if ('volume' in player) {
-              (player as any).volume = audioEnabled ? 1 : 0;
-            }
-            if ('playsInline' in player) {
-              (player as any).playsInline = true;
-            }
-            player.toggleAttribute?.('muted', !audioEnabled);
-
-            // Some HA players expose video element via property
-            if ((player as any).video instanceof HTMLVideoElement) {
-              applyVideoState((player as any).video);
-            }
-
-            if (
-              audioEnabled &&
-              typeof (player as any).play === 'function' &&
-              typeof (player as any).paused === 'boolean'
-            ) {
-              const playerAny = player as any;
-              if (playerAny.paused) {
-                playerAny.play().catch(() => {
-                  // Ignore autoplay blocks at player level; video fallback handles logging
-                });
-              }
-            }
-          } catch (playerError) {
-            // Silently ignore player update issues to avoid noisy logs
-          }
-        });
-      }, delay);
-    });
-  }
-
-  private _watchAudioTargets(huiImage: any, cameraModule: CameraModule): void {
-    if (!huiImage) return;
-
-    const key = cameraModule.id;
-    const targetNode = huiImage.shadowRoot || huiImage;
-    if (!targetNode) {
-      return;
-    }
-
-    const existing = this._audioObservers.get(key);
-    if (existing?.target === targetNode) {
-      return;
-    }
-
-    existing?.observer.disconnect();
-
-    const observer = new MutationObserver(() => {
-      const storedState = this._lastAudioStates.get(cameraModule.id);
-      const audioEnabled =
-        storedState !== undefined ? storedState : this._isAudioActive(cameraModule);
-      this._applyAudioState(huiImage, audioEnabled);
-    });
-
-    observer.observe(targetNode, { childList: true, subtree: true });
-    this._audioObservers.set(key, { observer, target: targetNode });
-  }
-
-  private refreshCamera(entity: string, hass: HomeAssistant): void {
-    // Use the stored ref first (works inside shadow DOM)
-    const refNode = this._huiImageRef?.value as any;
-    if (refNode && refNode.cameraImage === entity) {
-      refNode.hass = { ...hass };
-      refNode.requestUpdate?.();
-      return;
-    }
-    // Fallback: walk the host's own shadow root (stays within the card's DOM boundary)
-    const host = (this as any).renderRoot || (this as any).shadowRoot;
-    if (host) {
-      const huiImageElements = Array.from(host.querySelectorAll('hui-image')) as any[];
-      huiImageElements.forEach((element: any) => {
-        if (element.cameraImage === entity) {
-          element.hass = { ...hass };
-          element.requestUpdate?.();
-        }
+    video.muted = !audioActive;
+    video.volume = audioActive ? 1 : 0;
+    video.playsInline = true;
+    if (video.paused) {
+      void video.play().catch(() => {
+        // Autoplay policy rejected the unmuted stream; the toggle remains available.
       });
     }
   }
 
-  private _setupSnapshotRefresh(
-    cameraModule: CameraModule,
-    entity: string,
-    hass: HomeAssistant
-  ): void {
-    // Clear any existing timer first
-    this._clearSnapshotRefresh(cameraModule.id);
+  /** Walks the player's shadow trees to reach the `<video>` HA renders internally. */
+  private _findVideoElement(root: Element): HTMLVideoElement | null {
+    const queue: Array<Element | ShadowRoot> = [root];
+    const seen = new Set<Element | ShadowRoot>();
 
-    const interval = (cameraModule.refresh_interval || 10) * 1000; // Convert to milliseconds
+    while (queue.length) {
+      const node = queue.shift();
+      if (!node || seen.has(node)) continue;
+      seen.add(node);
 
-    // Setup recurring refresh timer
-    const timerId = setInterval(() => {
-      this.refreshCamera(entity, hass);
-    }, interval);
+      if (node instanceof HTMLVideoElement) return node;
 
-    this._snapshotRefreshTimers.set(cameraModule.id, timerId);
-  }
-
-  private _clearSnapshotRefresh(moduleId: string): void {
-    const existingTimer = this._snapshotRefreshTimers.get(moduleId);
-    if (existingTimer) {
-      clearInterval(existingTimer);
-      this._snapshotRefreshTimers.delete(moduleId);
-    }
-  }
-
-  private getCameraImageUrl(entity: string, hass: HomeAssistant, quality?: string): string {
-    if (!entity || !hass) {
-      return '';
+      const shadow = (node as Element).shadowRoot;
+      if (shadow) queue.push(shadow);
+      queue.push(...Array.from(node.children));
     }
 
-    // Use HA's native camera image URL generation - same method as picture-glance card
-    // This is the proven approach that works with all camera types including RTSP
-    let finalUrl: string;
-
-    try {
-      // Method 1: Try to use HA's internal camera URL helper (if available)
-      if ((hass as any).hassUrl) {
-        const hassUrl = (hass as any).hassUrl();
-        finalUrl = `${hassUrl}/api/camera_proxy/${entity}`;
-      } else {
-        // Method 2: Use relative URL (most common case)
-        finalUrl = `/api/camera_proxy/${entity}`;
-      }
-
-      // Add cache busting parameter (same as picture-glance)
-      const separator = finalUrl.includes('?') ? '&' : '?';
-      finalUrl += `${separator}token=${Date.now()}`;
-    } catch (error) {
-      // Fallback to basic URL
-      finalUrl = `/api/camera_proxy/${entity}?token=${Date.now()}`;
-    }
-
-    return finalUrl;
-  }
-
-  private async getCameraImageBlob(
-    entity: string,
-    hass: HomeAssistant,
-    quality?: string
-  ): Promise<string> {
-    try {
-      // Simple approach: use the same URL structure as HA's native camera interface
-      const timestamp = Date.now();
-      const url = `/api/camera_proxy/${entity}?t=${timestamp}`;
-
-      // Try to fetch with same credentials as HA interface
-      const response = await fetch(url, {
-        method: 'GET',
-        credentials: 'include', // Include all credentials (cookies, etc.)
-        headers: {
-          Accept: 'image/*',
-          'Cache-Control': 'no-cache',
-          Pragma: 'no-cache',
-        },
-      });
-
-      if (!response.ok) {
-        return await this.getCameraImageViaWebSocket(entity, hass);
-      }
-
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
-      return blobUrl;
-    } catch (error) {
-      return await this.getCameraImageViaWebSocket(entity, hass);
-    }
-  }
-
-  private async getCameraImageViaWebSocket(entity: string, hass: HomeAssistant): Promise<string> {
-    try {
-      // Use Home Assistant's connection to get camera thumbnail
-      const connection = (hass as any).connection;
-      if (!connection) {
-        throw new Error('No WebSocket connection available');
-      }
-
-      const result = await connection.sendMessagePromise({
-        type: 'camera_thumbnail',
-        entity_id: entity,
-      });
-
-      if (result && result.content) {
-        // Convert base64 to blob URL
-        const byteCharacters = atob(result.content);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'image/jpeg' });
-        const blobUrl = URL.createObjectURL(blob);
-
-        return blobUrl;
-      }
-
-      throw new Error('No image content received from WebSocket');
-    } catch (error) {
-      return '';
-    }
-  }
-
-  private async handleImageError(event: Event, module: CameraModule): Promise<void> {
-    const img = event.target as HTMLImageElement;
-
-    // Only try blob approach once (avoid infinite loops)
-    if (!img.dataset.triedBlob && module.entity) {
-      img.dataset.triedBlob = 'true';
-
-      try {
-        // Get hass instance from various possible sources
-        const hass =
-          (document.querySelector('home-assistant') as any)?.hass ||
-          (document.querySelector('ha-panel-lovelace') as any)?.hass ||
-          (window as any).hassConnection?.hass;
-
-        if (hass) {
-          const blobUrl = await this.getCameraImageBlob(module.entity, hass, module.image_quality);
-
-          if (blobUrl) {
-            img.src = blobUrl;
-            return;
-          }
-        }
-      } catch (error) {}
-    }
-
-    // Fallback to provided fallback image or error display
-    if (module.fallback_image) {
-      img.src = module.fallback_image;
-    } else {
-      // Hide the image and show unavailable state
-      img.style.display = 'none';
-
-      // Try to show an error message with helpful guidance
-      const container = img.closest('.camera-image-container') as HTMLElement | null;
-      if (container) {
-        const entityState = module.entity
-          ? (document.querySelector('home-assistant') as any)?.hass?.states?.[module.entity]
-          : null;
-        const cameraTypeRaw =
-          entityState?.attributes?.brand || entityState?.attributes?.model || 'Unknown';
-        const cameraType = escapeHtml(String(cameraTypeRaw));
-        const entityLabel = escapeHtml(String(module.entity ?? ''));
-
-        const moduleWithDesign = module as any;
-
-        container.innerHTML = `
-          <style>
-            @keyframes uc-camera-spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-            .uc-camera-error-panel .uc-camera-retry-btn:hover {
-              background: rgba(255, 255, 255, 0.3) !important;
-            }
-          </style>
-          <div
-            class="uc-camera-error-panel"
-            style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            background-color: var(--warning-color, #ff9800);
-            color: ${this.getTextColor(moduleWithDesign)};
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            min-height: 150px;
-            border: 1px solid rgba(255,255,255,0.2);
-            font-family: ${this.getTextFont(moduleWithDesign)};
-          ">
-            <ha-icon icon="mdi:camera-off" style="font-size: 48px; margin-bottom: 12px; opacity: 0.9;"></ha-icon>
-            <span style="font-weight: ${this.getTextWeight(moduleWithDesign)}; font-size: ${this.getTextSize(moduleWithDesign)}; margin-bottom: 8px;">Camera Load Failed</span>
-            <span style="font-size: ${this.getSmallTextSize(moduleWithDesign)}; margin-bottom: 8px; opacity: 0.9;">Entity: ${entityLabel}</span>
-            <span style="font-size: ${this.getSmallTextSize(moduleWithDesign)}; margin-bottom: 12px; opacity: 0.8;">Camera Type: ${cameraType}</span>
-            <div style="font-size: ${this.getSmallTextSize(moduleWithDesign)}; opacity: 0.8; line-height: 1.4; margin-bottom: 12px;">
-              <div style="margin-bottom: 6px;">• Check camera entity is working in HA</div>
-              <div style="margin-bottom: 6px;">• Verify RTSP credentials in HA config</div>
-              <div>• Try refreshing the browser</div>
-            </div>
-            ${
-              module.entity
-                ? `<button
-              type="button"
-              class="uc-camera-retry-btn"
-              style="
-                background: rgba(255,255,255,0.2);
-                border: 1px solid rgba(255,255,255,0.3);
-                color: white;
-                padding: 8px 16px;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: ${this.getSmallTextSize(moduleWithDesign)};
-                font-family: ${this.getTextFont(moduleWithDesign)};
-                transition: all 0.2s ease;
-              "
-            >
-              🔄 Retry Camera Load
-            </button>`
-                : ''
-            }
-          </div>
-        `;
-
-        if (module.entity) {
-          const retryBtn = container.querySelector<HTMLButtonElement>('.uc-camera-retry-btn');
-          if (retryBtn) {
-            retryBtn.addEventListener('click', () => {
-              void this._retryCameraImageLoad(container, module, moduleWithDesign);
-            });
-          }
-        }
-      }
-    }
-  }
-
-  /** Replaces inline `onclick` / globals: attach listeners after error `innerHTML`. */
-  private async _retryCameraImageLoad(
-    container: HTMLElement,
-    module: CameraModule,
-    moduleWithDesign: any
-  ): Promise<void> {
-    const entityId = module.entity;
-    if (!entityId) {
-      return;
-    }
-
-    const hass = (document.querySelector('home-assistant') as any)?.hass;
-    if (!hass) {
-      return;
-    }
-
-    try {
-      const newTimestamp = Date.now();
-      const newUrl = `/api/camera_proxy/${entityId}?t=${newTimestamp}`;
-
-      const newImg = document.createElement('img');
-      newImg.className = 'camera-image';
-      newImg.style.cssText = `
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  width: 100%;
-                  height: 100%;
-                  object-fit: ${module.image_fit || 'cover'};
-                  border-radius: inherit;
-                `;
-
-      newImg.onerror = (e: Event | string) => {
-        if (typeof e !== 'string') {
-          this.handleImageError(e, module);
-        }
-      };
-
-      newImg.onload = () => {
-        container.innerHTML = '';
-        container.appendChild(newImg);
-      };
-
-      newImg.src = newUrl;
-
-      container.innerHTML = `
-                  <style>
-                    @keyframes uc-camera-spin {
-                      0% { transform: rotate(0deg); }
-                      100% { transform: rotate(360deg); }
-                    }
-                  </style>
-                  <div style="
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      flex-direction: column;
-                      background-color: var(--primary-color);
-                      color: ${this.getTextColor(moduleWithDesign)};
-                      padding: 20px;
-                      border-radius: 8px;
-                      text-align: center;
-                      min-height: 150px;
-                      font-family: ${this.getTextFont(moduleWithDesign)};
-                    ">
-                      <div style="
-                        width: 32px;
-                        height: 32px;
-                        border: 3px solid rgba(255,255,255,0.3);
-                        border-top: 3px solid white;
-                        border-radius: 50%;
-                        animation: uc-camera-spin 1s linear infinite;
-                        margin-bottom: 12px;
-                      "></div>
-                      <span style="font-weight: ${this.getTextWeight(moduleWithDesign)}; font-size: ${this.getTextSize(moduleWithDesign)};">Retrying Camera Load...</span>
-                    </div>
-                  `;
-    } catch (error) {
-      console.error('🎥 Retry failed:', error);
-    }
+    return null;
   }
 
   // Global design text styling methods
@@ -3990,16 +3104,18 @@ export class UltraCameraModule extends BaseUltraModule {
         overflow: hidden;
         margin: 0 auto;
         flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
+        display: block;
+        transition: width 0.3s ease, height 0.3s ease;
       }
-      
+
+      /*
+       * The stage owns the frame; the player fills it absolutely. Home Assistant's players size
+       * their internal <video>/<img> against these, so both need a definite box.
+       */
       .camera-image {
-        width: 100%;
-        height: 100%;
-        transition: all 0.3s ease;
+        position: absolute;
+        inset: 0;
+        transition: opacity 0.3s ease;
       }
 
       .camera-audio-toggle {
@@ -4043,7 +3159,9 @@ export class UltraCameraModule extends BaseUltraModule {
         flex-direction: column;
         background-color: var(--disabled-color, #f5f5f5);
         color: var(--secondary-text-color);
-        min-height: 150px;
+        text-align: center;
+        padding: 8px;
+        box-sizing: border-box;
         transition: all 0.3s ease;
       }
       
@@ -4122,219 +3240,8 @@ export class UltraCameraModule extends BaseUltraModule {
         animation: textSizeChange 0.3s ease;
       }
 
-      /* Fullscreen icon styling */
-      .camera-fullscreen-icon {
-        transition: all 0.2s ease;
-        user-select: none;
-      }
-
-      .camera-fullscreen-icon:hover {
-        transform: scale(1.15);
-        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 12px rgba(0, 0, 0, 0.7);
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
-      }
-
-      .camera-fullscreen-icon:active {
-        transform: scale(1.05);
-      }
-
-      /* Fullscreen overlay animations */
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-
-      @keyframes fadeOut {
-        from {
-          opacity: 1;
-        }
-        to {
-          opacity: 0;
-        }
-      }
-
-      @keyframes scaleIn {
-        from {
-          opacity: 0;
-          transform: scale(0.8);
-        }
-        to {
-          opacity: 1;
-          transform: scale(1);
-        }
-      }
-
-      /* Fullscreen overlay global styles */
-      .camera-fullscreen-overlay {
-        -webkit-backdrop-filter: blur(10px);
-        backdrop-filter: blur(10px);
-        z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
-        position: fixed !important;
-      }
-
-      .camera-fullscreen-overlay .camera-image-container {
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      }
-
-      /* Override HA context menus and modals */
-      .camera-minimize-icon {
-        z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
-        position: fixed !important;
-        pointer-events: auto !important;
-      }
-
-      /* Ensure fullscreen is above all HA elements */
-      body .camera-fullscreen-overlay {
-        z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
-      }
-
-      body .camera-minimize-icon {
-        z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
-      }
-
-      /* When fullscreen is active, ensure our elements are always on top */
-      body.camera-fullscreen-active .camera-fullscreen-overlay,
-      body.camera-fullscreen-active .camera-minimize-icon {
-        z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
-        position: fixed !important;
-      }
-
-      /* Hide HA overlays during fullscreen */
-      body.camera-fullscreen-active ha-dialog,
-      body.camera-fullscreen-active ha-more-info-dialog,
-      body.camera-fullscreen-active .mdc-dialog,
-      body.camera-fullscreen-active .dialog-container {
-        z-index: ${Z_INDEX.CAMERA_FULLSCREEN_OVERLAY} !important;
-      }
-
-      .camera-minimize-icon:hover {
-        transform: scale(1.15) !important;
-        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 12px rgba(0, 0, 0, 0.7) !important;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9)) !important;
-      }
-
-      .camera-minimize-icon:active {
-        transform: scale(1.05) !important;
-      }
-
       /* Gap control styles - Standardized Slider Pattern */
       ${BaseUltraModule.getSliderStyles()}
     `;
   }
 }
-
-// Debounced, editor-aware camera update helpers
-// Note: Do not redeclare requestIdleCallback/cancelIdleCallback typings to avoid conflicts
-
-// Instance methods on class (placed after class to avoid reformatting large class body)
-(UltraCameraModule as any).prototype._isEditorOpen = function (): boolean {
-  try {
-    return !!document.querySelector('hui-dialog-edit-card, hui-card-edit-mode');
-  } catch {
-    return false;
-  }
-};
-
-(UltraCameraModule as any).prototype._isValidCameraEntity = function (
-  hass: HomeAssistant,
-  entityId: string
-): boolean {
-  if (!hass || !entityId) return false;
-  const st = hass.states?.[entityId];
-  if (!st) return false;
-  const domain = entityId.split('.')[0];
-  if (domain !== 'camera') return false;
-  if (st.state === 'unavailable' || st.state === 'unknown') return false;
-  return true;
-};
-
-(UltraCameraModule as any).prototype._scheduleCameraUpdate = function (
-  entity: string,
-  live: boolean,
-  cameraModule: CameraModule,
-  hass: HomeAssistant
-): void {
-  // Skip if no change
-  if (this._lastAppliedEntity === entity && this._lastAppliedLive === live) {
-    return;
-  }
-
-  this._pendingCameraProps = { entity, live };
-
-  // Debounce 200ms to serialize offers during editor churn
-  if (this._webrtcUpdateTimer) {
-    clearTimeout(this._webrtcUpdateTimer);
-  }
-  this._webrtcUpdateTimer = setTimeout(() => {
-    const pending = this._pendingCameraProps;
-    if (!pending) return;
-
-    // Validate target camera before touching the player
-    if (!(this as any)._isValidCameraEntity(hass, pending.entity)) {
-      // Ignore invalid entity while editing; keep current live stream
-      return;
-    }
-
-    // Find current hui-image rendered for this module
-    const host = (this as any).renderRoot || (this as any).shadowRoot || (this as any);
-    const container: HTMLElement | null = host.querySelector(
-      `.camera-module-container[data-uc-camera-id="${cameraModule.id}"] .camera-image-container`
-    );
-    if (container) {
-      // Determine whether live mode is active (which uses ha-camera-stream directly)
-      const isLiveMode = pending.live;
-
-      if (isLiveMode) {
-        // Live mode: the ref is a ha-camera-stream; update stateObj to switch entity
-        const node = this._huiImageRef?.value as any;
-        if (node && node.tagName?.toLowerCase() === 'ha-camera-stream') {
-          const stateObj = hass?.states?.[pending.entity];
-          if (stateObj) {
-            node.stateObj = stateObj;
-            const audioEnabled = this._isAudioActive(cameraModule);
-            node.muted = !audioEnabled;
-            (this as any)._ensureAudioState(node, cameraModule, audioEnabled);
-          }
-          this._lastAppliedEntity = pending.entity;
-          this._lastAppliedLive = pending.live;
-          this._lastRenderedEntity = pending.entity;
-        } else {
-          // Node not yet a ha-camera-stream (e.g. still mounting); trigger rerender
-          this._lastAppliedEntity = pending.entity;
-          this._lastAppliedLive = pending.live;
-          this.requestUpdate();
-        }
-      } else {
-        // Auto/snapshot mode: the ref is a hui-image; update cameraImage/cameraView
-        const images = Array.from(container.querySelectorAll('hui-image')) as any[];
-        for (let i = 1; i < images.length; i++) {
-          images[i].remove();
-        }
-
-        const node = this._huiImageRef?.value || images[0];
-        if (node) {
-          node.cameraImage = pending.entity;
-          const audioEnabled = this._isAudioActive(cameraModule);
-          node.muted = !audioEnabled;
-          queueMicrotask(() => {
-            node.cameraView = 'auto';
-            node.muted = !audioEnabled;
-          });
-
-          this._lastAppliedEntity = pending.entity;
-          this._lastAppliedLive = pending.live;
-          this._lastRenderedEntity = pending.entity;
-        } else {
-          // Fallback: request a rerender which will bind ref
-          this._lastAppliedEntity = pending.entity;
-          this._lastAppliedLive = pending.live;
-          this.requestUpdate();
-        }
-      }
-    }
-  }, 200);
-};

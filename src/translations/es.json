@@ -1332,6 +1332,44 @@
         "toggle": "Modo Placa Tem",
         "toggle_desc": "Seleccionar dinámicamente cámara y superposición a través de una placa Jinja tem",
         "cheatsheet": "Hoja de trucos de Placa Tem"
+      },
+      "view_mode": {
+        "title": "Stream Mode",
+        "desc": "Auto: still images refreshed every 10 seconds, exactly like Home Assistant picture cards. Live: a continuous stream. Snapshot: still images on your own refresh interval.",
+        "options": {
+          "auto": "Auto (HA Default)",
+          "live": "Always Live",
+          "snapshot": "Snapshot Only"
+        }
+      },
+      "audio_enabled": {
+        "title": "Enable Audio",
+        "desc": "Start the stream unmuted where the browser allows it. Browsers block unmuted autoplay until you interact with the page, so the stream may start muted until you use the sound button."
+      },
+      "show_audio_button": {
+        "title": "Sound Button",
+        "desc": "Show a mute/unmute button over the stream."
+      },
+      "show_controls": {
+        "title": "Player Controls",
+        "desc": "Show the browser's native video controls on the stream."
+      },
+      "image_fit": {
+        "title": "Image Fit",
+        "desc": "How the feed fills the frame. Cover crops to fill, Contain shows the whole frame with bars, Fill stretches to the frame.",
+        "options": {
+          "cover": "Cover",
+          "contain": "Contain",
+          "fill": "Fill"
+        }
+      },
+      "audio": {
+        "mute": "Mute",
+        "unmute": "Unmute"
+      },
+      "unavailable": "Camera Unavailable",
+      "snapshot_refresh": {
+        "section_title": "Snapshot Refresh Settings"
       }
     },
     "separator": {

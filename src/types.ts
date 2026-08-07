@@ -2984,6 +2984,9 @@ export interface CameraModule extends BaseModule {
   // Camera controls
   show_controls?: boolean | undefined;
 
+  // Show the mute/unmute button over a live stream
+  show_audio_button?: boolean | undefined;
+
   // Stream mode - controls how camera feed is displayed
   view_mode?: 'auto' | 'live' | 'snapshot' | undefined;
 

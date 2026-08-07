@@ -4,10 +4,12 @@ Display live camera feeds with controls and customization options.
 
 ## Features
 
-- **Live camera streams** - Real-time video feeds
+- **Live camera streams** - Real-time video feeds using the same HLS/WebRTC players as Home Assistant's own picture cards
 - **Still image mode** - Static snapshots with auto-refresh
+- **Image fit control** - Cover, contain, or fill the frame
 - **Crop controls** - Focus on specific areas of camera view
 - **Aspect ratio linking** - Maintain proportions or set independently
+- **Sound button** - Mute/unmute the stream without leaving the dashboard
 - **Name overlay** - Camera name display with positioning options
 - **Template support** - Dynamic camera selection based on conditions
 
@@ -21,9 +23,18 @@ Display live camera feeds with controls and customization options.
 
 ### Display Settings
 
-- **Live View** - Enable live stream (requires stream integration)
-- **Auto Refresh** - Automatically refresh still images
-- **Refresh Interval** - How often to refresh (in seconds)
+- **Stream Mode** - How the feed is delivered:
+  - **Auto (HA Default)** - Still images refreshed roughly every 10 seconds, matching Home Assistant's picture-entity behaviour. Lightest on the network.
+  - **Always Live** - A continuous stream via HLS or WebRTC. Requires the `stream` integration (or a WebRTC-capable camera).
+  - **Snapshot Only** - Still images refreshed on your own interval, set below.
+- **Image Fit** - How the feed fills the frame:
+  - **Cover** - Crops the feed so it fills the frame edge to edge (default)
+  - **Contain** - Shows the whole frame, adding bars where the ratios differ
+  - **Fill** - Stretches the feed to the frame
+- **Enable Audio** - Starts the stream unmuted where the browser allows it. Browsers block unmuted autoplay until you interact with the page, so the stream may start muted until you press the sound button.
+- **Sound Button** - Shows a mute/unmute button over the stream.
+- **Player Controls** - Shows the browser's native video controls.
+- **Auto Refresh** / **Refresh Interval** - Snapshot mode only: how often the still image is re-fetched (in seconds).
 
 ### Dimensions
 
@@ -31,6 +42,8 @@ Display live camera feeds with controls and customization options.
 - **Height** - Camera display height (100-1000px)
 - **Link Aspect Ratio** - Maintain proportions when resizing
 - **Aspect Ratio** - Current width:height ratio
+
+The module keeps the camera's own aspect ratio wherever possible, so a 16:9 feed stays 16:9 rather than being letterboxed inside a differently shaped box.
 
 ### Name Position
 
