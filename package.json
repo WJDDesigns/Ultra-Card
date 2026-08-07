@@ -103,7 +103,7 @@
     "eslint-config-prettier": "^10.1.8",
     "file-loader": "^6.2.0",
     "globals": "^17.6.0",
-    "jsdom": "29.1.1",
+    "jsdom": "30.0.1",
     "openai": "6.35.0",
     "playwright": "1.62.1",
     "prettier": "^3.8.3",
