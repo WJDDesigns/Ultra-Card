@@ -9,6 +9,16 @@ const ELEMENT_LOAD_TIMEOUT_MS = 2000;
 /** How long to back off before retrying an element that failed to register. */
 const ELEMENT_LOAD_RETRY_MS = 30000;
 
+/**
+ * Element names that were recorded from HA's picker label instead of its YAML
+ * type. Neither has ever matched a real HA card, so anything saved under them
+ * is already broken and can be rewritten on read without risk.
+ */
+const CARD_TYPE_ALIASES: Record<string, string> = {
+  'hui-activity-card': 'hui-logbook-card',
+  'hui-webpage-card': 'hui-iframe-card',
+};
+
 export interface NativeCardInfo {
   type: string; // e.g., 'hui-entities-card'
   name: string; // e.g., 'Entities'
@@ -61,6 +71,14 @@ class UcNativeCardsService {
       // Same rename as Activity/logbook: the picker says "Webpage", the type is `iframe`.
       { type: 'hui-iframe-card', name: 'Webpage', description: 'Embed a webpage' },
     ];
+  }
+
+  /**
+   * Map an element name that was never valid onto the card HA actually ships.
+   * Returns the input unchanged when there is nothing to repair.
+   */
+  resolveCardType(cardType: string): string {
+    return CARD_TYPE_ALIASES[cardType] || cardType;
   }
 
   /**

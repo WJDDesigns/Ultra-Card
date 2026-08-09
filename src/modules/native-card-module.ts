@@ -50,6 +50,28 @@ function canJudgeRendering(container: Element): boolean {
   return el.offsetParent !== null || el.getClientRects().length > 0;
 }
 
+/**
+ * Repair a module saved with an element name taken from HA's picker label.
+ *
+ * Both the element name and the stored config type were wrong, so a saved
+ * Activity card carries `hui-activity-card` plus `type: activity` and HA
+ * rejects both. Rewriting them on read fixes existing layouts without needing
+ * the user to delete and re-add the module.
+ */
+function resolveLegacyCardType(module: NativeCardModule): NativeCardModule {
+  const resolved = ucNativeCardsService.resolveCardType(module.card_type);
+  if (resolved === module.card_type) return module;
+
+  const staleConfigType = ucNativeCardsService.elementNameToConfigType(module.card_type);
+  const resolvedConfigType = ucNativeCardsService.elementNameToConfigType(resolved);
+  const cardConfig =
+    module.card_config?.type === staleConfigType
+      ? { ...module.card_config, type: resolvedConfigType }
+      : module.card_config;
+
+  return { ...module, card_type: resolved, card_config: cardConfig };
+}
+
 /** Card types come from saved config and imported presets, so never trust them as markup. */
 function escapeHtml(value: string): string {
   return String(value).replace(
@@ -295,6 +317,8 @@ export class UltraNativeCardModule extends BaseUltraModule {
     config: UltraCardConfig,
     updateModule: (updates: Partial<NativeCardModule>) => void
   ): TemplateResult | null {
+    module = resolveLegacyCardType(module);
+
     const cardInfo = ucNativeCardsService.getNativeCardInfo(module.card_type);
     const cardName = cardInfo?.name || module.name || 'Native Card';
 
@@ -742,6 +766,8 @@ export class UltraNativeCardModule extends BaseUltraModule {
     config: UltraCardConfig,
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
+    module = resolveLegacyCardType(module);
+
     // Use context-specific cache key so each context (dashboard, HA preview, builder) has its own card instance
     const context = previewContext || 'dashboard';
     const cacheKey = `${module.id}-preview-${context}`;
