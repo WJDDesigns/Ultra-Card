@@ -98,7 +98,6 @@ import {
   DEFAULT_FONTS,
   TYPOGRAPHY_FONTS,
   CUSTOM_YAML_CARD_TYPE,
-  NATIVE_HA_CARDS,
   WEB_SAFE_FONTS,
 } from './layout-tab-constants';
 import { patchModuleByIdInLayout } from '../../utils/uc-layout-patch-module';
@@ -10599,9 +10598,9 @@ export class LayoutTab extends LitElement {
       const cardInfo = ucNativeCardsService.getNativeCardInfo(cardType);
       const cardName = cardInfo?.name || cardType;
 
-      // The card list is static while HA's actual card set varies by version, so
-      // confirm this build really has the card rather than adding a module that
-      // can only ever render "Card not found".
+      // Discovery reads HA's card translations, which ship with the cards but are
+      // not the cards themselves, so confirm the element really registers rather
+      // than adding a module that can only ever render "Card not found".
       const available = await ucNativeCardsService.ensureCardElementLoaded(cardType);
       if (!available) {
         this._showToast(
@@ -29792,8 +29791,8 @@ export class LayoutTab extends LitElement {
     // Get card info for better display name
     let cardName: string;
     if (isNativeCard) {
-      // For native cards, look up in NATIVE_HA_CARDS list
-      const nativeCard = NATIVE_HA_CARDS.find(c => c.type === cardType);
+      // Prefers HA's own label for the card, from the discovered catalog.
+      const nativeCard = ucNativeCardsService.getNativeCardInfo(cardType);
       cardName = nativeCard ? nativeCard.name : cardType;
     } else {
       // For 3rd party cards, use the external cards service

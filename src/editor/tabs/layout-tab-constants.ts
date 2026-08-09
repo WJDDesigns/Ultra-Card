@@ -3,6 +3,8 @@
  * Extracted from layout-tab.ts to support future splitting of the layout editor.
  */
 
+import { CURATED_NATIVE_CARDS } from '../../services/uc-native-card-catalog';
+
 export interface FontOption {
   value: string;
   label: string;
@@ -27,50 +29,22 @@ export const TYPOGRAPHY_FONTS: FontOption[] = [
 // Special entry for Custom YAML Card - allows pasting any card YAML configuration
 export const CUSTOM_YAML_CARD_TYPE = 'custom-yaml-card';
 
+/** Always first in the palette, ahead of the native cards, discovered or not. */
+export const CUSTOM_YAML_CARD_ENTRY: NativeCardEntry = {
+  type: CUSTOM_YAML_CARD_TYPE,
+  name: 'Custom YAML Card',
+  icon: 'mdi:code-braces',
+  description: 'Paste any card configuration',
+};
+
+/**
+ * Static baseline for the card palette, used until runtime discovery resolves
+ * and whenever it cannot. Descriptions are dropped so the palette keeps showing
+ * the element name, which is what it has always shown.
+ */
 export const NATIVE_HA_CARDS: NativeCardEntry[] = [
-  {
-    type: CUSTOM_YAML_CARD_TYPE,
-    name: 'Custom YAML Card',
-    icon: 'mdi:code-braces',
-    description: 'Paste any card configuration',
-  },
-  // HA's picker renamed these two, but the element name must match the YAML
-  // type, not the label: Activity is `logbook`, Webpage is `iframe`.
-  { type: 'hui-logbook-card', name: 'Activity' },
-  { type: 'hui-alarm-panel-card', name: 'Alarm Panel' },
-  { type: 'hui-area-card', name: 'Area' },
-  { type: 'hui-button-card', name: 'Button' },
-  { type: 'hui-calendar-card', name: 'Calendar' },
-  { type: 'hui-clock-card', name: 'Clock' },
-  { type: 'hui-conditional-card', name: 'Conditional' },
-  { type: 'hui-entities-card', name: 'Entities' },
-  { type: 'hui-entity-card', name: 'Entity' },
-  { type: 'hui-entity-filter-card', name: 'Entity Filter' },
-  { type: 'hui-gauge-card', name: 'Gauge' },
-  { type: 'hui-glance-card', name: 'Glance' },
-  { type: 'hui-grid-card', name: 'Grid' },
-  { type: 'hui-heading-card', name: 'Heading' },
-  { type: 'hui-history-graph-card', name: 'History Graph' },
-  { type: 'hui-horizontal-stack-card', name: 'Horizontal Stack' },
-  { type: 'hui-humidifier-card', name: 'Humidifier' },
-  { type: 'hui-light-card', name: 'Light' },
-  { type: 'hui-map-card', name: 'Map' },
-  { type: 'hui-markdown-card', name: 'Markdown' },
-  { type: 'hui-media-control-card', name: 'Media Control' },
-  { type: 'hui-picture-card', name: 'Picture' },
-  { type: 'hui-picture-elements-card', name: 'Picture Elements' },
-  { type: 'hui-picture-entity-card', name: 'Picture Entity' },
-  { type: 'hui-picture-glance-card', name: 'Picture Glance' },
-  { type: 'hui-plant-status-card', name: 'Plant Status' },
-  { type: 'hui-sensor-card', name: 'Sensor' },
-  { type: 'hui-statistic-card', name: 'Statistic' },
-  { type: 'hui-statistics-graph-card', name: 'Statistics Graph' },
-  { type: 'hui-thermostat-card', name: 'Thermostat' },
-  { type: 'hui-tile-card', name: 'Tile' },
-  { type: 'hui-todo-list-card', name: 'To-do List' },
-  { type: 'hui-vertical-stack-card', name: 'Vertical Stack' },
-  { type: 'hui-weather-forecast-card', name: 'Weather Forecast' },
-  { type: 'hui-iframe-card', name: 'Webpage' },
+  CUSTOM_YAML_CARD_ENTRY,
+  ...CURATED_NATIVE_CARDS.map(card => ({ type: card.type, name: card.name })),
 ];
 
 export const WEB_SAFE_FONTS: FontOption[] = [

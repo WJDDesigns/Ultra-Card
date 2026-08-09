@@ -6,8 +6,10 @@ import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { ucExternalCardsService } from '../services/uc-external-cards-service';
+import { ucNativeCardsService } from '../services/uc-native-cards-service';
 import {
   NATIVE_HA_CARDS,
+  CUSTOM_YAML_CARD_ENTRY,
   CUSTOM_YAML_CARD_TYPE,
   type NativeCardEntry,
 } from './tabs/layout-tab-constants';
@@ -30,6 +32,9 @@ export class UcCardSelectorTab extends LitElement {
   /** Cached snapshot of third-party cards; refreshed on tab enter and on explicit Refresh. */
   @state() private _cachedAvailableCards: ThirdPartyCardEntry[] = [];
   private _cachedCardsByType = new Map<string, ThirdPartyCardEntry>();
+
+  /** Native cards this HA actually has; null until discovery resolves. */
+  @state() private _discoveredNativeCards: NativeCardEntry[] | null = null;
 
   static override styles = css`
     .cards-tab-container {
@@ -451,6 +456,32 @@ export class UcCardSelectorTab extends LitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     this._refreshCardsCache();
+    void this._discoverNativeCards();
+  }
+
+  override updated(changedProps: Map<string, unknown>): void {
+    super.updated(changedProps);
+
+    // `hass` is often set after the first connect, and discovery needs it.
+    if (changedProps.has('hass') && !this._discoveredNativeCards) {
+      void this._discoverNativeCards();
+    }
+  }
+
+  /**
+   * Replace the static palette with the cards this HA reports.
+   *
+   * Renders from the static baseline meanwhile, so the palette is never empty
+   * and never waits on this.
+   */
+  private async _discoverNativeCards(): Promise<void> {
+    if (!this.hass) return;
+
+    const cards = await ucNativeCardsService.ensureDiscovered(this.hass);
+    this._discoveredNativeCards = [
+      CUSTOM_YAML_CARD_ENTRY,
+      ...cards.map(card => ({ type: card.type, name: card.name })),
+    ];
   }
 
   /** Refresh cached third-party cards snapshot (tab enter / explicit Refresh). */
@@ -495,6 +526,8 @@ export class UcCardSelectorTab extends LitElement {
 
   private _emitRefresh(): void {
     this._refreshCardsCache();
+    ucNativeCardsService.resetDiscovery();
+    void this._discoverNativeCards();
     this.dispatchEvent(new CustomEvent('refresh', { bubbles: true, composed: true }));
   }
 
@@ -628,7 +661,7 @@ export class UcCardSelectorTab extends LitElement {
   }
 
   protected override render(): TemplateResult {
-    const nativeCards = NATIVE_HA_CARDS;
+    const nativeCards = this._discoveredNativeCards ?? NATIVE_HA_CARDS;
     const availableCards = this._cachedAvailableCards;
     const hasSearchQuery = this._cardSearchQuery.trim() !== '';
 
