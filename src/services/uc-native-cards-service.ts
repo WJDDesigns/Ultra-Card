@@ -3,9 +3,6 @@
  * Handles discovery and management of native Home Assistant cards (hui-* elements)
  */
 
-/** Matches the timeout HA uses when waiting for a lazily loaded element. */
-const ELEMENT_LOAD_TIMEOUT_MS = 2000;
-
 export interface NativeCardInfo {
   type: string; // e.g., 'hui-entities-card'
   name: string; // e.g., 'Entities'
@@ -100,90 +97,6 @@ class UcNativeCardsService {
     }
 
     return `hui-${configType}-card`;
-  }
-
-  /**
-   * Make sure the custom element class for a native card is registered.
-   *
-   * Home Assistant only eagerly defines a handful of card elements (entity,
-   * entities, button, glance, grid, light, sensor, thermostat, tile, ...).
-   * Everything else lives in a lazily imported chunk, so `document.createElement`
-   * would hand back an inert element that never upgrades: it renders nothing and
-   * has no `setConfig`. Asking HA's own card helpers to build the card triggers
-   * that import for us.
-   */
-  async ensureCardElementLoaded(cardType: string): Promise<CustomElementConstructor | undefined> {
-    if (!cardType) return undefined;
-
-    const registered = customElements.get(cardType);
-    if (registered) return registered;
-
-    // Share one attempt between the preview and the editor, both of which ask on
-    // every render. A failed attempt is dropped so a later render can retry.
-    let pending = this._pendingElementLoads.get(cardType);
-    if (!pending) {
-      pending = this._loadCardElement(cardType).finally(() => {
-        if (!customElements.get(cardType)) {
-          this._pendingElementLoads.delete(cardType);
-        }
-      });
-      this._pendingElementLoads.set(cardType, pending);
-    }
-    return pending;
-  }
-
-  /**
-   * Build a usable default config for a native card.
-   *
-   * Mirrors HA's own card picker: `getStubConfig` expects an entity shortlist plus
-   * a fallback list, and several cards (thermostat, gauge, media-control, ...)
-   * throw or render nothing when their entity is missing.
-   */
-  async getStubConfig(cardType: string, hass: any): Promise<Record<string, any>> {
-    const baseConfig = { type: this.elementNameToConfigType(cardType) };
-
-    const cardClass = (await this.ensureCardElementLoaded(cardType)) as any;
-    if (!cardClass || typeof cardClass.getStubConfig !== 'function') {
-      return baseConfig;
-    }
-
-    try {
-      const allEntities = hass?.states ? Object.keys(hass.states) : [];
-      const stubConfig = await Promise.resolve(cardClass.getStubConfig(hass, [], allEntities));
-
-      // Not every card includes `type` in its stub, so keep ours as the base.
-      return stubConfig && typeof stubConfig === 'object'
-        ? { ...baseConfig, ...stubConfig }
-        : baseConfig;
-    } catch (error) {
-      console.warn(`[UC Native Cards] getStubConfig failed for ${cardType}:`, error);
-      return baseConfig;
-    }
-  }
-
-  private _pendingElementLoads = new Map<string, Promise<CustomElementConstructor | undefined>>();
-
-  private async _loadCardElement(
-    cardType: string
-  ): Promise<CustomElementConstructor | undefined> {
-    try {
-      const loadCardHelpers = (window as any).loadCardHelpers;
-      if (typeof loadCardHelpers === 'function') {
-        const helpers = await loadCardHelpers();
-        // The config is intentionally minimal: HA imports the chunk before it
-        // validates, so an incomplete config still gets the element registered.
-        helpers?.createCardElement?.({ type: this.elementNameToConfigType(cardType) });
-      }
-    } catch (error) {
-      console.warn(`[UC Native Cards] Could not preload ${cardType}:`, error);
-    }
-
-    await Promise.race([
-      customElements.whenDefined(cardType),
-      new Promise(resolve => setTimeout(resolve, ELEMENT_LOAD_TIMEOUT_MS)),
-    ]);
-
-    return customElements.get(cardType);
   }
 }
 

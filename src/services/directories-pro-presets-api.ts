@@ -48,6 +48,11 @@ export class DirectoriesProPresetsAPI {
 
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   private localStorageDisabled = false; // Flag to disable localStorage if quota keeps failing
+  private corsProxies = [
+    'https://api.allorigins.win/raw?url=',
+    'https://corsproxy.io/?',
+    'https://cors-anywhere.herokuapp.com/',
+  ];
 
   /**
    * Fetch all presets from Directories Pro
@@ -343,7 +348,7 @@ export class DirectoriesProPresetsAPI {
   }
 
   /**
-   * Test connectivity to the presets API (for debugging)
+   * Test CORS-resilient connection (for debugging)
    */
   async testConnection(): Promise<{ method: string; success: boolean; error?: string }[]> {
     const testUrl = `${DirectoriesProPresetsAPI.API_BASE}/presets_dir_ltg?per_page=1`;
@@ -363,6 +368,25 @@ export class DirectoriesProPresetsAPI {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
+    }
+
+    // Test each CORS proxy
+    for (const proxy of this.corsProxies) {
+      try {
+        const proxyUrl = `${proxy}${encodeURIComponent(testUrl)}`;
+        await fetch(proxyUrl, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          signal: AbortSignal.timeout(8000),
+        });
+        results.push({ method: `Proxy: ${proxy}`, success: true });
+      } catch (error) {
+        results.push({
+          method: `Proxy: ${proxy}`,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
     }
 
     return results;
@@ -550,30 +574,100 @@ export class DirectoriesProPresetsAPI {
   }
 
   /**
-   * Fetch JSON directly from ultracard.io.
-   *
-   * This deliberately has no fallback transport. It previously retried through
-   * public CORS proxies (allorigins, corsproxy.io, cors-anywhere) and then via
-   * an injected JSONP <script> tag. Both routed Home Assistant users' traffic
-   * through anonymous third parties, and the JSONP path executed remote code in
-   * the dashboard. Callers already degrade to the 24h stale cache and then the
-   * fallback cache, which is the correct behaviour when the API is unreachable.
+   * CORS-resilient fetch that tries multiple methods
    */
   private async _fetchWithCorsResilience(url: string): Promise<any> {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      signal: AbortSignal.timeout(8000),
-    });
+    // Method 1: Direct fetch (fastest if CORS is working)
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(8000), // 8 second timeout
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      // Direct fetch failed, trying CORS proxies silently
+
+      // Method 2: Try CORS proxies
+      for (const proxy of this.corsProxies) {
+        try {
+          const proxyUrl = `${proxy}${encodeURIComponent(url)}`;
+          const response = await fetch(proxyUrl, {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+            },
+            signal: AbortSignal.timeout(10000), // 10 second timeout for proxies
+          });
+
+          if (!response.ok) {
+            throw new Error(`Proxy HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          console.log(`Successfully fetched via proxy: ${proxy}`);
+          return data;
+        } catch (proxyError) {
+          // Proxy failed silently, try next one
+          continue; // Try next proxy
+        }
+      }
+
+      // Method 3: Try JSONP-style approach (if supported by server)
+      try {
+        return await this._fetchViaJsonp(url);
+      } catch (jsonpError) {
+        console.warn('JSONP fetch failed:', jsonpError);
+      }
+
+      // All methods failed
+      throw new Error('All CORS-resilient fetch methods failed');
     }
+  }
 
-    return response.json();
+  /**
+   * JSONP-style fetch (experimental)
+   */
+  private async _fetchViaJsonp(url: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const callbackName = `ultracard_jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const script = document.createElement('script');
+      const timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error('JSONP timeout'));
+      }, 15000);
+
+      const cleanup = () => {
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+        delete (window as any)[callbackName];
+        clearTimeout(timeoutId);
+      };
+
+      (window as any)[callbackName] = (data: any) => {
+        cleanup();
+        resolve(data);
+      };
+
+      script.onerror = () => {
+        cleanup();
+        reject(new Error('JSONP script error'));
+      };
+
+      // Try to add callback parameter (may not work with all APIs)
+      const separator = url.includes('?') ? '&' : '?';
+      script.src = `${url}${separator}callback=${callbackName}`;
+      document.head.appendChild(script);
+    });
   }
 
   /**

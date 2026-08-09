@@ -7,28 +7,6 @@ import { ucNativeCardsService } from '../services/uc-native-cards-service';
 import { Z_INDEX } from '../utils/uc-z-index';
 import yaml from 'js-yaml';
 
-const NO_VISUAL_EDITOR_MESSAGE = `
-  <div data-uc-native-editor-fallback style="padding: 40px; text-align: center; color: var(--secondary-text-color);">
-    <ha-icon icon="mdi:information-outline" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-icon>
-    <p style="font-size: 14px; margin-bottom: 8px;">This card does not have a visual editor.</p>
-    <p style="font-size: 13px; opacity: 0.8;">Use the YAML tab to configure this card.</p>
-  </div>
-`;
-
-// Modules whose native editor produced nothing - avoids rebuilding a broken
-// editor (and wiping the fallback message) on every re-render
-const editorUnavailable = new Set<string>();
-
-// In-flight stub config lookups, keyed by module id, so a card is only asked once
-const stubConfigRequests = new Map<string, Promise<Record<string, any>>>();
-
-/** True when an element actually painted something, ignoring injected styles. */
-function hasRenderedContent(element: HTMLElement): boolean {
-  if (element.offsetHeight > 0 || element.offsetWidth > 0) return true;
-  const root: ParentNode = element.shadowRoot || element;
-  return Array.from(root.children).some(child => child.tagName !== 'STYLE');
-}
-
 // Editor element cache to prevent unnecessary recreation
 const editorElementCache = new Map<string, HTMLElement>();
 
@@ -265,29 +243,6 @@ export class UltraNativeCardModule extends BaseUltraModule {
     const cardInfo = ucNativeCardsService.getNativeCardInfo(module.card_type);
     const cardName = cardInfo?.name || module.name || 'Native Card';
 
-    // A card that was never configured only carries its `type`. Several HA editors
-    // read their entity while rendering (thermostat, gauge, media-control, ...) and
-    // throw without it, which leaves a blank settings panel behind - so adopt the
-    // card's own stub config first, the same way HA's card picker does.
-    const ensureStubConfig = (): Promise<Record<string, any>> | null => {
-      if (Object.keys(module.card_config || {}).length > 1) return null;
-
-      let pending = stubConfigRequests.get(module.id);
-      if (!pending) {
-        pending = ucNativeCardsService
-          .getStubConfig(module.card_type, hass)
-          .then(stubConfig => {
-            if (Object.keys(stubConfig).length > 1) {
-              updateModule({ card_config: stubConfig });
-              setTimeout(() => this.triggerPreviewUpdate(), 50);
-            }
-            return stubConfig;
-          });
-        stubConfigRequests.set(module.id, pending);
-      }
-      return pending;
-    };
-
     // Function to update editor properties (called on every render if needed)
     const setupEditorProperties = (editor: any, container: Element) => {
       try {
@@ -363,17 +318,6 @@ export class UltraNativeCardModule extends BaseUltraModule {
     const setupEditor = (container: Element | undefined) => {
       if (!container || !module.card_type) return;
 
-      if (editorUnavailable.has(module.id)) {
-        if (!container.querySelector('[data-uc-native-editor-fallback]')) {
-          container.innerHTML = NO_VISUAL_EDITOR_MESSAGE;
-        }
-        return;
-      }
-
-      // Runs regardless of whether the editor is new or cached, so a config that
-      // is still missing its entity cannot be pushed back into a working editor.
-      ensureStubConfig();
-
       const cacheKey = `${module.id}-editor`;
 
       // Check for cached editor
@@ -397,56 +341,61 @@ export class UltraNativeCardModule extends BaseUltraModule {
             // Track whether we got a direct editor (vs hui-card-element-editor wrapper)
             let isDirectEditor = false;
             let editorElement: HTMLElement | null = null;
-
-            // Most native cards live in a lazily loaded chunk, so the card class
-            // (and with it getConfigElement) is not available until HA imports it.
-            const cardClass = (await ucNativeCardsService.ensureCardElementLoaded(
-              module.card_type
-            )) as any;
-
+            
             try {
-              if (cardClass && typeof cardClass.getConfigElement === 'function') {
-                console.log('[UC Native Card] Getting config element from card class');
-                const result = await Promise.resolve(cardClass.getConfigElement());
-                if (result && typeof (result as any).setConfig === 'function') {
-                  editorElement = result;
-                  isDirectEditor = true;
-                  console.log(
-                    '[UC Native Card] Got direct editor from getConfigElement:',
-                    result.tagName
-                  );
-                } else {
-                  console.log('[UC Native Card] getConfigElement returned invalid result:', result);
-                }
-              } else if (customElements.get(editorElementName)) {
+              // Check if the specific card editor is already defined
+              const editorClass = customElements.get(editorElementName);
+              if (editorClass) {
                 console.log('[UC Native Card] Editor class found, creating directly:', editorElementName);
                 editorElement = document.createElement(editorElementName);
                 isDirectEditor = true;
+              } else {
+                // Try to get the editor from the card class's getConfigElement
+                const cardClass = customElements.get(module.card_type) as any;
+                if (cardClass && typeof cardClass.getConfigElement === 'function') {
+                  console.log('[UC Native Card] Getting config element from card class');
+                  const result = await Promise.resolve(cardClass.getConfigElement());
+                  if (result && !(result instanceof HTMLUnknownElement)) {
+                    editorElement = result;
+                    isDirectEditor = true;
+                    console.log(
+                      '[UC Native Card] Got direct editor from getConfigElement:',
+                      result.tagName
+                    );
+                  } else {
+                    console.log('[UC Native Card] getConfigElement returned invalid result:', result);
+                  }
+                }
               }
             } catch (e) {
               console.log('[UC Native Card] Could not get direct editor, falling back to wrapper:', e);
             }
             
-            // Last resort: HA's generic wrapper. Only usable when it is registered —
-            // an unregistered element would silently render an empty panel.
-            if (!editorElement && customElements.get('hui-card-element-editor')) {
+            // If we couldn't get the direct editor, use hui-card-element-editor wrapper
+            if (!editorElement || editorElement instanceof HTMLUnknownElement) {
               console.log('[UC Native Card] Using hui-card-element-editor wrapper');
               editorElement = document.createElement('hui-card-element-editor');
               isDirectEditor = false;
             }
             
-            // Check if editor element is valid
-            if (!editorElement) {
-              console.warn('[UC Native Card] No valid editor available');
-              editorElementCache.delete(cacheKey);
-              container.innerHTML = NO_VISUAL_EDITOR_MESSAGE;
-              return;
-            }
-
             editor = editorElement;
-
+            
             // Store whether this is a direct editor for later use
             (editor as any)._ucIsDirectEditor = isDirectEditor;
+
+            // Check if editor element is valid
+            if (!editor || editor instanceof HTMLUnknownElement) {
+              console.warn('[UC Native Card] No valid editor available');
+              editorElementCache.delete(cacheKey);
+              container.innerHTML = `
+                <div style="padding: 40px; text-align: center; color: var(--secondary-text-color);">
+                  <ha-icon icon="mdi:information-outline" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-icon>
+                  <p style="font-size: 14px; margin-bottom: 8px;">This card does not have a visual editor.</p>
+                  <p style="font-size: 13px; opacity: 0.8;">Use the YAML tab to configure this card.</p>
+                </div>
+              `;
+              return;
+            }
 
           // Set up config-changed listener (only once when editor is created)
           let configUpdateTimer: number | undefined;
@@ -540,15 +489,9 @@ export class UltraNativeCardModule extends BaseUltraModule {
             await new Promise(resolve => setTimeout(resolve, 50));
             
             // Prepare config with type
-            let editorConfig = { ...(module.card_config || {}) };
+            const editorConfig = { ...(module.card_config || {}) };
             if (!editorConfig.type) {
               editorConfig.type = ucNativeCardsService.elementNameToConfigType(module.card_type);
-            }
-
-            // Hand the editor a config it can actually render (see ensureStubConfig)
-            const stubConfig = await ensureStubConfig();
-            if (stubConfig && Object.keys(stubConfig).length > 1) {
-              editorConfig = { ...stubConfig };
             }
             
             console.log('[UC Native Card] Setting initial editor config (direct:', isDirectEditor, '):', editorConfig);
@@ -611,26 +554,28 @@ export class UltraNativeCardModule extends BaseUltraModule {
           
           initializeEditor();
 
-          // An editor that throws while rendering leaves an invisible, empty
-          // element behind, which reads as a broken settings panel. Point the user
-          // at the YAML tab instead of showing nothing at all.
-          const checkEditorRendered = async () => {
-            for (const delay of [600, 1500]) {
-              await new Promise(resolve => setTimeout(resolve, delay));
-              if (!editor || !container.contains(editor)) return;
-              if (hasRenderedContent(editor)) return;
+          // Get stub config if needed (async, but don't block)
+          const currentConfig = module.card_config || {};
+          if (Object.keys(currentConfig).length <= 1) {
+            try {
+              const cardConstructor = customElements.get(module.card_type) as any;
+              if (cardConstructor && typeof cardConstructor.getStubConfig === 'function') {
+                Promise.resolve(cardConstructor.getStubConfig(hass)).then((stubConfig) => {
+                  if (stubConfig && typeof stubConfig === 'object') {
+                    console.log('[UC Native Card] Got stub config from card:', stubConfig);
+                    // Save stub config and let setupEditorProperties apply it
+                    updateModule({ card_config: stubConfig });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }
+                }).catch((e) => {
+                  console.log('[UC Native Card] Failed to get stub config:', e);
+                });
+              }
+            } catch (e) {
+              console.log('[UC Native Card] Error getting stub config:', e);
             }
-            console.warn(
-              '[UC Native Card] Editor produced no content for',
-              module.card_type,
-              '- falling back to YAML hint'
-            );
-            editorUnavailable.add(module.id);
-            editorElementCache.delete(cacheKey);
-            container.innerHTML = NO_VISUAL_EDITOR_MESSAGE;
-          };
-          checkEditorRendered();
-
+          }
+          
           // Return early - setupEditorProperties will be called after timeout
           return;
 
@@ -824,28 +769,20 @@ export class UltraNativeCardModule extends BaseUltraModule {
 
       // CREATE PATH: Need to create new card element
       if (!cardElement) {
-        // HA lazily loads most of its cards. Creating the element before its class
-        // is registered yields an inert element that renders nothing and never
-        // upgrades cleanly, so wait for the definition and then try again.
-        if (!customElements.get(module.card_type)) {
-          ucNativeCardsService.ensureCardElementLoaded(module.card_type).then(loaded => {
-            if (loaded) {
-              setupCard(container);
-            } else {
-              container.innerHTML = `
-                <div style="padding: 16px; text-align: center; color: var(--error-color);">
-                  <ha-icon icon="mdi:alert-circle"></ha-icon>
-                  <p>Card not found: ${module.card_type}</p>
-                </div>
-              `;
-            }
-          });
-          return;
-        }
-
         try {
           // Create the native card element directly
           cardElement = document.createElement(module.card_type);
+
+          if (cardElement instanceof HTMLUnknownElement) {
+            container.innerHTML = `
+              <div style="padding: 16px; text-align: center; color: var(--error-color);">
+                <ha-icon icon="mdi:alert-circle"></ha-icon>
+                <p>Card not found: ${module.card_type}</p>
+              </div>
+            `;
+            return;
+          }
+
           cardElementCache.set(cacheKey, cardElement);
         } catch (error) {
           console.error('[UC Native Card] Failed to create card:', error);
@@ -1027,8 +964,6 @@ export function cleanupNativeCardCache(moduleId: string): void {
   // Clean up config change guards
   nativeConfigChangeGuard.delete(moduleId);
   nativeLastSentConfig.delete(moduleId);
-  editorUnavailable.delete(moduleId);
-  stubConfigRequests.delete(moduleId);
   
   // Clean up all context-specific preview cache entries
   const contexts: Array<'live' | 'ha-preview' | 'dashboard'> = ['live', 'ha-preview', 'dashboard'];
