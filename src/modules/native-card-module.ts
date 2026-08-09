@@ -23,6 +23,11 @@ const editorUnavailable = new Map<string, string>();
 // In-flight stub config lookups, keyed by module id, so a card is only asked once
 const stubConfigRequests = new Map<string, Promise<Record<string, any>>>();
 
+// Building an editor is async and the ref callback re-fires on every render, so
+// without this a re-render lands before the first build reaches the cache and
+// starts a duplicate. Keyed by editor cache key.
+const editorCreationInFlight = new Set<string>();
+
 /** True when an element actually painted something, ignoring injected styles. */
 function hasRenderedContent(element: HTMLElement): boolean {
   if (element.offsetHeight > 0 || element.offsetWidth > 0) return true;
@@ -414,6 +419,9 @@ export class UltraNativeCardModule extends BaseUltraModule {
       const editorNotMounted = editor && !container.contains(editor);
 
       if (needsNewEditor) {
+        if (editorCreationInFlight.has(cacheKey)) return;
+        editorCreationInFlight.add(cacheKey);
+
         // Use async IIFE to handle async editor loading
         (async () => {
           try {
@@ -681,7 +689,9 @@ export class UltraNativeCardModule extends BaseUltraModule {
           `;
           return;
         }
-        })(); // End of async IIFE
+        })().finally(() => {
+          editorCreationInFlight.delete(cacheKey);
+        }); // End of async IIFE
         return; // Return from setupEditor - async IIFE handles the rest
       } else if (editorNotMounted && editor) {
         // Editor exists in cache but was detached from DOM (tab switch) - re-mount it
@@ -1076,6 +1086,7 @@ export function cleanupNativeCardCache(moduleId: string): void {
   nativeLastSentConfig.delete(moduleId);
   editorUnavailable.delete(moduleId);
   stubConfigRequests.delete(moduleId);
+  editorCreationInFlight.delete(`${moduleId}-editor`);
   
   // Clean up all context-specific preview cache entries
   const contexts: Array<'live' | 'ha-preview' | 'dashboard'> = ['live', 'ha-preview', 'dashboard'];
