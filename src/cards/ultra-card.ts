@@ -932,14 +932,17 @@ export class UltraCard extends LitElement {
     // resolves async, after `_configCache` is already populated.
     const runtimeIds = this._getRuntimeEntityIds();
     if (entityIds.size === 0 && runtimeIds.size === 0) {
-      // No entity IDs collected from config fields or runtime modules — we
-      // cannot selectively filter which hass changes are relevant.  Allow the
-      // update so that entity-driven changes (action results, $variable-
-      // referenced entities, template-only cards) are rendered.  Template
-      // subscriptions also drive updates via 'ultra-card-template-update' →
-      // requestUpdate() (which bypasses this branch because changedProps
-      // won't contain 'hass').
-      return true;
+      // Nothing in this card reads an entity, so no hass tick can change what it
+      // renders. Every way a zero-entity card could still need a re-render is
+      // already handled before this point:
+      //   - an unresolved $variable sets _entityCollectionIncomplete, which feeds
+      //     requiresHassBroadUpdates above
+      //   - modules that scan the whole state machine, and time-based display
+      //     conditions, are caught by layoutRequiresBroadHassUpdates
+      //   - template subscriptions call requestUpdate() directly, so they never
+      //     reach shouldUpdate with 'hass' in changedProps
+      // Anything left is a purely decorative card re-rendering on every tick.
+      return false;
     }
     for (const id of entityIds) {
       const oldEntity = oldHass?.states?.[id];
