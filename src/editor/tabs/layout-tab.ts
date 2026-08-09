@@ -10599,6 +10599,18 @@ export class LayoutTab extends LitElement {
       const cardInfo = ucNativeCardsService.getNativeCardInfo(cardType);
       const cardName = cardInfo?.name || cardType;
 
+      // The card list is static while HA's actual card set varies by version, so
+      // confirm this build really has the card rather than adding a module that
+      // can only ever render "Card not found".
+      const available = await ucNativeCardsService.ensureCardElementLoaded(cardType);
+      if (!available) {
+        this._showToast(
+          `"${cardName}" is not available in this Home Assistant version.`,
+          'error'
+        );
+        return;
+      }
+
       // Start from the card's own stub config (like HA's card picker does) so the
       // card is immediately renderable - several HA cards and their editors throw
       // when their entity is missing.
