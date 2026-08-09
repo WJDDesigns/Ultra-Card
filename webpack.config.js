@@ -110,11 +110,13 @@ module.exports = (env, argv) => {
             from: path.resolve(__dirname, 'src/assets'),
             to: path.resolve(__dirname, 'dist/assets'),
             noErrorOnMissing: true,
+            globOptions: { ignore: ['**/.DS_Store'] },
           },
           {
             from: path.resolve(__dirname, 'src/assets'),
             to: path.resolve(__dirname, 'assets'),
             noErrorOnMissing: true,
+            globOptions: { ignore: ['**/.DS_Store'] },
           },
           // Copy individual assets to root for HACS serving
           {
@@ -259,9 +261,13 @@ module.exports = (env, argv) => {
       ...(process.env.ANALYZE ? [new BundleAnalyzerPlugin({ analyzerMode: 'static', openAnalyzer: false, reportFilename: 'bundle-report.html' })] : []),
     ],
     performance: {
+      // Matches the threshold in .github/workflows/ci.yml ("Bundle size check").
+      // The single-file HACS build is legitimately large (see docs/bundle-strategy.md),
+      // so a 2MB budget fired on every build and trained everyone to ignore it.
+      // Keep this in sync with CI so a warning means an actual regression.
       hints: isProduction ? 'warning' : false,
-      maxAssetSize: 2 * 1024 * 1024, // 2MB - catch bundle regressions
-      maxEntrypointSize: 2 * 1024 * 1024,
+      maxAssetSize: 16 * 1024 * 1024,
+      maxEntrypointSize: 16 * 1024 * 1024,
     },
     devServer: {
       static: {

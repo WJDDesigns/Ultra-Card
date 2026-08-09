@@ -368,6 +368,20 @@ export class UltraClockModule extends BaseUltraModule {
     );
   }
 
+  /**
+   * Stop the tick.
+   *
+   * The interval drives a re-render, so if it outlives the last clock on the
+   * page it keeps waking the card up (once a second when seconds are shown)
+   * to redraw nothing.
+   */
+  destroy(): void {
+    if (this._tickTimer) {
+      clearInterval(this._tickTimer);
+      this._tickTimer = null;
+    }
+  }
+
   override validate(module: CardModule): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     if (!module.id) errors.push('Module ID is required');

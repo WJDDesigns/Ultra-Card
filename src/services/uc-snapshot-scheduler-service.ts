@@ -7,11 +7,21 @@
  * @author WJD Designs
  */
 
-import { ucSnapshotService } from './uc-snapshot-service';
+import {
+  ucSnapshotService,
+  UC_SNAPSHOT_SETTINGS_CHANGED,
+  type SnapshotSettings,
+} from './uc-snapshot-service';
 import { ucCloudAuthService } from './uc-cloud-auth-service';
 
 const STORAGE_KEY_LAST_SNAPSHOT = 'ultra_card_last_auto_snapshot';
 const CHECK_INTERVAL = 60 * 1000; // Check every minute
+/**
+ * How long a fetched settings object is reused before hitting the cloud again.
+ * The schedule changes rarely, but the check runs every minute, so without this
+ * a single always-on dashboard makes 1,440 needless API calls a day.
+ */
+const SETTINGS_TTL = 15 * 60 * 1000;
 
 export interface SnapshotSchedulerStatus {
   enabled: boolean;
@@ -24,6 +34,10 @@ class UcSnapshotSchedulerService {
   private _checkInterval: number | null = null;
   private _isRunning = false;
   private _listeners: Set<(status: SnapshotSchedulerStatus) => void> = new Set();
+  private _cachedSettings: SnapshotSettings | null = null;
+  private _cachedSettingsAt = 0;
+  private _visibilityHandler: (() => void) | null = null;
+  private _settingsChangedHandler: (() => void) | null = null;
 
   constructor() {
     this._loadLastSnapshotTime();
@@ -46,6 +60,16 @@ class UcSnapshotSchedulerService {
       this._checkAndTriggerSnapshot();
     }, CHECK_INTERVAL);
 
+    // A hidden tab skips its checks, so catch up as soon as it is shown again.
+    // _shouldRunSnapshot is time-based, so a missed window still fires here.
+    this._visibilityHandler = () => {
+      if (!document.hidden) this._checkAndTriggerSnapshot();
+    };
+    document.addEventListener('visibilitychange', this._visibilityHandler);
+
+    this._settingsChangedHandler = () => this.invalidateSettingsCache();
+    window.addEventListener(UC_SNAPSHOT_SETTINGS_CHANGED, this._settingsChangedHandler);
+
     this._notifyListeners();
   }
 
@@ -53,11 +77,39 @@ class UcSnapshotSchedulerService {
    * Stop the auto-snapshot scheduler
    */
   stop(): void {
+    if (this._visibilityHandler) {
+      document.removeEventListener('visibilitychange', this._visibilityHandler);
+      this._visibilityHandler = null;
+    }
+    if (this._settingsChangedHandler) {
+      window.removeEventListener(UC_SNAPSHOT_SETTINGS_CHANGED, this._settingsChangedHandler);
+      this._settingsChangedHandler = null;
+    }
     if (this._checkInterval) {
       clearInterval(this._checkInterval);
       this._checkInterval = null;
       this._notifyListeners();
     }
+  }
+
+  /**
+   * Drop the cached schedule so the next check refetches it.
+   * Call after the user edits their snapshot settings.
+   */
+  invalidateSettingsCache(): void {
+    this._cachedSettings = null;
+    this._cachedSettingsAt = 0;
+  }
+
+  private async _getSettingsCached(): Promise<SnapshotSettings> {
+    const now = Date.now();
+    if (this._cachedSettings && now - this._cachedSettingsAt < SETTINGS_TTL) {
+      return this._cachedSettings;
+    }
+    const settings = await ucSnapshotService.getSettings();
+    this._cachedSettings = settings;
+    this._cachedSettingsAt = now;
+    return settings;
   }
 
   /**
@@ -69,6 +121,12 @@ class UcSnapshotSchedulerService {
       return;
     }
 
+    // A background tab has no reason to poll; the visibilitychange handler
+    // runs a catch-up check the moment it is foregrounded again.
+    if (typeof document !== 'undefined' && document.hidden) {
+      return;
+    }
+
     // Check if user is authenticated and Pro (integration or card auth)
     const user = ucCloudAuthService.getCurrentUser();
     if (!user || user.subscription?.tier !== 'pro') {
@@ -77,7 +135,7 @@ class UcSnapshotSchedulerService {
 
     try {
       // Get user settings
-      const settings = await ucSnapshotService.getSettings();
+      const settings = await this._getSettingsCached();
 
       if (!settings.enabled) {
         return;

@@ -7,6 +7,7 @@ import type { HomeAssistant } from 'custom-card-helpers';
 import { ucCloudAuthService, CloudUser } from '../../services/uc-cloud-auth-service';
 import { ucCloudSyncService, SyncStatus } from '../../services/uc-cloud-sync-service';
 import { dispatchHubNavigate } from '../hub-navigation';
+import { copyTextToClipboard } from '../../utils/uc-clipboard';
 
 @customElement('hub-variables-tab')
 export class HubVariablesTab extends LitElement {
@@ -651,13 +652,11 @@ export class HubVariablesTab extends LitElement {
     this._toastTimer = setTimeout(() => (this._toastMsg = ''), 2000);
   }
 
-  private _copyVarRef(name: string): void {
-    try {
-      navigator.clipboard.writeText(`$${name}`);
-      this._showToast(`Copied $${name}`);
-    } catch {
-      /* ignore */
-    }
+  private async _copyVarRef(name: string): Promise<void> {
+    const copied = await copyTextToClipboard(`$${name}`);
+    this._showToast(
+      copied ? `Copied $${name}` : 'Could not copy — your browser blocked clipboard access'
+    );
   }
 
   private _addVariable(): void {

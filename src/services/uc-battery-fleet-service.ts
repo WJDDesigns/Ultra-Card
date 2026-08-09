@@ -6,6 +6,9 @@ import {
   type HistoryStatePoint,
   type NumericPoint,
 } from './uc-history-service';
+import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
+
+const fleetDevicesMemo = new UcStatesMemo<BatteryDevice[]>();
 
 /**
  * Battery Fleet — discovery + drain analysis.
@@ -367,13 +370,38 @@ function detectCharging(
  * auto-discovered entities only — a manually listed entity is an explicit
  * choice and is never silently dropped.
  */
+/**
+ * Scans the whole state machine twice (charging index, then discovery) and is
+ * called from both the render path and the editor, so results are cached per
+ * hass tick. Area filtering reads the entity, device and area registries, which
+ * HA replaces independently of `states`, so those are cache dependencies too.
+ */
 export function discoverDevices(
   hass: HomeAssistant | undefined | null,
   config: BatteryFleetDiscoveryConfig | undefined
 ): BatteryDevice[] {
   const states = hass?.states;
-  if (!states) return [];
+  if (!states || !hass) return [];
 
+  const registries = hass as unknown as {
+    entities?: unknown;
+    devices?: unknown;
+    areas?: unknown;
+  };
+  const signature = statesMemoKey(config);
+  return fleetDevicesMemo.read(
+    signature,
+    [states, registries.entities, registries.devices, registries.areas],
+    signature,
+    () => computeDevices(hass, config)
+  );
+}
+
+function computeDevices(
+  hass: HomeAssistant,
+  config: BatteryFleetDiscoveryConfig | undefined
+): BatteryDevice[] {
+  const states = hass.states;
   const mode = config?.discovery_mode || 'auto';
   const reg = buildRegistry(hass);
   const chargingIndex = buildChargingIndex(states, reg);

@@ -236,6 +236,7 @@ export class UcActionConfirmationService {
         return `Navigate to ${action.navigation_path || 'unknown path'}`;
       case 'url':
         return `Open URL: ${action.url_path || 'unknown URL'}`;
+      case 'call-service': // legacy spelling of 'perform-action'
       case 'perform-action':
         const service = action.service || action.perform_action || 'unknown service';
         return `Execute service: ${service}${action.entity ? ` on ${action.entity}` : ''}`;

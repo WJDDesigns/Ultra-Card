@@ -1,4 +1,4 @@
-import { LitElement, html, css, TemplateResult } from 'lit';
+import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { UltraCardConfig, HoverEffectConfig, CustomVariable, DeviceBreakpoint } from '../types';
@@ -99,8 +99,11 @@ export class UltraCardEditor extends LitElement {
   /** Hub sidebar discovery banner dismissed (persisted in localStorage) */
   @state() private _hubBannerDismissed = false;
 
-  /** Ultra Card Connect flow handler available (files on disk, not yet configured). null = not yet checked */
-  @state() private _connectHandlerAvailable: boolean | null = null;
+  /**
+   * Ultra Card Connect flow handler available (files on disk, not yet configured).
+   * null = not yet checked, 'unknown' = HA's flow-handlers endpoint could not be read.
+   */
+  @state() private _connectHandlerAvailable: boolean | 'unknown' | null = null;
 
   /** (unused — kept for reference; activation now uses HA native navigation) */
   @state() private _connectActivating = false;
@@ -236,7 +239,7 @@ export class UltraCardEditor extends LitElement {
 
       // If integration is authenticated, register in auth service so isAuthenticated() works
       if (integrationUser) {
-        ucCloudAuthService.setIntegrationUser(integrationUser);
+        ucCloudAuthService.setIntegrationUser(integrationUser, this.hass);
         this._cloudUser = integrationUser;
       } else if (!this._cloudUser) {
         // hass arrived but sensor not connected yet — clear any stale user
@@ -264,9 +267,16 @@ export class UltraCardEditor extends LitElement {
   }
 
   private async _checkConnectHandlerAvailable(): Promise<void> {
-    if (!this.hass?.callApi) return;
+    if (!this.hass?.callApi) {
+      this._connectHandlerAvailable = 'unknown';
+      return;
+    }
     const domain = 'ultra_card_pro_cloud';
     try {
+      // config/config_entries/flow_handlers is an internal, unversioned HA
+      // endpoint. Treat a failure as "cannot tell" rather than "not installed",
+      // so an HA change degrades the banner's wording instead of telling users
+      // with Connect already on disk to go and install it again.
       const raw = await (this.hass as any).callApi(
         'GET',
         'config/config_entries/flow_handlers'
@@ -283,8 +293,12 @@ export class UltraCardEditor extends LitElement {
         available = domain in (raw as Record<string, unknown>);
       }
       this._connectHandlerAvailable = available;
-    } catch {
-      this._connectHandlerAvailable = false;
+    } catch (error) {
+      console.warn(
+        '[UltraCard] Could not read HA flow handlers; Connect install state is unknown.',
+        error
+      );
+      this._connectHandlerAvailable = 'unknown';
     }
   }
 
@@ -584,12 +598,33 @@ export class UltraCardEditor extends LitElement {
 
   private _renderHubDiscoveryBanner(): TemplateResult {
     const canActivate = this._connectHandlerAvailable === true;
+    const installStateUnknown = this._connectHandlerAvailable === 'unknown';
 
     return html`
       <div class="hub-discovery-banner">
         <div class="hub-discovery-content">
           <ha-icon icon="mdi:power-plug" class="banner-pulse-icon"></ha-icon>
-          ${canActivate
+          ${installStateUnknown
+            ? html`
+                <div class="hub-discovery-activate-block">
+                  <span>
+                    <strong>Ultra Card Connect</strong> manages favorites, presets, colors, variables and more. If you have already installed it, open Settings → Integrations and add <strong>Ultra Card Connect</strong>. Otherwise
+                    <a
+                      href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-connect&category=integration"
+                      target="_blank"
+                      rel="noopener"
+                      class="hub-discovery-link"
+                    >install it via HACS</a> first.
+                  </span>
+                  <div class="hub-discovery-actions">
+                    <button
+                      class="hub-discovery-activate"
+                      @click=${this._activateConnectSidebar}
+                    >Open Settings → Integrations</button>
+                  </div>
+                </div>
+              `
+            : canActivate
             ? html`
                 <div class="hub-discovery-activate-block">
                   <span>
@@ -4735,7 +4770,7 @@ export class UltraCardEditor extends LitElement {
     // No localStorage fallback — credentials live in HA config entries.
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
     if (integrationUser) {
-      ucCloudAuthService.setIntegrationUser(integrationUser);
+      ucCloudAuthService.setIntegrationUser(integrationUser, this.hass);
       this._cloudUser = integrationUser;
     }
 
@@ -4764,7 +4799,7 @@ export class UltraCardEditor extends LitElement {
     // Auth listener: re-read integration sensor whenever auth service emits
     this._authListener = (user: CloudUser | null) => {
       const iUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-      if (iUser) ucCloudAuthService.setIntegrationUser(iUser);
+      if (iUser) ucCloudAuthService.setIntegrationUser(iUser, this.hass);
       this._cloudUser = iUser || user;
       this.requestUpdate();
     };

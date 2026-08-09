@@ -5,6 +5,7 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { AlertCenterModule, CardModule, UltraCardConfig } from '../types';
 import type { TapActionConfig } from '../components/ultra-link';
 import { localize } from '../localize/localize';
+import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
 import '../components/ultra-color-picker';
 
 type AlertSeverity = 'critical' | 'warning' | 'info';
@@ -20,6 +21,8 @@ interface AlertRow {
 
 export class UltraAlertCenterModule extends BaseUltraModule {
   override handlesOwnDesignStyles = true;
+
+  private _alertsMemo = new UcStatesMemo<AlertRow[]>();
 
   metadata: ModuleMetadata = {
     type: 'alert_center',
@@ -202,7 +205,17 @@ export class UltraAlertCenterModule extends BaseUltraModule {
     return 'mdi:information-outline';
   }
 
+  /**
+   * Scans the whole state machine to keep at most `max_alerts` rows, so the
+   * result is cached per hass tick rather than recomputed on every render.
+   */
   private collectAlerts(hass: HomeAssistant, m: AlertCenterModule): AlertRow[] {
+    return this._alertsMemo.read(m.id, [hass.states], statesMemoKey(m), () =>
+      this._computeAlerts(hass, m)
+    );
+  }
+
+  private _computeAlerts(hass: HomeAssistant, m: AlertCenterModule): AlertRow[] {
     const hidden = new Set((m.hidden_entities || []).map(x => x.trim()).filter(Boolean));
     const manual = (m.include_entities || []).map(x => x.trim()).filter(Boolean);
     const seen = new Set<string>();

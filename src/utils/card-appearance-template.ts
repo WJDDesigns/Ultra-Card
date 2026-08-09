@@ -153,6 +153,32 @@ function readInlineTemplateValue(
 }
 
 /**
+ * Signature of every config value that affects which card appearance template
+ * subscriptions exist.
+ *
+ * Callers compare this across config changes to decide whether to tear down and
+ * re-register. Editing an unrelated field (dragging a slider in the editor
+ * fires config changes continuously) otherwise produces a burst of websocket
+ * unsubscribe/subscribe pairs for templates that did not change.
+ *
+ * Keep in sync with registerCardAppearanceTemplateSubscriptions below.
+ */
+export function getCardAppearanceTemplateSignature(
+  config: UltraCardConfig | undefined
+): string {
+  if (!config) return '';
+  const parts: string[] = [
+    getCardInstanceScope(config),
+    config.card_unified_template_mode ? '1' : '0',
+    config.card_unified_template ?? '',
+  ];
+  for (const field of CARD_INLINE_TEMPLATE_FIELDS) {
+    parts.push(String(config[field] ?? ''));
+  }
+  return parts.join('\u0000');
+}
+
+/**
  * Register card-level unified and inline field template subscriptions.
  */
 export function registerCardAppearanceTemplateSubscriptions(

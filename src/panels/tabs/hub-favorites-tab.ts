@@ -6,6 +6,7 @@ import { panelStyles } from '../panel-styles';
 import { ucCloudAuthService, CloudUser } from '../../services/uc-cloud-auth-service';
 import { ucCloudSyncService, SyncStatus } from '../../services/uc-cloud-sync-service';
 import { dispatchHubNavigate } from '../hub-navigation';
+import { copyTextToClipboard } from '../../utils/uc-clipboard';
 
 @customElement('hub-favorites-tab')
 export class HubFavoritesTab extends LitElement {
@@ -358,13 +359,13 @@ export class HubFavoritesTab extends LitElement {
     this._toastTimer = setTimeout(() => (this._toastMsg = ''), 2000);
   }
 
-  private _copyRowConfig(fav: FavoriteRow): void {
-    try {
-      navigator.clipboard.writeText(JSON.stringify(fav.row));
-      this._showToast(`Copied "${fav.name}"`);
-    } catch {
-      /* ignore */
-    }
+  private async _copyRowConfig(fav: FavoriteRow): Promise<void> {
+    const copied = await copyTextToClipboard(JSON.stringify(fav.row, null, 2));
+    this._showToast(
+      copied
+        ? `Copied "${fav.name}"`
+        : 'Could not copy — your browser blocked clipboard access'
+    );
   }
 
   private _removeFavorite(fav: FavoriteRow): void {
@@ -538,9 +539,6 @@ export class HubFavoritesTab extends LitElement {
             <p class="fav-subtitle">${colCount} column${colCount !== 1 ? 's' : ''}</p>
           </div>
           <div class="fav-actions">
-            <button class="action-btn" title="Copy config" @click=${() => this._copyRowConfig(fav)}>
-              <ha-icon icon="mdi:content-copy"></ha-icon>
-            </button>
             <button class="action-btn delete" title="Remove" @click=${() => this._removeFavorite(fav)}>
               <ha-icon icon="mdi:delete-outline"></ha-icon>
             </button>

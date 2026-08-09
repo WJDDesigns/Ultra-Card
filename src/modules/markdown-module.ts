@@ -717,7 +717,10 @@ All standard markdown features are automatically enabled!`,
         return sanitizeMarkdownHtml(html, !!markdownModule.enable_html);
       } catch (error) {
         console.warn('Ultra Card: Failed to process markdown:', error);
-        return processedContent; // Fallback to original content
+        // The result is assigned via .innerHTML, so the fallback must be sanitized
+        // too. Input that makes marked throw is exactly the input most likely to
+        // be hostile, so returning it raw would be a sanitizer bypass.
+        return sanitizeMarkdownHtml(processedContent, !!markdownModule.enable_html);
       }
     };
 

@@ -14,6 +14,7 @@ import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { localize } from '../localize/localize';
 import { autoMigrateCardModule } from '../utils/template-migration';
+import { UcStatesMemo } from '../utils/uc-states-memo';
 
 import '../components/ultra-template-editor';
 import '../components/ultra-color-picker';
@@ -276,7 +277,41 @@ export class UltraDynamicListModule extends BaseUltraModule {
   // Action source: cache & debounce timer per module id
   private _actionCache: Map<string, unknown> = new Map();
   private _actionFetching: Set<string> = new Set();
-  private _actionTimers: Map<string, ReturnType<typeof setInterval>> = new Map();
+  // Interval is retained alongside the handle so a changed refresh_interval
+  // replaces the timer instead of leaving the old cadence running.
+  private _actionTimers: Map<string, { timer: ReturnType<typeof setInterval>; intervalSec: number }> =
+    new Map();
+  /** state_changed subscriptions for action watch_entities, keyed by cache key. */
+  private _actionWatchUnsubs: Map<string, () => void> = new Map();
+  /** Serialised watch_entities per cache key, so the subscription can be rebuilt on change. */
+  private _actionWatchKeys: Map<string, string> = new Map();
+  private _firstTodoMemo = new UcStatesMemo<string | undefined>();
+
+  /** First `todo.*` entity, backing the "Default (first available)" option. Cached per hass tick. */
+  private _firstTodoEntity(hass: HomeAssistant): string | undefined {
+    if (!hass?.states) return undefined;
+    return this._firstTodoMemo.read('first', [hass.states], '', () =>
+      Object.keys(hass.states).find(id => id.startsWith('todo.'))
+    );
+  }
+
+  /**
+   * Clear every interval and event subscription this module owns.
+   *
+   * Without this, a dynamic list configured with an action refresh keeps
+   * calling the service on its interval after the card is gone.
+   */
+  destroy(): void {
+    for (const { timer } of this._actionTimers.values()) clearInterval(timer);
+    this._actionTimers.clear();
+    for (const unsub of this._actionWatchUnsubs.values()) {
+      try { unsub(); } catch { /* connection already closed */ }
+    }
+    this._actionWatchUnsubs.clear();
+    this._actionWatchKeys.clear();
+    this._actionCache.clear();
+    this._actionFetching.clear();
+  }
 
   private _hashString(str: string): string {
     let hash = 0;
@@ -1757,9 +1792,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
 
     // ─── Todo list source ───────────────────────────────────────────────────
     if (sourceType === 'todo') {
-      const firstTodoEntity =
-        hass.states &&
-        Object.keys(hass.states).find((id) => id.startsWith('todo.'));
+      const firstTodoEntity = this._firstTodoEntity(hass);
       const resolve = (e: string) => (e?.trim() || firstTodoEntity || '').trim();
       const primaryEntity = resolve(dynModule.todo_entity ?? '');
       const extraEntities = (dynModule.todo_entities || [])
@@ -1854,8 +1887,7 @@ export class UltraDynamicListModule extends BaseUltraModule {
       );
     } else if (sourceType === 'todo-template') {
       // ─── Todo-template source: fetch items then run a Jinja2 template ─────────
-      const firstTodoEntity =
-        hass.states && Object.keys(hass.states).find((id) => id.startsWith('todo.'));
+      const firstTodoEntity = this._firstTodoEntity(hass);
       const resolve = (e: string) => (e?.trim() || firstTodoEntity || '').trim();
       const primaryEntity = resolve(dynModule.todo_entity ?? '');
       const extraEntities = (dynModule.todo_entities || [])
@@ -2015,21 +2047,43 @@ export class UltraDynamicListModule extends BaseUltraModule {
           </div>`;
       }
 
-      // Set up watch entity subscriptions (once per module instance)
-      const watchKey = `__uvc_action_watch_${dynModule.id}`;
-      if (!(window as any)[watchKey] && (actCfg.watch_entities?.length ?? 0) > 0) {
-        (window as any)[watchKey] = true;
-        const connection = (hass as any).connection;
-        connection?.subscribeEvents?.((ev: { data: { entity_id: string } }) => {
-          if (actCfg.watch_entities?.includes(ev?.data?.entity_id)) fetchAction();
-        }, 'state_changed').catch(() => {});
+      // Watch entity subscription. Keyed on the entity list so editing it
+      // rebuilds the subscription; the unsubscribe is retained so deleting the
+      // module actually stops the listener.
+      const watchEntities = actCfg.watch_entities ?? [];
+      const watchSignature = watchEntities.join(',');
+      if (this._actionWatchKeys.get(cacheKey) !== watchSignature) {
+        this._actionWatchUnsubs.get(cacheKey)?.();
+        this._actionWatchUnsubs.delete(cacheKey);
+        this._actionWatchKeys.set(cacheKey, watchSignature);
+        if (watchEntities.length > 0) {
+          const connection = (hass as any).connection;
+          connection
+            ?.subscribeEvents?.((ev: { data: { entity_id: string } }) => {
+              if (watchEntities.includes(ev?.data?.entity_id)) fetchAction();
+            }, 'state_changed')
+            .then((unsub: () => void) => {
+              // The module may have been torn down while this was in flight.
+              if (this._actionWatchKeys.get(cacheKey) === watchSignature) {
+                this._actionWatchUnsubs.set(cacheKey, unsub);
+              } else {
+                unsub();
+              }
+            })
+            .catch(() => {});
+        }
       }
 
-      // Set up periodic refresh (once per module instance)
+      // Periodic refresh. Rebuilt when the configured interval changes.
       const interval = actCfg.refresh_interval ?? 0;
+      const existingTimer = this._actionTimers.get(cacheKey);
+      if (existingTimer && existingTimer.intervalSec !== interval) {
+        clearInterval(existingTimer.timer);
+        this._actionTimers.delete(cacheKey);
+      }
       if (interval > 0 && !this._actionTimers.has(cacheKey)) {
         const timer = setInterval(fetchAction, interval * 1000);
-        this._actionTimers.set(cacheKey, timer);
+        this._actionTimers.set(cacheKey, { timer, intervalSec: interval });
       }
 
       // Serialise response and inject as Jinja2 variable

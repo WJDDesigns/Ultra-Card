@@ -6,6 +6,7 @@ import { panelStyles } from '../panel-styles';
 import { ucCloudAuthService, CloudUser } from '../../services/uc-cloud-auth-service';
 import { ucCloudSyncService, SyncStatus } from '../../services/uc-cloud-sync-service';
 import { dispatchHubNavigate } from '../hub-navigation';
+import { copyTextToClipboard } from '../../utils/uc-clipboard';
 
 @customElement('hub-colors-tab')
 export class HubColorsTab extends LitElement {
@@ -529,13 +530,11 @@ export class HubColorsTab extends LitElement {
     this._toastTimer = setTimeout(() => (this._toastMsg = ''), 2000);
   }
 
-  private _copyColor(color: string): void {
-    try {
-      navigator.clipboard.writeText(color);
-      this._showToast(`Copied ${color}`);
-    } catch {
-      /* ignore */
-    }
+  private async _copyColor(color: string): Promise<void> {
+    const copied = await copyTextToClipboard(color);
+    this._showToast(
+      copied ? `Copied ${color}` : 'Could not copy — your browser blocked clipboard access'
+    );
   }
 
   private _deleteColor(fav: FavoriteColor): void {

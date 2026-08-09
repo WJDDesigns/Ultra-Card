@@ -17,8 +17,12 @@ export class EntityIconService {
   static getEntityIcon(entityId: string | any, hass: HomeAssistant): string | null {
     // Handle case where entityState is passed instead of entityId
     if (typeof entityId === 'object' && entityId !== null && !Array.isArray(entityId)) {
-      // This is likely an entity state object, try to find the entity ID from hass
-      if (hass?.states) {
+      // HA state objects carry their own entity_id, so prefer that over walking
+      // the whole state machine looking for a matching object reference.
+      const ownId = (entityId as { entity_id?: unknown }).entity_id;
+      if (typeof ownId === 'string' && ownId) {
+        entityId = ownId;
+      } else if (hass?.states) {
         for (const [id, state] of Object.entries(hass.states)) {
           if (state === entityId) {
             entityId = id;

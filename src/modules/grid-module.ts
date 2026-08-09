@@ -21,6 +21,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent, TapActionConfig } from '../components/ultra-link';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
+import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
 import '../components/ultra-color-picker';
 
 // Grid style preset configurations
@@ -355,6 +356,8 @@ function getStyleConfig(styleId: GridStylePreset): GridStyleConfig {
 }
 
 export class UltraGridModule extends BaseUltraModule {
+  private _autoFilterMemo = new UcStatesMemo<string[]>();
+
   metadata: ModuleMetadata = {
     type: 'grid',
     title: 'Grid',
@@ -517,54 +520,59 @@ export class UltraGridModule extends BaseUltraModule {
     return Array.from(domains).sort();
   }
 
+  /**
+   * Auto-filter walks every entity in the state machine, so the id list is
+   * cached per hass tick. Display conditions stay outside the cache because
+   * they are re-evaluated live in getFilteredEntities.
+   */
+  private getAutoFilteredIds(module: GridModule, hass: HomeAssistant): string[] {
+    return this._autoFilterMemo.read(module.id, [hass.states], statesMemoKey(module), () => {
+      let filtered = Object.keys(hass.states);
+
+      if (module.include_domains && module.include_domains.length > 0) {
+        filtered = filtered.filter(entityId =>
+          module.include_domains!.includes(entityId.split('.')[0])
+        );
+      }
+
+      // entity_id must contain at least one keyword
+      if (module.include_keywords && module.include_keywords.length > 0) {
+        const keywords = module.include_keywords.map(k => k.toLowerCase());
+        filtered = filtered.filter(entityId => {
+          const lowerEntityId = entityId.toLowerCase();
+          return keywords.some(keyword => lowerEntityId.includes(keyword));
+        });
+      }
+
+      if (module.exclude_domains && module.exclude_domains.length > 0) {
+        filtered = filtered.filter(
+          entityId => !module.exclude_domains!.includes(entityId.split('.')[0])
+        );
+      }
+
+      // entity_id must NOT contain any of these keywords
+      if (module.exclude_keywords && module.exclude_keywords.length > 0) {
+        const keywords = module.exclude_keywords.map(k => k.toLowerCase());
+        filtered = filtered.filter(entityId => {
+          const lowerEntityId = entityId.toLowerCase();
+          return !keywords.some(keyword => lowerEntityId.includes(keyword));
+        });
+      }
+
+      if (module.exclude_entities && module.exclude_entities.length > 0) {
+        filtered = filtered.filter(id => !module.exclude_entities!.includes(id));
+      }
+
+      return filtered;
+    });
+  }
+
   // Get filtered entities based on domain and keyword filters
   private getFilteredEntities(module: GridModule, hass: HomeAssistant): GridEntity[] {
     let entities: GridEntity[] = [...(module.entities || [])];
 
     if (module.enable_auto_filter && hass?.states) {
-      const allEntityIds = Object.keys(hass.states);
-
-      // Filter by included domains
-      let filtered = allEntityIds;
-      if (module.include_domains && module.include_domains.length > 0) {
-        filtered = allEntityIds.filter(entityId => {
-          const domain = entityId.split('.')[0];
-          return module.include_domains!.includes(domain);
-        });
-      }
-
-      // Filter by included keywords (entity_id must contain at least one keyword)
-      if (module.include_keywords && module.include_keywords.length > 0) {
-        filtered = filtered.filter(entityId => {
-          const lowerEntityId = entityId.toLowerCase();
-          return module.include_keywords!.some(keyword => 
-            lowerEntityId.includes(keyword.toLowerCase())
-          );
-        });
-      }
-
-      // Exclude specific domains
-      if (module.exclude_domains && module.exclude_domains.length > 0) {
-        filtered = filtered.filter(entityId => {
-          const domain = entityId.split('.')[0];
-          return !module.exclude_domains!.includes(domain);
-        });
-      }
-
-      // Exclude by keywords (entity_id must NOT contain any of these keywords)
-      if (module.exclude_keywords && module.exclude_keywords.length > 0) {
-        filtered = filtered.filter(entityId => {
-          const lowerEntityId = entityId.toLowerCase();
-          return !module.exclude_keywords!.some(keyword => 
-            lowerEntityId.includes(keyword.toLowerCase())
-          );
-        });
-      }
-
-      // Exclude specific entities
-      if (module.exclude_entities && module.exclude_entities.length > 0) {
-        filtered = filtered.filter(id => !module.exclude_entities!.includes(id));
-      }
+      const filtered = this.getAutoFilteredIds(module, hass);
 
       // Convert to GridEntity objects (only add new ones not already in manual list)
       const manualEntityIds = new Set(entities.map(e => e.entity));

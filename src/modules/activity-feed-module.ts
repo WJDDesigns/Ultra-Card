@@ -11,6 +11,7 @@ import { UcFormUtils } from '../utils/uc-form-utils';
 import { localize } from '../localize/localize';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
 import '../components/ultra-color-picker';
 
 interface FeedEvent {
@@ -28,6 +29,8 @@ interface FeedEvent {
 }
 
 export class UltraActivityFeedModule extends BaseUltraModule {
+  private _autoFilterMemo = new UcStatesMemo<string[]>();
+
   metadata: ModuleMetadata = {
     type: 'activity_feed',
     title: 'Activity Feed',
@@ -905,6 +908,32 @@ export class UltraActivityFeedModule extends BaseUltraModule {
     `;
   }
 
+  /**
+   * The domain/pattern filter walks every entity in the state machine, so it is
+   * cached per hass tick. Only the id list is cached — the events themselves
+   * carry relative timestamps and must stay live on every render.
+   */
+  private _autoFilteredIds(feedModule: ActivityFeedModule, hass: HomeAssistant): string[] {
+    return this._autoFilterMemo.read(feedModule.id, [hass.states], statesMemoKey(feedModule), () => {
+      const includeDomains = feedModule.include_domains || [];
+      const excludeDomains = feedModule.exclude_domains || [];
+      const excludePatterns = (feedModule.exclude_patterns || []).map(p => p.toLowerCase());
+      const matched: string[] = [];
+
+      for (const entityId of Object.keys(hass.states)) {
+        const domain = entityId.split('.')[0];
+
+        if (includeDomains.length > 0 && !includeDomains.includes(domain)) continue;
+        if (excludeDomains.includes(domain)) continue;
+        if (excludePatterns.some(p => entityId.toLowerCase().includes(p))) continue;
+
+        matched.push(entityId);
+      }
+
+      return matched;
+    });
+  }
+
   private _buildEvents(
     feedModule: ActivityFeedModule,
     hass: HomeAssistant
@@ -918,18 +947,7 @@ export class UltraActivityFeedModule extends BaseUltraModule {
 
     // Auto-filtered entities
     if (feedModule.enable_auto_filter) {
-      const includeDomains = feedModule.include_domains || [];
-      const excludeDomains = feedModule.exclude_domains || [];
-      const excludePatterns = feedModule.exclude_patterns || [];
-
-      for (const entityId of Object.keys(hass.states)) {
-        const domain = entityId.split('.')[0];
-
-        if (includeDomains.length > 0 && !includeDomains.includes(domain)) continue;
-        if (excludeDomains.includes(domain)) continue;
-        if (excludePatterns.some(p => entityId.toLowerCase().includes(p.toLowerCase())))
-          continue;
-
+      for (const entityId of this._autoFilteredIds(feedModule, hass)) {
         entityIds.add(entityId);
       }
     }

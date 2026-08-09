@@ -29,6 +29,7 @@ export interface TapActionConfig {
     | 'navigate'
     | 'url'
     | 'perform-action'
+    | 'call-service' // Legacy/alternative for 'perform-action'
     | 'assist'
     | 'nothing'
     | 'none'; // Legacy/alternative for 'nothing'
@@ -454,6 +455,7 @@ export class UltraLinkComponent {
           </div>
         `;
 
+      case 'call-service':
       case 'perform-action':
         return html`
           <div style="margin-top: 16px;">
@@ -1079,6 +1081,7 @@ export class UltraLinkComponent {
           forwardHaptic('selection'); // Selection is actively changing
           break;
         case 'perform-action':
+        case 'call-service':
         case 'assist':
           forwardHaptic('medium'); // Physical metaphor for performing actions
           break;
@@ -1150,6 +1153,10 @@ export class UltraLinkComponent {
         }
         break;
 
+      // 'call-service' is the pre-2024.8 spelling of 'perform-action'. Home Assistant's
+      // own handleAction still honours it, so configs and community presets written
+      // against the old name must keep working rather than silently doing nothing.
+      case 'call-service':
       case 'perform-action':
         if (serviceToCall) {
           const [domain, service] = serviceToCall.split('.');

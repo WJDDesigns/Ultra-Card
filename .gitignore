@@ -1,5 +1,10 @@
 # dependencies
 /node_modules
+# A stray `npm install` inside src/ once vendored a second dependency tree here.
+# Because Node resolves upward from the importing file, it shadowed the root
+# install (src/ built against its own Lit, not the one in package-lock.json).
+# Unanchored so it can never come back at any depth.
+node_modules/
 
 # build
 /dist/*

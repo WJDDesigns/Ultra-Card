@@ -303,19 +303,16 @@ class UcCloudSyncService {
         this._notifyListeners();
         console.log(`✅ Variables sync completed: ${result.synced} variables`);
       } else {
-        // Non-fatal: endpoint may not exist yet; mark as synced locally
-        result.success = true;
-        this._syncStatus.lastVariablesSync = new Date();
-        this._saveSyncStatus();
-        this._notifyListeners();
+        // Deliberately does NOT advance lastVariablesSync. Reporting success and
+        // bumping the timestamp hid every failure and made the next run skip
+        // work that never actually happened.
+        result.errors.push(`Variables sync failed: ${response.status} ${response.statusText}`);
+        console.warn(`❌ Variables sync failed: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
-      console.warn('Variables sync skipped:', error instanceof Error ? error.message : error);
-      // Graceful fallback: treat as success so UI doesn't alarm users
-      result.success = true;
-      this._syncStatus.lastVariablesSync = new Date();
-      this._saveSyncStatus();
-      this._notifyListeners();
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.warn('❌ Variables sync failed:', message);
+      result.errors.push(message);
     }
 
     return result;
@@ -521,8 +518,8 @@ class UcCloudSyncService {
   }
 
   private async _downloadFavorites(favorites: CloudFavorite[]): Promise<any[]> {
-    // Convert cloud favorites to local format and save
-    const localFavorites = favorites.map(cf => {
+    // Convert cloud favorites to local format
+    const downloaded = favorites.map(cf => {
       let row: unknown = null;
       try { row = cf.row_data ? JSON.parse(cf.row_data) : null; } catch { row = null; }
       return {
@@ -535,10 +532,40 @@ class UcCloudSyncService {
       };
     });
 
-    // Update local storage
-    safeSetItem('ultra-card-favorites', JSON.stringify(localFavorites));
+    if (downloaded.length === 0) return [];
 
-    return localFavorites;
+    // Upsert into the existing local store. This receives only the subset that
+    // needs downloading, so writing it directly would delete every favorite the
+    // user has that the remote did not send back.
+    const existing = this._getLocalFavorites();
+    const byId = new Map<string, any>(
+      existing.filter(f => f && typeof f.id === 'string').map(f => [f.id as string, f])
+    );
+    for (const fav of downloaded) {
+      byId.set(fav.id, { ...byId.get(fav.id), ...fav });
+    }
+    const merged = Array.from(byId.values());
+
+    // A merge can only ever grow or hold the local set. If it somehow shrank,
+    // the input was malformed - keep local rather than destroying user data.
+    if (merged.length < existing.length) {
+      console.error(
+        '[UltraCard] Favorites merge would drop entries; keeping local store untouched.'
+      );
+      return [];
+    }
+
+    safeSetItem('ultra-card-favorites', JSON.stringify(merged));
+
+    // ucFavoritesService caches favorites in memory and only reloads on this
+    // event (the `storage` event does not fire for same-tab writes).
+    try {
+      window.dispatchEvent(new CustomEvent('ultra-card-favorites-changed'));
+    } catch {
+      /* non-browser context */
+    }
+
+    return downloaded;
   }
 
   private async _mergeFavorites(

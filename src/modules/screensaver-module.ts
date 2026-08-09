@@ -91,6 +91,8 @@ export class UltraScreensaverModule extends BaseUltraModule {
   private _slideIndex = 0;
   private _now = new Date();
   private _initialized = false;
+  /** Retained so the activity listeners can actually be removed in destroy(). */
+  private _resetHandler: (() => void) | null = null;
   private _currentModule: ScreensaverModuleConfig | null = null;
   private _currentHass: HomeAssistant | null = null;
   private _currentConfig: UltraCardConfig | undefined = undefined;
@@ -189,6 +191,7 @@ export class UltraScreensaverModule extends BaseUltraModule {
     this._lastManualDismissAt = Date.now();
     this._destroyPortal();
     this._stopSlideshow();
+    this._stopClockTick();
     const timeout = Math.max(10, this._currentModule?.idle_timeout ?? 60);
     this._resetIdleTimer(timeout);
     this.triggerPreviewUpdate(true);
@@ -200,6 +203,7 @@ export class UltraScreensaverModule extends BaseUltraModule {
     this._active = false;
     this._destroyPortal();
     this._stopSlideshow();
+    this._stopClockTick();
     this.triggerPreviewUpdate(true);
   }
 
@@ -209,6 +213,10 @@ export class UltraScreensaverModule extends BaseUltraModule {
       this._now = new Date();
       if (this._active) this._updatePortal();
     }, 1000);
+  }
+
+  private _stopClockTick(): void {
+    if (this._clockTimer) { clearInterval(this._clockTimer); this._clockTimer = null; }
   }
 
   private _startSlideshow(): void {
@@ -226,18 +234,46 @@ export class UltraScreensaverModule extends BaseUltraModule {
     if (this._slideshowTimer) { clearInterval(this._slideshowTimer); this._slideshowTimer = null; }
   }
 
+  private static readonly ACTIVITY_EVENTS = [
+    'pointermove',
+    'pointerdown',
+    'keydown',
+    'touchstart',
+  ] as const;
+
   private _initListeners(timeoutSec: number): void {
     if (this._initialized) return;
     this._initialized = true;
-    const reset = () => {
+    this._resetHandler = () => {
       if (!this._active) this._resetIdleTimer(timeoutSec);
     };
-    document.addEventListener('pointermove', reset, { passive: true });
-    document.addEventListener('pointerdown', reset, { passive: true });
-    document.addEventListener('keydown',     reset, { passive: true });
-    document.addEventListener('touchstart',  reset, { passive: true });
+    for (const evt of UltraScreensaverModule.ACTIVITY_EVENTS) {
+      document.addEventListener(evt, this._resetHandler, { passive: true });
+    }
     this._resetIdleTimer(timeoutSec);
-    this._startClockTick();
+    // The clock tick is started by _doActivate. Starting it here too left a
+    // 1s interval running for the lifetime of the page even when the
+    // screensaver never activated.
+  }
+
+  /**
+   * Remove every document listener and timer this module owns.
+   *
+   * Safe to call repeatedly; _initListeners will re-arm on the next render.
+   */
+  destroy(): void {
+    if (this._resetHandler) {
+      for (const evt of UltraScreensaverModule.ACTIVITY_EVENTS) {
+        document.removeEventListener(evt, this._resetHandler);
+      }
+      this._resetHandler = null;
+    }
+    if (this._idleTimer) { clearTimeout(this._idleTimer); this._idleTimer = null; }
+    this._stopClockTick();
+    this._stopSlideshow();
+    this._destroyPortal();
+    this._active = false;
+    this._initialized = false;
   }
 
   // ── Portal management ─────────────────────────────────────────────────────

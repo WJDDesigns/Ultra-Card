@@ -5,6 +5,7 @@ import { CardModule, UpdateMonitorModule, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
 import '../components/ultra-color-picker';
 
 const SUPPORTS_INSTALL = 1; // UpdateEntityFeature.INSTALL
@@ -21,6 +22,8 @@ interface UpdateReading {
 }
 
 export class UltraUpdateMonitorModule extends BaseUltraModule {
+  private _readingsMemo = new UcStatesMemo<UpdateReading[]>();
+
   metadata: ModuleMetadata = {
     type: 'update_monitor',
     title: 'Update Monitor',
@@ -451,7 +454,14 @@ export class UltraUpdateMonitorModule extends BaseUltraModule {
     `;
   }
 
+  /** Full state-machine scan, so the result is cached per hass tick. */
   private _collectReadings(m: UpdateMonitorModule, hass: HomeAssistant): UpdateReading[] {
+    return this._readingsMemo.read(m.id, [hass.states], statesMemoKey(m), () =>
+      this._computeReadings(m, hass)
+    );
+  }
+
+  private _computeReadings(m: UpdateMonitorModule, hass: HomeAssistant): UpdateReading[] {
     const hidden = new Set((m.hidden_entities || []).map(x => x.trim()).filter(Boolean));
     const patterns = (m.exclude_patterns || []).map(p => p.toLowerCase());
 

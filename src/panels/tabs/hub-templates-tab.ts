@@ -4,6 +4,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { panelStyles } from '../panel-styles';
+import { copyTextToClipboard } from '../../utils/uc-clipboard';
 
 /** Modules that accept the unified template system ($vars + Jinja). Keep in sync with modules that use template-service / unified_template. */
 const TEMPLATE_CAPABLE_MODULES: { type: string; title: string }[] = [
@@ -216,15 +217,14 @@ export class HubTemplatesTab extends LitElement {
     if (this._copyTimeout) clearTimeout(this._copyTimeout);
   }
 
-  private _copyExample(id: string, code: string): void {
-    navigator.clipboard.writeText(code).then(() => {
-      this._copiedId = id;
-      if (this._copyTimeout) clearTimeout(this._copyTimeout);
-      this._copyTimeout = setTimeout(() => {
-        this._copiedId = null;
-        this._copyTimeout = null;
-      }, 2000);
-    });
+  private async _copyExample(id: string, code: string): Promise<void> {
+    if (!(await copyTextToClipboard(code))) return;
+    this._copiedId = id;
+    if (this._copyTimeout) clearTimeout(this._copyTimeout);
+    this._copyTimeout = setTimeout(() => {
+      this._copiedId = null;
+      this._copyTimeout = null;
+    }, 2000);
   }
 
   private _renderExample(id: string, ex: CopyableExample): unknown {

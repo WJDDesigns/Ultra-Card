@@ -323,19 +323,14 @@ class UcCardBackupService {
    * Make API call to WordPress backend
    */
   private async apiCall(endpoint: string, options: RequestInit = {}): Promise<any> {
-    const authHeader = ucCloudAuthService.getAuthHeader();
-
-    if (!authHeader) {
-      throw new Error('Not authenticated');
-    }
-
-    const url = `${this.apiBase}${endpoint}`;
-
-    const response = await fetch(url, {
+    // Must go through authenticatedFetch, not a raw fetch + getAuthHeader():
+    // under integration (Connect) auth the JWT is deliberately kept server-side,
+    // so getAuthHeader() returns null and every call here would throw.
+    // authenticatedFetch routes to the ultra_card_pro_cloud/proxy endpoint instead.
+    const response = await ucCloudAuthService.authenticatedFetch(`${this.apiBase}${endpoint}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: authHeader,
         ...(options.headers || {}),
       },
     });

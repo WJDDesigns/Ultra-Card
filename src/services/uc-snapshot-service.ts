@@ -15,6 +15,9 @@ import {
 } from './uc-dashboard-scanner-service';
 import { ucCloudAuthService } from './uc-cloud-auth-service';
 
+/** Fired after snapshot settings are saved, so cached schedules can refresh. */
+export const UC_SNAPSHOT_SETTINGS_CHANGED = 'uc-snapshot-settings-changed';
+
 // Snapshot data structure
 export interface SnapshotListItem {
   id: number;
@@ -292,6 +295,9 @@ class UcSnapshotService {
         method: 'PUT',
         body: JSON.stringify(settings),
       });
+      // The scheduler caches the schedule to avoid polling the cloud every
+      // minute. An event keeps that cache honest without a circular import.
+      window.dispatchEvent(new CustomEvent(UC_SNAPSHOT_SETTINGS_CHANGED));
     } catch (error) {
       console.error('Failed to update snapshot settings:', error);
       throw error;

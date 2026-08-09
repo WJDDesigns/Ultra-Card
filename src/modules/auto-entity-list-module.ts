@@ -14,6 +14,7 @@ import { localize } from '../localize/localize';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { ucActionService } from '../services/uc-action-service';
+import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
 import '../components/ultra-color-picker';
 import '../components/navigation-picker';
 
@@ -34,6 +35,8 @@ interface EntityRow {
 const PATCH_EVENT = 'uc-module-patch-by-id';
 
 export class UltraAutoEntityListModule extends BaseUltraModule {
+  private _entitiesMemo = new UcStatesMemo<EntityRow[]>();
+
   metadata: ModuleMetadata = {
     type: 'auto_entity_list',
     title: 'Auto Entities List',
@@ -2091,7 +2094,22 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
     return undefined;
   }
 
+  /**
+   * Walks every entity in the state machine, so the result is cached per hass
+   * tick. Area filtering reads the entity and device registries, which HA
+   * replaces independently of `states` — hence both are cache dependencies.
+   */
   private _collectEntities(m: AutoEntityListModule, hass: HomeAssistant): EntityRow[] {
+    const h = hass as unknown as { entities?: unknown; devices?: unknown };
+    return this._entitiesMemo.read(
+      m.id,
+      [hass.states, h.entities, h.devices],
+      statesMemoKey(m),
+      () => this._computeEntities(m, hass)
+    );
+  }
+
+  private _computeEntities(m: AutoEntityListModule, hass: HomeAssistant): EntityRow[] {
     const hidden = new Set((m.hidden_entities || []).filter(Boolean));
     const pinnedIds = new Set((m.pinned_entities || []).map(p => p.entity).filter(Boolean));
     const includeDomains = (m.include_domains || []).map(s => s.toLowerCase());

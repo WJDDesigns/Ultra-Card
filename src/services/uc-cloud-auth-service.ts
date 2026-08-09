@@ -14,6 +14,70 @@ import {
 /** HA integration endpoint that forwards multipart files to ultracard.io (JWT stays on the server). */
 const UC_MEDIA_UPLOAD_PATH = '/api/ultra_card_pro_cloud/media_upload';
 
+/**
+ * Ceiling for any single cloud request. Without this a slow or dropped
+ * connection leaves spinners running forever with no error to surface.
+ * Uploads get a longer budget because they carry real payloads.
+ */
+export const UC_CLOUD_TIMEOUT_MS = 15000;
+export const UC_CLOUD_UPLOAD_TIMEOUT_MS = 60000;
+
+/** Shape returned by the `ultra_card_pro_cloud/proxy` integration endpoint. */
+interface UcProxyResponse {
+  _status?: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _body?: any;
+}
+
+class UcCloudTimeoutError extends Error {
+  constructor(ms: number) {
+    super(`Ultra Card Cloud did not respond within ${Math.round(ms / 1000)}s. Please try again.`);
+    this.name = 'UcCloudTimeoutError';
+  }
+}
+
+/**
+ * Reject if `promise` has not settled within `ms`.
+ *
+ * Used for `hass.callApi` proxy calls, which take no AbortSignal. The
+ * underlying request may still complete on the server; this only stops the
+ * caller from waiting on it indefinitely.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  return Promise.race([
+    promise,
+    new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => reject(new UcCloudTimeoutError(ms)), ms);
+    }),
+  ]).finally(() => clearTimeout(timer)) as Promise<T>;
+}
+
+/** `fetch` with an abort-backed timeout, preserving any caller-supplied signal. */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  ms: number
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  const callerSignal = options.signal;
+  if (callerSignal) {
+    if (callerSignal.aborted) controller.abort();
+    else callerSignal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if ((error as Error)?.name === 'AbortError' && !callerSignal?.aborted) {
+      throw new UcCloudTimeoutError(ms);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function formDataContainsFile(fd: FormData): boolean {
   for (const [, value] of fd.entries()) {
     if (value instanceof File) return true;
@@ -301,127 +365,6 @@ class UcCloudAuthService {
   }
 
   /**
-   * Get Home Assistant user ID from hass object
-   * First tries window.hass, then tries to find hass from any ultra-card element
-   */
-  private _getHassUserId(): string | null {
-    try {
-      // Try window.hass first
-      let hass = (window as any).hass;
-
-      // If not available, try to get from any ultra-card element in the DOM
-      if (!hass) {
-        const ultraCards = document.querySelectorAll('ultra-card');
-        for (const card of Array.from(ultraCards)) {
-          const cardHass = (card as any).hass;
-          if (cardHass && cardHass.user) {
-            hass = cardHass;
-            break;
-          }
-        }
-      }
-
-      // If still not available, try home-assistant element
-      if (!hass) {
-        const homeAssistant = document.querySelector('home-assistant');
-        if (homeAssistant) {
-          hass = (homeAssistant as any).hass;
-        }
-      }
-
-      const userId = hass?.user?.id || null;
-
-      if (!userId) {
-        console.log(
-          '📝 HA user ID not available yet, hass object:',
-          hass ? 'exists' : 'missing',
-          'user:',
-          hass?.user ? 'exists' : 'missing'
-        );
-      } else {
-      }
-
-      return userId;
-    } catch (error) {
-      console.warn('Failed to get HA user ID:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Retry cloud session check multiple times until HA user ID is available
-   */
-  private _retryCloudSessionCheck(): void {
-    const maxRetries = 10;
-    let retryCount = 0;
-
-    const retry = () => {
-      retryCount++;
-      const haUserId = this._getHassUserId();
-
-      if (haUserId && !this._currentUser) {
-        console.log(
-          '🔄 Retrying cloud session check with now-available HA user ID (attempt',
-          retryCount,
-          ')'
-        );
-        this._checkCloudSession();
-      } else if (retryCount < maxRetries) {
-        // Retry every 500ms for up to 5 seconds
-        setTimeout(retry, 500);
-      } else {
-        console.log('📝 Max retries reached, HA user ID still not available');
-      }
-    };
-
-    // Start first retry after 500ms
-    setTimeout(retry, 500);
-  }
-
-  /**
-   * Check for active cloud session (cross-device sync)
-   */
-  private async _checkCloudSession(): Promise<void> {
-    if (!ucSessionSyncService.isEnabled()) {
-      return; // Cloud session sync not enabled yet
-    }
-
-    console.log('🔄 Checking for active cloud session...');
-
-    // Always check for cloud session first (cross-device sync)
-    // Pass HA user ID for magic cross-device sync
-    const storedUser = this._getFromLocalStorage();
-    const haUserId = this._getHassUserId();
-    const cloudUser = await ucSessionSyncService.getCurrentSession(haUserId, storedUser?.token);
-
-    if (cloudUser) {
-      this._setCurrentUser(cloudUser);
-      this._saveToStorage();
-      this._setupAutoRefresh();
-
-      // Start polling
-      ucSessionSyncService.startPolling(cloudUser.token, () => {
-        this.logout();
-      });
-      return; // Found cloud session, we're done
-    }
-
-    // No cloud session found, validate local session if we have one
-    if (this._currentUser) {
-      const valid = await ucSessionSyncService.validateSession(this._currentUser.token);
-      if (!valid) {
-        console.warn('⚠️ Local session invalidated remotely');
-        await this.logout();
-      } else {
-        // Start polling for session validation
-        ucSessionSyncService.startPolling(this._currentUser.token, () => {
-          this.logout();
-        });
-      }
-    }
-  }
-
-  /**
    * Get current authenticated user
    */
   getCurrentUser(): CloudUser | null {
@@ -430,9 +373,19 @@ class UcCloudAuthService {
 
   /**
    * Called whenever the integration sensor updates — keeps _currentUser in sync.
-   * When user has no token (integration auth), pass hass so authenticatedFetch can use the proxy.
+   *
+   * `hass` is required: under integration auth the JWT stays server-side, so
+   * authenticatedFetch can only reach the cloud through the hass proxy. Omitting
+   * it leaves _integrationHass null and every cloud call fails with
+   * "Not authenticated" — a silent failure that is hard to trace back here.
    */
-  setIntegrationUser(user: CloudUser, hass?: any): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setIntegrationUser(user: CloudUser, hass: any): void {
+    if (!hass) {
+      console.warn(
+        '[UltraCard] setIntegrationUser called without hass; cloud requests using integration auth will fail.'
+      );
+    }
     if (
       this._currentUser?.email === user.email &&
       this._currentUser?.token === user.token
@@ -652,11 +605,11 @@ class UcCloudAuthService {
               'This request includes files and is not supported through Home Assistant integration auth.'
             );
           }
-          const r = await fetch(UC_MEDIA_UPLOAD_PATH, {
-            method: 'POST',
-            body: fd,
-            credentials: 'same-origin',
-          });
+          const r = await fetchWithTimeout(
+            UC_MEDIA_UPLOAD_PATH,
+            { method: 'POST', body: fd, credentials: 'same-origin' },
+            UC_CLOUD_UPLOAD_TIMEOUT_MS
+          );
 
           // Dedicated route missing on older integration builds (404) — forward via JSON proxy + base64
           // only when Connect is current and claims media_upload. Otherwise surface an update error.
@@ -686,7 +639,8 @@ class UcCloudAuthService {
             if (typeof callApi !== 'function') {
               throw new Error('Integration proxy unavailable');
             }
-            const res = await callApi('POST', 'ultra_card_pro_cloud/proxy', {
+            const res = await withTimeout<UcProxyResponse>(
+              callApi('POST', 'ultra_card_pro_cloud/proxy', {
               method: 'POST',
               url,
               body: {
@@ -697,7 +651,9 @@ class UcCloudAuthService {
                   data: dataB64,
                 },
               },
-            });
+              }),
+              UC_CLOUD_UPLOAD_TIMEOUT_MS
+            );
             const status = res?._status ?? 0;
             const _body = res?._body;
             const ok = status >= 200 && status < 300;
@@ -717,11 +673,14 @@ class UcCloudAuthService {
         if (typeof callApi !== 'function') {
           throw new Error('Integration proxy unavailable');
         }
-        const res = await callApi('POST', 'ultra_card_pro_cloud/proxy', {
-          method,
-          url,
-          body: jsonBody,
-        });
+        const res = await withTimeout<UcProxyResponse>(
+          callApi('POST', 'ultra_card_pro_cloud/proxy', {
+            method,
+            url,
+            body: jsonBody,
+          }),
+          UC_CLOUD_TIMEOUT_MS
+        );
         const status = res?._status ?? 0;
         const _body = res?._body;
         const ok = status >= 200 && status < 300;
@@ -742,11 +701,14 @@ class UcCloudAuthService {
       if (typeof callApi !== 'function') {
         throw new Error('Integration proxy unavailable');
       }
-      const res = await callApi('POST', 'ultra_card_pro_cloud/proxy', {
-        method,
-        url,
-        body: body !== undefined ? body : null,
-      });
+      const res = await withTimeout<UcProxyResponse>(
+        callApi('POST', 'ultra_card_pro_cloud/proxy', {
+          method,
+          url,
+          body: body !== undefined ? body : null,
+        }),
+        UC_CLOUD_TIMEOUT_MS
+      );
       const status = res?._status ?? 0;
       const _body = res?._body;
       const ok = status >= 200 && status < 300;
@@ -767,10 +729,13 @@ class UcCloudAuthService {
     const baseHeaders: Record<string, string> = { Authorization: authHeader };
     if (!isFormData) baseHeaders['Content-Type'] = 'application/json';
 
-    const response = await fetch(url, {
-      ...options,
-      headers: { ...options.headers, ...baseHeaders },
-    });
+    const timeoutMs = isFormData ? UC_CLOUD_UPLOAD_TIMEOUT_MS : UC_CLOUD_TIMEOUT_MS;
+
+    const response = await fetchWithTimeout(
+      url,
+      { ...options, headers: { ...options.headers, ...baseHeaders } },
+      timeoutMs
+    );
 
     if (response.status === 401 && this._currentUser?.refreshToken) {
       try {
@@ -779,10 +744,11 @@ class UcCloudAuthService {
         if (newAuthHeader) {
           const retryHeaders: Record<string, string> = { Authorization: newAuthHeader };
           if (!isFormData) retryHeaders['Content-Type'] = 'application/json';
-          return fetch(url, {
-            ...options,
-            headers: { ...options.headers, ...retryHeaders },
-          });
+          return fetchWithTimeout(
+            url,
+            { ...options, headers: { ...options.headers, ...retryHeaders } },
+            timeoutMs
+          );
         }
       } catch (refreshError) {
         throw new Error('Authentication expired. Please login again.');
@@ -859,80 +825,12 @@ class UcCloudAuthService {
   }
 
   /**
-   * Check if current token is valid (not actually expired)
-   * This checks the ACTUAL expiry time, not the refresh threshold
-   * For integration users without expiresAt, always return true
-   */
-  private _isTokenValid(): boolean {
-    if (!this._currentUser) return false;
-
-    // If no expiresAt, user came from integration - always valid
-    if (!this._currentUser.expiresAt || this._currentUser.expiresAt === 0) {
-      return true;
-    }
-
-    return Date.now() < this._currentUser.expiresAt;
-  }
-
-  /**
    * Check if we should proactively refresh the token
    * (within REFRESH_THRESHOLD of expiry)
    */
   private _shouldRefreshToken(): boolean {
     if (!this._currentUser) return false;
     return Date.now() >= this._currentUser.expiresAt - UcCloudAuthService.REFRESH_THRESHOLD;
-  }
-
-  /**
-   * Setup automatic token refresh
-   */
-  private _setupAutoRefresh(): void {
-    this._clearAutoRefresh();
-
-    if (!this._currentUser) return;
-    // Integration auth (no expiresAt) doesn't need refresh
-    if (!this._currentUser.expiresAt || this._currentUser.expiresAt === 0) return;
-
-    const timeUntilRefresh =
-      this._currentUser.expiresAt - Date.now() - UcCloudAuthService.REFRESH_THRESHOLD;
-
-    if (timeUntilRefresh > 0) {
-      this._refreshTimer = window.setTimeout(async () => {
-        try {
-          await this.refreshToken();
-          this._setupAutoRefresh();
-        } catch (error) {
-          console.error('Auto-refresh failed:', error);
-        }
-      }, timeUntilRefresh);
-    }
-  }
-
-  /**
-   * On startup: if stored token is expired but we have a refresh token, silently renew it.
-   * This handles the case where the user returns after the token expired (e.g. next day).
-   */
-  private _attemptSessionRecovery(): void {
-    if (!this._currentUser) return;
-    // Integration auth is always valid, no recovery needed
-    if (!this._currentUser.expiresAt || this._currentUser.expiresAt === 0) return;
-    // Token still valid, nothing to do
-    if (this._isTokenValid()) return;
-
-    if (this._currentUser.refreshToken) {
-      // Token expired but we have a refresh token — try to renew silently
-      window.setTimeout(async () => {
-        try {
-          await this.refreshToken();
-          this._setupAutoRefresh();
-        } catch {
-          // Refresh failed — keep the session anyway, server will 401 if truly invalid
-        }
-      }, 0);
-    }
-    // No refresh token but token is expired — keep the session in storage anyway.
-    // isAuthenticated() no longer checks local expiry, so the user stays signed in.
-    // If the server rejects the token on an API call, they'll get a proper error then.
   }
 
   /**
@@ -1015,18 +913,6 @@ class UcCloudAuthService {
     }
   }
 
-  // Track if we've already logged the quota error (to avoid spam)
-  private static _quotaErrorLogged = false;
-  // Track last saved JSON to avoid redundant saves
-  private _lastSavedJson: string | null = null;
-
-  /**
-   * Legacy no-op: never persist JWT/credentials in the browser.
-   */
-  private _saveToStorage(): void {
-    this._clearStorage();
-  }
-
   /**
    * Clear user from localStorage
    */
@@ -1036,21 +922,6 @@ class UcCloudAuthService {
     } catch (error) {
       console.error('❌ Failed to clear auth storage:', error);
     }
-  }
-
-  /**
-   * Get user from localStorage (helper for cloud session check)
-   */
-  private _getFromLocalStorage(): CloudUser | null {
-    try {
-      const stored = localStorage.getItem(UcCloudAuthService.STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (error) {
-      console.error('❌ Failed to read from storage:', error);
-    }
-    return null;
   }
 
   /**

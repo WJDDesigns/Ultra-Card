@@ -19,6 +19,7 @@ import { responsiveDesignService } from './uc-responsive-design-service';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { getImageUrl } from '../utils/image-upload';
 import { navigationJsTemplatesAllowedForConfig } from './uc-navigation-js-gating';
+import { setVisibleInterval, UcVisibilityTimer } from '../utils/uc-visibility-timer';
 
 export { navigationJsTemplatesAllowedForConfig } from './uc-navigation-js-gating';
 
@@ -107,11 +108,11 @@ class UcNavigationService {
 
   // Media player state watcher – detects track changes even when the
   // originating card is on a non-visible view and not receiving hass updates.
-  private _mediaWatchInterval: ReturnType<typeof setInterval> | null = null;
+  private _mediaWatchInterval: UcVisibilityTimer | null = null;
   private _lastMediaSnapshot: Map<string, string> = new Map(); // entity_id → last_updated
 
   /** On mobile, poll for open dialogs (e.g. date picker) inside shadow roots so we hide the navbar. */
-  private _mobileOverlayCheckInterval: ReturnType<typeof setInterval> | null = null;
+  private _mobileOverlayCheckInterval: UcVisibilityTimer | null = null;
 
   // Use the getter to access the shared map
   private get previewOverrides() {
@@ -320,7 +321,7 @@ class UcNavigationService {
   private startMediaPlayerWatcher(): void {
     if (this._mediaWatchInterval) return;
 
-    this._mediaWatchInterval = setInterval(() => {
+    this._mediaWatchInterval = setVisibleInterval(() => {
       try {
         const haEl = document.querySelector('home-assistant') as any;
         const hass: HomeAssistant | undefined = haEl?.hass;
@@ -355,7 +356,7 @@ class UcNavigationService {
 
   private stopMediaPlayerWatcher(): void {
     if (this._mediaWatchInterval) {
-      clearInterval(this._mediaWatchInterval);
+      this._mediaWatchInterval.stop();
       this._mediaWatchInterval = null;
     }
     this._lastMediaSnapshot.clear();
@@ -499,7 +500,7 @@ class UcNavigationService {
   private startOrStopMobileOverlayCheck(): void {
     const shouldRun = this.registeredModules.size > 0 && this.isMobileViewport();
     if (shouldRun && !this._mobileOverlayCheckInterval) {
-      this._mobileOverlayCheckInterval = setInterval(() => {
+      this._mobileOverlayCheckInterval = setVisibleInterval(() => {
         if (this.registeredModules.size === 0 || !this.isMobileViewport()) {
           this.startOrStopMobileOverlayCheck();
           return;
@@ -507,7 +508,7 @@ class UcNavigationService {
         this.evaluateAndRender();
       }, 400);
     } else if (!shouldRun && this._mobileOverlayCheckInterval) {
-      clearInterval(this._mobileOverlayCheckInterval);
+      this._mobileOverlayCheckInterval.stop();
       this._mobileOverlayCheckInterval = null;
     }
   }
@@ -770,7 +771,7 @@ class UcNavigationService {
     this.stopMediaPlayerWatcher();
 
     if (this._mobileOverlayCheckInterval) {
-      clearInterval(this._mobileOverlayCheckInterval);
+      this._mobileOverlayCheckInterval.stop();
       this._mobileOverlayCheckInterval = null;
     }
 

@@ -129,3 +129,37 @@ export const computeBackgroundStyles = (
  * Lightweight validation to determine if a value could be parsed as a gradient. Useful for editor hints.
  */
 export const looksLikeGradient = (value?: string | null): boolean => isGradient(value);
+
+/**
+ * Allowlist of CSS color shapes that are safe to interpolate into generated
+ * markup (SVG/HTML strings that later go through `unsafeHTML` or `innerHTML`).
+ *
+ * Deliberately strict: anything not matching one of these is rejected outright
+ * rather than escaped, because a color field has no legitimate reason to
+ * contain quotes, angle brackets or whitespace-separated tokens.
+ */
+const SAFE_CSS_COLOR_PATTERNS: readonly RegExp[] = [
+  /^#[0-9a-f]{3,8}$/i, // #rgb, #rgba, #rrggbb, #rrggbbaa
+  /^(?:rgb|rgba|hsl|hsla)\(\s*[0-9a-z%.,\s/+-]*\)$/i, // functional notation
+  /^[a-z]+$/i, // named colors, plus transparent / currentColor / inherit
+  /^var\(\s*--[a-z0-9_-]+\s*(?:,\s*[#a-z0-9%.,()\s/+-]+)?\)$/i, // theme variables
+];
+
+/** Characters that could terminate an attribute or open a tag in generated markup. */
+const MARKUP_BREAKOUT_CHARS = /["'<>\\`]|\s{2,}|[\r\n\t]/;
+
+/**
+ * Return `value` when it is a CSS color safe to embed in generated markup,
+ * otherwise return `fallback`.
+ *
+ * Use this anywhere a user- or preset-supplied color is concatenated into an
+ * SVG/HTML string. Lit's `html` templates escape attribute values for you, so
+ * this is only needed on the `unsafeHTML` / `innerHTML` paths.
+ */
+export const sanitizeCssColor = (value: string | undefined | null, fallback: string): string => {
+  if (typeof value !== 'string') return fallback;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 64) return fallback;
+  if (MARKUP_BREAKOUT_CHARS.test(trimmed)) return fallback;
+  return SAFE_CSS_COLOR_PATTERNS.some(pattern => pattern.test(trimmed)) ? trimmed : fallback;
+};

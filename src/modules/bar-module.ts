@@ -24,6 +24,7 @@ import {
   createDefaultGradientStops,
 } from '../components/uc-gradient-editor';
 import { build3dTransformStyles } from '../utils/transform-3d-utils';
+import { setVisibleInterval, UcVisibilityTimer } from '../utils/uc-visibility-timer';
 
 /** Unified-template output keys the bar module reads (position/label/color also appear inside `ticks` entries). */
 const BAR_TEMPLATE_KEYS = [
@@ -52,10 +53,26 @@ export class UltraBarModule extends BaseUltraModule {
 
   private _templateService: TemplateService | undefined;
   private _templateInputDebounce: any = null;
-  private _timeProgressInterval: any = null;
+  private _timeProgressInterval: UcVisibilityTimer | null = null;
   private _timeProgressCleanup: (() => void) | null = null;
   private _scaleClampObservers = new WeakMap<Element, ResizeObserver>();
   private _scaleClampTimers = new WeakMap<Element, number>();
+
+  /** Called by the module lifecycle service once no live card uses this module type. */
+  destroy(): void {
+    if (this._timeProgressCleanup) {
+      this._timeProgressCleanup();
+      this._timeProgressCleanup = null;
+    }
+    if (this._timeProgressInterval) {
+      this._timeProgressInterval.stop();
+      this._timeProgressInterval = null;
+    }
+    if (this._templateInputDebounce) {
+      clearTimeout(this._templateInputDebounce);
+      this._templateInputDebounce = null;
+    }
+  }
 
   /**
    * Normalize booleans coming from editor/YAML, including string values.
@@ -4084,12 +4101,12 @@ export class UltraBarModule extends BaseUltraModule {
 
             // Set up continuous updates - clear any existing interval first
             if (this._timeProgressInterval) {
-              clearInterval(this._timeProgressInterval);
+              this._timeProgressInterval.stop();
               this._timeProgressInterval = null;
             }
 
             const updateInterval = (barModule as any).time_progress_update_interval || 1000;
-            this._timeProgressInterval = setInterval(() => {
+            this._timeProgressInterval = setVisibleInterval(() => {
               // Trigger a re-render by dispatching an event
               if (typeof window !== 'undefined') {
                 this.triggerPreviewUpdate();
@@ -4099,7 +4116,7 @@ export class UltraBarModule extends BaseUltraModule {
             // Store cleanup function
             this._timeProgressCleanup = () => {
               if (this._timeProgressInterval) {
-                clearInterval(this._timeProgressInterval);
+                this._timeProgressInterval.stop();
                 this._timeProgressInterval = null;
               }
             };

@@ -7,6 +7,9 @@ import {
   type HistoryStatePoint,
   type NumericPoint,
 } from './uc-history-service';
+import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
+
+const powerSensorsMemo = new UcStatesMemo<PowerCandidate[]>();
 
 /**
  * Vampire Power — standby ("phantom") load analysis.
@@ -314,12 +317,26 @@ function isNumericState(state: string | undefined): boolean {
  * heuristic — an explicit pick is a stronger signal than a name guess, and this
  * is the escape hatch when the heuristic guesses wrong.
  */
+/**
+ * Walks every entity in the state machine, and is called from both the render
+ * path and the editor, so results are cached per hass tick. The config
+ * signature doubles as the cache identity since there is no module id here.
+ */
 export function discoverPowerSensors(
   hass: HomeAssistant | undefined,
   config: VampireDiscoveryConfig | undefined
 ): PowerCandidate[] {
   if (!hass?.states) return [];
+  const signature = statesMemoKey(config);
+  return powerSensorsMemo.read(signature, [hass.states], signature, () =>
+    computePowerSensors(hass, config)
+  );
+}
 
+function computePowerSensors(
+  hass: HomeAssistant,
+  config: VampireDiscoveryConfig | undefined
+): PowerCandidate[] {
   const mode = config?.discovery_mode || 'auto';
   const patterns = (config?.exclude_patterns || [])
     .map(p =>

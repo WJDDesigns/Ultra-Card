@@ -4,6 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, MediaPlayerModule, UltraCardConfig } from '../types';
 import { UltraLinkComponent } from '../components/ultra-link';
+import { setVisibleTimeout, UcVisibilityTimer } from '../utils/uc-visibility-timer';
 import '../components/ultra-color-picker';
 
 // Media player supported features bitmask (from Home Assistant)
@@ -56,12 +57,21 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
 
   // State management
   /** One-shot progress tick timers keyed by module id (re-armed on every render while playing) */
-  private _progressTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+  private _progressTimers: Map<string, UcVisibilityTimer> = new Map();
   private _expandedModules: Set<string> = new Set();
   private _volumeDragState: Map<string, { dragging: boolean; value: number }> = new Map();
   private _extractedColors: Map<string, { primary: string; accent: string }> = new Map();
   private _lastMediaContentId: Map<string, string> = new Map();
 
+  /** Called by the module lifecycle service once no live card uses this module type. */
+  destroy(): void {
+    this._progressTimers.forEach(timer => timer.stop());
+    this._progressTimers.clear();
+    this._expandedModules.clear();
+    this._volumeDragState.clear();
+    this._extractedColors.clear();
+    this._lastMediaContentId.clear();
+  }
 
   createDefault(id?: string, hass?: HomeAssistant): CardModule {
     // Auto-detect a media_player entity if available
@@ -617,13 +627,13 @@ export class UltraMediaPlayerModule extends BaseUltraModule {
     // rendered (leak-safe).
     const existingTimer = this._progressTimers.get(mp.id);
     if (existingTimer) {
-      clearTimeout(existingTimer);
+      existingTimer.stop();
       this._progressTimers.delete(mp.id);
     }
     if (state === 'playing' && mp.show_progress !== false) {
       this._progressTimers.set(
         mp.id,
-        setTimeout(() => {
+        setVisibleTimeout(() => {
           this._progressTimers.delete(mp.id);
           this.triggerPreviewUpdate();
         }, 1000)

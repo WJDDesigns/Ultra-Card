@@ -21,6 +21,7 @@ import {
   LUNAR_CYCLE_DAYS,
   MoonPhaseId,
 } from '../utils/uc-moon-calc';
+import { sanitizeCssColor } from '../utils/uc-color-utils';
 
 // ─── Internal UI state (per module instance, not persisted) ──────────────────
 
@@ -849,7 +850,9 @@ export class UltraLunarPhaseModule extends BaseUltraModule {
     const snap = this._getSnapshot(displayDate, loc.lat, loc.lng);
     const isToday = state.selectedDate === null;
 
-    const accent = m.accent_color?.trim() || '#cdd6f4';
+    // Sanitized because `accent` is concatenated into SVG strings that are
+    // rendered with unsafeHTML (see moonSvg), where Lit does no escaping.
+    const accent = sanitizeCssColor(m.accent_color, '#cdd6f4');
     const southern = m.southern_hemisphere === true;
     const uid = (m.id || 'lp').replace(/[^a-zA-Z0-9_-]/g, '');
 

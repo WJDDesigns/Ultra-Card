@@ -11,6 +11,7 @@ import { UcFormUtils } from '../utils/uc-form-utils';
 import { localize } from '../localize/localize';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { UcStatesMemo, statesMemoKey } from '../utils/uc-states-memo';
 import '../components/ultra-color-picker';
 
 interface BatteryReading {
@@ -25,6 +26,9 @@ interface BatteryReading {
 const PATCH_EVENT = 'uc-module-patch-by-id';
 
 export class UltraBatteryMonitorModule extends BaseUltraModule {
+  private _readingsMemo = new UcStatesMemo<BatteryReading[]>();
+  private _chargingSensorsMemo = new UcStatesMemo<string[]>();
+
   metadata: ModuleMetadata = {
     type: 'battery_monitor',
     title: 'Battery Monitor',
@@ -1520,14 +1524,24 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
         return c;
       }
     }
-    for (const id of Object.keys(hass.states)) {
-      if (!id.startsWith('binary_sensor.')) continue;
-      const s = hass.states[id];
-      if (s.attributes?.device_class !== 'battery_charging') continue;
+    // Runs once per battery, so search a per-tick index rather than rescanning
+    // the whole state machine for each reading.
+    for (const id of this._chargingSensorIds(hass)) {
       const bn = id.split('.')[1] || '';
       if (bn.includes(base) || base.includes(bn.replace(/_battery_charging$/i, ''))) return id;
     }
     return undefined;
+  }
+
+  /** Every `battery_charging` binary sensor, cached per hass tick. */
+  private _chargingSensorIds(hass: HomeAssistant): string[] {
+    return this._chargingSensorsMemo.read('all', [hass.states], '', () =>
+      Object.keys(hass.states).filter(
+        id =>
+          id.startsWith('binary_sensor.') &&
+          hass.states[id]?.attributes?.device_class === 'battery_charging'
+      )
+    );
   }
 
   private _extractPct(st: any): number | null {
@@ -1544,7 +1558,21 @@ export class UltraBatteryMonitorModule extends BaseUltraModule {
     return null;
   }
 
+  /** Full state-machine scan, so the result is cached per hass tick. */
   private _collectReadings(
+    m: BatteryMonitorModule,
+    hass: HomeAssistant,
+    applyMax: boolean
+  ): BatteryReading[] {
+    return this._readingsMemo.read(
+      `${m.id}:${applyMax}`,
+      [hass.states],
+      statesMemoKey(m),
+      () => this._computeReadings(m, hass, applyMax)
+    );
+  }
+
+  private _computeReadings(
     m: BatteryMonitorModule,
     hass: HomeAssistant,
     applyMax: boolean

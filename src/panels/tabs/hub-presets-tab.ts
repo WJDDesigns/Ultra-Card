@@ -7,6 +7,7 @@ import { ucCloudAuthService } from '../../services/uc-cloud-auth-service';
 import { ucCloudSyncService } from '../../services/uc-cloud-sync-service';
 import type { CloudUser } from '../../services/uc-cloud-auth-service';
 import { panelStyles } from '../panel-styles';
+import { copyTextToClipboard } from '../../utils/uc-clipboard';
 import { sanitizePresetHtml } from '../../utils/html-sanitizer';
 import '../components/uc-hub-login-dialog';
 import '../components/uc-hub-rate-dialog';
@@ -687,12 +688,15 @@ export class HubPresetsTab extends LitElement {
         return;
       }
       const text = JSON.stringify(config, null, 2);
-      await navigator.clipboard.writeText(text);
-      this._showToast(`Copied "${preset.name}" config`);
+      const copied = await copyTextToClipboard(text);
+      this._showToast(
+        copied
+          ? `Copied "${preset.name}" config`
+          : 'Could not copy — your browser blocked clipboard access'
+      );
     } catch (err) {
-      console.warn('Clipboard write failed, using fallback:', err);
-      this._fallbackCopy(JSON.stringify(this._buildPresetConfig(preset), null, 2));
-      this._showToast(`Copied "${preset.name}" config`);
+      console.warn('Copy preset config failed:', err);
+      this._showToast('Could not copy this preset');
     }
     ucPresetsService.trackPresetDownload(preset.id).catch(() => {});
   }
@@ -704,27 +708,17 @@ export class HubPresetsTab extends LitElement {
         return;
       }
       const text = JSON.stringify(preset.layout, null, 2);
-      await navigator.clipboard.writeText(text);
-      this._showToast(`Copied layout for "${preset.name}"`);
+      const copied = await copyTextToClipboard(text);
+      this._showToast(
+        copied
+          ? `Copied layout for "${preset.name}"`
+          : 'Could not copy — your browser blocked clipboard access'
+      );
     } catch (err) {
-      console.warn('Clipboard write failed, using fallback:', err);
-      if (preset.layout) {
-        this._fallbackCopy(JSON.stringify(preset.layout, null, 2));
-        this._showToast(`Copied layout for "${preset.name}"`);
-      }
+      console.warn('Copy preset layout failed:', err);
+      this._showToast('Could not copy this layout');
     }
     ucPresetsService.trackPresetDownload(preset.id).catch(() => {});
-  }
-
-  private _fallbackCopy(text: string): void {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.left = '-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
   }
 
   private _toggleDetails(id: string): void {

@@ -87,6 +87,38 @@ describe('UltraLinkComponent entity-bound action normalization', () => {
   });
 });
 
+describe('UltraLinkComponent legacy call-service action', () => {
+  it('executes a call-service action the same as perform-action', async () => {
+    const hass = makeHass();
+    const element = document.createElement('button');
+
+    await UltraLinkComponent.handleAction(
+      { action: 'call-service', service: 'light.turn_on', data: { brightness: 128 } },
+      hass,
+      element,
+      { haptic_feedback: false } as any
+    );
+
+    expect(hass.callService).toHaveBeenCalledWith('light', 'turn_on', { brightness: 128 });
+  });
+
+  it('auto-injects entity_id for call-service when no explicit data is given', async () => {
+    const hass = makeHass();
+    const element = document.createElement('button');
+
+    await UltraLinkComponent.handleAction(
+      { action: 'call-service', service: 'light.toggle', entity: 'light.kitchen' },
+      hass,
+      element,
+      { haptic_feedback: false } as any
+    );
+
+    expect(hass.callService).toHaveBeenCalledWith('light', 'toggle', {
+      entity_id: 'light.kitchen',
+    });
+  });
+});
+
 describe('UltraLinkComponent close popup after action', () => {
   let closeEvents: CustomEvent[];
   let listener: (e: Event) => void;

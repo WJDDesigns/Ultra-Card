@@ -26,6 +26,8 @@ import { closePopupsForModule } from '../modules/popup-module';
 import { closeDrawersForModule } from '../modules/drawer-module';
 import { getImageUrl } from '../utils/image-upload';
 import { collectModuleTypesFromLayout, forEachNestedChildModules } from '../utils/uc-layout-module-types';
+import { layoutRequiresBroadHassUpdates } from '../utils/uc-broad-hass-updates';
+import { collectConfigEntityIds } from '../utils/uc-config-entity-ids';
 import { logicService } from '../services/logic-service';
 import { TemplateService } from '../services/template-service';
 import { configValidationService } from '../services/config-validation-service';
@@ -53,6 +55,7 @@ import { ucCustomVariablesService } from '../services/uc-custom-variables-servic
 import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';
 import {
   registerCardAppearanceTemplateSubscriptions,
+  getCardAppearanceTemplateSignature,
   resolveCardAppearance,
   buildCardContainerStyleFromAppearance,
 } from '../utils/card-appearance-template';
@@ -60,6 +63,7 @@ import { UC_ULTRA_CARD_HASS_READY } from '../utils/uc-pro-banner';
 import { loadUltraCardEditor } from '../editor/load-ultra-card-editor';
 import { externalCardContainerService } from '../services/external-card-container-service';
 import { ucCardInstanceRegistry } from '../services/uc-card-instance-registry';
+import { releaseUnusedModuleInstances } from '../services/uc-module-lifecycle-service';
 import { ucTimeMachineService } from '../services/uc-time-machine-service';
 
 @customElement('ultra-card')
@@ -142,6 +146,8 @@ export class UltraCard extends LitElement {
   private _layoutTemplatesRegistered = false;
   /** True after card appearance template subs are registered for this service instance */
   private _cardTemplatesRegistered = false;
+  /** Signature of the config fields the appearance subscriptions are built from. */
+  private _cardAppearanceSignature: string | undefined;
   private _templateUpdateDebounceTimer: number | undefined;
   /** Monotonic counter bumped on every config change; used as a cheap cache key instead of JSON.stringify. */
   private _configVersion = 0;
@@ -150,6 +156,9 @@ export class UltraCard extends LitElement {
   /** Cached dashboard edit mode with staleness window. */
   private _cachedDashboardEditMode: boolean | null = null;
   private _cachedDashboardEditModeTs = 0;
+  /** Cached "card edit dialog is open" with the same staleness window. */
+  private _cachedCardEditDialogOpen: boolean | null = null;
+  private _cachedCardEditDialogOpenTs = 0;
   /** Tracks which config version the service modules were last registered for. */
   private _lastRegisteredConfigVersion = -1;
   /** Tracks invisible state across renders for parent visibility side-effects. */
@@ -184,9 +193,16 @@ export class UltraCard extends LitElement {
     backgroundModules: Array<{ id: string; module: CardModule }>;
     navigationModules: Array<{ id: string; module: CardModule }>;
     timeMachineModules: Array<{ id: string; module: CardModule }>;
-    /** When true, any hass change should re-render (markdown / Jinja not fully tracked in entity set). */
+    /** When true, any hass change should re-render because the entity filter cannot be trusted. */
     requiresHassBroadUpdates: boolean;
   } | null = null;
+
+  /**
+   * Set while collecting entity IDs when a `$variable` reference could not be
+   * resolved. The collected set is then known to be incomplete, so hass
+   * filtering has to be switched off rather than silently dropping updates.
+   */
+  private _entityCollectionIncomplete = false;
 
   /** True while a Time Machine module is scrubbed into the past (this render). */
   private _timeTravelActive = false;
@@ -269,16 +285,17 @@ export class UltraCard extends LitElement {
     const has3rdPartyCards = moduleTypes.has('external_card');
     const hasNonExternalModules = Array.from(moduleTypes).some(t => t !== 'external_card');
 
-    let requiresHassBroadUpdates = false;
+    let requiresHassBroadUpdates =
+      layoutRequiresBroadHassUpdates(layout) || this._entityCollectionIncomplete;
     const jinjaInMarkdown = (s: string) => /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/.test(s);
     for (const mod of allModules) {
+      if (requiresHassBroadUpdates) break;
       if (mod.type !== 'markdown') continue;
       const m = mod as any;
       const unifiedOn =
         !!m.unified_template_mode && !!(m.unified_template && String(m.unified_template).trim());
       if (unifiedOn || jinjaInMarkdown(String(m.markdown_content || ''))) {
         requiresHassBroadUpdates = true;
-        break;
       }
     }
 
@@ -701,6 +718,34 @@ export class UltraCard extends LitElement {
     // Unregister background modules so per-view backgrounds are cleaned up
     this._unregisterBackgroundModules();
     this._unregisterNavigationModules();
+
+    // Module implementations are shared singletons, so this must run after the
+    // unregister above: it releases only those types no remaining card uses.
+    releaseUnusedModuleInstances();
+  }
+
+  /**
+   * Approximate card height in ~50px units, used by masonry dashboards to
+   * balance columns. Sections views use getGridOptions() below instead.
+   *
+   * This is only ever an estimate — module heights are dynamic — but any
+   * config-derived number packs better than HA's fallback default.
+   */
+  public getCardSize(): number {
+    const rows = this.config?.layout?.rows;
+    if (!rows?.length) return 3;
+
+    let size = 1; // card padding and chrome
+    for (const row of rows) {
+      // Columns sit side by side, so a row is as tall as its tallest column.
+      let tallestColumn = 0;
+      for (const column of row.columns || []) {
+        tallestColumn = Math.max(tallestColumn, column.modules?.length ?? 0);
+      }
+      size += Math.max(1, tallestColumn);
+    }
+
+    return Math.min(size, 20);
   }
 
   /**
@@ -769,165 +814,35 @@ export class UltraCard extends LitElement {
   }
 
   /**
+   * Whether HA's card edit dialog is open anywhere on the page.
+   *
+   * Cached on the same 1s window as the dashboard edit-mode check: the
+   * underlying `document.querySelector` is a full-document walk and this sits
+   * directly on the render path, where it previously ran on every paint.
+   */
+  private _isCardEditDialogOpen(): boolean {
+    const now = Date.now();
+    if (this._cachedCardEditDialogOpen !== null && now - this._cachedCardEditDialogOpenTs < 1000) {
+      return this._cachedCardEditDialogOpen;
+    }
+    let open = false;
+    try {
+      open = !!document.querySelector('hui-dialog-edit-card');
+    } catch {
+      open = false;
+    }
+    this._cachedCardEditDialogOpen = open;
+    this._cachedCardEditDialogOpenTs = now;
+    return open;
+  }
+
+  /**
    * Collect all entity IDs referenced in the card config (display conditions, module entities).
    * Used by shouldUpdate to skip re-renders when only unrelated hass state changed.
    */
-  /**
-   * Collect entity IDs from a single module object (non-recursive).
-   * Captures: top-level `entity`, `entities`, any property whose name contains
-   * "entity" (e.g. left_entity, weather_entity, timer_entity), and entity
-   * fields inside any array-of-objects property (icons, bars, nodes, markers, etc.).
-   */
-  /** Collect entity_id / entity from tap/hold/double_tap actions and nested targets. */
-  private _collectEntitiesFromAction(
-    action: any,
-    ids: Set<string>,
-    addEntityValue: (val: string) => void
-  ): void {
-    if (!action || typeof action !== 'object') return;
-    const stack: any[] = [action];
-    const seen = new Set<any>();
-    while (stack.length) {
-      const obj = stack.pop();
-      if (!obj || typeof obj !== 'object' || seen.has(obj)) continue;
-      seen.add(obj);
-      if (typeof obj.entity === 'string') addEntityValue(obj.entity);
-      if (typeof obj.entity_id === 'string') addEntityValue(obj.entity_id);
-      if (Array.isArray(obj.entity_id)) {
-        for (const e of obj.entity_id) {
-          if (typeof e === 'string') addEntityValue(e);
-        }
-      }
-      for (const k of Object.keys(obj)) {
-        const v = (obj as any)[k];
-        if (v && typeof v === 'object') {
-          if (Array.isArray(v)) {
-            for (const item of v) {
-              if (item && typeof item === 'object') stack.push(item);
-            }
-          } else {
-            stack.push(v);
-          }
-        }
-      }
-    }
-  }
-
-  private _collectModuleEntityIds(mod: any, ids: Set<string>): void {
-    if (!mod || typeof mod !== 'object') return;
-
-    // Resolve $variable references to real entity IDs so shouldUpdate can track them
-    const addEntityValue = (val: string) => {
-      if (val.startsWith('$')) {
-        const resolved = ucCustomVariablesService.resolveEntityField(val, this.config);
-        if (resolved && resolved.includes('.')) ids.add(resolved);
-      } else if (val.includes('.')) {
-        ids.add(val);
-      }
-    };
-
-    for (const key of Object.keys(mod)) {
-      const val = mod[key];
-
-      if (key === 'display_conditions' && Array.isArray(val)) {
-        val.forEach((c: any) => {
-          if (c?.entity && typeof c.entity === 'string') addEntityValue(c.entity);
-        });
-        continue;
-      }
-
-      // Skip non-entity config keys to avoid false positives
-      if (key === 'type' || key === 'id' || key.startsWith('_')) continue;
-
-      // String property whose name contains "entity" → likely an entity ID
-      if (typeof val === 'string' && key.toLowerCase().includes('entity')) {
-        addEntityValue(val);
-        continue;
-      }
-
-      // `entities` array: string[] or { entity: string }[]
-      if (key === 'entities' && Array.isArray(val)) {
-        val.forEach((e: any) => {
-          if (typeof e === 'string') addEntityValue(e);
-          else if (e?.entity && typeof e.entity === 'string') addEntityValue(e.entity);
-        });
-        continue;
-      }
-
-      // Any array-of-objects: scan each item for `entity` and `*_entity` fields
-      // (covers icons, bars, nodes, markers, calendars, presets, toggle_points, rules, etc.)
-      if (Array.isArray(val)) {
-        for (const item of val) {
-          if (!item || typeof item !== 'object') {
-            if (typeof item === 'string') addEntityValue(item);
-            continue;
-          }
-          for (const itemKey of Object.keys(item)) {
-            const itemVal = item[itemKey];
-            if (typeof itemVal === 'string' && itemKey.toLowerCase().includes('entity')) {
-              addEntityValue(itemVal);
-            }
-            // Handle nested entities arrays inside items (e.g. presets[].entities)
-            if (itemKey === 'entities' && Array.isArray(itemVal)) {
-              itemVal.forEach((e: any) => {
-                if (typeof e === 'string') addEntityValue(e);
-                else if (e?.entity && typeof e.entity === 'string') addEntityValue(e.entity);
-              });
-            }
-          }
-        }
-        continue;
-      }
-
-      // Shallow object scan (e.g. nav_media_player.entity, banner_settings.background_entity)
-      if (val && typeof val === 'object' && !Array.isArray(val)) {
-        for (const subKey of Object.keys(val)) {
-          const subVal = val[subKey];
-          if (typeof subVal === 'string' && subKey.toLowerCase().includes('entity')) {
-            addEntityValue(subVal);
-          }
-        }
-      }
-    }
-
-    this._collectEntitiesFromAction(mod.tap_action, ids, addEntityValue);
-    this._collectEntitiesFromAction(mod.hold_action, ids, addEntityValue);
-    this._collectEntitiesFromAction(mod.double_tap_action, ids, addEntityValue);
-  }
-
   private _getRelevantEntityIds(): Set<string> {
-    const ids = new Set<string>();
-    const config = this.config;
-    if (!config?.layout?.rows) return ids;
-
-    const processModules = (modules: any[]) => {
-      for (const mod of modules) {
-        this._collectModuleEntityIds(mod, ids);
-        // Recurse into container modules (horizontal, vertical, accordion, tabs.sections, panes, …)
-        forEachNestedChildModules(mod, processModules);
-      }
-    };
-
-    const addEntityValue = (val: string) => {
-      if (val.startsWith('$')) {
-        const resolved = ucCustomVariablesService.resolveEntityField(val, config);
-        if (resolved && resolved.includes('.')) ids.add(resolved);
-      } else if (val.includes('.')) {
-        ids.add(val);
-      }
-    };
-
-    for (const row of config.layout.rows) {
-      row.display_conditions?.forEach(c => {
-        if (c.entity && typeof c.entity === 'string') addEntityValue(c.entity);
-      });
-      for (const col of row.columns || []) {
-        col.display_conditions?.forEach(c => {
-          if (c.entity && typeof c.entity === 'string') addEntityValue(c.entity);
-        });
-        processModules(col.modules || []);
-      }
-    }
+    const { ids, incomplete } = collectConfigEntityIds(this.config);
+    this._entityCollectionIncomplete = incomplete;
     return ids;
   }
 
@@ -1083,7 +998,13 @@ export class UltraCard extends LitElement {
         }
       }
 
-      if (this._layoutTemplateService && this.hass) {
+      // Only rebuild the appearance subscriptions when the templates they are
+      // built from actually changed. Any other config edit leaves them alone.
+      const appearanceSignature = getCardAppearanceTemplateSignature(newConfig);
+      const appearanceChanged = appearanceSignature !== this._cardAppearanceSignature;
+      this._cardAppearanceSignature = appearanceSignature;
+
+      if (this._layoutTemplateService && this.hass && appearanceChanged) {
         Promise.all([
           this._layoutTemplateService.unsubscribeTemplatesByPrefix('unified_card_'),
           this._layoutTemplateService.unsubscribeTemplatesByPrefix('card_field_'),
@@ -1397,8 +1318,15 @@ export class UltraCard extends LitElement {
   /**
    * Pick up to three real, available entities (one per domain, in priority
    * order) so the starter card shows the user's own home instead of branding.
+   *
+   * `preferredIds` is HA's list of entities not already used on the dashboard.
+   * Preferring those stops a new card from suggesting entities the user can
+   * already see on screen; we fall back to all states when it comes up empty.
    */
-  private static _pickStubEntities(hass?: HomeAssistant): Array<{ entity: string; icon: string }> {
+  private static _pickStubEntities(
+    hass?: HomeAssistant,
+    preferredIds?: string[]
+  ): Array<{ entity: string; icon: string }> {
     if (!hass?.states) return [];
     const usable = (id: string): boolean => {
       const state = hass.states[id]?.state;
@@ -1413,10 +1341,13 @@ export class UltraCard extends LitElement {
       { domain: 'switch', icon: 'mdi:toggle-switch' },
     ];
     const allIds = Object.keys(hass.states);
+    const unusedIds = (preferredIds ?? []).filter(id => !!hass.states[id]);
     const picks: Array<{ entity: string; icon: string }> = [];
     for (const { domain, icon } of domainPriority) {
       if (picks.length >= 3) break;
-      const match = allIds.find(id => id.startsWith(`${domain}.`) && usable(id));
+      const match =
+        unusedIds.find(id => id.startsWith(`${domain}.`) && usable(id)) ??
+        allIds.find(id => id.startsWith(`${domain}.`) && usable(id));
       if (match) picks.push({ entity: match, icon });
     }
     if (picks.length === 0 && usable('sun.sun')) {
@@ -1427,8 +1358,13 @@ export class UltraCard extends LitElement {
 
   // Provide default configuration for new cards. HA calls this statically as
   // getStubConfig(hass, unusedEntities, allEntities); we use hass to build a
-  // working starter card from the user's real entities.
-  public static getStubConfig(hass?: HomeAssistant): UltraCardConfig {
+  // working starter card from the user's real entities, preferring the ones
+  // HA tells us are not already on the dashboard.
+  public static getStubConfig(
+    hass?: HomeAssistant,
+    unusedEntities?: string[],
+    allEntities?: string[]
+  ): UltraCardConfig {
     // Check if Pro user wants empty card (no default modules)
     const skipDefaultModules = UltraCard._shouldSkipDefaultModules();
 
@@ -1442,7 +1378,10 @@ export class UltraCard extends LitElement {
         alignment: 'center',
       } as TextModule;
 
-      const stubEntities = UltraCard._pickStubEntities(hass);
+      const stubEntities = UltraCard._pickStubEntities(
+        hass,
+        unusedEntities?.length ? unusedEntities : allEntities
+      );
       if (stubEntities.length > 0) {
         const iconModule = {
           type: 'icon',
@@ -1599,7 +1538,7 @@ export class UltraCard extends LitElement {
 
     // Use cached/cheap environment checks instead of DOM traversal on every render
     const isHaPreview = this._isEditorPreviewCard;
-    const isInCardEditor = isHaPreview || !!document.querySelector('hui-dialog-edit-card');
+    const isInCardEditor = isHaPreview || this._isCardEditDialogOpen();
     const isDashboardEditMode = this._getCachedDashboardEditMode();
     const breakpoint = responsiveDesignService.getCurrentBreakpoint();
     const renderCtx: RenderContext = { isHaPreview, isDashboardEditMode, breakpoint, hass: effectiveHass };
