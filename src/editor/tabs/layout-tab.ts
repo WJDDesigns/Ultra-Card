@@ -10599,8 +10599,10 @@ export class LayoutTab extends LitElement {
       const cardInfo = ucNativeCardsService.getNativeCardInfo(cardType);
       const cardName = cardInfo?.name || cardType;
 
-      // Create config type (e.g., 'hui-entities-card' -> 'entities')
-      const configType = ucNativeCardsService.elementNameToConfigType(cardType);
+      // Start from the card's own stub config (like HA's card picker does) so the
+      // card is immediately renderable - several HA cards and their editors throw
+      // when their entity is missing.
+      const cardConfig = await ucNativeCardsService.getStubConfig(cardType, this.hass);
 
       // Create native card module
       newModule = {
@@ -10608,9 +10610,7 @@ export class LayoutTab extends LitElement {
         type: 'native_card' as const,
         name: cardName,
         card_type: cardType, // Store full element name (hui-entities-card)
-        card_config: {
-          type: configType, // Store YAML type (entities)
-        },
+        card_config: cardConfig, // Stub config, keyed by YAML type (entities)
         display_conditions: [],
       };
     }
@@ -29688,6 +29688,12 @@ export class LayoutTab extends LitElement {
 
   private async _tryGetStubConfig(cardType: string): Promise<any | null> {
     const elementName = cardType.startsWith('custom:') ? cardType.substring(7) : cardType;
+
+    // Native HA cards expect an entity shortlist plus a fallback list, which the
+    // generic 3rd-party call below does not provide.
+    if (ucNativeCardsService.isNativeCard(elementName)) {
+      return ucNativeCardsService.getStubConfig(elementName, this.hass);
+    }
 
     // Get the card element constructor
     const cardConstructor = customElements.get(elementName);
