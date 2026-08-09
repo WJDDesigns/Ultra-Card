@@ -34,7 +34,9 @@ export const NATIVE_HA_CARDS: NativeCardEntry[] = [
     icon: 'mdi:code-braces',
     description: 'Paste any card configuration',
   },
-  { type: 'hui-activity-card', name: 'Activity' },
+  // HA's picker renamed these two, but the element name must match the YAML
+  // type, not the label: Activity is `logbook`, Webpage is `iframe`.
+  { type: 'hui-logbook-card', name: 'Activity' },
   { type: 'hui-alarm-panel-card', name: 'Alarm Panel' },
   { type: 'hui-area-card', name: 'Area' },
   { type: 'hui-button-card', name: 'Button' },
@@ -68,7 +70,7 @@ export const NATIVE_HA_CARDS: NativeCardEntry[] = [
   { type: 'hui-todo-list-card', name: 'To-do List' },
   { type: 'hui-vertical-stack-card', name: 'Vertical Stack' },
   { type: 'hui-weather-forecast-card', name: 'Weather Forecast' },
-  { type: 'hui-webpage-card', name: 'Webpage' },
+  { type: 'hui-iframe-card', name: 'Webpage' },
 ];
 
 export const WEB_SAFE_FONTS: FontOption[] = [

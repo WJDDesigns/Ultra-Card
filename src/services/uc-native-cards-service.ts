@@ -22,7 +22,9 @@ class UcNativeCardsService {
    */
   getAvailableNativeCards(): NativeCardInfo[] {
     return [
-      { type: 'hui-activity-card', name: 'Activity', description: 'Shows a list of events for entities' },
+      // HA renamed this card to "Activity" in the picker but kept `type: logbook`,
+      // and the element name has to match the type, not the label.
+      { type: 'hui-logbook-card', name: 'Activity', description: 'Shows a list of events for entities' },
       { type: 'hui-alarm-panel-card', name: 'Alarm Panel', description: 'Control alarm panel entities' },
       { type: 'hui-area-card', name: 'Area', description: 'Display area information and controls' },
       { type: 'hui-button-card', name: 'Button', description: 'Simple button for entity control' },
@@ -56,7 +58,8 @@ class UcNativeCardsService {
       { type: 'hui-todo-list-card', name: 'To-do List', description: 'Manage to-do list items' },
       { type: 'hui-vertical-stack-card', name: 'Vertical Stack', description: 'Stack cards vertically' },
       { type: 'hui-weather-forecast-card', name: 'Weather Forecast', description: 'Display weather forecast' },
-      { type: 'hui-webpage-card', name: 'Webpage', description: 'Embed a webpage' },
+      // Same rename as Activity/logbook: the picker says "Webpage", the type is `iframe`.
+      { type: 'hui-iframe-card', name: 'Webpage', description: 'Embed a webpage' },
     ];
   }
 
