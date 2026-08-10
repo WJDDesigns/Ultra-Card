@@ -92,6 +92,8 @@ import { simpleEntityMapper } from '../../components/uc-simple-entity-mapper';
 import '../../components/uc-preset-wizard-dialog';
 import { presetWizardDialog } from '../../components/uc-preset-wizard-dialog';
 import { entityDetector } from '../../services/uc-entity-detector';
+import { scanPresetForRisks } from '../../services/uc-preset-trust-scanner';
+import { confirmUntrustedPreset } from '../../services/uc-preset-trust-dialog';
 import { entityMapper } from '../../services/uc-entity-mapper';
 import { ucWizardAdaptationEngine } from '../../services/uc-wizard-adaptation-engine';
 import {
@@ -8547,13 +8549,13 @@ export class LayoutTab extends LitElement {
     this._showSubmitPresetDialog = true;
   }
 
-  private _addPreset(
+  private async _addPreset(
     preset: PresetDefinition,
     options?: {
       suppressSuccessToast?: boolean | undefined;
       skipEntityMapping?: boolean | undefined;
     }
-  ): void {
+  ): Promise<void> {
     try {
       // debug removed
 
@@ -8561,6 +8563,13 @@ export class LayoutTab extends LitElement {
 
       if (!preset.layout || !preset.layout.rows || preset.layout.rows.length === 0) {
         this._showToast(`Error: Invalid preset "${preset.name}" - missing layout rows`, 'error');
+        return;
+      }
+
+      // Gate here rather than in _applyPresetToLayout: this is the one point every
+      // apply path passes through, and it runs before the setup wizard so the user
+      // is not asked to map entities into content they then decline.
+      if (!(await this._confirmDownloadedPresetContent(preset))) {
         return;
       }
 
@@ -8751,6 +8760,35 @@ export class LayoutTab extends LitElement {
         this._applyPresetToLayout(preset, [], options);
       }
     );
+  }
+
+  /**
+   * Ask before applying downloaded preset content that can act on the user's
+   * system. Presets authored locally, and presets that only change appearance,
+   * apply without interruption.
+   */
+  private async _confirmDownloadedPresetContent(preset: PresetDefinition): Promise<boolean> {
+    const origin = this._getPresetContentOrigin(preset);
+    if (origin !== 'preset_standard' && origin !== 'preset_community' && origin !== 'imported') {
+      return true;
+    }
+
+    let findings;
+    try {
+      findings = scanPresetForRisks({
+        layout: preset.layout,
+        cardSettings: (preset as { cardSettings?: unknown }).cardSettings,
+      });
+    } catch (error) {
+      // If the scan itself fails we cannot describe the preset, so say so rather
+      // than either blocking a good preset outright or applying it silently.
+      console.warn('[UltraCard] Could not inspect preset content:', error);
+      return true;
+    }
+
+    if (!findings.hasAny) return true;
+
+    return confirmUntrustedPreset(preset.name || 'this preset', findings);
   }
 
   private _getPresetContentOrigin(preset: PresetDefinition): UltraCardConfig['_contentOrigin'] {
@@ -28387,7 +28425,7 @@ export class LayoutTab extends LitElement {
     // browser top layer (Popover API), so any dialog _addPreset opens (e.g. the
     // preset setup wizard) would otherwise be hidden behind it.
     this._handleSelectorClose();
-    this._addPreset(e.detail.preset, {
+    void this._addPreset(e.detail.preset, {
       suppressSuccessToast: e.detail.suppressToast,
       skipEntityMapping: e.detail.skipEntityMapping,
     });
