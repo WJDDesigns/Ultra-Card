@@ -842,8 +842,11 @@ async function main() {
     run(`git commit -m "${commitMessage}"`, { silent: true });
     log.success('Changes committed');
   } catch (error) {
-    // If nothing to commit, that's okay
-    if (error.message.includes('nothing to commit')) {
+    // git reports an already-clean tree on stdout, not in the thrown message, so
+    // checking error.message alone aborted every release where the version bump
+    // had already been committed by hand.
+    const output = `${error.message}\n${error.stdout || ''}`;
+    if (output.includes('nothing to commit')) {
       log.info('No changes to commit');
     } else {
       throw error;
