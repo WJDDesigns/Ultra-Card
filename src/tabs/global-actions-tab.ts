@@ -5,6 +5,7 @@ import type { HomeAssistant } from 'custom-card-helpers';
 import type { CardModule, HoverEffectConfig, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
 import { UcFormUtils } from '../utils/uc-form-utils';
+import { requestPreviewUpdate } from '../utils/uc-preview-update';
 import '../components/ultra-color-picker';
 
 @customElement('ultra-global-actions-tab')
@@ -194,18 +195,7 @@ export class GlobalActionsTab extends LitElement {
   }
 
   private _triggerPreviewUpdate(): void {
-    if (window._ultraCardUpdateTimer) {
-      clearTimeout(window._ultraCardUpdateTimer);
-      window._ultraCardUpdateTimer = null;
-    }
-    window._ultraCardUpdateTimer = setTimeout(() => {
-      window._ultraCardUpdateTimer = null;
-      const event = new CustomEvent('ultra-card-template-update', {
-        bubbles: true,
-        composed: true,
-      });
-      window.dispatchEvent(event);
-    }, 50);
+    requestPreviewUpdate({ source: 'global-actions' });
   }
 
   protected override render() {

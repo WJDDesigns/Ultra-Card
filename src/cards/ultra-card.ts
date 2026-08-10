@@ -28,6 +28,7 @@ import { getImageUrl } from '../utils/image-upload';
 import { collectModuleTypesFromLayout, forEachNestedChildModules } from '../utils/uc-layout-module-types';
 import { layoutRequiresBroadHassUpdates } from '../utils/uc-broad-hass-updates';
 import { collectConfigEntityIds } from '../utils/uc-config-entity-ids';
+import { UcMaxWaitDebounce } from '../utils/uc-max-wait-debounce';
 import { collectRuntimeEntityIds } from '../utils/uc-runtime-entity-ids';
 import { logicService } from '../services/logic-service';
 import { TemplateService } from '../services/template-service';
@@ -149,7 +150,20 @@ export class UltraCard extends LitElement {
   private _cardTemplatesRegistered = false;
   /** Signature of the config fields the appearance subscriptions are built from. */
   private _cardAppearanceSignature: string | undefined;
-  private _templateUpdateDebounceTimer: number | undefined;
+  /**
+   * Coalesces template-update events into repaints.
+   *
+   * The dispatcher already debounces, so this is the second stage; both need the
+   * max-wait or a steady stream of template callbacks postpones the repaint for as
+   * long as it lasts.
+   */
+  private readonly _templateUpdateDebounce = new UcMaxWaitDebounce(
+    () => {
+      this.requestUpdate();
+      this._updateHoverEffectStyles();
+    },
+    { wait: 50, maxWait: 250 }
+  );
   /** Monotonic counter bumped on every config change; used as a cheap cache key instead of JSON.stringify. */
   private _configVersion = 0;
   /** Coalesces multiple requestUpdate calls within the same microtask. */
@@ -490,23 +504,13 @@ export class UltraCard extends LitElement {
       // User-driven UI (accordion, tabs, …) uses triggerPreviewUpdate(true): do not reset a
       // 50ms debounce on every click or rapid taps never paint until the user pauses.
       if (detail?.immediate) {
-        if (this._templateUpdateDebounceTimer !== undefined) {
-          clearTimeout(this._templateUpdateDebounceTimer);
-          this._templateUpdateDebounceTimer = undefined;
-        }
+        this._templateUpdateDebounce.cancel();
         this._scheduleUpdate();
         this._updateHoverEffectStyles();
         return;
       }
 
-      if (this._templateUpdateDebounceTimer !== undefined) {
-        clearTimeout(this._templateUpdateDebounceTimer);
-      }
-      this._templateUpdateDebounceTimer = window.setTimeout(() => {
-        this._templateUpdateDebounceTimer = undefined;
-        this.requestUpdate();
-        this._updateHoverEffectStyles();
-      }, 50);
+      this._templateUpdateDebounce.schedule();
     };
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
 
@@ -618,10 +622,7 @@ export class UltraCard extends LitElement {
     logicService.unregisterConsumer();
 
     // Clean up layout template service
-    if (this._templateUpdateDebounceTimer !== undefined) {
-      clearTimeout(this._templateUpdateDebounceTimer);
-      this._templateUpdateDebounceTimer = undefined;
-    }
+    this._templateUpdateDebounce.cancel();
     if (this._layoutTemplateService) {
       this._layoutTemplateService.unsubscribeAllTemplates();
       this._layoutTemplateService = null;

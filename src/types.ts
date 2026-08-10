@@ -4,7 +4,6 @@ import { LinkAction } from './services/link-service';
 // Global window interface extensions
 declare global {
   interface Window {
-    _ultraCardUpdateTimer?: ReturnType<typeof setTimeout> | null | undefined;
     /**
      * Optional module chunk preload policy (see `uc-module-preload-scheduler.ts`).
      * `localStorage['ultra-card-module-preload']` accepts the same strings if this is unset.

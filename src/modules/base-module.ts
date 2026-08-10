@@ -10,6 +10,7 @@ import { ucGestureService, GestureConfig } from '../services/uc-gesture-service'
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { getImageUrl, SUPPORTED_IMAGE_ACCEPT } from '../utils/image-upload';
 import { renderTemplateKeyWarning } from '../utils/template-key-warning';
+import { requestPreviewUpdate } from '../utils/uc-preview-update';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { build3dTransformStyles } from '../utils/transform-3d-utils';
 import '../components/ultra-file-picker';
@@ -1286,27 +1287,9 @@ export abstract class BaseUltraModule implements UltraModule {
     // websocket tick). Never "skip" updates: a second callback while the debounce
     // timer is armed must reschedule so the final paint includes the latest
     // `hass.__uvc_template_strings` writes (skipping caused stale icon colors).
-    if (window._ultraCardUpdateTimer) {
-      clearTimeout(window._ultraCardUpdateTimer);
-      window._ultraCardUpdateTimer = null;
-    }
-
-    const delay = immediate ? 0 : 50;
-
-    window._ultraCardUpdateTimer = setTimeout(() => {
-      window._ultraCardUpdateTimer = null;
-      const event = new CustomEvent('ultra-card-template-update', {
-        bubbles: true,
-        composed: true,
-        detail: {
-          timestamp: Date.now(),
-          source: 'module-update',
-          /** When true, listeners must not debounce — e.g. accordion/tab toggles need same-frame paint. */
-          immediate,
-        },
-      });
-      window.dispatchEvent(event);
-    }, delay);
+    // Rescheduling is bounded so a stream of callbacks cannot postpone the paint
+    // forever — see `uc-preview-update`.
+    requestPreviewUpdate({ source: 'module-update', immediate });
   }
 
   /**
