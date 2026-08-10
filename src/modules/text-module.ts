@@ -747,7 +747,7 @@ export class UltraTextModule extends BaseUltraModule {
         ? html`<span class="rich-text-content"
             >${unsafeHTML(
               sanitizeRichTextHtml(effectiveContent, {
-                allowStyle: isLocallyAuthoredConfig(config),
+                trusted: isLocallyAuthoredConfig(config),
               })
             )}</span
           >`

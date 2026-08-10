@@ -716,7 +716,7 @@ All standard markdown features are automatically enabled!`,
         // Use marked.js to process the markdown (synchronous version)
         const html = marked(processedContent, markedOptions) as string;
         return sanitizeMarkdownHtml(html, !!markdownModule.enable_html, {
-          allowStyle: isLocallyAuthoredConfig(config),
+          trusted: isLocallyAuthoredConfig(config),
         });
       } catch (error) {
         console.warn('Ultra Card: Failed to process markdown:', error);
@@ -724,7 +724,7 @@ All standard markdown features are automatically enabled!`,
         // too. Input that makes marked throw is exactly the input most likely to
         // be hostile, so returning it raw would be a sanitizer bypass.
         return sanitizeMarkdownHtml(processedContent, !!markdownModule.enable_html, {
-          allowStyle: isLocallyAuthoredConfig(config),
+          trusted: isLocallyAuthoredConfig(config),
         });
       }
     };

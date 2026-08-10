@@ -13,7 +13,7 @@ const hass = { states: {} } as unknown as HomeAssistant;
 let handleAction: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
-  handleAction = vi.spyOn(UltraLinkComponent, 'handleAction').mockImplementation(() => undefined);
+  handleAction = vi.spyOn(UltraLinkComponent, 'handleAction').mockImplementation(async () => {});
 });
 
 afterEach(() => {

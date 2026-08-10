@@ -51,58 +51,114 @@ describe('html-sanitizer', () => {
     expect(escapeHtml(`a"b'c<d>e&f`)).toBe('a&quot;b&#39;c&lt;d&gt;e&amp;f');
   });
 
-  // S7: CSS from downloaded content can beacon via url() and exfiltrate via
-  // attribute selectors, so style is withheld from it while local text keeps it.
+  /**
+   * S7: CSS from downloaded content can beacon via url(), so that is removed. The
+   * cosmetic remainder is kept — every published preset using inline styles uses
+   * them for colour and alignment, and dropping the attribute outright made those
+   * presets render wrong to block a vector they never used.
+   */
   describe('style handling by content trust (S7)', () => {
     it('keeps the style attribute for locally authored rich text', () => {
       const sanitized = sanitizeRichTextHtml('<span style="color: red">hi</span>', {
-        allowStyle: true,
+        trusted: true,
       });
       expect(sanitized).toContain('style="color: red"');
     });
 
-    it('strips the style attribute for downloaded rich text but keeps the text', () => {
+    it('keeps cosmetic styles on downloaded rich text', () => {
+      const sanitized = sanitizeRichTextHtml('<span style="color: indianred">S</span>', {
+        trusted: false,
+      });
+      expect(sanitized).toContain('indianred');
+    });
+
+    it('removes a url() beacon from downloaded rich text but keeps the text', () => {
       const sanitized = sanitizeRichTextHtml(
         '<span style="background: url(https://evil.example/beacon.png)">hi</span>',
-        { allowStyle: false }
+        { trusted: false }
       );
-      expect(sanitized).not.toContain('style');
+      expect(sanitized).not.toContain('evil.example');
+      expect(sanitized).not.toContain('url(');
+      expect(sanitized).toContain('hi');
+    });
+
+    it('keeps the cosmetic half of a mixed declaration and drops the fetching half', () => {
+      const sanitized = sanitizeRichTextHtml(
+        '<span style="color: red; background: url(https://evil.example/b.png); text-align: left">hi</span>',
+        { trusted: false }
+      );
+      expect(sanitized).toContain('color: red');
+      expect(sanitized).toContain('text-align: left');
+      expect(sanitized).not.toContain('evil.example');
+    });
+
+    it('removes the other fetch-capable constructs too', () => {
+      for (const value of [
+        'background-image: image-set("https://evil.example/a.png" 1x)',
+        '-moz-binding: url(https://evil.example/x.xml)',
+        'behavior: url(https://evil.example/x.htc)',
+      ]) {
+        const sanitized = sanitizeRichTextHtml(`<span style="${value}">hi</span>`, {
+          trusted: false,
+        });
+        expect(sanitized).not.toContain('evil.example');
+      }
+    });
+
+    it('does not leave a fetch behind when a url() contains a semicolon', () => {
+      // Splitting on ';' severs this declaration; neither half may survive.
+      const sanitized = sanitizeRichTextHtml(
+        `<span style="background: url('https://evil.example/a;b.png')">hi</span>`,
+        { trusted: false }
+      );
       expect(sanitized).not.toContain('evil.example');
       expect(sanitized).toContain('hi');
     });
 
-    it('keeps other rich text attributes when style is withheld', () => {
+    it('keeps other rich text attributes alongside a cleaned style', () => {
       const sanitized = sanitizeRichTextHtml(
         '<a href="https://example.com" class="x" style="color:red">go</a>',
-        { allowStyle: false }
+        { trusted: false }
       );
       expect(sanitized).toContain('href="https://example.com"');
       expect(sanitized).toContain('class="x"');
-      expect(sanitized).not.toContain('color:red');
+      expect(sanitized).toContain('color:red');
     });
 
-    it('defaults to allowing style so existing callers are unchanged', () => {
+    it('defaults to trusting the content so existing callers are unchanged', () => {
       expect(sanitizeRichTextHtml('<span style="color: red">hi</span>')).toContain('style');
     });
 
-    it('drops style blocks and attributes from downloaded markdown even with HTML enabled', () => {
+    it('drops style blocks from downloaded markdown but keeps cosmetic attributes', () => {
       const sanitized = sanitizeMarkdownHtml(
         '<style>.x{background:url(https://evil.example/b.png)}</style><p style="color:red" class="x">ok</p>',
         true,
-        { allowStyle: false }
+        { trusted: false }
       );
+      // A <style> block can carry @import and selectors, which inline styles cannot,
+      // so it stays forbidden for downloaded content.
       expect(sanitized).not.toContain('<style');
       expect(sanitized).not.toContain('evil.example');
-      expect(sanitized).not.toContain('color:red');
+      expect(sanitized).toContain('color:red');
       expect(sanitized).toContain('ok');
       expect(sanitized).toContain('class="x"');
     });
 
     it('still preserves style blocks for local markdown with HTML enabled', () => {
       const sanitized = sanitizeMarkdownHtml('<style>.day-box{color:red}</style><p>ok</p>', true, {
-        allowStyle: true,
+        trusted: true,
       });
       expect(sanitized).toContain('<style>');
+    });
+
+    it('does not leak trust state between calls', () => {
+      sanitizeRichTextHtml('<span style="background: url(https://evil.example/a.png)">x</span>', {
+        trusted: false,
+      });
+      // The hook is global, so a stale flag would silently strip trusted content.
+      expect(sanitizeRichTextHtml('<span style="background: url(/local/a.png)">x</span>')).toContain(
+        'url('
+      );
     });
   });
 });
