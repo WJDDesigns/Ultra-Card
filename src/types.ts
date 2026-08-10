@@ -6813,6 +6813,14 @@ export interface UltraCardConfig {
    * Set from YAML for high-assurance dashboards. @see docs/navigation-js-templates.md
    */
   disable_navigation_js_templates?: boolean | undefined;
+  /**
+   * Opt back in to navigation `[[[...]]]` JavaScript for a config that came from a
+   * preset or import. Off by default: that code runs with the live `hass` object
+   * in scope, so it is only enabled by a deliberate human decision, never by
+   * anything the downloaded content itself claims about its own origin.
+   * @see docs/navigation-js-templates.md
+   */
+  allow_navigation_js_from_untrusted?: boolean | undefined;
   global_css?: string | undefined;
   /** When true, `card_unified_template` controls card appearance via unified template JSON or color string. */
   card_unified_template_mode?: boolean | undefined;

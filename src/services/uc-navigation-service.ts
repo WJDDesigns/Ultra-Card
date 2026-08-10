@@ -2722,7 +2722,12 @@ class UcNavigationService {
     const match = value.match(/\[\[\[([\s\S]*)\]\]\]/);
     if (!match) return value;
     if (!this.shouldAllowJsTemplateExecution(config)) {
-      console.warn('[UltraCard] Blocking JS template execution for imported/community content.');
+      console.warn(
+        '[UltraCard] Navigation JavaScript blocked: this card came from a preset or import ' +
+          `(origin: ${config?._contentOrigin ?? 'unknown'}), and [[[ ... ]]] runs with full ` +
+          'access to Home Assistant. Set `allow_navigation_js_from_untrusted: true` on the card ' +
+          'only if you have read the code yourself.'
+      );
       return '';
     }
 

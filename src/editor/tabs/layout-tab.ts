@@ -8754,12 +8754,20 @@ export class LayoutTab extends LitElement {
   }
 
   private _getPresetContentOrigin(preset: PresetDefinition): UltraCardConfig['_contentOrigin'] {
+    // Anything fetched from ultracard.io carries a `wp-` id. Decide "downloaded"
+    // from that alone: the author and tag fields travel in the same payload, so
+    // an untagged preset must not be able to fall through to `local` and inherit
+    // the trust of a locally authored config.
+    const downloaded = preset.id?.startsWith('wp-') === true;
+
     if (preset.tags?.includes('community')) {
       return 'preset_community';
     }
-    if (preset.id?.startsWith('wp-') || preset.tags?.includes('standard')) {
+    if (downloaded || preset.tags?.includes('standard')) {
       return 'preset_standard';
     }
+    // Presets bundled with the card itself ship in our own code, so they inherit
+    // the host config's origin.
     return this.config._contentOrigin || 'local';
   }
 
