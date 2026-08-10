@@ -285,19 +285,15 @@ export class UltraCard extends LitElement {
     const has3rdPartyCards = moduleTypes.has('external_card');
     const hasNonExternalModules = Array.from(moduleTypes).some(t => t !== 'external_card');
 
-    let requiresHassBroadUpdates =
+    // Templated markdown deliberately does NOT force broad hass updates. Both its
+    // template paths subscribe to HA's render_template websocket, and the
+    // subscription callback clears the content cache and fires
+    // 'ultra-card-template-update', which this card answers with requestUpdate().
+    // That arrives without 'hass' in changedProps, so it renders regardless of
+    // this flag. Forcing broad updates as well only added a re-render on every
+    // unrelated state change.
+    const requiresHassBroadUpdates =
       layoutRequiresBroadHassUpdates(layout) || this._entityCollectionIncomplete;
-    const jinjaInMarkdown = (s: string) => /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/.test(s);
-    for (const mod of allModules) {
-      if (requiresHassBroadUpdates) break;
-      if (mod.type !== 'markdown') continue;
-      const m = mod as any;
-      const unifiedOn =
-        !!m.unified_template_mode && !!(m.unified_template && String(m.unified_template).trim());
-      if (unifiedOn || jinjaInMarkdown(String(m.markdown_content || ''))) {
-        requiresHassBroadUpdates = true;
-      }
-    }
 
     this._configCache = {
       layoutKey,
