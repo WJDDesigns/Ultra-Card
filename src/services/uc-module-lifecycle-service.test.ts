@@ -155,6 +155,87 @@ describe('releaseUnusedModuleInstances', () => {
     expect(healthy).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * P2: 11 of the 13 modules that own a TemplateService had no teardown hook, so
+   * their render_template subscriptions — real backend tasks in HA — accumulated
+   * for the lifetime of the tab.
+   */
+  describe('template subscription release', () => {
+    function addModuleWithTemplateService(type: string, extra: Record<string, unknown> = {}) {
+      const unsubscribeAllTemplates = vi.fn().mockResolvedValue(undefined);
+      const { module } = makeModule(type, false);
+      module._templateService = { unsubscribeAllTemplates };
+      Object.assign(module, extra);
+      getModuleRegistry().registerModule(module);
+      registered.push(type);
+      return { module, unsubscribeAllTemplates };
+    }
+
+    it('releases subscriptions for a module with no teardown hook', () => {
+      const { module, unsubscribeAllTemplates } = addModuleWithTemplateService('uc-test-tpl');
+
+      releaseUnusedModuleInstances();
+
+      expect(unsubscribeAllTemplates).toHaveBeenCalledTimes(1);
+      // Cleared so the next render rebuilds it — every module creates the service
+      // lazily behind `if (!this._templateService)`.
+      expect(module._templateService).toBeUndefined();
+    });
+
+    it('leaves subscriptions alone while a card still uses the module', () => {
+      const { unsubscribeAllTemplates } = addModuleWithTemplateService('uc-test-tpl-inuse');
+      registerCard(document.createElement('div'), configWithTypes('uc-test-tpl-inuse'));
+
+      releaseUnusedModuleInstances();
+
+      expect(unsubscribeAllTemplates).not.toHaveBeenCalled();
+    });
+
+    it('runs the older cleanup() hook as well as releasing subscriptions', () => {
+      const cleanup = vi.fn();
+      const { unsubscribeAllTemplates } = addModuleWithTemplateService('uc-test-cleanup', {
+        cleanup,
+      });
+
+      releaseUnusedModuleInstances();
+
+      expect(cleanup).toHaveBeenCalledTimes(1);
+      expect(unsubscribeAllTemplates).toHaveBeenCalled();
+    });
+
+    it('prefers destroy() over cleanup() when a module has both', () => {
+      const cleanup = vi.fn();
+      const destroy = vi.fn();
+      addModuleWithTemplateService('uc-test-both', { cleanup, destroy });
+
+      releaseUnusedModuleInstances();
+
+      expect(destroy).toHaveBeenCalledTimes(1);
+      expect(cleanup).not.toHaveBeenCalled();
+    });
+
+    it('survives a rejected unsubscribe without an unhandled rejection', async () => {
+      const unsubscribeAllTemplates = vi.fn().mockRejectedValue(new Error('ws gone'));
+      const { module } = makeModule('uc-test-tpl-reject', false);
+      module._templateService = { unsubscribeAllTemplates };
+      getModuleRegistry().registerModule(module);
+      registered.push('uc-test-tpl-reject');
+
+      expect(() => releaseUnusedModuleInstances()).not.toThrow();
+      await Promise.resolve();
+      expect(unsubscribeAllTemplates).toHaveBeenCalled();
+    });
+
+    it('is safe to call twice', () => {
+      const { unsubscribeAllTemplates } = addModuleWithTemplateService('uc-test-tpl-twice');
+
+      releaseUnusedModuleInstances();
+      releaseUnusedModuleInstances();
+
+      expect(unsubscribeAllTemplates).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('treats a card with no config as using no module types', () => {
     const destroy = addModule('uc-test-noconfig');
     registerCard(document.createElement('div'), undefined);

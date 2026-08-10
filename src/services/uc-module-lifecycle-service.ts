@@ -11,13 +11,67 @@ import { collectModuleTypesFromLayout } from '../utils/uc-layout-module-types';
  * of all still-registered cards: a module type absent from every one of them
  * has no remaining owner and can safely release its timers and subscriptions.
  *
- * Modules opt in by exposing a `destroy()` method. It must be idempotent and
- * leave the instance reusable, because the same singleton is reused if a card
- * using that module type is added back to the page.
+ * Modules opt in by exposing a `destroy()` method (or the older `cleanup()`). It
+ * must be idempotent and leave the instance reusable, because the same singleton
+ * is reused if a card using that module type is added back to the page.
+ *
+ * Template subscriptions are additionally released generically, since most
+ * modules that own one never declared a teardown hook and their subscriptions
+ * would otherwise accumulate for the lifetime of the browser tab — the reason
+ * long-lived wall tablets get slower over hours.
  */
 
 interface DestroyableModule {
   destroy?: () => void;
+  /** Older teardown hook, predating `destroy()`. Same contract. */
+  cleanup?: () => void;
+  /**
+   * Not part of the module contract, but 13 module implementations own one of
+   * these and each render_template subscription it holds is a real backend task
+   * in HA. Released generically so a module without its own teardown hook cannot
+   * silently leak subscriptions for the lifetime of the browser tab.
+   */
+  _templateService?:
+    | {
+        unsubscribeAllTemplates?: () => Promise<void> | void;
+      }
+    | undefined;
+}
+
+/**
+ * Run a module's own teardown hook, whichever convention it uses.
+ * Returns true if the module had one.
+ */
+function runTeardownHook(module: DestroyableModule, type: string): boolean {
+  const hook = typeof module.destroy === 'function' ? module.destroy : module.cleanup;
+  if (typeof hook !== 'function') return false;
+  try {
+    hook.call(module);
+  } catch (error) {
+    console.warn(`[UltraCard] Failed to release module "${type}":`, error);
+  }
+  return true;
+}
+
+/**
+ * Drop the module's template subscriptions. Safe because every implementation
+ * recreates the service lazily (`if (!this._templateService)`) on its next
+ * render, so the singleton stays reusable when a card comes back.
+ */
+function releaseTemplateSubscriptions(module: DestroyableModule, type: string): void {
+  const service = module._templateService;
+  if (!service || typeof service.unsubscribeAllTemplates !== 'function') return;
+  try {
+    const result = service.unsubscribeAllTemplates();
+    if (result && typeof (result as Promise<void>).catch === 'function') {
+      (result as Promise<void>).catch(() => {
+        // Teardown is best effort; a failed unsubscribe must not surface here.
+      });
+    }
+    module._templateService = undefined;
+  } catch (error) {
+    console.warn(`[UltraCard] Failed to release template subscriptions for "${type}":`, error);
+  }
 }
 
 /** Module types currently present in the config of at least one live card. */
@@ -50,12 +104,11 @@ export function releaseUnusedModuleInstances(): void {
   for (const module of getModuleRegistry().getAllModules()) {
     const type = module?.metadata?.type;
     if (!type || inUse.has(type)) continue;
-    const destroy = (module as DestroyableModule).destroy;
-    if (typeof destroy !== 'function') continue;
-    try {
-      destroy.call(module);
-    } catch (error) {
-      console.warn(`[UltraCard] Failed to release module "${type}":`, error);
-    }
+
+    const candidate = module as DestroyableModule;
+    runTeardownHook(candidate, type);
+    // Also run unconditionally: a module's own hook may not cover its template
+    // service, and most modules have no hook at all.
+    releaseTemplateSubscriptions(candidate, type);
   }
 }
