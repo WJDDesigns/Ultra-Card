@@ -42,10 +42,22 @@ export function confirmUntrustedPreset(
   if (!findings.hasAny) return Promise.resolve(true);
 
   return new Promise<boolean>(resolve => {
-    const overlay = document.createElement('div');
-    overlay.className = 'uc-preset-trust-overlay';
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
+    // A <dialog> opened with showModal() enters the browser's top layer. This
+    // prompt appears while the Ultra Card editor is itself inside Home
+    // Assistant's modal card-edit dialog, and no z-index on a document.body
+    // child can paint above a top-layer element or receive its clicks — the
+    // prompt would render behind the editor and the preset would silently never
+    // arrive. Top layer stacks by promotion order, so opening ours last puts it
+    // above HA's.
+    const supportsModal = typeof HTMLDialogElement !== 'undefined';
+    const overlay = document.createElement(supportsModal ? 'dialog' : 'div');
+    overlay.className = supportsModal
+      ? 'uc-preset-trust-dialog'
+      : 'uc-preset-trust-dialog uc-preset-trust-fallback';
+    if (!supportsModal) {
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+    }
     overlay.setAttribute('aria-label', 'Review preset before adding');
 
     const sections = [
@@ -67,7 +79,7 @@ export function confirmUntrustedPreset(
     ].join('');
 
     overlay.innerHTML = `
-      <div class="uc-preset-trust-backdrop"></div>
+      ${supportsModal ? '' : '<div class="uc-preset-trust-backdrop"></div>'}
       <div class="uc-preset-trust-panel">
         <h2 class="uc-preset-trust-title">Review “${escapeHtml(presetName)}” before adding</h2>
         <p class="uc-preset-trust-message">
@@ -84,11 +96,25 @@ export function confirmUntrustedPreset(
 
     const style = document.createElement('style');
     style.textContent = `
-      .uc-preset-trust-overlay {
+      dialog.uc-preset-trust-dialog {
+        /* Reset the UA dialog box so the panel below controls all appearance. */
+        border: none;
+        padding: 0;
+        margin: auto;
+        background: transparent;
+        max-width: none;
+        max-height: none;
+        overflow: visible;
+        color: var(--primary-text-color);
+      }
+      dialog.uc-preset-trust-dialog::backdrop {
+        background: rgba(0, 0, 0, 0.56);
+      }
+      /* Fallback for engines without <dialog>: positioned overlay, which cannot
+         escape the top layer but is better than showing nothing. */
+      .uc-preset-trust-fallback {
         position: fixed;
         inset: 0;
-        /* Match the action confirmation dialog: Ultra popup portals use the max
-           32-bit z-index, so this must tie and win on DOM order. */
         z-index: 2147483647;
         display: grid;
         place-items: center;
@@ -184,10 +210,22 @@ export function confirmUntrustedPreset(
     const finalize = (confirmed: boolean): void => {
       if (resolved) return;
       resolved = true;
-      document.removeEventListener('keydown', handleKeydown, { capture: true });
-      if (style.parentNode) style.remove();
-      if (overlay.parentNode) overlay.remove();
-      resolve(confirmed);
+      // Teardown must never be able to strand the caller: this promise gates
+      // whether the preset applies at all, so the answer is delivered even if
+      // dismissing or removing the dialog throws.
+      try {
+        document.removeEventListener('keydown', handleKeydown, { capture: true });
+        if (supportsModal) {
+          const asDialog = overlay as HTMLDialogElement;
+          if (asDialog.open) asDialog.close();
+        }
+      } catch (error) {
+        console.warn('[UltraCard] Preset review dialog cleanup failed:', error);
+      } finally {
+        if (style.parentNode) style.remove();
+        if (overlay.parentNode) overlay.remove();
+        resolve(confirmed);
+      }
     };
 
     // Capture phase so Escape does not also close an Ultra popup underneath,
@@ -232,12 +270,43 @@ export function confirmUntrustedPreset(
     confirmButton.addEventListener('click', () => finalize(true));
     actionsRow.appendChild(confirmButton);
 
-    overlay
-      .querySelector('.uc-preset-trust-backdrop')
-      ?.addEventListener('click', () => finalize(false));
+    if (supportsModal) {
+      // With a <dialog> the backdrop is ::backdrop and is not a child, so a click
+      // landing on the dialog element itself is a click outside the panel.
+      overlay.addEventListener('click', event => {
+        if (event.target === overlay) finalize(false);
+      });
+      // Escape and any other native dismissal must still settle the promise,
+      // otherwise the awaiting caller would hang and the preset would neither
+      // apply nor report anything.
+      overlay.addEventListener('cancel', event => {
+        event.preventDefault();
+        finalize(false);
+      });
+      overlay.addEventListener('close', () => finalize(false));
+    } else {
+      overlay
+        .querySelector('.uc-preset-trust-backdrop')
+        ?.addEventListener('click', () => finalize(false));
+    }
 
     document.body.appendChild(overlay);
     document.body.appendChild(style);
+
+    if (supportsModal) {
+      try {
+        (overlay as HTMLDialogElement).showModal();
+      } catch (error) {
+        // Never leave the caller awaiting a dialog the user cannot see. Degrade to
+        // a plain positioned overlay: it cannot beat the top layer, but a visible
+        // prompt in the wrong stacking order is recoverable, whereas an invisible
+        // one loses the user's preset with no explanation.
+        console.warn('[UltraCard] Preset review dialog could not open modally:', error);
+        overlay.setAttribute('open', '');
+        overlay.classList.add('uc-preset-trust-fallback');
+      }
+    }
+
     document.addEventListener('keydown', handleKeydown, { capture: true });
 
     // Focus Cancel rather than the primary action: a stray Enter on a security
