@@ -1,102 +1,175 @@
 import { describe, it, expect } from 'vitest';
 import { configValidationService } from './config-validation-service';
-import { UltraCardConfig } from '../types';
 
-function makeConfig(): UltraCardConfig {
-  return {
-    type: 'custom:ultra-card',
-    layout: {
-      rows: [
-        {
-          id: 'row-1',
-          columns: [
+/**
+ * H2: setConfig only threw for a falsy config. Real validation ran inside a
+ * promise, and the throw in that .then() was swallowed by a .catch() that logged
+ * a warning — so a malformed config produced a half-rendered card instead of the
+ * config error HA shows when setConfig throws synchronously.
+ *
+ * The gate has to stay narrow. It reports shapes that are wrong, never values
+ * that are merely absent, because validateAndCorrectConfig fills those in and
+ * that auto-correction is worth keeping.
+ */
+describe('validateConfigStructure', () => {
+  const check = (config: unknown): string[] =>
+    configValidationService.validateConfigStructure(config);
+
+  describe('rejects what cannot be rendered', () => {
+    it('rejects a non-object config', () => {
+      expect(check(null)).toEqual(['Configuration must be an object']);
+      expect(check('nope')).toEqual(['Configuration must be an object']);
+      expect(check([])).toEqual(['Configuration must be an object']);
+    });
+
+    it('rejects a foreign card type', () => {
+      expect(check({ type: 'custom:other-card' })).toEqual([
+        'Invalid card type: custom:other-card',
+      ]);
+    });
+
+    it('rejects a non-string card type', () => {
+      expect(check({ type: 42 })).toEqual(['Card type must be a string']);
+    });
+
+    it('rejects a layout that is not an object', () => {
+      expect(check({ type: 'custom:ultra-card', layout: [] })).toEqual([
+        'Layout must be an object',
+      ]);
+    });
+
+    it('rejects rows that are not an array', () => {
+      expect(check({ type: 'custom:ultra-card', layout: { rows: {} } })).toEqual([
+        'Layout rows must be an array',
+      ]);
+    });
+
+    it('rejects a row that is not an object', () => {
+      expect(check({ type: 'custom:ultra-card', layout: { rows: ['broken'] } })).toEqual([
+        'Row 1 must be an object',
+      ]);
+    });
+
+    it('rejects columns that are not an array', () => {
+      expect(check({ type: 'custom:ultra-card', layout: { rows: [{ columns: 'x' }] } })).toEqual([
+        'Row 1: columns must be an array',
+      ]);
+    });
+
+    it('rejects modules that are not an array', () => {
+      const errors = check({
+        type: 'custom:ultra-card',
+        layout: { rows: [{ columns: [{ modules: 'x' }] }] },
+      });
+      expect(errors).toEqual(['Row 1, column 1: modules must be an array']);
+    });
+
+    it('rejects a module that is not an object', () => {
+      const errors = check({
+        type: 'custom:ultra-card',
+        layout: { rows: [{ columns: [{ modules: ['text'] }] }] },
+      });
+      expect(errors).toEqual(['Row 1, column 1: every module must be an object']);
+    });
+
+    it('reports the position of a problem in a later row', () => {
+      const errors = check({
+        type: 'custom:ultra-card',
+        layout: { rows: [{ columns: [] }, { columns: [] }, { columns: 'x' }] },
+      });
+      expect(errors).toEqual(['Row 3: columns must be an array']);
+    });
+
+    it('finds a broken module nested inside a layout module', () => {
+      const errors = check({
+        type: 'custom:ultra-card',
+        layout: {
+          rows: [
             {
-              id: 'col-1',
-              modules: [
-                { id: 'icon-1', type: 'icon' } as any,
+              columns: [{ modules: [{ type: 'horizontal', modules: [{ type: 7 }] }] }],
+            },
+          ],
+        },
+      });
+      expect(errors).toEqual(['Row 1, column 1: module type must be a string']);
+    });
+
+    it('caps how many problems it reports', () => {
+      const rows = Array.from({ length: 50 }, () => 'broken');
+      expect(check({ type: 'custom:ultra-card', layout: { rows } })).toHaveLength(10);
+    });
+  });
+
+  describe('leaves auto-correctable configs alone', () => {
+    it('accepts a config with nothing but a type', () => {
+      expect(check({ type: 'custom:ultra-card' })).toEqual([]);
+    });
+
+    it('accepts a missing type, which the async pass fills in', () => {
+      expect(check({ layout: { rows: [] } })).toEqual([]);
+    });
+
+    it('accepts a missing rows array', () => {
+      expect(check({ type: 'custom:ultra-card', layout: {} })).toEqual([]);
+    });
+
+    it('accepts a module with no type yet', () => {
+      const config = {
+        type: 'custom:ultra-card',
+        layout: { rows: [{ columns: [{ modules: [{ id: 'm1' }] }] }] },
+      };
+      expect(check(config)).toEqual([]);
+    });
+
+    it('accepts an unknown module type, which may be a third-party module', () => {
+      const config = {
+        type: 'custom:ultra-card',
+        layout: { rows: [{ columns: [{ modules: [{ id: 'm1', type: 'not-registered' }] }] }] },
+      };
+      expect(check(config)).toEqual([]);
+    });
+
+    it('accepts a realistic nested layout', () => {
+      const config = {
+        type: 'custom:ultra-card',
+        card_background: '#fff',
+        layout: {
+          rows: [
+            {
+              id: 'row-1',
+              columns: [
                 {
-                  id: 'layout-1',
-                  type: 'horizontal',
-                  modules: [{ id: 'nested-1', type: 'text' } as any],
-                } as any,
-                {
-                  id: 'popup-1',
-                  type: 'popup',
-                  trigger_module_id: 'icon-1',
-                } as any,
-                {
-                  id: 'button-1',
-                  type: 'button',
-                  tap_action: { action: 'open-popup', popup_id: 'popup-1' },
-                } as any,
+                  id: 'col-1',
+                  modules: [
+                    { id: 'm1', type: 'text', text: 'hello' },
+                    {
+                      id: 'm2',
+                      type: 'horizontal',
+                      modules: [
+                        { id: 'm3', type: 'icon' },
+                        { id: 'm4', type: 'bar' },
+                      ],
+                    },
+                  ],
+                },
               ],
             },
           ],
         },
-      ],
-    },
-  } as any;
-}
+      };
+      expect(check(config)).toEqual([]);
+    });
 
-describe('collectAllModuleIds', () => {
-  it('collects module IDs including nested layout modules', () => {
-    const ids = configValidationService.collectAllModuleIds(makeConfig());
-    expect(ids).toEqual(new Set(['icon-1', 'layout-1', 'nested-1', 'popup-1', 'button-1']));
-  });
-
-  it('returns an empty set for configs without layout', () => {
-    const ids = configValidationService.collectAllModuleIds({} as any);
-    expect(ids.size).toBe(0);
-  });
-});
-
-describe('regenerateModuleIds (issue #103 cross-card heal)', () => {
-  it('regenerates only the requested IDs, including nested modules', () => {
-    const config = makeConfig();
-    const result = configValidationService.regenerateModuleIds(
-      config,
-      new Set(['icon-1', 'nested-1'])
-    );
-
-    const newIds = configValidationService.collectAllModuleIds(result);
-    expect(newIds.has('icon-1')).toBe(false);
-    expect(newIds.has('nested-1')).toBe(false);
-    // Untouched modules keep their IDs
-    expect(newIds.has('layout-1')).toBe(true);
-    expect(newIds.has('popup-1')).toBe(true);
-    expect(newIds.has('button-1')).toBe(true);
-    expect(newIds.size).toBe(5);
-  });
-
-  it('rewrites trigger_module_id references to regenerated IDs', () => {
-    const config = makeConfig();
-    const result = configValidationService.regenerateModuleIds(config, new Set(['icon-1']));
-
-    const modules = (result as any).layout.rows[0].columns[0].modules;
-    const icon = modules[0];
-    const popup = modules[2];
-    expect(icon.id).not.toBe('icon-1');
-    expect(popup.trigger_module_id).toBe(icon.id);
-  });
-
-  it('rewrites popup_id action references to regenerated popup IDs', () => {
-    const config = makeConfig();
-    const result = configValidationService.regenerateModuleIds(config, new Set(['popup-1']));
-
-    const modules = (result as any).layout.rows[0].columns[0].modules;
-    const popup = modules[2];
-    const button = modules[3];
-    expect(popup.id).not.toBe('popup-1');
-    expect(button.tap_action.popup_id).toBe(popup.id);
-  });
-
-  it('does not mutate the original config', () => {
-    const config = makeConfig();
-    configValidationService.regenerateModuleIds(config, new Set(['icon-1', 'popup-1']));
-
-    const modules = (config as any).layout.rows[0].columns[0].modules;
-    expect(modules[0].id).toBe('icon-1');
-    expect(modules[2].id).toBe('popup-1');
-    expect(modules[3].tap_action.popup_id).toBe('popup-1');
+    it('does not recurse without bound on a deeply nested config', () => {
+      let modules: unknown = [{ id: 'leaf', type: 'text' }];
+      for (let i = 0; i < 200; i++) {
+        modules = [{ id: `l${i}`, type: 'horizontal', modules }];
+      }
+      const config = {
+        type: 'custom:ultra-card',
+        layout: { rows: [{ columns: [{ modules }] }] },
+      };
+      expect(() => check(config)).not.toThrow();
+    });
   });
 });

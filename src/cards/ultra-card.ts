@@ -1031,6 +1031,15 @@ export class UltraCard extends LitElement {
       throw new Error('Invalid configuration');
     }
 
+    // Structural problems have to surface here, synchronously, or HA cannot show a
+    // config error and the user gets a half-rendered card with a console warning
+    // nobody reads. Everything that can be auto-corrected is left to the async pass
+    // below.
+    const structuralErrors = configValidationService.validateConfigStructure(config);
+    if (structuralErrors.length > 0) {
+      throw new Error(`Invalid configuration: ${structuralErrors.join(', ')}`);
+    }
+
     // Snapshot of the raw stored config as HA passed it, before any
     // validation/normalization. The editor compares against this to tell
     // "the card being edited" apart from a diverged duplicate (issue #103).
@@ -1042,7 +1051,14 @@ export class UltraCard extends LitElement {
 
     configValidationService.validateAndCorrectConfig(config).then(validationResult => {
       if (!validationResult.valid) {
-        throw new Error(`Invalid configuration: ${validationResult.errors.join(', ')}`);
+        // Whatever reaches here got past the structural check above and depends on
+        // module handlers being loaded, so it cannot be reported to HA — setConfig
+        // has already returned. Warn rather than throw into a dead promise.
+        console.warn(
+          '[UltraCard] Config validation reported problems:',
+          validationResult.errors.join(', ')
+        );
+        return;
       }
 
       const isPreviewContext = this._detectEditorPreviewContext();

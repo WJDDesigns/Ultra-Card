@@ -30,6 +30,106 @@ export class ConfigValidationService {
   }
 
   /**
+   * Fast structural check, synchronous so `setConfig` can throw from it.
+   *
+   * HA's contract is that `setConfig` throws synchronously; that is how the editor
+   * shows a config error instead of rendering a broken card. The full pass is async
+   * because it waits on module handlers, and a throw from inside that promise
+   * reaches nobody.
+   *
+   * Deliberately narrow. It reports only values of the wrong shape, never missing
+   * ones: `validateAndCorrectConfig` fills in an absent type, layout or rows with a
+   * warning, and that auto-correction is worth keeping. Unknown module types are
+   * also left alone, since third-party modules may not have registered yet.
+   */
+  validateConfigStructure(config: unknown): string[] {
+    const errors: string[] = [];
+
+    if (typeof config !== 'object' || config === null || Array.isArray(config)) {
+      return ['Configuration must be an object'];
+    }
+
+    const root = config as Record<string, unknown>;
+
+    if (root.type !== undefined) {
+      if (typeof root.type !== 'string') {
+        errors.push('Card type must be a string');
+      } else if (root.type !== 'custom:ultra-card') {
+        errors.push(`Invalid card type: ${root.type}`);
+      }
+    }
+
+    if (root.layout !== undefined) {
+      if (typeof root.layout !== 'object' || root.layout === null || Array.isArray(root.layout)) {
+        errors.push('Layout must be an object');
+      } else {
+        const rows = (root.layout as Record<string, unknown>).rows;
+        if (rows !== undefined) {
+          if (!Array.isArray(rows)) {
+            errors.push('Layout rows must be an array');
+          } else {
+            rows.forEach((row, index) => this._checkRowStructure(row, index, errors));
+          }
+        }
+      }
+    }
+
+    // One message per problem area is enough to explain the failure without
+    // producing an unreadable wall of text from a badly mangled config.
+    return errors.slice(0, 10);
+  }
+
+  private _checkRowStructure(row: unknown, index: number, errors: string[]): void {
+    if (typeof row !== 'object' || row === null || Array.isArray(row)) {
+      errors.push(`Row ${index + 1} must be an object`);
+      return;
+    }
+    const columns = (row as Record<string, unknown>).columns;
+    if (columns === undefined) return;
+    if (!Array.isArray(columns)) {
+      errors.push(`Row ${index + 1}: columns must be an array`);
+      return;
+    }
+    columns.forEach((column, columnIndex) => {
+      if (typeof column !== 'object' || column === null || Array.isArray(column)) {
+        errors.push(`Row ${index + 1}, column ${columnIndex + 1} must be an object`);
+        return;
+      }
+      this._checkModulesStructure(
+        (column as Record<string, unknown>).modules,
+        `Row ${index + 1}, column ${columnIndex + 1}`,
+        errors,
+        0
+      );
+    });
+  }
+
+  /** Layout modules nest (horizontal, vertical, slider), so recurse with a depth cap. */
+  private _checkModulesStructure(
+    modules: unknown,
+    where: string,
+    errors: string[],
+    depth: number
+  ): void {
+    if (modules === undefined || depth > 10) return;
+    if (!Array.isArray(modules)) {
+      errors.push(`${where}: modules must be an array`);
+      return;
+    }
+    for (const module of modules) {
+      if (typeof module !== 'object' || module === null || Array.isArray(module)) {
+        errors.push(`${where}: every module must be an object`);
+        continue;
+      }
+      const record = module as Record<string, unknown>;
+      if (record.type !== undefined && typeof record.type !== 'string') {
+        errors.push(`${where}: module type must be a string`);
+      }
+      this._checkModulesStructure(record.modules, where, errors, depth + 1);
+    }
+  }
+
+  /**
    * Validates and corrects a complete Ultra Card config.
    * Ensures module handlers are loaded before validating so implementation-backed validation runs correctly.
    */
