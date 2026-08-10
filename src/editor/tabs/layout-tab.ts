@@ -8521,11 +8521,14 @@ export class LayoutTab extends LitElement {
     const layout = this._ensureLayout();
     if (!layout?.rows || layout.rows.length === 0) return null;
     // Generate the full [ultra_card]...[/ultra_card] export shortcode — same format as export
-    const shortcode = ucExportImportService.generateCardShortcode(this.config);
+    const { shortcode, redactions } = ucExportImportService.generateCardShortcodeForSharing(
+      this.config
+    );
     return {
       shortcode,
       card_settings: undefined,
       custom_variables: undefined,
+      redactions,
     };
   }
 

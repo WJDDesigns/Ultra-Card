@@ -14,6 +14,7 @@ import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { sanitizeRichTextHtml } from '../utils/html-sanitizer';
+import { isLocallyAuthoredConfig } from '../utils/uc-content-trust';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 import '../components/ultra-wysiwyg-editor';
@@ -744,7 +745,11 @@ export class UltraTextModule extends BaseUltraModule {
     const textElement =
       !textModule.unified_template_mode && effectiveContent
         ? html`<span class="rich-text-content"
-            >${unsafeHTML(sanitizeRichTextHtml(effectiveContent))}</span
+            >${unsafeHTML(
+              sanitizeRichTextHtml(effectiveContent, {
+                allowStyle: isLocallyAuthoredConfig(config),
+              })
+            )}</span
           >`
         : textPlaceholder;
 

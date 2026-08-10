@@ -4,7 +4,7 @@
  * Source is always 'community' and not shown to the user.
  */
 
-import { LitElement, html, css, TemplateResult } from 'lit';
+import { LitElement, html, css, TemplateResult, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import {
   ucCloudSyncService,
@@ -16,6 +16,8 @@ export interface SubmitPresetDialogPayload {
   shortcode: string;
   card_settings?: Record<string, unknown> | undefined;
   custom_variables?: unknown[] | undefined;
+  /** What the privacy sanitizer replaced before this became publishable. */
+  redactions?: Array<{ description: string; count: number }> | undefined;
 }
 
 const MAX_PHOTOS = 5;
@@ -180,6 +182,33 @@ export class UcHubSubmitPresetDialog extends LitElement {
       color: var(--secondary-text-color);
       opacity: 0.8;
       margin-top: 2px;
+    }
+
+    /* Privacy disclosure under the preset code */
+    .privacy-notice {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--secondary-background-color);
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--primary-text-color);
+    }
+    .privacy-notice ha-icon {
+      flex: 0 0 auto;
+      --mdc-icon-size: 18px;
+      color: var(--primary-color);
+    }
+    .privacy-notice ul {
+      margin: 4px 0 0;
+      padding-left: 18px;
+    }
+    .privacy-notice-foot {
+      margin-top: 6px;
+      color: var(--secondary-text-color);
     }
 
     /* Two-column row — collapses to single column on mobile */
@@ -644,6 +673,39 @@ export class UcHubSubmitPresetDialog extends LitElement {
     }
   }
 
+  /**
+   * State what the sanitizer replaced before this code became publishable, and
+   * that entity IDs still go public either way. Sharing a preset sends your own
+   * dashboard to a public marketplace, so it should not be the one step that
+   * tells you nothing about what leaves your system.
+   */
+  private _renderPrivacyNotice() {
+    if (!this.payload?.shortcode) return nothing;
+
+    const redactions = this.payload.redactions ?? [];
+    return html`
+      <div class="privacy-notice">
+        <ha-icon icon="mdi:shield-check-outline"></ha-icon>
+        <div>
+          ${redactions.length
+            ? html`
+                <strong>Replaced before sharing:</strong>
+                <ul>
+                  ${redactions.map(
+                    item => html`<li>${item.description} (${item.count})</li>`
+                  )}
+                </ul>
+              `
+            : html`<strong>No IP addresses or personal names were detected.</strong>`}
+          <div class="privacy-notice-foot">
+            Your entity IDs and friendly names are still part of the preset code above.
+            Review it before submitting.
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   private _formatBytes(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -935,6 +997,7 @@ export class UcHubSubmitPresetDialog extends LitElement {
                 ? 'Auto-filled from your current card layout. Edit if needed.'
                 : 'Paste your Ultra Card layout JSON here.'}
             </span>`}
+        ${this._renderPrivacyNotice()}
       </div>
 
       <!-- Photos -->

@@ -224,11 +224,17 @@ class UcPrivacyService {
   }
 
   /**
-   * Show privacy confirmation dialog (deprecated - now automatic)
+   * Consent gate for the local export paths. Deliberately always true.
+   *
+   * The callers of this are clipboard and file exports, where the data does not
+   * leave the user's machine, so interrupting every copy with a modal would be
+   * noise rather than protection. Publishing to ultracard.io is the case that
+   * genuinely needs disclosure, and that now happens in the submit preset dialog
+   * where the user can see what was replaced and review the code before it goes
+   * public. The return value is kept so a caller can start requiring consent
+   * without changing every call site.
    */
   async showPrivacyDialog(scanResult: PrivacyScanResult): Promise<boolean> {
-    // Always return true - privacy protection is now automatic
-    // Log what was sanitized for debugging if needed
     if (scanResult.found.length > 0) {
       console.log(
         `🔒 Privacy Protection: Automatically sanitized ${scanResult.found.length} items`

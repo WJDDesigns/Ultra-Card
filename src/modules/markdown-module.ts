@@ -12,6 +12,7 @@ import { buildEntityContext, computeEntitySignature } from '../utils/template-co
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { sanitizeMarkdownHtml } from '../utils/html-sanitizer';
+import { isLocallyAuthoredConfig } from '../utils/uc-content-trust';
 import { marked } from 'marked';
 
 
@@ -714,13 +715,17 @@ All standard markdown features are automatically enabled!`,
       try {
         // Use marked.js to process the markdown (synchronous version)
         const html = marked(processedContent, markedOptions) as string;
-        return sanitizeMarkdownHtml(html, !!markdownModule.enable_html);
+        return sanitizeMarkdownHtml(html, !!markdownModule.enable_html, {
+          allowStyle: isLocallyAuthoredConfig(config),
+        });
       } catch (error) {
         console.warn('Ultra Card: Failed to process markdown:', error);
         // The result is assigned via .innerHTML, so the fallback must be sanitized
         // too. Input that makes marked throw is exactly the input most likely to
         // be hostile, so returning it raw would be a sanitizer bypass.
-        return sanitizeMarkdownHtml(processedContent, !!markdownModule.enable_html);
+        return sanitizeMarkdownHtml(processedContent, !!markdownModule.enable_html, {
+          allowStyle: isLocallyAuthoredConfig(config),
+        });
       }
     };
 

@@ -185,11 +185,41 @@ class UcExportImportService {
    * Used when sharing a preset from the layout builder.
    */
   generateCardShortcode(config: UltraCardConfig, name?: string): string {
-    // Strip personal data (same as exportCardToClipboard)
-    const sanitized = { ...config };
-    delete sanitized.favorite_colors;
+    return this.generateCardShortcodeForSharing(config, name).shortcode;
+  }
 
-    // Gather variables referenced in the config
+  /**
+   * Build the share shortcode and report what was redacted from it.
+   *
+   * This previously deleted favorite_colors, stamped `privacyProtected: true` and
+   * shipped the config as-is, so the payload asserted a protection it had never
+   * applied while carrying real entity IDs and friendly names to a public
+   * marketplace. Entity IDs routinely contain family members' names and room
+   * layouts, and this path is more exposed than exportCardToClipboard, which has
+   * always sanitized. The findings are returned so the submit flow can tell the
+   * user what will be published rather than deciding silently on their behalf.
+   */
+  generateCardShortcodeForSharing(
+    config: UltraCardConfig,
+    name?: string
+  ): { shortcode: string; redactions: Array<{ description: string; count: number }> } {
+    const stripped = { ...config };
+    delete stripped.favorite_colors;
+
+    const privacyScan = ucPrivacyService.scanAndSanitize(stripped);
+    const sanitized = privacyScan.sanitizedData as UltraCardConfig;
+
+    const byDescription = new Map<string, number>();
+    for (const item of privacyScan.found) {
+      byDescription.set(item.description, (byDescription.get(item.description) || 0) + 1);
+    }
+    const redactions = Array.from(byDescription, ([description, count]) => ({
+      description,
+      count,
+    })).sort((a, b) => b.count - a.count);
+
+    // Variables are gathered from the original config: sanitizing can rewrite a
+    // variable reference, and we still need to find the definition it named.
     const usedVarNames = scanConfigForVariables(config);
     const variablesToExport: CustomVariable[] = [];
     for (const varName of usedVarNames) {
@@ -211,12 +241,12 @@ class UcExportImportService {
       metadata: {
         exported: new Date().toISOString(),
         name: name || config.card_name || 'Ultra Card',
-        privacyProtected: true,
+        privacyProtected: privacyScan.found.length > 0,
       },
       customVariables: variablesToExport.length > 0 ? variablesToExport : undefined,
     };
 
-    return this._generateShortcode(exportData);
+    return { shortcode: this._generateShortcode(exportData), redactions };
   }
 
   async exportCardToClipboard(config: UltraCardConfig, name?: string): Promise<void> {
