@@ -28,6 +28,7 @@ import { getImageUrl } from '../utils/image-upload';
 import { collectModuleTypesFromLayout, forEachNestedChildModules } from '../utils/uc-layout-module-types';
 import { layoutRequiresBroadHassUpdates } from '../utils/uc-broad-hass-updates';
 import { collectConfigEntityIds } from '../utils/uc-config-entity-ids';
+import { collectRuntimeEntityIds } from '../utils/uc-runtime-entity-ids';
 import { logicService } from '../services/logic-service';
 import { TemplateService } from '../services/template-service';
 import { configValidationService } from '../services/config-validation-service';
@@ -851,40 +852,7 @@ export class UltraCard extends LitElement {
    * filter accurate without a manual invalidation step.
    */
   private _getRuntimeEntityIds(): Set<string> {
-    const ids = new Set<string>();
-    const config = this.config;
-    if (!config?.layout?.rows) return ids;
-    const registry = getModuleRegistry();
-
-    const visit = (modules: any[] | undefined) => {
-      if (!modules) return;
-      for (const mod of modules) {
-        if (!mod || typeof mod !== 'object') continue;
-        const handler = mod.type ? registry.getModule(mod.type) : undefined;
-        const fn = handler && (handler as any).getRuntimeEntityIds;
-        if (typeof fn === 'function') {
-          try {
-            const arr = fn.call(handler, mod);
-            if (Array.isArray(arr)) {
-              for (const id of arr) {
-                if (typeof id === 'string' && id.includes('.')) ids.add(id);
-              }
-            }
-          } catch (e) {
-            // Swallow — runtime collection must never break the render path.
-          }
-        }
-        const m = mod as any;
-        forEachNestedChildModules(m, visit);
-      }
-    };
-
-    for (const row of config.layout.rows) {
-      for (const col of row.columns || []) {
-        visit(col.modules);
-      }
-    }
-    return ids;
+    return collectRuntimeEntityIds(this.config);
   }
 
   /**

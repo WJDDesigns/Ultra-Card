@@ -39,6 +39,9 @@ import '../components/uc-snapshot-history-modal';
 import '../components/uc-snapshot-settings-dialog';
 import '../components/uc-manual-backup-dialog';
 import { getModuleRegistry } from '../modules';
+import { layoutRequiresBroadHassUpdates } from '../utils/uc-broad-hass-updates';
+import { collectConfigEntityIds, anyEntityChanged } from '../utils/uc-config-entity-ids';
+import { collectRuntimeEntityIds } from '../utils/uc-runtime-entity-ids';
 import { localize } from '../localize/localize';
 import { ucToastService } from '../services/uc-toast-service';
 
@@ -232,38 +235,100 @@ export class UltraCardEditor extends LitElement {
       }
     }
 
-    // Check for integration auth when hass updates
-    if (changedProperties.has('hass') && this.hass) {
-      ucFavoriteColorsService.setHass(this.hass);
-      const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-
-      // If integration is authenticated, register in auth service so isAuthenticated() works
-      if (integrationUser) {
-        ucCloudAuthService.setIntegrationUser(integrationUser, this.hass);
-        this._cloudUser = integrationUser;
-      } else if (!this._cloudUser) {
-        // hass arrived but sensor not connected yet — clear any stale user
-        this._cloudUser = null;
-      }
-
-      // If connectedCallback ran before hass was available, finish auth init now
-      if (!this._hasInitializedAuth) {
-        this._hasInitializedAuth = true;
-      }
-
-      // Update entity picker enhancer with latest hass/config
-      ucEntityPickerEnhancer.update(this.hass, this.config);
-    }
-
     // Also update enhancer when config changes
     if (changedProperties.has('config') && this.hass) {
       ucEntityPickerEnhancer.update(this.hass, this.config);
     }
+  }
+
+  /**
+   * Work that must happen on every hass update, whether or not we re-render.
+   *
+   * Deliberately called from `shouldUpdate` rather than `willUpdate`: Lit skips
+   * `willUpdate` entirely when `shouldUpdate` returns false, so leaving this
+   * there would stop Pro/Connect auth being detected and leave the entity-picker
+   * enhancer stale on exactly the ticks the render gate filters out.
+   */
+  private _onHassChanged(): void {
+    if (!this.hass) return;
+
+    ucFavoriteColorsService.setHass(this.hass);
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+
+    // If integration is authenticated, register in auth service so isAuthenticated() works
+    if (integrationUser) {
+      ucCloudAuthService.setIntegrationUser(integrationUser, this.hass);
+      this._cloudUser = integrationUser;
+    } else if (!this._cloudUser) {
+      // hass arrived but sensor not connected yet — clear any stale user
+      this._cloudUser = null;
+    }
+
+    // If connectedCallback ran before hass was available, finish auth init now
+    if (!this._hasInitializedAuth) {
+      this._hasInitializedAuth = true;
+    }
+
+    // Update entity picker enhancer with latest hass/config
+    ucEntityPickerEnhancer.update(this.hass, this.config);
 
     // One-time check: can we offer "Activate" (integration files on disk, no config entry yet)?
-    if (changedProperties.has('hass') && this.hass && this._connectHandlerAvailable === null) {
+    if (this._connectHandlerAvailable === null) {
       this._checkConnectHandlerAvailable();
     }
+  }
+
+  protected override shouldUpdate(changedProps: PropertyValues): boolean {
+    if (changedProps.has('hass') && this.hass) {
+      this._onHassChanged();
+    }
+
+    // Anything beyond a bare hass tick always renders: the editor's own state
+    // (active tab, open dialogs, expanded sections) drives most of its UI, and a
+    // config change must always be reflected.
+    if (changedProps.size !== 1 || !changedProps.has('hass')) return true;
+
+    const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
+    const newHass = this.hass;
+    if (!oldHass?.states || !newHass?.states) return true;
+
+    // The editor reads much more of hass than the card does, so bail out to a
+    // render on anything that can change its chrome — not just entity states.
+    if (
+      oldHass.locale !== newHass.locale ||
+      oldHass.themes !== newHass.themes ||
+      oldHass.user !== newHass.user ||
+      oldHass.connected !== newHass.connected ||
+      (oldHass as any).language !== (newHass as any).language ||
+      (oldHass as any).config !== (newHass as any).config ||
+      (oldHass as any).entities !== (newHass as any).entities ||
+      (oldHass as any).devices !== (newHass as any).devices ||
+      (oldHass as any).areas !== (newHass as any).areas
+    ) {
+      return true;
+    }
+
+    // An entity appearing or disappearing changes what every picker should offer.
+    if (Object.keys(oldHass.states).length !== Object.keys(newHass.states).length) {
+      return true;
+    }
+
+    const layout = this.config?.layout;
+    if (layoutRequiresBroadHassUpdates(layout)) return true;
+
+    const { ids, incomplete } = collectConfigEntityIds(this.config);
+    if (incomplete) return true;
+    if (anyEntityChanged(ids, oldHass.states, newHass.states)) return true;
+
+    // The builder renders a live preview of every module, and modules that
+    // resolve their own entities (plant_care, dog_duty, cleaning_zones,
+    // laundry_tracker, vehicle_maintenance) mostly do NOT force broad updates —
+    // without this their previews would freeze while the editor is open.
+    return anyEntityChanged(
+      collectRuntimeEntityIds(this.config),
+      oldHass.states,
+      newHass.states
+    );
   }
 
   private async _checkConnectHandlerAvailable(): Promise<void> {
