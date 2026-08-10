@@ -1,5 +1,49 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.7.0-beta5
+
+A stability, performance and privacy pass over the whole card. Most of it is invisible, but it should feel noticeably lighter on slower hardware, stop getting slower the longer a tablet is left on, and close a few ways your data could quietly go missing. Please report anything odd on GitHub or Discord — this is a pre-release for testing.
+
+### ⚠️ Breaking Changes
+
+- **Downloaded presets no longer run JavaScript through navigation actions** - A preset could previously mark itself as trusted and have its JavaScript run against your Home Assistant. Cards you build yourself are completely unaffected, and no preset in the marketplace uses this. If you have a downloaded card that genuinely relied on it, add `allow_navigation_js_from_untrusted: true` to that card once you have read what its code does
+
+### 🚀 New Features
+
+- **Added a review prompt before a downloaded preset is applied** - If a preset can call a service, load something from a third-party site, or embed another card, you now get a short summary of exactly that, naming the module responsible, and you choose whether to continue. Presets that only style things are added as before with no prompt
+- **Added automatic discovery of your Home Assistant's native cards** - The Cards tab reads the cards your install actually has instead of a list maintained by hand, so nothing is offered that your Home Assistant cannot build, and new HA cards appear on their own
+
+### 🔧 Improvements
+
+- **Improved how much work the card asks of Home Assistant** - Every template the card watches is a real task on your HA server, and the card was throwing those away and recreating them each time a tracked entity changed. Templates written the usual way, with `states('sensor.x')` and friends, now hold a single subscription for as long as they are on screen. On a dashboard full of templated icons and colours this is the difference between constant churn and near silence, and it shows up most on a Raspberry Pi
+- **Improved cleanup when you leave a dashboard** - Modules used to leave template subscriptions and timers running behind them, which is why a wall tablet left on for hours got gradually slower. They are now released once no card on the page is using that module
+- **Improved battery use on phones and tablets** - Clocks, progress bars and media player countdowns stop doing work while the tab is in the background instead of ticking away unseen
+- **Improved performance on installs with a lot of entities** - Modules that search every entity you own, such as alert lists, auto entity lists and battery, power and update discovery, now reuse their results instead of searching again on every update
+- **Improved editor responsiveness on large cards** - The editor redraws when something it is actually showing has changed, rather than on every state change anywhere in your system
+- **Improved rendering of decorative cards** - A card with no entities in it, like a divider, label or image, no longer re-renders every time anything in your system changes
+- **Improved keyboard access across card controls** - Buttons, images, bars, gauges, toggles, clocks and QR codes can be reached with Tab and activated with Enter or Space. Controls that do nothing when tapped are skipped rather than becoming empty tab stops
+- **Improved the privacy of presets you publish** - Submitting to the marketplace described itself as privacy protected while only removing your colour list. IP addresses and personal names are now genuinely removed, the submit dialog lists exactly what was taken out, and it reminds you that your entity IDs and friendly names are still part of the code you are about to share
+- **Improved how styling in downloaded content is handled** - An image URL inside a style rule fires a request the moment the card renders, which quietly tells a third party you looked at it. Those are now removed from downloaded content, while colours, alignment and the rest of the author's styling are kept exactly as intended
+- **Improved error reporting for a broken card configuration** - An invalid config used to draw a half-built card and log a warning nobody would see. Home Assistant now shows its normal configuration error instead
+- **Improved card sizing on masonry dashboards** - The card tells Home Assistant how tall it is, so it no longer has to guess and sit oddly next to its neighbours
+
+### 🐛 Bug Fixes
+
+- **Fixed cloud sync deleting favorites that only existed on this device** - Downloading favorites replaced your local list instead of merging into it, so anything you had not uploaded yet was lost
+- **Fixed card backups failing when signed in through Ultra Card Connect** - The backup service was contacting the cloud directly instead of going through Connect
+- **Fixed variable sync reporting success when it had actually failed**
+- **Fixed the Colors tab claiming your colours were backed up to the cloud** - Colour sync was never finished, yet the Hub reported success and showed a recent "last synced" time, and the tab showed a tick even on failure. Your colours are saved on this device and the card now says so plainly. Sync will return when it genuinely works
+- **Fixed actions set to `call-service` doing nothing** - Only the newer `perform-action` name was handled, so anything written with the older name silently did nothing
+- **Fixed several native card problems** - A slow-loading card was misread as having no visual editor, one module could build three editors at once, and the Activity and Webpage cards were listed under the wrong internal name so they failed to add. Cards already saved under a wrong name are repaired when they load
+- **Fixed the Screensaver, Dynamic List and Clock modules leaving timers running** - Each left work behind after its card was gone
+- **Fixed card appearance templates being rebuilt after unrelated edits**
+- **Fixed a template-supplied colour being able to break out of the Lunar Phase module's markup**
+- **Fixed the Markdown module showing unsanitised content when a template failed**
+- **Fixed the duplicate Copy button on saved favorites**
+- **Fixed known vulnerabilities in bundled dependencies**
+
+---
+
 ## Version 3.7.0-beta4
 
 The Add Module picker now shows you what each module looks like instead of asking you to recognise it by name. Hover any tile and it plays. Please report anything odd on GitHub or Discord — this is a pre-release for testing.
