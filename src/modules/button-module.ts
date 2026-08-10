@@ -705,6 +705,7 @@ export class UltraButtonModule extends BaseUltraModule {
             @pointerup=${handlers.onPointerUp}
             @pointerleave=${handlers.onPointerLeave}
             @pointercancel=${handlers.onPointerCancel}
+            @keydown=${handlers.onKeyDown}
           >
             ${buttonModule.show_icon && buttonModule.icon && buttonModule.icon_position === 'before'
               ? html`<ha-icon

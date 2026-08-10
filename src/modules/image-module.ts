@@ -1,4 +1,4 @@
-import { TemplateResult, html } from 'lit';
+import { TemplateResult, html, nothing } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, ImageModule, UltraCardConfig } from '../types';
@@ -941,6 +941,9 @@ export class UltraImageModule extends BaseUltraModule {
                     @pointerup=${handlers.onPointerUp}
                     @pointerleave=${handlers.onPointerLeave}
                     @pointercancel=${handlers.onPointerCancel}
+                    @keydown=${handlers.onKeyDown}
+                    role=${handlers.isActionable ? 'button' : nothing}
+                    tabindex=${handlers.isActionable ? '0' : nothing}
                   />
                 `
               : html`

@@ -1,4 +1,4 @@
-import { TemplateResult, html } from 'lit';
+import { TemplateResult, html, nothing } from 'lit';
 import { ref, createRef, Ref } from 'lit/directives/ref.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
@@ -5604,6 +5604,9 @@ export class UltraBarModule extends BaseUltraModule {
           @pointerup=${handlers.onPointerUp}
           @pointerleave=${handlers.onPointerLeave}
           @pointercancel=${handlers.onPointerCancel}
+          @keydown=${handlers.onKeyDown}
+          role=${handlers.isActionable ? 'button' : nothing}
+          tabindex=${handlers.isActionable ? '0' : nothing}
         >
             <!-- Bar Fill / Dots Style / Minimal Style -->
             ${

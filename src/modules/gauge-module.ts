@@ -1,4 +1,4 @@
-import { html, svg, TemplateResult } from 'lit';
+import { html, svg, nothing, TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, GaugeModule, UltraCardConfig } from '../types';
@@ -1718,6 +1718,9 @@ export class UltraGaugeModule extends BaseUltraModule {
         @pointerup=${gestureHandlers.onPointerUp}
         @pointerleave=${gestureHandlers.onPointerLeave}
         @pointercancel=${gestureHandlers.onPointerCancel}
+        @keydown=${gestureHandlers.onKeyDown}
+        role=${gestureHandlers.isActionable ? 'button' : nothing}
+        tabindex=${gestureHandlers.isActionable ? '0' : nothing}
       >
         ${gaugeModule.show_name && gaugeModule.name_position === 'top'
           ? html`

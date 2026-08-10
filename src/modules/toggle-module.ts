@@ -1,4 +1,4 @@
-import { TemplateResult, html, css } from 'lit';
+import { TemplateResult, html, css, nothing } from 'lit';
 import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, ToggleModule, TogglePoint, UltraCardConfig } from '../types';
@@ -1640,6 +1640,9 @@ export class UltraToggleModule extends BaseUltraModule {
           @pointerup=${gestureHandlers.onPointerUp}
           @pointerleave=${gestureHandlers.onPointerLeave}
           @pointercancel=${gestureHandlers.onPointerCancel}
+          @keydown=${gestureHandlers.onKeyDown}
+          role=${gestureHandlers.isActionable ? 'button' : nothing}
+          tabindex=${gestureHandlers.isActionable ? '0' : nothing}
         >
           ${innerContent}
         </div>`,

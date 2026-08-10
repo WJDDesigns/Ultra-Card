@@ -306,11 +306,18 @@ export abstract class BaseUltraModule implements UltraModule {
    *     @pointerup=${handlers.onPointerUp}
    *     @pointerleave=${handlers.onPointerLeave}
    *     @pointercancel=${handlers.onPointerCancel}
+   *     @keydown=${handlers.onKeyDown}
+   *     role=${handlers.isActionable ? 'button' : nothing}
+   *     tabindex=${handlers.isActionable ? '0' : nothing}
    *   >
    *     Content here
    *   </div>
    * `;
    * ```
+   *
+   * Bind `@keydown` on anything activatable, or keyboard users cannot reach it at
+   * all. `role` and `tabindex` belong on plain elements only — not on a native
+   * `<button>`, and not on a layout container. See ucGestureService for details.
    */
   protected createGestureHandlers(
     elementId: string,

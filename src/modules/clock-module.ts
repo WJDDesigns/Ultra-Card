@@ -331,6 +331,9 @@ export class UltraClockModule extends BaseUltraModule {
         @pointerup=${g.onPointerUp}
         @pointerleave=${g.onPointerLeave}
         @pointercancel=${g.onPointerCancel}
+        @keydown=${g.onKeyDown}
+        role=${g.isActionable ? 'button' : nothing}
+        tabindex=${g.isActionable ? '0' : nothing}
       >
         ${this.wrapWithAnimation(
           html`

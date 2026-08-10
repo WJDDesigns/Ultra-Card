@@ -41,6 +41,55 @@ function isExplicitNothingAction(action: TapActionConfig | undefined | null): bo
  */
 const SCROLL_CANCEL_THRESHOLD_PX = 10;
 
+/** Elements that handle Enter/Space themselves, so a wrapper must not act too. */
+const NATIVELY_INTERACTIVE = new Set([
+  'a',
+  'button',
+  'input',
+  'select',
+  'textarea',
+  'summary',
+  'ha-icon-button',
+  'ha-switch',
+  'ha-slider',
+  'ha-textfield',
+  'ha-select',
+  'ha-control-switch',
+  'ha-control-slider',
+]);
+
+/**
+ * Whether a keyboard event landed on a control nested inside the gesture element
+ * rather than on the element itself.
+ */
+function isInteractiveElement(target: HTMLElement, boundary: HTMLElement): boolean {
+  let node: HTMLElement | null = target;
+  while (node && node !== boundary) {
+    const tag = node.tagName?.toLowerCase?.();
+    if (tag && NATIVELY_INTERACTIVE.has(tag)) return true;
+    if (node.getAttribute?.('role') === 'button') return true;
+    if (node.hasAttribute?.('tabindex') && node.getAttribute('tabindex') !== '-1') return true;
+    node = node.parentElement;
+  }
+  return false;
+}
+
+/**
+ * Whether a gesture config would actually do something when activated.
+ *
+ * Use before adding role="button" and tabindex="0": announcing a button that does
+ * nothing, or putting a decorative element in the tab order, is worse for
+ * keyboard and screen-reader users than leaving it alone. An undefined action is
+ * actionable when there is an entity, because it falls through to more-info.
+ */
+export function hasActionableGesture(config: GestureConfig): boolean {
+  const { tap_action, hold_action, double_tap_action, entity } = config;
+  const actions = [tap_action, hold_action, double_tap_action];
+  if (actions.some(action => action && !isExplicitNothingAction(action))) return true;
+  // All three unset falls through to the default more-info action.
+  return actions.every(action => !action) && !!entity;
+}
+
 /**
  * Gesture state for tracking multi-touch interactions
  */
@@ -95,11 +144,23 @@ interface GestureState {
  *     @pointerup=${handlers.onPointerUp}
  *     @pointerleave=${handlers.onPointerLeave}
  *     @pointercancel=${handlers.onPointerCancel}
+ *     @keydown=${handlers.onKeyDown}
+ *     role=${handlers.isActionable ? 'button' : nothing}
+ *     tabindex=${handlers.isActionable ? '0' : nothing}
  *   >
  *     Content here
  *   </div>
  * `;
  * ```
+ *
+ * Bind `@keydown` on anything a user can activate, or it is unreachable without a
+ * pointer. On a plain element add `role="button"` and `tabindex="0"` as above; on a
+ * native `<button>` the keydown binding alone is enough. Both are gated on
+ * `isActionable` so decorative elements stay out of the tab order.
+ *
+ * Do not make a layout container (horizontal, vertical, stack, tabs) a button.
+ * Announcing a region as a button and putting a large element in the tab order
+ * ahead of the real controls inside it is worse than leaving it pointer-only.
  *
  * Bind `@pointermove` so the service can detect scroll/drag gestures and
  * suppress the tap action when the user is just trying to scroll the page
@@ -207,6 +268,12 @@ export class UcGestureService {
     };
 
     return {
+      /**
+       * Whether these handlers would do anything if activated. Gate role="button"
+       * and tabindex="0" on this, so decorative elements stay out of the tab order.
+       */
+      isActionable: hasActionableGesture(gestureConfig),
+
       onPointerDown: (e: PointerEvent) => {
         const target = e.target as HTMLElement;
 
@@ -379,6 +446,45 @@ export class UcGestureService {
             }, 300); // Wait 300ms to distinguish from double click
           }
         }
+      },
+
+      /**
+       * Keyboard activation, so these controls are reachable without a pointer.
+       *
+       * Enter and Space run the tap action immediately: the double-tap wait exists
+       * to disambiguate two quick pointer taps, which has no keyboard equivalent,
+       * and hold has none either. Bind alongside the pointer handlers, and on a
+       * non-focusable element add role="button" and tabindex="0" so it can be
+       * reached at all — see hasActionableGesture before doing that.
+       */
+      onKeyDown: (e: KeyboardEvent) => {
+        if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+
+        const target = e.target as HTMLElement;
+        if (shouldExcludeTarget(target)) return;
+
+        // A keypress on a nested control belongs to that control. Without this,
+        // activating a button inside a gesture-wrapped element would fire both.
+        const current = e.currentTarget as HTMLElement | null;
+        if (current && target !== current && isInteractiveElement(target, current)) {
+          return;
+        }
+
+        // Space scrolls the page and Enter can submit a form; neither is wanted
+        // when the key is activating a control.
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (isExplicitNothingAction(tap_action)) return;
+
+        UltraLinkComponent.handleAction(
+          tap_action || ({ action: 'default', entity } as any),
+          hass,
+          target,
+          cardConfig,
+          entity,
+          module
+        );
       },
 
       onPointerLeave: () => {

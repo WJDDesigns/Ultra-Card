@@ -1,4 +1,4 @@
-import { TemplateResult, html } from 'lit';
+import { TemplateResult, html, nothing } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import QRCodeStyling from 'qr-code-styling';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
@@ -998,6 +998,9 @@ export class UltraQrCodeModule extends BaseUltraModule {
         @pointerup="${handlers.onPointerUp}"
         @pointerleave="${handlers.onPointerLeave}"
         @pointercancel="${handlers.onPointerCancel}"
+        @keydown="${handlers.onKeyDown}"
+        role=${handlers.isActionable ? 'button' : nothing}
+        tabindex=${handlers.isActionable ? '0' : nothing}
         style="${designStyles}; cursor: ${qrModule.tap_action?.action !== 'nothing' ? 'pointer' : 'default'};"
       >
         ${labelBelow ? imgEl : labelEl}
