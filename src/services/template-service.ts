@@ -1,5 +1,6 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import { ucCustomVariablesService } from './uc-custom-variables-service';
 import { UltraCardConfig } from '../types';
 
 /**
@@ -39,6 +40,71 @@ function isStringBasedTemplate(templateKey: string): boolean {
 
 const STATIC_SIG = '__STATIC__';
 
+/** Matches the `$variable` tokens preprocessTemplateVariables substitutes. */
+const CUSTOM_VAR_PATTERN = /(?<!\$)\$([a-zA-Z][a-zA-Z0-9_]*)/g;
+
+/** Bounded caches keyed by raw template text, which never changes for a given string. */
+const MAX_TEMPLATE_ANALYSIS_ENTRIES = 2000;
+const _referencedVarNames = new Map<string, string[]>();
+const _usesSnapshotCache = new Map<string, boolean>();
+
+function cacheSet<V>(cache: Map<string, V>, key: string, value: V): V {
+  if (cache.size >= MAX_TEMPLATE_ANALYSIS_ENTRIES) cache.clear();
+  cache.set(key, value);
+  return value;
+}
+
+/** The `$var` names a template references, so their values can be checked for staleness. */
+function customVarNames(template: string): string[] {
+  const cached = _referencedVarNames.get(template);
+  if (cached) return cached;
+  const names = new Set<string>();
+  for (const match of template.matchAll(CUSTOM_VAR_PATTERN)) {
+    if (match[1]) names.add(match[1]);
+  }
+  return cacheSet(_referencedVarNames, template, Array.from(names).sort());
+}
+
+/**
+ * Whether a template actually reads any of the entity-snapshot variables.
+ *
+ * The snapshot is passed as `render_template` `variables`, which HA binds once at
+ * subscribe time and never refreshes, so keeping it current means tearing the
+ * subscription down and building a new one on every state change. That is only
+ * worth doing for templates that read the snapshot. Templates written with
+ * `states(...)`, `state_attr(...)` and friends need none of it: HA derives their
+ * dependencies itself and re-renders over the existing subscription.
+ *
+ * Errs toward true. A false positive costs a resubscribe we would have done
+ * anyway; a false negative would leave a template showing stale values.
+ */
+function templateUsesVariableSnapshot(
+  template: string,
+  variables?: Record<string, unknown>
+): boolean {
+  if (!variables) return false;
+  const names = Object.keys(variables);
+  if (names.length === 0) return false;
+
+  const cacheKey = `${names.join(',')}\u0000${template}`;
+  const cached = _usesSnapshotCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+
+  let uses = false;
+  for (const name of names) {
+    // A key we cannot safely turn into a word-boundary pattern is assumed used.
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
+      uses = true;
+      break;
+    }
+    if (new RegExp(`\\b${name}\\b`).test(template)) {
+      uses = true;
+      break;
+    }
+  }
+  return cacheSet(_usesSnapshotCache, cacheKey, uses);
+}
+
 /**
  * Service class for handling template evaluation and subscription in Ultra Card.
  *
@@ -54,6 +120,14 @@ const STATIC_SIG = '__STATIC__';
  * subscriptions (race safety).  The first websocket message after each subscribe
  * always persists to `hass.__uvc_template_strings` and fires `onResultChanged` so the
  * UI never "misses" an update waiting on string equality.
+ *
+ * That resubscribe is only necessary for templates that actually read the snapshot.
+ * Callers pass an `entitySignature` whenever the module has an entity, but most
+ * templates are written against HA's own globals (`states(...)`, `state_attr(...)`)
+ * and never touch it — for those, HA tracks the dependencies itself and re-renders
+ * over the existing subscription, so we subscribe once and leave it. Each
+ * `render_template` subscription is a real backend task, so avoiding the churn is
+ * the single biggest saving available here. See `templateUsesVariableSnapshot`.
  */
 export class TemplateService {
   private _templateSubscriptions: Map<string, Promise<() => Promise<void>>> = new Map();
@@ -64,6 +138,8 @@ export class TemplateService {
 
   /** Last entity snapshot signature passed per template key (for resubscribe decisions). */
   private _entitySignatures: Map<string, string> = new Map();
+  /** Last resolved `$var` values per template key; a change means the sent text changed. */
+  private _customVarSignatures: Map<string, string> = new Map();
   /** Latest generation for a key; subscription callbacks with older gen are ignored. */
   private _liveGenByKey: Map<string, number> = new Map();
   /** Serialize subscribe/unsubscribe per key to avoid overlapping WS operations. */
@@ -125,6 +201,30 @@ export class TemplateService {
     this._subscribeChains.set(key, next);
   }
 
+  /**
+   * Signature of the custom variables this template substitutes. Empty for the
+   * common case of a template with no `$var` tokens, so this costs nothing there.
+   */
+  private _customVarSignature(template: string, cardConfig?: UltraCardConfig): string {
+    const names = customVarNames(template);
+    if (names.length === 0) return '';
+    return names
+      .map(name => {
+        let value: unknown = null;
+        try {
+          value = cardConfig
+            ? ucCustomVariablesService.resolveVariableInContext(name, this.hass, cardConfig)
+            : ucCustomVariablesService.resolveVariable(name, this.hass);
+        } catch {
+          // An unresolvable variable is left in the template untouched, so treat it
+          // as a stable value rather than forcing endless resubscribes.
+          value = null;
+        }
+        return `${name}=${value === null || value === undefined ? '' : String(value)}`;
+      })
+      .join('\u0001');
+  }
+
   private async _unsubscribeKey(templateKey: string): Promise<void> {
     const subPromise = this._templateSubscriptions.get(templateKey);
     if (subPromise) {
@@ -152,15 +252,28 @@ export class TemplateService {
       return;
     }
 
-    const trackEntity = entitySignature !== undefined;
+    // Only track the entity snapshot when the template actually reads it (P1).
+    // Otherwise this subscription is created once and left alone, and HA pushes
+    // fresh results over it as the entities the template names change.
+    const trackEntity =
+      entitySignature !== undefined && templateUsesVariableSnapshot(template, variables);
+
+    // `$var` values are substituted into the template text before it is sent, so a
+    // changed custom variable needs a new subscription even when the entity
+    // snapshot is irrelevant. Previously this only happened by coincidence, when an
+    // unrelated state change forced a resubscribe.
+    const varSignature = this._customVarSignature(template, cardConfig);
+
     const prevSig = this._entitySignatures.get(templateKey);
+    const prevVarSig = this._customVarSignatures.get(templateKey);
     const hadSub = this._templateSubscriptions.has(templateKey);
+    const varsChanged = prevVarSig !== undefined && prevVarSig !== varSignature;
 
     if (hadSub) {
-      if (!trackEntity) {
+      if (!trackEntity && !varsChanged) {
         return;
       }
-      if (entitySignature === prevSig) {
+      if (trackEntity && entitySignature === prevSig && !varsChanged) {
         return;
       }
       const preserved = this.hass.__uvc_template_strings?.[templateKey];
@@ -187,6 +300,7 @@ export class TemplateService {
     } else {
       this._entitySignatures.set(templateKey, STATIC_SIG);
     }
+    this._customVarSignatures.set(templateKey, varSignature);
 
     let isFirstMessage = true;
 
@@ -316,6 +430,7 @@ export class TemplateService {
       this._previousStringResults.delete(key);
       this._evaluationCache.delete(key);
       this._entitySignatures.delete(key);
+      this._customVarSignatures.delete(key);
       this._liveGenByKey.delete(key);
       this._subscribeChains.delete(key);
       if (this.hass?.__uvc_template_strings) {
@@ -333,6 +448,7 @@ export class TemplateService {
     this._evaluationCache.clear();
     this._previousStringResults.clear();
     this._entitySignatures.clear();
+    this._customVarSignatures.clear();
     this._liveGenByKey.clear();
     this._subscribeChains.clear();
   }
