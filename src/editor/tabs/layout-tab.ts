@@ -92,7 +92,11 @@ import { simpleEntityMapper } from '../../components/uc-simple-entity-mapper';
 import '../../components/uc-preset-wizard-dialog';
 import { presetWizardDialog } from '../../components/uc-preset-wizard-dialog';
 import { entityDetector } from '../../services/uc-entity-detector';
-import { scanPresetForRisks } from '../../services/uc-preset-trust-scanner';
+import {
+  scanPresetForRisks,
+  type PresetRiskFindings,
+  type PresetRiskItem,
+} from '../../services/uc-preset-trust-scanner';
 import { confirmUntrustedPreset } from '../../services/uc-preset-trust-dialog';
 import { entityMapper } from '../../services/uc-entity-mapper';
 import { ucWizardAdaptationEngine } from '../../services/uc-wizard-adaptation-engine';
@@ -8791,7 +8795,38 @@ export class LayoutTab extends LitElement {
 
     if (!findings.hasAny) return true;
 
-    return confirmUntrustedPreset(preset.name || 'this preset', findings);
+    return confirmUntrustedPreset(preset.name || 'this preset', this._labelFindings(findings));
+  }
+
+  /**
+   * Swap raw module types for the titles users see in the picker, so the prompt
+   * says "Image" rather than "image". Kept out of the scanner so it stays a pure
+   * function with no registry dependency.
+   */
+  private _labelFindings(findings: PresetRiskFindings): PresetRiskFindings {
+    const registry = getModuleRegistry();
+    // Findings can also sit on layout scaffolding rather than a module — a row
+    // background image, for instance — so name those in the same vocabulary the
+    // builder uses.
+    const structural: Record<string, string> = {
+      'ultra-card-row': 'the row background',
+      'ultra-card-column': 'the column background',
+      'ultra-card': 'the card background',
+    };
+    const label = (type: string): string =>
+      structural[type] ||
+      registry.getModuleMetadata(type)?.title ||
+      type.replace(/[_-]+/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+
+    const relabel = (items: PresetRiskItem[]): PresetRiskItem[] =>
+      items.map(item => ({ ...item, sources: item.sources.map(label) }));
+
+    return {
+      ...findings,
+      serviceCalls: relabel(findings.serviceCalls),
+      remoteHosts: relabel(findings.remoteHosts),
+      embeddedCards: relabel(findings.embeddedCards),
+    };
   }
 
   private _getPresetContentOrigin(preset: PresetDefinition): UltraCardConfig['_contentOrigin'] {

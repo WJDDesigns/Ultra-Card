@@ -1,4 +1,4 @@
-import type { PresetRiskFindings } from './uc-preset-trust-scanner';
+import type { PresetRiskFindings, PresetRiskItem } from './uc-preset-trust-scanner';
 
 /**
  * Disclosure prompt shown before a downloaded preset is applied.
@@ -23,9 +23,18 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function renderSection(title: string, note: string, items: string[]): string {
+function renderSection(title: string, note: string, items: PresetRiskItem[]): string {
   if (!items.length) return '';
-  const listItems = items.map(item => `<li><code>${escapeHtml(item)}</code></li>`).join('');
+  const listItems = items
+    .map(item => {
+      // Name the module responsible so the finding is actionable rather than just
+      // alarming — "which module pulls in this host" is the useful question.
+      const where = item.sources.length
+        ? `<span class="uc-preset-trust-source">in ${escapeHtml(item.sources.join(', '))}</span>`
+        : '';
+      return `<li><code>${escapeHtml(item.value)}</code>${where}</li>`;
+    })
+    .join('');
   return `
     <div class="uc-preset-trust-section">
       <div class="uc-preset-trust-section-title">${escapeHtml(title)}</div>
@@ -171,6 +180,11 @@ export function confirmUntrustedPreset(
       .uc-preset-trust-list code {
         font-family: var(--code-font-family, monospace);
         word-break: break-all;
+      }
+      .uc-preset-trust-source {
+        margin-left: 6px;
+        color: var(--secondary-text-color);
+        font-size: 12px;
       }
       .uc-preset-trust-footnote {
         margin: 12px 0 0;

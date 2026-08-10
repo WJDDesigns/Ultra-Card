@@ -14,13 +14,24 @@
  * cannot be evaded that way.
  */
 
+export interface PresetRiskItem {
+  /** The service, host or card type found. */
+  value: string;
+  /**
+   * Which modules it belongs to, innermost first. Naming the module makes the
+   * finding actionable: "a host is contacted" is far less useful than knowing it
+   * is the background image on a specific module.
+   */
+  sources: string[];
+}
+
 export interface PresetRiskFindings {
   /** Services the preset can invoke, e.g. `lock.unlock`. */
-  serviceCalls: string[];
+  serviceCalls: PresetRiskItem[];
   /** Third-party hosts contacted on render, which reveals that you viewed this card. */
-  remoteHosts: string[];
+  remoteHosts: PresetRiskItem[];
   /** Other cards this preset embeds and hands `hass` to. */
-  embeddedCards: string[];
+  embeddedCards: PresetRiskItem[];
   hasAny: boolean;
 }
 
@@ -50,27 +61,29 @@ function isBenignHost(host: string): boolean {
 }
 
 export function scanPresetForRisks(root: unknown): PresetRiskFindings {
-  const serviceCalls = new Set<string>();
-  const remoteHosts = new Set<string>();
-  const embeddedCards = new Set<string>();
+  const serviceCalls = new Map<string, Set<string>>();
+  const remoteHosts = new Map<string, Set<string>>();
+  const embeddedCards = new Map<string, Set<string>>();
 
   let nodes = 0;
   const seen = new WeakSet<object>();
 
-  const visitString = (value: string): void => {
-    // Only absolute http(s) URLs reach a third party. Relative paths and
-    // /local/... asset paths are served by the user's own HA.
-    if (!/^https?:\/\//i.test(value)) return;
-    const host = hostOf(value);
-    if (host && !isBenignHost(host)) remoteHosts.add(host);
+  const record = (into: Map<string, Set<string>>, value: string, owner: string | null): void => {
+    const sources = into.get(value) ?? new Set<string>();
+    if (owner) sources.add(owner);
+    into.set(value, sources);
   };
 
-  const visit = (node: unknown, depth: number): void => {
+  const visit = (node: unknown, depth: number, owner: string | null): void => {
     if (node === null || node === undefined) return;
     if (nodes++ > MAX_NODES || depth > MAX_DEPTH) return;
 
     if (typeof node === 'string') {
-      visitString(node);
+      // Only absolute http(s) URLs reach a third party. Relative paths and
+      // /local/... asset paths are served by the user's own HA.
+      if (!/^https?:\/\//i.test(node)) return;
+      const host = hostOf(node);
+      if (host && !isBenignHost(host)) record(remoteHosts, host, owner);
       return;
     }
     if (typeof node !== 'object') return;
@@ -81,18 +94,25 @@ export function scanPresetForRisks(root: unknown): PresetRiskFindings {
     seen.add(node as object);
 
     if (Array.isArray(node)) {
-      for (const item of node) visit(item, depth + 1);
+      for (const item of node) visit(item, depth + 1, owner);
       return;
     }
 
     const obj = node as Record<string, unknown>;
 
-    if (typeof obj.action === 'string' && SERVICE_ACTIONS.has(obj.action)) {
+    // Attribute findings to the innermost enclosing module. Action objects also
+    // carry a `type` in some shapes, so only treat a node as a module when it
+    // is not one of those.
+    const isActionNode = typeof obj.action === 'string';
+    const nextOwner =
+      !isActionNode && typeof obj.type === 'string' && obj.type ? obj.type : owner;
+
+    if (isActionNode && SERVICE_ACTIONS.has(obj.action as string)) {
       const service =
         (typeof obj.perform_action === 'string' && obj.perform_action) ||
         (typeof obj.service === 'string' && obj.service) ||
         '';
-      serviceCalls.add(service || 'an unspecified service');
+      record(serviceCalls, service || 'an unspecified service', owner);
     }
 
     if (obj.type === 'external_card' || obj.type === 'native_card') {
@@ -101,19 +121,24 @@ export function scanPresetForRisks(root: unknown): PresetRiskFindings {
         (typeof (obj.card_config as Record<string, unknown> | undefined)?.type === 'string' &&
           String((obj.card_config as Record<string, unknown>).type)) ||
         'an unnamed card';
-      embeddedCards.add(cardType);
+      record(embeddedCards, cardType, String(obj.type));
     }
 
-    for (const value of Object.values(obj)) visit(value, depth + 1);
+    for (const value of Object.values(obj)) visit(value, depth + 1, nextOwner);
   };
 
-  visit(root, 0);
+  visit(root, 0, null);
 
-  const sorted = (s: Set<string>): string[] => Array.from(s).sort();
+  const toItems = (from: Map<string, Set<string>>): PresetRiskItem[] =>
+    Array.from(from, ([value, sources]) => ({
+      value,
+      sources: Array.from(sources).sort(),
+    })).sort((a, b) => a.value.localeCompare(b.value));
+
   const findings: PresetRiskFindings = {
-    serviceCalls: sorted(serviceCalls),
-    remoteHosts: sorted(remoteHosts),
-    embeddedCards: sorted(embeddedCards),
+    serviceCalls: toItems(serviceCalls),
+    remoteHosts: toItems(remoteHosts),
+    embeddedCards: toItems(embeddedCards),
     hasAny: false,
   };
   findings.hasAny =

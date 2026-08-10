@@ -3,8 +3,10 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { confirmUntrustedPreset } from './uc-preset-trust-dialog';
 import type { PresetRiskFindings } from './uc-preset-trust-scanner';
 
+const item = (value: string, ...sources: string[]) => ({ value, sources });
+
 const findings = (over: Partial<PresetRiskFindings> = {}): PresetRiskFindings => ({
-  serviceCalls: ['lock.unlock'],
+  serviceCalls: [item('lock.unlock', 'Button')],
   remoteHosts: [],
   embeddedCards: [],
   hasAny: true,
@@ -106,9 +108,9 @@ describe('confirmUntrustedPreset', () => {
     const pending = confirmUntrustedPreset(
       'Kitchen Sink',
       findings({
-        serviceCalls: ['lock.unlock'],
-        remoteHosts: ['images.unsplash.com'],
-        embeddedCards: ['custom:mushroom-card'],
+        serviceCalls: [item('lock.unlock', 'Button')],
+        remoteHosts: [item('images.unsplash.com', 'Image')],
+        embeddedCards: [item('custom:mushroom-card', 'External Card')],
       })
     );
     const text = panel()?.textContent ?? '';
@@ -119,9 +121,24 @@ describe('confirmUntrustedPreset', () => {
     await pending;
   });
 
+  it('names the module each finding belongs to', async () => {
+    const pending = confirmUntrustedPreset(
+      'Modern Vehicle Card',
+      findings({
+        serviceCalls: [],
+        remoteHosts: [item('images.unsplash.com', 'Image', 'Text')],
+      })
+    );
+    const text = panel()?.textContent ?? '';
+    expect(text).toContain('images.unsplash.com');
+    expect(text).toContain('in Image, Text');
+    clickButton('Cancel');
+    await pending;
+  });
+
   it('escapes preset-controlled strings rather than rendering them as markup', async () => {
     const pending = confirmUntrustedPreset('<img src=x onerror=alert(1)>', {
-      serviceCalls: ['<script>alert(2)</script>'],
+      serviceCalls: [item('<script>alert(2)</script>', '<b>bold</b>')],
       remoteHosts: [],
       embeddedCards: [],
       hasAny: true,
@@ -129,6 +146,7 @@ describe('confirmUntrustedPreset', () => {
 
     expect(document.querySelector('.uc-preset-trust-panel img')).toBeNull();
     expect(document.querySelector('.uc-preset-trust-panel script')).toBeNull();
+    expect(document.querySelector('.uc-preset-trust-panel b')).toBeNull();
     // Present as visible text, so the user can see what the preset claimed to be.
     expect(panel()?.textContent).toContain('onerror');
     clickButton('Cancel');
