@@ -185,70 +185,18 @@ function updateAllCardInstances(
         console.warn(`[UC Native Card] Failed to update card instance for ${context}:`, error);
       }
     } else {
-      // Card doesn't exist in cache - for dashboard, search DOM and update directly
-      // Dashboard is a separate Ultra Card instance, so we need to find and update the card element
-      if (context === 'dashboard') {
-        try {
-          console.log(`[UC Native Card] Searching DOM for dashboard card: ${cardType}`);
-          
-          // Search for all Ultra Card instances in the DOM
-          const allUltraCards = document.querySelectorAll('ultra-card');
-          
-          for (const ultraCard of Array.from(allUltraCards)) {
-            // Find all card elements of this type within this Ultra Card instance
-            const cardElements = ultraCard.querySelectorAll(cardType);
-            
-            // Try to find the card that belongs to this module
-            for (const cardEl of Array.from(cardElements)) {
-              try {
-                // Update this card element directly
-                (cardEl as any).hass = hass;
-                
-                // Try to update config
-                if (typeof (cardEl as any).setConfig === 'function') {
-                  try {
-                    (cardEl as any).setConfig(normalizedConfig);
-                    console.log(`[UC Native Card] Updated dashboard card via setConfig:`, cardType);
-                  } catch (e) {
-                    (cardEl as any).config = normalizedConfig;
-                    console.log(`[UC Native Card] Updated dashboard card via config property:`, cardType);
-                  }
-                } else {
-                  (cardEl as any).config = normalizedConfig;
-                  console.log(`[UC Native Card] Updated dashboard card via config property:`, cardType);
-                }
-                
-                // Cache this element for future updates
-                cardElementCache.set(cacheKey, cardEl as HTMLElement);
-                cardLastConfig.set(cacheKey, normalizedConfig);
-                
-                // Successfully updated - break out
-                break;
-              } catch (updateError) {
-                console.warn('[UC Native Card] Failed to update card in DOM:', updateError);
-              }
-            }
-            
-            // If we found and cached a card, break out of Ultra Card loop
-            if (cardElementCache.has(cacheKey)) {
-              break;
-            }
-          }
-          
-          // If still not found, log warning
-          if (!cardElementCache.has(cacheKey)) {
-            console.warn(`[UC Native Card] Could not find dashboard card in DOM: ${cardType}`);
-          }
-        } catch (domError) {
-          console.warn('[UC Native Card] DOM search failed:', domError);
-        }
-      }
-      
-      // Clear any stale cached config so new card gets latest config
-      if (!cardElementCache.has(cacheKey)) {
-        cardLastConfig.delete(cacheKey);
-        cardWasDisconnected.delete(cacheKey);
-      }
+      // Nothing is mounted for this context, which is normal while a card is being
+      // added and has never rendered on the dashboard. Clearing the cached config is
+      // enough: renderPreview applies `module.card_config` when it creates the
+      // element, and its own drift check reconciles anything arriving out of order.
+      //
+      // A DOM hunt for the dashboard element used to live here. It could never match,
+      // because both `ultra-card` and the cards inside it sit in shadow roots that
+      // `document.querySelectorAll` does not enter, so all it produced was a warning
+      // per keystroke. It was unsound as well: it pushed this module's config onto the
+      // first element of the same card type found anywhere on the page.
+      cardLastConfig.delete(cacheKey);
+      cardWasDisconnected.delete(cacheKey);
     }
   });
 }
