@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ucCloudSyncService, CloudFavorite } from './uc-cloud-sync-service';
+import {
+  ucCloudSyncService,
+  CloudFavorite,
+  COLOR_SYNC_UNAVAILABLE,
+} from './uc-cloud-sync-service';
+import { ucCloudAuthService } from './uc-cloud-auth-service';
 import { safeGetItem, safeSetItem } from '../utils/safe-storage';
 
 const STORAGE_KEY = 'ultra-card-favorites';
@@ -96,5 +101,50 @@ describe('UcCloudSyncService._downloadFavorites', () => {
     ]);
 
     expect(result).toHaveLength(2);
+  });
+});
+
+/**
+ * C5: colour sync had no merge, upload or download, yet reported success and
+ * stamped a last-synced time — so the Hub showed a recent backup for data that
+ * had never left the device.
+ */
+describe('colour sync honesty', () => {
+  beforeEach(() => {
+    vi.spyOn(ucCloudAuthService, 'isAuthenticated').mockReturnValue(true);
+  });
+
+  it('reports colour sync as unavailable', () => {
+    expect(ucCloudSyncService.isColorSyncAvailable()).toBe(false);
+  });
+
+  it('does not report success for a sync it cannot perform', async () => {
+    const result = await ucCloudSyncService.syncFavoriteColors();
+
+    expect(result.success).toBe(false);
+    expect(result.synced).toBe(0);
+    expect(result.errors[0]).toBe(COLOR_SYNC_UNAVAILABLE);
+  });
+
+  it('does not stamp a last-synced time', async () => {
+    const before = ucCloudSyncService.getSyncStatus().lastColorsSync ?? null;
+
+    await ucCloudSyncService.syncFavoriteColors();
+
+    expect(ucCloudSyncService.getSyncStatus().lastColorsSync ?? null).toEqual(before);
+  });
+
+  it('still refuses when not authenticated', async () => {
+    vi.spyOn(ucCloudAuthService, 'isAuthenticated').mockReturnValue(false);
+
+    await expect(ucCloudSyncService.syncFavoriteColors()).rejects.toThrow(/not authenticated/i);
+  });
+
+  it('does not queue colour changes that can never be sent', () => {
+    const before = ucCloudSyncService.getSyncStatus().pendingChanges;
+
+    ucCloudSyncService.queueChange('color', 'create', { id: 'c1', color: '#fff' });
+
+    expect(ucCloudSyncService.getSyncStatus().pendingChanges).toBe(before);
   });
 });

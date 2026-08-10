@@ -1367,7 +1367,11 @@ export class HubAccountTab extends LitElement {
     const lastFavorites = this._formatSyncTime(s?.lastFavoritesSync ?? null);
 
     const stats: Array<{ icon: string; label: string; count: number; lastSync: string; proOnly?: boolean }> = [
-      { icon: 'mdi:palette',       label: 'Colors',    count: this._syncCounts.colors,    lastSync: lastColors },
+      // Colours are listed here only once they really sync; showing a count under
+      // "Cloud Sync" implied those colours were backed up when they were not.
+      ...(ucCloudSyncService.isColorSyncAvailable()
+        ? [{ icon: 'mdi:palette', label: 'Colors', count: this._syncCounts.colors, lastSync: lastColors }]
+        : []),
       { icon: 'mdi:variable',      label: 'Variables', count: this._syncCounts.variables, lastSync: lastVariables },
       { icon: 'mdi:heart',         label: 'Favorites', count: this._syncCounts.favorites, lastSync: lastFavorites },
       { icon: 'mdi:view-dashboard',label: 'Presets',   count: this._syncCounts.presets,   lastSync: '—', proOnly: false },
@@ -1429,7 +1433,7 @@ export class HubAccountTab extends LitElement {
           Sign in or create an account
         </h3>
         <p class="form-note" style="margin: 0 0 16px 0;">
-          Sign in to cloud-save favorites, colors, and presets. Upgrade to Pro for full features.
+          Sign in to cloud-save favorites and presets. Upgrade to Pro for full features.
         </p>
 
         <div class="form-tabs">

@@ -488,8 +488,14 @@ export class HubColorsTab extends LitElement {
     if (this._syncing) return;
     this._syncing = true;
     try {
-      await ucCloudSyncService.syncFavoriteColors();
-      this._showToast('Colors synced ✓');
+      // syncFavoriteColors reports problems in the result rather than throwing, so
+      // a try/catch alone showed a tick for every outcome including failure.
+      const result = await ucCloudSyncService.syncFavoriteColors();
+      if (result.success) {
+        this._showToast('Colors synced ✓');
+      } else {
+        this._showToast(result.errors[0] || 'Sync failed — try again');
+      }
     } catch {
       this._showToast('Sync failed — try again');
     } finally {
@@ -498,6 +504,19 @@ export class HubColorsTab extends LitElement {
   }
 
   private _renderSyncBanner() {
+    // Until colour sync exists, say where colours actually live rather than
+    // offering a backup or a last-synced time for data that never left the device.
+    if (!ucCloudSyncService.isColorSyncAvailable()) {
+      return html`
+        <div class="sync-banner sync-banner-guest">
+          <ha-icon icon="mdi:content-save-outline"></ha-icon>
+          <div class="sync-banner-body">
+            <strong>Saved on this device</strong>
+            <span>Cloud sync for colors is coming — export your card to carry them over.</span>
+          </div>
+        </div>
+      `;
+    }
     if (!this._cloudUser) {
       return html`
         <div class="sync-banner sync-banner-guest">

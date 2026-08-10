@@ -83,6 +83,10 @@ export interface SyncStatus {
  */
 const REVIEWS_STORAGE_KEY = 'ultra-card-reviews';
 
+/** Shown wherever colour sync is attempted, so the reason is never a silent no-op. */
+export const COLOR_SYNC_UNAVAILABLE =
+  'Color sync is not available yet — your colors are saved on this device only.';
+
 class UcCloudSyncService {
   private static readonly API_BASE = 'https://ultracard.io/wp-json/ultra-card/v1';
   private static readonly SYNC_STATUS_KEY = 'ultra-card-sync-status';
@@ -214,52 +218,37 @@ class UcCloudSyncService {
   }
 
   /**
-   * Sync favorite colors with cloud
+   * Whether favourite colours can be synced to the cloud.
+   *
+   * They cannot: the merge, upload and download steps were never written. This is
+   * exposed so the UI can describe colours accurately instead of offering a
+   * backup that does not happen. Flip this to true in the same change that
+   * implements the transfer, and the sync affordances come back with it.
+   */
+  isColorSyncAvailable(): boolean {
+    return false;
+  }
+
+  /**
+   * Sync favorite colors with cloud.
+   *
+   * Reports failure rather than doing nothing quietly. It previously fetched the
+   * remote colours, merged them into an empty array, transferred nothing, then
+   * set success and stamped `lastColorsSync` — so the Hub showed a recent backup
+   * time for data that had never left the device.
    */
   async syncFavoriteColors(): Promise<SyncResult> {
     if (!ucCloudAuthService.isAuthenticated()) {
       throw new Error('Cannot sync colors: not authenticated');
     }
 
-    const result: SyncResult = {
+    return {
       success: false,
       synced: 0,
       conflicts: 0,
-      errors: [],
+      errors: [COLOR_SYNC_UNAVAILABLE],
       lastSync: new Date().toISOString(),
     };
-
-    try {
-      // Get local colors
-      const localColors = this._getLocalColors();
-
-      // Get remote colors
-      const remoteColors = await this._fetchRemoteColors();
-
-      // Resolve conflicts and merge
-      const { merged, conflicts } = await this._mergeColors(localColors, remoteColors);
-
-      // Upload/download changes
-      const uploadResults = await this._uploadColors(merged.filter(c => c._needsUpload));
-      const downloadResults = await this._downloadColors(merged.filter(c => c._needsDownload));
-
-      result.success = true;
-      result.synced = uploadResults.length + downloadResults.length;
-      result.conflicts = conflicts.length;
-
-      this._syncStatus.lastColorsSync = new Date();
-      this._saveSyncStatus();
-      this._notifyListeners();
-
-      console.log(
-        `✅ Colors sync completed: ${result.synced} synced, ${result.conflicts} conflicts`
-      );
-    } catch (error) {
-      console.error('❌ Colors sync failed:', error);
-      result.errors.push(error instanceof Error ? error.message : 'Unknown error');
-    }
-
-    return result;
   }
 
   /**
@@ -348,7 +337,12 @@ class UcCloudSyncService {
       const uploadResults = await this._uploadReviews(merged.filter(r => r._needsUpload));
       const downloadResults = await this._downloadReviews(merged.filter(r => r._needsDownload));
 
-      result.success = true;
+      // _mergeReviews returns nothing, so the two calls above are always given an
+      // empty list. Reported as a failure so this cannot grow a caller that
+      // believes it works. Reviews themselves live server-side, so nothing local
+      // is at risk here — unlike colours.
+      result.success = false;
+      result.errors.push('Review sync is not implemented yet.');
       result.synced = uploadResults.length + downloadResults.length;
       result.conflicts = conflicts.length;
 
@@ -369,6 +363,12 @@ class UcCloudSyncService {
     action: 'create' | 'update' | 'delete',
     data: any
   ): void {
+    // Colours have nowhere to go, and a queued change that can never be sent
+    // would sit in the pending count forever, reading as "sync is behind".
+    if (type === 'color' && !this.isColorSyncAvailable()) {
+      return;
+    }
+
     const changeId = `${type}-${action}-${Date.now()}`;
     this._pendingChanges.set(changeId, {
       type,
@@ -975,10 +975,9 @@ class UcCloudSyncService {
         }
         break;
       case 'color':
-        if (change.action === 'create') {
-          await this._uploadColors([change.data]);
-        }
-        break;
+        // Nothing to upload to. Queuing these only made them disappear from the
+        // queue as though they had been sent; queueChange now refuses them.
+        throw new Error(COLOR_SYNC_UNAVAILABLE);
       case 'review':
         if (change.action === 'create') {
           await this._uploadReviews([change.data]);
