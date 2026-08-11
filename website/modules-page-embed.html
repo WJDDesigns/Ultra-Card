@@ -1,16 +1,28 @@
 <script>
 (async function(){
-  var sha=null;
-  try{
-    var r=await fetch('https://api.github.com/repos/WJDDesigns/Ultra-Card/commits/main',{headers:{Accept:'application/vnd.github+json'}});
-    if(r.ok){sha=(await r.json()).sha;}
-  }catch(e){}
-  var s=document.createElement('script');
-  if(window.UCM_BUNDLE_SRC){s.src=window.UCM_BUNDLE_SRC;document.head.appendChild(s);return;}
-  s.src=sha
-    ? 'https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@'+sha+'/dist-demo/ultra-card-demo.js'
-    : 'https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@main/dist-demo/ultra-card-demo.js?h='+Math.floor(Date.now()/3600000);
-  document.head.appendChild(s);
+  /* Demo bundle is ~10MB on jsDelivr. Prefer the latest main SHA so new modules
+     appear automatically, but always fall back — a fresh commit can 404 on the
+     CDN for a few minutes, which previously left every preview blank. */
+  var urls=[];
+  if(window.UCM_BUNDLE_SRC){ urls.push(window.UCM_BUNDLE_SRC); }
+  else {
+    var sha=null;
+    try{
+      var r=await fetch('https://api.github.com/repos/WJDDesigns/Ultra-Card/commits/main',{headers:{Accept:'application/vnd.github+json'}});
+      if(r.ok){sha=(await r.json()).sha;}
+    }catch(e){}
+    if(sha) urls.push('https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@'+sha+'/dist-demo/ultra-card-demo.js');
+    urls.push('https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@v3.7.0/dist-demo/ultra-card-demo.js');
+    urls.push('https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@main/dist-demo/ultra-card-demo.js?h='+Math.floor(Date.now()/3600000));
+  }
+  function load(i){
+    if(i>=urls.length) return;
+    var s=document.createElement('script');
+    s.src=urls[i];
+    s.onerror=function(){ try{s.remove();}catch(e){} load(i+1); };
+    document.head.appendChild(s);
+  }
+  load(0);
 })();
 </script>
 <style>
@@ -29,7 +41,7 @@
   <header class="ucm-hero">
     <div class="ucm-hero-glow" aria-hidden="true"></div>
     <div class="ucm-wrap">
-      <div class="ucm-eyebrow"><span class="ucm-pulse"></span> Module Library · Updated for <b id="ucm-version">v3.7.0&#8209;beta3</b></div>
+      <div class="ucm-eyebrow"><span class="ucm-pulse"></span> Module Library · Updated for <b id="ucm-version">v3.7.0</b></div>
       <h1 class="ucm-h1">Every module.<br><span class="ucm-grad-text">Running live.</span></h1>
       <p class="ucm-sub">Ultra Card ships <b class="ucm-count" data-count="total">93</b> drag&#8209;and&#8209;drop modules for your Home Assistant dashboard.
       Every preview below is the <b>real module</b>, running the same code as your dashboard with live sample data.</p>
@@ -192,7 +204,9 @@
 @keyframes ucmPulse{70%{box-shadow:0 0 0 9px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
 .ucm-h1{position:relative;font-size:clamp(38px,6vw,68px);font-weight:800;margin:22px 0 16px;letter-spacing:-.02em}
 .ucm-grad-text{background:linear-gradient(92deg,var(--uc-blue),#b44ce0 55%,var(--uc-pink));-webkit-background-clip:text;background-clip:text;color:transparent}
-.ucm-sub{position:relative;max-width:660px;margin:0 auto;color:var(--uc-dim);font-size:17px;text-align:center!important}
+/* Scoped like .ucm-wrap: the .ucm p reset above is more specific than a bare
+   .ucm-sub, so unscoped auto margins lose and the block hugs the left edge. */
+.ucm .ucm-sub{position:relative;max-width:660px;margin:0 auto;color:var(--uc-dim);font-size:17px;text-align:center!important}
 .ucm-search-hero{position:relative;display:flex;align-items:center;max-width:620px;margin:30px auto 0;
   background:var(--uc-card);border:1px solid var(--uc-line);border-radius:999px;padding:4px 8px 4px 20px;
   box-shadow:0 12px 40px rgba(0,0,0,.45);transition:border-color .2s}
@@ -595,25 +609,30 @@ function observeGrids(){ $$('.ucm-pv',root).forEach(pv=>{ if(!pv.closest('.ucm-m
 const PREVIEWS = {};
 const NO_REAL_PREVIEW = new Set(['native_card','external_card']);
 function realPreviewReady(){ return !!customElements.get('uc-module-demo'); }
-function renderPreview(pv, type, interactive){
+function mountMock(pv, type, interactive){
   const m = CATALOG.find(x=>x.type===type);
-  if(!NO_REAL_PREVIEW.has(type)){
-    if(realPreviewReady()){ mountReal(pv, type); return; }
-    // bundle still loading: show shimmer, upgrade when ready
-    const wait = document.createElement('div'); wait.className='pv';
-    wait.innerHTML = '<div class="pv-blk" style="width:78%;height:64%;border-radius:10px"></div>';
-    pv.appendChild(wait);
-    customElements.whenDefined('uc-module-demo').then(()=>{
-      if(wait.isConnected){ wait.remove(); mountReal(pv, type); }
-    });
-    return;
-  }
   const fn = PREVIEWS[type] || PREVIEWS['__'+(m?m.category:'data')] || PREVIEWS.__data;
   const holder = document.createElement('div'); holder.className='pv';
   pv.appendChild(holder);
   try{ fn(holder, {interactive, m});
-    holder.insertAdjacentHTML('beforeend','<span style="position:absolute;bottom:6px;right:9px;font-size:8.5px;letter-spacing:.06em;color:#5a6373;text-transform:uppercase">Concept illustration</span>');
+    if(NO_REAL_PREVIEW.has(type)){
+      holder.insertAdjacentHTML('beforeend','<span style="position:absolute;bottom:6px;right:9px;font-size:8.5px;letter-spacing:.06em;color:#5a6373;text-transform:uppercase">Concept illustration</span>');
+    }
   }catch(err){ holder.innerHTML='<div class="pv-card">'+ (m?m.title:type) +'</div>'; }
+}
+function renderPreview(pv, type, interactive){
+  if(!NO_REAL_PREVIEW.has(type) && realPreviewReady()){ mountReal(pv, type); return; }
+  /* Paint a mock immediately so cards never sit empty while the ~10MB demo
+     bundle downloads (or if jsDelivr briefly 404s a fresh commit SHA). */
+  mountMock(pv, type, interactive);
+  if(NO_REAL_PREVIEW.has(type)) return;
+  customElements.whenDefined('uc-module-demo').then(()=>{
+    if(!pv.isConnected || pv.dataset.ready!=='1') return;
+    if(pv.querySelector('uc-module-demo')) return;
+    (timers.get(pv)||[]).forEach(clearInterval); timers.delete(pv);
+    pv.querySelectorAll(':scope > .pv').forEach(n=>n.remove());
+    mountReal(pv, type);
+  });
 }
 function mountReal(pv, type){
   if(pv.querySelector('uc-module-demo')) return;   /* already mounted */

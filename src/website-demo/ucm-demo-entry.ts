@@ -817,8 +817,7 @@ function startDemoLoop() {
 }
 
 /** HA default dark-theme variables so modules look like a real dashboard. */
-const THEME_CSS = `
-:host{
+const THEME_VARS = `
   --card-background-color:#1c1c1c;
   --ha-card-background:#1c1c1c;
   --primary-background-color:#111111;
@@ -827,6 +826,7 @@ const THEME_CSS = `
   --secondary-text-color:#9b9b9b;
   --disabled-text-color:#6f6f6f;
   --primary-color:#03a9f4;
+  --rgb-primary-color:3,169,244;
   --accent-color:#ff9800;
   --divider-color:rgba(225,225,225,.12);
   --state-icon-color:#9da0a2;
@@ -842,6 +842,11 @@ const THEME_CSS = `
   --ha-card-box-shadow:none;
   --mdc-icon-size:24px;
   --card-primary-font-size:14px;
+`;
+
+const THEME_CSS = `
+:host{
+${THEME_VARS}
   display:block;
   color:var(--primary-text-color);
   font-family:Roboto,'Open Sans',system-ui,sans-serif;
@@ -888,6 +893,25 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radiu
 @keyframes ucdPopup{0%,8%{opacity:0;transform:translate(-50%,-38%) scale(.92)}18%,72%{opacity:1;transform:translate(-50%,-50%) scale(1)}86%,100%{opacity:0;transform:translate(-50%,-38%) scale(.92)}}
 `;
 
+/**
+ * Modules that float UI above the card (dropdown menus, popups, drawers,
+ * screensavers, toasts) portal it to document.body so it escapes clipping.
+ * That lands it outside our shadow root, where the :host variables above no
+ * longer reach it — and the module styles read them without fallbacks, so an
+ * unthemed overlay paints fully transparent with black text. Declaring the
+ * same variables on body keeps portaled content themed. Only custom properties
+ * are set, so nothing on the host page changes unless it reads an HA var name.
+ */
+let themeVarsInjected = false;
+function injectPortalThemeVars(): void {
+  if (themeVarsInjected) return;
+  themeVarsInjected = true;
+  const style = document.createElement('style');
+  style.id = 'ucd-portal-theme-vars';
+  style.textContent = `body{${THEME_VARS}}`;
+  document.head.appendChild(style);
+}
+
 class UcModuleDemo extends HTMLElement {
   static get observedAttributes() {
     return ['type'];
@@ -906,6 +930,7 @@ class UcModuleDemo extends HTMLElement {
 
   constructor() {
     super();
+    injectPortalThemeVars();
     this._root = this.attachShadow({ mode: 'open' });
     const style = document.createElement('style');
     style.textContent = THEME_CSS;
