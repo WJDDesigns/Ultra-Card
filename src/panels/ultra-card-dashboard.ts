@@ -56,6 +56,7 @@ export class UltraCardPanel extends LitElement {
 
   @state() private _activeTab: HubTab = 'dashboard';
   @state() private _pendingDocsSlug = '';
+  @state() private _pendingPresetsView: 'browse' | 'mine' | '' = '';
   @state() private _proAuth: HubProTab['auth'] = null;
   @state() private _cloudUser: CloudUser | null = null;
   @state() private _narrow = window.matchMedia('(max-width: 870px)').matches;
@@ -295,17 +296,22 @@ export class UltraCardPanel extends LitElement {
   private _onNavigateTab(e: CustomEvent<HubNavigateDetail>): void {
     const detail = e.detail;
     if (!detail?.tab) return;
-    if (detail.slug) {
-      this._selectTab(detail.tab, { docsSlug: detail.slug });
-    } else {
-      this._selectTab(detail.tab);
-    }
+    const options: { docsSlug?: string; presetsView?: 'browse' | 'mine' } = {};
+    if (detail.slug) options.docsSlug = detail.slug;
+    if (detail.presetsView) options.presetsView = detail.presetsView;
+    this._selectTab(detail.tab, options);
   }
 
-  private _selectTab(tab: HubTab, options?: { docsSlug?: string }): void {
+  private _selectTab(
+    tab: HubTab,
+    options?: { docsSlug?: string; presetsView?: 'browse' | 'mine' }
+  ): void {
     this._activeTab = normalizeHubTab(tab) ?? 'dashboard';
     if (options?.docsSlug) {
       this._pendingDocsSlug = options.docsSlug;
+    }
+    if (options?.presetsView) {
+      this._pendingPresetsView = options.presetsView;
     }
     this._persistNavState();
     this._onTabActivated(this._activeTab);
@@ -473,7 +479,13 @@ export class UltraCardPanel extends LitElement {
       case 'favorites':
         return html`<hub-favorites-tab></hub-favorites-tab>`;
       case 'presets':
-        return html`<hub-presets-tab></hub-presets-tab>`;
+        return html`<hub-presets-tab
+          .hass=${this.hass}
+          .initialView=${this._pendingPresetsView || 'browse'}
+          @presets-view-applied=${() => {
+            this._pendingPresetsView = '';
+          }}
+        ></hub-presets-tab>`;
       case 'colors':
         return html`<hub-colors-tab .hass=${this.hass}></hub-colors-tab>`;
       case 'variables':

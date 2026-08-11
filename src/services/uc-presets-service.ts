@@ -509,7 +509,7 @@ class UcPresetsService {
         id: `wp-error-${wpPreset.id}`,
         name: wpPreset.name || 'Error Preset',
         description: 'This preset could not be loaded properly',
-        category: 'custom',
+        category: 'content',
         icon: 'mdi:alert-circle',
         author: wpPreset.author || 'Community',
         version: '1.0.0',
@@ -546,32 +546,42 @@ class UcPresetsService {
   }
 
   /**
-   * Map WordPress category to Ultra Card category
+   * Map WordPress category to Ultra Card category (aligned with /modules).
    */
   private _mapWordPressCategory(wpCategory: string): PresetDefinition['category'] {
-    const categoryMap: Record<string, PresetDefinition['category']> = {
-      // Exact matches for Ultra Card categories
-      badges: 'badges',
-      layouts: 'layouts',
-      widgets: 'widgets',
-      custom: 'badges', // Map WordPress 'custom' to 'badges' for now
+    const moduleCats: PresetDefinition['category'][] = [
+      'layout',
+      'content',
+      'data',
+      'interactive',
+      'input',
+      'media',
+    ];
+    const normalized = wpCategory.toLowerCase().trim();
+    if ((moduleCats as string[]).includes(normalized)) {
+      return normalized as PresetDefinition['category'];
+    }
 
-      // Alternative names that should map to Ultra Card categories
-      badge: 'badges',
-      layout: 'layouts',
-      widget: 'widgets',
-      dashboard: 'layouts',
-      dashboards: 'layouts',
-      theme: 'custom',
-      themes: 'custom',
+    const legacyMap: Record<string, PresetDefinition['category']> = {
+      badges: 'content',
+      badge: 'content',
+      layouts: 'layout',
+      layout: 'layout',
+      widgets: 'content',
+      widget: 'content',
+      custom: 'content',
+      dashboard: 'layout',
+      dashboards: 'layout',
+      theme: 'content',
+      themes: 'content',
+      scenes: 'content',
+      climate: 'interactive',
+      energy: 'data',
+      security: 'data',
+      lights: 'interactive',
     };
 
-    const normalized = wpCategory.toLowerCase().trim();
-    const mappedCategory = categoryMap[normalized];
-
-    // Mapping WordPress category (silent)
-
-    return mappedCategory || 'badges'; // Default to badges instead of custom
+    return legacyMap[normalized] || 'content';
   }
 
   /**
@@ -588,14 +598,20 @@ class UcPresetsService {
     if (tags.includes('vehicle') || tags.includes('car')) return 'mdi:car';
     if (tags.includes('location')) return 'mdi:map-marker';
 
-    // Fallback to category-based icons
+    // Fallback to category-based icons (aligned with /modules)
     const categoryIcons: Record<string, string> = {
-      badge: 'mdi:card-account-details',
-      badges: 'mdi:card-account-details',
-      layout: 'mdi:view-column',
-      layouts: 'mdi:view-column',
-      widget: 'mdi:widgets',
-      widgets: 'mdi:widgets',
+      layout: 'mdi:view-dashboard-outline',
+      layouts: 'mdi:view-dashboard-outline',
+      content: 'mdi:text-box-outline',
+      data: 'mdi:chart-box-outline',
+      interactive: 'mdi:gesture-tap',
+      input: 'mdi:form-textbox',
+      media: 'mdi:image-multiple-outline',
+      // Legacy
+      badge: 'mdi:text-box-outline',
+      badges: 'mdi:text-box-outline',
+      widget: 'mdi:chart-box-outline',
+      widgets: 'mdi:chart-box-outline',
       dashboard: 'mdi:view-dashboard',
       dashboards: 'mdi:view-dashboard',
     };

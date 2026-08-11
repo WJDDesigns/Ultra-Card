@@ -9088,7 +9088,7 @@ export class LayoutTab extends LitElement {
         id: '__remap_card__',
         name: 'Remap Card Entities',
         description: 'Remap all entities in this card',
-        category: 'custom',
+        category: 'content',
         icon: 'mdi:resistor-nodes',
         author: '',
         version: '1.0',

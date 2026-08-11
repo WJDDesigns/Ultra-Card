@@ -39,6 +39,8 @@ export interface WordPressPresetsResponse {
 
 export class DirectoriesProPresetsAPI {
   private static readonly API_BASE = 'https://ultracard.io/wp-json/wp/v2';
+  /** Native Ultra Card catalog (preferred once plugin 1.3+ is deployed). */
+  private static readonly UC_API_BASE = 'https://ultracard.io/wp-json/ultra-card/v1';
   private static readonly CACHE_KEY = 'ultra-card-directories-pro-presets-v2';
   private static readonly CACHE_TIMESTAMP_KEY = 'ultra-card-directories-pro-presets-v2-timestamp';
   private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -93,10 +95,25 @@ export class DirectoriesProPresetsAPI {
       if (params.search) queryParams.set('search', params.search);
       if (params.sort) queryParams.set('sort', params.sort);
 
+      // Prefer native Ultra Card catalog (works against DP posts pre-cutover and ultra_preset after).
+      const nativeUrl = `${DirectoriesProPresetsAPI.UC_API_BASE}/presets?${queryParams.toString()}`;
+      try {
+        const nativePayload = await this._fetchWithCorsResilience(nativeUrl);
+        const nativeMapped = this._mapNativeCatalog(nativePayload, params.page || 1);
+        if (nativeMapped && Array.isArray((nativePayload as any)?.presets)) {
+          const cacheData = { data: nativeMapped, timestamp: Date.now() };
+          this.cache.set(cacheKey, cacheData);
+          this._saveToLocalStorage(cacheKey, cacheData);
+          return nativeMapped;
+        }
+      } catch {
+        // Fall through to legacy Directories Pro REST.
+      }
+
       // Embed author and media information
       queryParams.set('_embed', 'true');
 
-      // Use Directories Pro post type
+      // Legacy Directories Pro post type
       const url = `${DirectoriesProPresetsAPI.API_BASE}/presets_dir_ltg?${queryParams.toString()}`;
 
       // Try multiple methods to fetch data
@@ -144,7 +161,7 @@ export class DirectoriesProPresetsAPI {
                 description: this._truncateDescription(fullDescription, 15), // Truncated for cards
                 description_full: fullDescriptionHtml, // HTML for Read More
                 shortcode: meta.shortcode || '{"rows":[]}',
-                category: meta.category || 'badges', // Default to badges instead of custom
+                category: meta.category || 'content',
                 tags: tags,
                 integrations,
                 author:
@@ -255,7 +272,7 @@ export class DirectoriesProPresetsAPI {
         description: this._truncateDescription(fullDescription, 15),
         description_full: fullDescriptionHtml,
         shortcode: meta.shortcode || '{"rows":[]}',
-        category: meta.category || 'badges',
+        category: meta.category || 'content',
         tags: tags,
         integrations,
         author:
@@ -329,7 +346,7 @@ export class DirectoriesProPresetsAPI {
     }
 
     // Fallback categories
-    return ['badges', 'layouts', 'widgets', 'dashboards', 'themes'];
+    return ['layout', 'content', 'data', 'interactive', 'input', 'media'];
   }
 
   /**
@@ -497,6 +514,64 @@ export class DirectoriesProPresetsAPI {
       console.warn('Failed to read from localStorage:', error);
       return null;
     }
+  }
+
+  /**
+   * Map GET /ultra-card/v1/presets payload into WordPressPresetsResponse.
+   */
+  private _mapNativeCatalog(payload: any, page: number): WordPressPresetsResponse | null {
+    if (!payload || typeof payload !== 'object') return null;
+    const list = Array.isArray(payload.presets)
+      ? payload.presets
+      : Array.isArray(payload)
+        ? payload
+        : null;
+    if (!list) return null;
+
+    const presets: WordPressPreset[] = list.map((p: any) => {
+      const tags = Array.isArray(p.tags)
+        ? p.tags.map((t: any) => String(t).trim()).filter(Boolean)
+        : typeof p.tags === 'string'
+          ? p.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+          : [];
+      const integrations = p.integrations
+        ? String(p.integrations)
+            .split(',')
+            .map((t: string) => t.trim())
+            .filter(Boolean)
+        : [];
+      const description = this._stripHtml(p.description || '');
+      const gallery = Array.isArray(p.gallery) ? p.gallery.map(String) : [];
+      return {
+        id: Number(p.id),
+        name: String(p.name || ''),
+        description: description.slice(0, 200),
+        description_full: p.description || description,
+        shortcode: String(p.shortcode || ''),
+        category: String(p.category || 'content'),
+        tags,
+        integrations: integrations.length ? integrations : undefined,
+        author: String(p.author || ''),
+        featured_image: String(p.featured_image || gallery[0] || ''),
+        gallery,
+        downloads: Number(p.downloads || 0),
+        rating: Number(p.rating || 0),
+        reviews_count: Number(p.rating_count || 0),
+        rating_count: Number(p.rating_count || 0),
+        created: String(p.date || ''),
+        updated: String(p.modified || ''),
+        is_featured: String(p.source || '') === 'official',
+        difficulty: 'beginner',
+        preset_url: p.preset_url ? String(p.preset_url) : undefined,
+      };
+    });
+
+    return {
+      presets,
+      total: Number(payload.total ?? presets.length),
+      pages: Number(payload.total_pages ?? 1),
+      current_page: Number(payload.page ?? page),
+    };
   }
 
   /**

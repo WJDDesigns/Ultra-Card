@@ -7,6 +7,8 @@ export interface HubNavigateDetail {
   tab: HubTab;
   /** Docs wiki page slug (when tab is docs). */
   slug?: string;
+  /** Presets tab sub-view (when tab is presets). */
+  presetsView?: 'browse' | 'mine';
 }
 
 export const HUB_NAVIGATE_EVENT = 'hub-navigate-tab';

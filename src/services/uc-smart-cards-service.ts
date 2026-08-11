@@ -442,7 +442,7 @@ class UcSmartCardsService {
         id,
         name,
         description,
-        category: 'layouts',
+        category: 'layout',
         icon: 'mdi:brain',
         author: 'Home Assistant Assist',
         version: '1.0.0',
@@ -513,7 +513,7 @@ class UcSmartCardsService {
         id,
         name: title,
         description,
-        category: 'layouts',
+        category: 'layout',
         icon: 'mdi:brain',
         author: 'Home Assistant Assist',
         version: '1.0.0',
@@ -717,14 +717,26 @@ class UcSmartCardsService {
     }
 
     const now = new Date().toISOString();
-    const categoryRaw = String(candidate.category || 'layouts').toLowerCase();
-    const category: PresetDefinition['category'] =
-      categoryRaw === 'badges' ||
-      categoryRaw === 'layouts' ||
-      categoryRaw === 'widgets' ||
-      categoryRaw === 'custom'
-        ? categoryRaw
-        : 'custom';
+    const categoryRaw = String(candidate.category || 'layout').toLowerCase();
+    const moduleCats: PresetDefinition['category'][] = [
+      'layout',
+      'content',
+      'data',
+      'interactive',
+      'input',
+      'media',
+    ];
+    const legacyMap: Record<string, PresetDefinition['category']> = {
+      badges: 'content',
+      badge: 'content',
+      layouts: 'layout',
+      widgets: 'content',
+      widget: 'content',
+      custom: 'content',
+    };
+    const category: PresetDefinition['category'] = (moduleCats as string[]).includes(categoryRaw)
+      ? (categoryRaw as PresetDefinition['category'])
+      : legacyMap[categoryRaw] || 'content';
 
     return {
       id: String(candidate.id || `smart-${Date.now()}-${index}`),
