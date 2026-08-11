@@ -348,4 +348,6 @@ export const coreLoaders: Record<string, ModuleLoader> = {
     import(/* webpackMode: "eager" */ './vampire-power-module').then(
       m => new m.UltraVampirePowerModule()
     ),
+  unifi: () =>
+    import(/* webpackMode: "eager" */ './unifi-module').then(m => new m.UltraUnifiModule()),
 };

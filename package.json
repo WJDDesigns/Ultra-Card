@@ -31,6 +31,7 @@
     "translations:stats": "node scripts/translation-stats.js",
     "sync:translations": "node prepare-build.js",
     "sync:panel": "node scripts/sync-panel-to-integration.js",
+    "plugin:zip": "node scripts/package-plugin.js",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",

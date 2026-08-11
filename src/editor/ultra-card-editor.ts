@@ -1236,6 +1236,28 @@ export class UltraCardEditor extends LitElement {
               <div class="cs-accordion-content">
                 <div class="settings-grid">
                   <div class="setting-item" style="grid-column: 1 / -1;">
+                    <div class="cs-inline-toggle">
+                      <label>
+                        ${localize('editor.appearance.transparent_card', lang, 'Transparent Card')}
+                      </label>
+                      <ha-switch
+                        .checked=${this.config.card_transparent || false}
+                        @change=${(e: Event) => {
+                          const target = e.target as any;
+                          this._updateConfig({ card_transparent: target.checked });
+                        }}
+                      ></ha-switch>
+                    </div>
+                    <div class="setting-description">
+                      ${localize(
+                        'editor.appearance.transparent_card_desc',
+                        lang,
+                        'Remove the card background, border, and shadow so only your content is visible.'
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="setting-item" style="grid-column: 1 / -1;">
                     <div class="template-section" style="margin-bottom: 8px;">
                       <div class="template-header">
                         <div class="switch-label-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">

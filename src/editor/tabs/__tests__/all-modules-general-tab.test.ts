@@ -61,6 +61,7 @@ const EMPTY_GENERAL_TAB = new Set([
   'laundry_tracker',
   'vehicle_maintenance',
   'vampire_power',
+  'unifi',
 ]);
 
 const CONFIG: UltraCardConfig = {

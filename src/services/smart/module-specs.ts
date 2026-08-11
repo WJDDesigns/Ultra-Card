@@ -52,6 +52,7 @@ const KEYWORD_OVERRIDES: Record<string, string[]> = {
   laundry_tracker: ['laundry tracker', 'laundry', 'wash cycle', 'forgotten laundry', 'wet clothes'],
   vehicle_maintenance: ['vehicle maintenance', 'car maintenance', 'oil change', 'service interval', 'odometer'],
   vampire_power: ['vampire power', 'phantom load', 'standby power', 'idle power', 'energy waste'],
+  unifi: ['unifi', 'ubiquiti', 'udm', 'network rack', 'switch ports', 'access point', 'unifi network'],
   calendar: ['events', 'schedule', 'agenda'],
   battery_monitor: ['battery', 'low battery', 'phone battery'],
   area_summary: ['room summary', 'room tile', 'floor plan'],
@@ -452,6 +453,12 @@ const AI_FIELD_OVERRIDES: Record<string, { purpose: string; fields: string[]; ex
     fields: ['discovery_mode', 'history_days', 'energy_rate', 'cost_period', 'layout'],
     example: { type: 'vampire_power', discovery_mode: 'auto', history_days: 7, energy_rate: 0.15, cost_period: 'year' },
   },
+  unifi: {
+    purpose:
+      'Auto-discovers Ubiquiti UniFi network gear and renders a virtual rack, port panel, topology map, clients, or WAN health view with live LEDs and traffic.',
+    fields: ['view', 'rack_style', 'animation_intensity', 'topology_layout', 'show_advanced'],
+    example: { type: 'unifi', view: 'rack', rack_style: 'dark', animation_intensity: 'full' },
+  },
 };
 
 const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
@@ -505,6 +512,7 @@ const ENTITY_DOMAIN_OVERRIDES: Record<string, string[]> = {
   laundry_tracker: ['sensor', 'binary_sensor'],
   vehicle_maintenance: ['sensor', 'input_number', 'todo'],
   vampire_power: ['sensor'],
+  unifi: ['sensor', 'switch', 'button', 'device_tracker', 'light', 'update'],
   animated_weather: ['weather'],
   animated_forecast: ['weather'],
   animated_clock: ['*'],

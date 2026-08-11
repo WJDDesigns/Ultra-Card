@@ -733,6 +733,36 @@ function sanitizeVampirePowerModule(module: SmartModule, id: string): SmartModul
   };
 }
 
+function sanitizeUnifiModule(module: SmartModule, id: string): SmartModule | null {
+  return {
+    id,
+    type: 'unifi',
+    view: oneOf(
+      module.view,
+      ['rack', 'ports', 'devices', 'topology', 'clients', 'wan'] as const,
+      'rack'
+    ),
+    device_order: [],
+    hidden_device_ids: [],
+    include_clients: true,
+    client_ids: [],
+    curation_seeded: false,
+    rack_max_devices: numberInRange(module.rack_max_devices, 1, 64, 16),
+    use_device_images: module.use_device_images !== false,
+    show_title: module.show_title !== false,
+    title: String(module.title || 'UniFi Network'),
+    rack_style: oneOf(module.rack_style, ['dark', 'light', 'glass', 'blueprint', 'blank'] as const, 'dark'),
+    blank_background: module.blank_background === true,
+    show_port_labels: true,
+    show_advanced: module.show_advanced !== false,
+    show_sparklines: module.show_sparklines !== false,
+    animation_intensity: oneOf(module.animation_intensity, ['full', 'subtle', 'off'] as const, 'full'),
+    topology_layout: oneOf(module.topology_layout, ['tree', 'radial'] as const, 'tree'),
+    setup_dismissed: false,
+    ...defaultDisplayActions(),
+  };
+}
+
 export const supplementalSmartModuleHandlers = {
   bar: {
     sanitize: wrapSanitize(sanitizeBarModule),
@@ -948,6 +978,12 @@ export const supplementalSmartModuleHandlers = {
     // Auto-discovery means no entity context is required to produce a useful card.
     defaultBuilder: (ctx: SmartBuildContext) =>
       sanitizeVampirePowerModule({ type: 'vampire_power' } as SmartModule, ctx.id),
+  },
+  unifi: {
+    sanitize: wrapSanitize((module, _hass, id) => sanitizeUnifiModule(module, id)),
+    // UniFi gear is auto-discovered from the integration — no entity required.
+    defaultBuilder: (ctx: SmartBuildContext) =>
+      sanitizeUnifiModule({ type: 'unifi' } as SmartModule, ctx.id),
   },
   animated_weather: {
     sanitize: wrapSanitize(sanitizeAnimatedWeatherModule),

@@ -15,6 +15,9 @@ export function getPresetCardSettingsUpdates(
   if (cardSettings.card_unified_template !== undefined) {
     updates.card_unified_template = cardSettings.card_unified_template;
   }
+  if (cardSettings.card_transparent !== undefined) {
+    updates.card_transparent = cardSettings.card_transparent;
+  }
   if (cardSettings.card_background !== undefined) {
     updates.card_background = cardSettings.card_background;
   }

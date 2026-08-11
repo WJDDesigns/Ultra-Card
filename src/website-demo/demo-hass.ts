@@ -580,10 +580,403 @@ export function createDemoStates(): Record<string, any> {
   };
 }
 
+/* --------------------------------------------------------------------------
+ * UniFi demo network — feeds the UniFi Network pro module.
+ *
+ * The module discovers gear from HA's entity/device registries (hass.entities /
+ * hass.devices) using the official integration's unique_id patterns
+ * (device_state-<mac>, port_rx-<mac>_<idx>, …) and translation_keys. This
+ * builds a realistic site: UDM-SE gateway → HD24 PoE switch → E8 switch,
+ * three APs, and two tracked clients with bandwidth sensors.
+ * ------------------------------------------------------------------------ */
+
+interface UnifiDemoPort {
+  idx: number;
+  /** Link speed in Mbps; 0 = link down. */
+  speed: number;
+  /** Live receive/transmit rates in Mbps (drives blinking activity LEDs). */
+  rx?: number;
+  tx?: number;
+  /** PoE draw in watts; adds a PoE power sensor + PoE control switch. */
+  poeW?: number;
+  name?: string;
+}
+
+interface UnifiDemoRegistry {
+  states: Record<string, any>;
+  entities: Record<string, any>;
+  devices: Record<string, any>;
+}
+
+export function buildUnifiDemoNetwork(): UnifiDemoRegistry {
+  const states: Record<string, any> = {};
+  const entities: Record<string, any> = {};
+  const devices: Record<string, any> = {};
+
+  const reg = (
+    entityId: string,
+    deviceId: string,
+    uniqueId: string,
+    translationKey: string | null,
+    name: string
+  ) => {
+    entities[entityId] = {
+      entity_id: entityId,
+      device_id: deviceId,
+      platform: 'unifi',
+      unique_id: uniqueId,
+      translation_key: translationKey,
+      original_name: name,
+      disabled_by: null,
+      hidden_by: null,
+    };
+  };
+
+  const daysAgo = (d: number) => new Date(Date.now() - d * 86400000).toISOString();
+  const mbpsToBytes = (mbps: number) => Math.round(mbps * 125000); // B/s like HA
+
+  const addInfra = (opts: {
+    id: string;
+    slug: string;
+    name: string;
+    model: string;
+    mac: string;
+    sw: string;
+    cpu: number;
+    mem: number;
+    tempC?: number;
+    clients?: number;
+    uptimeDays: number;
+    uplinkMac?: string;
+    ports?: UnifiDemoPort[];
+    wan?: Array<[string, number]>;
+  }) => {
+    const macRaw = opts.mac.replace(/:/g, '');
+    const s = opts.slug;
+    devices[opts.id] = {
+      name: opts.name,
+      manufacturer: 'Ubiquiti Networks',
+      model: opts.model,
+      sw_version: opts.sw,
+      connections: [['mac', opts.mac]],
+      identifiers: [['unifi', opts.mac]],
+      disabled_by: null,
+    };
+
+    states[`sensor.${s}_state`] = st(`sensor.${s}_state`, 'connected', {
+      friendly_name: `${opts.name} State`,
+    });
+    reg(`sensor.${s}_state`, opts.id, `device_state-${macRaw}`, 'device_state', 'State');
+
+    states[`sensor.${s}_cpu`] = st(`sensor.${s}_cpu`, String(opts.cpu), {
+      friendly_name: `${opts.name} CPU utilization`,
+      unit_of_measurement: '%',
+      state_class: 'measurement',
+    });
+    reg(`sensor.${s}_cpu`, opts.id, `cpu-${macRaw}`, 'device_cpu_utilization', 'CPU utilization');
+
+    states[`sensor.${s}_memory`] = st(`sensor.${s}_memory`, String(opts.mem), {
+      friendly_name: `${opts.name} Memory utilization`,
+      unit_of_measurement: '%',
+      state_class: 'measurement',
+    });
+    reg(`sensor.${s}_memory`, opts.id, `memory-${macRaw}`, 'device_memory_utilization', 'Memory utilization');
+
+    if (opts.tempC != null) {
+      states[`sensor.${s}_temperature`] = st(`sensor.${s}_temperature`, String(opts.tempC), {
+        friendly_name: `${opts.name} Temperature`,
+        unit_of_measurement: '°C',
+        device_class: 'temperature',
+        state_class: 'measurement',
+      });
+      reg(`sensor.${s}_temperature`, opts.id, `temperature-${macRaw}`, null, 'Temperature');
+    }
+
+    if (opts.clients != null) {
+      states[`sensor.${s}_clients`] = st(`sensor.${s}_clients`, String(opts.clients), {
+        friendly_name: `${opts.name} Clients`,
+      });
+      reg(`sensor.${s}_clients`, opts.id, `device_clients-${macRaw}`, 'device_clients', 'Clients');
+    }
+
+    states[`sensor.${s}_uptime`] = st(`sensor.${s}_uptime`, daysAgo(opts.uptimeDays), {
+      friendly_name: `${opts.name} Uptime`,
+      device_class: 'timestamp',
+    });
+    reg(`sensor.${s}_uptime`, opts.id, `device_uptime-${macRaw}`, null, 'Uptime');
+
+    if (opts.uplinkMac) {
+      states[`sensor.${s}_uplink_mac`] = st(`sensor.${s}_uplink_mac`, opts.uplinkMac, {
+        friendly_name: `${opts.name} Uplink MAC`,
+      });
+      reg(`sensor.${s}_uplink_mac`, opts.id, `device_uplink_mac-${macRaw}`, 'device_uplink_mac', 'Uplink MAC');
+    }
+
+    for (const [target, ms] of opts.wan || []) {
+      const t = target.toLowerCase();
+      states[`sensor.${s}_${t}_latency`] = st(`sensor.${s}_${t}_latency`, String(ms), {
+        friendly_name: `${opts.name} ${target} WAN latency`,
+        unit_of_measurement: 'ms',
+        state_class: 'measurement',
+      });
+      reg(`sensor.${s}_${t}_latency`, opts.id, `${t}_wan_latency-${macRaw}`, 'wan_latency', `${target} WAN latency`);
+    }
+
+    for (const p of opts.ports || []) {
+      const pn = p.name || `Port ${p.idx}`;
+      const rxId = `sensor.${s}_port_${p.idx}_rx`;
+      const txId = `sensor.${s}_port_${p.idx}_tx`;
+      const lnId = `sensor.${s}_port_${p.idx}_link_speed`;
+      states[rxId] = st(rxId, String(mbpsToBytes(p.speed > 0 ? p.rx ?? 0 : 0)), {
+        friendly_name: `${opts.name} ${pn} RX`,
+        unit_of_measurement: 'B/s',
+        state_class: 'measurement',
+      });
+      reg(rxId, opts.id, `port_rx-${macRaw}_${p.idx}`, 'port_bandwidth_rx', `${pn} RX`);
+      states[txId] = st(txId, String(mbpsToBytes(p.speed > 0 ? p.tx ?? 0 : 0)), {
+        friendly_name: `${opts.name} ${pn} TX`,
+        unit_of_measurement: 'B/s',
+        state_class: 'measurement',
+      });
+      reg(txId, opts.id, `port_tx-${macRaw}_${p.idx}`, 'port_bandwidth_tx', `${pn} TX`);
+      states[lnId] = st(lnId, String(p.speed), {
+        friendly_name: `${opts.name} ${pn} Link speed`,
+        unit_of_measurement: 'Mbit/s',
+      });
+      reg(lnId, opts.id, `port_link_speed-${macRaw}_${p.idx}`, 'port_link_speed', `${pn} Link speed`);
+      if (p.poeW) {
+        const ppId = `sensor.${s}_port_${p.idx}_poe_power`;
+        states[ppId] = st(ppId, String(p.poeW), {
+          friendly_name: `${opts.name} ${pn} PoE power`,
+          unit_of_measurement: 'W',
+          state_class: 'measurement',
+        });
+        reg(ppId, opts.id, `poe_power-${macRaw}_${p.idx}`, 'port_poe_power', `${pn} PoE power`);
+        const psId = `switch.${s}_port_${p.idx}_poe`;
+        states[psId] = st(psId, 'on', { friendly_name: `${opts.name} ${pn} PoE` });
+        reg(psId, opts.id, `poe-${macRaw}_${p.idx}`, 'poe_port_control', `${pn} PoE`);
+      }
+    }
+  };
+
+  const addClient = (opts: {
+    id: string;
+    slug: string;
+    name: string;
+    manufacturer: string;
+    model: string;
+    mac: string;
+    rx: number;
+    tx: number;
+  }) => {
+    const macRaw = opts.mac.replace(/:/g, '');
+    devices[opts.id] = {
+      name: opts.name,
+      manufacturer: opts.manufacturer,
+      model: opts.model,
+      connections: [['mac', opts.mac]],
+      disabled_by: null,
+    };
+    const rxId = `sensor.${opts.slug}_rx`;
+    states[rxId] = st(rxId, String(opts.rx), {
+      friendly_name: `${opts.name} RX`,
+      unit_of_measurement: 'Mbit/s',
+      state_class: 'measurement',
+    });
+    reg(rxId, opts.id, `rx-${macRaw}`, 'client_bandwidth_rx', 'RX');
+    const txId = `sensor.${opts.slug}_tx`;
+    states[txId] = st(txId, String(opts.tx), {
+      friendly_name: `${opts.name} TX`,
+      unit_of_measurement: 'Mbit/s',
+      state_class: 'measurement',
+    });
+    reg(txId, opts.id, `tx-${macRaw}`, 'client_bandwidth_tx', 'TX');
+    const trId = `device_tracker.${opts.slug}`;
+    states[trId] = st(trId, 'home', { friendly_name: opts.name, source_type: 'router' });
+    reg(trId, opts.id, `${macRaw}-default`, null, opts.name);
+    const blId = `switch.${opts.slug}_block`;
+    states[blId] = st(blId, 'on', { friendly_name: `${opts.name} Block` });
+    reg(blId, opts.id, `block-${macRaw}`, 'block_client', 'Block');
+  };
+
+  const GW_MAC = 'f4:e2:c6:a0:00:01';
+  const HD24_MAC = 'f4:e2:c6:a0:00:02';
+  const E8_MAC = 'f4:e2:c6:a0:00:03';
+
+  addInfra({
+    id: 'ucd_unifi_gw',
+    slug: 'udm_se',
+    name: 'Dream Machine SE',
+    model: 'UDMPROSE',
+    mac: GW_MAC,
+    sw: '4.3.6',
+    cpu: 31,
+    mem: 58,
+    tempC: 52,
+    clients: 4,
+    uptimeDays: 63,
+    wan: [
+      ['Google', 12],
+      ['Cloudflare', 9],
+      ['Microsoft', 14],
+    ],
+    ports: [
+      { idx: 1, speed: 2500, rx: 148, tx: 22 },
+      { idx: 2, speed: 1000, rx: 12, tx: 3.4 },
+      { idx: 3, speed: 1000, rx: 4.2, tx: 1.1 },
+      { idx: 4, speed: 100, rx: 0.8, tx: 0.2 },
+      { idx: 5, speed: 1000, rx: 6.4, tx: 2.2, poeW: 6.5 },
+      { idx: 6, speed: 2500, rx: 88, tx: 14 },
+      { idx: 7, speed: 0 },
+      { idx: 8, speed: 1000, rx: 2.1, tx: 0.6 },
+      { idx: 9, speed: 10000, rx: 620, tx: 240, name: 'SFP+ 9' },
+      { idx: 10, speed: 0, name: 'SFP+ 10' },
+    ],
+  });
+
+  addInfra({
+    id: 'ucd_unifi_sw_hd24',
+    slug: 'usw_hd24',
+    name: 'Switch Pro HD 24 PoE',
+    model: 'USWED72',
+    mac: HD24_MAC,
+    sw: '7.4.1',
+    cpu: 6,
+    mem: 16,
+    tempC: 48,
+    clients: 11,
+    uptimeDays: 63,
+    uplinkMac: GW_MAC,
+    ports: [
+      { idx: 1, speed: 2500, rx: 92, tx: 31, poeW: 11.2 },
+      { idx: 2, speed: 2500, rx: 64, tx: 18, poeW: 12.9 },
+      { idx: 3, speed: 2500, rx: 30, tx: 9.5, poeW: 16.9 },
+      { idx: 4, speed: 0 },
+      { idx: 5, speed: 1000, rx: 3.1, tx: 0.9 },
+      { idx: 6, speed: 1000, rx: 5.4, tx: 4.8, poeW: 3.7 },
+      { idx: 7, speed: 0 },
+      { idx: 8, speed: 1000, rx: 4.9, tx: 4.2, poeW: 3.5 },
+      { idx: 9, speed: 100, rx: 0.4, tx: 0.1 },
+      { idx: 10, speed: 1000, rx: 1.8, tx: 0.5 },
+      { idx: 11, speed: 0 },
+      { idx: 12, speed: 1000, rx: 7.2, tx: 2.4 },
+      { idx: 13, speed: 0 },
+      { idx: 14, speed: 1000, rx: 2.6, tx: 1.2, poeW: 6.2 },
+      { idx: 15, speed: 100, rx: 0.3, tx: 0.1, poeW: 2.1 },
+      { idx: 16, speed: 2500, rx: 41, tx: 12 },
+      { idx: 17, speed: 1000, rx: 1.1, tx: 0.4 },
+      { idx: 18, speed: 1000, rx: 3.8, tx: 3.1, poeW: 4.4 },
+      { idx: 19, speed: 0 },
+      { idx: 20, speed: 1000, rx: 9.6, tx: 3.3, poeW: 8.3 },
+      { idx: 21, speed: 1000, rx: 1.5, tx: 0.7, poeW: 4.1 },
+      { idx: 22, speed: 0 },
+      { idx: 23, speed: 1000, rx: 0.9, tx: 0.3 },
+      { idx: 24, speed: 0 },
+      { idx: 25, speed: 10000, rx: 610, tx: 235, name: 'SFP+ 25' },
+      { idx: 26, speed: 10000, rx: 120, tx: 48, name: 'SFP+ 26' },
+    ],
+  });
+
+  addInfra({
+    id: 'ucd_unifi_sw_e8',
+    slug: 'usw_e8',
+    name: 'USW Enterprise 8 PoE',
+    model: 'US68P',
+    mac: E8_MAC,
+    sw: '7.4.1',
+    cpu: 4,
+    mem: 56,
+    tempC: 64,
+    clients: 1,
+    uptimeDays: 30,
+    uplinkMac: HD24_MAC,
+    ports: [
+      { idx: 1, speed: 2500, rx: 38, tx: 11, poeW: 4.2 },
+      { idx: 2, speed: 2500, rx: 22, tx: 6.8, poeW: 3.9 },
+      { idx: 3, speed: 1000, rx: 2.4, tx: 0.8 },
+      { idx: 4, speed: 1000, rx: 1.2, tx: 0.4 },
+      { idx: 5, speed: 1000, rx: 4.4, tx: 3.9, poeW: 5.8 },
+      { idx: 6, speed: 1000, rx: 0.7, tx: 0.2 },
+      { idx: 7, speed: 100, rx: 0.2, tx: 0.1 },
+      { idx: 8, speed: 1000, rx: 1.9, tx: 0.6 },
+      { idx: 9, speed: 10000, rx: 118, tx: 46, name: 'SFP+ 9' },
+      { idx: 10, speed: 0, name: 'SFP+ 10' },
+    ],
+  });
+
+  addInfra({
+    id: 'ucd_unifi_ap_max2',
+    slug: 'ap_2nd_floor',
+    name: '2nd Floor U7 Pro Max',
+    model: 'U7PROMAX',
+    mac: 'f4:e2:c6:a0:00:04',
+    sw: '7.1.22',
+    cpu: 8,
+    mem: 67,
+    clients: 41,
+    uptimeDays: 63,
+    uplinkMac: HD24_MAC,
+  });
+
+  addInfra({
+    id: 'ucd_unifi_ap_maxb',
+    slug: 'ap_basement',
+    name: 'Basement U7 Pro Max',
+    model: 'U7PROMAX',
+    mac: 'f4:e2:c6:a0:00:05',
+    sw: '7.1.22',
+    cpu: 6,
+    mem: 64,
+    clients: 11,
+    uptimeDays: 63,
+    uplinkMac: HD24_MAC,
+  });
+
+  addInfra({
+    id: 'ucd_unifi_ap_wall',
+    slug: 'ap_1st_floor',
+    name: '1st Floor U7 Pro Wall',
+    model: 'U7PIW',
+    mac: 'f4:e2:c6:a0:00:06',
+    sw: '7.1.22',
+    cpu: 6,
+    mem: 52,
+    clients: 32,
+    uptimeDays: 63,
+    uplinkMac: E8_MAC,
+  });
+
+  addClient({
+    id: 'ucd_unifi_cl_mac',
+    slug: 'tonys_macbook',
+    name: "Tony's MacBook Pro",
+    manufacturer: 'Apple',
+    model: 'MacBookPro18,3',
+    mac: '3c:22:fb:aa:00:01',
+    rx: 184.2,
+    tx: 12.6,
+  });
+
+  addClient({
+    id: 'ucd_unifi_cl_ps5',
+    slug: 'playstation_5',
+    name: 'PlayStation 5',
+    manufacturer: 'Sony Interactive Entertainment',
+    model: 'CFI-2016',
+    mac: 'a8:e3:ee:aa:00:02',
+    rx: 32.4,
+    tx: 2.1,
+  });
+
+  return { states, entities, devices };
+}
+
 /** Build the fake hass object. Mutating services trigger listener callbacks. */
 export function createDemoHass() {
   const listeners = new Set<Listener>();
   const states = createDemoStates();
+  const unifi = buildUnifiDemoNetwork();
+  Object.assign(states, unifi.states);
 
   const notify = () => listeners.forEach(l => l());
 
@@ -620,8 +1013,9 @@ export function createDemoHass() {
       kitchen: { area_id: 'kitchen', name: 'Kitchen', icon: 'mdi:silverware-fork-knife' },
       bedroom: { area_id: 'bedroom', name: 'Bedroom', icon: 'mdi:bed' },
     },
-    devices: {},
+    devices: { ...unifi.devices },
     entities: {
+      ...unifi.entities,
       'light.living_room': { entity_id: 'light.living_room', area_id: 'living_room' },
       'sensor.living_room_temperature': {
         entity_id: 'sensor.living_room_temperature',

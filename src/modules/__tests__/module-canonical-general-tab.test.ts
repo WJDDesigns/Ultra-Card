@@ -134,6 +134,7 @@ const CANONICAL_ENFORCED_MODULES = new Set([
   'laundry-tracker-module.ts',
   'vehicle-maintenance-module.ts',
   'vampire-power-module.ts',
+  'unifi-module.ts',
   // New layout containers
   'grid-layout-module.ts',
   'flip-card-module.ts',

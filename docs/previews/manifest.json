@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-08-11T13:55:51.016Z",
+  "generatedAt": "2026-08-11T22:43:05.344Z",
   "ultraCardVersion": "3.7.0",
   "counts": {
-    "total": 93,
+    "total": 94,
     "free": 66,
-    "pro": 27
+    "pro": 28
   },
   "modules": [
     {
@@ -1532,6 +1532,27 @@
         "interactive"
       ],
       "preview": "previews/toggle.png",
+      "status": "ok"
+    },
+    {
+      "type": "unifi",
+      "title": "UniFi Network",
+      "description": "Virtual rack, live ports, topology and clients for UniFi gear",
+      "category": "data",
+      "icon": "mdi:lan",
+      "pro": true,
+      "tags": [
+        "pro",
+        "premium",
+        "unifi",
+        "ubiquiti",
+        "network",
+        "rack",
+        "ports",
+        "topology",
+        "server-room"
+      ],
+      "preview": "previews/unifi.png",
       "status": "ok"
     },
     {

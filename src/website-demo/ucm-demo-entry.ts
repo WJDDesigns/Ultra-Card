@@ -330,6 +330,25 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
     c.entities = ['sensor.tv_standby', 'sensor.console_standby', 'sensor.desktop_standby'];
     c.max_items = 3;
   },
+  unifi: c => {
+    c.view = 'rack';
+    // Skip first-run curation so the demo rack renders instantly with every
+    // device visible in a deliberate top-to-bottom order.
+    c.curation_seeded = true;
+    c.hidden_device_ids = [];
+    c.device_order = [
+      'ucd_unifi_gw',
+      'ucd_unifi_sw_hd24',
+      'ucd_unifi_sw_e8',
+      'ucd_unifi_ap_max2',
+      'ucd_unifi_ap_maxb',
+      'ucd_unifi_ap_wall',
+    ];
+    c.setup_dismissed = true;
+    c.include_clients = true;
+    c.client_ids = ['ucd_unifi_cl_mac', 'ucd_unifi_cl_ps5'];
+    c.animation_intensity = 'full';
+  },
   washer: c => {
     Object.assign(c, {
       entity: 'sensor.washer_machine_state',

@@ -638,6 +638,10 @@ class UcPresetsService {
       settings.card_unified_template = cardData.card_unified_template;
       hasSettings = true;
     }
+    if (cardData.card_transparent !== undefined) {
+      settings.card_transparent = cardData.card_transparent;
+      hasSettings = true;
+    }
     if (cardData.card_background !== undefined) {
       settings.card_background = cardData.card_background;
       hasSettings = true;

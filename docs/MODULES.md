@@ -2,7 +2,7 @@
 
 _Generated from v3.7.0 on 2026-08-11 — do not edit by hand._
 
-**93 modules** · 66 free · 27 PRO
+**94 modules** · 66 free · 28 PRO
 
 ## content
 
@@ -49,6 +49,7 @@ _Generated from v3.7.0 on 2026-08-11 — do not edit by hand._
 <tr><td width="220"><img src="previews/status_summary.png" width="200" alt="Status Summary"></td><td><b>Status Summary</b><br>Display entity activity with timestamps and customizable color coding</td></tr>
 <tr><td width="220"><img src="previews/time_machine.png" width="200" alt="Time Machine"></td><td><b>Time Machine</b> · <sub>PRO</sub><br>Rewind the entire card with a draggable history timeline</td></tr>
 <tr><td width="220"><img src="previews/todo_list.png" width="200" alt="To-Do List"></td><td><b>To-Do List</b><br>Show, check off, and add items on Home Assistant to-do lists</td></tr>
+<tr><td width="220"><img src="previews/unifi.png" width="200" alt="UniFi Network"></td><td><b>UniFi Network</b> · <sub>PRO</sub><br>Virtual rack, live ports, topology and clients for UniFi gear</td></tr>
 <tr><td width="220"><img src="previews/update_monitor.png" width="200" alt="Update Monitor"></td><td><b>Update Monitor</b><br>Auto-discover update entities and surface pending updates with install actions</td></tr>
 <tr><td width="220"><img src="previews/vampire_power.png" width="200" alt="Vampire Power"></td><td><b>Vampire Power</b> · <sub>PRO</sub><br>Finds always-on standby loads and ranks them by what they cost you</td></tr>
 <tr><td width="220"><img src="previews/vehicle_maintenance.png" width="200" alt="Vehicle Maintenance"></td><td><b>Vehicle Maintenance</b> · <sub>PRO</sub><br>Odometer and time based service intervals with a cost-tracked service log</td></tr>

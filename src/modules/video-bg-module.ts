@@ -211,66 +211,25 @@ export class UltraVideoBgModule extends BaseUltraModule {
             ],
             (e: CustomEvent) => { updateModule(e.detail.value); setTimeout(() => this.triggerPreviewUpdate(), 50); }
           )}
-          <div style="margin-bottom: 16px;">
-            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-              ${videoBgModule.default_source === 'youtube'
-                ? 'YouTube Video URL or ID'
-                : videoBgModule.default_source === 'vimeo'
-                  ? 'Vimeo Video URL or ID'
-                  : 'Video URL'}
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-            >
-              ${videoBgModule.default_source === 'youtube'
-                ? 'Enter YouTube video URL or video ID (e.g., dQw4w9WgXcQ).'
-                : videoBgModule.default_source === 'vimeo'
-                  ? 'Enter Vimeo video URL or video ID (e.g., 123456789).'
-                  : 'Enter the full URL to your video file.'}
-            </div>
-            <ha-textfield
-              .value=${videoBgModule.default_video_url || ''}
-              placeholder=${videoBgModule.default_source === 'youtube'
-                ? 'dQw4w9WgXcQ or https://youtube.com/watch?v=...'
-                : videoBgModule.default_source === 'vimeo'
-                  ? '123456789 or https://vimeo.com/...'
-                  : 'https://example.com/video.mp4'}
-              @input=${(e: Event) => {
-                const target = e.target as any;
-                const input = target.shadowRoot?.querySelector('input') || target;
-                const value = target.value;
-                const cursorPosition = input.selectionStart;
-                const cursorEnd = input.selectionEnd;
-
-                updateModule({ default_video_url: value });
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-
-                requestAnimationFrame(() => {
-                  if (input && typeof cursorPosition === 'number') {
-                    target.value = value;
-                    input.value = value;
-                    input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                  }
-                });
-                setTimeout(() => {
-                  if (input && typeof cursorPosition === 'number') {
-                    target.value = value;
-                    input.value = value;
-                    input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                  }
-                }, 0);
-                setTimeout(() => {
-                  if (input && typeof cursorPosition === 'number') {
-                    target.value = value;
-                    input.value = value;
-                    input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                  }
-                }, 10);
-              }}
-              style="width: 100%; --mdc-theme-primary: var(--primary-color);"
-            ></ha-textfield>
-          </div>
+          ${this.renderFieldSection(
+            videoBgModule.default_source === 'youtube'
+              ? 'YouTube Video URL or ID'
+              : videoBgModule.default_source === 'vimeo'
+                ? 'Vimeo Video URL or ID'
+                : 'Video URL',
+            videoBgModule.default_source === 'youtube'
+              ? 'Enter YouTube video URL or video ID (e.g., dQw4w9WgXcQ or https://youtube.com/watch?v=...).'
+              : videoBgModule.default_source === 'vimeo'
+                ? 'Enter Vimeo video URL or video ID (e.g., 123456789 or https://vimeo.com/...).'
+                : 'Enter the full URL to your video file (e.g., https://example.com/video.mp4).',
+            hass,
+            { default_video_url: videoBgModule.default_video_url || '' },
+            [this.textField('default_video_url')],
+            (e: CustomEvent) => {
+              updateModule(e.detail.value);
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
+          )}
           <div style="margin-bottom: 16px;">
             <div
               style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;"

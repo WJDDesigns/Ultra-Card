@@ -21,6 +21,7 @@ export const CARD_INLINE_TEMPLATE_FIELDS = [
 export type CardInlineTemplateField = (typeof CARD_INLINE_TEMPLATE_FIELDS)[number];
 
 export interface ResolvedCardAppearance {
+  card_transparent?: boolean | undefined;
   card_background?: string | undefined;
   card_border_radius?: number | undefined;
   card_border_color?: string | undefined;
@@ -220,6 +221,7 @@ export function resolveCardAppearance(
   if (!config) return {};
 
   const resolved: ResolvedCardAppearance = {
+    card_transparent: config.card_transparent,
     card_background: config.card_background,
     card_border_radius: config.card_border_radius,
     card_border_color: config.card_border_color,
@@ -283,6 +285,28 @@ export function buildCardContainerStyleFromAppearance(
   const defaultBorderWidth = options?.defaultBorderWidth ?? 1;
   const defaultBorderColor = options?.defaultBorderColor ?? 'var(--divider-color)';
   const requirePositiveBorderWidth = options?.requirePositiveBorderWidth ?? false;
+
+  if (appearance.card_transparent) {
+    // Invisible card chrome: no background, border, or shadow. Radius still
+    // applies (clips background images/hover effects) and padding is kept.
+    styles.push('background: transparent');
+    styles.push('border: none');
+    styles.push('box-shadow: none');
+
+    if (appearance.card_border_radius !== undefined) {
+      styles.push(`border-radius: ${appearance.card_border_radius}px`);
+    } else if (includeDefaultRadius) {
+      styles.push(`border-radius: 12px`);
+    }
+
+    if (appearance.card_padding !== undefined) {
+      styles.push(`padding: ${appearance.card_padding}px`);
+    } else if (includeDefaultPadding) {
+      styles.push(`padding: 16px`);
+    }
+
+    return styles.join('; ');
+  }
 
   if (appearance.card_background) {
     styles.push(`background: ${appearance.card_background}`);

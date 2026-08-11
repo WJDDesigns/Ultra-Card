@@ -131,4 +131,28 @@ describe('buildCardContainerStyleFromAppearance', () => {
     expect(style).toContain('border-radius: 12px');
     expect(style).toContain('border: 1px solid #3d4570');
   });
+
+  it('strips background, border, and shadow when card_transparent is set', () => {
+    const style = buildCardContainerStyleFromAppearance(
+      {
+        card_transparent: true,
+        card_background: '#1b1f3a',
+        card_border_radius: 12,
+        card_border_color: '#3d4570',
+        card_border_width: 1,
+        card_padding: 16,
+        card_shadow_enabled: true,
+        card_shadow_color: '#000000',
+      },
+      { defaultBorderWidth: 1, defaultBorderColor: 'var(--divider-color)' }
+    );
+
+    expect(style).toContain('background: transparent');
+    expect(style).toContain('border: none');
+    expect(style).toContain('box-shadow: none');
+    expect(style).toContain('border-radius: 12px');
+    expect(style).toContain('padding: 16px');
+    expect(style).not.toContain('#1b1f3a');
+    expect(style).not.toContain('#3d4570');
+  });
 });

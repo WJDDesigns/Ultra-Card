@@ -1950,8 +1950,9 @@ export class UltraCard extends LitElement {
       }),
     ].filter(Boolean);
 
-    // Apply background image
+    // Apply background image (skipped when the card is transparent)
     if (
+      !appearance.card_transparent &&
       this.config.card_background_image_type &&
       this.config.card_background_image_type !== 'none'
     ) {

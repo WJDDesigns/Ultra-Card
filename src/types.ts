@@ -218,7 +218,8 @@ export interface BaseModule {
     | 'plant_care'
     | 'laundry_tracker'
     | 'vehicle_maintenance'
-    | 'vampire_power';
+    | 'vampire_power'
+    | 'unifi';
   name?: string | undefined;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
@@ -5450,7 +5451,8 @@ export type CardModule =
   | PlantCareModule
   | LaundryTrackerModule
   | VehicleMaintenanceModule
-  | VampirePowerModule;
+  | VampirePowerModule
+  | UnifiModule;
 
 // Dog Duty (Pro) — yard map with AI-detected dog waste markers
 /** Normalized detect-zone rectangle (full-frame coordinates, 0–1). */
@@ -6680,6 +6682,7 @@ export interface PresetDefinition {
   cardSettings?: {
     card_unified_template_mode?: boolean | undefined;
     card_unified_template?: string | undefined;
+    card_transparent?: boolean | undefined;
     card_background?: string | undefined;
     card_border_radius?: number | undefined;
     card_border_color?: string | undefined;
@@ -6826,6 +6829,8 @@ export interface UltraCardConfig {
   card_unified_template_mode?: boolean | undefined;
   /** Unified template for card-level appearance (background, border, shadow, padding). */
   card_unified_template?: string | undefined;
+  /** When true, removes card background, border, and shadow (invisible card chrome). */
+  card_transparent?: boolean | undefined;
   card_background?: string | undefined;
   card_border_radius?: number | undefined;
   card_border_color?: string | undefined;
@@ -8593,6 +8598,94 @@ export interface VampirePowerModule extends BaseModule {
   text_color?: string | undefined;
   secondary_text_color?: string | undefined;
   card_background_color?: string | undefined;
+
+  tap_action?: ModuleActionConfig | undefined;
+  hold_action?: ModuleActionConfig | undefined;
+  double_tap_action?: ModuleActionConfig | undefined;
+}
+
+// -------------------------------------------------------------------------
+// UniFi Network (Pro) — rack / ports / topology / clients / WAN views
+// -------------------------------------------------------------------------
+
+export type UnifiViewMode = 'rack' | 'ports' | 'devices' | 'topology' | 'clients' | 'wan';
+
+export type UnifiRackStyle = 'dark' | 'light' | 'glass' | 'blueprint' | 'blank';
+
+export type UnifiAnimationIntensity = 'off' | 'subtle' | 'full';
+
+export type UnifiTopologyLayout = 'tree' | 'radial';
+
+export interface UnifiDeviceOverride {
+  device_id: string;
+  /** Display name override. */
+  name?: string | undefined;
+  /** Force rack U height (1–4). */
+  height_u?: number | undefined;
+  /** Hide this device from all views. */
+  hidden?: boolean | undefined;
+  /** Custom accent color for LEDs / rings. */
+  accent_color?: string | undefined;
+}
+
+export interface UnifiModule extends BaseModule {
+  type: 'unifi';
+
+  /** Active visualization mode. */
+  view: UnifiViewMode;
+
+  /** Device ids in rack order (top → bottom). Missing devices append at end. */
+  device_order: string[];
+  /** Device ids the user dismissed. */
+  hidden_device_ids: string[];
+  /** Optional allow-list; empty/undefined means all non-hidden devices. */
+  include_device_ids?: string[] | undefined;
+  /** Per-device display overrides. */
+  device_overrides?: UnifiDeviceOverride[] | undefined;
+  /** Restrict discovery to these HA area ids. */
+  area_filter?: string[] | undefined;
+  /**
+   * True after the card has applied its first-run visible-device curation.
+   * Prevents re-hiding devices the user later chose to show.
+   */
+  curation_seeded?: boolean | undefined;
+  /** Cap for first-run auto-visible devices (default 16). */
+  rack_max_devices?: number | undefined;
+
+  /** Device id focused in the ports view. */
+  ports_device_id?: string | undefined;
+  /** Include client devices in clients / topology views. */
+  include_clients?: boolean | undefined;
+  /**
+   * Explicit allow-list of client device ids for the Clients view.
+   * Empty/undefined means show no clients until the user adds some.
+   */
+  client_ids?: string[] | undefined;
+  /** Render real Ubiquiti product photos when available (default true). */
+  use_device_images?: boolean | undefined;
+
+  title?: string | undefined;
+  show_title?: boolean | undefined;
+
+  rack_style: UnifiRackStyle;
+  /** Strip all card/container backgrounds so components float on the dashboard (all views). */
+  blank_background?: boolean | undefined;
+  show_u_numbers?: boolean | undefined;
+  show_port_labels?: boolean | undefined;
+  show_advanced?: boolean | undefined;
+  show_sparklines?: boolean | undefined;
+  animation_intensity: UnifiAnimationIntensity;
+  topology_layout: UnifiTopologyLayout;
+
+  /** Setup wizard was dismissed by the user. */
+  setup_dismissed?: boolean | undefined;
+
+  accent_color?: string | undefined;
+  led_up_color?: string | undefined;
+  led_down_color?: string | undefined;
+  rack_background?: string | undefined;
+  text_color?: string | undefined;
+  secondary_text_color?: string | undefined;
 
   tap_action?: ModuleActionConfig | undefined;
   hold_action?: ModuleActionConfig | undefined;
