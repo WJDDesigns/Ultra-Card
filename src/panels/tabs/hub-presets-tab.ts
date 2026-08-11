@@ -1206,11 +1206,40 @@ export class HubPresetsTab extends LitElement {
     this._ratingPreset = { id: preset.id, name: preset.name };
   }
 
-  private _handleRatingSubmitted(e: CustomEvent<{ presetId: string; rating: number }>): void {
-    const { presetId, rating } = e.detail;
+  private _handleRatingSubmitted(
+    e: CustomEvent<{
+      presetId: string;
+      rating: number;
+      presetRating?: number;
+      presetRatingCount?: number;
+    }>
+  ): void {
+    const { presetId, rating, presetRating, presetRatingCount } = e.detail;
     this._userReviews = new Map(this._userReviews).set(presetId, rating);
+    this._applyAggregateRating(presetId, presetRating, presetRatingCount);
     this._ratingPreset = null;
     this._showToast('Thanks for your rating!');
+  }
+
+  /**
+   * Fold the server's recalculated average back into the loaded catalog so the
+   * count next to the stars matches the vote that was just cast.
+   */
+  private _applyAggregateRating(
+    presetId: string,
+    rating: number | undefined,
+    count: number | undefined
+  ): void {
+    if (rating == null) return;
+    const preset = this._presets.find(p => p.id === presetId);
+    if (!preset) return;
+
+    preset.metadata = {
+      ...preset.metadata,
+      rating,
+      ...(count != null ? { rating_count: count } : {}),
+    };
+    this._presets = [...this._presets];
   }
 
   override render() {

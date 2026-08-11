@@ -44,6 +44,10 @@ export interface CloudReview {
   created: string;
   updated: string;
   user_id: number;
+  /** Preset-wide average after this vote. Only returned by the write endpoints. */
+  preset_rating?: number | undefined;
+  /** Number of votes behind `preset_rating`. */
+  preset_rating_count?: number | undefined;
 }
 
 /** Payload for submitting a user preset to ultracard.io */
@@ -691,18 +695,32 @@ class UcCloudSyncService {
   }
 
   /**
+   * Presets from ultracard.io are keyed `wp-<id>` inside the card, but the reviews
+   * API stores the bare WordPress post ID. Strip the prefix before crossing the
+   * boundary: the server reads preset_id with intval(), so a prefixed id arrives
+   * as 0 and the vote is rejected.
+   */
+  private static _toWordPressPresetId(presetId: string | number): string {
+    return String(presetId).replace(/^wp-/, '');
+  }
+
+  /**
    * Submit a review for a preset (authenticated users only).
    */
   async submitReview(presetId: string, rating: number): Promise<CloudReview> {
     if (!ucCloudAuthService.isAuthenticated()) {
       throw new Error('Authentication required to submit reviews');
     }
+    const wpPresetId = UcCloudSyncService._toWordPressPresetId(presetId);
+    if (!/^\d+$/.test(wpPresetId)) {
+      throw new Error('This preset cannot be rated.');
+    }
     const response = await ucCloudAuthService.authenticatedFetch(
       `${UcCloudSyncService.API_BASE}/reviews`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preset_id: presetId, rating }),
+        body: JSON.stringify({ preset_id: wpPresetId, rating }),
       }
     );
     if (!response.ok) {
@@ -823,7 +841,8 @@ class UcCloudSyncService {
   getUserReview(presetId: string): CloudReview | null {
     const user = ucCloudAuthService.getCurrentUser();
     if (!user) return null;
-    const pid = String(presetId);
+    // Stored reviews carry the server's bare WordPress ID, callers pass `wp-<id>`.
+    const pid = UcCloudSyncService._toWordPressPresetId(presetId);
     const uid = Number(user.id);
     const reviews = this._getLocalReviews() as CloudReview[];
     const found = reviews.find(

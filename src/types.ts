@@ -6704,6 +6704,7 @@ export interface PresetDefinition {
     updated: string;
     downloads?: number | undefined;
     rating?: number | undefined;
+    rating_count?: number | undefined;
     entityMappings?: EntityMapping[] | undefined; // Store original→mapped entity pairs
   };
 }

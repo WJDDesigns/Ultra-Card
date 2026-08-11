@@ -205,10 +205,15 @@ export class UcHubRateDialog extends LitElement {
     this._submitting = true;
     this._error = '';
     try {
-      await ucCloudSyncService.submitReview(this.presetId, this._selectedRating);
+      const review = await ucCloudSyncService.submitReview(this.presetId, this._selectedRating);
       this.dispatchEvent(
         new CustomEvent('rating-submitted', {
-          detail: { presetId: this.presetId, rating: this._selectedRating },
+          detail: {
+            presetId: this.presetId,
+            rating: this._selectedRating,
+            presetRating: review.preset_rating,
+            presetRatingCount: review.preset_rating_count,
+          },
           bubbles: true,
           composed: true,
         })

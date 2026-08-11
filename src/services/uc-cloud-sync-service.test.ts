@@ -105,6 +105,80 @@ describe('UcCloudSyncService._downloadFavorites', () => {
 });
 
 /**
+ * Presets are keyed `wp-<id>` in the card but the reviews API reads preset_id
+ * with intval(), so a prefixed id arrived as 0 and every rating was rejected
+ * with a 400 — silently, leaving the whole catalogue on zero votes.
+ */
+describe('preset rating submits a WordPress preset ID', () => {
+  const authFetch = () =>
+    vi.spyOn(ucCloudAuthService, 'authenticatedFetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: '1',
+        preset_id: '7259',
+        rating: 5,
+        user_id: 1,
+        created: '2026-01-01T00:00:00.000Z',
+        updated: '2026-01-01T00:00:00.000Z',
+        preset_rating: 4.5,
+        preset_rating_count: 12,
+      }),
+    } as Response);
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+    vi.spyOn(ucCloudAuthService, 'isAuthenticated').mockReturnValue(true);
+  });
+
+  it('strips the wp- prefix so the server does not read preset_id as 0', async () => {
+    const fetchSpy = authFetch();
+
+    await ucCloudSyncService.submitReview('wp-7259', 5);
+
+    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string);
+    expect(body).toEqual({ preset_id: '7259', rating: 5 });
+  });
+
+  it('passes an already-bare id through untouched', async () => {
+    const fetchSpy = authFetch();
+
+    await ucCloudSyncService.submitReview('7259', 4);
+
+    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.preset_id).toBe('7259');
+  });
+
+  it('refuses ids that are not a WordPress preset instead of posting a 0', async () => {
+    const fetchSpy = authFetch();
+
+    await expect(ucCloudSyncService.submitReview('wp-error-6152', 5)).rejects.toThrow(
+      /cannot be rated/i
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('returns the recalculated aggregate so the stars can refresh', async () => {
+    authFetch();
+
+    const review = await ucCloudSyncService.submitReview('wp-7259', 5);
+
+    expect(review.preset_rating).toBe(4.5);
+    expect(review.preset_rating_count).toBe(12);
+  });
+
+  it('finds the stored vote when looked up by the prefixed card id', async () => {
+    authFetch();
+    vi.spyOn(ucCloudAuthService, 'getCurrentUser').mockReturnValue({ id: 1 } as any);
+
+    await ucCloudSyncService.submitReview('wp-7259', 5);
+
+    // The server stores a bare id; the Hub asks with `wp-7259`.
+    expect(ucCloudSyncService.getUserReview('wp-7259')?.rating).toBe(5);
+  });
+});
+
+/**
  * C5: colour sync had no merge, upload or download, yet reported success and
  * stamped a last-synced time — so the Hub showed a recent backup for data that
  * had never left the device.
