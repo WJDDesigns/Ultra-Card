@@ -6,8 +6,11 @@ import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { panelStyles } from '../panel-styles';
 import { ucDashboardScannerService } from '../../services/uc-dashboard-scanner-service';
+import { ucCloudAuthService, type CloudUser } from '../../services/uc-cloud-auth-service';
+import { ucPresetAuthorService, type AuthorPreset } from '../../services/uc-preset-author-service';
 import { VERSION } from '../../version';
 import { dispatchHubNavigate } from '../hub-navigation';
+import { localize } from '../../localize/localize';
 
 const SENSOR_ENTITY = 'sensor.ultra_card_pro_cloud_authentication_status';
 
@@ -28,7 +31,10 @@ export class HubDashboardTab extends LitElement {
   @state() private _changelogLoading = true;
   @state() private _changelogError = '';
   @state() private _changelogTitle = '';
+  @state() private _authorPresets: AuthorPreset[] = [];
+  @state() private _authorPresetsLoaded = false;
 
+  private _authListener: ((user: CloudUser | null) => void) | undefined;
   static override styles = [
     panelStyles,
     css`
@@ -286,6 +292,55 @@ export class HubDashboardTab extends LitElement {
         border-color: var(--primary-color);
         color: var(--primary-color);
       }
+
+      .author-prompt {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px;
+        margin-bottom: 24px;
+        border-radius: 12px;
+        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.25);
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
+      }
+
+      .author-prompt ha-icon {
+        --mdc-icon-size: 22px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      .author-prompt-body {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .author-prompt-body p {
+        margin: 0 0 8px;
+        font-size: 14px;
+        line-height: 1.45;
+        color: var(--primary-text-color);
+      }
+
+      .author-prompt-body button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--primary-color);
+        background: transparent;
+        color: var(--primary-color);
+        font-size: 12px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+      }
+
+      .author-prompt-body button:hover {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.1);
+      }
     `,
   ];
 
@@ -293,6 +348,57 @@ export class HubDashboardTab extends LitElement {
     super.connectedCallback();
     this._loadStats();
     this._loadChangelog();
+    this._authListener = () => {
+      void this._loadAuthorPresets();
+    };
+    ucCloudAuthService.addListener(this._authListener);
+    void this._loadAuthorPresets();
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this._authListener) {
+      ucCloudAuthService.removeListener(this._authListener);
+      this._authListener = undefined;
+    }
+  }
+
+  private _lang(): string {
+    return this.hass?.locale?.language ?? 'en';
+  }
+
+  private _t(key: string, fallback: string): string {
+    return localize(key, this._lang(), fallback);
+  }
+
+  private async _loadAuthorPresets(): Promise<void> {
+    if (!ucCloudAuthService.isAuthenticated()) {
+      this._authorPresets = [];
+      this._authorPresetsLoaded = true;
+      return;
+    }
+    try {
+      this._authorPresets = await ucPresetAuthorService.listMine();
+    } catch {
+      // Non-admins get 403; ignore quietly on the dashboard
+      this._authorPresets = [];
+    } finally {
+      this._authorPresetsLoaded = true;
+    }
+  }
+
+  private _authorAttention(): { awaiting: number; changes: number } {
+    let awaiting = 0;
+    let changes = 0;
+    for (const p of this._authorPresets) {
+      if (p.review_status === 'changes_requested') changes += 1;
+      else if (p.review_status === 'pending' || p.has_pending_revision) awaiting += 1;
+    }
+    return { awaiting, changes };
+  }
+
+  private _openMyPresets(): void {
+    dispatchHubNavigate(this, { tab: 'presets', presetsView: 'mine' });
   }
 
   private _connectionStatus(): {
@@ -442,6 +548,10 @@ export class HubDashboardTab extends LitElement {
   }
 
   override render() {
+    const attention = this._authorAttention();
+    const showAuthorPrompt =
+      this._authorPresetsLoaded && (attention.awaiting > 0 || attention.changes > 0);
+
     return html`
       <div class="welcome-hero">
         <h2>Welcome to Ultra Card</h2>
@@ -454,6 +564,35 @@ export class HubDashboardTab extends LitElement {
           Version ${VERSION}
         </div>
       </div>
+
+      ${showAuthorPrompt
+        ? html`
+            <div class="author-prompt">
+              <ha-icon icon="mdi:clipboard-text-clock-outline"></ha-icon>
+              <div class="author-prompt-body">
+                <p>
+                  ${attention.awaiting > 0
+                    ? this._t(
+                        'hub.dashboard.presets_awaiting_review',
+                        '{count} presets awaiting review'
+                      ).replace('{count}', String(attention.awaiting))
+                    : nothing}
+                  ${attention.awaiting > 0 && attention.changes > 0 ? ' · ' : nothing}
+                  ${attention.changes > 0
+                    ? this._t(
+                        'hub.dashboard.presets_changes_requested',
+                        '{count} with changes requested'
+                      ).replace('{count}', String(attention.changes))
+                    : nothing}
+                </p>
+                <button type="button" @click=${this._openMyPresets}>
+                  <ha-icon icon="mdi:account-edit-outline"></ha-icon>
+                  ${this._t('hub.dashboard.view_my_presets', 'View My Presets')}
+                </button>
+              </div>
+            </div>
+          `
+        : nothing}
 
       <div class="command-center">
         <div class="command-card">

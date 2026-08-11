@@ -1,5 +1,68 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.7.0
+
+The stable 3.7.0 release. This rolls up everything from the 3.7.0 betas — new appliance modules, layout containers, household PRO modules, the Add Module gallery, privacy and performance work — plus Hub preset authoring and category updates. Thanks to everyone who tested the betas and reported issues.
+
+### ⚠️ Breaking Changes
+
+- **Downloaded presets no longer run JavaScript through navigation actions** - A preset could previously mark itself as trusted and have its JavaScript run against your Home Assistant. Cards you build yourself are completely unaffected, and no preset in the marketplace uses this. If you have a downloaded card that genuinely relied on it, add `allow_navigation_js_from_untrusted: true` to that card once you have read what its code does
+
+### 🚀 New Features
+
+- **Added Washer, Dryer, Dishwasher, Refrigerator, and Range & Oven modules** - Free animated appliance cards with live cycle status, time remaining, controls, and brand-aware auto-setup from a single entity (SmartThings, LG ThinQ, and more), each in hero, standard, and compact layouts
+- **Added Time Machine module (PRO)** - Rewind your dashboard with a draggable history timeline to see what every card looked like at any moment, complete with playback and event markers; graphs travel back in time with you
+- **Added Grid Layout, Flip Card, Drawer, Scroll Row, and State Switcher modules** - New free layout containers for CSS grid packing, front/back flips, slide-in panels, horizontal snap scrolling, and logic-driven module switching
+- **Added Dog Duty, Cleaning Zones, Battery Fleet, Plant Care, Laundry Tracker, Vehicle Maintenance, and Vampire Power modules (PRO)** - Household tracking modules that work from the sensors and to-do lists you already have (Dog Duty is the only one that needs AI vision)
+- **Added a gallery view to the Add Module picker** - Every module shows a real screenshot; hovering a tile plays a short loop. Gallery / List preference is remembered, and reduced-motion systems keep animations off
+- **Added a Close Popup After Action option** - Modules inside a Popup can close that popup on tap, hold, or double tap — including when the action is Nothing, so a plain Close button needs no action at all
+- **Added a review prompt before a downloaded preset is applied** - If a preset can call a service, load something from a third-party site, or embed another card, you get a short summary naming the module responsible, and you choose whether to continue
+- **Added automatic discovery of your Home Assistant's native cards** - The Cards tab reads the cards your install actually has instead of a hand-maintained list
+- **Added My Presets authoring in the Hub** - Browse and manage presets you submitted to ultracard.io, see review status and moderator notes, edit pending or live presets, and submit new ones with a required featured image plus optional gallery photos
+- **Added author status prompts on the Hub dashboard** - See how many of your presets are awaiting review or need changes, with a shortcut into My Presets
+
+### 🔧 Improvements
+
+- **Improved preset categories** - Marketplace and Hub presets now use Layout, Content, Data, Controls, Inputs, and Media (aligned with the module libraries). Older category names are mapped automatically
+- **Improved the Hub preset submit dialog** - Featured image is required, gallery photos are optional (up to five), and category choices match the new taxonomy
+- **Improved how cloud favorites sync** - Favorite row data is preserved more reliably when downloading from the cloud, including payloads that arrive as objects instead of JSON strings
+- **Improved the Icon module editor** - Collapsible rows with drag-and-drop reordering, optional name labels, and a header that shows the icon and its entity at a glance
+- **Improved the new-card experience** - Adding an Ultra Card starts with a working card built from your own entities, and Ultra Card gets a proper showcase tile in Home Assistant's card picker
+- **Improved the module browser** - Standard and PRO modules live in two separate libraries with a cleaner switcher, module counts, and search scoped to the library you are viewing
+- **Improved template editing across every module** - Templates that return a JSON key the module does not use now show a warning with a suggestion for the key you probably meant
+- **Improved the template cheatsheet and inline help** - Icon and Info list every property they support
+- **Improved how much work the card asks of Home Assistant** - Ordinary templates hold a single subscription instead of being torn down and recreated on every entity change
+- **Improved cleanup when you leave a dashboard** - Modules release template subscriptions and timers once nothing on the page is using them, so wall tablets no longer get slower the longer they stay on
+- **Improved battery use on phones and tablets** - Clocks, progress bars, and media player countdowns pause while the tab is in the background
+- **Improved performance on installs with a lot of entities** - Entity-discovery modules reuse search results instead of rescanning on every update
+- **Improved editor responsiveness on large cards** - The editor redraws when something it is showing has changed, not on every state change in the system
+- **Improved rendering of decorative cards** - Cards with no entities no longer re-render on every system state change
+- **Improved keyboard access across card controls** - Buttons, images, bars, gauges, toggles, clocks, and QR codes can be reached with Tab and activated with Enter or Space
+- **Improved the privacy of presets you publish** - Submitting to the marketplace genuinely removes IPs and personal names, lists what was taken out, and reminds you that entity IDs and friendly names remain in the code you share
+- **Improved how styling in downloaded content is handled** - Third-party image URLs inside style rules are stripped from downloaded content while colours, alignment, and the rest of the author's styling are kept
+- **Improved error reporting for a broken card configuration** - Invalid configs show Home Assistant's normal configuration error instead of a half-built card
+- **Improved card sizing on masonry dashboards** - The card tells Home Assistant how tall it is
+- **Improved the module previews on ultracard.io/modules** - Website demos animate on their own, with corrected demo data for many modules
+
+### 🐛 Bug Fixes
+
+- **Fixed templates returning `state` doing nothing** - Returning `{ "state": "..." }` now works alongside `state_text`
+- **Fixed cloud sync deleting favorites that only existed on this device** - Downloading favorites merges into your local list instead of replacing it
+- **Fixed card backups failing when signed in through Ultra Card Connect** - Backups go through Connect instead of contacting the cloud directly
+- **Fixed variable sync reporting success when it had actually failed**
+- **Fixed the Colors tab claiming your colours were backed up to the cloud** - Colour sync was never finished; the card now says plainly that colours are saved on this device
+- **Fixed actions set to `call-service` doing nothing** - The older action name is handled again alongside `perform-action`
+- **Fixed several native card problems** - Slow-loading cards, duplicate editors, and wrong internal names for Activity and Webpage cards; saved cards under a wrong name are repaired on load
+- **Fixed the Screensaver, Dynamic List, and Clock modules leaving timers running**
+- **Fixed card appearance templates being rebuilt after unrelated edits**
+- **Fixed a template-supplied colour being able to break out of the Lunar Phase module's markup**
+- **Fixed the Markdown module showing unsanitised content when a template failed**
+- **Fixed the duplicate Copy button on saved favorites**
+- **Fixed an error when a card was removed mid-edit**
+- **Fixed known vulnerabilities in bundled dependencies**
+
+---
+
 ## Version 3.7.0-beta5
 
 A stability, performance and privacy pass over the whole card. Most of it is invisible, but it should feel noticeably lighter on slower hardware, stop getting slower the longer a tablet is left on, and close a few ways your data could quietly go missing. Please report anything odd on GitHub or Discord — this is a pre-release for testing.

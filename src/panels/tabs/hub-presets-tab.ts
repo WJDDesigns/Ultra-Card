@@ -1,21 +1,34 @@
 import { LitElement, html, css, nothing } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import type { HomeAssistant } from 'custom-card-helpers';
 import { PresetDefinition } from '../../types';
 import { ucPresetsService } from '../../services/uc-presets-service';
 import { ucCloudAuthService } from '../../services/uc-cloud-auth-service';
 import { ucCloudSyncService } from '../../services/uc-cloud-sync-service';
+import {
+  ucPresetAuthorService,
+  type AuthorPreset,
+} from '../../services/uc-preset-author-service';
 import type { CloudUser } from '../../services/uc-cloud-auth-service';
 import { panelStyles } from '../panel-styles';
 import { copyTextToClipboard } from '../../utils/uc-clipboard';
 import { sanitizePresetHtml } from '../../utils/html-sanitizer';
+import { localize } from '../../localize/localize';
 import '../components/uc-hub-login-dialog';
 import '../components/uc-hub-rate-dialog';
+import '../components/uc-hub-submit-preset-dialog';
 
 type PresetCategory = 'all' | PresetDefinition['category'];
+type PresetsView = 'browse' | 'mine';
 
 @customElement('hub-presets-tab')
 export class HubPresetsTab extends LitElement {
+  @property({ attribute: false }) public hass?: HomeAssistant;
+  /** Initial sub-view when navigated from dashboard prompt. */
+  @property() initialView: PresetsView = 'browse';
+
+  @state() private _view: PresetsView = 'browse';
   @state() private _presets: PresetDefinition[] = [];
   @state() private _category: PresetCategory = 'all';
   @state() private _loading = false;
@@ -29,10 +42,26 @@ export class HubPresetsTab extends LitElement {
   @state() private _pendingRateAfterLogin: { id: string; name: string } | null = null;
   @state() private _userReviews: Map<string, number> = new Map();
   @state() private _readMoreId: string | null = null;
+
+  @state() private _myPresets: AuthorPreset[] = [];
+  @state() private _myLoading = false;
+  @state() private _myError: string | null = null;
+  @state() private _myForbidden = false;
+  @state() private _editingPreset: AuthorPreset | null = null;
+  @state() private _actionBusyId: number | null = null;
+
   private _unsub: (() => void) | undefined;
   private _statusUnsub: (() => void) | undefined;
   private _authListener: ((user: CloudUser | null) => void) | undefined;
   private _toastTimer: ReturnType<typeof setTimeout> | undefined;
+
+  private _lang(): string {
+    return this.hass?.locale?.language ?? 'en';
+  }
+
+  private _t(key: string, fallback: string): string {
+    return localize(key, this._lang(), fallback);
+  }
 
   private _getSanitizedPresetDescription(preset: PresetDefinition): string {
     const rawDescription =
@@ -577,6 +606,268 @@ export class HubPresetsTab extends LitElement {
         color: var(--error-color, #f44336);
         font-size: 14px;
       }
+
+      /* Browse | My Presets segmented control */
+      .presets-view-switch {
+        display: flex;
+        gap: 4px;
+        padding: 4px;
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
+        border-radius: 14px;
+        margin-bottom: 16px;
+      }
+
+      .presets-view-option {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border: none;
+        border-radius: 10px;
+        background: transparent;
+        color: var(--secondary-text-color);
+        font-size: 14px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .presets-view-option ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      .presets-view-option:hover:not(.active) {
+        color: var(--primary-text-color);
+      }
+
+      .presets-view-option.active {
+        background: var(--ha-card-background, var(--card-background-color));
+        color: var(--primary-color);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+      }
+
+      /* My Presets list */
+      .my-presets-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .my-preset-row {
+        display: grid;
+        grid-template-columns: 72px 1fr auto;
+        gap: 14px;
+        align-items: start;
+        padding: 14px;
+        background: var(--ha-card-background, var(--card-background-color));
+        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.08));
+        border-radius: 12px;
+      }
+
+      @media (max-width: 600px) {
+        .my-preset-row {
+          grid-template-columns: 56px 1fr;
+        }
+        .my-preset-actions {
+          grid-column: 1 / -1;
+        }
+      }
+
+      .my-preset-thumb {
+        width: 72px;
+        height: 72px;
+        border-radius: 8px;
+        object-fit: cover;
+        background: var(--secondary-background-color);
+      }
+
+      .my-preset-thumb-placeholder {
+        width: 72px;
+        height: 72px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
+        color: var(--secondary-text-color);
+      }
+
+      .my-preset-thumb-placeholder ha-icon {
+        --mdc-icon-size: 28px;
+      }
+
+      .my-preset-info h4 {
+        margin: 0 0 6px;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .my-preset-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+
+      .status-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+      }
+
+      .status-chip.pending {
+        background: rgba(255, 152, 0, 0.15);
+        color: #ef6c00;
+      }
+
+      .status-chip.live {
+        background: rgba(76, 175, 80, 0.15);
+        color: #2e7d32;
+      }
+
+      .status-chip.changes_requested {
+        background: rgba(33, 150, 243, 0.15);
+        color: #1565c0;
+      }
+
+      .status-chip.rejected {
+        background: rgba(244, 67, 54, 0.12);
+        color: #c62828;
+      }
+
+      .status-chip.draft {
+        background: rgba(158, 158, 158, 0.18);
+        color: var(--secondary-text-color);
+      }
+
+      .revision-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12);
+        color: var(--primary-color);
+      }
+
+      .revision-badge ha-icon {
+        --mdc-icon-size: 14px;
+      }
+
+      .moderator-note {
+        margin: 6px 0 0;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.03));
+        font-size: 12px;
+        line-height: 1.45;
+        color: var(--primary-text-color);
+      }
+
+      .moderator-note strong {
+        color: var(--secondary-text-color);
+        font-weight: 600;
+      }
+
+      .my-preset-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-end;
+      }
+
+      .my-action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+        background: transparent;
+        color: var(--secondary-text-color);
+        font-size: 12px;
+        font-weight: 500;
+        font-family: inherit;
+        cursor: pointer;
+        text-decoration: none;
+        box-sizing: border-box;
+      }
+
+      .my-action-btn:hover:not(:disabled) {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      .my-action-btn.danger:hover:not(:disabled) {
+        border-color: var(--error-color, #f44336);
+        color: var(--error-color, #f44336);
+      }
+
+      .my-action-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .my-action-btn ha-icon {
+        --mdc-icon-size: 14px;
+      }
+
+      .my-login-cta,
+      .my-admin-only {
+        text-align: center;
+        padding: 36px 20px;
+        background: var(--ha-card-background, var(--card-background-color));
+        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.08));
+        border-radius: 14px;
+      }
+
+      .my-login-cta ha-icon,
+      .my-admin-only ha-icon {
+        --mdc-icon-size: 40px;
+        color: var(--primary-color);
+        margin-bottom: 12px;
+      }
+
+      .my-login-cta h3,
+      .my-admin-only h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+
+      .my-login-cta p,
+      .my-admin-only p {
+        margin: 0 0 16px;
+        color: var(--secondary-text-color);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .my-login-cta button,
+      .my-admin-only button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 18px;
+        border: none;
+        border-radius: 10px;
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+        font-size: 14px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+      }
     `,
   ];
 
@@ -584,6 +875,9 @@ export class HubPresetsTab extends LitElement {
   refresh(): void {
     ucPresetsService.ensureWordPressLoaded();
     void ucPresetsService.refreshWordPressPresets();
+    if (this._view === 'mine' && this._cloudUser) {
+      void this._loadMyPresets();
+    }
   }
 
   override connectedCallback(): void {
@@ -592,7 +886,15 @@ export class HubPresetsTab extends LitElement {
     this._cloudUser = ucCloudAuthService.getCurrentUser();
     this._authListener = (user: CloudUser | null) => {
       this._cloudUser = user;
-      if (user) ucCloudSyncService.loadUserReviewsFromServer().then(() => this.requestUpdate());
+      if (user) {
+        this._showLoginDialog = false;
+        ucCloudSyncService.loadUserReviewsFromServer().then(() => this.requestUpdate());
+        if (this._view === 'mine') void this._loadMyPresets();
+      } else {
+        this._myPresets = [];
+        this._myError = null;
+        this._myForbidden = false;
+      }
     };
     ucCloudAuthService.addListener(this._authListener);
     if (this._cloudUser) {
@@ -611,6 +913,15 @@ export class HubPresetsTab extends LitElement {
     });
   }
 
+  override updated(changed: Map<string, unknown>): void {
+    if (changed.has('initialView') && this.initialView === 'mine') {
+      this._setView('mine');
+      this.dispatchEvent(
+        new CustomEvent('presets-view-applied', { bubbles: true, composed: true })
+      );
+    }
+  }
+
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this._unsub?.();
@@ -620,6 +931,127 @@ export class HubPresetsTab extends LitElement {
       this._authListener = undefined;
     }
     if (this._toastTimer) clearTimeout(this._toastTimer);
+  }
+
+  private _setView(view: PresetsView): void {
+    this._view = view;
+    if (view === 'mine' && this._cloudUser) {
+      void this._loadMyPresets();
+    }
+  }
+
+  private async _loadMyPresets(): Promise<void> {
+    if (!ucCloudAuthService.isAuthenticated()) return;
+    this._myLoading = true;
+    this._myError = null;
+    this._myForbidden = false;
+    try {
+      this._myPresets = await ucPresetAuthorService.listMine();
+    } catch (err) {
+      const status = (err as { status?: number })?.status;
+      if (status === 403) {
+        this._myForbidden = true;
+        this._myError = this._t(
+          'hub.my_presets.admin_only_message',
+          'Preset authoring is available to Home Assistant administrators only. Sign in as an admin (via Ultra Card Connect) to manage your submissions.'
+        );
+      } else {
+        this._myError =
+          err instanceof Error
+            ? err.message
+            : this._t('hub.my_presets.load_error', 'Could not load your presets.');
+      }
+      this._myPresets = [];
+    } finally {
+      this._myLoading = false;
+    }
+  }
+
+  private _statusChip(preset: AuthorPreset): { key: string; label: string; className: string } {
+    if (preset.review_status === 'changes_requested') {
+      return {
+        key: 'changes_requested',
+        label: this._t('hub.my_presets.status.changes_requested', 'Changes requested'),
+        className: 'changes_requested',
+      };
+    }
+    if (preset.review_status === 'rejected' || preset.status === 'rejected') {
+      return {
+        key: 'rejected',
+        label: this._t('hub.my_presets.status.rejected', 'Rejected'),
+        className: 'rejected',
+      };
+    }
+    if (preset.status === 'publish' && preset.review_status === 'approved') {
+      return {
+        key: 'live',
+        label: this._t('hub.my_presets.status.live', 'Live'),
+        className: 'live',
+      };
+    }
+    if (preset.status === 'draft') {
+      return {
+        key: 'draft',
+        label: this._t('hub.my_presets.status.draft', 'Draft'),
+        className: 'draft',
+      };
+    }
+    if (preset.status === 'publish') {
+      return {
+        key: 'live',
+        label: this._t('hub.my_presets.status.live', 'Live'),
+        className: 'live',
+      };
+    }
+    return {
+      key: 'pending',
+      label: this._t('hub.my_presets.status.pending', 'Pending review'),
+      className: 'pending',
+    };
+  }
+
+  private _openEdit(preset: AuthorPreset): void {
+    this._editingPreset = preset;
+  }
+
+  private async _withdraw(preset: AuthorPreset): Promise<void> {
+    const ok = window.confirm(
+      this._t(
+        'hub.my_presets.confirm_withdraw',
+        'Withdraw this pending submission or revision?'
+      )
+    );
+    if (!ok) return;
+    this._actionBusyId = preset.id;
+    try {
+      await ucPresetAuthorService.withdraw(preset.id);
+      this._showToast(this._t('hub.my_presets.withdrawn', 'Submission withdrawn'));
+      await this._loadMyPresets();
+    } catch (err) {
+      this._showToast(err instanceof Error ? err.message : 'Withdraw failed');
+    } finally {
+      this._actionBusyId = null;
+    }
+  }
+
+  private async _delete(preset: AuthorPreset): Promise<void> {
+    const ok = window.confirm(
+      this._t(
+        'hub.my_presets.confirm_delete',
+        'Delete this preset? This cannot be undone.'
+      )
+    );
+    if (!ok) return;
+    this._actionBusyId = preset.id;
+    try {
+      await ucPresetAuthorService.remove(preset.id);
+      this._showToast(this._t('hub.my_presets.deleted', 'Preset deleted'));
+      await this._loadMyPresets();
+    } catch (err) {
+      this._showToast(err instanceof Error ? err.message : 'Delete failed');
+    } finally {
+      this._actionBusyId = null;
+    }
   }
 
   private _showToast(msg: string): void {
@@ -782,15 +1214,6 @@ export class HubPresetsTab extends LitElement {
   }
 
   override render() {
-    const filtered = this._getFilteredPresets();
-    const categories: { key: PresetCategory; label: string; icon: string }[] = [
-      { key: 'all', label: 'All', icon: 'mdi:view-grid' },
-      { key: 'badges', label: 'Badges', icon: 'mdi:shield-star' },
-      { key: 'layouts', label: 'Layouts', icon: 'mdi:view-dashboard' },
-      { key: 'widgets', label: 'Widgets', icon: 'mdi:widgets' },
-      { key: 'custom', label: 'Custom', icon: 'mdi:tune-variant' },
-    ];
-
     return html`
       ${this._showLoginDialog
         ? html`
@@ -815,9 +1238,69 @@ export class HubPresetsTab extends LitElement {
             ></uc-hub-rate-dialog>
           `
         : ''}
+      ${this._editingPreset
+        ? html`
+            <uc-hub-submit-preset-dialog
+              mode="edit"
+              .existing=${this._editingPreset}
+              .language=${this._lang()}
+              @preset-updated=${() => {
+                this._editingPreset = null;
+                this._showToast(
+                  this._t('hub.my_presets.updated', 'Preset update saved')
+                );
+                void this._loadMyPresets();
+              }}
+              @close=${() => {
+                this._editingPreset = null;
+              }}
+            ></uc-hub-submit-preset-dialog>
+          `
+        : ''}
+
+      <div class="presets-view-switch" role="tablist" aria-label=${this._t('hub.my_presets.view_switch', 'Presets view')}>
+        <button
+          class="presets-view-option ${this._view === 'browse' ? 'active' : ''}"
+          role="tab"
+          aria-selected=${this._view === 'browse' ? 'true' : 'false'}
+          @click=${() => this._setView('browse')}
+        >
+          <ha-icon icon="mdi:view-grid-outline"></ha-icon>
+          ${this._t('hub.my_presets.browse', 'Browse')}
+        </button>
+        <button
+          class="presets-view-option ${this._view === 'mine' ? 'active' : ''}"
+          role="tab"
+          aria-selected=${this._view === 'mine' ? 'true' : 'false'}
+          @click=${() => this._setView('mine')}
+        >
+          <ha-icon icon="mdi:account-edit-outline"></ha-icon>
+          ${this._t('hub.my_presets.mine', 'My Presets')}
+        </button>
+      </div>
+
+      ${this._view === 'mine' ? this._renderMyPresets() : this._renderBrowse()}
+
+      <div class="toast ${this._toastMsg ? 'show' : ''}">${this._toastMsg}</div>
+    `;
+  }
+
+  private _renderBrowse() {
+    const filtered = this._getFilteredPresets();
+    const categories: { key: PresetCategory; label: string; icon: string }[] = [
+      { key: 'all', label: 'All', icon: 'mdi:view-grid' },
+      { key: 'layout', label: 'Layout', icon: 'mdi:view-dashboard-outline' },
+      { key: 'content', label: 'Content', icon: 'mdi:text-box-outline' },
+      { key: 'data', label: 'Data', icon: 'mdi:chart-box-outline' },
+      { key: 'interactive', label: 'Controls', icon: 'mdi:gesture-tap' },
+      { key: 'input', label: 'Inputs', icon: 'mdi:form-textbox' },
+      { key: 'media', label: 'Media', icon: 'mdi:image-multiple-outline' },
+    ];
+
+    return html`
       <div class="hub-tab-blurb">
         <ha-icon icon="mdi:information-outline"></ha-icon>
-        <p><strong>Presets</strong> are ready-made layouts and widgets you can add to any card. Browse by category, search, or add a preset from the card editor to get started quickly.</p>
+        <p><strong>Presets</strong> are ready-made layouts you can add to any card. Browse by the same categories as modules, search, or add a preset from the card editor to get started quickly.</p>
       </div>
       <!-- Toolbar -->
       <div class="presets-toolbar">
@@ -902,8 +1385,177 @@ export class HubPresetsTab extends LitElement {
               ${filtered.map(preset => this._renderPresetCard(preset))}
             </div>
           `}
+    `;
+  }
 
-      <div class="toast ${this._toastMsg ? 'show' : ''}">${this._toastMsg}</div>
+  private _renderMyPresets() {
+    if (!this._cloudUser) {
+      return html`
+        <div class="my-login-cta">
+          <ha-icon icon="mdi:account-lock-outline"></ha-icon>
+          <h3>${this._t('hub.my_presets.login_title', 'Sign in to manage your presets')}</h3>
+          <p>
+            ${this._t(
+              'hub.my_presets.login_message',
+              'View submission status, moderator feedback, and update your presets from here.'
+            )}
+          </p>
+          <button type="button" @click=${() => (this._showLoginDialog = true)}>
+            <ha-icon icon="mdi:login"></ha-icon>
+            ${this._t('hub.my_presets.login_button', 'Sign in')}
+          </button>
+        </div>
+      `;
+    }
+
+    if (this._myForbidden) {
+      return html`
+        <div class="my-admin-only">
+          <ha-icon icon="mdi:shield-account-outline"></ha-icon>
+          <h3>${this._t('hub.my_presets.admin_only_title', 'Admin access required')}</h3>
+          <p>${this._myError}</p>
+        </div>
+      `;
+    }
+
+    return html`
+      <div class="hub-tab-blurb">
+        <ha-icon icon="mdi:information-outline"></ha-icon>
+        <p>
+          ${this._t(
+            'hub.my_presets.blurb',
+            'Track your submissions, respond to moderator feedback, and update presets without leaving Home Assistant.'
+          )}
+        </p>
+      </div>
+      <div class="presets-toolbar">
+        <button class="refresh-btn" ?disabled=${this._myLoading} @click=${() => this._loadMyPresets()}>
+          <ha-icon icon="mdi:refresh" class=${this._myLoading ? 'spinning' : ''}></ha-icon>
+          ${this._t('hub.my_presets.refresh', 'Refresh')}
+        </button>
+      </div>
+
+      ${this._myLoading
+        ? html`
+            <div class="loading-state">
+              <ha-icon icon="mdi:loading" class="spinning"></ha-icon>
+              ${this._t('hub.my_presets.loading', 'Loading your presets…')}
+            </div>
+          `
+        : nothing}
+      ${this._myError && !this._myForbidden
+        ? html`<div class="error-state">${this._myError}</div>`
+        : nothing}
+      ${!this._myLoading && !this._myError && this._myPresets.length === 0
+        ? html`
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <ha-icon icon="mdi:upload-outline"></ha-icon>
+              </div>
+              <h3>${this._t('hub.my_presets.empty_title', 'No submissions yet')}</h3>
+              <p>
+                ${this._t(
+                  'hub.my_presets.empty_message',
+                  'Share a layout from the card editor to submit your first preset.'
+                )}
+              </p>
+            </div>
+          `
+        : html`
+            <div class="my-presets-list">
+              ${this._myPresets.map(p => this._renderMyPresetRow(p))}
+            </div>
+          `}
+    `;
+  }
+
+  private _renderMyPresetRow(preset: AuthorPreset) {
+    const chip = this._statusChip(preset);
+    const thumb = preset.gallery?.[0];
+    const busy = this._actionBusyId === preset.id;
+    const canWithdraw =
+      preset.review_status === 'pending' ||
+      preset.has_pending_revision ||
+      preset.status === 'pending';
+
+    return html`
+      <div class="my-preset-row">
+        ${thumb
+          ? html`<img class="my-preset-thumb" src=${thumb} alt="" loading="lazy" />`
+          : html`
+              <div class="my-preset-thumb-placeholder">
+                <ha-icon icon="mdi:card-text-outline"></ha-icon>
+              </div>
+            `}
+        <div class="my-preset-info">
+          <h4>${preset.name}</h4>
+          <div class="my-preset-meta">
+            <span class="status-chip ${chip.className}">${chip.label}</span>
+            ${preset.has_pending_revision
+              ? html`
+                  <span class="revision-badge">
+                    <ha-icon icon="mdi:clock-outline"></ha-icon>
+                    ${this._t('hub.my_presets.pending_revision', 'Update awaiting review')}
+                  </span>
+                `
+              : nothing}
+          </div>
+          ${preset.moderator_note
+            ? html`
+                <div class="moderator-note">
+                  <strong>${this._t('hub.my_presets.moderator_note', 'Moderator note')}:</strong>
+                  ${preset.moderator_note}
+                </div>
+              `
+            : nothing}
+        </div>
+        <div class="my-preset-actions">
+          <button
+            type="button"
+            class="my-action-btn"
+            ?disabled=${busy}
+            @click=${() => this._openEdit(preset)}
+          >
+            <ha-icon icon="mdi:pencil"></ha-icon>
+            ${this._t('hub.my_presets.edit', 'Edit')}
+          </button>
+          ${canWithdraw
+            ? html`
+                <button
+                  type="button"
+                  class="my-action-btn"
+                  ?disabled=${busy}
+                  @click=${() => this._withdraw(preset)}
+                >
+                  <ha-icon icon="mdi:undo"></ha-icon>
+                  ${this._t('hub.my_presets.withdraw', 'Withdraw')}
+                </button>
+              `
+            : nothing}
+          <button
+            type="button"
+            class="my-action-btn danger"
+            ?disabled=${busy}
+            @click=${() => this._delete(preset)}
+          >
+            <ha-icon icon="mdi:delete-outline"></ha-icon>
+            ${this._t('hub.my_presets.delete', 'Delete')}
+          </button>
+          ${preset.preset_url
+            ? html`
+                <a
+                  class="my-action-btn"
+                  href=${preset.preset_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ha-icon icon="mdi:open-in-new"></ha-icon>
+                  ${this._t('hub.my_presets.view_on_site', 'View on site')}
+                </a>
+              `
+            : nothing}
+        </div>
+      </div>
     `;
   }
 

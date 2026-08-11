@@ -629,7 +629,11 @@ class UcCloudSyncService {
   private _convertCloudFavorite(cf: CloudFavorite): any {
     let row: unknown = null;
     try {
-      row = cf.row_data ? JSON.parse(cf.row_data) : null;
+      if (cf.row_data) {
+        row = typeof cf.row_data === 'string' ? JSON.parse(cf.row_data) : cf.row_data;
+      } else if ((cf as { data?: unknown }).data) {
+        row = (cf as { data?: unknown }).data;
+      }
     } catch {
       row = null;
     }
@@ -745,7 +749,8 @@ class UcCloudSyncService {
   async submitPreset(
     payload: SubmitPresetPayload,
     photos?: File[],
-    photoIds?: number[]
+    photoIds?: number[],
+    featuredImageId?: number
   ): Promise<{ id: number; status: string; message?: string }> {
     if (!ucCloudAuthService.isAuthenticated()) {
       throw new Error('Authentication required to submit presets');
@@ -764,6 +769,9 @@ class UcCloudSyncService {
     }
     if (payload.custom_variables && payload.custom_variables.length > 0) {
       body.append('custom_variables', JSON.stringify(payload.custom_variables));
+    }
+    if (featuredImageId && featuredImageId > 0) {
+      body.append('featured_image_id', String(featuredImageId));
     }
     // Prefer pre-uploaded attachment IDs; fall back to raw file uploads
     if (photoIds?.length) {
@@ -799,16 +807,12 @@ class UcCloudSyncService {
       // Ignore fetch errors — fall through to defaults
     }
     return [
-      { value: 'layouts',  label: 'Layouts'  },
-      { value: 'badges',   label: 'Badges'   },
-      { value: 'widgets',  label: 'Widgets'  },
-      { value: 'scenes',   label: 'Scenes'   },
-      { value: 'climate',  label: 'Climate'  },
-      { value: 'energy',   label: 'Energy'   },
-      { value: 'security', label: 'Security' },
-      { value: 'lights',   label: 'Lights'   },
-      { value: 'media',    label: 'Media'    },
-      { value: 'custom',   label: 'Custom'   },
+      { value: 'layout', label: 'Layout' },
+      { value: 'content', label: 'Content' },
+      { value: 'data', label: 'Data' },
+      { value: 'interactive', label: 'Controls' },
+      { value: 'input', label: 'Inputs' },
+      { value: 'media', label: 'Media' },
     ];
   }
 

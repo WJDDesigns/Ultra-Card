@@ -6663,7 +6663,7 @@ export interface PresetDefinition {
   id: string;
   name: string;
   description: string;
-  category: 'badges' | 'layouts' | 'widgets' | 'custom';
+  category: 'layout' | 'content' | 'data' | 'interactive' | 'input' | 'media';
   icon: string;
   author: string;
   version: string;
