@@ -1997,7 +1997,6 @@ export class UltraDogDutyModule extends BaseUltraModule {
           this.triggerPreviewUpdate(true);
         }}
       >
-        <span class="dog-duty-zone" aria-hidden="true"></span>
         <span class="dog-duty-glyph" aria-label=${localize('editor.dog_duty.marker', lang, 'Marker')}
           >${glyph}</span
         >
@@ -2902,20 +2901,6 @@ export class UltraDogDutyModule extends BaseUltraModule {
         display: grid;
         place-items: center;
       }
-      .dog-duty-zone {
-        position: absolute;
-        width: 42px;
-        height: 42px;
-        border-radius: 50%;
-        border: 2px solid rgba(255, 64, 64, 0.55);
-        background: rgba(255, 64, 64, 0.12);
-        animation: dog-duty-pulse 2s ease-in-out infinite;
-      }
-      .dog-duty-marker.cleaned .dog-duty-zone {
-        border-color: rgba(76, 175, 80, 0.5);
-        background: rgba(76, 175, 80, 0.12);
-        animation: none;
-      }
       .dog-duty-glyph {
         position: relative;
         z-index: 1;
@@ -2924,11 +2909,10 @@ export class UltraDogDutyModule extends BaseUltraModule {
         justify-content: center;
         width: 28px;
         height: 28px;
-        border-radius: 50%;
-        background: rgba(0, 0, 0, 0.55);
         color: #ff5252;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-        font-size: 16px;
+        /* Shadow only — keeps glyphs legible over any camera frame without a colored plate */
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85));
+        font-size: 20px;
         font-weight: 800;
         line-height: 1;
       }
@@ -2939,21 +2923,17 @@ export class UltraDogDutyModule extends BaseUltraModule {
       .dog-duty-marker.selected .dog-duty-glyph {
         outline: 2px solid var(--primary-color);
         outline-offset: 2px;
+        border-radius: 50%;
       }
       .dog-duty-emoji {
-        font-size: 16px;
+        font-size: 20px;
       }
       .dog-duty-x {
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 900;
       }
       .dog-duty-glyph ha-icon {
-        --mdc-icon-size: 18px;
-      }
-
-      @keyframes dog-duty-pulse {
-        0%, 100% { transform: scale(1); opacity: 0.9; }
-        50% { transform: scale(1.15); opacity: 0.55; }
+        --mdc-icon-size: 22px;
       }
 
       .dog-duty-empty {
