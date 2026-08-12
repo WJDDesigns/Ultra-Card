@@ -62,6 +62,12 @@ const HOST_PAGE = `<!doctype html><html><head><meta charset="utf-8">
 </style></head><body><div id="stage"></div>
 <script src="/ultra-card-demo.js"></script></body></html>`;
 
+/* Modules leave heavy things behind — WebGL contexts, map tiles, media
+ * elements — and a single page accumulating all of them crashes the renderer
+ * partway through a full run. Start a fresh page every so often; the cost is a
+ * couple of seconds per recycle against losing the run outright. */
+const PAGE_RECYCLE_EVERY = 25;
+
 /** Static server for the host page + demo bundle. */
 async function serve() {
   const bundle = await fs.readFile(BUNDLE);
@@ -78,6 +84,17 @@ async function serve() {
   return server;
 }
 
+/** A page loaded with the demo bundle, fonts resolved and ready to capture. */
+async function openPage(browser) {
+  const page = await browser.newPage({ viewport: { width: 460, height: 900 }, deviceScaleFactor: 2 });
+  await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' });
+  await page.waitForFunction(() => !!window.UCDemo, null, { timeout: 60000 });
+  // Glyphs are drawn from the webfont; capturing before it lands yields blanks.
+  await page.evaluate(() => document.fonts.load('24px "Material Design Icons"'));
+  await page.evaluate(() => document.fonts.ready);
+  return page;
+}
+
 async function main() {
   try {
     await fs.access(BUNDLE);
@@ -88,12 +105,18 @@ async function main() {
 
   const server = await serve();
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 460, height: 900 }, deviceScaleFactor: 2 });
-  await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' });
-  await page.waitForFunction(() => !!window.UCDemo, null, { timeout: 60000 });
-  // Glyphs are drawn from the webfont; capturing before it lands yields blanks.
-  await page.evaluate(() => document.fonts.load('24px "Material Design Icons"'));
-  await page.evaluate(() => document.fonts.ready);
+  try {
+    await run(browser);
+  } finally {
+    // Without this a mid-run failure leaves the port held, and the next run
+    // dies on EADDRINUSE — or worse, quietly talks to the stale server.
+    await browser.close().catch(() => {});
+    server.close();
+  }
+}
+
+async function run(browser) {
+  let page = await openPage(browser);
 
   const manifests = await page.evaluate(() => window.UCDemo.types());
   const version = await page.evaluate(() => window.UCDemo.version);
@@ -106,6 +129,11 @@ async function main() {
   for (const meta of targets) {
     const type = meta.type;
     const outFile = path.join(OUT_DIR, `${type}.png`);
+
+    if (results.length && results.length % PAGE_RECYCLE_EVERY === 0) {
+      await page.close();
+      page = await openPage(browser);
+    }
 
     const health = await page.evaluate(async t => {
       const stage = document.getElementById('stage');
@@ -189,8 +217,7 @@ async function main() {
     console.log(`${mark} ${type.padEnd(24)} ${status}${health.sample ? '  ' + health.sample.slice(0, 46) : ''}`);
   }
 
-  await browser.close();
-  server.close();
+  await page.close();
 
   // ── manifest: the contract every consumer reads ──
   // A partial run (--only) must not drop the modules it did not capture, so

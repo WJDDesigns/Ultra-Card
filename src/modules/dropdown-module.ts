@@ -59,6 +59,7 @@ export class UltraDropdownModule extends BaseUltraModule {
   private resizeHandler: ((e: Event) => void) | null = null;
   private portaledDropdowns: Map<string, HTMLElement> = new Map(); // moduleId -> portaled element
   private portaledDropdownTriggers: Map<string, HTMLElement> = new Map(); // moduleId -> trigger element
+  private portalOrphanSweep = 0; // interval id; runs only while a menu is portaled
   private scrollListenerParents: Map<string, Array<{ el: HTMLElement; handler: (e: Event) => void }>> =
     new Map(); // instanceId -> parent elements with their scroll handlers (for symmetric cleanup)
   private portaledDropdownListeners: Map<
@@ -2032,7 +2033,6 @@ export class UltraDropdownModule extends BaseUltraModule {
                     });
                   }
                   
-                  console.log('Dropdown clicked');
                   this.toggleDropdown(e, moduleId, previewContext);
                 }}
               >
@@ -2629,9 +2629,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
             // Re-parent to the correct host if context changed (e.g., opened inside popup portal)
             if (portaledDropdown && portaledDropdown.parentElement !== overlayHost) {
-              this.removePortaledDropdownListeners(instanceId);
-              portaledDropdown.remove();
-              this.portaledDropdowns.delete(instanceId);
+              this.destroyPortaledDropdown(instanceId);
               portaledDropdown = undefined;
             }
 
@@ -2685,6 +2683,9 @@ export class UltraDropdownModule extends BaseUltraModule {
 
             // Set up scroll and resize handlers to update position
             this.setupScrollAndResizeHandlers(instanceId);
+
+            // Watch for the trigger disappearing without a close.
+            this.startPortalOrphanSweep();
           }
         } else {
           // Fallback if selectedElement not found
@@ -2702,13 +2703,8 @@ export class UltraDropdownModule extends BaseUltraModule {
           this.removeClickOutsideHandler();
           this.removeScrollAndResizeHandlers(instanceId);
         } else {
-          // In dashboard context, hide portaled dropdown and clean up handlers
-          const portaledDropdown = this.portaledDropdowns.get(instanceId);
-          if (portaledDropdown) {
-            portaledDropdown.style.display = 'none';
-            portaledDropdown.style.pointerEvents = 'none';
-            portaledDropdown.style.visibility = 'hidden';
-          }
+          // In dashboard context, discard the portaled clone and clean up handlers
+          this.destroyPortaledDropdown(instanceId);
           dropdownElement.style.display = 'none';
           dropdownElement.style.pointerEvents = 'none';
           dropdownElement.style.visibility = 'hidden';
@@ -2739,15 +2735,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     // Update chevron rotation instantly, passing the specific container if available
     this.updateChevronRotationInstant(instanceId, false, moduleContainer || undefined);
 
-    // Hide the portaled dropdown (for dashboard contexts)
-    const portaledDropdown = this.portaledDropdowns.get(instanceId);
-    if (portaledDropdown) {
-      portaledDropdown.style.display = 'none';
-      portaledDropdown.style.pointerEvents = 'none';
-      portaledDropdown.style.visibility = 'hidden';
-    }
-
-    // Also hide regular dropdown element (for preview contexts)
+    // Hide regular dropdown element (for preview contexts)
     const regularDropdown = document.querySelector(
       `.dropdown-module-container[data-module-id="${instanceId}"] .dropdown-options`
     ) as HTMLElement;
@@ -2757,11 +2745,12 @@ export class UltraDropdownModule extends BaseUltraModule {
       regularDropdown.style.visibility = 'hidden';
     }
 
-    // Sync ARIA state on the trigger
+    // Sync ARIA state on the trigger, which must happen before the portal (and
+    // with it the cached trigger reference) is discarded.
     this.getTriggerElement(instanceId)?.setAttribute('aria-expanded', 'false');
 
-    // Clean up trigger reference
-    this.portaledDropdownTriggers.delete(instanceId);
+    // Discard the portaled clone (for dashboard contexts)
+    this.destroyPortaledDropdown(instanceId);
 
     this.removeClickOutsideHandler();
     this.removeScrollAndResizeHandlers(instanceId);
@@ -2814,9 +2803,15 @@ export class UltraDropdownModule extends BaseUltraModule {
       const moduleContainer = selectedElement.closest('.dropdown-module-container') as HTMLElement;
       this.updateChevronRotationInstant(moduleId, false, moduleContainer || undefined);
       
-      portaledDropdown.style.display = 'none';
-      portaledDropdown.style.pointerEvents = 'none';
-      portaledDropdown.style.visibility = 'hidden';
+      // In preview contexts this is the module's own element, which must only be
+      // hidden; a portaled clone is disposable and gets removed outright.
+      if (this.portaledDropdowns.get(moduleId) === portaledDropdown) {
+        this.destroyPortaledDropdown(moduleId);
+      } else {
+        portaledDropdown.style.display = 'none';
+        portaledDropdown.style.pointerEvents = 'none';
+        portaledDropdown.style.visibility = 'hidden';
+      }
       this.removeClickOutsideHandler();
       this.removeScrollAndResizeHandlers(moduleId);
     };
@@ -2969,6 +2964,46 @@ export class UltraDropdownModule extends BaseUltraModule {
       });
       this.scrollListenerParents.delete(instanceId);
     }
+  }
+
+  /**
+   * Take a portaled menu out of the overlay host and forget it.
+   *
+   * The clone is disposable — every open either builds it fresh or re-syncs its
+   * markup — so parking it in the host on close buys nothing and risks an
+   * orphan. Because the clone lives outside the module's shadow root it gets
+   * none of the module's styles, so an orphan paints unstyled option text over
+   * whatever takes the card's place.
+   */
+  private destroyPortaledDropdown(instanceId: string): void {
+    this.removePortaledDropdownListeners(instanceId);
+    this.removeScrollAndResizeHandlers(instanceId);
+    this.portaledDropdowns.get(instanceId)?.remove();
+    this.portaledDropdowns.delete(instanceId);
+    this.portaledDropdownTriggers.delete(instanceId);
+  }
+
+  /**
+   * Reap portals whose owner vanished without closing them — a view switch, an
+   * editor re-render, or a card removed while its menu was open. Nothing
+   * notifies us of that removal, so poll for it, but only while a menu is
+   * actually portaled: closing removes the clone, which empties the map and
+   * stops the sweep.
+   */
+  private startPortalOrphanSweep(): void {
+    if (this.portalOrphanSweep) return;
+    this.portalOrphanSweep = window.setInterval(() => {
+      for (const instanceId of Array.from(this.portaledDropdowns.keys())) {
+        if (this.portaledDropdownTriggers.get(instanceId)?.isConnected) continue;
+        this.dropdownOpenStates.set(instanceId, false);
+        this.destroyPortaledDropdown(instanceId);
+        this.removeClickOutsideHandler();
+      }
+      if (this.portaledDropdowns.size === 0) {
+        clearInterval(this.portalOrphanSweep);
+        this.portalOrphanSweep = 0;
+      }
+    }, 400);
   }
 
   /** Remove wheel/touchmove/scroll listeners attached to a portaled dropdown. */

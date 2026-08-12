@@ -544,25 +544,33 @@ const DEMO_ANIMATE: Record<string, (el: any) => void> = {
 
 const DEMO_STAGE: Record<string, (holder: HTMLElement, el: any) => void> = {
   dropdown: (holder, el) => {
-    // Open downward, clipped inside the card, with a solid list background.
-    holder.style.overflow = 'hidden';
+    // The module pins its menu to the viewport with `position: fixed` so it can
+    // escape a dashboard's stacking contexts; in a demo card that leaves the
+    // menu floating free of the card it belongs to. Re-anchor it to the trigger
+    // and reserve the room it needs. The selector has to outrank the module's
+    // own `[data-preview-context]` rule, hence the `.ucd-card` prefix.
+    holder.style.minHeight = '152px';
     const style = document.createElement('style');
     style.textContent = `
-      .dropdown-options, [class*="dropdown-options"], [class*="dropdown-list"]{
+      .ucd-card .dropdown-module-container[data-preview-context] .dropdown-options{
+        position: absolute !important;
+        top: 100% !important; bottom: auto !important; margin-top: 6px !important;
+        left: 0 !important; right: 0 !important; width: auto !important;
         background: var(--card-background-color, #1c1c1c) !important;
         border: 1px solid var(--divider-color, rgba(255,255,255,.14)) !important;
         border-radius: 10px !important;
         box-shadow: 0 12px 30px rgba(0,0,0,.55) !important;
-        top: 100% !important; bottom: auto !important; margin-top: 4px !important;
-        max-height: 92px !important; overflow: hidden !important; z-index: 4 !important;
+        overflow: hidden !important;
+        z-index: 4 !important;
       }
       .custom-dropdown{ position: relative !important; }`;
     holder.appendChild(style);
-    let open = false;
-    el._addTimer(setInterval(() => {
+    // Open straight away: the still frame is captured before the first interval
+    // tick, and a closed selector says nothing about what the module does.
+    const toggle = () =>
       clickFirst(holder, ['.dropdown-selected', '.custom-dropdown', 'select', 'button', 'ha-button']);
-      open = !open;
-    }, 2600));
+    toggle();
+    el._addTimer(setInterval(toggle, 2600));
   },
   accordion: (holder, el) => {
     el._addTimer(setInterval(() => { controls(holder)[0]?.click(); }, 3000));
@@ -1319,6 +1327,10 @@ class UcModuleDemo extends HTMLElement {
       // use the 'live' editor representation instead.
       const ctxOverrides: Record<string, 'live' | 'dashboard'> = {
         screensaver: 'live',
+        // Dashboard context portals the open menu to document.body, where it
+        // escapes both the card and this element's styles. The editor-preview
+        // path keeps it in place, which is what the staging above dresses up.
+        dropdown: 'live',
       };
       const tpl: TemplateResult = this._handler.renderPreview(
         this._module,
@@ -1335,9 +1347,14 @@ class UcModuleDemo extends HTMLElement {
   }
 }
 
+/* Modules that portal UI to document.body have no way to clean it up when their
+ * demo is swapped out, and an escapee outlives the card it belongs to — on this
+ * page it lands on top of unrelated demos. Sweep anything left behind. */
 setInterval(() => {
   document
-    .querySelectorAll('body > .ultra-popup-portal, body > .ultra-drawer-portal')
+    .querySelectorAll(
+      'body > .ultra-popup-portal, body > .ultra-drawer-portal, body > [id^="portaled-dropdown-"]'
+    )
     .forEach(el => el.remove());
 }, 1500);
 
