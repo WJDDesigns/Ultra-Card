@@ -260,7 +260,6 @@ export class UltraDropdownModule extends BaseUltraModule {
     };
 
     const updateCurrentSelection = (selection: string) => {
-      console.log('Updating current selection to:', selection);
       updateModule({ current_selection: selection });
     };
 
@@ -841,7 +840,6 @@ export class UltraDropdownModule extends BaseUltraModule {
                                 // Stop event propagation to prevent header click
                                 e.stopPropagation();
                                 e.preventDefault();
-                                console.log('Direct caret clicked for option:', option.id);
 
                                 // Find elements directly from the event
                                 const caret = e.target as HTMLElement;
@@ -852,19 +850,16 @@ export class UltraDropdownModule extends BaseUltraModule {
 
                                 if (card && content && caret) {
                                   const id = card.getAttribute('data-option-id') || '';
-                                  console.log('Direct caret - found ID:', id);
 
                                   // Toggle state
                                   if (this.expandedOptions.has(id)) {
                                     this.expandedOptions.delete(id);
                                     content.style.display = 'none';
                                     caret.style.transform = 'rotate(0deg)';
-                                    console.log('Direct caret - collapsed');
                                   } else {
                                     this.expandedOptions.add(id);
                                     content.style.display = 'block';
                                     caret.style.transform = 'rotate(180deg)';
-                                    console.log('Direct caret - expanded');
                                   }
                                 }
                               }}
@@ -1097,7 +1092,6 @@ export class UltraDropdownModule extends BaseUltraModule {
   private draggedIndex: number | null = null;
 
   private handleDragStart(e: DragEvent, index: number): void {
-    console.log('Drag start for index:', index);
     this.draggedIndex = index;
 
     if (e.dataTransfer) {
@@ -1163,7 +1157,6 @@ export class UltraDropdownModule extends BaseUltraModule {
     const optionItem = dragHandle.closest('.option-item') as HTMLElement;
     if (optionItem) {
       optionItem.classList.add('dragging');
-      console.log('Added dragging class to option item');
     }
   }
 
@@ -1180,7 +1173,6 @@ export class UltraDropdownModule extends BaseUltraModule {
     if (optionItem && !optionItem.classList.contains('dragging')) {
       optionItem.style.borderTop = '3px solid var(--primary-color)';
       optionItem.style.backgroundColor = 'rgba(var(--rgb-primary-color), 0.1)';
-      console.log('Drag entered option item');
     }
   }
 
@@ -1189,7 +1181,6 @@ export class UltraDropdownModule extends BaseUltraModule {
     if (optionItem) {
       optionItem.style.borderTop = '';
       optionItem.style.backgroundColor = '';
-      console.log('Drag left option item');
     }
   }
 
@@ -1199,7 +1190,6 @@ export class UltraDropdownModule extends BaseUltraModule {
     moveOption: (from: number, to: number) => void
   ): void {
     e.preventDefault();
-    console.log('Drop event - from:', this.draggedIndex, 'to:', dropIndex);
 
     // Clear visual feedback
     const optionItem = e.currentTarget as HTMLElement;
@@ -1207,7 +1197,6 @@ export class UltraDropdownModule extends BaseUltraModule {
     optionItem.style.backgroundColor = '';
 
     if (this.draggedIndex !== null && this.draggedIndex !== dropIndex) {
-      console.log('Executing moveOption from', this.draggedIndex, 'to', dropIndex);
       moveOption(this.draggedIndex, dropIndex);
     }
 
@@ -1222,11 +1211,9 @@ export class UltraDropdownModule extends BaseUltraModule {
   }
 
   private handleDragEnd(e: DragEvent): void {
-    console.log('Drag end');
     const target = (e.target as HTMLElement)?.closest('.option-item') as HTMLElement;
     if (target) {
       target.classList.remove('dragging');
-      console.log('Removed dragging class');
     }
 
     // Clear any remaining visual feedback
@@ -1238,26 +1225,19 @@ export class UltraDropdownModule extends BaseUltraModule {
   }
 
   private toggleHeader(e: Event): void {
-    console.log('Header clicked');
     const header = e.currentTarget as HTMLElement;
     const card = header.closest('.option-item') as HTMLElement;
     if (!card) {
-      console.log('No card found');
       return;
     }
     const id = card.getAttribute('data-option-id') || '';
     if (!id) {
-      console.log('No ID found');
       return;
     }
-    console.log('Toggling option with ID:', id);
 
     // Find elements directly from the card we already have
     const content = card.querySelector('.option-content') as HTMLElement;
     const caret = card.querySelector('.expand-caret') as HTMLElement;
-
-    console.log('Found content from card:', content);
-    console.log('Found caret from card:', caret);
 
     // Toggle state
     if (this.expandedOptions.has(id)) {
@@ -1269,59 +1249,36 @@ export class UltraDropdownModule extends BaseUltraModule {
     // Update DOM directly
     if (content && caret) {
       const isExpanded = this.expandedOptions.has(id);
-      console.log('Is expanded:', isExpanded);
 
       if (isExpanded) {
         content.style.display = 'block';
         caret.style.transform = 'rotate(180deg)';
-        console.log('Showing content, rotating caret to 180deg');
       } else {
         content.style.display = 'none';
         caret.style.transform = 'rotate(0deg)';
-        console.log('Hiding content, rotating caret to 0deg');
       }
     }
   }
 
   private toggleOptionExpanded(optionId: string): void {
-    console.log('toggleOptionExpanded called for:', optionId);
-    console.log('Current expanded options:', Array.from(this.expandedOptions));
-
     // Toggle the expanded state of the option
     if (this.expandedOptions.has(optionId)) {
       this.expandedOptions.delete(optionId);
-      console.log('Removing from expanded options');
     } else {
       this.expandedOptions.add(optionId);
-      console.log('Adding to expanded options');
     }
 
     // Find the option element and update it directly
     const optionElement = document.querySelector(`[data-option-id="${optionId}"]`);
-    console.log('Found option element:', optionElement);
-
     if (optionElement) {
       const content = optionElement.querySelector('.option-content') as HTMLElement;
       const caret = optionElement.querySelector('.expand-caret') as HTMLElement;
 
-      console.log('Found content:', content);
-      console.log('Found caret:', caret);
-
       if (content && caret) {
         const isExpanded = this.expandedOptions.has(optionId);
-        console.log('Is expanded:', isExpanded);
-
-        if (isExpanded) {
-          // Show content
-          content.style.display = 'block';
-          caret.style.transform = 'rotate(180deg)'; // Point up when expanded
-          console.log('Showing content, rotating caret to 180deg');
-        } else {
-          // Hide content
-          content.style.display = 'none';
-          caret.style.transform = 'rotate(0deg)'; // Point down when collapsed
-          console.log('Hiding content, rotating caret to 0deg');
-        }
+        // Caret points up when expanded, down when collapsed.
+        content.style.display = isExpanded ? 'block' : 'none';
+        caret.style.transform = isExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
       }
     }
   }
@@ -1832,7 +1789,6 @@ export class UltraDropdownModule extends BaseUltraModule {
       } else {
         // Template not evaluated yet - try to evaluate synchronously as fallback
         // This handles the case where template hasn't been subscribed yet
-        console.log('Template not evaluated yet, using manual options as fallback');
         availableOptions = dropdownModule.options?.map(opt => ({
           label: opt.label,
           icon: opt.icon,
@@ -2122,7 +2078,6 @@ export class UltraDropdownModule extends BaseUltraModule {
                     
                     // Prevent double-handling
                     if (this.chevronClickHandling.has(moduleId)) {
-                      console.log('Chevron click already being handled for', moduleId);
                       return;
                     }
                     
@@ -2981,6 +2936,15 @@ export class UltraDropdownModule extends BaseUltraModule {
     this.portaledDropdowns.get(instanceId)?.remove();
     this.portaledDropdowns.delete(instanceId);
     this.portaledDropdownTriggers.delete(instanceId);
+    this.stopPortalOrphanSweepIfIdle();
+  }
+
+  /** Drop the sweep timer as soon as there is nothing left for it to watch. */
+  private stopPortalOrphanSweepIfIdle(): void {
+    if (this.portalOrphanSweep && this.portaledDropdowns.size === 0) {
+      clearInterval(this.portalOrphanSweep);
+      this.portalOrphanSweep = 0;
+    }
   }
 
   /**
@@ -2999,10 +2963,9 @@ export class UltraDropdownModule extends BaseUltraModule {
         this.destroyPortaledDropdown(instanceId);
         this.removeClickOutsideHandler();
       }
-      if (this.portaledDropdowns.size === 0) {
-        clearInterval(this.portalOrphanSweep);
-        this.portalOrphanSweep = 0;
-      }
+      // destroyPortaledDropdown stops the sweep once the last portal is gone;
+      // this covers a clone removed by anything other than that path.
+      this.stopPortalOrphanSweepIfIdle();
     }, 400);
   }
 
@@ -3306,7 +3269,6 @@ export class UltraDropdownModule extends BaseUltraModule {
           e.stopPropagation();
           const optionValue = entityOptions[index];
           if (optionValue) {
-            console.log('Entity option clicked:', optionValue);
             // Format the label for display/storage ($variables resolved)
             const srcEntity =
               this.resolveEntity(dropdownModule.source_entity, config) ||
@@ -3377,8 +3339,6 @@ export class UltraDropdownModule extends BaseUltraModule {
         newOptionEl.addEventListener('click', e => {
           e.stopPropagation();
           if (templateOption) {
-            console.log('Template option clicked:', templateOption.label);
-            
             // Track state if enabled
             if (dropdownModule.track_state) {
               this.currentSelection.set(instanceId, templateOption.label);
@@ -3395,8 +3355,6 @@ export class UltraDropdownModule extends BaseUltraModule {
               hass.callService('climate', 'set_hvac_mode', {
                 entity_id: sourceEntity,
                 hvac_mode: templateOption.mode,
-              }).then(() => {
-                console.log(`Set ${sourceEntity} to ${templateOption.mode}`);
               }).catch((error) => {
                 console.error('Failed to set HVAC mode:', error);
               });
@@ -3434,7 +3392,6 @@ export class UltraDropdownModule extends BaseUltraModule {
 
           newOptionEl.addEventListener('click', e => {
             e.stopPropagation();
-            console.log('Placeholder clicked');
             this.selectOption('', dropdownModule);
             this.closeDropdown(undefined, instanceId);
           });
@@ -3500,16 +3457,6 @@ export class UltraDropdownModule extends BaseUltraModule {
   }
 
   private selectOption(value: string, module: DropdownModule): void {
-    // Update the current selection if state tracking is enabled
-    if (module.track_state && value) {
-      // This would typically update the module configuration
-      // For now, we'll just track it locally for the preview
-      console.log('Selected option:', value);
-
-      // In a real implementation, this would update the module config:
-      // updateModule({ current_selection: value });
-    }
-    
     // Entity-driven dropdowns should always mirror the underlying entity state,
     // so skip local persistence to keep duplicated modules in sync.
     if (module.source_mode === 'entity') {
@@ -3529,8 +3476,6 @@ export class UltraDropdownModule extends BaseUltraModule {
     config?: UltraCardConfig,
     dropdownModule?: DropdownModule
   ): void {
-    console.log('Executing action:', option.action);
-
     // Trigger haptic feedback if enabled (default: true)
     const hapticEnabled = config?.haptic_feedback !== false;
     if (hapticEnabled) {
@@ -3544,7 +3489,6 @@ export class UltraDropdownModule extends BaseUltraModule {
       // Dispatch within the component tree so HA overlays catch the event ($variables resolved)
       const moreInfoEntity =
         this.resolveEntity(option.action.entity, config) || option.action.entity;
-      console.log('Triggering more-info for entity:', moreInfoEntity);
       const event = new CustomEvent('hass-more-info', {
         detail: { entityId: moreInfoEntity },
         bubbles: true,
