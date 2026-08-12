@@ -14,6 +14,7 @@ import {
   DashboardCard,
 } from './uc-dashboard-scanner-service';
 import { ucCloudAuthService } from './uc-cloud-auth-service';
+import { UC_DEBUG } from '../utils/uc-debug';
 
 /** Fired after snapshot settings are saved, so cached schedules can refresh. */
 export const UC_SNAPSHOT_SETTINGS_CHANGED = 'uc-snapshot-settings-changed';
@@ -88,9 +89,10 @@ class UcSnapshotService {
         throw new Error('No Ultra Cards found in dashboard');
       }
 
-      console.log(
-        `📦 Captured ${dashboardSnapshot.card_count} Ultra Cards from ${dashboardSnapshot.views.length} views`
-      );
+      UC_DEBUG &&
+        console.log(
+          `📦 Captured ${dashboardSnapshot.card_count} Ultra Cards from ${dashboardSnapshot.views.length} views`
+        );
 
       // Send to WordPress backend
       const response = await this.apiCall('/snapshots', {
@@ -121,17 +123,17 @@ class UcSnapshotService {
   async createAutoSnapshot(): Promise<void> {
     const user = ucCloudAuthService.getCurrentUser();
     if (!user || user.subscription?.tier !== 'pro') {
-      console.log('⏭️ Skipping auto snapshot - not authenticated or not a Pro user');
+      UC_DEBUG && console.log('⏭️ Skipping auto snapshot - not authenticated or not a Pro user');
       return;
     }
 
     try {
-      console.log('🤖 Creating automatic daily snapshot...');
+      UC_DEBUG && console.log('🤖 Creating automatic daily snapshot...');
 
       const dashboardSnapshot = await ucDashboardScannerService.scanAllDashboards();
 
       if (dashboardSnapshot.card_count === 0) {
-        console.log('⚠️ No Ultra Cards found, skipping auto snapshot');
+        UC_DEBUG && console.log('⚠️ No Ultra Cards found, skipping auto snapshot');
         return;
       }
 
@@ -160,7 +162,8 @@ class UcSnapshotService {
       // Add cache-busting timestamp to prevent stale data
       // Note: Using timestamp in URL is sufficient; custom headers cause CORS issues
       const timestamp = Date.now();
-      console.log(`📋 Fetching snapshot list with cache-busting timestamp: ${timestamp}`);
+      UC_DEBUG &&
+        console.log(`📋 Fetching snapshot list with cache-busting timestamp: ${timestamp}`);
 
       const response = await this.apiCall(`/snapshots?limit=${limit}&_=${timestamp}`, {
         method: 'GET',
@@ -202,7 +205,7 @@ class UcSnapshotService {
       throw new Error('Must be logged in to restore snapshots');
     }
 
-    console.log(`🔄 Restoring snapshot ${snapshotId}...`);
+    UC_DEBUG && console.log(`🔄 Restoring snapshot ${snapshotId}...`);
 
     try {
       const response = await this.apiCall(`/snapshots/${snapshotId}/restore`, {
@@ -227,9 +230,10 @@ class UcSnapshotService {
         cardsByView[viewTitle].sort((a, b) => a.card_index - b.card_index);
       });
 
-      console.log(
-        `✅ Snapshot restored: ${snapshotData.card_count} cards across ${Object.keys(cardsByView).length} views`
-      );
+      UC_DEBUG &&
+        console.log(
+          `✅ Snapshot restored: ${snapshotData.card_count} cards across ${Object.keys(cardsByView).length} views`
+        );
 
       return {
         snapshot_data: snapshotData,
@@ -255,7 +259,7 @@ class UcSnapshotService {
         method: 'DELETE',
       });
 
-      console.log(`🗑️ Snapshot ${snapshotId} deleted`);
+      UC_DEBUG && console.log(`🗑️ Snapshot ${snapshotId} deleted`);
     } catch (error) {
       console.error(`Failed to delete snapshot ${snapshotId}:`, error);
       throw error;

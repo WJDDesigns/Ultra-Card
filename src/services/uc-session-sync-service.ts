@@ -7,6 +7,7 @@
  */
 
 import { CloudUser } from './uc-cloud-auth-service';
+import { UC_DEBUG } from '../utils/uc-debug';
 
 interface SessionResponse {
   success: boolean;
@@ -60,7 +61,7 @@ class UcSessionSyncService {
   disable(): void {
     this._isEnabled = false;
     this.stopPolling();
-    console.log('📴 Cloud session sync disabled');
+    UC_DEBUG && console.log('📴 Cloud session sync disabled');
   }
 
   /**
@@ -68,12 +69,12 @@ class UcSessionSyncService {
    */
   async createSession(user: CloudUser, haUserId: string): Promise<string | null> {
     if (!this._isEnabled) {
-      console.log('📝 Cloud session sync disabled, skipping session creation');
+      UC_DEBUG && console.log('📝 Cloud session sync disabled, skipping session creation');
       return null;
     }
 
     try {
-      console.log('🔄 Creating cloud session...');
+      UC_DEBUG && console.log('🔄 Creating cloud session...');
 
       const response = await fetch(
         `${UcSessionSyncService.API_BASE}/ultra-card/v1/session/create`,
@@ -122,7 +123,7 @@ class UcSessionSyncService {
     }
 
     try {
-      console.log('🔄 Checking for active cloud session...');
+      UC_DEBUG && console.log('🔄 Checking for active cloud session...');
 
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -147,11 +148,11 @@ class UcSessionSyncService {
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('📭 No active cloud session found');
+          UC_DEBUG && console.log('📭 No active cloud session found');
           return null;
         }
         if (response.status === 401) {
-          console.log('🔐 Not authenticated, cannot retrieve session');
+          UC_DEBUG && console.log('🔐 Not authenticated, cannot retrieve session');
           return null;
         }
         throw new Error(`Session fetch failed: ${response.status}`);
@@ -217,7 +218,7 @@ class UcSessionSyncService {
     }
 
     try {
-      console.log('🔄 Invalidating cloud session...');
+      UC_DEBUG && console.log('🔄 Invalidating cloud session...');
 
       await fetch(`${UcSessionSyncService.API_BASE}/ultra-card/v1/session/logout`, {
         method: 'DELETE',
@@ -243,7 +244,7 @@ class UcSessionSyncService {
 
     this.stopPolling();
 
-    console.log('🔄 Starting session validation polling');
+    UC_DEBUG && console.log('🔄 Starting session validation polling');
 
     this._pollTimer = window.setInterval(async () => {
       const valid = await this.validateSession(token);

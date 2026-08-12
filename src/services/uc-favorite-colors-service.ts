@@ -1,6 +1,7 @@
 import { FavoriteColor } from '../types';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
 import { getConnectInfo, getOutdatedConnectError } from './uc-connect-compatibility';
+import { UC_DEBUG } from '../utils/uc-debug';
 // NOTE: Cloud sync disabled - import removed as favorites are local-only per user request
 // import { ucCloudSyncService } from './uc-cloud-sync-service';
 
@@ -216,9 +217,10 @@ class UcFavoriteColorsService {
   private _logMissingIntegrationOnce(): void {
     if (this._logged404) return;
     this._logged404 = true;
-    console.info(
-      'Ultra Card: Favorite colors sync requires the "Ultra Card Connect" integration. Install it from HACS (Integration: Ultra Card Connect) to persist colors across devices and after logout.'
-    );
+    UC_DEBUG &&
+      console.info(
+        'Ultra Card: Favorite colors sync requires the "Ultra Card Connect" integration. Install it from HACS (Integration: Ultra Card Connect) to persist colors across devices and after logout.'
+      );
   }
 
   private _logOutdatedIntegrationOnce(hass: any): void {
@@ -227,7 +229,7 @@ class UcFavoriteColorsService {
     const message =
       getOutdatedConnectError(hass, 'Favorite colors sync') ||
       'Ultra Card: Favorite colors sync needs Ultra Card Connect 1.6.0 or newer. Please update the integration.';
-    console.info(message);
+    UC_DEBUG && console.info(message);
   }
 
   /**
@@ -289,11 +291,11 @@ class UcFavoriteColorsService {
       if (status === 401 || status === 403) {
         // Auth errors are also definitive for this session
         this._haLoaded = true;
-        console.debug('Failed to load favorite colors from HA (auth error):', err);
+        UC_DEBUG && console.debug('Failed to load favorite colors from HA (auth error):', err);
         return;
       }
       // Transient error (network, 5xx, etc.) — leave _haLoaded false so we retry
-      console.debug('Failed to load favorite colors from HA (will retry):', err);
+      UC_DEBUG && console.debug('Failed to load favorite colors from HA (will retry):', err);
     }
   }
 
@@ -325,7 +327,7 @@ class UcFavoriteColorsService {
         }
         return;
       }
-      console.debug('Failed to sync favorite colors to HA:', err);
+      UC_DEBUG && console.debug('Failed to sync favorite colors to HA:', err);
     }
   }
 
@@ -368,53 +370,56 @@ class UcFavoriteColorsService {
    * Test method to verify service is working
    */
   testService(): void {
-    console.log('UcFavoriteColorsService: Test method called');
-    console.log('Current favorites:', this._favorites);
-    console.log('Number of listeners:', this._listeners.size);
+    UC_DEBUG && console.log('UcFavoriteColorsService: Test method called');
+    UC_DEBUG && console.log('Current favorites:', this._favorites);
+    UC_DEBUG && console.log('Number of listeners:', this._listeners.size);
 
     // Test adding a color
     const testColor = this.addFavorite('Test Color', '#ff0000');
-    console.log('Test color added:', testColor);
+    UC_DEBUG && console.log('Test color added:', testColor);
 
     // Test getting favorites
     const allFavorites = this.getFavorites();
-    console.log('All favorites after test add:', allFavorites);
+    UC_DEBUG && console.log('All favorites after test add:', allFavorites);
   }
 
   /**
    * Debug method to help diagnose favorite colors issues
    */
   debugFavoriteColors(): void {
-    console.log('=== Ultra Card Favorite Colors Debug Info ===');
-    console.log('Storage Key:', UcFavoriteColorsService.STORAGE_KEY);
-    console.log('Current Favorite Colors Count:', this._favorites.length);
-    console.log('Listeners Count:', this._listeners.size);
-    console.log('LocalStorage Available:', this._isLocalStorageAvailable());
+    UC_DEBUG && console.log('=== Ultra Card Favorite Colors Debug Info ===');
+    UC_DEBUG && console.log('Storage Key:', UcFavoriteColorsService.STORAGE_KEY);
+    UC_DEBUG && console.log('Current Favorite Colors Count:', this._favorites.length);
+    UC_DEBUG && console.log('Listeners Count:', this._listeners.size);
+    UC_DEBUG && console.log('LocalStorage Available:', this._isLocalStorageAvailable());
 
     try {
       const stored = safeGetItem(UcFavoriteColorsService.STORAGE_KEY);
-      console.log('Raw Storage Data:', stored ? `${stored.length} characters` : 'null');
-      console.log('Storage Data Valid:', stored ? 'Valid JSON' : 'No data');
+      UC_DEBUG && console.log('Raw Storage Data:', stored ? `${stored.length} characters` : 'null');
+      UC_DEBUG && console.log('Storage Data Valid:', stored ? 'Valid JSON' : 'No data');
 
       if (stored) {
         const parsed = JSON.parse(stored);
-        console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
-        console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
+        UC_DEBUG &&
+          console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
+        UC_DEBUG &&
+          console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
       }
     } catch (error) {
       console.error('Storage Data Error:', error);
     }
 
-    console.log(
-      'Favorite Colors List:',
-      this._favorites.map(f => ({
-        id: f.id,
-        name: f.name,
-        color: f.color,
-        order: f.order,
-      }))
-    );
-    console.log('==========================================');
+    UC_DEBUG &&
+      console.log(
+        'Favorite Colors List:',
+        this._favorites.map(f => ({
+          id: f.id,
+          name: f.name,
+          color: f.color,
+          order: f.order,
+        }))
+      );
+    UC_DEBUG && console.log('==========================================');
   }
 
   /**
@@ -676,7 +681,8 @@ class UcFavoriteColorsService {
    * Handle storage quota exceeded by cleaning up old favorite colors
    */
   private _handleStorageQuotaExceeded(): void {
-    console.log('Attempting to free up storage space by removing oldest favorite colors...');
+    UC_DEBUG &&
+      console.log('Attempting to free up storage space by removing oldest favorite colors...');
 
     if (this._favorites.length <= 1) {
       console.error('Cannot free up space - only one or no favorite colors exist');
@@ -691,13 +697,14 @@ class UcFavoriteColorsService {
     const colorsToKeep = sortedFavorites.slice(0, this._favorites.length - colorsToRemove);
     this._favorites = colorsToKeep;
 
-    console.log(`Removed ${colorsToRemove} oldest favorite colors to free up storage space`);
+    UC_DEBUG &&
+      console.log(`Removed ${colorsToRemove} oldest favorite colors to free up storage space`);
 
     // Try to save again
     try {
       const dataToSave = JSON.stringify(this._favorites);
       safeSetItem(UcFavoriteColorsService.STORAGE_KEY, dataToSave);
-      console.log('Successfully saved favorite colors after cleanup');
+      UC_DEBUG && console.log('Successfully saved favorite colors after cleanup');
       this._notifyListeners();
       this._broadcastChange();
     } catch (error) {

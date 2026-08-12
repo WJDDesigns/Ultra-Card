@@ -1,5 +1,6 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { SportsGameData, SportsLeague, SportsGameStatus, SportsTeamInfo } from '../types';
+import { UC_DEBUG } from '../utils/uc-debug';
 
 /**
  * Sports Data Service
@@ -244,18 +245,19 @@ class SportsDataService {
     try {
       const path = LEAGUE_PATHS[league];
       const url = `${ESPN_BASE}/${path}/scoreboard`;
-      console.debug(`Sports module: Fetching scoreboard from ${url}`);
+      UC_DEBUG && console.debug(`Sports module: Fetching scoreboard from ${url}`);
 
       const response = await fetch(url);
 
       if (!response.ok) {
-        console.debug(`Sports module: Scoreboard request failed with status ${response.status}`);
+        UC_DEBUG &&
+          console.debug(`Sports module: Scoreboard request failed with status ${response.status}`);
         return null;
       }
 
       const data = await response.json();
       const events = data?.events || [];
-      console.debug(`Sports module: Found ${events.length} events in scoreboard`);
+      UC_DEBUG && console.debug(`Sports module: Found ${events.length} events in scoreboard`);
 
       // Find the game involving this team
       for (const event of events) {
@@ -268,17 +270,17 @@ class SportsDataService {
         );
 
         if (isTeamInGame) {
-          console.debug(`Sports module: Found team ${teamId} in scoreboard game`);
+          UC_DEBUG && console.debug(`Sports module: Found team ${teamId} in scoreboard game`);
           const gameData = this.normalizeESPNEvent(event, league);
-          console.debug('Sports module: Normalized game data:', gameData);
+          UC_DEBUG && console.debug('Sports module: Normalized game data:', gameData);
           return gameData;
         }
       }
 
-      console.debug(`Sports module: Team ${teamId} not found in today's scoreboard`);
+      UC_DEBUG && console.debug(`Sports module: Team ${teamId} not found in today's scoreboard`);
       return null;
     } catch (error) {
-      console.debug('Sports module: Scoreboard fetch failed:', error);
+      UC_DEBUG && console.debug('Sports module: Scoreboard fetch failed:', error);
       return null;
     }
   }
@@ -364,7 +366,7 @@ class SportsDataService {
 
       return this.normalizeESPNEvent(selectedEvent, league);
     } catch (error) {
-      console.debug('Sports module: Team schedule fetch failed:', error);
+      UC_DEBUG && console.debug('Sports module: Team schedule fetch failed:', error);
       return null;
     }
   }
@@ -465,13 +467,13 @@ class SportsDataService {
     const getLogoUrl = (teamData: any): string => {
       const team = teamData?.team;
       if (!team) {
-        console.debug('Sports module: No team data for logo extraction');
+        UC_DEBUG && console.debug('Sports module: No team data for logo extraction');
         return '';
       }
 
       // Try direct logo property first
       if (team.logo) {
-        console.debug(`Sports module: Found direct logo: ${team.logo}`);
+        UC_DEBUG && console.debug(`Sports module: Found direct logo: ${team.logo}`);
         return team.logo;
       }
 
@@ -482,11 +484,12 @@ class SportsDataService {
           (l: any) => l.rel?.includes('default') || l.rel?.includes('full')
         );
         const logoUrl = defaultLogo?.href || team.logos[0]?.href || '';
-        console.debug(`Sports module: Found logo from array: ${logoUrl}`);
+        UC_DEBUG && console.debug(`Sports module: Found logo from array: ${logoUrl}`);
         return logoUrl;
       }
 
-      console.debug(`Sports module: No logo found for team ${team.abbreviation || team.name}`);
+      UC_DEBUG &&
+        console.debug(`Sports module: No logo found for team ${team.abbreviation || team.name}`);
       return '';
     };
 

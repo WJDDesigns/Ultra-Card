@@ -1,6 +1,7 @@
 import { CustomVariable, UltraCardConfig } from '../types';
 import { HomeAssistant } from 'custom-card-helpers';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
+import { UC_DEBUG } from '../utils/uc-debug';
 
 /**
  * Service for managing custom variables across Ultra Card instances
@@ -740,36 +741,39 @@ class UcCustomVariablesService {
    * Debug method to help diagnose custom variables issues
    */
   debugVariables(): void {
-    console.log('=== Ultra Card Custom Variables Debug Info ===');
-    console.log('Storage Key:', UcCustomVariablesService.STORAGE_KEY);
-    console.log('Current Variables Count:', this._variables.length);
-    console.log('Listeners Count:', this._listeners.size);
-    console.log('LocalStorage Available:', this._isLocalStorageAvailable());
+    UC_DEBUG && console.log('=== Ultra Card Custom Variables Debug Info ===');
+    UC_DEBUG && console.log('Storage Key:', UcCustomVariablesService.STORAGE_KEY);
+    UC_DEBUG && console.log('Current Variables Count:', this._variables.length);
+    UC_DEBUG && console.log('Listeners Count:', this._listeners.size);
+    UC_DEBUG && console.log('LocalStorage Available:', this._isLocalStorageAvailable());
 
     try {
       const stored = safeGetItem(UcCustomVariablesService.STORAGE_KEY);
-      console.log('Raw Storage Data:', stored ? `${stored.length} characters` : 'null');
+      UC_DEBUG && console.log('Raw Storage Data:', stored ? `${stored.length} characters` : 'null');
 
       if (stored) {
         const parsed = JSON.parse(stored);
-        console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
-        console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
+        UC_DEBUG &&
+          console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
+        UC_DEBUG &&
+          console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
       }
     } catch (error) {
       console.error('Storage Data Error:', error);
     }
 
-    console.log(
-      'Variables List:',
-      this._variables.map(v => ({
-        id: v.id,
-        name: v.name,
-        entity: v.entity,
-        value_type: v.value_type,
-        order: v.order,
-      }))
-    );
-    console.log('==========================================');
+    UC_DEBUG &&
+      console.log(
+        'Variables List:',
+        this._variables.map(v => ({
+          id: v.id,
+          name: v.name,
+          entity: v.entity,
+          value_type: v.value_type,
+          order: v.order,
+        }))
+      );
+    UC_DEBUG && console.log('==========================================');
   }
 
   /**

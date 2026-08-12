@@ -16,6 +16,7 @@ import './uc-snapshot-restore-dialog';
 import { ucToastService } from '../services/uc-toast-service';
 import { ucConfirmService } from '../services/uc-confirm-service';
 import type { RestoreMethodChoice } from './uc-snapshot-restore-dialog';
+import { UC_DEBUG } from '../utils/uc-debug';
 
 type TabType = 'snapshots' | 'card-backups';
 
@@ -131,7 +132,7 @@ export class UcSnapshotHistoryModal extends LitElement {
       throw new Error('Could not access dashboard configuration');
     }
 
-    console.log('📋 Current dashboard config loaded');
+    UC_DEBUG && console.log('📋 Current dashboard config loaded');
 
     // Get all views
     const views = lovelaceConfig.views || [];
@@ -157,9 +158,10 @@ export class UcSnapshotHistoryModal extends LitElement {
         return;
       }
 
-      console.log(
-        `  📝 Restoring ${snapshotCardsForView.length} cards in view: ${view.title || viewPath}`
-      );
+      UC_DEBUG &&
+        console.log(
+          `  📝 Restoring ${snapshotCardsForView.length} cards in view: ${view.title || viewPath}`
+        );
 
       // Sort snapshot cards by their original index
       snapshotCardsForView.sort((a, b) => a.card_index - b.card_index);
@@ -209,7 +211,7 @@ export class UcSnapshotHistoryModal extends LitElement {
     // Save the updated config back to Home Assistant
     await this._saveLovelaceConfig(lovelaceConfig);
 
-    console.log('💾 Dashboard configuration saved successfully');
+    UC_DEBUG && console.log('💾 Dashboard configuration saved successfully');
   }
 
   /**
@@ -221,7 +223,7 @@ export class UcSnapshotHistoryModal extends LitElement {
     deleted: number;
     skipped: number;
   }> {
-    console.log('🧠 Starting SMART REPLACE restore...');
+    UC_DEBUG && console.log('🧠 Starting SMART REPLACE restore...');
 
     const lovelaceConfig = await this._getLovelaceConfig();
     if (!lovelaceConfig) {
@@ -256,9 +258,10 @@ export class UcSnapshotHistoryModal extends LitElement {
       }
     });
 
-    console.log(
-      `📋 Indexed ${Object.keys(customNameIndex).length} custom-named cards and ${Object.keys(positionIndex).length} position-based cards`
-    );
+    UC_DEBUG &&
+      console.log(
+        `📋 Indexed ${Object.keys(customNameIndex).length} custom-named cards and ${Object.keys(positionIndex).length} position-based cards`
+      );
 
     // Update each view
     views.forEach((view: any, viewIndex: number) => {
@@ -291,9 +294,10 @@ export class UcSnapshotHistoryModal extends LitElement {
                     positionIndex[posKey] || positionIndex[`${viewId}::${currentCardIndex}`];
 
                   if (snapshotCard) {
-                    console.log(
-                      `  ✅ Position match: card ${currentCardIndex} in ${view.title || viewPath}`
-                    );
+                    UC_DEBUG &&
+                      console.log(
+                        `  ✅ Position match: card ${currentCardIndex} in ${view.title || viewPath}`
+                      );
                   }
                 }
 
@@ -303,9 +307,10 @@ export class UcSnapshotHistoryModal extends LitElement {
                   restored++;
                   return snapshotCard.config;
                 } else {
-                  console.log(
-                    `  ⏭️ Skipped: "${cardName}" at position ${currentCardIndex - 1} (no match)`
-                  );
+                  UC_DEBUG &&
+                    console.log(
+                      `  ⏭️ Skipped: "${cardName}" at position ${currentCardIndex - 1} (no match)`
+                    );
                   skipped++;
                 }
               }
@@ -335,9 +340,10 @@ export class UcSnapshotHistoryModal extends LitElement {
                 positionIndex[posKey] || positionIndex[`${viewId}::${currentCardIndex}`];
 
               if (snapshotCard) {
-                console.log(
-                  `  ✅ Position match: card ${currentCardIndex} in ${view.title || viewPath}`
-                );
+                UC_DEBUG &&
+                  console.log(
+                    `  ✅ Position match: card ${currentCardIndex} in ${view.title || viewPath}`
+                  );
               }
             }
 
@@ -347,9 +353,10 @@ export class UcSnapshotHistoryModal extends LitElement {
               restored++;
               return snapshotCard.config;
             } else {
-              console.log(
-                `  ⏭️ Skipped: "${cardName}" at position ${currentCardIndex - 1} (no match)`
-              );
+              UC_DEBUG &&
+                console.log(
+                  `  ⏭️ Skipped: "${cardName}" at position ${currentCardIndex - 1} (no match)`
+                );
               skipped++;
             }
           }
@@ -375,7 +382,7 @@ export class UcSnapshotHistoryModal extends LitElement {
     deleted: number;
     skipped: number;
   }> {
-    console.log('🧹 Starting CLEAN & RESTORE...');
+    UC_DEBUG && console.log('🧹 Starting CLEAN & RESTORE...');
 
     const lovelaceConfig = await this._getLovelaceConfig();
     if (!lovelaceConfig) {
@@ -387,7 +394,7 @@ export class UcSnapshotHistoryModal extends LitElement {
     let restored = 0;
 
     // Step 1: Delete ALL Ultra Cards
-    console.log('🗑️ Step 1: Deleting all existing Ultra Cards...');
+    UC_DEBUG && console.log('🗑️ Step 1: Deleting all existing Ultra Cards...');
     views.forEach((view: any) => {
       if (view.type === 'sections' && view.sections) {
         view.sections.forEach((section: any) => {
@@ -400,9 +407,10 @@ export class UcSnapshotHistoryModal extends LitElement {
               }
               return true;
             });
-            console.log(
-              `  🗑️ Deleted ${before - section.cards.length} Ultra Cards from section in ${view.title || 'view'}`
-            );
+            UC_DEBUG &&
+              console.log(
+                `  🗑️ Deleted ${before - section.cards.length} Ultra Cards from section in ${view.title || 'view'}`
+              );
           }
         });
       } else if (view.cards) {
@@ -414,14 +422,15 @@ export class UcSnapshotHistoryModal extends LitElement {
           }
           return true;
         });
-        console.log(
-          `  🗑️ Deleted ${before - view.cards.length} Ultra Cards from ${view.title || 'view'}`
-        );
+        UC_DEBUG &&
+          console.log(
+            `  🗑️ Deleted ${before - view.cards.length} Ultra Cards from ${view.title || 'view'}`
+          );
       }
     });
 
     // Step 2: Group snapshot cards by view
-    console.log('📦 Step 2: Restoring snapshot cards...');
+    UC_DEBUG && console.log('📦 Step 2: Restoring snapshot cards...');
     const cardsByView: { [key: string]: any[] } = {};
     snapshotData.cards.forEach((card: any) => {
       const viewKey = card.view_path || card.view_id;
@@ -439,7 +448,8 @@ export class UcSnapshotHistoryModal extends LitElement {
 
       if (viewCards.length === 0) return;
 
-      console.log(`  ➕ Restoring ${viewCards.length} cards to ${view.title || viewPath}`);
+      UC_DEBUG &&
+        console.log(`  ➕ Restoring ${viewCards.length} cards to ${view.title || viewPath}`);
 
       if (view.type === 'sections' && view.sections) {
         // Check if snapshot has section information
@@ -447,7 +457,7 @@ export class UcSnapshotHistoryModal extends LitElement {
 
         if (hasSectionInfo) {
           // NEW SNAPSHOTS: Restore to original sections using captured section_index
-          console.log('    ✓ Using section info from snapshot (new format)');
+          UC_DEBUG && console.log('    ✓ Using section info from snapshot (new format)');
           const cardsBySection: { [sectionIndex: number]: any[] } = {};
           viewCards.forEach(card => {
             const sectionIndex = card.section_index ?? 0;
@@ -483,9 +493,10 @@ export class UcSnapshotHistoryModal extends LitElement {
           });
         } else {
           // OLD SNAPSHOTS: Intelligently distribute across existing sections
-          console.log(
-            '    ⚠️ No section info - distributing evenly across sections (old snapshot format)'
-          );
+          UC_DEBUG &&
+            console.log(
+              '    ⚠️ No section info - distributing evenly across sections (old snapshot format)'
+            );
 
           // Sort cards by original index
           viewCards.sort((a, b) => a.card_index - b.card_index);

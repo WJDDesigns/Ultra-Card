@@ -1,5 +1,6 @@
 import { FavoriteRow, CardRow } from '../types';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/safe-storage';
+import { UC_DEBUG } from '../utils/uc-debug';
 // NOTE: Cloud sync disabled - import removed as favorites are local-only per user request
 // import { ucCloudSyncService } from './uc-cloud-sync-service';
 
@@ -128,36 +129,39 @@ class UcFavoritesService {
    * Debug method to help diagnose favorites issues
    */
   debugFavorites(): void {
-    console.log('=== Ultra Card Favorites Debug Info ===');
-    console.log('Storage Key:', UcFavoritesService.STORAGE_KEY);
-    console.log('Current Favorites Count:', this._favorites.length);
-    console.log('Listeners Count:', this._listeners.size);
-    console.log('LocalStorage Available:', this._isLocalStorageAvailable());
+    UC_DEBUG && console.log('=== Ultra Card Favorites Debug Info ===');
+    UC_DEBUG && console.log('Storage Key:', UcFavoritesService.STORAGE_KEY);
+    UC_DEBUG && console.log('Current Favorites Count:', this._favorites.length);
+    UC_DEBUG && console.log('Listeners Count:', this._listeners.size);
+    UC_DEBUG && console.log('LocalStorage Available:', this._isLocalStorageAvailable());
 
     try {
       const stored = safeGetItem(UcFavoritesService.STORAGE_KEY);
-      console.log('Raw Storage Data:', stored ? `${stored.length} characters` : 'null');
-      console.log('Storage Data Valid:', stored ? 'Valid JSON' : 'No data');
+      UC_DEBUG && console.log('Raw Storage Data:', stored ? `${stored.length} characters` : 'null');
+      UC_DEBUG && console.log('Storage Data Valid:', stored ? 'Valid JSON' : 'No data');
 
       if (stored) {
         const parsed = JSON.parse(stored);
-        console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
-        console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
+        UC_DEBUG &&
+          console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
+        UC_DEBUG &&
+          console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
       }
     } catch (error) {
       console.error('Storage Data Error:', error);
     }
 
-    console.log(
-      'Favorites List:',
-      this._favorites.map(f => ({
-        id: f.id,
-        name: f.name,
-        created: f.created,
-        tags: f.tags.length,
-      }))
-    );
-    console.log('=====================================');
+    UC_DEBUG &&
+      console.log(
+        'Favorites List:',
+        this._favorites.map(f => ({
+          id: f.id,
+          name: f.name,
+          created: f.created,
+          tags: f.tags.length,
+        }))
+      );
+    UC_DEBUG && console.log('=====================================');
   }
 
   /**
@@ -287,7 +291,7 @@ class UcFavoritesService {
    * Handle storage quota exceeded by cleaning up old favorites
    */
   private _handleStorageQuotaExceeded(): void {
-    console.log('Attempting to free up storage space by removing oldest favorites...');
+    UC_DEBUG && console.log('Attempting to free up storage space by removing oldest favorites...');
 
     if (this._favorites.length <= 1) {
       console.error('Cannot free up space - only one or no favorites exist');
@@ -304,13 +308,14 @@ class UcFavoritesService {
     const favoritesToKeep = sortedFavorites.slice(favoritesToRemove);
     this._favorites = favoritesToKeep;
 
-    console.log(`Removed ${favoritesToRemove} oldest favorites to free up storage space`);
+    UC_DEBUG &&
+      console.log(`Removed ${favoritesToRemove} oldest favorites to free up storage space`);
 
     // Try to save again
     try {
       const dataToSave = JSON.stringify(this._favorites);
       safeSetItem(UcFavoritesService.STORAGE_KEY, dataToSave);
-      console.log('Successfully saved favorites after cleanup');
+      UC_DEBUG && console.log('Successfully saved favorites after cleanup');
       this._notifyListeners();
       this._broadcastChange();
     } catch (error) {
