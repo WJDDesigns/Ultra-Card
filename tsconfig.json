@@ -23,9 +23,5 @@
     "rootDir": "./src"
   },
   "include": ["src"],
-  "exclude": [
-    "src/modules/_module-template.ts",
-    "src/services/uc-presets-service-backup.ts",
-    "src/services/uc-presets-service-updated.ts"
-  ]
+  "exclude": ["src/modules/_module-template.ts"]
 }
