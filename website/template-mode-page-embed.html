@@ -1,15 +1,16 @@
 <!--
-  Ultra Card — Template Mode page embed (modules/presets-page twin).
-  Paste everything below into the WPBakery Raw HTML element on
-  ultracard.io/template-mode.
+  Ultra Card: Template Mode page embed (modules/presets-page twin).
+
+  Live delivery: paste [ultra_card_page id="template-mode"] into a WPBakery
+  Text Block. The Website Harness plugin fetches this fragment from the repo.
 
   Unlike the modules and presets pages, nothing here is a screenshot: the demo
   bundle ships a Jinja interpreter for the fake `hass`, so the previews below are
   the real module code evaluating real templates. All reference data (context
   variables, return properties, examples, per-scope copy) is read from
   window.UCDemo.templates, which is generated from the same source as the in-app
-  Template Cheatsheet — so this page gains new modules and keys automatically and
-  can never drift from the card.
+  Template Cheatsheet. That means this page gains new modules and keys
+  automatically and can never drift from the card.
 
   Local testing:
     npm run build:demo
@@ -20,12 +21,12 @@
 <script>
 (async function(){
   /* Demo bundle is ~10MB on jsDelivr. Prefer the latest main SHA so new modules
-     and template keys appear automatically, but always fall back — a fresh
-     commit can 404 on the CDN for a few minutes.
+     and template keys appear automatically, but always fall back, because a
+     fresh commit can 404 on the CDN for a few minutes.
 
      Unlike modules-page-embed.html, the branch URL is tried BEFORE the version
      pin. The anonymous GitHub API allows 60 requests an hour per IP, and when
-     that runs out `sha` is null — so whatever sits first here is what those
+     that runs out `sha` is null, so whatever sits first here is what those
      visitors get. This page needs window.UCDemo.templates and the Jinja
      evaluator, which a released tag only has once a release ships with them, so
      degrading to "latest main" beats degrading to "predates this page".
@@ -70,10 +71,9 @@
   <header class="uct-hero" id="uct-top">
     <div class="uct-hero-glow" aria-hidden="true"></div>
     <div class="uct-wrap">
-      <span class="uct-eyebrow"><i class="mdi mdi-code-braces"></i> Template Mode</span>
       <h1 class="uct-h1">Your card already knows.<br><span class="uct-grad-text">Let it show.</span></h1>
       <p class="uct-sub">A static module shows one icon, one colour, one number. Turn on Template&nbsp;Mode and a
-        short Jinja2 template decides those every time your entities change — so one module reports level,
+        short Jinja2 template decides those every time your entities change, so one module reports level,
         status and urgency at once. <b>Everything on this page is live</b>: the previews are the real Ultra Card
         modules, evaluating the real templates against a simulated home you can drive yourself.</p>
       <div class="uct-stats">
@@ -96,7 +96,7 @@
         <span class="uct-pill">Why bother?</span>
         <h2>The same module, twice.</h2>
         <p>On the left, a normal module. On the right, the identical module with one template added. Drag the
-          temperature and watch which one reacts — that difference is the whole feature.</p>
+          temperature and watch which one reacts. That difference is the whole feature.</p>
       </div>
 
       <div class="uct-sim uct-sim-inline" id="uct-why-sim">
@@ -119,7 +119,7 @@
         <span class="uct-pill uct-pill-live"><i class="mdi mdi-flask-outline"></i> Playground</span>
         <h2>Build one. Watch it run.</h2>
         <p>Pick where the template lives, build it with the form or write it by hand, and see the real module
-          render it. Nothing here is saved or sent anywhere — when it looks right, copy it into your card.</p>
+          render it. Nothing here is saved or sent anywhere. When it looks right, copy it into your card.</p>
       </div>
 
       <nav class="uct-scope-chips" id="uct-scope-chips" aria-label="Template scope"></nav>
@@ -188,7 +188,7 @@
 
           <div class="uct-out-card">
             <div class="uct-out-head"><i class="mdi mdi-file-code-outline"></i> What the template returned</div>
-            <pre class="uct-result" id="uct-result">—</pre>
+            <pre class="uct-result" id="uct-result">Waiting for the first render…</pre>
             <div class="uct-keys" id="uct-keys"></div>
           </div>
 
@@ -207,7 +207,7 @@
       <div class="uct-sec-head">
         <span class="uct-pill">Every place it works</span>
         <h2>Fourteen switches, one language.</h2>
-        <p>Template Mode is the same Jinja everywhere — only the properties you return change. Here is what each
+        <p>Template Mode is the same Jinja everywhere: only the properties you return change. Here is what each
           one controls and why you'd reach for it.</p>
       </div>
       <div class="uct-scope-grid" id="uct-scope-grid"></div>
@@ -228,7 +228,7 @@
         <div class="uct-ref-col">
           <h3 class="uct-ref-h"><i class="mdi mdi-import"></i> Context variables</h3>
           <p class="uct-ref-note">Available when the module is bound to an entity. Text, Markdown and QR
-            templates have no entity of their own — there, name it with <code>states('sensor.x')</code>.</p>
+            templates have no entity of their own, so name one with <code>states('sensor.x')</code> instead.</p>
           <div class="uct-field uct-field-inline">
             <label class="uct-field-label" for="uct-ref-entity">Resolving for</label>
             <select class="uct-select" id="uct-ref-entity"></select>
@@ -238,7 +238,7 @@
         <div class="uct-ref-col">
           <h3 class="uct-ref-h"><i class="mdi mdi-export"></i> Return properties</h3>
           <p class="uct-ref-note">Return a JSON object with any of these. Return a plain string instead and each
-            module interprets it sensibly — an icon name for Icon, body text for Text, an entity id for Camera.</p>
+            module interprets it sensibly: an icon name for Icon, body text for Text, an entity id for Camera.</p>
           <div class="uct-field uct-field-inline">
             <label class="uct-field-label" for="uct-ref-scope">For</label>
             <select class="uct-select" id="uct-ref-scope"></select>
@@ -269,8 +269,8 @@
         <article class="uct-note">
           <i class="mdi mdi-numeric"></i>
           <h3>Numbers and booleans go outside</h3>
-          <p>Values that aren't strings — <code>value</code>, <code>pie_fill</code>,
-            <code>card_border_radius</code>, <code>fill_area</code> — are emitted bare. Jinja prints
+          <p>Values that aren't strings (<code>value</code>, <code>pie_fill</code>,
+            <code>card_border_radius</code>, <code>fill_area</code>) are emitted bare. Jinja prints
             <code>True</code>, which looks wrong but is fine: Home Assistant evaluates the result as a Python
             literal before the card sees it.</p>
           <pre class="uct-note-code"><span class="uct-good">✓ "value": {{ state | float(0) }},
@@ -280,8 +280,8 @@
           <i class="mdi mdi-alphabetical-variant"></i>
           <h3><code>state</code> is an input, <code>state_text</code> is an output</h3>
           <p><code>{{ state }}</code> is the entity's value coming in. The property that sets the text a module
-            displays is <code>state_text</code>. Returning <code>state</code> also works — it's accepted as an
-            alias because everyone tries it — but the others have no such alias, so a typo just does nothing.
+            displays is <code>state_text</code>. Returning <code>state</code> also works (it's accepted as an
+            alias because everyone tries it), but the others have no such alias, so a typo just does nothing.
             Unknown keys are flagged under the editor.</p>
         </article>
         <article class="uct-note">
@@ -297,7 +297,7 @@
           <p>Home Assistant watches the entities your template mentions and re-renders only when they change.
             Reading <code>states('sensor.x')</code> lets it track that for you. The snapshot variables
             (<code>state</code>, <code>attributes</code>) are handed in per render instead, so Ultra Card has to
-            resubscribe when they move — correct either way, but <code>states()</code> is the lighter path for
+            resubscribe when they move. Both are correct, but <code>states()</code> is the lighter path for
             wall tablets.</p>
         </article>
         <article class="uct-note">
@@ -315,7 +315,7 @@
   <section class="uct-cta">
     <div class="uct-wrap uct-cta-in">
       <h2>Templates are free. All of them.</h2>
-      <p>Template Mode ships with Ultra Card — no subscription, no account. Install from HACS and the same
+      <p>Template Mode ships with Ultra Card: no subscription, no account. Install from HACS and the same
         cheatsheet you just used is a click away inside every module editor.</p>
       <div class="uct-hero-ctas">
         <a class="uct-btn uct-btn-blue" href="https://github.com/WJDDesigns/Ultra-Card" target="_blank" rel="noopener"><i class="mdi mdi-github"></i> Get Ultra Card free</a>
@@ -335,13 +335,18 @@
 .uct h1,.uct h2,.uct h3{margin:0;color:#fff;line-height:1.15}.uct p{margin:0}.uct a{text-decoration:none;color:inherit}
 .uct button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .uct input,.uct select,.uct textarea{font-family:inherit}
-.uct b{color:#fff}.uct code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.uct b{color:#fff}
+/* Inline code chips set their own colours everywhere, not just in the places
+   that happen to look wrong: the WordPress theme ships a light-mode `code`
+   style whose dark text is invisible against this page, and it wins anywhere
+   we only declare a font. */
+.uct code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.925em;background:rgba(41,182,246,.12);color:#9ddcff;border-radius:4px;padding:1px 5px}
+.uct pre code{background:none;color:inherit;padding:0;border-radius:0;font-size:inherit}
 .uct :target{scroll-margin-top:var(--uct-header-offset)}
 
 /* ---------- hero ---------- */
-.uct-hero{position:relative;padding:calc(var(--uct-header-offset,96px) + 44px) 0 52px;text-align:center;overflow:hidden}
+.uct-hero{position:relative;padding:calc(var(--uct-header-offset,96px) + 72px) 0 52px;text-align:center;overflow:hidden}
 .uct-hero-glow{position:absolute;inset:-40% -20% auto;height:130%;pointer-events:none;background:radial-gradient(45% 60% at 28% 20%,rgba(41,182,246,.26),transparent 70%),radial-gradient(45% 60% at 72% 14%,rgba(128,23,162,.36),transparent 70%),radial-gradient(30% 40% at 55% 46%,rgba(255,45,120,.12),transparent 70%)}
-.uct-eyebrow{position:relative;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#6fd4ff;border:1px solid rgba(41,182,246,.35);background:rgba(41,182,246,.1);border-radius:999px;padding:6px 14px;margin-bottom:20px}
 .uct-h1{position:relative;font-size:clamp(38px,6vw,68px);font-weight:800;margin:0 0 18px;letter-spacing:-.02em}
 .uct-grad-text{background:linear-gradient(92deg,var(--uc-blue),#b44ce0 55%,var(--uc-pink));-webkit-background-clip:text;background-clip:text;color:transparent}
 .uct .uct-sub{position:relative;max-width:760px;margin:0 auto;color:var(--uc-dim);font-size:17px;text-align:center}
@@ -502,7 +507,7 @@
 .uct-ref-h{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;margin-bottom:10px}
 .uct-ref-h .mdi{color:var(--uc-blue)}
 .uct-ref-note{font-size:13.5px;color:var(--uc-dim);margin-bottom:16px}
-.uct-ref-note code,.uct-note p code{font-size:12.5px;background:rgba(41,182,246,.12);color:#9ddcff;border-radius:4px;padding:1px 5px}
+.uct-ref-note code,.uct-note p code{font-size:12.5px}
 .uct-table{width:100%;border-collapse:collapse;font-size:13px}
 .uct-table td{padding:9px 10px;border-top:1px solid var(--uc-line);vertical-align:top}
 .uct-table tr:first-child td{border-top:0}
@@ -520,9 +525,9 @@
 .uct-note{border:1px solid var(--uc-line);border-radius:18px;background:var(--uc-card);padding:22px}
 .uct-note>.mdi{font-size:22px;color:var(--uc-gold);background:rgba(255,194,51,.12);border-radius:11px;padding:9px;line-height:1;display:inline-block;margin-bottom:14px}
 .uct-note h3{font-size:17px;font-weight:700;margin-bottom:9px}
-.uct-note h3 code{font-size:14.5px;color:#9ddcff}
+.uct-note h3 code{font-size:14.5px}
 .uct-note p{font-size:14px;color:var(--uc-dim)}
-.uct-note-code{margin:13px 0 0;padding:12px 13px;border-radius:10px;background:#0c0f14;border:1px solid var(--uc-line);overflow:auto;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre}
+.uct-note-code{margin:13px 0 0;padding:12px 13px;border-radius:10px;background:#0c0f14;color:#d9e2ee;border:1px solid var(--uc-line);overflow:auto;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre}
 .uct-bad{color:#ffb4c8}.uct-good{color:#8ef0b0}
 
 /* ---------- cta ---------- */
@@ -578,7 +583,7 @@
       var ta = document.createElement('textarea');
       ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
       document.body.appendChild(ta); ta.select();
-      try{ document.execCommand('copy'); done(); }catch(e){ toast('Could not copy — select it manually'); }
+      try{ document.execCommand('copy'); done(); }catch(e){ toast('Could not copy. Select it manually'); }
       document.body.removeChild(ta);
     }
   }
@@ -592,9 +597,9 @@
   }
 
   /* ═══════════════════ the home we simulate ═══════════════════
-     Deliberately entities the demo bundle's ambient loop leaves alone, so a
-     visitor's slider is never fighting the animation. */
-  var SIM = [
+     Fallback copies for older pinned bundles that predate
+     UCDemo.templates.playground. Prefer the live bundle data. */
+  var LEGACY_SIM = [
     { id:'sensor.temperature', label:'sensor.temperature', icon:'mdi:thermometer', kind:'range', min:-5, max:42, step:.5, unit:' °C' },
     { id:'sensor.battery',     label:'sensor.battery',     icon:'mdi:battery-60',  kind:'range', min:0,  max:100, step:1, unit:' %' },
     { id:'sensor.humidity',    label:'sensor.humidity',    icon:'mdi:water-percent', kind:'range', min:0, max:100, step:1, unit:' %' },
@@ -611,33 +616,33 @@
      switching source produces a template that reads sensibly for that quantity
      rather than temperature wording on a battery. Order is always
      [ high branch, low branch, otherwise ]. */
-  var SOURCES = [
-    { id:'sensor.temperature', label:'sensor.temperature — a number in °C', numeric:true,
+  var LEGACY_SOURCES = [
+    { id:'sensor.temperature', label:'sensor.temperature (a number in °C)', numeric:true,
       high:28, low:12,
       words:['Too warm','Too cold','Comfortable'],
       colors:['#ff4444','#2196f3','#4ade80'],
       icons:['mdi:fire','mdi:snowflake','mdi:thermometer'] },
-    { id:'sensor.battery', label:'sensor.battery — a percentage', numeric:true,
+    { id:'sensor.battery', label:'sensor.battery (a percentage)', numeric:true,
       high:80, low:20,
       words:['Charged','Low battery','OK'],
       colors:['#4ade80','#ff4444','#ffa726'],
       icons:['mdi:battery','mdi:battery-alert','mdi:battery-50'] },
-    { id:'sensor.humidity', label:'sensor.humidity — a percentage', numeric:true,
+    { id:'sensor.humidity', label:'sensor.humidity (a percentage)', numeric:true,
       high:65, low:35,
       words:['Humid','Dry','Comfortable'],
       colors:['#2196f3','#ffa726','#4ade80'],
       icons:['mdi:water','mdi:water-off','mdi:water-check'] },
-    { id:'binary_sensor.door', label:'binary_sensor.door — on / off', numeric:false,
+    { id:'binary_sensor.door', label:'binary_sensor.door (on / off)', numeric:false,
       match:'on',
       words:['Open','Closed'],
       colors:['#ff4444','#4ade80'],
       icons:['mdi:door-open','mdi:door-closed'] },
-    { id:'sensor.day_period', label:'sensor.day_period — night / morning / …', numeric:false,
+    { id:'sensor.day_period', label:'sensor.day_period (night / morning / …)', numeric:false,
       match:'night',
       words:['Night','Daytime'],
       colors:['#7c4dff','#ffa726'],
       icons:['mdi:weather-night','mdi:weather-sunny'] },
-    { id:'weather.home', label:'weather.home — a condition', numeric:false,
+    { id:'weather.home', label:'weather.home (a condition)', numeric:false,
       match:'sunny',
       words:['Sunny','Not sunny'],
       colors:['#ffa726','#8d97a8'],
@@ -650,7 +655,7 @@
   var COMMON = {
     patch: function(tpl){ return { unified_template_mode:true, unified_template:tpl }; }
   };
-  var SETUP = {
+  var LEGACY_SETUP = {
     icon: {
       entity:'sensor.temperature',
       bind:function(m, entity){
@@ -696,7 +701,7 @@
     },
     spinbox: { entity:'sensor.temperature', bind:function(m){ m.value = 22; m.min_value = 5; m.max_value = 35; }, patch:COMMON.patch },
     /* A camera's own state is "idle"/"recording", so thresholding it teaches
-       nothing. The builder names a sensor instead — valid in any scope. */
+       nothing. The builder names a sensor instead, which is valid in any scope. */
     camera: {
       entity:'camera.front_door', readFrom:'named',
       bind:function(m, entity){ m.entity = entity; m.camera_name = 'Front Door'; },
@@ -724,7 +729,7 @@
   };
 
   /* Seed templates for the builder, by scope. Keys the builder can drive. */
-  var BUILDER_KEYS = {
+  var LEGACY_BUILDER_KEYS = {
     icon:['icon','icon_color','state_text','name_color'],
     info:['icon','icon_color','state_text','name','state_color','container_background_color'],
     text:['content','color','icon','icon_color'],
@@ -740,14 +745,45 @@
     layout:['visible'],
     card:['card_background','card_border_color']
   };
+  var SIM = LEGACY_SIM.slice();
+  var SOURCES = LEGACY_SOURCES.slice();
+  var SETUP = Object.assign({}, LEGACY_SETUP);
+  var BUILDER_KEYS = Object.assign({}, LEGACY_BUILDER_KEYS);
+
+  /* Prefer live bundle playground + per-scope demo wiring; fall back to the
+     LEGACY_* tables so older pinned bundles still render a playground. */
+  function rebuildPlaygroundFromBundle(){
+    var live = ((D && D.templates) || {}).playground || {};
+    if(Array.isArray(live.sim) && live.sim.length) SIM = live.sim.slice();
+    else SIM = LEGACY_SIM.slice();
+    if(Array.isArray(live.sources) && live.sources.length) SOURCES = live.sources.slice();
+    else SOURCES = LEGACY_SOURCES.slice();
+    SETUP = Object.assign({}, LEGACY_SETUP);
+    BUILDER_KEYS = Object.assign({}, LEGACY_BUILDER_KEYS);
+    SCOPES.forEach(function(s){
+      if(!s || !s.demo) return;
+      SETUP[s.id] = {
+        entity: s.demo.entity || '',
+        bind: s.demo.bind,
+        patch: s.demo.patch,
+        readFrom: s.demo.readFrom,
+        preview: s.demo.preview,
+        demoType: s.demoType
+      };
+      if(Array.isArray(s.demo.builderKeys) && s.demo.builderKeys.length){
+        BUILDER_KEYS[s.id] = s.demo.builderKeys.slice();
+      }
+    });
+  }
+
   /* Properties emitted unquoted, because JSON wants a real number/boolean. */
   var RAW_KEYS = { value:1, value_min:1, value_max:1, pie_fill:1, fill_area:1, visible:1, card_border_radius:1, card_border_width:1, card_padding:1, card_shadow_enabled:1 };
   /* Properties the bar/gauge need alongside colours so the preview has a value. */
   var VALUE_KEY = { bar:'value', gauge:'value' };
 
   /* Branch defaults for keys the source table doesn't describe. Order matches the
-     rules: [ high branch, low branch, otherwise ] — the last entry is always the
-     {% else %}, including on two-branch chains. */
+     rules: [ high branch, low branch, otherwise ], where the last entry is always
+     the {% else %}, including on two-branch chains. */
   var DEFAULT_OUT = {
     name_color:['#ffffff','#ffffff','#9aa3b2'],
     button_text_color:['#ffffff'],
@@ -777,7 +813,7 @@
   function noLive(){
     root.classList.add('is-nolive');
     var r = el('uct-result');
-    if(r) r.textContent = 'Live preview unavailable — the demo bundle did not load. The templates and reference below are still accurate.';
+    if(r) r.textContent = 'Live preview unavailable: the demo bundle did not load. The templates and reference below are still accurate.';
   }
 
   var booted = false;
@@ -790,6 +826,7 @@
     RET = t.returnProperties || [];
     EX = t.examples || {};
     if(!SCOPES.length){ noLive(); return; }
+    rebuildPlaygroundFromBundle();
     initStats();
     initWhy();
     initScopeChips();
@@ -835,7 +872,7 @@
       scope:'text', title:'A sentence instead of a number',
       lede:'Same text module. Text modules have no entity of their own, so the template names one.',
       staticNote:'Whatever you typed, forever.',
-      tplNote:'Reads two sensors and writes the summary — with its own icon and colour.',
+      tplNote:'Reads two sensors and writes the summary, with its own icon and colour.',
       tpl:"{% set t = states('sensor.temperature') | float(0) %}\n{% set h = states('sensor.humidity') | float(0) %}\n{\n  \"content\": \"{{ t }}°C · {{ h }}% humidity\",\n  \"icon\": \"{% if t > 28 %}mdi:fire{% elif t < 12 %}mdi:snowflake{% else %}mdi:thermometer{% endif %}\",\n  \"icon_color\": \"{% if t > 28 %}#ff4444{% elif t < 12 %}#2196f3{% else %}#4ade80{% endif %}\",\n  \"color\": \"{% if t > 28 %}#ff4444{% else %}#eef1f6{% endif %}\"\n}"
     }
   ];
@@ -994,7 +1031,7 @@
     root.querySelectorAll('[data-scope]').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-scope') === id); });
 
     // Builder defaults: entity-context scopes read `state`, the others must name
-    // an entity — so both paths start from a source the visitor can change.
+    // an entity, so both paths start from a source the visitor can change.
     pg.entity = setup.entity && SOURCES.some(function(s){ return s.id === setup.entity; }) ? setup.entity : 'sensor.temperature';
     el('uct-b-entity').value = pg.entity;
     pg.keys = (BUILDER_KEYS[id] || []).slice(0, 2);
@@ -1002,9 +1039,9 @@
 
     el('uct-builder-intro').innerHTML = esc(scope.why);
     el('uct-b-entity-hint').innerHTML = usesStateVar(id)
-      ? 'This module is bound to an entity, so the builder writes <code>{{ state }}</code> — the template travels with whatever entity you point the module at.'
+      ? 'This module is bound to an entity, so the builder writes <code>{{ state }}</code>. The template travels with whatever entity you point the module at.'
       : scope.entityContext
-        ? '<b>' + esc(scope.label) + '</b> is bound to an entity, but its own state is not a useful threshold — so the builder reads a sensor by name with <code>states(\'…\')</code>. <code>{{ state }}</code> still works here.'
+        ? '<b>' + esc(scope.label) + '</b> is bound to an entity, but its own state is not a useful threshold, so the builder reads a sensor by name with <code>states(\'…\')</code>. <code>{{ state }}</code> still works here.'
         : '<b>' + esc(scope.label) + '</b> templates get no entity context, so the builder names the entity with <code>states(\'…\')</code>.';
     el('uct-code-target').textContent = setup.preview === 'card' ? 'card_unified_template' : 'unified_template';
     el('uct-out-type').textContent = setup.preview ? scope.where : (setup.demoType || id) + ' module';
@@ -1047,7 +1084,7 @@
   }
 
   /* Keys whose default should follow the chosen source rather than the generic
-     table — a battery reads "Charged / Low battery / OK", not "Too warm". */
+     table: a battery reads "Charged / Low battery / OK", not "Too warm". */
   var WORD_KEYS = { state_text:1, name:1, label:1, content:1, overlay_text:1 };
   var SOURCE_COLOR_KEYS = {
     icon_color:1, color:1, state_color:1, value_color:1,
@@ -1139,7 +1176,7 @@
     keysHost.innerHTML = available.map(function(k){
       return '<button type="button" class="uct-key-toggle' + (pg.keys.indexOf(k) !== -1 ? ' on' : '') + '" data-key="' + esc(k) + '">'
         + '<i class="mdi ' + (pg.keys.indexOf(k) !== -1 ? 'mdi-check' : 'mdi-plus') + '"></i>' + esc(k) + '</button>';
-    }).join('') || '<span class="uct-field-hint">This scope has a single output — edit it on the Template tab.</span>';
+    }).join('') || '<span class="uct-field-hint">This scope has a single output. Edit it on the Template tab.</span>';
 
     keysHost.onclick = function(e){
       var btn = e.target.closest('[data-key]');
@@ -1234,7 +1271,7 @@
     var scope = scopeById(pg.scope);
     el('uct-insert-vars').innerHTML = scope.entityContext
       ? CTX.map(function(v){ return '<button type="button" class="uct-ins" data-ins="' + esc(v.snippet) + '" title="' + esc(v.description) + '">' + esc(v.key) + '</button>'; }).join('')
-      : '<span class="uct-field-hint">No entity context here — insert <code>states(\'sensor.temperature\')</code> instead.</span>'
+      : '<span class="uct-field-hint">No entity context here, so insert <code>states(\'sensor.temperature\')</code> instead.</span>'
         + '<button type="button" class="uct-ins" data-ins="{{ states(\'sensor.temperature\') }}">states()</button>'
         + '<button type="button" class="uct-ins" data-ins="{{ state_attr(\'climate.home\', \'temperature\') }}">state_attr()</button>'
         + '<button type="button" class="uct-ins" data-ins="{{ is_state(\'binary_sensor.door\', \'on\') }}">is_state()</button>';
@@ -1271,7 +1308,7 @@
         + '<button type="button" class="uct-btn uct-btn-ghost uct-btn-xs" data-load="' + i + '"><i class="mdi mdi-play"></i> Run it</button>'
         + '<button type="button" class="uct-btn uct-btn-ghost uct-btn-xs" data-copy="' + i + '"><i class="mdi mdi-content-copy"></i> Copy</button>'
         + '</span></div><pre>' + esc(ex.code) + '</pre></div>';
-    }).join('') || '<p class="uct-field-hint">No packaged example for this one yet — the builder is a good starting point.</p>';
+    }).join('') || '<p class="uct-field-hint">No packaged example for this one yet. The builder is a good starting point.</p>';
 
     el('uct-examples').onclick = function(e){
       var load = e.target.closest('[data-load]');
@@ -1312,7 +1349,7 @@
   }
 
   function layoutPreviewHtml(){
-    return '<div class="uct-stage"><div class="uct-stage-static" style="border:1px dashed rgba(255,255,255,.14);border-radius:10px;padding:10px 12px;font-size:12.5px;color:#8d97a8;margin-bottom:10px">Row 1 — always visible</div>'
+    return '<div class="uct-stage"><div class="uct-stage-static" style="border:1px dashed rgba(255,255,255,.14);border-radius:10px;padding:10px 12px;font-size:12.5px;color:#8d97a8;margin-bottom:10px">Row 1 (always visible)</div>'
       + '<div id="uct-stage-wrap" style="border:1px solid rgba(41,182,246,.35);border-radius:10px;padding:8px"><div class="uct-frame" id="uct-stage-row" style="min-height:0;border:0;background:transparent;padding:0"></div></div>'
       + '<p class="uct-sim-hint" id="uct-stage-note" style="margin-top:10px"></p></div>';
   }
@@ -1381,7 +1418,7 @@
         ? (value.visible !== undefined ? value.visible : (value.active !== undefined ? value.active : true))
         : String(value).trim() === 'true';
       wrap.style.display = visible ? '' : 'none';
-      if(note) note.textContent = visible ? 'Row 2 is visible — the template returned true.' : 'Row 2 is hidden — the template returned false.';
+      if(note) note.textContent = visible ? 'Row 2 is visible: the template returned true.' : 'Row 2 is hidden: the template returned false.';
       return;
     }
     if(setup.preview === 'card'){
@@ -1534,7 +1571,7 @@
     var ctx = D.entityContext(sel.value) || {};
     el('uct-var-table').querySelector('tbody').innerHTML = CTX.map(function(v){
       var raw = ctx[v.key];
-      var shown = raw === undefined ? '—' : (typeof raw === 'object' ? JSON.stringify(raw) : String(raw));
+      var shown = raw === undefined ? 'not set' : (typeof raw === 'object' ? JSON.stringify(raw) : String(raw));
       if(shown.length > 60) shown = shown.slice(0, 57) + '…';
       return '<tr><td class="uct-td-key"><code class="uct-k">' + esc(v.key) + '</code></td>'
         + '<td class="uct-td-desc">' + esc(v.description) + '<div class="uct-td-type">' + esc(v.type) + '</div></td>'
