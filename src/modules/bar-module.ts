@@ -4222,8 +4222,11 @@ export class UltraBarModule extends BaseUltraModule {
     }
 
     let leftDisplay = '';
-    if (barModule.unified_template_mode && unifiedBarLeftLabel) {
-      leftDisplay = unifiedBarLeftLabel;
+    // "label" is the documented shorthand for the left label; an explicit
+    // left_label wins when a template returns both.
+    const templateLeftLabel = unifiedBarLeftLabel || (barLabel ? String(barLabel).trim() : '');
+    if (barModule.unified_template_mode && templateLeftLabel) {
+      leftDisplay = templateLeftLabel;
     } else if (barModule.left_entity && hass?.states[barModule.left_entity]) {
       const leftState = hass.states[barModule.left_entity];
       try {

@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  Local harness for the page embeds. Not part of the WordPress paste — it only
+  wraps an embed in a minimal page and points the demo bundle at the local
+  dist-demo build so previews work offline.
+
+    npm run build:demo
+    npx http-server -p 8765 -c-1 .
+    open http://127.0.0.1:8765/website/_local-preview.html?p=template-mode-page-embed.html
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ultra Card embed — local preview</title>
+<style>
+  html,body{margin:0;background:#0e1015;color:#eef1f6;font-family:'Open Sans',system-ui,sans-serif}
+  /* Stand in for the Impreza theme's fixed header offset. */
+  #shell{--uct-header-offset:0px}
+  #err{display:none;padding:20px;color:#ffb4c8;font:13px ui-monospace,monospace;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<div id="err"></div>
+<div id="shell">Loading embed…</div>
+<script>
+window.UCM_BUNDLE_SRC = '../dist-demo/ultra-card-demo.js';
+window.addEventListener('error', function(e){
+  var box = document.getElementById('err');
+  box.style.display = 'block';
+  box.textContent += 'ERROR: ' + (e.message || e.type) + '\n  at ' + (e.filename || '?') + ':' + (e.lineno || '?') + '\n';
+});
+(async function(){
+  var page = new URLSearchParams(location.search).get('p') || 'template-mode-page-embed.html';
+  var html = await (await fetch(page, { cache:'no-store' })).text();
+  var shell = document.getElementById('shell');
+  shell.innerHTML = html;
+  // innerHTML never executes <script>, so re-create each one in order.
+  var scripts = Array.prototype.slice.call(shell.querySelectorAll('script'));
+  for(var i = 0; i < scripts.length; i++){
+    var old = scripts[i];
+    var s = document.createElement('script');
+    if(old.src) { s.src = old.src; }
+    else { s.textContent = old.textContent; }
+    old.parentNode.replaceChild(s, old);
+    if(old.src) await new Promise(function(r){ s.onload = s.onerror = r; });
+  }
+})();
+</script>
+</body>
+</html>

@@ -12,6 +12,14 @@ import { render, html, TemplateResult } from 'lit';
 import { getMdiSheet } from './ha-shims';
 import { getModuleRegistry } from '../modules';
 import { createDemoHass } from './demo-hass';
+import { renderTemplate as renderDemoTemplate } from './demo-jinja';
+import { buildEntityContext } from '../utils/template-context';
+import {
+  CONTEXT_VARIABLES,
+  EXAMPLE_TEMPLATES,
+  RETURN_PROPERTIES,
+  TEMPLATE_SCOPES,
+} from '../components/uc-template-cheatsheet-data';
 import { VERSION } from '../version';
 
 const registry = getModuleRegistry();
@@ -340,9 +348,12 @@ const DEMO_TWEAKS: Record<string, (cfg: any) => void> = {
       'ucd_unifi_gw',
       'ucd_unifi_sw_hd24',
       'ucd_unifi_sw_e8',
+      'ucd_unifi_nvr',
       'ucd_unifi_ap_max2',
       'ucd_unifi_ap_maxb',
       'ucd_unifi_ap_wall',
+      'ucd_unifi_cam_drive',
+      'ucd_unifi_cam_door',
     ];
     c.setup_dismissed = true;
     c.include_clients = true;
@@ -939,6 +950,33 @@ function injectPortalThemeVars(): void {
   document.head.appendChild(style);
 }
 
+/**
+ * Merge a config patch into a live module config. Arrays merge element-wise by
+ * index so a patch can reach into `icons[0]` or `info_entities[0]` — which is
+ * where those modules keep their per-item template.
+ */
+function deepPatch(target: any, patch: any): void {
+  if (!target || !patch || typeof patch !== 'object') return;
+  for (const [key, value] of Object.entries(patch)) {
+    if (Array.isArray(value)) {
+      if (!Array.isArray(target[key])) target[key] = [];
+      value.forEach((item, i) => {
+        if (item && typeof item === 'object' && !Array.isArray(item)) {
+          if (!target[key][i] || typeof target[key][i] !== 'object') target[key][i] = {};
+          deepPatch(target[key][i], item);
+        } else {
+          target[key][i] = item;
+        }
+      });
+    } else if (value && typeof value === 'object') {
+      if (!target[key] || typeof target[key] !== 'object') target[key] = {};
+      deepPatch(target[key], value);
+    } else {
+      target[key] = value;
+    }
+  }
+}
+
 class UcModuleDemo extends HTMLElement {
   static get observedAttributes() {
     return ['type'];
@@ -954,6 +992,46 @@ class UcModuleDemo extends HTMLElement {
   private _visible = false;
   private _vio?: IntersectionObserver;
   private _tplListener = () => this._scheduleRender();
+  private _patch?: Record<string, any> | undefined;
+  private _configure?: ((mod: any) => void) | undefined;
+  private _styleEl?: HTMLStyleElement;
+
+  /**
+   * Extra config merged over the module's demo default. The Template Mode
+   * playground uses this to switch `unified_template_mode` on and feed the
+   * template the visitor is editing.
+   *
+   * Arrays merge element-wise by index, so a patch can reach `icons[0]` without
+   * restating the rest of the item. To restructure a config — replacing an array
+   * outright, say — use `configure` instead.
+   */
+  set config(patch: Record<string, any> | undefined) {
+    this._patch = patch;
+    if (this._module && patch) {
+      deepPatch(this._module, patch);
+      this._staticDone = false;
+      this._renderNow();
+    }
+  }
+
+  get config(): Record<string, any> | undefined {
+    return this._patch;
+  }
+
+  /**
+   * Shape the whole config after the demo defaults are applied. Runs on every
+   * boot and receives the live config to mutate, so a page can replace arrays
+   * or derive items from the defaults.
+   */
+  set configure(fn: ((mod: any) => void) | undefined) {
+    this._configure = fn;
+    if (this._module) this._boot();
+  }
+
+  /** The resolved module config, for pages that want to show the YAML. */
+  get moduleConfig(): any {
+    return this._module;
+  }
 
   constructor() {
     super();
@@ -1032,27 +1110,38 @@ class UcModuleDemo extends HTMLElement {
 
       const mod = handler.createDefault(`demo_${type}`, demoHass);
       DEMO_TWEAKS[type]?.(mod);
+      if (this._patch) deepPatch(mod, this._patch);
+      this._configure?.(mod);
       this._module = mod;
 
       // Real per-module styles from the module implementation itself.
       const styles = (handler.getStyles?.() || '') + '\n' + registry.getAllModuleStyles();
-      const styleEl = document.createElement('style');
-      styleEl.textContent = styles;
-      this._root.appendChild(styleEl);
+      // Reuse one style element: `configure` can re-boot, and a fresh element
+      // per boot would pile up thousands of identical sheets in the playground.
+      if (!this._styleEl) {
+        this._styleEl = document.createElement('style');
+        this._root.appendChild(this._styleEl);
+      }
+      this._styleEl.textContent = styles;
 
       this._unsub?.();
       this._unsub = demoHass.__subscribe(() => this._scheduleRender());
       this._renderNow();
 
+      // The Template Mode playground opts out: staging and the config animators
+      // rewrite the very fields a template is supposed to be driving (the text
+      // typewriter, the spinbox value), which reads as the template flickering.
+      const ambient = !this.hasAttribute('no-animate');
+
       const stage = DEMO_STAGE[type];
-      if (stage) setTimeout(() => { try { stage(this._holder, this); } catch (e) { /* staging is best-effort */ } }, 400);
+      if (stage && ambient) setTimeout(() => { try { stage(this._holder, this); } catch (e) { /* staging is best-effort */ } }, 400);
 
       // Wall-clock modules tick every second so the time is always real.
       if (TIME_MODULES.has(type)) this._addTimer(setInterval(() => this._scheduleRender(), 1000));
 
       // Config-level animators (typewriter text, stepper values, ...).
       const animate = DEMO_ANIMATE[type];
-      if (animate) setTimeout(() => { try { animate(this); } catch (e) { /* best-effort */ } }, 500);
+      if (animate && ambient) setTimeout(() => { try { animate(this); } catch (e) { /* best-effort */ } }, 500);
     } catch (err) {
       this._holder.innerHTML = `<div class="ucd-error">Preview unavailable — see this module live on your own dashboard.</div>`;
       // eslint-disable-next-line no-console
@@ -1368,4 +1457,32 @@ if (!customElements.get('uc-module-demo')) {
   registry,
   lit: { render, html },
   types: () => registry.getAllModuleMetadata(),
+
+  /**
+   * Template Mode reference data — the same arrays that drive the in-app
+   * Template Cheatsheet, so the website page cannot drift from the card.
+   */
+  templates: {
+    contextVariables: CONTEXT_VARIABLES,
+    returnProperties: RETURN_PROPERTIES,
+    examples: EXAMPLE_TEMPLATES,
+    scopes: TEMPLATE_SCOPES,
+  },
+
+  /** Render a template the way the demo websocket does (Jinja + literal_eval). */
+  renderTemplate: (template: string, variables?: Record<string, any>) =>
+    renderDemoTemplate(template, demoHass, variables || {}),
+
+  /** The context variables a module bound to `entityId` would receive. */
+  entityContext: (entityId: string, config?: any) =>
+    buildEntityContext(entityId, demoHass as any, config),
+
+  /** Drive a demo entity, e.g. from a playground slider. */
+  setState: (entityId: string, state: string, attributes?: Record<string, any>) =>
+    demoHass.__setState(entityId, state, attributes),
+
+  /** Called on every demo state change. Returns an unsubscribe function. */
+  subscribe: (listener: () => void) => demoHass.__subscribe(listener),
 };
+
+window.dispatchEvent(new CustomEvent('uc-demo-ready'));

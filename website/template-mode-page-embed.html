@@ -1,0 +1,1556 @@
+<!--
+  Ultra Card — Template Mode page embed (modules/presets-page twin).
+  Paste everything below into the WPBakery Raw HTML element on
+  ultracard.io/template-mode.
+
+  Unlike the modules and presets pages, nothing here is a screenshot: the demo
+  bundle ships a Jinja interpreter for the fake `hass`, so the previews below are
+  the real module code evaluating real templates. All reference data (context
+  variables, return properties, examples, per-scope copy) is read from
+  window.UCDemo.templates, which is generated from the same source as the in-app
+  Template Cheatsheet — so this page gains new modules and keys automatically and
+  can never drift from the card.
+
+  Local testing:
+    npm run build:demo
+    npx http-server -p 8765 -c-1 .
+    open http://127.0.0.1:8765/website/template-mode-page-embed.html
+  (set window.UCM_BUNDLE_SRC before this file to point at a local bundle)
+-->
+<script>
+(async function(){
+  /* Demo bundle is ~10MB on jsDelivr. Prefer the latest main SHA so new modules
+     and template keys appear automatically, but always fall back — a fresh
+     commit can 404 on the CDN for a few minutes.
+
+     Unlike modules-page-embed.html, the branch URL is tried BEFORE the version
+     pin. The anonymous GitHub API allows 60 requests an hour per IP, and when
+     that runs out `sha` is null — so whatever sits first here is what those
+     visitors get. This page needs window.UCDemo.templates and the Jinja
+     evaluator, which a released tag only has once a release ships with them, so
+     degrading to "latest main" beats degrading to "predates this page".
+     The pin stays last as a genuine last resort. */
+  var urls=[];
+  if(window.UCM_BUNDLE_SRC){ urls.push(window.UCM_BUNDLE_SRC); }
+  else {
+    var sha=null;
+    try{
+      var r=await fetch('https://api.github.com/repos/WJDDesigns/Ultra-Card/commits/main',{headers:{Accept:'application/vnd.github+json'}});
+      if(r.ok){sha=(await r.json()).sha;}
+    }catch(e){}
+    if(sha) urls.push('https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@'+sha+'/dist-demo/ultra-card-demo.js');
+    urls.push('https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@main/dist-demo/ultra-card-demo.js?h='+Math.floor(Date.now()/3600000));
+    urls.push('https://cdn.jsdelivr.net/gh/WJDDesigns/Ultra-Card@v3.7.0/dist-demo/ultra-card-demo.js');
+  }
+  function load(i){
+    if(i>=urls.length) return;
+    var s=document.createElement('script');
+    s.src=urls[i];
+    s.onerror=function(){ try{s.remove();}catch(e){} load(i+1); };
+    document.head.appendChild(s);
+  }
+  load(0);
+})();
+</script>
+<style>
+/* Full-bleed + neutralize Impreza section padding. These two theme selectors are
+   unscoped because the block only loads on this page; if the Template Mode page
+   ever shares a template with others, prefix them with its .page-id-N class the
+   way modules-page-embed.html does. */
+.uct{margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}
+.l-section.wpb_row{padding-top:0!important;padding-bottom:0!important}
+.l-main{background:#0e1015}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+
+<!-- ======================= UCT:EMBED-START ======================= -->
+<div class="uct" id="uct">
+
+  <!-- ================= HERO ================= -->
+  <header class="uct-hero" id="uct-top">
+    <div class="uct-hero-glow" aria-hidden="true"></div>
+    <div class="uct-wrap">
+      <span class="uct-eyebrow"><i class="mdi mdi-code-braces"></i> Template Mode</span>
+      <h1 class="uct-h1">Your card already knows.<br><span class="uct-grad-text">Let it show.</span></h1>
+      <p class="uct-sub">A static module shows one icon, one colour, one number. Turn on Template&nbsp;Mode and a
+        short Jinja2 template decides those every time your entities change — so one module reports level,
+        status and urgency at once. <b>Everything on this page is live</b>: the previews are the real Ultra Card
+        modules, evaluating the real templates against a simulated home you can drive yourself.</p>
+      <div class="uct-stats">
+        <div class="uct-stat"><b data-stat="scopes">14</b><span>Places to use them</span></div>
+        <div class="uct-stat"><b data-stat="vars">11</b><span>Context variables</span></div>
+        <div class="uct-stat"><b data-stat="props">43</b><span>Return properties</span></div>
+        <div class="uct-stat uct-stat-live"><b data-stat="examples">34</b><span>Worked examples</span></div>
+      </div>
+      <div class="uct-hero-ctas">
+        <a class="uct-btn uct-btn-blue" href="#uct-play"><i class="mdi mdi-flask-outline"></i> Open the playground</a>
+        <a class="uct-btn uct-btn-ghost" href="#uct-scopes"><i class="mdi mdi-view-grid-outline"></i> Browse by module</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= WHY ================= -->
+  <section class="uct-section" id="uct-why">
+    <div class="uct-wrap">
+      <div class="uct-sec-head">
+        <span class="uct-pill">Why bother?</span>
+        <h2>The same module, twice.</h2>
+        <p>On the left, a normal module. On the right, the identical module with one template added. Drag the
+          temperature and watch which one reacts — that difference is the whole feature.</p>
+      </div>
+
+      <div class="uct-sim uct-sim-inline" id="uct-why-sim">
+        <label class="uct-sim-row">
+          <span class="uct-sim-label"><i class="mdi mdi-thermometer"></i> sensor.temperature</span>
+          <input type="range" min="-5" max="42" step="0.5" value="31.5" id="uct-why-temp">
+          <output class="uct-sim-out" id="uct-why-temp-out">31.5 °C</output>
+        </label>
+        <p class="uct-sim-hint">This drives the demo entity, exactly like a real sensor reporting a new value.</p>
+      </div>
+
+      <div class="uct-why-grid" id="uct-why-grid"></div>
+    </div>
+  </section>
+
+  <!-- ================= PLAYGROUND ================= -->
+  <section class="uct-section uct-section-alt" id="uct-play">
+    <div class="uct-wrap">
+      <div class="uct-sec-head">
+        <span class="uct-pill uct-pill-live"><i class="mdi mdi-flask-outline"></i> Playground</span>
+        <h2>Build one. Watch it run.</h2>
+        <p>Pick where the template lives, build it with the form or write it by hand, and see the real module
+          render it. Nothing here is saved or sent anywhere — when it looks right, copy it into your card.</p>
+      </div>
+
+      <nav class="uct-scope-chips" id="uct-scope-chips" aria-label="Template scope"></nav>
+
+      <div class="uct-play">
+        <!-- ---- left: builder / code ---- -->
+        <div class="uct-play-editor">
+          <div class="uct-tabs" role="tablist">
+            <button type="button" class="uct-tab active" data-mode="builder" role="tab"><i class="mdi mdi-tune-variant"></i> Builder</button>
+            <button type="button" class="uct-tab" data-mode="code" role="tab"><i class="mdi mdi-code-braces"></i> Template</button>
+            <button type="button" class="uct-tab" data-mode="examples" role="tab"><i class="mdi mdi-book-open-variant"></i> Examples</button>
+          </div>
+
+          <!-- builder -->
+          <div class="uct-pane" data-pane="builder">
+            <p class="uct-pane-intro" id="uct-builder-intro"></p>
+            <div class="uct-field">
+              <label class="uct-field-label" for="uct-b-entity">Read from</label>
+              <select class="uct-select" id="uct-b-entity"></select>
+              <p class="uct-field-hint" id="uct-b-entity-hint"></p>
+            </div>
+            <div class="uct-field">
+              <span class="uct-field-label">Set these properties</span>
+              <div class="uct-key-toggles" id="uct-b-keys"></div>
+            </div>
+            <div class="uct-rules" id="uct-b-rules"></div>
+            <button type="button" class="uct-btn uct-btn-ghost uct-btn-sm" id="uct-b-add"><i class="mdi mdi-plus"></i> Add a rule</button>
+          </div>
+
+          <!-- code -->
+          <div class="uct-pane" data-pane="code" hidden>
+            <div class="uct-code-head">
+              <span id="uct-code-target">unified_template</span>
+              <div class="uct-code-actions">
+                <button type="button" class="uct-btn uct-btn-ghost uct-btn-xs" id="uct-code-format"><i class="mdi mdi-broom"></i> Tidy</button>
+                <button type="button" class="uct-btn uct-btn-ghost uct-btn-xs" id="uct-code-copy"><i class="mdi mdi-content-copy"></i> Copy</button>
+              </div>
+            </div>
+            <textarea class="uct-code" id="uct-code" spellcheck="false" rows="14"></textarea>
+            <div class="uct-insert">
+              <div class="uct-insert-group">
+                <span class="uct-insert-title">Insert a variable</span>
+                <div class="uct-insert-chips" id="uct-insert-vars"></div>
+              </div>
+              <div class="uct-insert-group">
+                <span class="uct-insert-title">Insert a return property</span>
+                <div class="uct-insert-chips" id="uct-insert-props"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- examples -->
+          <div class="uct-pane" data-pane="examples" hidden>
+            <p class="uct-pane-intro">The examples that ship inside Ultra Card, for this module. Load one to run
+              it here, then edit it.</p>
+            <div class="uct-examples" id="uct-examples"></div>
+          </div>
+        </div>
+
+        <!-- ---- right: live output ---- -->
+        <div class="uct-play-output">
+          <div class="uct-out-card">
+            <div class="uct-out-head"><i class="mdi mdi-eye-outline"></i> Live module<span class="uct-out-badge" id="uct-out-type"></span></div>
+            <div class="uct-preview" id="uct-preview"></div>
+          </div>
+
+          <div class="uct-out-card">
+            <div class="uct-out-head"><i class="mdi mdi-file-code-outline"></i> What the template returned</div>
+            <pre class="uct-result" id="uct-result">—</pre>
+            <div class="uct-keys" id="uct-keys"></div>
+          </div>
+
+          <div class="uct-out-card">
+            <div class="uct-out-head"><i class="mdi mdi-home-automation"></i> Simulate your home</div>
+            <div class="uct-sim" id="uct-sim"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SCOPES ================= -->
+  <section class="uct-section" id="uct-scopes">
+    <div class="uct-wrap">
+      <div class="uct-sec-head">
+        <span class="uct-pill">Every place it works</span>
+        <h2>Fourteen switches, one language.</h2>
+        <p>Template Mode is the same Jinja everywhere — only the properties you return change. Here is what each
+          one controls and why you'd reach for it.</p>
+      </div>
+      <div class="uct-scope-grid" id="uct-scope-grid"></div>
+    </div>
+  </section>
+
+  <!-- ================= REFERENCE ================= -->
+  <section class="uct-section uct-section-alt" id="uct-reference">
+    <div class="uct-wrap">
+      <div class="uct-sec-head">
+        <span class="uct-pill">Reference</span>
+        <h2>What goes in, what comes out.</h2>
+        <p>Variables are handed to your template; properties are what you hand back. Both lists are read straight
+          from the card, and the variable column below is resolving live right now.</p>
+      </div>
+
+      <div class="uct-ref">
+        <div class="uct-ref-col">
+          <h3 class="uct-ref-h"><i class="mdi mdi-import"></i> Context variables</h3>
+          <p class="uct-ref-note">Available when the module is bound to an entity. Text, Markdown and QR
+            templates have no entity of their own — there, name it with <code>states('sensor.x')</code>.</p>
+          <div class="uct-field uct-field-inline">
+            <label class="uct-field-label" for="uct-ref-entity">Resolving for</label>
+            <select class="uct-select" id="uct-ref-entity"></select>
+          </div>
+          <table class="uct-table" id="uct-var-table"><tbody></tbody></table>
+        </div>
+        <div class="uct-ref-col">
+          <h3 class="uct-ref-h"><i class="mdi mdi-export"></i> Return properties</h3>
+          <p class="uct-ref-note">Return a JSON object with any of these. Return a plain string instead and each
+            module interprets it sensibly — an icon name for Icon, body text for Text, an entity id for Camera.</p>
+          <div class="uct-field uct-field-inline">
+            <label class="uct-field-label" for="uct-ref-scope">For</label>
+            <select class="uct-select" id="uct-ref-scope"></select>
+          </div>
+          <table class="uct-table" id="uct-prop-table"><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= GOTCHAS ================= -->
+  <section class="uct-section" id="uct-gotchas">
+    <div class="uct-wrap">
+      <div class="uct-sec-head">
+        <span class="uct-pill">Field notes</span>
+        <h2>The things that trip people up.</h2>
+        <p>Six habits that turn "why is it blank?" into a template that just works.</p>
+      </div>
+      <div class="uct-notes">
+        <article class="uct-note">
+          <i class="mdi mdi-format-quote-close"></i>
+          <h3>Keep Jinja inside the quotes</h3>
+          <p>The template renders <em>first</em>, then the result is parsed as JSON. So the Jinja has to sit
+            inside the string it produces, not around the key.</p>
+          <pre class="uct-note-code"><span class="uct-bad">✗ "icon": {% if hot %}"mdi:fire"{% endif %}</span>
+<span class="uct-good">✓ "icon": "{% if hot %}mdi:fire{% else %}mdi:snowflake{% endif %}"</span></pre>
+        </article>
+        <article class="uct-note">
+          <i class="mdi mdi-numeric"></i>
+          <h3>Numbers and booleans go outside</h3>
+          <p>Values that aren't strings — <code>value</code>, <code>pie_fill</code>,
+            <code>card_border_radius</code>, <code>fill_area</code> — are emitted bare. Jinja prints
+            <code>True</code>, which looks wrong but is fine: Home Assistant evaluates the result as a Python
+            literal before the card sees it.</p>
+          <pre class="uct-note-code"><span class="uct-good">✓ "value": {{ state | float(0) }},
+  "fill_area": {{ is_state('input_boolean.fill','on') }}</span></pre>
+        </article>
+        <article class="uct-note">
+          <i class="mdi mdi-alphabetical-variant"></i>
+          <h3><code>state</code> is an input, <code>state_text</code> is an output</h3>
+          <p><code>{{ state }}</code> is the entity's value coming in. The property that sets the text a module
+            displays is <code>state_text</code>. Returning <code>state</code> also works — it's accepted as an
+            alias because everyone tries it — but the others have no such alias, so a typo just does nothing.
+            Unknown keys are flagged under the editor.</p>
+        </article>
+        <article class="uct-note">
+          <i class="mdi mdi-eye-off-outline"></i>
+          <h3>Hiding things is a different switch</h3>
+          <p>A module template controls how a module <em>looks</em>, never whether it appears. To show and hide,
+            use <b>Display Conditions</b> on the module, or Template Mode on the row or column and return
+            <code>visible</code>.</p>
+        </article>
+        <article class="uct-note">
+          <i class="mdi mdi-speedometer"></i>
+          <h3>Name entities with <code>states()</code></h3>
+          <p>Home Assistant watches the entities your template mentions and re-renders only when they change.
+            Reading <code>states('sensor.x')</code> lets it track that for you. The snapshot variables
+            (<code>state</code>, <code>attributes</code>) are handed in per render instead, so Ultra Card has to
+            resubscribe when they move — correct either way, but <code>states()</code> is the lighter path for
+            wall tablets.</p>
+        </article>
+        <article class="uct-note">
+          <i class="mdi mdi-currency-usd"></i>
+          <h3>Reuse values with <code>$variables</code></h3>
+          <p>Define a variable once in the Hub and drop <code>$living_room_temp</code> into any template; Ultra
+            Card substitutes it before Home Assistant renders. Need a literal dollar sign? Write
+            <code>$$</code>.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CTA ================= -->
+  <section class="uct-cta">
+    <div class="uct-wrap uct-cta-in">
+      <h2>Templates are free. All of them.</h2>
+      <p>Template Mode ships with Ultra Card — no subscription, no account. Install from HACS and the same
+        cheatsheet you just used is a click away inside every module editor.</p>
+      <div class="uct-hero-ctas">
+        <a class="uct-btn uct-btn-blue" href="https://github.com/WJDDesigns/Ultra-Card" target="_blank" rel="noopener"><i class="mdi mdi-github"></i> Get Ultra Card free</a>
+        <a class="uct-btn uct-btn-ghost" href="https://ultracard.io/modules/"><i class="mdi mdi-view-grid-outline"></i> See every module</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="uct-toast" id="uct-toast" hidden></div>
+</div>
+<!-- ======================= UCT:EMBED-END ======================= -->
+
+<style>
+.uct{--uc-blue:#29b6f6;--uc-purple:#8017A2;--uc-pink:#ff2d78;--uc-gold:#ffc233;--uc-green:#4ade80;--uc-bg:#0e1015;--uc-bg2:#14171d;--uc-card:#1a1e26;--uc-line:rgba(255,255,255,.09);--uc-txt:#eef1f6;--uc-dim:#9aa3b2;--uc-r:14px;--uct-header-offset:96px;background:var(--uc-bg);color:var(--uc-txt);font-family:'Open Sans',system-ui,sans-serif;line-height:1.55;overflow-x:clip}
+.uct *,.uct *::before,.uct *::after{box-sizing:border-box}
+.uct .uct-wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.uct h1,.uct h2,.uct h3{margin:0;color:#fff;line-height:1.15}.uct p{margin:0}.uct a{text-decoration:none;color:inherit}
+.uct button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.uct input,.uct select,.uct textarea{font-family:inherit}
+.uct b{color:#fff}.uct code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.uct :target{scroll-margin-top:var(--uct-header-offset)}
+
+/* ---------- hero ---------- */
+.uct-hero{position:relative;padding:calc(var(--uct-header-offset,96px) + 44px) 0 52px;text-align:center;overflow:hidden}
+.uct-hero-glow{position:absolute;inset:-40% -20% auto;height:130%;pointer-events:none;background:radial-gradient(45% 60% at 28% 20%,rgba(41,182,246,.26),transparent 70%),radial-gradient(45% 60% at 72% 14%,rgba(128,23,162,.36),transparent 70%),radial-gradient(30% 40% at 55% 46%,rgba(255,45,120,.12),transparent 70%)}
+.uct-eyebrow{position:relative;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#6fd4ff;border:1px solid rgba(41,182,246,.35);background:rgba(41,182,246,.1);border-radius:999px;padding:6px 14px;margin-bottom:20px}
+.uct-h1{position:relative;font-size:clamp(38px,6vw,68px);font-weight:800;margin:0 0 18px;letter-spacing:-.02em}
+.uct-grad-text{background:linear-gradient(92deg,var(--uc-blue),#b44ce0 55%,var(--uc-pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.uct .uct-sub{position:relative;max-width:760px;margin:0 auto;color:var(--uc-dim);font-size:17px;text-align:center}
+.uct-stats{position:relative;display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:34px}
+.uct-stat{min-width:150px;padding:14px 20px;border:1px solid var(--uc-line);border-radius:var(--uc-r);background:rgba(255,255,255,.03)}
+.uct-stat b{display:block;font-size:26px;font-weight:800}
+.uct-stat span{font-size:12px;color:var(--uc-dim);text-transform:uppercase;letter-spacing:.05em}
+.uct-stat-live{border-color:rgba(74,222,128,.3)}.uct-stat-live b{color:#8ef0b0}
+.uct-hero-ctas{position:relative;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+.uct-btn{display:inline-flex;align-items:center;gap:9px;font-weight:700;font-size:15.5px;border-radius:12px;padding:13px 24px;color:#fff}
+.uct-btn-ghost{border:1.5px solid rgba(255,255,255,.24);background:rgba(255,255,255,.05)}
+.uct-btn-ghost:hover{border-color:rgba(255,255,255,.45);color:#fff}
+.uct-btn-blue{background:linear-gradient(92deg,var(--uc-blue),var(--uc-purple));box-shadow:0 8px 26px rgba(41,182,246,.28)}
+.uct-btn-sm{padding:9px 15px;font-size:13.5px;border-radius:10px}
+.uct-btn-xs{padding:6px 11px;font-size:12px;border-radius:8px;gap:6px;white-space:nowrap}
+
+/* ---------- sections ---------- */
+.uct-section{padding:64px 0}
+.uct-section-alt{background:var(--uc-bg2);border-block:1px solid var(--uc-line)}
+.uct-sec-head{max-width:760px;margin:0 auto 40px;text-align:center}
+.uct-sec-head h2{font-size:clamp(27px,3.4vw,40px);font-weight:800;margin:14px 0 12px;letter-spacing:-.015em}
+.uct-sec-head p{color:var(--uc-dim);font-size:16px}
+.uct-pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#c9a6e8;border:1px solid rgba(180,76,224,.35);background:rgba(180,76,224,.12);border-radius:999px;padding:5px 13px}
+.uct-pill-live{color:#8ef0b0;border-color:rgba(74,222,128,.32);background:rgba(74,222,128,.1)}
+
+/* ---------- why / compare ---------- */
+.uct-sim-inline{max-width:620px;margin:0 auto 34px}
+.uct-why-grid{display:grid;gap:20px}
+.uct-compare{border:1px solid var(--uc-line);border-radius:18px;background:var(--uc-card);overflow:hidden}
+.uct-compare-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid var(--uc-line)}
+.uct-compare-head h3{font-size:18px;font-weight:700}
+.uct-compare-head span{font-size:13.5px;color:var(--uc-dim)}
+.uct-compare-body{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--uc-line)}
+.uct-compare-side{background:var(--uc-card);padding:18px 20px 20px}
+.uct-compare-side.is-tpl{background:linear-gradient(180deg,rgba(41,182,246,.06),transparent 60%)}
+.uct-side-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--uc-dim);margin-bottom:14px}
+.uct-compare-side.is-tpl .uct-side-tag{color:#6fd4ff}
+.uct-side-note{margin-top:14px;font-size:13px;color:var(--uc-dim)}
+.uct-compare-code{border-top:1px solid var(--uc-line)}
+.uct-compare-code summary{padding:12px 20px;font-size:13px;font-weight:700;color:var(--uc-dim);cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+.uct-compare-code summary::-webkit-details-marker{display:none}
+.uct-compare-code summary:hover{color:#fff}
+.uct-compare-code pre{margin:0;padding:0 20px 18px;overflow:auto;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#d9e2ee;white-space:pre}
+
+/* ---------- module preview frame ---------- */
+.uct-frame{border:1px solid var(--uc-line);border-radius:12px;background:#131720;padding:12px;min-height:118px;display:flex;align-items:center;justify-content:center}
+.uct-frame uc-module-demo{display:block;width:100%}
+.uct-frame-ph{font-size:13px;color:#6a7383;text-align:center;padding:16px}
+
+/* ---------- scope chips ---------- */
+.uct-scope-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:26px}
+.uct-scope-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--uc-dim);border:1px solid var(--uc-line);background:rgba(255,255,255,.03)}
+.uct-scope-chip:hover{color:#fff;border-color:rgba(255,255,255,.24)}
+.uct-scope-chip.active{color:#fff;border-color:var(--uc-blue);background:rgba(41,182,246,.14)}
+
+/* ---------- playground ---------- */
+.uct-play{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:20px;align-items:start}
+.uct-play-editor,.uct-out-card{border:1px solid var(--uc-line);border-radius:18px;background:var(--uc-card);overflow:hidden}
+.uct-play-output{display:flex;flex-direction:column;gap:20px}
+.uct-tabs{display:flex;gap:2px;padding:6px;border-bottom:1px solid var(--uc-line);background:rgba(0,0,0,.2)}
+.uct-tab{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:700;color:var(--uc-dim)}
+.uct-tab:hover{color:#fff}
+.uct-tab.active{background:rgba(41,182,246,.14);color:#fff}
+.uct-pane{padding:20px}
+.uct-pane[hidden]{display:none}
+.uct-pane-intro{font-size:13.5px;color:var(--uc-dim);margin-bottom:18px}
+.uct-field{margin-bottom:18px}
+.uct-field-inline{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.uct-field-label{display:block;font-size:11.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--uc-dim);margin-bottom:8px}
+.uct-field-inline .uct-field-label{margin:0;white-space:nowrap}
+.uct-field-hint{font-size:12.5px;color:#7f8a9b;margin-top:7px}
+.uct-select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--uc-line);background:#101319;color:#fff;font-size:14px}
+.uct-select:focus{outline:0;border-color:var(--uc-blue)}
+.uct-key-toggles{display:flex;flex-wrap:wrap;gap:7px}
+.uct-key-toggle{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:700;font-family:ui-monospace,Menlo,monospace;color:var(--uc-dim);border:1px solid var(--uc-line);background:rgba(255,255,255,.03)}
+.uct-key-toggle.on{color:#fff;border-color:rgba(74,222,128,.5);background:rgba(74,222,128,.13)}
+.uct-rules{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.uct-rule{border:1px solid var(--uc-line);border-radius:12px;background:rgba(0,0,0,.22);padding:14px}
+.uct-rule-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.uct-rule-when{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#6fd4ff}
+.uct-rule.is-else .uct-rule-when{color:var(--uc-gold)}
+.uct-rule-op{padding:7px 10px;border-radius:9px;border:1px solid var(--uc-line);background:#101319;color:#fff;font-size:13px}
+.uct-rule-val{width:96px;padding:7px 10px;border-radius:9px;border:1px solid var(--uc-line);background:#101319;color:#fff;font-size:13px}
+.uct-rule-del{margin-left:auto;width:30px;height:30px;border-radius:8px;color:var(--uc-dim);font-size:16px;display:inline-flex;align-items:center;justify-content:center}
+.uct-rule-del:hover{color:var(--uc-pink);background:rgba(255,45,120,.12)}
+.uct-rule-outs{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.uct-out-field{display:flex;flex-direction:column;gap:5px}
+.uct-out-field label{font-size:11.5px;font-family:ui-monospace,Menlo,monospace;color:var(--uc-dim)}
+.uct-out-input-wrap{display:flex;gap:6px;align-items:center}
+.uct-out-field input[type=text]{flex:1;min-width:0;padding:7px 10px;border-radius:9px;border:1px solid var(--uc-line);background:#101319;color:#fff;font-size:13px}
+.uct-out-field input[type=color]{width:34px;height:32px;padding:0;border:1px solid var(--uc-line);border-radius:8px;background:#101319}
+.uct-out-field input:focus{outline:0;border-color:var(--uc-blue)}
+
+/* ---------- code editor ---------- */
+.uct-code-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--uc-line);font:12px/1 ui-monospace,Menlo,monospace;color:var(--uc-dim);letter-spacing:.03em}
+.uct-code-actions{display:flex;gap:6px}
+.uct-pane[data-pane=code]{padding:0}
+.uct-code{display:block;width:100%;border:0;background:#0c0f14;color:#e8eef5;padding:16px;font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:vertical;min-height:260px;tab-size:2}
+.uct-code:focus{outline:0;box-shadow:inset 0 0 0 1px var(--uc-blue)}
+.uct-insert{padding:16px;border-top:1px solid var(--uc-line);display:flex;flex-direction:column;gap:14px}
+.uct-insert-title{display:block;font-size:11.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--uc-dim);margin-bottom:8px}
+.uct-insert-chips{display:flex;flex-wrap:wrap;gap:6px}
+.uct-ins{padding:5px 11px;border-radius:999px;font:12px/1.3 ui-monospace,Menlo,monospace;color:#bcc6d4;border:1px solid var(--uc-line);background:rgba(255,255,255,.03)}
+.uct-ins:hover{color:#fff;border-color:var(--uc-blue);background:rgba(41,182,246,.14)}
+
+/* ---------- examples ---------- */
+.uct-examples{display:flex;flex-direction:column;gap:14px}
+.uct-example{border:1px solid var(--uc-line);border-radius:12px;overflow:hidden;background:rgba(0,0,0,.22)}
+.uct-example-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-bottom:1px solid var(--uc-line)}
+.uct-example-head strong{font-size:13.5px;font-weight:700}
+.uct-example pre{margin:0;padding:13px 14px;overflow:auto;max-height:220px;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#d9e2ee;white-space:pre}
+
+/* ---------- output panels ---------- */
+.uct-out-head{display:flex;align-items:center;gap:9px;padding:13px 16px;border-bottom:1px solid var(--uc-line);font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--uc-dim)}
+.uct-out-head .mdi{font-size:16px;color:var(--uc-blue)}
+.uct-out-badge{margin-left:auto;font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:0;text-transform:none;color:#7f8a9b}
+.uct-preview{padding:16px}
+.uct-result{margin:0;padding:14px 16px;max-height:180px;overflow:auto;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cfe6ff;white-space:pre-wrap;word-break:break-word}
+.uct-result.is-error{color:#ffb4c8}
+.uct-keys{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 16px}
+.uct-key{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font:11.5px/1.3 ui-monospace,Menlo,monospace}
+.uct-key-ok{color:#8ef0b0;background:rgba(74,222,128,.13);border:1px solid rgba(74,222,128,.3)}
+.uct-key-bad{color:#ffb4c8;background:rgba(255,45,120,.12);border:1px solid rgba(255,45,120,.32)}
+
+/* ---------- simulator ---------- */
+.uct-sim{display:flex;flex-direction:column;gap:12px;padding:16px}
+.uct-sim-row{display:flex;align-items:center;gap:12px;font-size:13px}
+.uct-sim-label{display:inline-flex;align-items:center;gap:7px;min-width:170px;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--uc-dim)}
+.uct-sim-label .mdi{font-size:15px;color:var(--uc-blue)}
+.uct-sim-row input[type=range]{flex:1;min-width:80px;accent-color:var(--uc-blue)}
+.uct-sim-out{min-width:74px;text-align:right;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:#fff}
+.uct-sim-hint{font-size:12.5px;color:#7f8a9b;margin-top:2px}
+.uct-switch{position:relative;flex:1;display:flex;justify-content:flex-end}
+.uct-switch button{padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:700;border:1px solid var(--uc-line);color:var(--uc-dim);background:rgba(255,255,255,.03)}
+.uct-switch button.on{color:#04121c;background:var(--uc-blue);border-color:var(--uc-blue)}
+
+/* ---------- scope grid ---------- */
+.uct-scope-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px}
+.uct-scope-card{display:flex;flex-direction:column;border:1px solid var(--uc-line);border-radius:18px;background:var(--uc-card);overflow:hidden}
+.uct-scope-card-head{display:flex;align-items:center;gap:12px;padding:18px 20px 14px}
+.uct-scope-card-head .mdi{font-size:24px;color:var(--uc-blue);background:rgba(41,182,246,.12);border-radius:11px;padding:9px;line-height:1}
+.uct-scope-card-head h3{font-size:18px;font-weight:700}
+.uct-scope-where{font:11.5px/1.4 ui-monospace,Menlo,monospace;color:#7f8a9b;margin-top:3px}
+.uct-scope-body{padding:0 20px 18px;display:flex;flex-direction:column;gap:14px;flex:1}
+.uct-scope-why{font-size:14px;color:#c3ccda}
+.uct-scope-uses{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.uct-scope-uses li{position:relative;padding-left:22px;font-size:13.5px;color:var(--uc-dim)}
+.uct-scope-uses li::before{content:'';position:absolute;left:7px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--uc-blue)}
+.uct-scope-tags{display:flex;flex-wrap:wrap;gap:5px}
+.uct-tag{font:11px/1.3 ui-monospace,Menlo,monospace;color:#8d97a8;border:1px solid var(--uc-line);border-radius:999px;padding:4px 9px}
+.uct-tag-ctx{color:#8ef0b0;border-color:rgba(74,222,128,.3)}
+.uct-tag-noctx{color:var(--uc-gold);border-color:rgba(255,194,51,.3)}
+.uct-scope-foot{margin-top:auto;padding:14px 20px;border-top:1px solid var(--uc-line);display:flex;gap:8px;flex-wrap:wrap}
+
+/* ---------- reference tables ---------- */
+.uct-ref{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.uct-ref-col{border:1px solid var(--uc-line);border-radius:18px;background:var(--uc-card);padding:22px}
+.uct-ref-h{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;margin-bottom:10px}
+.uct-ref-h .mdi{color:var(--uc-blue)}
+.uct-ref-note{font-size:13.5px;color:var(--uc-dim);margin-bottom:16px}
+.uct-ref-note code,.uct-note p code{font-size:12.5px;background:rgba(41,182,246,.12);color:#9ddcff;border-radius:4px;padding:1px 5px}
+.uct-table{width:100%;border-collapse:collapse;font-size:13px}
+.uct-table td{padding:9px 10px;border-top:1px solid var(--uc-line);vertical-align:top}
+.uct-table tr:first-child td{border-top:0}
+.uct-table .uct-td-key{width:1%;white-space:nowrap}
+.uct-table code.uct-k{font-size:12.5px;font-weight:600;color:#9ddcff;background:rgba(41,182,246,.12);border-radius:5px;padding:3px 7px}
+.uct-td-type{font-size:11.5px;color:#7f8a9b;font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
+.uct-td-desc{color:var(--uc-dim)}
+.uct-td-live{width:1%;white-space:nowrap;text-align:right}
+.uct-live-val{font:12px/1.3 ui-monospace,Menlo,monospace;color:#8ef0b0;max-width:200px;display:inline-block;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+.uct-copy-btn{width:28px;height:28px;border-radius:8px;color:var(--uc-dim);font-size:14px;display:inline-flex;align-items:center;justify-content:center}
+.uct-copy-btn:hover{color:#fff;background:rgba(255,255,255,.08)}
+
+/* ---------- gotchas ---------- */
+.uct-notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:20px}
+.uct-note{border:1px solid var(--uc-line);border-radius:18px;background:var(--uc-card);padding:22px}
+.uct-note>.mdi{font-size:22px;color:var(--uc-gold);background:rgba(255,194,51,.12);border-radius:11px;padding:9px;line-height:1;display:inline-block;margin-bottom:14px}
+.uct-note h3{font-size:17px;font-weight:700;margin-bottom:9px}
+.uct-note h3 code{font-size:14.5px;color:#9ddcff}
+.uct-note p{font-size:14px;color:var(--uc-dim)}
+.uct-note-code{margin:13px 0 0;padding:12px 13px;border-radius:10px;background:#0c0f14;border:1px solid var(--uc-line);overflow:auto;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre}
+.uct-bad{color:#ffb4c8}.uct-good{color:#8ef0b0}
+
+/* ---------- cta ---------- */
+.uct-cta{padding:70px 0 84px;background:linear-gradient(180deg,rgba(128,23,162,.16),transparent)}
+.uct-cta-in{text-align:center;max-width:720px}
+.uct-cta h2{font-size:clamp(26px,3.2vw,38px);font-weight:800;margin-bottom:14px}
+.uct-cta p{color:var(--uc-dim);font-size:16px}
+
+/* ---------- toast ---------- */
+.uct-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:99999;background:#1a1e26;border:1px solid rgba(74,222,128,.4);color:#fff;font-size:13.5px;font-weight:600;padding:11px 18px;border-radius:999px;box-shadow:0 14px 40px rgba(0,0,0,.55)}
+.uct-toast[hidden]{display:none}
+
+/* ---------- no-bundle fallback ---------- */
+.uct.is-nolive .uct-frame,.uct.is-nolive .uct-sim,.uct.is-nolive #uct-why-sim{display:none}
+.uct.is-nolive .uct-nolive-note{display:block}
+.uct-nolive-note{display:none;font-size:13px;color:var(--uc-gold);padding:14px 16px}
+
+@media(max-width:1000px){
+  .uct-play{grid-template-columns:1fr}
+  .uct-ref{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .uct-compare-body{grid-template-columns:1fr}
+  .uct-stat{min-width:calc(50% - 8px)}
+  .uct-sim-label{min-width:0;flex:1}
+  .uct-sim-row{flex-wrap:wrap}
+  .uct-scope-grid,.uct-notes{grid-template-columns:1fr}
+}
+</style>
+
+<script>
+(function(){
+  var root = document.getElementById('uct');
+  if(!root) return;
+
+  /* ═══════════════════ helpers ═══════════════════ */
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+  function el(id){ return document.getElementById(id); }
+  function mdi(name){ return 'mdi mdi-' + String(name||'').replace(/^mdi:/,''); }
+  var toastTimer = 0;
+  function toast(msg){
+    var t = el('uct-toast');
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.hidden = true; }, 1800);
+  }
+  function copy(text){
+    function done(){ toast('Copied to clipboard'); }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else { fallback(); }
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); done(); }catch(e){ toast('Could not copy — select it manually'); }
+      document.body.removeChild(ta);
+    }
+  }
+  function debounce(fn, ms){
+    var t = 0;
+    return function(){
+      var args = arguments, self = this;
+      clearTimeout(t);
+      t = setTimeout(function(){ fn.apply(self, args); }, ms);
+    };
+  }
+
+  /* ═══════════════════ the home we simulate ═══════════════════
+     Deliberately entities the demo bundle's ambient loop leaves alone, so a
+     visitor's slider is never fighting the animation. */
+  var SIM = [
+    { id:'sensor.temperature', label:'sensor.temperature', icon:'mdi:thermometer', kind:'range', min:-5, max:42, step:.5, unit:' °C' },
+    { id:'sensor.battery',     label:'sensor.battery',     icon:'mdi:battery-60',  kind:'range', min:0,  max:100, step:1, unit:' %' },
+    { id:'sensor.humidity',    label:'sensor.humidity',    icon:'mdi:water-percent', kind:'range', min:0, max:100, step:1, unit:' %' },
+    { id:'cover.garage',       label:'cover.garage',       icon:'mdi:garage',      kind:'range', min:0,  max:100, step:5, attr:'current_position', unit:' %' },
+    { id:'binary_sensor.door', label:'binary_sensor.door', icon:'mdi:door',        kind:'switch', on:'on', off:'off', onLabel:'Open', offLabel:'Closed' },
+    { id:'input_boolean.show_section', label:'input_boolean.show_section', icon:'mdi:eye-outline', kind:'switch', on:'on', off:'off', onLabel:'On', offLabel:'Off' },
+    { id:'input_boolean.show_fill', label:'input_boolean.show_fill', icon:'mdi:chart-areaspline', kind:'switch', on:'on', off:'off', onLabel:'On', offLabel:'Off' },
+    { id:'sensor.day_period',  label:'sensor.day_period',  icon:'mdi:theme-light-dark', kind:'choice', options:['night','morning','afternoon','evening'] },
+    { id:'weather.home',       label:'weather.home',       icon:'mdi:weather-partly-cloudy', kind:'choice', options:['sunny','cloudy','rainy','snowy'] }
+  ];
+
+  /* Entities offered as the "read from" source in the builder.
+     high/low seed the two thresholds, and words/colors/icons seed each branch so
+     switching source produces a template that reads sensibly for that quantity
+     rather than temperature wording on a battery. Order is always
+     [ high branch, low branch, otherwise ]. */
+  var SOURCES = [
+    { id:'sensor.temperature', label:'sensor.temperature — a number in °C', numeric:true,
+      high:28, low:12,
+      words:['Too warm','Too cold','Comfortable'],
+      colors:['#ff4444','#2196f3','#4ade80'],
+      icons:['mdi:fire','mdi:snowflake','mdi:thermometer'] },
+    { id:'sensor.battery', label:'sensor.battery — a percentage', numeric:true,
+      high:80, low:20,
+      words:['Charged','Low battery','OK'],
+      colors:['#4ade80','#ff4444','#ffa726'],
+      icons:['mdi:battery','mdi:battery-alert','mdi:battery-50'] },
+    { id:'sensor.humidity', label:'sensor.humidity — a percentage', numeric:true,
+      high:65, low:35,
+      words:['Humid','Dry','Comfortable'],
+      colors:['#2196f3','#ffa726','#4ade80'],
+      icons:['mdi:water','mdi:water-off','mdi:water-check'] },
+    { id:'binary_sensor.door', label:'binary_sensor.door — on / off', numeric:false,
+      match:'on',
+      words:['Open','Closed'],
+      colors:['#ff4444','#4ade80'],
+      icons:['mdi:door-open','mdi:door-closed'] },
+    { id:'sensor.day_period', label:'sensor.day_period — night / morning / …', numeric:false,
+      match:'night',
+      words:['Night','Daytime'],
+      colors:['#7c4dff','#ffa726'],
+      icons:['mdi:weather-night','mdi:weather-sunny'] },
+    { id:'weather.home', label:'weather.home — a condition', numeric:false,
+      match:'sunny',
+      words:['Sunny','Not sunny'],
+      colors:['#ffa726','#8d97a8'],
+      icons:['mdi:weather-sunny','mdi:weather-cloudy'] }
+  ];
+
+  /* ═══════════════════ per-scope playground wiring ═══════════════════
+     `bind` shapes the demo module so it points at the playground entity;
+     `patch` is the cheap merge used on every keystroke. */
+  var COMMON = {
+    patch: function(tpl){ return { unified_template_mode:true, unified_template:tpl }; }
+  };
+  var SETUP = {
+    icon: {
+      entity:'sensor.temperature',
+      bind:function(m, entity){
+        var base = (m.icons && m.icons[0]) || {};
+        m.icons = [ Object.assign({}, base, { id:'uct_icon', icon_mode:'entity', entity:entity, name:'', icon_active:'mdi:thermometer', icon_inactive:'mdi:thermometer' }) ];
+      },
+      patch:function(tpl){ return { icons:[{ unified_template_mode:true, unified_template:tpl }] }; }
+    },
+    info: {
+      entity:'sensor.temperature',
+      bind:function(m, entity){
+        var base = (m.info_entities && m.info_entities[0]) || {};
+        m.info_entities = [ Object.assign({}, base, { id:'uct_info', entity:entity, name:'' }) ];
+      },
+      patch:function(tpl){ return { info_entities:[{ unified_template_mode:true, unified_template:tpl }] }; }
+    },
+    text: { entity:'sensor.temperature', bind:function(m){ m.text = 'Static text'; m.font_size = 20; }, patch:COMMON.patch },
+    markdown: { entity:'sensor.temperature', bind:function(m){ m.markdown_content = '### Static markdown'; }, patch:COMMON.patch },
+    bar: {
+      entity:'sensor.battery',
+      /* left_enabled has to be on for the label a template returns to have
+         somewhere to render. */
+      bind:function(m, entity){
+        m.entity = entity;
+        if(m.bars && m.bars[0]) m.bars[0].entity = entity;
+        m.left_enabled = true;
+      },
+      patch:COMMON.patch
+    },
+    gauge: {
+      entity:'sensor.temperature',
+      bind:function(m, entity){ m.entity = entity; m.min_value = -5; m.max_value = 45; },
+      patch:COMMON.patch
+    },
+    graphs: {
+      entity:'sensor.temperature',
+      bind:function(m, entity){
+        m.entities = [{ id:'uct_g1', entity:entity, name:'Temperature' }];
+        m.title = 'Temperature · 24h';
+        m.chart_height = 150;
+      },
+      patch:COMMON.patch
+    },
+    spinbox: { entity:'sensor.temperature', bind:function(m){ m.value = 22; m.min_value = 5; m.max_value = 35; }, patch:COMMON.patch },
+    /* A camera's own state is "idle"/"recording", so thresholding it teaches
+       nothing. The builder names a sensor instead — valid in any scope. */
+    camera: {
+      entity:'camera.front_door', readFrom:'named',
+      bind:function(m, entity){ m.entity = entity; m.camera_name = 'Front Door'; },
+      patch:COMMON.patch
+    },
+    toggle: {
+      entity:'cover.garage',
+      bind:function(m, entity){ m.tracking_entity = entity; },
+      patch:function(tpl){ return { toggle_points:[{ match_mode:'template', unified_template_mode:true, unified_template:tpl }] }; }
+    },
+    qr: {
+      entity:'input_text.guest_wifi_password', demoType:'qr_code',
+      patch:function(tpl){ return { content_mode:'unified', unified_template_mode:true, unified_template:tpl }; }
+    },
+    status_summary: {
+      entity:'binary_sensor.door',
+      bind:function(m, entity){ m.enable_auto_filter = false; m.entities = [{ id:'uct_ss1', entity:entity }]; m.max_items_to_show = 1; },
+      patch:COMMON.patch
+    },
+    /* Rows/columns and card appearance are card-level, so there is no single
+       module to preview. Both render a small staged dashboard instead, driven by
+       the same parsed template result the card would act on. */
+    layout: { entity:'', preview:'layout' },
+    card:   { entity:'', preview:'card' }
+  };
+
+  /* Seed templates for the builder, by scope. Keys the builder can drive. */
+  var BUILDER_KEYS = {
+    icon:['icon','icon_color','state_text','name_color'],
+    info:['icon','icon_color','state_text','name','state_color','container_background_color'],
+    text:['content','color','icon','icon_color'],
+    markdown:['content','color','container_background_color'],
+    bar:['label','color'],
+    gauge:['gauge_color'],
+    graphs:['global_color'],
+    spinbox:['value_color','button_background_color','button_text_color'],
+    camera:['overlay_text','overlay_color'],
+    toggle:['match'],
+    qr:['qr_content'],
+    status_summary:['color'],
+    layout:['visible'],
+    card:['card_background','card_border_color']
+  };
+  /* Properties emitted unquoted, because JSON wants a real number/boolean. */
+  var RAW_KEYS = { value:1, value_min:1, value_max:1, pie_fill:1, fill_area:1, visible:1, card_border_radius:1, card_border_width:1, card_padding:1, card_shadow_enabled:1 };
+  /* Properties the bar/gauge need alongside colours so the preview has a value. */
+  var VALUE_KEY = { bar:'value', gauge:'value' };
+
+  /* Branch defaults for keys the source table doesn't describe. Order matches the
+     rules: [ high branch, low branch, otherwise ] — the last entry is always the
+     {% else %}, including on two-branch chains. */
+  var DEFAULT_OUT = {
+    name_color:['#ffffff','#ffffff','#9aa3b2'],
+    button_text_color:['#ffffff'],
+    overlay_color:['#ffffff'],
+    qr_content:['https://ultracard.io'],
+    match:['true','false','false'],
+    visible:['true','true','false']
+  };
+  function isColorKey(k){ return /color|background/.test(k); }
+
+  /* ═══════════════════ state ═══════════════════ */
+  var D = null;                    // window.UCDemo once the bundle lands
+  var SCOPES = [], CTX = [], RET = [], EX = {};
+  var pg = { scope:'icon', mode:'builder', tpl:'', entity:'sensor.temperature', keys:[], rules:[] };
+
+  /* ═══════════════════ boot ═══════════════════ */
+  function ready(fn){
+    if(window.UCDemo) return fn();
+    window.addEventListener('uc-demo-ready', fn, { once:true });
+    // The bundle may already be executing; poll briefly as a belt-and-braces.
+    var tries = 0;
+    var iv = setInterval(function(){
+      if(window.UCDemo){ clearInterval(iv); fn(); return; }
+      if(++tries > 120){ clearInterval(iv); noLive(); }
+    }, 250);
+  }
+  function noLive(){
+    root.classList.add('is-nolive');
+    var r = el('uct-result');
+    if(r) r.textContent = 'Live preview unavailable — the demo bundle did not load. The templates and reference below are still accurate.';
+  }
+
+  var booted = false;
+  ready(function(){
+    if(booted) return; booted = true;
+    D = window.UCDemo;
+    var t = (D && D.templates) || {};
+    SCOPES = t.scopes || [];
+    CTX = t.contextVariables || [];
+    RET = t.returnProperties || [];
+    EX = t.examples || {};
+    if(!SCOPES.length){ noLive(); return; }
+    initStats();
+    initWhy();
+    initScopeChips();
+    initPlayground();
+    initScopeGrid();
+    initReference();
+    // Repaint the live columns as the simulated home moves.
+    D.subscribe(debounce(function(){ refreshSimValues(); refreshVarTable(); renderResult(); }, 180));
+  });
+
+  /* ═══════════════════ hero stats ═══════════════════ */
+  function initStats(){
+    var counts = {
+      scopes: SCOPES.length,
+      vars: CTX.length,
+      props: RET.length,
+      examples: Object.keys(EX).reduce(function(n,k){ return n + EX[k].length; }, 0)
+    };
+    Object.keys(counts).forEach(function(k){
+      root.querySelectorAll('[data-stat="'+k+'"]').forEach(function(node){ node.textContent = counts[k]; });
+    });
+  }
+
+  /* ═══════════════════ why: static vs templated ═══════════════════ */
+  var WHY = [
+    {
+      scope:'icon', title:'An icon that reports, not decorates',
+      lede:'Same icon module, same entity.',
+      staticNote:'A thermometer. It looks identical at 40 °C and at −5 °C.',
+      tplNote:'Glyph, colour and the value underneath all follow the reading.',
+      tpl:'{\n  "icon": "{% if state | float(0) > 28 %}mdi:fire{% elif state | float(0) < 12 %}mdi:snowflake{% else %}mdi:thermometer{% endif %}",\n  "icon_color": "{% if state | float(0) > 28 %}#ff4444{% elif state | float(0) < 12 %}#2196f3{% else %}#4ade80{% endif %}",\n  "state_text": "{{ state }}{{ unit }}"\n}'
+    },
+    {
+      scope:'bar', title:'A bar that warns you',
+      lede:'Same bar module, reading the temperature.',
+      entity:'sensor.temperature',
+      tune:function(m){ if(m.bars && m.bars[0]){ m.bars[0].min_value = -5; m.bars[0].max_value = 45; } },
+      staticNote:'One colour, whatever the value is doing.',
+      tplNote:'Colour crosses with the thresholds, and the label says what it means.',
+      tpl:'{% set t = state | float(0) %}\n{\n  "value": {{ t }},\n  "label": "{{ t }}°C · {% if t > 28 %}too warm{% elif t < 12 %}too cold{% else %}comfortable{% endif %}",\n  "color": "{% if t > 28 %}#ff4444{% elif t < 12 %}#2196f3{% else %}#4ade80{% endif %}"\n}'
+    },
+    {
+      scope:'text', title:'A sentence instead of a number',
+      lede:'Same text module. Text modules have no entity of their own, so the template names one.',
+      staticNote:'Whatever you typed, forever.',
+      tplNote:'Reads two sensors and writes the summary — with its own icon and colour.',
+      tpl:"{% set t = states('sensor.temperature') | float(0) %}\n{% set h = states('sensor.humidity') | float(0) %}\n{\n  \"content\": \"{{ t }}°C · {{ h }}% humidity\",\n  \"icon\": \"{% if t > 28 %}mdi:fire{% elif t < 12 %}mdi:snowflake{% else %}mdi:thermometer{% endif %}\",\n  \"icon_color\": \"{% if t > 28 %}#ff4444{% elif t < 12 %}#2196f3{% else %}#4ade80{% endif %}\",\n  \"color\": \"{% if t > 28 %}#ff4444{% else %}#eef1f6{% endif %}\"\n}"
+    }
+  ];
+
+  function initWhy(){
+    var grid = el('uct-why-grid');
+    grid.innerHTML = WHY.map(function(w, i){
+      return '<article class="uct-compare">'
+        + '<div class="uct-compare-head"><h3>' + esc(w.title) + '</h3><span>' + esc(w.lede) + '</span></div>'
+        + '<div class="uct-compare-body">'
+        +   '<div class="uct-compare-side"><span class="uct-side-tag"><i class="mdi mdi-minus-circle-outline"></i> Without a template</span>'
+        +     '<div class="uct-frame" id="uct-why-s' + i + '"></div>'
+        +     '<p class="uct-side-note">' + esc(w.staticNote) + '</p></div>'
+        +   '<div class="uct-compare-side is-tpl"><span class="uct-side-tag"><i class="mdi mdi-code-braces"></i> With a template</span>'
+        +     '<div class="uct-frame" id="uct-why-t' + i + '"></div>'
+        +     '<p class="uct-side-note">' + esc(w.tplNote) + '</p></div>'
+        + '</div>'
+        + '<details class="uct-compare-code"><summary><i class="mdi mdi-chevron-right"></i> Show the template</summary><pre>' + esc(w.tpl) + '</pre></details>'
+        + '</article>';
+    }).join('');
+
+    WHY.forEach(function(w, i){
+      var opts = { entity: w.entity, tune: w.tune };
+      mountDemo(el('uct-why-s' + i), w.scope, null, opts);
+      mountDemo(el('uct-why-t' + i), w.scope, w.tpl, opts);
+    });
+
+    var slider = el('uct-why-temp'), out = el('uct-why-temp-out');
+    function push(){
+      out.textContent = Number(slider.value).toFixed(1) + ' °C';
+      D.setState('sensor.temperature', Number(slider.value).toFixed(1));
+    }
+    slider.addEventListener('input', push);
+    push();
+  }
+
+  /**
+   * Put a real module into `host`, optionally with Template Mode on.
+   * Returns the <uc-module-demo> element so callers can patch it later.
+   */
+  /* opts.entity overrides the scope's default entity; opts.tune runs last so a
+     caller can adjust things the scope's bind() doesn't know about (scales etc). */
+  function mountDemo(host, scopeId, tpl, opts){
+    if(!host) return null;
+    opts = opts || {};
+    var setup = SETUP[scopeId] || {};
+    var type = setup.demoType || scopeId;
+    var entity = opts.entity || setup.entity || '';
+    var node = document.createElement('uc-module-demo');
+    node.setAttribute('type', type);
+    node.setAttribute('no-animate', '');
+    node.configure = function(m){
+      if(setup.bind) setup.bind(m, entity);
+      if(tpl != null){
+        var patch = (setup.patch || COMMON.patch)(tpl);
+        applyPatch(m, patch);
+      }
+      if(opts.tune) opts.tune(m);
+    };
+    host.innerHTML = '';
+    host.appendChild(node);
+    return node;
+  }
+
+  /** Same element-wise merge the demo element uses, for the configure hook. */
+  function applyPatch(target, patch){
+    Object.keys(patch || {}).forEach(function(k){
+      var v = patch[k];
+      if(Array.isArray(v)){
+        if(!Array.isArray(target[k])) target[k] = [];
+        v.forEach(function(item, i){
+          if(item && typeof item === 'object'){
+            if(!target[k][i] || typeof target[k][i] !== 'object') target[k][i] = {};
+            applyPatch(target[k][i], item);
+          } else { target[k][i] = item; }
+        });
+      } else if(v && typeof v === 'object'){
+        if(!target[k] || typeof target[k] !== 'object') target[k] = {};
+        applyPatch(target[k], v);
+      } else { target[k] = v; }
+    });
+  }
+
+  /* ═══════════════════ playground ═══════════════════ */
+  var previewNode = null;
+
+  function scopeById(id){
+    for(var i=0;i<SCOPES.length;i++){ if(SCOPES[i].id === id) return SCOPES[i]; }
+    return SCOPES[0];
+  }
+  function propsFor(id){
+    return RET.filter(function(p){ return (p.modules || []).indexOf(id) !== -1; });
+  }
+
+  function initScopeChips(){
+    var nav = el('uct-scope-chips');
+    nav.innerHTML = SCOPES.map(function(s){
+      return '<button type="button" class="uct-scope-chip' + (s.id === pg.scope ? ' active' : '') + '" data-scope="' + esc(s.id) + '">'
+        + '<i class="' + mdi(s.icon) + '"></i> ' + esc(s.label) + '</button>';
+    }).join('');
+    nav.addEventListener('click', function(e){
+      var btn = e.target.closest('[data-scope]');
+      if(!btn) return;
+      selectScope(btn.getAttribute('data-scope'));
+    });
+  }
+
+  function initPlayground(){
+    el('uct-b-entity').innerHTML = SOURCES.map(function(s){
+      return '<option value="' + esc(s.id) + '">' + esc(s.label) + '</option>';
+    }).join('');
+
+    root.querySelectorAll('.uct-tab').forEach(function(tab){
+      tab.addEventListener('click', function(){ setMode(tab.getAttribute('data-mode')); });
+    });
+
+    el('uct-code').addEventListener('input', debounce(function(){
+      pg.tpl = el('uct-code').value;
+      pushTemplate();
+    }, 350));
+
+    el('uct-code-copy').addEventListener('click', function(){ copy(pg.tpl); });
+    el('uct-code-format').addEventListener('click', function(){
+      pg.tpl = tidy(pg.tpl);
+      el('uct-code').value = pg.tpl;
+      pushTemplate();
+    });
+    el('uct-b-entity').addEventListener('change', function(){
+      pg.entity = el('uct-b-entity').value;
+      seedRules();
+      rebuildFromBuilder();
+      renderBuilder();
+      // Re-bind the module when `state` is what the template reads.
+      if(usesStateVar(pg.scope)) mountPreview();
+    });
+    el('uct-b-add').addEventListener('click', function(){
+      pg.rules.splice(pg.rules.length - 1, 0, newRule());
+      rebuildFromBuilder();
+      renderBuilder();
+    });
+
+    initSim();
+    selectScope(pg.scope);
+  }
+
+  function setMode(mode){
+    pg.mode = mode;
+    root.querySelectorAll('.uct-tab').forEach(function(t){ t.classList.toggle('active', t.getAttribute('data-mode') === mode); });
+    root.querySelectorAll('.uct-pane').forEach(function(p){ p.hidden = p.getAttribute('data-pane') !== mode; });
+  }
+
+  function selectScope(id){
+    pg.scope = id;
+    var scope = scopeById(id);
+    var setup = SETUP[id] || {};
+    root.querySelectorAll('[data-scope]').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-scope') === id); });
+
+    // Builder defaults: entity-context scopes read `state`, the others must name
+    // an entity — so both paths start from a source the visitor can change.
+    pg.entity = setup.entity && SOURCES.some(function(s){ return s.id === setup.entity; }) ? setup.entity : 'sensor.temperature';
+    el('uct-b-entity').value = pg.entity;
+    pg.keys = (BUILDER_KEYS[id] || []).slice(0, 2);
+    seedRules();
+
+    el('uct-builder-intro').innerHTML = esc(scope.why);
+    el('uct-b-entity-hint').innerHTML = usesStateVar(id)
+      ? 'This module is bound to an entity, so the builder writes <code>{{ state }}</code> — the template travels with whatever entity you point the module at.'
+      : scope.entityContext
+        ? '<b>' + esc(scope.label) + '</b> is bound to an entity, but its own state is not a useful threshold — so the builder reads a sensor by name with <code>states(\'…\')</code>. <code>{{ state }}</code> still works here.'
+        : '<b>' + esc(scope.label) + '</b> templates get no entity context, so the builder names the entity with <code>states(\'…\')</code>.';
+    el('uct-code-target').textContent = setup.preview === 'card' ? 'card_unified_template' : 'unified_template';
+    el('uct-out-type').textContent = setup.preview ? scope.where : (setup.demoType || id) + ' module';
+
+    renderExamples();
+    renderInsertChips();
+    rebuildFromBuilder();
+    renderBuilder();
+    mountPreview();
+    setMode(pg.mode === 'examples' ? 'examples' : pg.mode);
+  }
+
+  /* ---- builder model ---- */
+  function currentSource(){
+    return SOURCES.filter(function(s){ return s.id === pg.entity; })[0] || SOURCES[0];
+  }
+  function newRule(){
+    var src = currentSource();
+    return {
+      op: src.numeric ? '>' : '=',
+      value: src.numeric ? String(src.high) : (src.match || 'on'),
+      outs:{}, isElse:false
+    };
+  }
+  function seedRules(){
+    var src = currentSource();
+    if(src.numeric){
+      pg.rules = [
+        { op:'>', value:String(src.high), outs:{}, isElse:false },
+        { op:'<', value:String(src.low), outs:{}, isElse:false },
+        { op:'', value:'', outs:{}, isElse:true }
+      ];
+    } else {
+      pg.rules = [
+        { op:'=', value:src.match, outs:{}, isElse:false },
+        { op:'', value:'', outs:{}, isElse:true }
+      ];
+    }
+    fillDefaults();
+  }
+
+  /* Keys whose default should follow the chosen source rather than the generic
+     table — a battery reads "Charged / Low battery / OK", not "Too warm". */
+  var WORD_KEYS = { state_text:1, name:1, label:1, content:1, overlay_text:1 };
+  var SOURCE_COLOR_KEYS = {
+    icon_color:1, color:1, state_color:1, value_color:1,
+    gauge_color:1, global_color:1, button_background_color:1, card_border_color:1
+  };
+  /* Backgrounds want the branch colour at low opacity, not the colour itself. */
+  var TINT_KEYS = { container_background_color:0.14, card_background:0.16 };
+
+  function tint(hex, alpha){
+    var m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+    if(!m) return hex;
+    var n = parseInt(m[1], 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
+  }
+
+  function defaultOut(key, rule, i){
+    var src = currentSource();
+    // The else branch always takes the last (neutral) entry, whether the chain
+    // has two branches or three.
+    var pick = function(list){ return rule.isElse ? list[list.length - 1] : list[Math.min(i, list.length - 1)]; };
+    if(key === 'icon' && src.icons) return pick(src.icons);
+    if(WORD_KEYS[key] && src.words) return pick(src.words);
+    if(SOURCE_COLOR_KEYS[key] && src.colors) return pick(src.colors);
+    if(TINT_KEYS[key] && src.colors) return tint(pick(src.colors), TINT_KEYS[key]);
+    return pick(DEFAULT_OUT[key] || ['']) || '';
+  }
+
+  function fillDefaults(){
+    pg.rules.forEach(function(rule, i){
+      pg.keys.forEach(function(k){
+        if(rule.outs[k] == null) rule.outs[k] = defaultOut(k, rule, i);
+      });
+    });
+  }
+
+  /** Does the builder write `{{ state }}`, or name an entity explicitly? */
+  function usesStateVar(scopeId){
+    var scope = scopeById(scopeId);
+    return !!(scope && scope.entityContext) && (SETUP[scopeId] || {}).readFrom !== 'named';
+  }
+
+  /** Turn the builder rules into the same Jinja a person would write by hand. */
+  function buildTemplate(){
+    var src = SOURCES.filter(function(s){ return s.id === pg.entity; })[0] || SOURCES[0];
+    var read = usesStateVar(pg.scope) ? 'state' : "states('" + pg.entity + "')";
+    var expr = src.numeric ? (read + ' | float(0)') : read;
+    var head = '{% set v = ' + expr + ' %}\n';
+
+    function chain(key){
+      var parts = [];
+      pg.rules.forEach(function(rule){
+        var out = String(rule.outs[key] == null ? '' : rule.outs[key]);
+        if(rule.isElse){
+          parts.push('{% else %}' + out);
+        } else {
+          var cmp = src.numeric
+            ? 'v ' + rule.op + ' ' + (rule.value === '' ? '0' : rule.value)
+            : "v == '" + String(rule.value).replace(/'/g, "\\'") + "'";
+          parts.push('{% ' + (parts.length ? 'elif' : 'if') + ' ' + cmp + ' %}' + out);
+        }
+      });
+      return parts.join('') + '{% endif %}';
+    }
+
+    // Raw keys (numbers, booleans) are emitted unquoted so the JSON stays valid;
+    // string keys wrap the same if/elif chain in quotes.
+    var lines = [];
+    var valueKey = VALUE_KEY[pg.scope];
+    if(valueKey) lines.push('  "' + valueKey + '": {{ v }}');
+    pg.keys.forEach(function(k){
+      if(RAW_KEYS[k]) lines.push('  "' + k + '": ' + chain(k));
+      else lines.push('  "' + k + '": "' + chain(k) + '"');
+    });
+
+    if(!lines.length) return head + '{}';
+    return head + '{\n' + lines.join(',\n') + '\n}';
+  }
+
+  function rebuildFromBuilder(){
+    fillDefaults();
+    pg.tpl = buildTemplate();
+    el('uct-code').value = pg.tpl;
+    pushTemplate();
+  }
+
+  function renderBuilder(){
+    var keysHost = el('uct-b-keys');
+    var available = BUILDER_KEYS[pg.scope] || [];
+    keysHost.innerHTML = available.map(function(k){
+      return '<button type="button" class="uct-key-toggle' + (pg.keys.indexOf(k) !== -1 ? ' on' : '') + '" data-key="' + esc(k) + '">'
+        + '<i class="mdi ' + (pg.keys.indexOf(k) !== -1 ? 'mdi-check' : 'mdi-plus') + '"></i>' + esc(k) + '</button>';
+    }).join('') || '<span class="uct-field-hint">This scope has a single output — edit it on the Template tab.</span>';
+
+    keysHost.onclick = function(e){
+      var btn = e.target.closest('[data-key]');
+      if(!btn) return;
+      var k = btn.getAttribute('data-key');
+      var at = pg.keys.indexOf(k);
+      if(at === -1) pg.keys.push(k);
+      else if(pg.keys.length > 1) pg.keys.splice(at, 1);
+      rebuildFromBuilder();
+      renderBuilder();
+    };
+
+    var src = SOURCES.filter(function(s){ return s.id === pg.entity; })[0] || SOURCES[0];
+    var host = el('uct-b-rules');
+    host.innerHTML = pg.rules.map(function(rule, i){
+      var head;
+      if(rule.isElse){
+        head = '<span class="uct-rule-when">Otherwise</span>';
+      } else {
+        var ops = src.numeric
+          ? [['>','is above'],['>=','is at least'],['<','is below'],['<=','is at most'],['==','equals']]
+          : [['=','is']];
+        head = '<span class="uct-rule-when">' + (i === 0 ? 'When' : 'Else when') + '</span>'
+          + '<select class="uct-rule-op" data-i="' + i + '" data-f="op">'
+          + ops.map(function(o){ return '<option value="' + esc(o[0]) + '"' + (rule.op === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('')
+          + '</select>';
+        if(src.numeric){
+          head += '<input class="uct-rule-val" type="number" step="any" value="' + esc(rule.value) + '" data-i="' + i + '" data-f="value">';
+        } else {
+          var opts = (SIM.filter(function(s){ return s.id === src.id; })[0] || {}).options
+            || (src.id === 'binary_sensor.door' ? ['on','off'] : []);
+          head += opts.length
+            ? '<select class="uct-rule-op" data-i="' + i + '" data-f="value">'
+              + opts.map(function(o){ return '<option value="' + esc(o) + '"' + (rule.value === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('')
+              + '</select>'
+            : '<input class="uct-rule-val" type="text" value="' + esc(rule.value) + '" data-i="' + i + '" data-f="value">';
+        }
+        if(pg.rules.length > 2){
+          head += '<button type="button" class="uct-rule-del" data-del="' + i + '" aria-label="Remove rule"><i class="mdi mdi-close"></i></button>';
+        }
+      }
+      var outs = pg.keys.map(function(k){
+        var v = String(rule.outs[k] == null ? '' : rule.outs[k]);
+        var colorSwatch = isColorKey(k) && /^#[0-9a-f]{6}$/i.test(v)
+          ? '<input type="color" value="' + esc(v) + '" data-i="' + i + '" data-f="out:' + esc(k) + '" aria-label="' + esc(k) + ' colour">'
+          : '';
+        return '<div class="uct-out-field"><label>' + esc(k) + '</label><div class="uct-out-input-wrap">'
+          + '<input type="text" value="' + esc(v) + '" data-i="' + i + '" data-f="out:' + esc(k) + '" spellcheck="false">'
+          + colorSwatch + '</div></div>';
+      }).join('');
+      return '<div class="uct-rule' + (rule.isElse ? ' is-else' : '') + '"><div class="uct-rule-head">' + head + '</div>'
+        + '<div class="uct-rule-outs">' + outs + '</div></div>';
+    }).join('');
+
+    var onEdit = function(e){
+      var t = e.target;
+      var f = t.getAttribute && t.getAttribute('data-f');
+      if(!f) return;
+      var rule = pg.rules[Number(t.getAttribute('data-i'))];
+      if(!rule) return;
+      if(f.indexOf('out:') === 0) rule.outs[f.slice(4)] = t.value;
+      else rule[f] = t.value;
+      rebuildFromBuilder();
+      // A colour swatch and its text input mirror each other; repaint to sync.
+      if(t.type === 'color' || f === 'op') renderBuilder();
+    };
+    host.oninput = debounce(onEdit, 250);
+    host.onchange = onEdit;
+    host.onclick = function(e){
+      var del = e.target.closest('[data-del]');
+      if(!del) return;
+      pg.rules.splice(Number(del.getAttribute('data-del')), 1);
+      rebuildFromBuilder();
+      renderBuilder();
+    };
+  }
+
+  /* ---- code tab helpers ---- */
+  function tidy(src){
+    // Only reflows a JSON-shaped template: puts each top-level key on its own
+    // line. Jinja inside the values is left exactly as written.
+    var s = String(src).trim();
+    if(!/^\{[\s\S]*\}$/.test(s)) return s;
+    var head = '';
+    var m = s.match(/^((?:\{%[\s\S]*?%\}\s*)+)/);
+    if(m){ head = m[1].replace(/\s*$/, '\n'); s = s.slice(m[1].length).trim(); }
+    var body = s.slice(1, -1).split(/,\n?(?=\s*")/).map(function(line){ return '  ' + line.trim(); });
+    return head + '{\n' + body.join(',\n') + '\n}';
+  }
+
+  function renderInsertChips(){
+    var scope = scopeById(pg.scope);
+    el('uct-insert-vars').innerHTML = scope.entityContext
+      ? CTX.map(function(v){ return '<button type="button" class="uct-ins" data-ins="' + esc(v.snippet) + '" title="' + esc(v.description) + '">' + esc(v.key) + '</button>'; }).join('')
+      : '<span class="uct-field-hint">No entity context here — insert <code>states(\'sensor.temperature\')</code> instead.</span>'
+        + '<button type="button" class="uct-ins" data-ins="{{ states(\'sensor.temperature\') }}">states()</button>'
+        + '<button type="button" class="uct-ins" data-ins="{{ state_attr(\'climate.home\', \'temperature\') }}">state_attr()</button>'
+        + '<button type="button" class="uct-ins" data-ins="{{ is_state(\'binary_sensor.door\', \'on\') }}">is_state()</button>';
+
+    el('uct-insert-props').innerHTML = propsFor(pg.scope).map(function(p){
+      return '<button type="button" class="uct-ins" data-ins="' + esc(p.snippet) + '" title="' + esc(p.description) + '">' + esc(p.key) + '</button>';
+    }).join('') || '<span class="uct-field-hint">Return a plain string for this one.</span>';
+
+    [el('uct-insert-vars'), el('uct-insert-props')].forEach(function(host){
+      host.onclick = function(e){
+        var btn = e.target.closest('[data-ins]');
+        if(!btn) return;
+        insertAtCursor(btn.getAttribute('data-ins'));
+      };
+    });
+  }
+
+  function insertAtCursor(text){
+    var ta = el('uct-code');
+    var start = ta.selectionStart || 0, end = ta.selectionEnd || 0;
+    ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
+    ta.focus();
+    ta.selectionStart = ta.selectionEnd = start + text.length;
+    pg.tpl = ta.value;
+    pushTemplate();
+    setMode('code');
+  }
+
+  function renderExamples(){
+    var list = EX[pg.scope] || [];
+    el('uct-examples').innerHTML = list.map(function(ex, i){
+      return '<div class="uct-example"><div class="uct-example-head"><strong>' + esc(ex.label) + '</strong>'
+        + '<span class="uct-code-actions">'
+        + '<button type="button" class="uct-btn uct-btn-ghost uct-btn-xs" data-load="' + i + '"><i class="mdi mdi-play"></i> Run it</button>'
+        + '<button type="button" class="uct-btn uct-btn-ghost uct-btn-xs" data-copy="' + i + '"><i class="mdi mdi-content-copy"></i> Copy</button>'
+        + '</span></div><pre>' + esc(ex.code) + '</pre></div>';
+    }).join('') || '<p class="uct-field-hint">No packaged example for this one yet — the builder is a good starting point.</p>';
+
+    el('uct-examples').onclick = function(e){
+      var load = e.target.closest('[data-load]');
+      if(load){
+        pg.tpl = list[Number(load.getAttribute('data-load'))].code;
+        el('uct-code').value = pg.tpl;
+        pushTemplate();
+        setMode('code');
+        return;
+      }
+      var cp = e.target.closest('[data-copy]');
+      if(cp) copy(list[Number(cp.getAttribute('data-copy'))].code);
+    };
+  }
+
+  /* ---- live preview + result ---- */
+  function mountPreview(){
+    var host = el('uct-preview');
+    var setup = SETUP[pg.scope] || {};
+    if(setup.preview){
+      host.innerHTML = setup.preview === 'layout' ? layoutPreviewHtml() : cardPreviewHtml();
+      previewNode = null;
+      if(setup.preview === 'layout') mountDemo(el('uct-stage-row'), 'info', null);
+      else mountDemo(el('uct-stage-card-mod'), 'info', null);
+      renderResult();
+      return;
+    }
+    // When the builder writes {{ state }}, the previewed module has to be bound
+    // to the entity the "Read from" picker names, or `state` would silently mean
+    // something else than the page just said it does.
+    previewNode = mountDemo(host, pg.scope, pg.tpl, usesStateVar(pg.scope) ? { entity: pg.entity } : null);
+  }
+
+  /** The entity the previewed module is actually bound to. */
+  function previewEntity(){
+    var setup = SETUP[pg.scope] || {};
+    return usesStateVar(pg.scope) ? pg.entity : (setup.entity || '');
+  }
+
+  function layoutPreviewHtml(){
+    return '<div class="uct-stage"><div class="uct-stage-static" style="border:1px dashed rgba(255,255,255,.14);border-radius:10px;padding:10px 12px;font-size:12.5px;color:#8d97a8;margin-bottom:10px">Row 1 — always visible</div>'
+      + '<div id="uct-stage-wrap" style="border:1px solid rgba(41,182,246,.35);border-radius:10px;padding:8px"><div class="uct-frame" id="uct-stage-row" style="min-height:0;border:0;background:transparent;padding:0"></div></div>'
+      + '<p class="uct-sim-hint" id="uct-stage-note" style="margin-top:10px"></p></div>';
+  }
+  function cardPreviewHtml(){
+    return '<div class="uct-stage"><div id="uct-stage-card" style="border:1px solid var(--uc-line);border-radius:12px;padding:12px;background:#131720;transition:background .2s,border-color .2s,border-radius .2s,padding .2s">'
+      + '<div class="uct-frame" id="uct-stage-card-mod" style="min-height:0;border:0;background:transparent;padding:0"></div></div>'
+      + '<p class="uct-sim-hint" style="margin-top:10px">The card chrome above is driven by the properties your template returns.</p></div>';
+  }
+
+  /** Push the current template into the live module (cheap, no re-boot). */
+  function pushTemplate(){
+    var setup = SETUP[pg.scope] || {};
+    if(previewNode && !setup.preview){
+      previewNode.config = (setup.patch || COMMON.patch)(pg.tpl);
+    }
+    renderResult();
+  }
+
+  function renderResult(){
+    if(!D) return;
+    var scope = scopeById(pg.scope);
+    var out = el('uct-result'), keysHost = el('uct-keys');
+    if(!out) return;
+    // Evaluate with the same context the module gets, so this panel can't
+    // disagree with the preview beside it.
+    var ctxEntity = scope.entityContext ? previewEntity() : '';
+    var vars = ctxEntity ? D.entityContext(ctxEntity) : {};
+    var res;
+    try { res = D.renderTemplate(pg.tpl, vars); }
+    catch(err){ res = { error: String(err) }; }
+
+    if(res.error){
+      out.classList.add('is-error');
+      out.textContent = 'Template error: ' + res.error;
+      keysHost.innerHTML = '';
+      return;
+    }
+    out.classList.remove('is-error');
+    var value = res.result;
+    var isObject = value && typeof value === 'object';
+    out.textContent = isObject ? JSON.stringify(value, null, 2) : String(value);
+
+    if(isObject){
+      var known = {};
+      propsFor(pg.scope).forEach(function(p){ known[p.key] = 1; });
+      if(pg.scope === 'icon' || pg.scope === 'info') known.state = 1;   // documented alias
+      keysHost.innerHTML = Object.keys(value).map(function(k){
+        return known[k]
+          ? '<span class="uct-key uct-key-ok"><i class="mdi mdi-check"></i>' + esc(k) + '</span>'
+          : '<span class="uct-key uct-key-bad" title="Not a property this scope reads"><i class="mdi mdi-alert"></i>' + esc(k) + '</span>';
+      }).join('');
+    } else {
+      keysHost.innerHTML = '<span class="uct-key uct-key-ok"><i class="mdi mdi-text-short"></i>plain string</span>';
+    }
+
+    applyStagePreview(value);
+  }
+
+  /** Rows/columns and card appearance have no module of their own to drive. */
+  function applyStagePreview(value){
+    var setup = SETUP[pg.scope] || {};
+    if(setup.preview === 'layout'){
+      var wrap = el('uct-stage-wrap'), note = el('uct-stage-note');
+      if(!wrap) return;
+      var visible = value && typeof value === 'object'
+        ? (value.visible !== undefined ? value.visible : (value.active !== undefined ? value.active : true))
+        : String(value).trim() === 'true';
+      wrap.style.display = visible ? '' : 'none';
+      if(note) note.textContent = visible ? 'Row 2 is visible — the template returned true.' : 'Row 2 is hidden — the template returned false.';
+      return;
+    }
+    if(setup.preview === 'card'){
+      var card = el('uct-stage-card');
+      if(!card) return;
+      var v = value && typeof value === 'object' ? value : { card_background: String(value).trim() };
+      card.style.background = v.card_background || '#131720';
+      card.style.borderColor = v.card_border_color || 'var(--uc-line)';
+      card.style.borderWidth = (v.card_border_width != null ? v.card_border_width : 1) + 'px';
+      card.style.borderRadius = (v.card_border_radius != null ? v.card_border_radius : 12) + 'px';
+      card.style.padding = (v.card_padding != null ? v.card_padding : 12) + 'px';
+      card.style.boxShadow = v.card_shadow_enabled
+        ? [(v.card_shadow_horizontal || 0) + 'px', (v.card_shadow_vertical || 2) + 'px', (v.card_shadow_blur || 8) + 'px', (v.card_shadow_spread || 0) + 'px', v.card_shadow_color || 'rgba(0,0,0,.3)'].join(' ')
+        : 'none';
+    }
+  }
+
+  /* ---- simulator ---- */
+  function initSim(){
+    var host = el('uct-sim');
+    host.innerHTML = SIM.map(function(s, i){
+      var control;
+      if(s.kind === 'range'){
+        control = '<input type="range" min="' + s.min + '" max="' + s.max + '" step="' + s.step + '" data-sim="' + i + '">'
+          + '<output class="uct-sim-out" data-simout="' + i + '"></output>';
+      } else if(s.kind === 'switch'){
+        control = '<span class="uct-switch"><button type="button" data-simtoggle="' + i + '"></button></span>';
+      } else {
+        control = '<span class="uct-switch"><select class="uct-rule-op" data-simchoice="' + i + '">'
+          + s.options.map(function(o){ return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('')
+          + '</select></span>';
+      }
+      return '<label class="uct-sim-row"><span class="uct-sim-label"><i class="' + mdi(s.icon) + '"></i>' + esc(s.label) + '</span>' + control + '</label>';
+    }).join('') + '<p class="uct-sim-hint">These are the demo home\'s entities. Move one and every preview on the page re-renders, exactly as it would when a real sensor reports.</p>';
+
+    host.addEventListener('input', function(e){
+      var idx = e.target.getAttribute('data-sim');
+      if(idx == null) return;
+      var s = SIM[Number(idx)];
+      var v = e.target.value;
+      if(s.attr){
+        var cur = D.hass.states[s.id];
+        D.setState(s.id, cur ? cur.state : 'open', (function(o){ o[s.attr] = Number(v); return o; })({}));
+      } else {
+        D.setState(s.id, String(v));
+      }
+      refreshSimValues();
+    });
+    host.addEventListener('change', function(e){
+      var ci = e.target.getAttribute('data-simchoice');
+      if(ci == null) return;
+      D.setState(SIM[Number(ci)].id, e.target.value);
+    });
+    host.addEventListener('click', function(e){
+      var btn = e.target.closest('[data-simtoggle]');
+      if(!btn) return;
+      e.preventDefault();
+      var s = SIM[Number(btn.getAttribute('data-simtoggle'))];
+      var cur = D.hass.states[s.id];
+      var isOn = cur && cur.state === s.on;
+      D.setState(s.id, isOn ? s.off : s.on);
+      refreshSimValues();
+    });
+
+    refreshSimValues();
+  }
+
+  function refreshSimValues(){
+    if(!D) return;
+    SIM.forEach(function(s, i){
+      var st = D.hass.states[s.id];
+      if(!st) return;
+      var raw = s.attr ? st.attributes[s.attr] : st.state;
+      var slider = root.querySelector('[data-sim="' + i + '"]');
+      if(slider && document.activeElement !== slider) slider.value = String(Number(raw) || 0);
+      var out = root.querySelector('[data-simout="' + i + '"]');
+      if(out) out.textContent = String(raw) + (s.unit || '');
+      var toggle = root.querySelector('[data-simtoggle="' + i + '"]');
+      if(toggle){
+        var on = st.state === s.on;
+        toggle.classList.toggle('on', on);
+        toggle.textContent = on ? (s.onLabel || 'On') : (s.offLabel || 'Off');
+      }
+      var choice = root.querySelector('[data-simchoice="' + i + '"]');
+      if(choice && document.activeElement !== choice) choice.value = st.state;
+    });
+  }
+
+  /* ═══════════════════ scope grid ═══════════════════ */
+  function initScopeGrid(){
+    var grid = el('uct-scope-grid');
+    grid.innerHTML = SCOPES.map(function(s){
+      var props = propsFor(s.id);
+      var tags = props.slice(0, 6).map(function(p){ return '<span class="uct-tag">' + esc(p.key) + '</span>'; }).join('');
+      if(props.length > 6) tags += '<span class="uct-tag">+' + (props.length - 6) + ' more</span>';
+      var ctxTag = s.entityContext
+        ? '<span class="uct-tag uct-tag-ctx"><i class="mdi mdi-check"></i> entity context</span>'
+        : '<span class="uct-tag uct-tag-noctx"><i class="mdi mdi-information-outline"></i> name the entity</span>';
+      return '<article class="uct-scope-card">'
+        + '<div class="uct-scope-card-head"><i class="' + mdi(s.icon) + '"></i><div><h3>' + esc(s.label) + '</h3>'
+        +   '<div class="uct-scope-where">' + esc(s.where) + '</div></div></div>'
+        + '<div class="uct-scope-body">'
+        +   '<p class="uct-scope-why">' + esc(s.why) + '</p>'
+        +   '<ul class="uct-scope-uses">' + (s.useCases || []).map(function(u){ return '<li>' + esc(u) + '</li>'; }).join('') + '</ul>'
+        +   '<div class="uct-scope-tags">' + ctxTag + tags + '</div>'
+        + '</div>'
+        + '<div class="uct-scope-foot">'
+        +   '<button type="button" class="uct-btn uct-btn-blue uct-btn-sm" data-try="' + esc(s.id) + '"><i class="mdi mdi-flask-outline"></i> Try it live</button>'
+        +   ((EX[s.id] || []).length ? '<button type="button" class="uct-btn uct-btn-ghost uct-btn-sm" data-ex="' + esc(s.id) + '"><i class="mdi mdi-book-open-variant"></i> ' + (EX[s.id].length) + ' example' + (EX[s.id].length > 1 ? 's' : '') + '</button>' : '')
+        + '</div></article>';
+    }).join('');
+
+    grid.addEventListener('click', function(e){
+      var tryBtn = e.target.closest('[data-try]');
+      var exBtn = e.target.closest('[data-ex]');
+      var target = tryBtn || exBtn;
+      if(!target) return;
+      selectScope(target.getAttribute(tryBtn ? 'data-try' : 'data-ex'));
+      setMode(exBtn ? 'examples' : 'builder');
+      el('uct-play').scrollIntoView({ behavior:'smooth', block:'start' });
+    });
+  }
+
+  /* ═══════════════════ reference tables ═══════════════════ */
+  function initReference(){
+    el('uct-ref-entity').innerHTML = SOURCES.map(function(s){
+      return '<option value="' + esc(s.id) + '">' + esc(s.id) + '</option>';
+    }).join('');
+    el('uct-ref-entity').addEventListener('change', refreshVarTable);
+
+    el('uct-ref-scope').innerHTML = SCOPES.map(function(s){
+      return '<option value="' + esc(s.id) + '">' + esc(s.label) + '</option>';
+    }).join('');
+    el('uct-ref-scope').addEventListener('change', renderPropTable);
+
+    var onCopy = function(e){
+      var btn = e.target.closest('[data-cp]');
+      if(btn) copy(btn.getAttribute('data-cp'));
+    };
+    el('uct-var-table').addEventListener('click', onCopy);
+    el('uct-prop-table').addEventListener('click', onCopy);
+
+    refreshVarTable();
+    renderPropTable();
+  }
+
+  function refreshVarTable(){
+    var sel = el('uct-ref-entity');
+    if(!sel) return;
+    var ctx = D.entityContext(sel.value) || {};
+    el('uct-var-table').querySelector('tbody').innerHTML = CTX.map(function(v){
+      var raw = ctx[v.key];
+      var shown = raw === undefined ? '—' : (typeof raw === 'object' ? JSON.stringify(raw) : String(raw));
+      if(shown.length > 60) shown = shown.slice(0, 57) + '…';
+      return '<tr><td class="uct-td-key"><code class="uct-k">' + esc(v.key) + '</code></td>'
+        + '<td class="uct-td-desc">' + esc(v.description) + '<div class="uct-td-type">' + esc(v.type) + '</div></td>'
+        + '<td class="uct-td-live"><span class="uct-live-val" title="' + esc(shown) + '">' + esc(shown) + '</span>'
+        + '<button type="button" class="uct-copy-btn" data-cp="' + esc(v.snippet) + '" aria-label="Copy ' + esc(v.key) + '"><i class="mdi mdi-content-copy"></i></button></td></tr>';
+    }).join('');
+  }
+
+  function renderPropTable(){
+    var id = el('uct-ref-scope').value;
+    var rows = propsFor(id);
+    el('uct-prop-table').querySelector('tbody').innerHTML = rows.length ? rows.map(function(p){
+      return '<tr><td class="uct-td-key"><code class="uct-k">' + esc(p.key) + '</code></td>'
+        + '<td class="uct-td-desc">' + esc(p.description) + '<div class="uct-td-type">' + esc(p.type) + '</div></td>'
+        + '<td class="uct-td-live"><button type="button" class="uct-copy-btn" data-cp="' + esc(p.snippet) + '" aria-label="Copy ' + esc(p.key) + '"><i class="mdi mdi-content-copy"></i></button></td></tr>';
+    }).join('') : '<tr><td class="uct-td-desc">This scope takes a plain string rather than a JSON object.</td></tr>';
+  }
+})();
+</script>

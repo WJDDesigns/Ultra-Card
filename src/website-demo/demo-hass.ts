@@ -4,6 +4,8 @@
  * real modules render and behave exactly as they do on a dashboard.
  */
 
+import { renderJinjaText, renderTemplate } from './demo-jinja';
+
 type Listener = () => void;
 
 const now = () => new Date().toISOString();
@@ -385,6 +387,83 @@ export function createDemoStates(): Record<string, any> {
       icon: 'mdi:coffee',
     }),
 
+    /* ---- entities named by the shipped Template Mode examples ----
+       The cheatsheet and docs use short ids like sensor.temperature. They exist
+       here so every example a visitor copies from the Template Mode page renders
+       a real result instead of "unknown". The Template Mode playground drives
+       these directly; the ambient demo loop leaves them alone. */
+    'sensor.temperature': st('sensor.temperature', '31.4', {
+      friendly_name: 'Temperature',
+      unit_of_measurement: '°C',
+      device_class: 'temperature',
+      state_class: 'measurement',
+    }),
+    'sensor.temp': st('sensor.temp', '31.4', {
+      friendly_name: 'Temp',
+      unit_of_measurement: '°C',
+      device_class: 'temperature',
+    }),
+    'sensor.humidity': st('sensor.humidity', '54', {
+      friendly_name: 'Humidity',
+      unit_of_measurement: '%',
+      device_class: 'humidity',
+      state_class: 'measurement',
+    }),
+    'sensor.battery': st('sensor.battery', '18', {
+      friendly_name: 'Battery',
+      unit_of_measurement: '%',
+      device_class: 'battery',
+      state_class: 'measurement',
+    }),
+    'sensor.name': st('sensor.name', 'Living Room', { friendly_name: 'Room Name' }),
+    'sensor.count': st('sensor.count', '3', { friendly_name: 'Open Windows' }),
+    'sensor.day_period': st('sensor.day_period', 'night', {
+      friendly_name: 'Day Period',
+      icon: 'mdi:theme-light-dark',
+    }),
+    'sensor.door_url_suffix': st('sensor.door_url_suffix', 'ultracard.io/docs', {
+      friendly_name: 'Door URL Suffix',
+    }),
+    'binary_sensor.door': st('binary_sensor.door', 'off', {
+      friendly_name: 'Front Door',
+      device_class: 'door',
+    }),
+    'climate.home': st('climate.home', 'heat', {
+      friendly_name: 'Home Thermostat',
+      temperature: 71,
+      current_temperature: 69.5,
+      hvac_modes: ['off', 'heat', 'cool', 'auto'],
+    }),
+    'climate.hvac': st('climate.hvac', 'heat', {
+      friendly_name: 'HVAC',
+      temperature: 22,
+      current_temperature: 21,
+      hvac_modes: ['off', 'heat', 'cool'],
+    }),
+    'cover.garage': st('cover.garage', 'open', {
+      friendly_name: 'Garage',
+      device_class: 'garage',
+      current_position: 20,
+    }),
+    'camera.outdoor': st('camera.outdoor', 'streaming', {
+      friendly_name: 'Outdoor Camera',
+      entity_picture: '/api/camera_proxy/camera.outdoor',
+    }),
+    'camera.indoor': st('camera.indoor', 'streaming', {
+      friendly_name: 'Indoor Camera',
+      entity_picture: '/api/camera_proxy/camera.indoor',
+    }),
+    'input_boolean.show_section': st('input_boolean.show_section', 'on', {
+      friendly_name: 'Show Section',
+    }),
+    'input_boolean.show_row': st('input_boolean.show_row', 'on', { friendly_name: 'Show Row' }),
+    'input_boolean.show_fill': st('input_boolean.show_fill', 'on', { friendly_name: 'Show Fill' }),
+    'input_text.guest_wifi_password': st('input_text.guest_wifi_password', 'ultra-card-2026', {
+      friendly_name: 'Guest Wi-Fi Password',
+      mode: 'text',
+      icon: 'mdi:wifi-lock',
+    }),
+
     // ---- inputs ----
     'input_text.guest_wifi': st('input_text.guest_wifi', '', {
       friendly_name: 'Guest Wi-Fi Name',
@@ -645,6 +724,8 @@ export function buildUnifiDemoNetwork(): UnifiDemoRegistry {
     cpu: number;
     mem: number;
     tempC?: number;
+    /** Per-probe temperatures, e.g. { CPU: 62, Local: 48 }. */
+    probeTemps?: Record<string, number>;
     clients?: number;
     uptimeDays: number;
     uplinkMac?: string;
@@ -682,6 +763,7 @@ export function buildUnifiDemoNetwork(): UnifiDemoRegistry {
     });
     reg(`sensor.${s}_memory`, opts.id, `memory-${macRaw}`, 'device_memory_utilization', 'Memory utilization');
 
+    // "Device temperature" (general_temperature) — only gear that reports it.
     if (opts.tempC != null) {
       states[`sensor.${s}_temperature`] = st(`sensor.${s}_temperature`, String(opts.tempC), {
         friendly_name: `${opts.name} Temperature`,
@@ -689,7 +771,27 @@ export function buildUnifiDemoNetwork(): UnifiDemoRegistry {
         device_class: 'temperature',
         state_class: 'measurement',
       });
-      reg(`sensor.${s}_temperature`, opts.id, `temperature-${macRaw}`, null, 'Temperature');
+      reg(
+        `sensor.${s}_temperature`,
+        opts.id,
+        `device_temperature-${macRaw}`,
+        null,
+        'Temperature'
+      );
+    }
+
+    // Per-probe temperatures (CPU / Local / PHY). HA disables these by
+    // default, which is why AP temps look missing until they're enabled.
+    for (const [probe, value] of Object.entries(opts.probeTemps || {})) {
+      const key = probe.toLowerCase();
+      const eid = `sensor.${s}_${key}_temperature`;
+      states[eid] = st(eid, String(value), {
+        friendly_name: `${opts.name} ${probe} temperature`,
+        unit_of_measurement: '°C',
+        device_class: 'temperature',
+        state_class: 'measurement',
+      });
+      reg(eid, opts.id, `temperature-${key}-${macRaw}`, 'device_sub_temperature', `${probe} temperature`);
     }
 
     if (opts.clients != null) {
@@ -914,6 +1016,7 @@ export function buildUnifiDemoNetwork(): UnifiDemoRegistry {
     cpu: 8,
     mem: 67,
     clients: 41,
+    probeTemps: { CPU: 64, Local: 46, PHY: 58 },
     uptimeDays: 63,
     uplinkMac: HD24_MAC,
   });
@@ -928,6 +1031,7 @@ export function buildUnifiDemoNetwork(): UnifiDemoRegistry {
     cpu: 6,
     mem: 64,
     clients: 11,
+    probeTemps: { CPU: 59, Local: 42, PHY: 54 },
     uptimeDays: 63,
     uplinkMac: HD24_MAC,
   });
@@ -942,8 +1046,109 @@ export function buildUnifiDemoNetwork(): UnifiDemoRegistry {
     cpu: 6,
     mem: 52,
     clients: 32,
+    probeTemps: { CPU: 61, Local: 44 },
     uptimeDays: 63,
     uplinkMac: E8_MAC,
+  });
+
+  // --- UniFi Protect hardware (cameras + NVR) -----------------------------
+  const regProtect = (
+    entityId: string,
+    deviceId: string,
+    uniqueId: string,
+    name: string
+  ) => {
+    entities[entityId] = {
+      entity_id: entityId,
+      device_id: deviceId,
+      platform: 'unifiprotect',
+      unique_id: uniqueId,
+      translation_key: null,
+      original_name: name,
+      disabled_by: null,
+      hidden_by: null,
+    };
+  };
+
+  const addProtectCamera = (opts: {
+    id: string;
+    slug: string;
+    name: string;
+    model: string;
+    mac: string;
+    snapshotSeed: string;
+    motion?: boolean;
+    doorbell?: boolean;
+  }) => {
+    devices[opts.id] = {
+      name: opts.name,
+      manufacturer: 'Ubiquiti',
+      model: opts.model,
+      sw_version: '4.74.88',
+      connections: [['mac', opts.mac]],
+      disabled_by: null,
+    };
+    const camId = `camera.${opts.slug}_high`;
+    states[camId] = st(camId, 'recording', {
+      friendly_name: opts.name,
+      entity_picture: `https://picsum.photos/seed/${opts.snapshotSeed}/640/360`,
+    });
+    regProtect(camId, opts.id, `${opts.mac.replace(/:/g, '')}_high`, 'High resolution channel');
+    const moId = `binary_sensor.${opts.slug}_motion`;
+    states[moId] = st(moId, opts.motion ? 'on' : 'off', {
+      friendly_name: `${opts.name} Motion`,
+      device_class: 'motion',
+    });
+    regProtect(moId, opts.id, `${opts.mac.replace(/:/g, '')}_motion`, 'Motion');
+    if (opts.doorbell) {
+      const dbId = `binary_sensor.${opts.slug}_doorbell`;
+      states[dbId] = st(dbId, 'off', {
+        friendly_name: `${opts.name} Doorbell`,
+        device_class: 'occupancy',
+      });
+      regProtect(dbId, opts.id, `${opts.mac.replace(/:/g, '')}_doorbell`, 'Doorbell');
+    }
+  };
+
+  const NVR_ID = 'ucd_unifi_nvr';
+  devices[NVR_ID] = {
+    name: 'Network Video Recorder',
+    manufacturer: 'Ubiquiti',
+    model: 'UNVR',
+    sw_version: '4.0.180',
+    connections: [['mac', 'f4:e2:c6:a0:00:07']],
+    disabled_by: null,
+  };
+  states['sensor.unvr_uptime'] = st('sensor.unvr_uptime', daysAgo(63), {
+    friendly_name: 'NVR Uptime',
+    device_class: 'timestamp',
+  });
+  regProtect('sensor.unvr_uptime', NVR_ID, 'f4e2c6a00007_uptime', 'Uptime');
+  states['sensor.unvr_storage'] = st('sensor.unvr_storage', '38.2', {
+    friendly_name: 'NVR Storage utilization',
+    unit_of_measurement: '%',
+    state_class: 'measurement',
+  });
+  regProtect('sensor.unvr_storage', NVR_ID, 'f4e2c6a00007_storage', 'Storage utilization');
+
+  addProtectCamera({
+    id: 'ucd_unifi_cam_drive',
+    slug: 'driveway_cam',
+    name: 'Driveway G5 Bullet',
+    model: 'G5 Bullet',
+    mac: 'f4:e2:c6:a0:00:08',
+    snapshotSeed: 'uc-unifi-driveway',
+    motion: true,
+  });
+
+  addProtectCamera({
+    id: 'ucd_unifi_cam_door',
+    slug: 'front_doorbell',
+    name: 'Front Door G4 Doorbell Pro',
+    model: 'G4 Doorbell Pro',
+    mac: 'f4:e2:c6:a0:00:09',
+    snapshotSeed: 'uc-unifi-frontdoor',
+    doorbell: true,
   });
 
   addClient({
@@ -969,6 +1174,63 @@ export function buildUnifiDemoNetwork(): UnifiDemoRegistry {
   });
 
   return { states, entities, devices };
+}
+
+/**
+ * Stand-in for Home Assistant's `render_template` websocket subscription, so
+ * modules using Template Mode paint real results on the website.
+ *
+ * Contract expected by `TemplateService`: call back with `{ result }` on the
+ * first render and again whenever the value changes, and return an unsubscribe
+ * function.
+ */
+function subscribeRenderTemplate(
+  cb: (message: { result: any; listeners: Record<string, unknown> }) => void,
+  msg: { template?: string; variables?: Record<string, any> },
+  hass: any,
+  subscribeStates: (listener: Listener) => () => void
+): () => void {
+  let alive = true;
+  let lastKey: string | undefined;
+  let throttle = 0;
+
+  const push = () => {
+    if (!alive) return;
+    const { result, error } = renderTemplate(String(msg.template || ''), hass, msg.variables || {});
+    if (error) {
+      // HA reports template errors on the subscription and the card falls back
+      // to its static config, so staying quiet here keeps previews honest.
+      // eslint-disable-next-line no-console
+      console.warn('[uc-demo] template error:', error, msg.template);
+      return;
+    }
+    const key = result !== null && typeof result === 'object' ? JSON.stringify(result) : String(result);
+    if (key === lastKey) return;
+    lastKey = key;
+    cb({ result, listeners: { all: false, entities: [], domains: [], time: false } });
+  };
+
+  // The demo entity ticker fires every ~90ms. Templates only need to keep up
+  // with the eye, and re-rendering each one on every tick is wasted work.
+  const onStateChange = () => {
+    if (throttle) return;
+    throttle = window.setTimeout(() => {
+      throttle = 0;
+      push();
+    }, 250);
+  };
+
+  // Deliver the first result asynchronously: modules subscribe from inside
+  // their own render pass, and calling back synchronously would re-enter it.
+  const firstPaint = window.setTimeout(push, 0);
+  const unsubscribeStates = subscribeStates(onStateChange);
+
+  return () => {
+    alive = false;
+    clearTimeout(firstPaint);
+    if (throttle) clearTimeout(throttle);
+    unsubscribeStates();
+  };
 }
 
 /** Build the fake hass object. Mutating services trigger listener callbacks. */
@@ -1211,7 +1473,14 @@ export function createDemoHass() {
       return Promise.resolve();
     },
 
-    async callApi(method: string, path: string) {
+    async callApi(method: string, path: string, body?: any) {
+      // Template Mode fires a one-shot render for its first paint (dropdown
+      // options, action fields) before the websocket subscription takes over.
+      if (path === 'template' && body?.template) {
+        const { text, error } = renderJinjaText(String(body.template), hass, body.variables || {});
+        if (error) throw new Error(error);
+        return text;
+      }
       // History API: synthesize plausible series for graphs modules.
       if (path.startsWith('history/period')) {
         const m = path.match(/filter_entity_id=([^&]+)/);
@@ -1304,7 +1573,15 @@ export function createDemoHass() {
 
     connection: {
       subscribeEvents: async () => () => {},
-      subscribeMessage: async (_cb: any, _msg: any) => () => {},
+      subscribeMessage: async (cb: any, msg: any) => {
+        if (msg?.type === 'render_template') {
+          return subscribeRenderTemplate(cb, msg, hass, l => {
+            listeners.add(l);
+            return () => listeners.delete(l);
+          });
+        }
+        return () => {};
+      },
       sendMessagePromise: async (msg: any) => hass.callWS(msg),
       addEventListener: () => {},
       removeEventListener: () => {},

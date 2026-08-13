@@ -24,6 +24,9 @@ export const UC_QR_DATA_READY_EVENT = 'uc-qr-data-ready';
 /** Cache: key = cacheKey(module, content), value = generated QR data URL */
 const qrDataUrlCache = new Map<string, string>();
 
+/** Keys with an encode already in flight, so re-renders don't duplicate the work. */
+const qrGeneratingSet = new Set<string>();
+
 /**
  * Logo image cache.
  * key = original URL
@@ -753,6 +756,15 @@ export class UltraQrCodeModule extends BaseUltraModule {
     `;
   }
 
+  private _renderQrGenerating(hass: HomeAssistant): TemplateResult {
+    return html`
+      <div class="qr-code-module-preview qr-code-loading" style="text-align: center; padding: 24px; color: var(--secondary-text-color);">
+        <ha-icon icon="mdi:loading" class="qr-code-spinner" style="--mdi-icon-size: 32px;"></ha-icon>
+        <div style="margin-top: 8px; font-size: 14px;">${localize('editor.qr_code.generating', hass?.locale?.language || 'en', 'Generating QR...')}</div>
+      </div>
+    `;
+  }
+
   private _resolveContent(module: QrCodeModule, hass: HomeAssistant, config?: UltraCardConfig): string {
     const legacyTemplate =
       (module as any).content_mode === 'template' && (module as any).content_template;
@@ -770,7 +782,9 @@ export class UltraQrCodeModule extends BaseUltraModule {
       const key = `qr_unified_${module.id}_${templateHash}`;
       const cached = (hass as any).__uvc_template_strings?.[key];
       if (cached != null) {
-        const parsed = parseUnifiedTemplate(String(cached));
+        // Pass the cached value through as-is: Home Assistant hands back a real
+        // object for a JSON template, and String()-ing that loses the content.
+        const parsed = parseUnifiedTemplate(cached);
         if (!hasTemplateError(parsed)) {
           const q = unifiedTemplateQrContent(parsed);
           if (q) return q.trim();
@@ -860,7 +874,16 @@ export class UltraQrCodeModule extends BaseUltraModule {
     }
 
     if (!dataUrl && content) {
-      const dispatchReady = () => window.dispatchEvent(new CustomEvent(UC_QR_DATA_READY_EVENT));
+      // Rendering can happen many times before the blob resolves; without this
+      // guard every one of those starts another canvas encode for the same key.
+      if (qrGeneratingSet.has(key)) {
+        return this._renderQrGenerating(hass);
+      }
+      qrGeneratingSet.add(key);
+      const dispatchReady = () => {
+        qrGeneratingSet.delete(key);
+        window.dispatchEvent(new CustomEvent(UC_QR_DATA_READY_EVENT));
+      };
 
       const qrInstance = new QRCodeStyling({
         width: size,
@@ -911,12 +934,7 @@ export class UltraQrCodeModule extends BaseUltraModule {
           dispatchReady();
         });
 
-      return html`
-        <div class="qr-code-module-preview qr-code-loading" style="text-align: center; padding: 24px; color: var(--secondary-text-color);">
-          <ha-icon icon="mdi:loading" class="qr-code-spinner" style="--mdi-icon-size: 32px;"></ha-icon>
-          <div style="margin-top: 8px; font-size: 14px;">${localize('editor.qr_code.generating', hass?.locale?.language || 'en', 'Generating QR...')}</div>
-        </div>
-      `;
+      return this._renderQrGenerating(hass);
     }
 
     if (!dataUrl) {
