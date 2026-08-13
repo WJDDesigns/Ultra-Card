@@ -10,9 +10,9 @@ import type { UnifiDevice, UnifiTopology } from '../../services/uc-unifi-service
 import { orderDevices } from '../../services/uc-unifi-service';
 import { renderFaceplate } from './faceplates';
 
-/** Kinds that mount in the rack stack. APs get their own shelf; plugs and
- * unclassified gear never appear in the rack view. */
-const RACK_KINDS = new Set(['gateway', 'switch', 'pdu']);
+/** Kinds that mount in the rack stack. APs get their own shelf; plugs,
+ * cameras, and unclassified gear never appear in the rack view. */
+const RACK_KINDS = new Set(['gateway', 'switch', 'pdu', 'nvr']);
 
 export interface RackViewHandlers {
   onDeviceClick?: (device: UnifiDevice) => void;

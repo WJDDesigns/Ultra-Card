@@ -285,68 +285,121 @@ export function unifiModuleStyles(): string {
   inset: 0;
   pointer-events: none;
 }
-.uc-unifi-port-light {
+/* One cell per physical port, sized to the jack opening in the photo */
+.uc-unifi-port-cell {
   position: absolute;
   box-sizing: border-box;
-  border: 1px solid transparent;
-  border-radius: 2px;
 }
-.uc-unifi-port-light.kind-sfp { border-radius: 1px; }
-.uc-unifi-port-light.is-down { border-color: rgba(100,110,130,0.28); }
-.uc-unifi-port-light.is-up {
-  border-color: var(--plc);
-  box-shadow: inset 0 0 4px var(--plc);
-}
-/* Etherlighting: light emanating from the port opening */
-.uc-unifi-port-light .glow {
+/* Our Etherlighting: fills the opening, hiding the factory photo's own port
+   colour (lit blue inserts) so only live state is visible. */
+.uc-unifi-port-cell .etherlight {
   position: absolute;
-  inset: -55% -40%;
-  background: radial-gradient(ellipse at 50% 60%, var(--plc) 0%, transparent 62%);
-  opacity: 0.55;
+  inset: 0;
+  border-radius: 1.5px;
+  background: #0a0d12;
+  /* Dark rim inside the opening keeps the jack looking recessed rather than
+     like a flat painted tile. */
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+    inset 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+.uc-unifi-port-cell.kind-sfp .etherlight { border-radius: 1px; }
+.uc-unifi-port-cell.is-down .etherlight {
+  background: linear-gradient(180deg, #10141b 0%, #05070a 100%);
+}
+/* Lit port: a translucent light guide in the jack mouth, brighter at the top
+   edge where the LED sits, falling off into the recess. */
+.uc-unifi-port-cell.is-up .etherlight {
+  /* Flat fallback first: without color-mix the gradient below is dropped and
+     the port would otherwise render as an unlit black hole. */
+  background: var(--plc);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--plc) 78%, #ffffff) 0%,
+    var(--plc) 42%,
+    color-mix(in srgb, var(--plc) 42%, #000000) 100%
+  );
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.45),
+    inset 0 0 2px rgba(255, 255, 255, 0.5),
+    0 0 2px var(--plc);
+}
+/* Faint halo spilling out of a lit opening */
+.uc-unifi-port-cell .halo {
+  position: absolute;
+  inset: -28% -20%;
+  background: radial-gradient(ellipse at 50% 50%, var(--plc) 0%, transparent 65%);
+  opacity: 0.26;
   filter: blur(2px);
-  border-radius: 6px;
+  border-radius: 40%;
   pointer-events: none;
 }
-/* Data LEDs: green blinks with receive, amber blinks with transmit */
-.uc-unifi-port-light .led-rx,
-.uc-unifi-port-light .led-tx {
+/* Activity LEDs sitting directly above the opening: green rx, amber tx */
+.uc-unifi-port-cell .leds {
   position: absolute;
-  top: -2px;
-  width: 4px;
-  height: 4px;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 1px;
+  display: flex;
+  justify-content: center;
+  gap: clamp(1px, 12%, 2px);
+  pointer-events: none;
+}
+.uc-unifi-port-cell .leds i {
+  width: clamp(2px, 32%, 4px);
+  aspect-ratio: 1;
   border-radius: 50%;
-  opacity: 0.25;
+  background: rgba(120,130,150,0.3);
+  flex: 0 0 auto;
 }
-.uc-unifi-port-light .led-rx { left: -1px; background: #69f0ae; }
-.uc-unifi-port-light .led-tx { right: -1px; background: #ffd740; }
-.uc-unifi-port-light .led-rx.is-active {
+.uc-unifi-port-cell .led-rx.is-lit { background: #00e676; opacity: 0.45; }
+.uc-unifi-port-cell .led-tx.is-lit { background: #ffd740; opacity: 0.45; }
+.uc-unifi-port-cell .led-rx.is-active {
   opacity: 1;
-  box-shadow: 0 0 4px #69f0ae;
-  animation: uc-unifi-port-blink var(--uc-unifi-act, 1s) ease-in-out infinite;
+  box-shadow: 0 0 3px #00e676, 0 0 6px rgba(0,230,118,0.6);
+  animation: uc-unifi-port-blink var(--uc-unifi-act, 1s) steps(2, jump-none) infinite;
 }
-.uc-unifi-port-light .led-tx.is-active {
+.uc-unifi-port-cell .led-tx.is-active {
   opacity: 1;
-  box-shadow: 0 0 4px #ffd740;
-  animation: uc-unifi-port-blink var(--uc-unifi-act, 1s) ease-in-out infinite;
+  box-shadow: 0 0 3px #ffd740, 0 0 6px rgba(255,215,64,0.6);
+  animation: uc-unifi-port-blink var(--uc-unifi-act, 1s) steps(2, jump-none) infinite;
 }
 /* Steady PoE bar beneath powered ports */
-.uc-unifi-port-light .led-poe {
+.uc-unifi-port-cell .led-poe {
   position: absolute;
-  bottom: -3px;
-  left: 20%;
-  width: 60%;
-  height: 2px;
+  top: 100%;
+  margin-top: 1px;
+  left: 15%;
+  width: 70%;
+  height: 1.5px;
   border-radius: 1px;
   background: #ffb300;
   box-shadow: 0 0 3px #ffb300;
 }
-/* Fallback LED strip below the photo (models without measured port maps) */
+/* Synthetic port row below the photo (models without measured port maps) */
 .uc-unifi-photo-strip {
   display: flex;
   justify-content: center;
-  margin-top: 2px;
+  margin-top: 7px;
   pointer-events: none;
 }
+.uc-unifi-port-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+}
+.uc-unifi-port-cell.in-row {
+  position: relative;
+  width: 11px;
+  height: 13px;
+  flex: 0 0 auto;
+}
+.uc-unifi-port-cell.in-row.kind-sfp { width: 13px; height: 10px; }
+.uc-unifi-port-cell.in-row .leds { gap: 1px; }
+.uc-unifi-port-cell.in-row .leds i { width: 3px; }
 .uc-unifi-photo-footer {
   display: flex;
   align-items: center;
@@ -369,24 +422,6 @@ export function unifiModuleStyles(): string {
 .uc-unifi-photo-footer .ports { font-variant-numeric: tabular-nums; opacity: 0.75; }
 .uc-unifi-photo-footer .state.ok { color: #69f0ae; }
 .uc-unifi-photo-footer .state.bad { color: #ff8a65; }
-.uc-unifi-mini-leds {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 3px;
-  align-items: center;
-  min-width: 0;
-}
-.uc-unifi-mini-leds i {
-  width: 6px;
-  height: 6px;
-  border-radius: 2px;
-  flex: 0 0 auto;
-}
-.uc-unifi-mini-leds i.is-active {
-  animation: uc-unifi-port-blink var(--uc-unifi-act, 1s) ease-in-out infinite;
-}
-
 /* Smart plug / outlet tile */
 .uc-unifi-plug-tile {
   display: flex;
@@ -542,6 +577,52 @@ export function unifiModuleStyles(): string {
   -webkit-user-drag: none;
   filter: drop-shadow(0 3px 8px rgba(0,0,0,0.3));
 }
+/* Live camera snapshot (UniFi Protect): 16:9-ish cover crop with a motion
+   glow when the camera's motion sensor is on. */
+.uc-unifi-device-tile .uc-unifi-tile-snapbox {
+  position: relative;
+  height: 96px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.25);
+}
+.uc-unifi-device-tile .uc-unifi-tile-snap {
+  width: 100%;
+  height: 96px;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.uc-unifi-device-tile .uc-unifi-tile-snapbox.is-motion {
+  box-shadow: inset 0 0 0 2px #ff5252, 0 0 12px rgba(255, 82, 82, 0.55);
+  animation: uc-unifi-motion-pulse 1.4s ease-in-out infinite;
+}
+@keyframes uc-unifi-motion-pulse {
+  0%, 100% { box-shadow: inset 0 0 0 2px #ff5252, 0 0 6px rgba(255, 82, 82, 0.35); }
+  50% { box-shadow: inset 0 0 0 2px #ff5252, 0 0 16px rgba(255, 82, 82, 0.75); }
+}
+.uc-unifi-motion-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(211, 47, 47, 0.85);
+  backdrop-filter: blur(2px);
+}
+.uc-unifi-motion-badge.is-ring {
+  left: auto;
+  right: 6px;
+  background: rgba(25, 118, 210, 0.85);
+}
 .uc-unifi-device-head {
   display: flex; align-items: center; gap: 10px;
 }
@@ -658,9 +739,8 @@ export function unifiModuleStyles(): string {
   .uc-unifi-port.is-active .uc-unifi-port-led,
   .uc-unifi-poe-dot,
   .uc-unifi-flow,
-  .uc-unifi-mini-leds i.is-active,
-  .uc-unifi-port-light .led-rx.is-active,
-  .uc-unifi-port-light .led-tx.is-active,
+  .uc-unifi-port-cell .led-rx.is-active,
+  .uc-unifi-port-cell .led-tx.is-active,
   .uc-unifi-ring-spin {
     animation: none !important;
   }
@@ -669,9 +749,9 @@ export function unifiModuleStyles(): string {
 .uc-unifi.anim-off .uc-unifi-port.is-active .uc-unifi-port-led,
 .uc-unifi.anim-off .uc-unifi-poe-dot,
 .uc-unifi.anim-off .uc-unifi-flow,
-.uc-unifi.anim-off .uc-unifi-mini-leds i.is-active,
-.uc-unifi.anim-off .uc-unifi-port-light .led-rx.is-active,
-.uc-unifi.anim-off .uc-unifi-port-light .led-tx.is-active,
+.uc-unifi.anim-off .uc-unifi-port-cell .led-rx.is-active,
+.uc-unifi.anim-off .uc-unifi-port-cell .led-tx.is-active,
+.uc-unifi.anim-off .uc-unifi-tile-snapbox.is-motion,
 .uc-unifi.anim-off .uc-unifi-ring-spin {
   animation: none !important;
 }

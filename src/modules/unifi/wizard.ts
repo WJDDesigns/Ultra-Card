@@ -111,6 +111,7 @@ export function renderSetupWizard(
         ${badge('Port bandwidth', report.portBandwidth)}
         ${badge('Link speed', report.portLinkSpeed)}
         ${badge('PoE', report.portPoe)}
+        ${badge('Temperature', report.deviceTemperature)}
         ${badge('WAN latency', report.wanLatency)}
       </div>
 
@@ -135,7 +136,7 @@ export function renderSetupWizard(
               ${localize(
                 'editor.unifi.wizard_disabled',
                 lang,
-                '{count} useful UniFi sensors are disabled (port RX/TX, link speed, PoE, etc.). Enable them for live port lights and traffic.'
+                '{count} useful UniFi sensors are disabled (port RX/TX, link speed, PoE, temperatures, etc.). Enable them for live port lights, traffic, and device temps.'
               ).replace('{count}', String(report.disabledEntityIds.length))}
             </p>
             <div class="uc-unifi-wizard-actions">

@@ -20,6 +20,7 @@ import { hasProAccess, renderProLockUI, renderProLockedPreview } from '../utils/
 import {
   discoverUnifiTopology,
   forgetUnifiTopology,
+  inferUplinkDeviceId,
   orderDevices,
   seedCuration,
   suggestVisibleDeviceIds,
@@ -79,6 +80,7 @@ export class UltraUnifiModule extends BaseUltraModule {
       curation_seeded: false,
       rack_max_devices: 16,
       use_device_images: true,
+      show_camera_previews: true,
       show_title: true,
       title: 'UniFi Network',
       rack_style: 'dark',
@@ -166,6 +168,10 @@ export class UltraUnifiModule extends BaseUltraModule {
         return 'mdi:power-plug-outline';
       case 'switch':
         return 'mdi:switch';
+      case 'camera':
+        return 'mdi:cctv';
+      case 'nvr':
+        return 'mdi:nas';
       default:
         return 'mdi:lan';
     }
@@ -212,6 +218,8 @@ export class UltraUnifiModule extends BaseUltraModule {
       ap: topo.devices.filter(d => d.kind === 'ap').length,
       pdu: topo.devices.filter(d => d.kind === 'pdu').length,
       plug: topo.devices.filter(d => d.kind === 'plug').length,
+      camera: topo.devices.filter(d => d.kind === 'camera').length,
+      nvr: topo.devices.filter(d => d.kind === 'nvr').length,
       other: topo.devices.filter(d => d.kind === 'other').length,
     };
 
@@ -230,7 +238,7 @@ export class UltraUnifiModule extends BaseUltraModule {
           ${localize(
             'editor.unifi.device_list_hint',
             lang,
-            'Only Ubiquiti network gear appears here. Connected phones, PCs, and IoT stay in the Clients view. Smart plugs and outlets never mount in the rack — shown ones appear in the Devices view.'
+            'Only Ubiquiti hardware appears here — network gear plus UniFi Protect cameras and NVRs. Connected phones, PCs, and IoT stay in the Clients view. Plugs and cameras never mount in the rack — shown ones appear in the Devices view.'
           )}
           ${topo.clients.length
             ? html`<br />${localize(
@@ -332,6 +340,20 @@ export class UltraUnifiModule extends BaseUltraModule {
                 String(kindCounts.plug)
               ),
             },
+            {
+              value: 'camera',
+              label: localize('editor.unifi.kind_camera', lang, 'Cameras ({n})').replace(
+                '{n}',
+                String(kindCounts.camera)
+              ),
+            },
+            {
+              value: 'nvr',
+              label: localize('editor.unifi.kind_nvr', lang, 'NVRs ({n})').replace(
+                '{n}',
+                String(kindCounts.nvr)
+              ),
+            },
           ].filter(s => s.value === 'all' || Number(s.label.match(/\((\d+)\)/)?.[1] || 0) > 0),
           next => {
             this._deviceFilter.set(m.id, { ...filter, kind: next });
@@ -406,7 +428,7 @@ export class UltraUnifiModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult | typeof nothing {
     const lang = hass?.locale?.language || 'en';
-    const rackKinds = new Set<UnifiDeviceKind>(['gateway', 'switch', 'pdu']);
+    const rackKinds = new Set<UnifiDeviceKind>(['gateway', 'switch', 'pdu', 'nvr']);
     const ordered = orderDevices(topo.devices, m.device_order, m.hidden_device_ids).filter(d =>
       rackKinds.has(d.kind)
     );
@@ -515,6 +537,114 @@ export class UltraUnifiModule extends BaseUltraModule {
             `
           )}
         </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Pin topology parents. HA never reports an uplink for Protect cameras and
+   * disables the uplink sensor by default on Network gear, so the card has to
+   * guess — this is the escape hatch when the guess is wrong.
+   */
+  private _renderTopologyLinks(
+    m: UnifiModule,
+    hass: HomeAssistant,
+    topo: UnifiTopology,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    const lang = hass?.locale?.language || 'en';
+    const visible = this._visibleDevices(m, topo);
+    const byId = new Map(visible.map(d => [d.deviceId, d]));
+    const pinnedOf = (id: string): string | undefined =>
+      (m.device_overrides || []).find(o => o.device_id === id)?.uplink_device_id || undefined;
+
+    // Only gear the card had to guess for needs pinning; keep existing pins
+    // listed so they can be changed back.
+    const needsPin = visible.filter(d => {
+      if (d.kind === 'gateway') return false;
+      if (pinnedOf(d.deviceId)) return true;
+      return !(d.uplinkDeviceId && byId.has(d.uplinkDeviceId));
+    });
+    if (!needsPin.length) return html``;
+
+    const setUplink = (deviceId: string, uplink: string | undefined) => {
+      const list = [...(m.device_overrides || [])];
+      const i = list.findIndex(o => o.device_id === deviceId);
+      if (i >= 0) {
+        const { uplink_device_id: _drop, ...rest } = list[i];
+        const next = uplink ? { ...rest, uplink_device_id: uplink } : rest;
+        // Drop the entry entirely once it holds nothing but the device id.
+        const meaningful = Object.entries(next).some(
+          ([k, v]) => k !== 'device_id' && v !== undefined
+        );
+        if (meaningful) list[i] = next;
+        else list.splice(i, 1);
+      } else if (uplink) {
+        list.push({ device_id: deviceId, uplink_device_id: uplink });
+      }
+      updateModule({ device_overrides: list } as Partial<CardModule>);
+      this.triggerPreviewUpdate();
+    };
+
+    return html`
+      <div
+        class="settings-section"
+        style="background:var(--secondary-background-color);border-radius:8px;padding:16px;margin-bottom:24px;"
+      >
+        <div
+          class="section-title"
+          style="font-size:14px;font-weight:700;color:var(--primary-color);margin-bottom:8px;"
+        >
+          ${localize('editor.unifi.topology_links', lang, 'Topology links')}
+        </div>
+        <div style="font-size:12px;color:var(--secondary-text-color);margin-bottom:12px;line-height:1.45;">
+          ${localize(
+            'editor.unifi.topology_links_hint',
+            lang,
+            'These devices don’t report an uplink, so the card guesses their parent (shown as a dashed line). UniFi Protect cameras never report one — pin the switch they plug into.'
+          )}
+        </div>
+        ${needsPin.map(d => {
+          const guess = inferUplinkDeviceId(d, visible);
+          const guessName = guess ? byId.get(guess)?.name || guess : '—';
+          const options = [
+            {
+              value: '',
+              label: localize('editor.unifi.uplink_auto', lang, 'Auto ({name})').replace(
+                '{name}',
+                guessName
+              ),
+            },
+            ...visible
+              .filter(o => o.deviceId !== d.deviceId)
+              .map(o => ({ value: o.deviceId, label: o.name })),
+          ];
+          return html`
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <ha-icon
+                icon=${this._kindIcon(d.kind)}
+                style="--mdc-icon-size:18px;opacity:0.7;flex-shrink:0;"
+              ></ha-icon>
+              <div style="flex:1;min-width:0;">
+                <div
+                  style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                >
+                  ${d.name}
+                </div>
+                <div style="font-size:11px;opacity:0.6;">${d.model || d.kind}</div>
+              </div>
+              <div style="flex:1.2;min-width:0;">
+                ${this.renderUcForm(
+                  hass,
+                  { uplink: pinnedOf(d.deviceId) || '' },
+                  [this.selectField('uplink', options)],
+                  (e: CustomEvent) => setUplink(d.deviceId, e.detail.value?.uplink || undefined),
+                  false
+                )}
+              </div>
+            </div>
+          `;
+        })}
       </div>
     `;
   }
@@ -797,6 +927,10 @@ export class UltraUnifiModule extends BaseUltraModule {
 
         ${view === 'rack' ? this._renderRackOrder(curated, hass, topo, updateModule) : nothing}
 
+        ${view === 'topology'
+          ? this._renderTopologyLinks(curated, hass, topo, updateModule)
+          : nothing}
+
         ${view === 'clients' && topo.clients.length
           ? this._renderClientPicker(curated, hass, topo, updateModule)
           : nothing}
@@ -941,6 +1075,31 @@ export class UltraUnifiModule extends BaseUltraModule {
                     onChange: (e: CustomEvent) => {
                       updateModule({
                         use_device_images: e.detail.value?.use_device_images,
+                      } as Partial<CardModule>);
+                      this.triggerPreviewUpdate();
+                    },
+                  },
+                ]
+              : []),
+            ...(view === 'devices' && topo.devices.some(d => d.kind === 'camera')
+              ? [
+                  {
+                    title: localize(
+                      'editor.unifi.show_camera_previews',
+                      lang,
+                      'Live camera previews'
+                    ),
+                    description: localize(
+                      'editor.unifi.show_camera_previews_desc',
+                      lang,
+                      'Show live snapshots on UniFi Protect camera tiles instead of product photos.'
+                    ),
+                    hass,
+                    data: { show_camera_previews: m.show_camera_previews !== false },
+                    schema: [this.booleanField('show_camera_previews')],
+                    onChange: (e: CustomEvent) => {
+                      updateModule({
+                        show_camera_previews: e.detail.value?.show_camera_previews,
                       } as Partial<CardModule>);
                       this.triggerPreviewUpdate();
                     },

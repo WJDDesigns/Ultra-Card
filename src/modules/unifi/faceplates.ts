@@ -10,7 +10,7 @@
 import { TemplateResult, html, svg, nothing } from 'lit';
 import type { UnifiRackStyle } from '../../types';
 import type { UnifiDevice, UnifiPort } from '../../services/uc-unifi-service';
-import { linkSpeedColor, toMbps } from '../../services/uc-unifi-service';
+import { formatRate, linkSpeedColor, toMbps } from '../../services/uc-unifi-service';
 import { ucUnifiDeviceDb } from '../../services/uc-unifi-device-db';
 import { portMapForSku, type PortMap } from './port-maps';
 import type { HomeAssistant } from 'custom-card-helpers';
@@ -215,8 +215,15 @@ export function renderFaceplate(
   return renderSwitchFaceplate(device, shape, options);
 }
 
-/** Live port activity LEDs shown under product photos. */
-function renderMiniLedStrip(
+/**
+ * Synthetic port row for models whose photo geometry isn't mapped.
+ *
+ * Uses the same lit-opening + activity-LED language as the photo overlay, so
+ * every switch and gateway reads identically — the ports just sit in a row
+ * beneath the photo instead of on it, rather than guessing at coordinates and
+ * landing the lights in the wrong place.
+ */
+function renderPortRow(
   device: UnifiDevice,
   options: FaceplateRenderOptions
 ): TemplateResult | typeof nothing {
@@ -225,27 +232,59 @@ function renderMiniLedStrip(
   const anim = options.animation || 'full';
   const shown = ports.slice(0, 52);
   return html`
-    <span class="uc-unifi-mini-leds" aria-hidden="true">
+    <span class="uc-unifi-port-row" aria-hidden="true">
       ${shown.map(p => {
-        const color = p.up ? linkSpeedColor(p.linkSpeedMbps) : 'rgba(120,130,150,0.28)';
-        const act = anim !== 'off' ? portActivityMs(p, options.hass) : 0;
+        const up = p.up;
+        const color = linkSpeedColor(p.linkSpeedMbps);
+        const { rx, tx } = up ? portRates(p, options.hass) : { rx: 0, tx: 0 };
+        const rxMs = anim !== 'off' ? rateBlinkMs(rx) : 0;
+        const txMs = anim !== 'off' ? rateBlinkMs(tx) : 0;
         const poe = p.poeOn === true || (p.poePowerW != null && p.poePowerW > 0);
-        return html`<i
-          class="${act > 0 ? 'is-active' : ''} ${poe ? 'is-poe' : ''}"
-          style="background:${color};${p.up ? `box-shadow:0 0 4px ${color};` : ''}${act > 0 ? `--uc-unifi-act:${act}s;` : ''}"
-          title="P${p.index}${p.linkSpeedMbps ? ` · ${p.linkSpeedMbps} Mbps` : ''}"
-        ></i>`;
+        const sfp = (p.linkSpeedMbps ?? 0) >= 10000 || /sfp/i.test(p.name || '');
+        return html`
+          <span
+            class="uc-unifi-port-cell in-row ${up ? 'is-up' : 'is-down'} ${sfp
+              ? 'kind-sfp'
+              : 'kind-rj45'}"
+            style="${up ? `--plc:${color};` : ''}"
+            title="P${p.index}${p.linkSpeedMbps ? ` · ${p.linkSpeedMbps} Mbps` : ''}${up
+              ? ` · ${formatRate(rx + tx)}`
+              : ' · down'}${poe && p.poePowerW != null ? ` · PoE ${p.poePowerW} W` : ''}"
+          >
+            <i class="etherlight"></i>
+            ${up ? html`<i class="halo"></i>` : nothing}
+            <span class="leds">
+              <i
+                class="led-rx ${up && rxMs > 0 ? 'is-active' : ''} ${up ? 'is-lit' : ''}"
+                style="${rxMs > 0 ? `--uc-unifi-act:${rxMs}s;` : ''}"
+              ></i>
+              <i
+                class="led-tx ${up && txMs > 0 ? 'is-active' : ''} ${up ? 'is-lit' : ''}"
+                style="${txMs > 0 ? `--uc-unifi-act:${txMs}s;` : ''}"
+              ></i>
+            </span>
+            ${poe ? html`<i class="led-poe"></i>` : nothing}
+          </span>
+        `;
       })}
     </span>
   `;
 }
 
 /**
- * Live lights positioned over the physical ports in the product photo,
- * matching real UniFi hardware: an Etherlighting glow emanating from the
- * port opening (colored by link speed, official console scheme), a green
- * LED blinking with receive traffic, an amber LED blinking with transmit
- * traffic, and a steady PoE bar under powered ports.
+ * Live lights over the physical ports of a product photo.
+ *
+ * Each port gets two pieces, mirroring real UniFi hardware:
+ *
+ * 1. An opening cover that fills the jack mouth exactly. It replaces whatever
+ *    the factory photo shows there (Etherlighting models are photographed with
+ *    lit blue inserts, which would otherwise read as "every port active"), and
+ *    carries our own light: the link-speed colour when up, a dark empty jack
+ *    when down, plus a halo spilling out of the opening.
+ * 2. A pair of activity LEDs directly above the opening — green for receive,
+ *    amber for transmit — each blinking at a rate that tracks its throughput.
+ *
+ * PoE-powered ports also get a steady amber bar beneath the opening.
  */
 function renderPortLightsOverlay(
   device: UnifiDevice,
@@ -265,26 +304,26 @@ function renderPortLightsOverlay(
         const rxMs = anim !== 'off' ? rateBlinkMs(rx) : 0;
         const txMs = anim !== 'off' ? rateBlinkMs(tx) : 0;
         const poe = port.poeOn === true || (port.poePowerW != null && port.poePowerW > 0);
-        const pos = `left:${((cell.cx - cell.w / 2) * 100).toFixed(2)}%;top:${(cell.y * 100).toFixed(2)}%;width:${(cell.w * 100).toFixed(2)}%;height:${(cell.h * 100).toFixed(2)}%;`;
+        const pos = `left:${((cell.cx - cell.w / 2) * 100).toFixed(3)}%;top:${(cell.y * 100).toFixed(3)}%;width:${(cell.w * 100).toFixed(3)}%;height:${(cell.h * 100).toFixed(3)}%;`;
+        const rate = formatRate(rx + tx);
         return html`
           <span
-            class="uc-unifi-port-light ${up ? 'is-up' : 'is-down'} kind-${cell.kind}"
+            class="uc-unifi-port-cell ${up ? 'is-up' : 'is-down'} kind-${cell.kind}"
             style="${pos}${up ? `--plc:${color};` : ''}"
-            title="P${port.index}${port.linkSpeedMbps ? ` · ${port.linkSpeedMbps} Mbps` : ''}${poe && port.poePowerW != null ? ` · ${port.poePowerW} W` : ''}"
+            title="P${port.index}${port.linkSpeedMbps ? ` · ${port.linkSpeedMbps} Mbps` : ''}${up ? ` · ${rate}` : ' · down'}${poe && port.poePowerW != null ? ` · PoE ${port.poePowerW} W` : ''}"
           >
-            ${up
-              ? html`
-                  <i class="glow"></i>
-                  <i
-                    class="led-rx ${rxMs > 0 ? 'is-active' : ''}"
-                    style="${rxMs > 0 ? `--uc-unifi-act:${rxMs}s;` : ''}"
-                  ></i>
-                  <i
-                    class="led-tx ${txMs > 0 ? 'is-active' : ''}"
-                    style="${txMs > 0 ? `--uc-unifi-act:${txMs}s;` : ''}"
-                  ></i>
-                `
-              : nothing}
+            <i class="etherlight"></i>
+            ${up ? html`<i class="halo"></i>` : nothing}
+            <span class="leds">
+              <i
+                class="led-rx ${up && rxMs > 0 ? 'is-active' : ''} ${up ? 'is-lit' : ''}"
+                style="${rxMs > 0 ? `--uc-unifi-act:${rxMs}s;` : ''}"
+              ></i>
+              <i
+                class="led-tx ${up && txMs > 0 ? 'is-active' : ''} ${up ? 'is-lit' : ''}"
+                style="${txMs > 0 ? `--uc-unifi-act:${txMs}s;` : ''}"
+              ></i>
+            </span>
             ${poe ? html`<i class="led-poe"></i>` : nothing}
           </span>
         `;
@@ -324,7 +363,7 @@ function renderPhotoUnit(
           ${map ? renderPortLightsOverlay(device, options, map) : nothing}
         </div>
         ${!map && device.ports.length
-          ? html`<div class="uc-unifi-photo-strip">${renderMiniLedStrip(device, options)}</div>`
+          ? html`<div class="uc-unifi-photo-strip">${renderPortRow(device, options)}</div>`
           : nothing}
       </div>
       <div class="uc-unifi-photo-footer">

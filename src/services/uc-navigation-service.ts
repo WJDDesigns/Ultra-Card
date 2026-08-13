@@ -11,6 +11,8 @@ import {
   NavActionConfig,
   NavShowLabels,
   NavAutohideConfig,
+  NavCollapseConfig,
+  NavCollapseMode,
 } from '../types';
 import { openPopupById } from './popup-trigger-registry';
 import { logicService } from './logic-service';
@@ -106,6 +108,15 @@ class UcNavigationService {
   private autohideMouseHandler: ((e: MouseEvent) => void) | null = null;
   private autohideActive = false;
 
+  /** Collapsed/expanded state keyed by moduleId (shared across all_views scope). */
+  private collapsedState: Map<string, boolean> = new Map();
+
+  // Collapse hide-on-scroll tracking
+  private collapseScrollHandler: ((e: Event) => void) | null = null;
+  private collapseScrollActive = false;
+  private collapseScrollLastY = 0;
+  private collapseEscapeHandler: ((e: KeyboardEvent) => void) | null = null;
+
   // Media player state watcher – detects track changes even when the
   // originating card is on a non-visible view and not receiving hass updates.
   private _mediaWatchInterval: UcVisibilityTimer | null = null;
@@ -113,6 +124,8 @@ class UcNavigationService {
 
   /** On mobile, poll for open dialogs (e.g. date picker) inside shadow roots so we hide the navbar. */
   private _mobileOverlayCheckInterval: UcVisibilityTimer | null = null;
+
+  private static readonly COLLAPSE_STORAGE_PREFIX = 'uc-nav-collapsed:';
 
   // Use the getter to access the shared map
   private get previewOverrides() {
@@ -823,7 +836,89 @@ class UcNavigationService {
         ...(module.nav_media_player || {}),
       },
       nav_styles: module.nav_styles ?? templateConfig?.nav_styles,
+      nav_autohide: {
+        ...(templateConfig?.nav_autohide || {}),
+        ...(module.nav_autohide || {}),
+      },
+      nav_collapse: {
+        ...(templateConfig?.nav_collapse || {}),
+        ...(module.nav_collapse || {}),
+      },
     };
+  }
+
+  private getCollapseStorageKey(moduleId: string): string {
+    return `${UcNavigationService.COLLAPSE_STORAGE_PREFIX}${moduleId}`;
+  }
+
+  /** Resolve whether the navbar should render collapsed for this module. */
+  private isCollapsed(
+    moduleId: string,
+    collapse: NavCollapseConfig | undefined,
+    mode: NavCollapseMode
+  ): boolean {
+    // Scroll mode is transient — use in-memory only, never localStorage
+    if (mode === 'scroll') {
+      if (this.collapsedState.has(moduleId)) {
+        return this.collapsedState.get(moduleId) === true;
+      }
+      return collapse?.start_collapsed !== false;
+    }
+
+    if (this.collapsedState.has(moduleId)) {
+      return this.collapsedState.get(moduleId) === true;
+    }
+
+    // Hydrate from localStorage when remember_state is on (default true)
+    if (collapse?.remember_state !== false) {
+      try {
+        const stored = localStorage.getItem(this.getCollapseStorageKey(moduleId));
+        if (stored === '1' || stored === '0') {
+          const value = stored === '1';
+          this.collapsedState.set(moduleId, value);
+          return value;
+        }
+      } catch {
+        /* private browsing / blocked storage */
+      }
+    }
+
+    const startCollapsed = collapse?.start_collapsed !== false;
+    this.collapsedState.set(moduleId, startCollapsed);
+    return startCollapsed;
+  }
+
+  private setCollapsed(
+    moduleId: string,
+    collapsed: boolean,
+    collapse: NavCollapseConfig | undefined,
+    mode: NavCollapseMode,
+    viewLayer: ViewNavLayer
+  ): void {
+    this.collapsedState.set(moduleId, collapsed);
+
+    // Persist for handle/rail only
+    if (mode !== 'scroll' && collapse?.remember_state !== false) {
+      try {
+        localStorage.setItem(this.getCollapseStorageKey(moduleId), collapsed ? '1' : '0');
+      } catch {
+        /* private browsing / blocked storage */
+      }
+    }
+
+    this.requestRender(viewLayer);
+  }
+
+  private toggleCollapsed(
+    moduleId: string,
+    collapse: NavCollapseConfig | undefined,
+    mode: NavCollapseMode,
+    viewLayer: ViewNavLayer,
+    registered: RegisteredModule
+  ): void {
+    const next = !this.isCollapsed(moduleId, collapse, mode);
+    this.triggerHaptic('tap', registered);
+    this.setCollapsed(moduleId, next, collapse, mode, viewLayer);
   }
 
   private renderNavigationTemplate(
@@ -841,7 +936,7 @@ class UcNavigationService {
     const position =
       deviceConfig.position || (isDesktop ? desktopConfig.position || 'bottom' : 'bottom');
 
-    const showLabels = deviceConfig.show_labels ?? false;
+    let showLabels = deviceConfig.show_labels ?? false;
 
     const hidden = this.resolveBoolean(deviceConfig.hidden, false, hass, navModule, navModule);
     if (hidden) {
@@ -907,9 +1002,32 @@ class UcNavigationService {
       }
     })();
 
-    // Auto-hide logic
+    // Collapse config — mutually exclusive with auto-hide
+    const collapse = navModule.nav_collapse;
+    const collapseMode: NavCollapseMode = collapse?.mode || 'handle';
+    const collapseEnabled = collapse?.enabled === true && !isDashboardEditMode;
+    const isCollapsed =
+      collapseEnabled && this.isCollapsed(registered.moduleId, collapse, collapseMode);
+
+    // Rail mode: force labels off while collapsed
+    if (collapseEnabled && collapseMode === 'rail' && isCollapsed) {
+      showLabels = false;
+    }
+
+    const railSize = collapse?.rail_size ?? 56;
+    const handleSize = collapse?.handle_size ?? 40;
+    const handlePosition = collapse?.handle_position ?? 50;
+    const handleIcon = collapse?.handle_icon || 'mdi:menu';
+    const isLateral = position === 'left' || position === 'right';
+    const showBackdrop =
+      collapseEnabled &&
+      !isCollapsed &&
+      (collapse?.backdrop !== undefined ? collapse.backdrop : isLateral);
+
+    // Auto-hide logic — skipped when collapse is enabled
     const autohide = navModule.nav_autohide;
-    const autohideEnabled = autohide?.enabled === true && !isDashboardEditMode;
+    const autohideEnabled =
+      !collapseEnabled && autohide?.enabled === true && !isDashboardEditMode;
     const isAutoHidden = autohideEnabled && viewLayer.autohideHidden === true;
 
     // Set up auto-hide if enabled
@@ -917,6 +1035,20 @@ class UcNavigationService {
       this.setupAutohide(viewLayer, navModule, position);
     } else {
       this.teardownAutohide(viewLayer);
+    }
+
+    // Scroll-mode collapse listeners
+    if (collapseEnabled && collapseMode === 'scroll') {
+      this.setupCollapseScroll(viewLayer, navModule, registered);
+    } else {
+      this.teardownCollapseScroll();
+    }
+
+    // Escape-to-close when expanded with backdrop
+    if (collapseEnabled && showBackdrop) {
+      this.setupCollapseEscape(registered, viewLayer, collapse, collapseMode);
+    } else {
+      this.teardownCollapseEscape();
     }
 
     // Stack backdrop - closes stack when clicking outside
@@ -937,6 +1069,89 @@ class UcNavigationService {
     // Stack children popup rendered outside .navbar-card to avoid overflow clipping
     const stackPopup = this.renderActiveStackPopup(navModule, hass, registered, viewLayer, position);
 
+    const collapseClass = collapseEnabled
+      ? ` collapse-enabled collapse-mode-${collapseMode}${isCollapsed ? ' collapsed' : ''}`
+      : '';
+
+    const railStyle =
+      collapseEnabled && collapseMode === 'rail'
+        ? ` --uc-nav-rail-size: ${railSize}px;`
+        : '';
+
+    const handleStyleVars = collapseEnabled
+      ? ` --uc-nav-handle-size: ${handleSize}px; --uc-nav-handle-position: ${handlePosition}%;`
+      : '';
+
+    const dockInlineStyle = `${mode === 'docked'
+      ? this.getDockedStyle(position, isDesktop, offset, showLabels)
+      : offsetStyle} justify-content: ${alignment};${dockColor
+      ? ` --uc-nav-dock-color: ${dockColor}; --navbar-button-bg: rgba(255,255,255,0.12); --navbar-button-hover-bg: rgba(255,255,255,0.24); --navbar-button-active-bg: rgba(255,255,255,0.36); --navbar-icon-color: rgba(255,255,255,0.85); --navbar-icon-active-color: #fff;`
+      : ''}${iconColor
+      ? ` --uc-nav-icon-color: ${iconColor}; --navbar-icon-color: ${iconColor}; --navbar-icon-active-color: ${iconColor};`
+      : ''}`;
+
+    const collapseBackdrop = showBackdrop
+      ? html`
+          <div
+            class="nav-collapse-backdrop"
+            style="position: fixed; inset: 0; pointer-events: auto; z-index: 50; background: rgba(0,0,0,0.35);"
+            @click=${() =>
+              this.setCollapsed(registered.moduleId, true, collapse, collapseMode, viewLayer)}
+          ></div>
+        `
+      : '';
+
+    const showHandle =
+      collapseEnabled && (collapseMode === 'handle' || collapseMode === 'rail');
+
+    const collapseHandle = showHandle
+      ? html`
+          <button
+            type="button"
+            class="nav-collapse-handle ${position}${isCollapsed ? ' is-collapsed' : ''}"
+            role="button"
+            tabindex="0"
+            aria-expanded="${!isCollapsed}"
+            aria-label="${isCollapsed ? 'Expand navigation' : 'Collapse navigation'}"
+            @click=${(e: Event) => {
+              e.stopPropagation();
+              this.toggleCollapsed(
+                registered.moduleId,
+                collapse,
+                collapseMode,
+                viewLayer,
+                registered
+              );
+            }}
+            @keydown=${(e: KeyboardEvent) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                this.toggleCollapsed(
+                  registered.moduleId,
+                  collapse,
+                  collapseMode,
+                  viewLayer,
+                  registered
+                );
+              }
+            }}
+          >
+            <ha-icon
+              icon="${isCollapsed
+                ? handleIcon
+                : position === 'left'
+                  ? 'mdi:chevron-left'
+                  : position === 'right'
+                    ? 'mdi:chevron-right'
+                    : position === 'top'
+                      ? 'mdi:chevron-up'
+                      : 'mdi:chevron-down'}"
+            ></ha-icon>
+          </button>
+        `
+      : '';
+
     return html`
       <style>
         ${baseStyles}
@@ -945,9 +1160,9 @@ class UcNavigationService {
       <div
         class="navbar ${isDesktop ? 'desktop' : 'mobile'} ${mode} ${position} ${isAutoHidden
           ? 'autohide-hidden'
-          : ''} ${autohideEnabled ? 'autohide-enabled' : ''} style-${navModule.nav_style ||
+          : ''} ${autohideEnabled ? 'autohide-enabled' : ''}${collapseClass} style-${navModule.nav_style ||
         'uc_modern'}"
-        style="${iconGapStyle}"
+        style="${iconGapStyle}${railStyle}${handleStyleVars}"
       >
         ${isDashboardEditMode
           ? viewLayer.editModePreviewExpanded
@@ -957,13 +1172,7 @@ class UcNavigationService {
                   class="navbar-card ${isDesktop ? 'desktop' : 'mobile'} ${mode} ${position}${dockColor
                     ? ' has-dock-color'
                     : ''}"
-                  style="${mode === 'docked'
-                    ? this.getDockedStyle(position, isDesktop, offset)
-                    : offsetStyle} justify-content: ${alignment};${dockColor
-                    ? ` --uc-nav-dock-color: ${dockColor}; --navbar-button-bg: rgba(255,255,255,0.12); --navbar-button-hover-bg: rgba(255,255,255,0.24); --navbar-button-active-bg: rgba(255,255,255,0.36); --navbar-icon-color: rgba(255,255,255,0.85); --navbar-icon-active-color: #fff;`
-                    : ''}${iconColor
-                    ? ` --uc-nav-icon-color: ${iconColor}; --navbar-icon-color: ${iconColor}; --navbar-icon-active-color: ${iconColor};`
-                    : ''}"
+                  style="${dockInlineStyle}"
                 >
                   ${this.renderRoutesWithMediaPlayer(
                     routes,
@@ -980,18 +1189,12 @@ class UcNavigationService {
               `
             : '' /* Dock hidden — toggle lives in the module placeholder card */
           : html`
-              ${stackBackdrop} ${stackPopup} ${mediaPlayerWidgetTemplate}
+              ${collapseBackdrop} ${stackBackdrop} ${stackPopup} ${mediaPlayerWidgetTemplate}
               <div
                 class="navbar-card ${isDesktop ? 'desktop' : 'mobile'} ${mode} ${position}${dockColor
                   ? ' has-dock-color'
                   : ''}"
-                style="${mode === 'docked'
-                  ? this.getDockedStyle(position, isDesktop, offset)
-                  : offsetStyle} justify-content: ${alignment};${dockColor
-                  ? ` --uc-nav-dock-color: ${dockColor}; --navbar-button-bg: rgba(255,255,255,0.12); --navbar-button-hover-bg: rgba(255,255,255,0.24); --navbar-button-active-bg: rgba(255,255,255,0.36); --navbar-icon-color: rgba(255,255,255,0.85); --navbar-icon-active-color: #fff;`
-                  : ''}${iconColor
-                  ? ` --uc-nav-icon-color: ${iconColor}; --navbar-icon-color: ${iconColor}; --navbar-icon-active-color: ${iconColor};`
-                  : ''}"
+                style="${dockInlineStyle}"
               >
                 ${this.renderRoutesWithMediaPlayer(
                   routes,
@@ -1004,6 +1207,7 @@ class UcNavigationService {
                   showLabels
                 )}
               </div>
+              ${collapseHandle}
               ${this.renderMediaPlayerPopup(mediaPlayerConfig, hass, navModule, registered, viewLayer)}
             `}
       </div>
@@ -2340,6 +2544,7 @@ class UcNavigationService {
     if (/^https?:\/\//i.test(path)) {
       window.open(path, '_blank', 'noopener');
       this.triggerHaptic(actionType, registered);
+      this.maybeCollapseAfterNavigate(registered, viewLayer);
       return;
     }
 
@@ -2353,6 +2558,7 @@ class UcNavigationService {
     );
     this.triggerHaptic('url', registered);
     this.triggerHaptic(actionType, registered);
+    this.maybeCollapseAfterNavigate(registered, viewLayer);
   }
 
   private triggerHaptic(
@@ -2517,7 +2723,7 @@ class UcNavigationService {
           const mod = previewOverride?.module ?? layer.activeModule.module;
           const cfg = previewOverride?.config ?? layer.activeModule.config;
           const navConfig = this.resolveNavigationConfig(mod, cfg);
-          if (navConfig.nav_autohide?.enabled) {
+          if (navConfig.nav_autohide?.enabled && !navConfig.nav_collapse?.enabled) {
             anyActive = true;
             break;
           }
@@ -2529,6 +2735,180 @@ class UcNavigationService {
         this.autohideActive = false;
       }
     }
+  }
+
+  // ── Collapse: hide-on-scroll ──────────────────────────────────────
+
+  private setupCollapseScroll(
+    _viewLayer: ViewNavLayer,
+    _navModule: NavigationModule,
+    _registered: RegisteredModule
+  ): void {
+    if (this.collapseScrollActive) return;
+    this.collapseScrollActive = true;
+    this.collapseScrollLastY = this.getScrollTop();
+
+    this.collapseScrollHandler = () => {
+      const y = this.getScrollTop();
+      const delta = y - this.collapseScrollLastY;
+
+      for (const layer of this.viewLayers.values()) {
+        if (!layer.activeModule) continue;
+        const previewOverride = this.previewOverrides.get(layer.activeModule.moduleId);
+        const mod = previewOverride?.module ?? layer.activeModule.module;
+        const cfg = previewOverride?.config ?? layer.activeModule.config;
+        const navConfig = this.resolveNavigationConfig(mod, cfg);
+        const collapse = navConfig.nav_collapse;
+        if (!collapse?.enabled) continue;
+        const mode: NavCollapseMode = collapse.mode || 'handle';
+        if (mode !== 'scroll') continue;
+
+        const threshold = collapse.scroll_threshold ?? 24;
+        if (Math.abs(delta) < threshold) continue;
+
+        const currentlyCollapsed = this.isCollapsed(layer.activeModule.moduleId, collapse, mode);
+        if (delta > 0 && !currentlyCollapsed) {
+          this.setCollapsed(layer.activeModule.moduleId, true, collapse, mode, layer);
+        } else if (delta < 0 && currentlyCollapsed) {
+          this.setCollapsed(layer.activeModule.moduleId, false, collapse, mode, layer);
+        }
+      }
+
+      this.collapseScrollLastY = y;
+    };
+
+    document.addEventListener('scroll', this.collapseScrollHandler, {
+      passive: true,
+      capture: true,
+    });
+  }
+
+  private teardownCollapseScroll(): void {
+    if (!this.collapseScrollActive) return;
+
+    // Keep listener if any layer still uses scroll collapse
+    let anyScroll = false;
+    for (const layer of this.viewLayers.values()) {
+      if (!layer.activeModule) continue;
+      const previewOverride = this.previewOverrides.get(layer.activeModule.moduleId);
+      const mod = previewOverride?.module ?? layer.activeModule.module;
+      const cfg = previewOverride?.config ?? layer.activeModule.config;
+      const navConfig = this.resolveNavigationConfig(mod, cfg);
+      if (navConfig.nav_collapse?.enabled && (navConfig.nav_collapse.mode || 'handle') === 'scroll') {
+        anyScroll = true;
+        break;
+      }
+    }
+    if (anyScroll) return;
+
+    if (this.collapseScrollHandler) {
+      document.removeEventListener('scroll', this.collapseScrollHandler, {
+        capture: true,
+      } as EventListenerOptions);
+      this.collapseScrollHandler = null;
+    }
+    this.collapseScrollActive = false;
+  }
+
+  private getScrollTop(): number {
+    // HA dashboards typically scroll an inner container, not window
+    const ha = document.querySelector('home-assistant') as HTMLElement | null;
+    const main = ha?.shadowRoot?.querySelector('home-assistant-main') as HTMLElement | null;
+    const drawer = main?.shadowRoot?.querySelector('ha-drawer') as HTMLElement | null;
+    const panel = drawer?.querySelector('hui-root') as HTMLElement | null;
+    const view =
+      (panel?.shadowRoot?.querySelector('.view') as HTMLElement | null) ||
+      (document.querySelector('hui-view') as HTMLElement | null) ||
+      (document.scrollingElement as HTMLElement | null);
+
+    if (view && typeof view.scrollTop === 'number') return view.scrollTop;
+    return window.scrollY || document.documentElement.scrollTop || 0;
+  }
+
+  // ── Collapse: Escape-to-close ─────────────────────────────────────
+
+  private setupCollapseEscape(
+    _registered: RegisteredModule,
+    _viewLayer: ViewNavLayer,
+    _collapse: NavCollapseConfig | undefined,
+    _mode: NavCollapseMode
+  ): void {
+    if (this.collapseEscapeHandler) return;
+
+    this.collapseEscapeHandler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+
+      for (const layer of this.viewLayers.values()) {
+        if (!layer.activeModule) continue;
+        const previewOverride = this.previewOverrides.get(layer.activeModule.moduleId);
+        const mod = previewOverride?.module ?? layer.activeModule.module;
+        const cfg = previewOverride?.config ?? layer.activeModule.config;
+        const navConfig = this.resolveNavigationConfig(mod, cfg);
+        const collapse = navConfig.nav_collapse;
+        if (!collapse?.enabled) continue;
+        const mode: NavCollapseMode = collapse.mode || 'handle';
+        if (mode === 'scroll') continue;
+        if (this.isCollapsed(layer.activeModule.moduleId, collapse, mode)) continue;
+
+        const isDesk = this.isDesktop(navConfig.nav_desktop);
+        const dConfig = isDesk ? navConfig.nav_desktop || {} : navConfig.nav_mobile || {};
+        const pos = dConfig.position || 'bottom';
+        const isLateral = pos === 'left' || pos === 'right';
+        const useBackdrop =
+          collapse.backdrop !== undefined ? collapse.backdrop : isLateral;
+        if (!useBackdrop) continue;
+
+        e.stopPropagation();
+        this.setCollapsed(layer.activeModule.moduleId, true, collapse, mode, layer);
+        break;
+      }
+    };
+    document.addEventListener('keydown', this.collapseEscapeHandler);
+  }
+
+  private teardownCollapseEscape(): void {
+    // Keep Escape handler if any expanded collapse-with-backdrop layer exists
+    for (const layer of this.viewLayers.values()) {
+      if (!layer.activeModule) continue;
+      const previewOverride = this.previewOverrides.get(layer.activeModule.moduleId);
+      const mod = previewOverride?.module ?? layer.activeModule.module;
+      const cfg = previewOverride?.config ?? layer.activeModule.config;
+      const navConfig = this.resolveNavigationConfig(mod, cfg);
+      const collapse = navConfig.nav_collapse;
+      if (!collapse?.enabled) continue;
+      const mode: NavCollapseMode = collapse.mode || 'handle';
+      if (mode === 'scroll') continue;
+      if (this.isCollapsed(layer.activeModule.moduleId, collapse, mode)) continue;
+      const isDesk = this.isDesktop(navConfig.nav_desktop);
+      const dConfig = isDesk ? navConfig.nav_desktop || {} : navConfig.nav_mobile || {};
+      const pos = dConfig.position || 'bottom';
+      const isLateral = pos === 'left' || pos === 'right';
+      const useBackdrop = collapse.backdrop !== undefined ? collapse.backdrop : isLateral;
+      if (useBackdrop) return; // still needed
+    }
+
+    if (!this.collapseEscapeHandler) return;
+    document.removeEventListener('keydown', this.collapseEscapeHandler);
+    this.collapseEscapeHandler = null;
+  }
+
+  /** Collapse the navbar after a successful navigation (handle/rail mode). */
+  private maybeCollapseAfterNavigate(
+    registered: RegisteredModule,
+    viewLayer: ViewNavLayer
+  ): void {
+    const previewOverride = this.previewOverrides.get(registered.moduleId);
+    const mod = previewOverride?.module ?? registered.module;
+    const cfg = previewOverride?.config ?? registered.config;
+    const navConfig = this.resolveNavigationConfig(mod, cfg);
+    const collapse = navConfig.nav_collapse;
+    if (!collapse?.enabled) return;
+
+    const mode: NavCollapseMode = collapse.mode || 'handle';
+    if (mode === 'scroll') return;
+    if (collapse.close_on_navigate === false) return;
+
+    this.setCollapsed(registered.moduleId, true, collapse, mode, viewLayer);
   }
 
   /**
@@ -2782,10 +3162,26 @@ class UcNavigationService {
     return window.innerWidth >= minWidth;
   }
 
-  private getDockedStyle(position: string, isDesktop: boolean, offset: number = 0): string {
+  private getDockedStyle(
+    position: string,
+    isDesktop: boolean,
+    offset: number = 0,
+    showLabels: NavShowLabels = false
+  ): string {
     const offsetMargin = offset > 0 ? ` margin-${position}: ${offset}px;` : '';
     if (position === 'left' || position === 'right') {
-      return `height: 100%; width: ${isDesktop ? '72px' : '64px'}; border-radius: 0;${offsetMargin}`;
+      const iconWidth = isDesktop ? 72 : 64;
+      const labelsVisible =
+        showLabels === true ||
+        (showLabels as unknown) === 'true' ||
+        showLabels === 'text_only' ||
+        showLabels === 'routes_only';
+      // Fixed icon-only width clips labels; grow to fit when labels are on
+      // (floating mode already sizes to content, which is why labels appear there).
+      if (labelsVisible) {
+        return `height: 100%; width: auto; min-width: ${iconWidth}px; max-width: min(220px, 42vw); border-radius: 0;${offsetMargin}`;
+      }
+      return `height: 100%; width: ${iconWidth}px; border-radius: 0;${offsetMargin}`;
     }
     return `width: 100%; border-radius: 0;${offsetMargin}`;
   }
@@ -3312,6 +3708,18 @@ class UcNavigationService {
         font-weight: 600;
         color: var(--primary-text-color);
         white-space: nowrap;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: center;
+      }
+      /* Lateral docks with labels: allow the sidebar to size to content */
+      .navbar-card.docked.left .route,
+      .navbar-card.docked.right .route {
+        min-width: 0;
+        width: 100%;
+        padding: 0 4px;
+        box-sizing: border-box;
       }
       .stack-item {
         position: relative;
@@ -3505,6 +3913,153 @@ class UcNavigationService {
       .navbar.autohide-hidden.right {
         transform: translateX(calc(100% + 8px));
         opacity: 0;
+      }
+
+      /* ── Collapse transitions ───────────────────────────── */
+      .navbar.collapse-enabled .navbar-card {
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+          width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+          height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+          min-width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.35s ease;
+      }
+
+      /* Handle mode: slide dock fully off-screen; handle stays visible */
+      .navbar.collapse-mode-handle.collapsed.bottom .navbar-card {
+        transform: translateY(calc(100% + 8px));
+        opacity: 0;
+        pointer-events: none;
+      }
+      .navbar.collapse-mode-handle.collapsed.top .navbar-card {
+        transform: translateY(calc(-100% - 8px));
+        opacity: 0;
+        pointer-events: none;
+      }
+      .navbar.collapse-mode-handle.collapsed.left .navbar-card {
+        transform: translateX(calc(-100% - 8px));
+        opacity: 0;
+        pointer-events: none;
+      }
+      .navbar.collapse-mode-handle.collapsed.right .navbar-card {
+        transform: translateX(calc(100% + 8px));
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Scroll mode: same off-screen slide as handle, no persistent handle */
+      .navbar.collapse-mode-scroll.collapsed.bottom .navbar-card {
+        transform: translateY(calc(100% + 8px));
+        opacity: 0;
+        pointer-events: none;
+      }
+      .navbar.collapse-mode-scroll.collapsed.top .navbar-card {
+        transform: translateY(calc(-100% - 8px));
+        opacity: 0;
+        pointer-events: none;
+      }
+      .navbar.collapse-mode-scroll.collapsed.left .navbar-card {
+        transform: translateX(calc(-100% - 8px));
+        opacity: 0;
+        pointer-events: none;
+      }
+      .navbar.collapse-mode-scroll.collapsed.right .navbar-card {
+        transform: translateX(calc(100% + 8px));
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Rail mode: shrink to icon strip */
+      .navbar.collapse-mode-rail.collapsed.left .navbar-card,
+      .navbar.collapse-mode-rail.collapsed.right .navbar-card {
+        width: var(--uc-nav-rail-size, 56px) !important;
+        min-width: var(--uc-nav-rail-size, 56px);
+      }
+      .navbar.collapse-mode-rail:not(.collapsed).left .navbar-card,
+      .navbar.collapse-mode-rail:not(.collapsed).right .navbar-card {
+        width: auto !important;
+        min-width: var(--uc-nav-rail-size, 56px);
+      }
+      .navbar.collapse-mode-rail.collapsed.top .navbar-card,
+      .navbar.collapse-mode-rail.collapsed.bottom .navbar-card {
+        max-height: var(--uc-nav-rail-size, 56px);
+      }
+
+      /* Edge handle — outside .navbar-card so it stays on-screen when dock slides away */
+      .nav-collapse-handle {
+        pointer-events: auto;
+        position: absolute;
+        z-index: 70;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--uc-nav-handle-size, 40px);
+        height: var(--uc-nav-handle-size, 40px);
+        padding: 0;
+        margin: 0;
+        border: 1px solid var(--navbar-border-color, rgba(var(--rgb-primary-color), 0.15));
+        border-radius: 12px;
+        background: var(--uc-nav-dock-color, var(--navbar-background-color, var(--card-background-color)));
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+        color: var(--uc-nav-icon-color, var(--navbar-icon-color, var(--primary-text-color)));
+        cursor: pointer;
+        backdrop-filter: blur(var(--navbar-backdrop-blur, 16px)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--navbar-backdrop-blur, 16px)) saturate(180%);
+        transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+      }
+      .nav-collapse-handle:hover {
+        background: var(--navbar-button-hover-bg, rgba(var(--rgb-primary-color), 0.14));
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+      }
+      .nav-collapse-handle:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
+      .nav-collapse-handle ha-icon {
+        --mdc-icon-size: 22px;
+        pointer-events: none;
+      }
+      .nav-collapse-handle.left {
+        left: 0;
+        top: var(--uc-nav-handle-position, 50%);
+        transform: translateY(-50%);
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+      }
+      .nav-collapse-handle.right {
+        right: 0;
+        top: var(--uc-nav-handle-position, 50%);
+        transform: translateY(-50%);
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+      .nav-collapse-handle.top {
+        top: 0;
+        left: var(--uc-nav-handle-position, 50%);
+        transform: translateX(-50%);
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+      }
+      .nav-collapse-handle.bottom {
+        bottom: 0;
+        left: var(--uc-nav-handle-position, 50%);
+        transform: translateX(-50%);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+      /* When dock is expanded in handle mode, tuck handle against the dock edge */
+      .navbar.collapse-mode-handle:not(.collapsed) .nav-collapse-handle.left {
+        left: auto;
+        /* sits just outside the card — card is flex-start aligned */
+      }
+      .nav-collapse-backdrop {
+        z-index: 50;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .navbar.collapse-enabled .navbar-card,
+        .navbar.autohide-enabled {
+          transition: none;
+        }
       }
 
       .badge {

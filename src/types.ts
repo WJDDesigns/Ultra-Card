@@ -4382,7 +4382,7 @@ export type NavShowLabels = boolean | 'text_only' | 'routes_only';
 export type NavAlignment = 'start' | 'center' | 'end' | 'space-between' | 'space-around';
 export type NavDeviceMode = 'docked' | 'floating';
 export type NavDesktopPosition = 'top' | 'bottom' | 'left' | 'right';
-export type NavMobilePosition = 'top' | 'bottom';
+export type NavMobilePosition = 'top' | 'bottom' | 'left' | 'right';
 
 export type NavActionConfig = Omit<ModuleActionConfig, 'action'> & {
   action: ActionType | 'open-popup';
@@ -4529,6 +4529,8 @@ export interface NavigationTemplateConfig {
   nav_styles?: string | undefined;
   nav_haptic?: NavHapticSetting | undefined;
   nav_media_player?: NavMediaPlayerConfig | undefined;
+  nav_autohide?: NavAutohideConfig | undefined;
+  nav_collapse?: NavCollapseConfig | undefined;
 }
 
 export interface NavAutohideConfig {
@@ -4536,6 +4538,32 @@ export interface NavAutohideConfig {
   enabled?: boolean | undefined;
   /** Seconds of inactivity before hiding (default: 3) */
   delay?: number | undefined;
+}
+
+export type NavCollapseMode = 'handle' | 'rail' | 'scroll';
+
+export interface NavCollapseConfig {
+  enabled?: boolean | undefined;
+  /** handle = slide fully off-screen behind an edge tab; rail = shrink to icon strip; scroll = hide on scroll down */
+  mode?: NavCollapseMode | undefined;
+  /** Initial collapsed state when no remembered preference exists (default: true) */
+  start_collapsed?: boolean | undefined;
+  /** Persist collapsed/expanded choice in localStorage (default: true). Scroll mode never persists. */
+  remember_state?: boolean | undefined;
+  /** Handle mode: icon for the edge tab (default: mdi:menu) */
+  handle_icon?: string | undefined;
+  /** Handle mode: size of the edge tab in px (default: 40) */
+  handle_size?: number | undefined;
+  /** Handle mode: position along the edge as % (default: 50) */
+  handle_position?: number | undefined;
+  /** Rail mode: collapsed width/height in px (default: 56) */
+  rail_size?: number | undefined;
+  /** Show backdrop when expanded (default: true for lateral positions) */
+  backdrop?: boolean | undefined;
+  /** Collapse after navigating a route (default: true) */
+  close_on_navigate?: boolean | undefined;
+  /** Scroll mode: px scrolled before toggling (default: 24) */
+  scroll_threshold?: number | undefined;
 }
 
 export interface NavigationModule extends BaseModule {
@@ -4566,6 +4594,8 @@ export interface NavigationModule extends BaseModule {
   nav_media_player?: NavMediaPlayerConfig | undefined;
   /** macOS-style auto-hide configuration */
   nav_autohide?: NavAutohideConfig | undefined;
+  /** Collapsible navbar: edge handle, icon rail, or hide-on-scroll */
+  nav_collapse?: NavCollapseConfig | undefined;
   /** Custom accent color for the dock background (tints styles) */
   nav_dock_color?: string | undefined;
   /** Custom accent color for icons */
@@ -8626,6 +8656,12 @@ export interface UnifiDeviceOverride {
   hidden?: boolean | undefined;
   /** Custom accent color for LEDs / rings. */
   accent_color?: string | undefined;
+  /**
+   * Pin this device's topology parent. Wins over the `Uplink MAC` sensor and
+   * the card's inference — use it for gear HA can't report an uplink for
+   * (UniFi Protect cameras) or when the guess lands on the wrong switch.
+   */
+  uplink_device_id?: string | undefined;
 }
 
 export interface UnifiModule extends BaseModule {
@@ -8663,6 +8699,8 @@ export interface UnifiModule extends BaseModule {
   client_ids?: string[] | undefined;
   /** Render real Ubiquiti product photos when available (default true). */
   use_device_images?: boolean | undefined;
+  /** Show live snapshots on camera tiles in the Devices view (default true). */
+  show_camera_previews?: boolean | undefined;
 
   title?: string | undefined;
   show_title?: boolean | undefined;

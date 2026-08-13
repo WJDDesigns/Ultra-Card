@@ -11,8 +11,14 @@ import {
   PORT_UID_PREFIXES,
   discoverUnifiTopology,
   orderDevices,
+  inferUplinkDeviceId,
+  findDevicePortOnParent,
+  portLabel,
+  portsThroughputMbps,
   isUbiquitiManufacturer,
   isUnifiInfrastructureDevice,
+  parseTemperatureLabel,
+  sortTemperatures,
   suggestVisibleDeviceIds,
   seedCuration,
   type UnifiDevice,
@@ -167,6 +173,27 @@ describe('classifyDevice', () => {
   it('prefers gateway when WAN latency present', () => {
     expect(classifyDevice('Custom GW', { hasWanLatency: true })).toBe('gateway');
   });
+
+  it('classifies UniFi Protect cameras and doorbells', () => {
+    expect(classifyDevice('G5 Bullet')).toBe('camera');
+    expect(classifyDevice('G4 Doorbell Pro')).toBe('camera');
+    expect(classifyDevice('UVC G3 Instant')).toBe('camera');
+    expect(classifyDevice('AI 360')).toBe('camera');
+    expect(classifyDevice('G4 Dome')).toBe('camera');
+    // Camera entity fingerprint is definitive even with an unknown model
+    expect(classifyDevice('Mystery Cam', { hasCamera: true })).toBe('camera');
+  });
+
+  it('never classifies phones like "Moto G4" as cameras', () => {
+    expect(classifyDevice('Moto G4')).not.toBe('camera');
+    expect(classifyDevice('LG G5')).not.toBe('camera');
+  });
+
+  it('classifies NVRs', () => {
+    expect(classifyDevice('UNVR')).toBe('nvr');
+    expect(classifyDevice('UNVR-Pro')).toBe('nvr');
+    expect(classifyDevice('Network Video Recorder')).toBe('nvr');
+  });
 });
 
 describe('kindFromDbType', () => {
@@ -180,7 +207,9 @@ describe('kindFromDbType', () => {
     expect(kindFromDbType('power-supply', 'USP-Plug')).toBe('plug');
     expect(kindFromDbType('power-supply', 'USP-PDU-Pro')).toBe('pdu');
     expect(kindFromDbType('power-supply', 'USP-RPS')).toBe('pdu');
-    expect(kindFromDbType('camera')).toBeNull();
+    expect(kindFromDbType('camera')).toBe('camera');
+    expect(kindFromDbType('doorbell')).toBe('camera');
+    expect(kindFromDbType('nvr')).toBe('nvr');
     expect(kindFromDbType(undefined)).toBeNull();
   });
 });
@@ -230,7 +259,9 @@ describe('orderDevices', () => {
       cpuPct: null,
       memoryPct: null,
       temperatureC: null,
+      temperatures: [],
       clients: null,
+      motionOn: null,
       acPowerBudgetW: null,
       acPowerConsumptionW: null,
       ports: [],
@@ -264,7 +295,9 @@ describe('suggestVisibleDeviceIds / seedCuration', () => {
       cpuPct: null,
       memoryPct: null,
       temperatureC: null,
+      temperatures: [],
       clients: null,
+      motionOn: null,
       acPowerBudgetW: null,
       acPowerConsumptionW: null,
       ports: Array.from({ length: ports }, (_, i) => ({
@@ -332,6 +365,233 @@ describe('suggestVisibleDeviceIds / seedCuration', () => {
   it('does not re-seed after curation_seeded', () => {
     const devices = [mk('gw', 'gateway')];
     expect(seedCuration(devices, { curation_seeded: true, hidden_device_ids: [] })).toBeNull();
+  });
+});
+
+describe('parseTemperatureLabel', () => {
+  it('names the general device temperature', () => {
+    expect(parseTemperatureLabel('device_temperature-aa:bb:cc:dd:ee:ff')).toBe('General');
+  });
+
+  it('names per-probe temperatures from the unique id', () => {
+    expect(parseTemperatureLabel('temperature-cpu-aa:bb:cc:dd:ee:ff')).toBe('CPU');
+    expect(parseTemperatureLabel('temperature-local-aa:bb:cc:dd:ee:ff')).toBe('Local');
+    expect(parseTemperatureLabel('temperature-phy-aa:bb:cc:dd:ee:ff')).toBe('PHY');
+  });
+
+  it('falls back to the translation key and name', () => {
+    expect(parseTemperatureLabel('x', 'device_sub_temperature', 'CPU temperature')).toBe('CPU');
+    expect(parseTemperatureLabel('x', 'device_sub_temperature', 'Local temperature')).toBe('Local');
+    expect(parseTemperatureLabel('x', 'device_temperature')).toBe('General');
+  });
+
+  it('ignores unrelated sensors', () => {
+    expect(parseTemperatureLabel('cpu-aa:bb:cc:dd:ee:ff', 'device_cpu_utilization')).toBeNull();
+    expect(parseTemperatureLabel('port_rx-aa:bb:cc:dd:ee:ff_1')).toBeNull();
+    expect(parseTemperatureLabel('')).toBeNull();
+  });
+
+  it('orders whole-device readings ahead of silicon probes', () => {
+    const mk = (label: string) => ({ label, celsius: 1, entityId: `sensor.${label}` });
+    expect(
+      sortTemperatures([mk('PHY'), mk('CPU'), mk('Local'), mk('General')]).map(t => t.label)
+    ).toEqual(['General', 'Local', 'CPU', 'PHY']);
+  });
+});
+
+describe('inferUplinkDeviceId', () => {
+  const mk = (
+    id: string,
+    kind: UnifiDevice['kind'],
+    ports: Array<{ poeW?: number | null; poeOn?: boolean | null }> = []
+  ): UnifiDevice =>
+    ({
+      deviceId: id,
+      mac: id,
+      name: id,
+      model: kind,
+      manufacturer: 'Ubiquiti Networks',
+      kind,
+      heightU: 1,
+      cpuPct: null,
+      memoryPct: null,
+      temperatureC: null,
+      temperatures: [],
+      clients: null,
+      motionOn: null,
+      acPowerBudgetW: null,
+      acPowerConsumptionW: null,
+      ports: ports.map((p, i) => ({
+        index: i + 1,
+        name: `P${i + 1}`,
+        linkSpeedMbps: 1000,
+        rx: null,
+        tx: null,
+        poePowerW: p.poeW ?? null,
+        poeOn: p.poeOn ?? null,
+        ...(p.poeW != null || p.poeOn != null ? { poeSwitchEntityId: `switch.${id}_poe_${i}` } : {}),
+        enabled: null,
+        up: true,
+      })),
+      outlets: [],
+      entityIds: [],
+    }) as UnifiDevice;
+
+  it('hangs cameras off the PoE switch, not the gateway', () => {
+    const gw = mk('gw', 'gateway');
+    const sw = mk('sw', 'switch', [{ poeW: 6.5 }, { poeW: 11.2 }]);
+    const cam = mk('cam', 'camera');
+    expect(inferUplinkDeviceId(cam, [gw, sw, cam])).toBe('sw');
+  });
+
+  it('hangs APs off the PoE switch too', () => {
+    const gw = mk('gw', 'gateway');
+    const sw = mk('sw', 'switch', [{ poeW: 4.2 }]);
+    const ap = mk('ap', 'ap');
+    expect(inferUplinkDeviceId(ap, [gw, sw, ap])).toBe('sw');
+  });
+
+  it('prefers the switch actually delivering PoE when several exist', () => {
+    const gw = mk('gw', 'gateway');
+    const core = mk('core', 'switch', [{ poeW: 12 }, { poeW: 9 }, { poeW: 4 }]);
+    const agg = mk('agg', 'switch', [{ poeW: 0, poeOn: false }, { poeW: 0, poeOn: false }]);
+    const cam = mk('cam', 'camera');
+    expect(inferUplinkDeviceId(cam, [gw, core, agg, cam])).toBe('core');
+  });
+
+  it('falls back to the gateway when no switch can supply PoE', () => {
+    const gw = mk('gw', 'gateway');
+    const sw = mk('sw', 'switch', [{}, {}]);
+    const cam = mk('cam', 'camera');
+    expect(inferUplinkDeviceId(cam, [gw, sw, cam])).toBe('gw');
+  });
+
+  it('falls back to the gateway when there is no switch at all', () => {
+    const gw = mk('gw', 'gateway');
+    const cam = mk('cam', 'camera');
+    expect(inferUplinkDeviceId(cam, [gw, cam])).toBe('gw');
+  });
+
+  it('keeps switches on the gateway', () => {
+    const gw = mk('gw', 'gateway');
+    const core = mk('core', 'switch', [{ poeW: 12 }]);
+    const edge = mk('edge', 'switch', [{ poeW: 3 }]);
+    expect(inferUplinkDeviceId(edge, [gw, core, edge])).toBe('gw');
+  });
+
+  it('never returns the device itself and tolerates a lone device', () => {
+    const cam = mk('cam', 'camera');
+    expect(inferUplinkDeviceId(cam, [cam])).toBeNull();
+  });
+
+  it('puts NVRs on a switch even without PoE', () => {
+    const gw = mk('gw', 'gateway');
+    const sw = mk('sw', 'switch', [{}, {}]);
+    const nvr = mk('nvr', 'nvr');
+    expect(inferUplinkDeviceId(nvr, [gw, sw, nvr])).toBe('sw');
+  });
+});
+
+describe('link rate sources', () => {
+  const mkPort = (
+    index: number,
+    name: string,
+    over: Partial<UnifiDevice['ports'][number]> = {}
+  ): UnifiDevice['ports'][number] => ({
+    index,
+    name,
+    linkSpeedMbps: 1000,
+    rx: null,
+    tx: null,
+    poePowerW: null,
+    poeOn: null,
+    enabled: null,
+    up: true,
+    ...over,
+  });
+
+  const mkDevice = (name: string, ports: UnifiDevice['ports']): UnifiDevice =>
+    ({
+      deviceId: name,
+      mac: name,
+      name,
+      model: '',
+      manufacturer: 'Ubiquiti Networks',
+      kind: 'switch',
+      heightU: 1,
+      cpuPct: null,
+      memoryPct: null,
+      temperatureC: null,
+      temperatures: [],
+      clients: null,
+      motionOn: null,
+      acPowerBudgetW: null,
+      acPowerConsumptionW: null,
+      ports,
+      outlets: [],
+      entityIds: [],
+    }) as UnifiDevice;
+
+  const hassWith = (units: Record<string, string>) =>
+    ({
+      states: Object.fromEntries(
+        Object.entries(units).map(([id, unit]) => [id, { attributes: { unit_of_measurement: unit } }])
+      ),
+    }) as never;
+
+  it('strips the entity role suffix from a port label', () => {
+    expect(portLabel(mkPort(1, 'Back Left Cam RX'))).toBe('Back Left Cam');
+    expect(portLabel(mkPort(1, 'Port 5 Link speed'))).toBe('Port 5');
+    expect(portLabel(mkPort(1, 'Garage PoE power'))).toBe('Garage');
+  });
+
+  it('sums RX and TX in Mbps across ports', () => {
+    const hass = hassWith({ 'sensor.rx': 'B/s', 'sensor.tx': 'B/s' });
+    const ports = [
+      mkPort(1, 'Port 1', { rx: 1_250_000, tx: 125_000, rxEntityId: 'sensor.rx', txEntityId: 'sensor.tx' }),
+    ];
+    expect(portsThroughputMbps(hass, ports)).toBeCloseTo(11, 5);
+  });
+
+  it('reports null when no port has a bandwidth reading', () => {
+    expect(portsThroughputMbps(hassWith({}), [mkPort(1, 'Port 1')])).toBeNull();
+    expect(portsThroughputMbps(hassWith({}), [])).toBeNull();
+  });
+
+  it('matches a leaf device to the parent port named after it', () => {
+    const parent = mkDevice('Switch', [
+      mkPort(1, 'Port 1 RX'),
+      mkPort(2, 'Back Left RX'),
+      mkPort(3, 'SFP+ 9 RX'),
+    ]);
+    const cam = mkDevice('Back Left', []);
+    expect(findDevicePortOnParent(cam, parent)?.index).toBe(2);
+  });
+
+  it('matches when the port label wraps the device name', () => {
+    const parent = mkDevice('Switch', [mkPort(4, 'Back Left Camera RX')]);
+    expect(findDevicePortOnParent(mkDevice('Back Left', []), parent)?.index).toBe(4);
+  });
+
+  it('ignores factory port labels', () => {
+    const parent = mkDevice('Switch', [mkPort(1, 'Port 1 RX'), mkPort(25, 'SFP+ 25 RX')]);
+    expect(findDevicePortOnParent(mkDevice('Port 1', []), parent)).toBeNull();
+  });
+
+  it('refuses ambiguous label matches', () => {
+    const parent = mkDevice('Switch', [
+      mkPort(1, 'Back Left Camera RX'),
+      mkPort(2, 'Back Left Sensor RX'),
+    ]);
+    expect(findDevicePortOnParent(mkDevice('Back Left', []), parent)).toBeNull();
+  });
+
+  it('breaks a tie in favour of the only live port', () => {
+    const parent = mkDevice('Switch', [
+      mkPort(1, 'Back Left Camera RX', { up: false }),
+      mkPort(2, 'Back Left Camera 2 RX'),
+    ]);
+    expect(findDevicePortOnParent(mkDevice('Back Left', []), parent)?.index).toBe(2);
   });
 });
 
@@ -545,6 +805,241 @@ describe('discoverUnifiTopology', () => {
 
     const topo = discoverUnifiTopology(hass, 'fixture-protect-shell', {});
     expect(topo.devices.map(d => d.deviceId)).toEqual(['gw']);
+  });
+
+  it('admits UniFi Protect cameras and NVRs as devices', () => {
+    const hass = {
+      states: {
+        'sensor.gw_state': { state: 'connected', attributes: {} },
+        'camera.driveway_high': {
+          state: 'recording',
+          attributes: { entity_picture: '/api/camera_proxy/camera.driveway_high?token=x' },
+        },
+        'binary_sensor.driveway_motion': {
+          state: 'on',
+          attributes: { device_class: 'motion' },
+        },
+        'sensor.nvr_storage': { state: '38', attributes: { unit_of_measurement: '%' } },
+      },
+      entities: {
+        'sensor.gw_state': {
+          entity_id: 'sensor.gw_state',
+          device_id: 'gw',
+          platform: 'unifi',
+          unique_id: 'device_state-aa:bb:cc:dd:ee:01',
+          translation_key: 'device_state',
+        },
+        'camera.driveway_high': {
+          entity_id: 'camera.driveway_high',
+          device_id: 'cam1',
+          platform: 'unifiprotect',
+          unique_id: 'aabbccddee10_high',
+        },
+        'binary_sensor.driveway_motion': {
+          entity_id: 'binary_sensor.driveway_motion',
+          device_id: 'cam1',
+          platform: 'unifiprotect',
+          unique_id: 'aabbccddee10_motion',
+        },
+        'sensor.nvr_storage': {
+          entity_id: 'sensor.nvr_storage',
+          device_id: 'nvr1',
+          platform: 'unifiprotect',
+          unique_id: 'aabbccddee11_storage',
+        },
+      },
+      devices: {
+        gw: {
+          id: 'gw',
+          name: 'Gateway',
+          manufacturer: 'Ubiquiti Networks',
+          model: 'UDM-SE',
+          connections: [['mac', 'aa:bb:cc:dd:ee:01']],
+        },
+        cam1: {
+          id: 'cam1',
+          name: 'Driveway',
+          manufacturer: 'Ubiquiti',
+          model: 'G5 Bullet',
+          connections: [['mac', 'aa:bb:cc:dd:ee:10']],
+        },
+        nvr1: {
+          id: 'nvr1',
+          name: 'Network Video Recorder',
+          manufacturer: 'Ubiquiti',
+          model: 'UNVR',
+          connections: [['mac', 'aa:bb:cc:dd:ee:11']],
+        },
+      },
+      areas: {},
+    } as any;
+
+    const topo = discoverUnifiTopology(hass, 'fixture-protect-hw', {});
+    expect(topo.devices.map(d => d.deviceId).sort()).toEqual(['cam1', 'gw', 'nvr1']);
+    const cam = topo.devices.find(d => d.deviceId === 'cam1')!;
+    expect(cam.kind).toBe('camera');
+    expect(cam.cameraEntityId).toBe('camera.driveway_high');
+    expect(cam.motionEntityId).toBe('binary_sensor.driveway_motion');
+    expect(cam.motionOn).toBe(true);
+    expect(topo.devices.find(d => d.deviceId === 'nvr1')?.kind).toBe('nvr');
+  });
+
+  it('drops Protect duplicates whose MAC the Network integration already owns', () => {
+    const hass = {
+      states: {
+        'sensor.sw_state': { state: 'connected', attributes: {} },
+        'sensor.dup_storage': { state: '10', attributes: {} },
+      },
+      entities: {
+        'sensor.sw_state': {
+          entity_id: 'sensor.sw_state',
+          device_id: 'sw',
+          platform: 'unifi',
+          unique_id: 'device_state-aa:bb:cc:dd:ee:20',
+          translation_key: 'device_state',
+        },
+        'sensor.dup_storage': {
+          entity_id: 'sensor.dup_storage',
+          device_id: 'dup',
+          platform: 'unifiprotect',
+          unique_id: 'aabbccddee20_storage',
+        },
+      },
+      devices: {
+        sw: {
+          id: 'sw',
+          name: 'Switch',
+          manufacturer: 'Ubiquiti Networks',
+          model: 'USW-24-PoE',
+          connections: [['mac', 'aa:bb:cc:dd:ee:20']],
+        },
+        dup: {
+          id: 'dup',
+          name: 'Switch (Protect)',
+          manufacturer: 'Ubiquiti',
+          model: 'UNVR',
+          connections: [['mac', 'aa:bb:cc:dd:ee:20']],
+        },
+      },
+      areas: {},
+    } as any;
+
+    const topo = discoverUnifiTopology(hass, 'fixture-protect-macdupe', {});
+    expect(topo.devices.map(d => d.deviceId)).toEqual(['sw']);
+  });
+
+  it('reads AP per-probe temperatures without mistaking CPU temp for CPU load', () => {
+    const hass = {
+      states: {
+        'sensor.ap_state': { state: 'connected', attributes: {} },
+        'sensor.ap_cpu': { state: '8', attributes: { unit_of_measurement: '%' } },
+        'sensor.ap_cpu_temperature': {
+          state: '64',
+          attributes: { unit_of_measurement: '°C', device_class: 'temperature' },
+        },
+        'sensor.ap_local_temperature': {
+          state: '46',
+          attributes: { unit_of_measurement: '°C', device_class: 'temperature' },
+        },
+      },
+      entities: {
+        'sensor.ap_state': {
+          entity_id: 'sensor.ap_state',
+          device_id: 'ap',
+          platform: 'unifi',
+          unique_id: 'device_state-aa:bb:cc:dd:ee:30',
+          translation_key: 'device_state',
+        },
+        'sensor.ap_cpu': {
+          entity_id: 'sensor.ap_cpu',
+          device_id: 'ap',
+          platform: 'unifi',
+          unique_id: 'cpu_utilization-aa:bb:cc:dd:ee:30',
+          translation_key: 'device_cpu_utilization',
+        },
+        'sensor.ap_cpu_temperature': {
+          entity_id: 'sensor.ap_cpu_temperature',
+          device_id: 'ap',
+          platform: 'unifi',
+          unique_id: 'temperature-cpu-aa:bb:cc:dd:ee:30',
+          translation_key: 'device_sub_temperature',
+          original_name: 'CPU temperature',
+        },
+        'sensor.ap_local_temperature': {
+          entity_id: 'sensor.ap_local_temperature',
+          device_id: 'ap',
+          platform: 'unifi',
+          unique_id: 'temperature-local-aa:bb:cc:dd:ee:30',
+          translation_key: 'device_sub_temperature',
+          original_name: 'Local temperature',
+        },
+      },
+      devices: {
+        ap: {
+          id: 'ap',
+          name: 'Office AP',
+          manufacturer: 'Ubiquiti Networks',
+          model: 'U7PROMAX',
+          connections: [['mac', 'aa:bb:cc:dd:ee:30']],
+        },
+      },
+      areas: {},
+    } as any;
+
+    const topo = discoverUnifiTopology(hass, 'fixture-ap-temps', {});
+    const ap = topo.devices[0];
+    // CPU load must still come from the utilization sensor, not 64 °C
+    expect(ap.cpuPct).toBe(8);
+    expect(ap.cpuEntityId).toBe('sensor.ap_cpu');
+    expect(ap.temperatures.map(t => t.label)).toEqual(['Local', 'CPU']);
+    // Board temp is the headline, matching what the UniFi console shows
+    expect(ap.temperatureC).toBe(46);
+    expect(ap.temperatureEntityId).toBe('sensor.ap_local_temperature');
+  });
+
+  it('prefers the general device temperature when present', () => {
+    const hass = {
+      states: {
+        'sensor.sw_temperature': {
+          state: '52',
+          attributes: { unit_of_measurement: '°C', device_class: 'temperature' },
+        },
+        'sensor.sw_cpu_temperature': {
+          state: '70',
+          attributes: { unit_of_measurement: '°C', device_class: 'temperature' },
+        },
+      },
+      entities: {
+        'sensor.sw_temperature': {
+          entity_id: 'sensor.sw_temperature',
+          device_id: 'sw',
+          platform: 'unifi',
+          unique_id: 'device_temperature-aa:bb:cc:dd:ee:31',
+        },
+        'sensor.sw_cpu_temperature': {
+          entity_id: 'sensor.sw_cpu_temperature',
+          device_id: 'sw',
+          platform: 'unifi',
+          unique_id: 'temperature-cpu-aa:bb:cc:dd:ee:31',
+          translation_key: 'device_sub_temperature',
+          original_name: 'CPU temperature',
+        },
+      },
+      devices: {
+        sw: {
+          id: 'sw',
+          name: 'Core Switch',
+          manufacturer: 'Ubiquiti Networks',
+          model: 'USW-24-PoE',
+          connections: [['mac', 'aa:bb:cc:dd:ee:31']],
+        },
+      },
+      areas: {},
+    } as any;
+
+    const topo = discoverUnifiTopology(hass, 'fixture-general-temp', {});
+    expect(topo.devices[0].temperatureC).toBe(52);
+    expect(topo.devices[0].temperatures.map(t => t.label)).toEqual(['General', 'CPU']);
   });
 
   it('resolves uplink topology via uplink mac sensor', () => {

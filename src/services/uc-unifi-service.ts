@@ -22,7 +22,15 @@ import { ucUnifiDeviceDb } from './uc-unifi-device-db';
 /* Types                                                                       */
 /* -------------------------------------------------------------------------- */
 
-export type UnifiDeviceKind = 'gateway' | 'switch' | 'ap' | 'pdu' | 'plug' | 'other';
+export type UnifiDeviceKind =
+  | 'gateway'
+  | 'switch'
+  | 'ap'
+  | 'pdu'
+  | 'plug'
+  | 'camera'
+  | 'nvr'
+  | 'other';
 
 export type UnifiPortRole =
   | 'rx'
@@ -58,6 +66,13 @@ export interface UnifiPort {
   up: boolean;
 }
 
+export interface UnifiTemperature {
+  /** Probe name as UniFi reports it: General / Local / CPU / PHY. */
+  label: string;
+  celsius: number | null;
+  entityId: string;
+}
+
 export interface UnifiOutlet {
   index: number;
   name: string;
@@ -83,11 +98,20 @@ export interface UnifiDevice {
   cpuEntityId?: string | undefined;
   memoryPct: number | null;
   memoryEntityId?: string | undefined;
+  /** Headline temperature (General, else Local, else CPU, else PHY). */
   temperatureC: number | null;
   temperatureEntityId?: string | undefined;
+  /** Every temperature probe the device exposes. */
+  temperatures: UnifiTemperature[];
   uptimeEntityId?: string | undefined;
   clients: number | null;
   clientsEntityId?: string | undefined;
+  /** Live camera entity (UniFi Protect) for snapshot previews. */
+  cameraEntityId?: string | undefined;
+  motionEntityId?: string | undefined;
+  /** Current motion state when a motion sensor exists. */
+  motionOn: boolean | null;
+  doorbellEntityId?: string | undefined;
   uplinkMac?: string | undefined;
   uplinkMacEntityId?: string | undefined;
   /** Device id of the uplink peer when resolved. */
@@ -150,6 +174,8 @@ export interface UnifiCapabilityReport {
   portLinkSpeed: CapStatus;
   portPoe: CapStatus;
   deviceClients: CapStatus;
+  /** Device temperature probes (disabled by default on most APs). */
+  deviceTemperature: CapStatus;
   wanLatency: CapStatus;
   /** Entity ids that exist but are disabled_by (candidates for one-click enable). */
   disabledEntityIds: string[];
@@ -252,6 +278,15 @@ const UBNT_MANUFACTURERS = new Set([
 const INFRA_MODEL_RE =
   /\b(UDM|UDMP|UXG|UCG|USG|UDR|USW|US-8|US-16|US-24|US-48|U6|U7|UAP|E7|UX|USP|PDU|UCK|UNVR|UVC|ULTE|UGW|AGGREGATION|ENTERPRISE|DREAM\s*MACHINE|CLOUD\s*GATEWAY|SECURITY\s*GATEWAY|ACCESS\s*POINT|SWITCH)\b/i;
 
+/** UniFi Protect camera families: UVC prefix, G3–G6 form-factor names,
+ *  AI-series, and doorbells. Requires a form-factor word after G-numbers so
+ *  tracked clients like "Moto G4" never classify as cameras. */
+const CAMERA_MODEL_RE =
+  /(^|[^A-Z0-9])(UVC[\sA-Z0-9-]*|G[3-6][\s-]?(BULLET|DOME|FLEX|PRO|PTZ|INSTANT|TURRET|DOORBELL)[\sA-Z0-9-]*|AI[\s-]?(360|BULLET|DOME|PRO|THETA|DSLR|PORT|KEY)|DOORBELL)([^A-Z0-9]|$)/;
+
+const NVR_MODEL_RE =
+  /(^|[^A-Z0-9])(UNVR[\sA-Z0-9-]*|ENVR|NETWORK\s*VIDEO\s*RECORDER)([^A-Z0-9]|$)/;
+
 /** unique_id prefixes used by the official UniFi integration for ports/outlets. */
 export const PORT_UID_PREFIXES: Record<string, UnifiPortRole> = {
   'port_rx-': 'rx',
@@ -278,6 +313,8 @@ const DEVICE_SENSOR_KEYS = [
   'device_cpu_utilization',
   'device_memory_utilization',
   'device_clients',
+  'device_temperature',
+  'device_sub_temperature',
   'device_uplink_mac',
   'wan_latency',
   'smartpower_ac_power_budget',
@@ -371,6 +408,61 @@ export function parsePortUniqueId(
   return null;
 }
 
+const TEMP_LABELS: Record<string, string> = {
+  cpu: 'CPU',
+  phy: 'PHY',
+  local: 'Local',
+  general: 'General',
+  board: 'Board',
+  system: 'System',
+};
+
+function normalizeTempLabel(raw: string): string {
+  const key = raw.toLowerCase();
+  return TEMP_LABELS[key] || raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+}
+
+/**
+ * Identify a UniFi temperature sensor and name its probe.
+ *
+ * The integration ships two families: one "Device temperature" sensor
+ * (`device_temperature-<mac>`, from the device's general_temperature, enabled
+ * by default but only present on gear that reports it) and per-probe sensors
+ * (`temperature-cpu|local|phy-<mac>`) that Home Assistant **disables by
+ * default**. Most access points only expose the per-probe family, which is
+ * why their temperature looks missing until those entities are enabled.
+ */
+export function parseTemperatureLabel(
+  uniqueId: string | undefined | null,
+  translationKey?: string | null | undefined,
+  originalName?: string | null | undefined
+): string | null {
+  const uid = uniqueId || '';
+  if (uid.startsWith('device_temperature-')) return 'General';
+  const sub = /^temperature-([a-z0-9]+)-/i.exec(uid);
+  if (sub) return normalizeTempLabel(sub[1]);
+  if (translationKey === 'device_temperature') return 'General';
+  if (translationKey === 'device_sub_temperature') {
+    // Localized names look like "CPU temperature" / "Local temperature".
+    const m = /^\s*([A-Za-z]+)\s+temp/i.exec(originalName || '');
+    return m ? normalizeTempLabel(m[1]) : 'Temperature';
+  }
+  return null;
+}
+
+/** Display order: whole-device reading first, then board, then silicon. */
+const TEMP_ORDER = ['General', 'Local', 'Board', 'System', 'CPU', 'PHY'];
+
+export function sortTemperatures(temps: UnifiTemperature[]): UnifiTemperature[] {
+  const rank = (t: UnifiTemperature): number => {
+    const i = TEMP_ORDER.indexOf(t.label);
+    return i === -1 ? TEMP_ORDER.length : i;
+  };
+  return [...temps].sort(
+    (a, b) => rank(a) - rank(b) || a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+  );
+}
+
 export function isClientUniqueId(uniqueId: string | undefined | null): boolean {
   if (!uniqueId) return false;
   // Port unique_ids also start with patterns — check port prefixes first
@@ -396,6 +488,13 @@ export function kindFromDbType(
     case 'gateway':
     case 'router':
       return 'gateway';
+    case 'camera':
+    case 'doorbell':
+      return 'camera';
+    case 'nvr':
+    case 'recorder':
+    case 'dvr':
+      return 'nvr';
     case 'power-supply': {
       const m = (model || '').toUpperCase();
       // Rack-mount power (PDU Pro, RPS) vs. wall plugs / power strips
@@ -429,6 +528,8 @@ export function classifyDevice(
     hasClients?: boolean;
     hasDeviceState?: boolean;
     hasCpu?: boolean;
+    /** Device exposes a camera entity (UniFi Protect). */
+    hasCamera?: boolean;
   } = {}
 ): UnifiDeviceKind {
   const m = (model || '').toUpperCase();
@@ -437,6 +538,9 @@ export function classifyDevice(
   const dbEntry = ucUnifiDeviceDb.lookup(model);
   const dbKind = dbEntry ? kindFromDbType(dbEntry.deviceType, model) : null;
   if (dbKind) return dbKind;
+
+  if (NVR_MODEL_RE.test(m)) return 'nvr';
+  if (CAMERA_MODEL_RE.test(m)) return 'camera';
 
   if (PLUG_MODEL_RE.test(m)) return 'plug';
 
@@ -469,6 +573,9 @@ export function classifyDevice(
   if (fingerprint.hasOutlets) {
     return (fingerprint.outletCount ?? 0) > 2 ? 'pdu' : 'plug';
   }
+
+  // A camera entity is definitive even when the model string is unknown.
+  if (fingerprint.hasCamera) return 'camera';
 
   return 'other';
 }
@@ -529,6 +636,8 @@ export function isInfrastructureAccumulator(acc: {
   restartEntityId?: string | undefined;
   acBudgetEntityId?: string | undefined;
   acConsumeEntityId?: string | undefined;
+  cameraEntityId?: string | undefined;
+  motionEntityId?: string | undefined;
   wanLatency: readonly unknown[];
 }): boolean {
   if (!isUnifiInfrastructureDevice(acc.device)) {
@@ -541,6 +650,7 @@ export function isInfrastructureAccumulator(acc: {
       !!acc.memoryEntityId ||
       !!acc.uplinkMacEntityId ||
       !!acc.acBudgetEntityId ||
+      !!acc.cameraEntityId ||
       acc.wanLatency.length > 0;
     if (!hasInfraEntities) return false;
   }
@@ -557,14 +667,18 @@ export function isInfrastructureAccumulator(acc: {
     !!acc.restartEntityId ||
     !!acc.acBudgetEntityId ||
     !!acc.acConsumeEntityId ||
+    !!acc.cameraEntityId ||
+    !!acc.motionEntityId ||
     acc.wanLatency.length > 0 ||
-    looksLikeUnifiInfraModel(acc.device.model);
+    looksLikeUnifiInfraModel(acc.device.model) ||
+    CAMERA_MODEL_RE.test((acc.device.model || '').toUpperCase()) ||
+    NVR_MODEL_RE.test((acc.device.model || '').toUpperCase());
   return hasSomething;
 }
 
 export function estimateHeightU(kind: UnifiDeviceKind, portCount: number, model: string): number {
   const m = (model || '').toUpperCase();
-  if (kind === 'ap' || kind === 'plug') return 1;
+  if (kind === 'ap' || kind === 'plug' || kind === 'camera') return 1;
   if (kind === 'pdu') {
     if (/PRO|24|20/.test(m)) return 1;
     return 1;
@@ -578,6 +692,144 @@ export function estimateHeightU(kind: UnifiDeviceKind, portCount: number, model:
   return 1;
 }
 
+/** Ports wired for PoE (a PoE entity exists, or power is being reported). */
+function poePortCount(d: UnifiDevice): number {
+  return d.ports.filter(
+    p => !!p.poeSwitchEntityId || !!p.poePowerEntityId || p.poePowerW != null
+  ).length;
+}
+
+/** Ports actively delivering PoE right now. */
+function activePoePortCount(d: UnifiDevice): number {
+  return d.ports.filter(p => p.poeOn === true || (p.poePowerW != null && p.poePowerW > 0)).length;
+}
+
+/** Leaf hardware that hangs off a switch rather than the gateway directly. */
+const EDGE_KINDS = new Set<UnifiDeviceKind>(['ap', 'camera', 'nvr']);
+
+/**
+ * Best-guess parent for a device whose `Uplink MAC` sensor isn't available —
+ * notably UniFi Protect cameras, which the Network integration never reports
+ * an uplink for. PoE-powered edge gear is fed by a PoE switch when one
+ * exists; blindly inferring the gateway hung wall cameras off the wrong
+ * branch. Everything else falls back to the gateway.
+ */
+export function inferUplinkDeviceId(
+  device: UnifiDevice,
+  candidates: readonly UnifiDevice[]
+): string | null {
+  const other = candidates.filter(d => d.deviceId !== device.deviceId);
+  const gatewayId = other.find(d => d.kind === 'gateway')?.deviceId ?? null;
+  if (!EDGE_KINDS.has(device.kind)) return gatewayId;
+
+  const switches = other.filter(d => d.kind === 'switch');
+  if (!switches.length) return gatewayId;
+
+  // NVRs just need a switch port; APs and cameras need a PoE port, so rank by
+  // PoE actually being delivered — the core switch wins over an unpowered
+  // aggregation switch.
+  const wantsPoe = device.kind !== 'nvr';
+  const score = (d: UnifiDevice): number[] => [
+    wantsPoe ? activePoePortCount(d) : 0,
+    wantsPoe ? poePortCount(d) : 0,
+    d.ports.length,
+  ];
+  const best = [...switches].sort((a, b) => {
+    const sa = score(a);
+    const sb = score(b);
+    for (let i = 0; i < sa.length; i++) {
+      if (sb[i] !== sa[i]) return sb[i] - sa[i];
+    }
+    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+  })[0];
+
+  // No switch can supply PoE: the gateway's own PoE ports are the better bet.
+  if (wantsPoe && poePortCount(best) === 0 && gatewayId) return gatewayId;
+  return best.deviceId;
+}
+
+/** Role words the UniFi integration appends to a port's controller label. */
+const PORT_ROLE_SUFFIX_RE = /\s+(rx|tx|link\s*speed|poe\s*power|poe|power\s*cycle|port\s*enable)$/i;
+
+/** Factory port labels ("Port 7", "SFP+ 25") carry no downstream identity. */
+const GENERIC_PORT_NAME_RE = /^(sfp\+?\s*)?port\s*\d+$/i;
+const GENERIC_SFP_NAME_RE = /^sfp\+?\s*\d+$/i;
+
+/** The controller-side port label, without the entity's role suffix. */
+export function portLabel(port: UnifiPort): string {
+  return (port.name || '').replace(PORT_ROLE_SUFFIX_RE, '').trim();
+}
+
+function normalizeLabel(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function unitOf(hass: HomeAssistant, entityId: string | undefined): string {
+  if (!entityId) return '';
+  return String(hass.states?.[entityId]?.attributes?.unit_of_measurement || '');
+}
+
+/**
+ * Combined RX+TX across ports, in Mbps. Null when not a single port reports a
+ * rate: port bandwidth is an opt-in integration option, and a missing sensor
+ * must never read as "no traffic".
+ */
+export function portsThroughputMbps(
+  hass: HomeAssistant,
+  ports: readonly UnifiPort[]
+): number | null {
+  let total = 0;
+  let measured = false;
+  for (const p of ports) {
+    const rx = toMbps(p.rx, unitOf(hass, p.rxEntityId));
+    const tx = toMbps(p.tx, unitOf(hass, p.txEntityId));
+    if (rx != null) {
+      total += rx;
+      measured = true;
+    }
+    if (tx != null) {
+      total += tx;
+      measured = true;
+    }
+  }
+  return measured ? total : null;
+}
+
+/**
+ * Locate the parent switch port a device is plugged into.
+ *
+ * The UniFi integration keys ports by `<switch mac>_<index>` only — nothing in
+ * the entity registry or state attributes names the client on the far end. The
+ * one association it does carry is the controller's port label, which admins
+ * routinely set to the device it feeds. Matching is therefore deliberately
+ * strict: factory labels are ignored, and an ambiguous label wins nothing.
+ */
+export function findDevicePortOnParent(
+  device: UnifiDevice,
+  parent: UnifiDevice
+): UnifiPort | null {
+  const target = normalizeLabel(device.name);
+  if (target.length < 4) return null;
+
+  const matches = parent.ports.filter(p => {
+    const label = portLabel(p);
+    if (!label || GENERIC_PORT_NAME_RE.test(label) || GENERIC_SFP_NAME_RE.test(label)) return false;
+    const n = normalizeLabel(label);
+    if (n.length < 4) return false;
+    return n === target || n.includes(target) || target.includes(n);
+  });
+  if (!matches.length) return null;
+
+  const exact = matches.find(p => normalizeLabel(portLabel(p)) === target);
+  if (exact) return exact;
+  if (matches.length === 1) return matches[0];
+  const up = matches.filter(p => p.up);
+  return up.length === 1 ? up[0] : null;
+}
+
 /**
  * Default visible set for a new card: gateways, switches, PDUs first.
  * APs are included only when the total stays small so racks don't explode.
@@ -588,6 +840,8 @@ export function suggestVisibleDeviceIds(
 ): string[] {
   const max = options?.max ?? 16;
   const includeAps = options?.includeAps ?? devices.filter(d => d.kind === 'ap').length <= 8;
+  // Cameras are eye candy, not core rack gear — auto-show only small fleets.
+  const includeCameras = devices.filter(d => d.kind === 'camera').length <= 6;
 
   const priority = (k: UnifiDeviceKind): number => {
     switch (k) {
@@ -595,12 +849,16 @@ export function suggestVisibleDeviceIds(
         return 0;
       case 'switch':
         return 1;
-      case 'pdu':
+      case 'nvr':
         return 2;
-      case 'ap':
+      case 'pdu':
         return 3;
-      default:
+      case 'ap':
         return 4;
+      case 'camera':
+        return 5;
+      default:
+        return 6;
     }
   };
 
@@ -613,6 +871,7 @@ export function suggestVisibleDeviceIds(
   const out: string[] = [];
   for (const d of sorted) {
     if (d.kind === 'ap' && !includeAps) continue;
+    if (d.kind === 'camera' && !includeCameras) continue;
     // Smart plugs / outlets and unclassified gear stay hidden until the user
     // explicitly shows them.
     if (d.kind === 'plug') continue;
@@ -758,14 +1017,19 @@ function buildTopologyFromHass(
     entityIds: string[];
     /** Count of entities from the `unifi` platform on this device. */
     unifiCount: number;
+    /** Count of entities from the `unifiprotect` platform on this device. */
+    protectCount: number;
     ports: Map<number, PortBucket>;
     outlets: Map<number, OutletBucket>;
     stateEntityId?: string;
     cpuEntityId?: string;
     memoryEntityId?: string;
-    temperatureEntityId?: string;
+    temps: Map<string, { label: string; entityId: string }>;
     uptimeEntityId?: string;
     clientsEntityId?: string;
+    cameraEntityId?: string;
+    motionEntityId?: string;
+    doorbellEntityId?: string;
     uplinkMacEntityId?: string;
     ledEntityId?: string;
     restartEntityId?: string;
@@ -782,8 +1046,10 @@ function buildTopologyFromHass(
       device: row,
       entityIds: [],
       unifiCount: 0,
+      protectCount: 0,
       ports: new Map(),
       outlets: new Map(),
+      temps: new Map(),
       wanLatency: [],
     });
   }
@@ -882,6 +1148,30 @@ function buildTopologyFromHass(
     const acc = byDevice.get(deviceId)!;
     acc.entityIds.push(entityId);
     if (isUnifiPlatform) acc.unifiCount++;
+    if (row?.platform === 'unifiprotect') acc.protectCount++;
+
+    // UniFi Protect hardware (cameras, doorbells, NVRs)
+    if (domain === 'camera') {
+      // Prefer the high-resolution channel when Protect exposes several
+      if (!acc.cameraEntityId || /high/i.test(uniqueId + entityId)) {
+        acc.cameraEntityId = entityId;
+      }
+      continue;
+    }
+    if (domain === 'binary_sensor') {
+      const dc = st?.attributes?.device_class;
+      if (dc === 'motion' && !acc.motionEntityId) {
+        acc.motionEntityId = entityId;
+        continue;
+      }
+      if (
+        !acc.doorbellEntityId &&
+        (dc === 'occupancy' || /doorbell/i.test(`${uniqueId} ${entityId} ${originalName}`))
+      ) {
+        acc.doorbellEntityId = entityId;
+        continue;
+      }
+    }
 
     // Port / outlet via unique_id
     const parsed = parsePortUniqueId(uniqueId);
@@ -937,6 +1227,23 @@ function buildTopologyFromHass(
       continue;
     }
 
+    // Temperatures must be claimed before the CPU/memory heuristics below:
+    // the per-probe unique_id `temperature-cpu-<mac>` contains "cpu", so the
+    // CPU-utilization matcher would otherwise report °C as a percentage.
+    if (domain === 'sensor') {
+      const label =
+        parseTemperatureLabel(uniqueId, tKey, originalName) ??
+        (st?.attributes?.device_class === 'temperature'
+          ? normalizeTempLabel(
+              /^\s*([A-Za-z]+)\s+temp/i.exec(originalName || '')?.[1] || 'Temperature'
+            )
+          : null);
+      if (label) {
+        if (!acc.temps.has(label)) acc.temps.set(label, { label, entityId });
+        continue;
+      }
+    }
+
     // Device-level sensors via translation_key / unique_id / name heuristics
     if (tKey === 'device_state' || uniqueId.startsWith('device_state-') || (domain === 'sensor' && /state$/i.test(entityId) && !acc.stateEntityId)) {
       if (tKey === 'device_state' || uniqueId.includes('device_state') || /_state$/.test(entityId)) {
@@ -986,10 +1293,6 @@ function buildTopologyFromHass(
       acc.acConsumeEntityId = entityId;
       continue;
     }
-    if (domain === 'sensor' && st?.attributes?.device_class === 'temperature' && !acc.temperatureEntityId) {
-      acc.temperatureEntityId = entityId;
-      continue;
-    }
     if (domain === 'sensor' && (st?.attributes?.device_class === 'timestamp' || /uptime/i.test(entityId)) && /uptime/i.test(uniqueId + entityId + originalName)) {
       acc.uptimeEntityId = entityId;
       continue;
@@ -1037,9 +1340,11 @@ function buildTopologyFromHass(
   // (Sync path only sees enabled entities in states; async path fills the rest.)
 
   const macToDeviceId = new Map<string, string>();
+  const networkMacs = new Set<string>();
   for (const [id, acc] of byDevice) {
     const mac = deviceMac(acc.device);
     if (mac) macToDeviceId.set(mac, id);
+    if (mac && acc.unifiCount > 0) networkMacs.add(mac);
   }
 
   const devices: UnifiDevice[] = [];
@@ -1047,10 +1352,6 @@ function buildTopologyFromHass(
 
   for (const [id, acc] of byDevice) {
     if (!isInfrastructureAccumulator(acc as Parameters<typeof isInfrastructureAccumulator>[0])) continue;
-    // Devices with zero `unifi`-platform entities are shells owned by other
-    // integrations (e.g. the same UDM registered again by UniFi Protect).
-    // Rendering them would duplicate hardware in the rack.
-    if (acc.unifiCount === 0) continue;
 
     const areaId = acc.device.area_id || undefined;
     if (areaFilter) {
@@ -1074,7 +1375,19 @@ function buildTopologyFromHass(
       hasClients: !!acc.clientsEntityId,
       hasDeviceState: !!acc.stateEntityId,
       hasCpu: !!acc.cpuEntityId,
+      hasCamera: !!acc.cameraEntityId,
     });
+
+    // Admission: devices need entities from the Network (`unifi`) or Protect
+    // (`unifiprotect`) integrations — anything else is a shell we'd render
+    // with no live data. Protect also registers the console it runs on
+    // (UDM / UDM-SE), which duplicates the Network entry: drop Protect-only
+    // gateways and anything whose MAC the Network integration already owns.
+    if (acc.unifiCount === 0) {
+      if (acc.protectCount === 0) continue;
+      if (kind === 'gateway') continue;
+      if (mac && networkMacs.has(mac)) continue;
+    }
 
     const ports: UnifiPort[] = [...acc.ports.values()]
       .sort((a, b) => a.index - b.index)
@@ -1140,6 +1453,17 @@ function buildTopologyFromHass(
         switchEntityId: ob.switch,
       }));
 
+    const temperatures = sortTemperatures(
+      [...acc.temps.values()].map(t => ({
+        label: t.label,
+        celsius: parseNum(hass.states[t.entityId]?.state),
+        entityId: t.entityId,
+      }))
+    );
+    // Headline temp: the first probe with a reading, in display order, so an
+    // AP that only exposes Local/CPU still shows a number.
+    const headlineTemp = temperatures.find(t => t.celsius != null) || temperatures[0];
+
     const uplinkRaw = acc.uplinkMacEntityId
       ? String(hass.states[acc.uplinkMacEntityId]?.state || '')
       : '';
@@ -1163,13 +1487,22 @@ function buildTopologyFromHass(
       cpuEntityId: acc.cpuEntityId,
       memoryPct: acc.memoryEntityId ? parseNum(hass.states[acc.memoryEntityId]?.state) : null,
       memoryEntityId: acc.memoryEntityId,
-      temperatureC: acc.temperatureEntityId
-        ? parseNum(hass.states[acc.temperatureEntityId]?.state)
-        : null,
-      temperatureEntityId: acc.temperatureEntityId,
+      temperatureC: headlineTemp?.celsius ?? null,
+      temperatureEntityId: headlineTemp?.entityId,
+      temperatures,
       uptimeEntityId: acc.uptimeEntityId,
       clients: acc.clientsEntityId ? parseNum(hass.states[acc.clientsEntityId]?.state) : null,
       clientsEntityId: acc.clientsEntityId,
+      cameraEntityId: acc.cameraEntityId,
+      motionEntityId: acc.motionEntityId,
+      motionOn: acc.motionEntityId
+        ? hass.states[acc.motionEntityId]?.state === 'on'
+          ? true
+          : hass.states[acc.motionEntityId]?.state === 'off'
+            ? false
+            : null
+        : null,
+      doorbellEntityId: acc.doorbellEntityId,
       uplinkMac,
       uplinkMacEntityId: acc.uplinkMacEntityId,
       uplinkDeviceId,
@@ -1195,14 +1528,17 @@ function buildTopologyFromHass(
     wanLatency.push(...acc.wanLatency);
   }
 
-  // Sort: gateways first, then switches, APs, PDUs, plugs, other — alpha within kind
+  // Sort: gateways first, then switches, NVRs, APs, PDUs, cameras, plugs,
+  // other — alpha within kind
   const kindOrder: Record<UnifiDeviceKind, number> = {
     gateway: 0,
     switch: 1,
-    ap: 2,
-    pdu: 3,
-    plug: 4,
-    other: 5,
+    nvr: 2,
+    ap: 3,
+    pdu: 4,
+    camera: 5,
+    plug: 6,
+    other: 7,
   };
   devices.sort((a, b) => {
     const k = kindOrder[a.kind] - kindOrder[b.kind];
@@ -1392,6 +1728,8 @@ class UcUnifiService {
     let poeDisabled = 0;
     let clientsEnabled = 0;
     let clientsDisabled = 0;
+    let tempEnabled = 0;
+    let tempDisabled = 0;
     let wanEnabled = 0;
     let wanDisabled = 0;
 
@@ -1413,6 +1751,9 @@ class UcUnifiService {
         tKey === 'poe_port_control';
       const isClients =
         tKey === 'device_clients' || tKey === 'wlan_clients' || /clients/i.test(uid);
+      // Per-probe temperatures are disabled by default, so APs look like they
+      // have no temperature at all until these are enabled.
+      const isTemp = !!parseTemperatureLabel(uid, tKey, e.original_name);
       const isWan = tKey === 'wan_latency' || /latency/i.test(uid);
       // Disabled by default in HA; required to resolve topology uplinks.
       const isUplink =
@@ -1439,6 +1780,11 @@ class UcUnifiService {
           clientsDisabled++;
           disabledEntityIds.push(e.entity_id);
         } else clientsEnabled++;
+      } else if (isTemp) {
+        if (disabled) {
+          tempDisabled++;
+          disabledEntityIds.push(e.entity_id);
+        } else tempEnabled++;
       } else if (isWan) {
         if (disabled) {
           wanDisabled++;
@@ -1486,6 +1832,9 @@ class UcUnifiService {
         (tipsByView.ports ? tipsByView.ports + ' ' : '') +
         `${linkDisabled} link-speed sensors are disabled.`;
     }
+    if (tempDisabled > 0 && tempEnabled === 0) {
+      tipsByView.devices = `${tempDisabled} temperature sensors are disabled — Home Assistant turns off the CPU/Local/PHY probes most access points use. Enable them to see temperatures.`;
+    }
 
     return {
       hasDevices: topo.devices.length > 0,
@@ -1497,6 +1846,7 @@ class UcUnifiService {
         clientsDisabled,
         clientsEnabled === 0 && clientsDisabled === 0
       ),
+      deviceTemperature: status(tempEnabled, tempDisabled, tempEnabled === 0 && tempDisabled === 0),
       wanLatency: status(wanEnabled, wanDisabled, wanEnabled === 0 && wanDisabled === 0),
       disabledEntityIds: [...new Set(disabledEntityIds)],
       bandwidthOptionMissing,
@@ -1628,6 +1978,10 @@ export function kindIcon(kind: UnifiDeviceKind): string {
       return 'mdi:power-socket-us';
     case 'plug':
       return 'mdi:power-plug-outline';
+    case 'camera':
+      return 'mdi:cctv';
+    case 'nvr':
+      return 'mdi:nas';
     default:
       return 'mdi:lan';
   }

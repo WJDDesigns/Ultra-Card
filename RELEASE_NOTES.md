@@ -1,5 +1,39 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.8.0-beta1
+
+The first 3.8.0 beta. The headline is the new UniFi Network module — a virtual rack with real Ubiquiti product photos and live port lights, plus topology, ports, clients and WAN health — which now discovers UniFi Protect cameras and NVRs alongside your network gear. The Navigation module also learns how to get out of the way, cards can go fully transparent, and a normal dashboard session no longer floods the browser console. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+### 🚀 New Features
+
+- **Added the UniFi Network module (PRO)** - Live monitoring for your Ubiquiti gear, built entirely on Home Assistant's UniFi integration: a virtual rack with real product photos, a per-port panel with RX/TX bars and PoE controls, a topology map, a sortable client table, and WAN latency. Ports light up on the photo itself — speed-coloured openings, receive and transmit LEDs that blink with actual throughput, and a PoE bar underneath
+- **Added UniFi Protect cameras and NVRs to the UniFi module (PRO)** - Cameras, doorbells, and NVRs are discovered alongside network gear when the UniFi Protect integration is set up. Camera tiles show a live snapshot with a motion glow and doorbell ring badge, NVRs mount in the rack, and the console a Protect install runs on is never listed twice
+- **Added a collapsible navbar to the Navigation module** - Give the navbar back to your dashboard: collapse it behind an edge handle, shrink it to an icon rail, or hide it as you scroll. It remembers your choice, can dim the dashboard behind a side navbar, and closes on Escape or after you tap a route
+- **Added left and right navbar positions on mobile** - Mobile mode can use a side navbar instead of only top or bottom
+- **Added a Transparent Card option** - One switch in Card Appearance removes the background, border, and shadow so only your modules show on the dashboard
+- **Added Topology link pinning to the UniFi module (PRO)** - Pin a device's uplink when Home Assistant cannot report one — Protect cameras never do — or when the card's guess lands on the wrong switch
+
+### 🔧 Improvements
+
+- **Improved the console during a normal dashboard session** - Favorites, snapshots, session sync, custom variables, sports data, the native card wrapper, and the Dropdown module no longer narrate their internals. The support logs are still there behind the `UC_DEBUG` flag, and warnings and errors are untouched
+- **Improved topology edges in the UniFi module** - Every live link now flows: the animation speed tracks the measured rate, colour and thickness follow the negotiated link speed, and a link that is up but unmeasured drifts slowly instead of looking dead. A dashed edge now means the parent was inferred, not that the link is idle. Cameras and access points with no ports of their own borrow the rate from the parent switch port named after them
+- **Improved temperature reporting in the UniFi module** - The card reads every temperature probe and labels which one it used (`Temp · Local`), so access points finally show a temperature. The setup wizard's Enable sensors button now turns those probe entities on for you
+- **Improved port lights on UniFi hardware without a port map** - Unmapped models render the same lit openings and LEDs as a row beneath the photo instead of guessing where the jacks are. Measured port maps were added for the UDM-Pro, UDM-SE, and ten more switches, with the numbering checked against each unit's silkscreen
+- **Improved the Dog Duty module over camera footage** - Duty markers drop the coloured plate and pulsing ring for a drop shadow, so the glyphs stay legible over any picture and can be bigger
+- **Improved the Video Background editor** - The video source fields use the standard editor controls, so they behave like every other module
+- **Improved the Template Mode documentation on ultracard.io** - The page now teaches Template Mode by running it: every preview is real module code evaluating real Jinja against a simulated home you can drive, and the property reference is generated from the same data as the in-card cheatsheet, so it cannot drift
+
+### 🐛 Bug Fixes
+
+- **Fixed preset ratings never recording** - Every rating submitted from Home Assistant was rejected by the server, which is why the marketplace showed blank stars next to healthy download counts. Ratings now save, your own stars show up in the dialog, and the average updates in place
+- **Fixed a closed Dropdown menu leaving a ghost list on the dashboard** - Switching views, re-rendering the editor, or removing a card while a menu was open left a copy of the option list painted, unstyled, over whatever replaced the card
+- **Fixed QR templates that return `qr_content` doing nothing** - The documented object form now renders
+- **Fixed the QR module taking seconds to draw** - It no longer starts a fresh encode on every re-render while one is already running
+- **Fixed the Bar module ignoring a template's `label` property** - A documented property that silently did nothing now works
+- **Fixed four wrong entries in the template property reference** - `color` also applies to bars and `value` to gauges and spinboxes; bar `left_label`, `right_label`, `value_min`, `value_max` and the icon `active` flag were missing entirely
+
+---
+
 ## Version 3.7.0
 
 The stable 3.7.0 release. This rolls up everything from the 3.7.0 betas — new appliance modules, layout containers, household PRO modules, the Add Module gallery, privacy and performance work — plus Hub preset authoring and category updates. Thanks to everyone who tested the betas and reported issues.

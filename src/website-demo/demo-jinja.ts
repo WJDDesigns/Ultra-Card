@@ -1068,7 +1068,11 @@ class Scope {
 
   /** `set` writes to the scope that already owns the name (namespaces aside). */
   set(name: string, value: JValue): void {
-    let owner: Scope | undefined = this;
+    if (name in this.vars) {
+      this.vars[name] = value;
+      return;
+    }
+    let owner: Scope | undefined = this.parent;
     while (owner && !(name in owner.vars)) owner = owner.parent;
     (owner || this).vars[name] = value;
   }

@@ -749,6 +749,7 @@ function sanitizeUnifiModule(module: SmartModule, id: string): SmartModule | nul
     curation_seeded: false,
     rack_max_devices: numberInRange(module.rack_max_devices, 1, 64, 16),
     use_device_images: module.use_device_images !== false,
+    show_camera_previews: module.show_camera_previews !== false,
     show_title: module.show_title !== false,
     title: String(module.title || 'UniFi Network'),
     rack_style: oneOf(module.rack_style, ['dark', 'light', 'glass', 'blueprint', 'blank'] as const, 'dark'),

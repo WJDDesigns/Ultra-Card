@@ -146,6 +146,12 @@ export class UltraNavigationModule extends BaseUltraModule {
         widget_position: 'above',
         desktop_position: 'bottom-center',
       },
+      nav_collapse: {
+        enabled: false,
+        mode: 'handle',
+        start_collapsed: true,
+        remember_state: true,
+      },
       nav_styles: '',
       nav_template: '',
       display_mode: 'always',
@@ -248,6 +254,7 @@ export class UltraNavigationModule extends BaseUltraModule {
     return html`
       ${this.injectUcFormStyles()}
       <style>
+        ${BaseUltraModule.getSliderStyles()}
         ${this.getEditorStyles()}
       </style>
 
@@ -795,6 +802,14 @@ export class UltraNavigationModule extends BaseUltraModule {
                     label: localize('editor.navigation.position_bottom', lang, 'Bottom'),
                   },
                   { value: 'top', label: localize('editor.navigation.position_top', lang, 'Top') },
+                  {
+                    value: 'left',
+                    label: localize('editor.navigation.position_left', lang, 'Left'),
+                  },
+                  {
+                    value: 'right',
+                    label: localize('editor.navigation.position_right', lang, 'Right'),
+                  },
                 ]),
               ],
               onChange: (e: CustomEvent) => {
@@ -973,81 +988,413 @@ export class UltraNavigationModule extends BaseUltraModule {
           </div>
         </div>
 
-        <!-- Auto-Hide Section -->
-        <div class="settings-section">
-          <div class="section-title">
-            ${localize('editor.navigation.section_autohide', lang, 'AUTO-HIDE')}
+        <!-- Collapse & Auto-Hide Section -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.navigation.section_collapse', lang, 'COLLAPSE & AUTO-HIDE')}
           </div>
-          <div class="section-description">
+          <div
+            class="section-description"
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px;"
+          >
             ${localize(
-              'editor.navigation.section_autohide_desc',
+              'editor.navigation.section_collapse_desc',
               lang,
-              'macOS-style dock auto-hide. The navbar slides off-screen after a period of inactivity and reappears when the cursor reaches the screen edge. Off by default.'
+              'Hide the navbar to free up dashboard space. Choose an edge handle, icon rail, or hide-on-scroll. Collapse and auto-hide are mutually exclusive.'
             )}
           </div>
 
           ${UcFormUtils.renderFieldSection(
-            localize('editor.navigation.autohide_enable', lang, 'Enable Auto-Hide'),
+            localize('editor.navigation.collapse_enable', lang, 'Enable Collapse'),
             localize(
-              'editor.navigation.autohide_enable_desc',
+              'editor.navigation.collapse_enable_desc',
               lang,
-              'Hide the navbar when not in use.'
+              'Allow the navbar to collapse and expand on demand.'
             ),
             hass,
-            { enabled: navModule.nav_autohide?.enabled ?? false },
+            { enabled: navModule.nav_collapse?.enabled ?? false },
             [UcFormUtils.boolean('enabled')],
             (e: CustomEvent) => {
+              const enabled = e.detail.value.enabled;
               updateModule({
-                nav_autohide: {
-                  ...(navModule.nav_autohide || {}),
-                  enabled: e.detail.value.enabled,
+                nav_collapse: {
+                  ...(navModule.nav_collapse || {}),
+                  enabled,
                 },
+                // Disable auto-hide when enabling collapse (mutually exclusive)
+                ...(enabled
+                  ? {
+                      nav_autohide: {
+                        ...(navModule.nav_autohide || {}),
+                        enabled: false,
+                      },
+                    }
+                  : {}),
               });
+              this.triggerPreviewUpdate();
             }
           )}
-          ${navModule.nav_autohide?.enabled
+
+          ${navModule.nav_collapse?.enabled
             ? html`
-                <div class="field-group" style="margin: 16px 0; padding: 0 16px;">
-                  <div>
-                    <div
-                      class="field-title"
-                      style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-                    >
-                      ${localize('editor.navigation.autohide_delay', lang, 'Hide Delay')}
-                    </div>
-                    <div
-                      class="field-description"
-                      style="font-size: 13px; color: var(--secondary-text-color);"
-                    >
-                      ${localize(
+                ${this.renderSegmentedField(
+                  localize('editor.navigation.collapse_mode', lang, 'Collapse Mode'),
+                  localize(
+                    'editor.navigation.collapse_mode_desc',
+                    lang,
+                    'How the navbar collapses and reappears.'
+                  ),
+                  navModule.nav_collapse?.mode || 'handle',
+                  [
+                    {
+                      value: 'handle',
+                      label: localize(
+                        'editor.navigation.collapse_mode_handle',
+                        lang,
+                        'Edge Handle'
+                      ),
+                      icon: 'mdi:menu',
+                    },
+                    {
+                      value: 'rail',
+                      label: localize(
+                        'editor.navigation.collapse_mode_rail',
+                        lang,
+                        'Icon Rail'
+                      ),
+                      icon: 'mdi:view-column-outline',
+                    },
+                    {
+                      value: 'scroll',
+                      label: localize(
+                        'editor.navigation.collapse_mode_scroll',
+                        lang,
+                        'Hide on Scroll'
+                      ),
+                      icon: 'mdi:gesture-swipe-vertical',
+                    },
+                  ],
+                  (value: string) => {
+                    updateModule({
+                      nav_collapse: {
+                        ...(navModule.nav_collapse || {}),
+                        mode: value as 'handle' | 'rail' | 'scroll',
+                      },
+                    });
+                    this.triggerPreviewUpdate();
+                  }
+                )}
+
+                ${UcFormUtils.renderFieldSection(
+                  localize(
+                    'editor.navigation.start_collapsed',
+                    lang,
+                    'Start Collapsed'
+                  ),
+                  localize(
+                    'editor.navigation.start_collapsed_desc',
+                    lang,
+                    'Begin collapsed when no saved preference exists.'
+                  ),
+                  hass,
+                  { start_collapsed: navModule.nav_collapse?.start_collapsed !== false },
+                  [UcFormUtils.boolean('start_collapsed')],
+                  (e: CustomEvent) => {
+                    updateModule({
+                      nav_collapse: {
+                        ...(navModule.nav_collapse || {}),
+                        start_collapsed: e.detail.value.start_collapsed,
+                      },
+                    });
+                    this.triggerPreviewUpdate();
+                  }
+                )}
+
+                ${(navModule.nav_collapse?.mode || 'handle') !== 'scroll'
+                  ? UcFormUtils.renderFieldSection(
+                      localize(
+                        'editor.navigation.remember_state',
+                        lang,
+                        'Remember State'
+                      ),
+                      localize(
+                        'editor.navigation.remember_state_desc',
+                        lang,
+                        'Persist collapsed/expanded across reloads.'
+                      ),
+                      hass,
+                      { remember_state: navModule.nav_collapse?.remember_state !== false },
+                      [UcFormUtils.boolean('remember_state')],
+                      (e: CustomEvent) => {
+                        updateModule({
+                          nav_collapse: {
+                            ...(navModule.nav_collapse || {}),
+                            remember_state: e.detail.value.remember_state,
+                          },
+                        });
+                        this.triggerPreviewUpdate();
+                      }
+                    )
+                  : ''}
+
+                ${(navModule.nav_collapse?.mode || 'handle') === 'handle' ||
+                (navModule.nav_collapse?.mode || 'handle') === 'rail'
+                  ? html`
+                      ${this.renderIconField(
+                        localize(
+                          'editor.navigation.handle_icon',
+                          lang,
+                          'Handle Icon'
+                        ),
+                        localize(
+                          'editor.navigation.handle_icon_desc',
+                          lang,
+                          'Icon shown on the edge tab when collapsed.'
+                        ),
+                        hass,
+                        navModule.nav_collapse?.handle_icon || 'mdi:menu',
+                        (value: string) => {
+                          updateModule({
+                            nav_collapse: {
+                              ...(navModule.nav_collapse || {}),
+                              handle_icon: value,
+                            },
+                          });
+                          this.triggerPreviewUpdate();
+                        }
+                      )}
+                      ${this.renderSliderField(
+                        localize(
+                          'editor.navigation.handle_size',
+                          lang,
+                          'Handle Size'
+                        ),
+                        localize(
+                          'editor.navigation.handle_size_desc',
+                          lang,
+                          'Size of the edge tab in pixels.'
+                        ),
+                        navModule.nav_collapse?.handle_size ?? 40,
+                        40,
+                        24,
+                        64,
+                        1,
+                        (value: number) => {
+                          updateModule({
+                            nav_collapse: {
+                              ...(navModule.nav_collapse || {}),
+                              handle_size: value,
+                            },
+                          });
+                          this.triggerPreviewUpdate();
+                        },
+                        'px'
+                      )}
+                      ${this.renderSliderField(
+                        localize(
+                          'editor.navigation.handle_position',
+                          lang,
+                          'Handle Position'
+                        ),
+                        localize(
+                          'editor.navigation.handle_position_desc',
+                          lang,
+                          'Position of the handle along the edge (percent).'
+                        ),
+                        navModule.nav_collapse?.handle_position ?? 50,
+                        50,
+                        10,
+                        90,
+                        1,
+                        (value: number) => {
+                          updateModule({
+                            nav_collapse: {
+                              ...(navModule.nav_collapse || {}),
+                              handle_position: value,
+                            },
+                          });
+                          this.triggerPreviewUpdate();
+                        },
+                        '%'
+                      )}
+                      ${UcFormUtils.renderFieldSection(
+                        localize('editor.navigation.backdrop', lang, 'Backdrop'),
+                        localize(
+                          'editor.navigation.backdrop_desc',
+                          lang,
+                          'Dim the dashboard behind an expanded lateral navbar. Defaults on for left/right.'
+                        ),
+                        hass,
+                        {
+                          backdrop:
+                            navModule.nav_collapse?.backdrop !== undefined
+                              ? navModule.nav_collapse.backdrop
+                              : true,
+                        },
+                        [UcFormUtils.boolean('backdrop')],
+                        (e: CustomEvent) => {
+                          updateModule({
+                            nav_collapse: {
+                              ...(navModule.nav_collapse || {}),
+                              backdrop: e.detail.value.backdrop,
+                            },
+                          });
+                          this.triggerPreviewUpdate();
+                        }
+                      )}
+                      ${UcFormUtils.renderFieldSection(
+                        localize(
+                          'editor.navigation.close_on_navigate',
+                          lang,
+                          'Close on Navigate'
+                        ),
+                        localize(
+                          'editor.navigation.close_on_navigate_desc',
+                          lang,
+                          'Collapse the navbar after tapping a route.'
+                        ),
+                        hass,
+                        {
+                          close_on_navigate:
+                            navModule.nav_collapse?.close_on_navigate !== false,
+                        },
+                        [UcFormUtils.boolean('close_on_navigate')],
+                        (e: CustomEvent) => {
+                          updateModule({
+                            nav_collapse: {
+                              ...(navModule.nav_collapse || {}),
+                              close_on_navigate: e.detail.value.close_on_navigate,
+                            },
+                          });
+                          this.triggerPreviewUpdate();
+                        }
+                      )}
+                    `
+                  : ''}
+
+                ${(navModule.nav_collapse?.mode || 'handle') === 'rail'
+                  ? this.renderSliderField(
+                      localize('editor.navigation.rail_size', lang, 'Rail Size'),
+                      localize(
+                        'editor.navigation.rail_size_desc',
+                        lang,
+                        'Width/height of the collapsed icon rail in pixels.'
+                      ),
+                      navModule.nav_collapse?.rail_size ?? 56,
+                      56,
+                      40,
+                      96,
+                      1,
+                      (value: number) => {
+                        updateModule({
+                          nav_collapse: {
+                            ...(navModule.nav_collapse || {}),
+                            rail_size: value,
+                          },
+                        });
+                        this.triggerPreviewUpdate();
+                      },
+                      'px'
+                    )
+                  : ''}
+
+                ${(navModule.nav_collapse?.mode || 'handle') === 'scroll'
+                  ? this.renderSliderField(
+                      localize(
+                        'editor.navigation.scroll_threshold',
+                        lang,
+                        'Scroll Threshold'
+                      ),
+                      localize(
+                        'editor.navigation.scroll_threshold_desc',
+                        lang,
+                        'Pixels scrolled before the navbar hides or reappears.'
+                      ),
+                      navModule.nav_collapse?.scroll_threshold ?? 24,
+                      24,
+                      8,
+                      120,
+                      1,
+                      (value: number) => {
+                        updateModule({
+                          nav_collapse: {
+                            ...(navModule.nav_collapse || {}),
+                            scroll_threshold: value,
+                          },
+                        });
+                        this.triggerPreviewUpdate();
+                      },
+                      'px'
+                    )
+                  : ''}
+              `
+            : ''}
+
+          ${!navModule.nav_collapse?.enabled
+            ? html`
+                ${UcFormUtils.renderFieldSection(
+                  localize('editor.navigation.autohide_enable', lang, 'Enable Auto-Hide'),
+                  localize(
+                    'editor.navigation.autohide_enable_desc',
+                    lang,
+                    'macOS-style: hide after idle, reveal on edge hover. Desktop mouse only.'
+                  ),
+                  hass,
+                  { enabled: navModule.nav_autohide?.enabled ?? false },
+                  [UcFormUtils.boolean('enabled')],
+                  (e: CustomEvent) => {
+                    updateModule({
+                      nav_autohide: {
+                        ...(navModule.nav_autohide || {}),
+                        enabled: e.detail.value.enabled,
+                      },
+                    });
+                    this.triggerPreviewUpdate();
+                  }
+                )}
+                ${navModule.nav_autohide?.enabled
+                  ? this.renderSliderField(
+                      localize('editor.navigation.autohide_delay', lang, 'Hide Delay'),
+                      localize(
                         'editor.navigation.autohide_delay_desc',
                         lang,
                         'Seconds of inactivity before the navbar hides.'
-                      )}
-                    </div>
-                  </div>
-                  <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
-                    <ha-slider
-                      style="flex: 1;"
-                      .min=${1}
-                      .max=${15}
-                      .step=${0.5}
-                      .value=${navModule.nav_autohide?.delay ?? 3}
-                      @change=${(e: Event) =>
+                      ),
+                      navModule.nav_autohide?.delay ?? 3,
+                      3,
+                      1,
+                      15,
+                      0.5,
+                      (value: number) => {
                         updateModule({
                           nav_autohide: {
                             ...(navModule.nav_autohide || {}),
-                            delay: parseFloat((e.target as any).value),
+                            delay: value,
                           },
-                        })}
-                    ></ha-slider>
-                    <span style="min-width: 40px; text-align: center; font-weight: 600;">
-                      ${navModule.nav_autohide?.delay ?? 3}s
-                    </span>
-                  </div>
-                </div>
+                        });
+                        this.triggerPreviewUpdate();
+                      },
+                      's'
+                    )
+                  : ''}
               `
-            : ''}
+            : html`
+                <div
+                  style="font-size: 13px; color: var(--secondary-text-color); padding: 8px 0 0;"
+                >
+                  ${localize(
+                    'editor.navigation.autohide_disabled_by_collapse',
+                    lang,
+                    'Auto-hide is unavailable while collapse is enabled. Disable collapse to use auto-hide.'
+                  )}
+                </div>
+              `}
         </div>
 
         <!-- Haptics Section -->
@@ -1343,6 +1690,14 @@ export class UltraNavigationModule extends BaseUltraModule {
         ...(module.nav_media_player || {}),
       },
       nav_styles: module.nav_styles ?? templateConfig?.nav_styles,
+      nav_autohide: {
+        ...(templateConfig?.nav_autohide || {}),
+        ...(module.nav_autohide || {}),
+      },
+      nav_collapse: {
+        ...(templateConfig?.nav_collapse || {}),
+        ...(module.nav_collapse || {}),
+      },
     };
   }
 
