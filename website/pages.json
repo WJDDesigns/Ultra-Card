@@ -1,0 +1,34 @@
+{
+  "generatedAt": "2026-08-13T17:22:45.557Z",
+  "repo": "WJDDesigns/Ultra-Card",
+  "demoBundle": "dist-demo/ultra-card-demo.js",
+  "pages": [
+    {
+      "id": "modules",
+      "file": "website/modules-page-embed.html",
+      "title": "Modules",
+      "path": "/modules/",
+      "needsDemoBundle": true,
+      "bytes": 158982,
+      "sha256": "8cf86c756e42c55d44f8dbfaae7a7fcde817979813a3c9d448e2004d146c669c"
+    },
+    {
+      "id": "template-mode",
+      "file": "website/template-mode-page-embed.html",
+      "title": "Template Mode",
+      "path": "/template-mode/",
+      "needsDemoBundle": true,
+      "bytes": 85600,
+      "sha256": "bc5515d97e96a0adf632b93115a7cda10e7df186bdfaf4940ff7794504c97fe7"
+    },
+    {
+      "id": "presets",
+      "file": "website/presets-page-embed.html",
+      "title": "Presets",
+      "path": "/presets/",
+      "needsDemoBundle": false,
+      "bytes": 30095,
+      "sha256": "69e002e10dd1ad5094c8f0730e4a2b71b6373770e23404da414796a24778ac51"
+    }
+  ]
+}

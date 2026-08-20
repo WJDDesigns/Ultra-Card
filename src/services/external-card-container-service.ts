@@ -1,6 +1,17 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { escapeHtml } from '../utils/html-sanitizer';
-import { ucExternalCardsService } from './uc-external-cards-service';
+import { isEntityRowType, ucExternalCardsService } from './uc-external-cards-service';
+
+/**
+ * Explain a failure the user can act on, rather than leaving them with a card
+ * that looks broken. Rows are filtered out of the picker now, but layouts saved
+ * before that still carry one.
+ */
+function loadFailureHint(cardType: string): string {
+  return isEntityRowType(cardType)
+    ? 'This is an entity row, not a card. Use it inside an Entities card.'
+    : '';
+}
 
 interface ContainerInfo {
   container: HTMLElement;
@@ -288,10 +299,12 @@ class ExternalCardContainerService {
       // Create error placeholder
       const displayName = cardType.startsWith('custom:') ? cardType : `custom:${cardType}`;
       const safeName = escapeHtml(displayName);
+      const hint = loadFailureHint(cardType);
       container.innerHTML = `
         <div style="padding: 16px; text-align: center; color: var(--error-color);">
           <ha-icon icon="mdi:alert-circle" style="font-size: 48px;"></ha-icon>
           <p>Failed to load ${safeName}</p>
+          ${hint ? `<p style="font-size: 13px; opacity: 0.8;">${escapeHtml(hint)}</p>` : ''}
         </div>
       `;
 
@@ -382,7 +395,10 @@ class ExternalCardContainerService {
         ) as HTMLElement | null;
 
         if (!realElement) {
-          placeholder.textContent = `Failed to load ${cardType}`;
+          const hint = loadFailureHint(cardType);
+          placeholder.textContent = hint
+            ? `Failed to load ${cardType} - ${hint}`
+            : `Failed to load ${cardType}`;
           placeholder.style.color = 'var(--error-color, #db4437)';
           return;
         }

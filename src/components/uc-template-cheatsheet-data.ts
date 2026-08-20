@@ -47,7 +47,14 @@ export const RETURN_PROPERTIES: CheatsheetEntry[] = [
     snippet: '"active": {{ state_number > 50 }}',
     modules: ['icon'],
   },
-  { key: 'content', type: 'string', description: 'Text or markdown body', snippet: '"content": "{{ state }}"', modules: ['text', 'markdown'] },
+  {
+    key: 'content',
+    type: 'string',
+    description:
+      'Text or markdown body. HTML tags are shown as text, not parsed — style it with the color keys below, or use the Markdown module with Enable HTML for real markup.',
+    snippet: '"content": "{{ state }}"',
+    modules: ['text', 'markdown'],
+  },
   {
     key: 'color',
     type: 'string',
@@ -262,7 +269,9 @@ export const EXAMPLE_TEMPLATES: Record<string, { label: string; code: string }[]
 {{ s.name }}: {{ s.state }} {{ s.attributes.unit_of_measurement }}`,
     },
     {
-      label: 'Styled text via JSON',
+      // A <span style="..."> in "content" renders as literal text, which is the
+      // single most common Template Mode surprise. Colour belongs in its own key.
+      label: 'Styled text via JSON (HTML tags will not work here)',
       code: `{% set t = states('sensor.temperature') | float(0) %}
 {
   "content": "Temperature: {{ t }}°",
@@ -290,6 +299,15 @@ export const EXAMPLE_TEMPLATES: Record<string, { label: string; code: string }[]
     },
   ],
   markdown: [
+    {
+      // The one place template output can carry markup — and only with the
+      // module's Enable HTML switch on, which is off by default.
+      label: 'Inline HTML (needs Enable HTML on the module)',
+      code: `{% set t = states('sensor.temperature') | float(0) %}
+{
+  "content": "Temperature: <span style=\\"color:{% if t > 30 %}#FF4444{% else %}#4CAF50{% endif %}\\">{{ t }}°</span>"
+}`,
+    },
     {
       label: 'Status dashboard',
       code: `{
@@ -531,6 +549,26 @@ export const EXAMPLE_TEMPLATES: Record<string, { label: string; code: string }[]
 export type TemplateTarget = 'module' | 'icons' | 'info_entities' | 'toggle_points' | 'qr';
 
 /**
+ * ultracard.io Template Mode playground wiring for one scope.
+ * Lives on the scope so a new TEMPLATE_SCOPES entry gets a playground
+ * automatically once these fields are filled in.
+ */
+export interface TemplateScopeDemo {
+  /** Default entity the playground binds the module to. Empty for layout/card. */
+  entity: string;
+  /** When set, the builder reads from a named entity rather than the bound one. */
+  readFrom?: 'named';
+  /** How the playground preview is staged. Defaults to the module itself. */
+  preview?: 'module' | 'layout' | 'card';
+  /** Return keys the builder can drive for this scope. */
+  builderKeys: string[];
+  /** Shape the default module so it points at the playground entity. */
+  bind?: (module: any, entity: string) => void;
+  /** Cheap merge applied on every keystroke with the current template string. */
+  patch?: (tpl: string) => Record<string, unknown>;
+}
+
+/**
  * Teaching metadata for each place Template Mode can be switched on: what it
  * controls, why you'd reach for it, and which module renders it.
  *
@@ -558,6 +596,8 @@ export interface TemplateScope {
   /** Module type in the registry, for a live preview. */
   demoType?: string;
   target?: TemplateTarget;
+  /** Playground wiring for ultracard.io/template-mode. */
+  demo?: TemplateScopeDemo;
 }
 
 export const TEMPLATE_SCOPES: TemplateScope[] = [
@@ -576,6 +616,26 @@ export const TEMPLATE_SCOPES: TemplateScope[] = [
     entityContext: true,
     demoType: 'icon',
     target: 'icons',
+    demo: {
+      entity: 'sensor.temperature',
+      builderKeys: ['icon', 'icon_color', 'state_text', 'name_color'],
+      bind(m, entity) {
+        const base = (m.icons && m.icons[0]) || {};
+        m.icons = [
+          Object.assign({}, base, {
+            id: 'uct_icon',
+            icon_mode: 'entity',
+            entity,
+            name: '',
+            icon_active: 'mdi:thermometer',
+            icon_inactive: 'mdi:thermometer',
+          }),
+        ];
+      },
+      patch(tpl) {
+        return { icons: [{ unified_template_mode: true, unified_template: tpl }] };
+      },
+    },
   },
   {
     id: 'info',
@@ -591,6 +651,17 @@ export const TEMPLATE_SCOPES: TemplateScope[] = [
     entityContext: true,
     demoType: 'info',
     target: 'info_entities',
+    demo: {
+      entity: 'sensor.temperature',
+      builderKeys: ['icon', 'icon_color', 'state_text', 'name', 'state_color', 'container_background_color'],
+      bind(m, entity) {
+        const base = (m.info_entities && m.info_entities[0]) || {};
+        m.info_entities = [Object.assign({}, base, { id: 'uct_info', entity, name: '' })];
+      },
+      patch(tpl) {
+        return { info_entities: [{ unified_template_mode: true, unified_template: tpl }] };
+      },
+    },
   },
   {
     id: 'text',
@@ -606,6 +677,17 @@ export const TEMPLATE_SCOPES: TemplateScope[] = [
     entityContext: false,
     demoType: 'text',
     target: 'module',
+    demo: {
+      entity: 'sensor.temperature',
+      builderKeys: ['content', 'color', 'icon', 'icon_color'],
+      bind(m) {
+        m.text = 'Static text';
+        m.font_size = 20;
+      },
+      patch(tpl) {
+        return { unified_template_mode: true, unified_template: tpl };
+      },
+    },
   },
   {
     id: 'markdown',
@@ -621,6 +703,16 @@ export const TEMPLATE_SCOPES: TemplateScope[] = [
     entityContext: false,
     demoType: 'markdown',
     target: 'module',
+    demo: {
+      entity: 'sensor.temperature',
+      builderKeys: ['content', 'color', 'container_background_color'],
+      bind(m) {
+        m.markdown_content = '### Static markdown';
+      },
+      patch(tpl) {
+        return { unified_template_mode: true, unified_template: tpl };
+      },
+    },
   },
   {
     id: 'bar',
@@ -631,11 +723,23 @@ export const TEMPLATE_SCOPES: TemplateScope[] = [
     useCases: [
       'Percentage derived from two sensors (used ÷ total)',
       'Green under 70, amber to 90, red above',
-      'Custom scale labels — E / Reserve / 1/2 / F on a fuel bar',
+      'Custom scale labels: E / Reserve / 1/2 / F on a fuel bar',
     ],
     entityContext: true,
     demoType: 'bar',
     target: 'module',
+    demo: {
+      entity: 'sensor.battery',
+      builderKeys: ['label', 'color'],
+      bind(m, entity) {
+        m.entity = entity;
+        if (m.bars && m.bars[0]) m.bars[0].entity = entity;
+        m.left_enabled = true;
+      },
+      patch(tpl) {
+        return { unified_template_mode: true, unified_template: tpl };
+      },
+    },
   },
   {
     id: 'gauge',
@@ -651,6 +755,18 @@ export const TEMPLATE_SCOPES: TemplateScope[] = [
     entityContext: true,
     demoType: 'gauge',
     target: 'module',
+    demo: {
+      entity: 'sensor.temperature',
+      builderKeys: ['gauge_color'],
+      bind(m, entity) {
+        m.entity = entity;
+        m.min_value = -5;
+        m.max_value = 45;
+      },
+      patch(tpl) {
+        return { unified_template_mode: true, unified_template: tpl };
+      },
+    },
   },
   {
     id: 'graphs',
@@ -659,20 +775,32 @@ export const TEMPLATE_SCOPES: TemplateScope[] = [
     where: 'Graphs module → Template Mode',
     why: 'Series colours, area fill and pie fill become conditional, so a chart can flag its own bad news instead of always being blue.',
     useCases: [
-      'Line turns red once today\'s usage passes budget',
+      "Line turns red once today's usage passes budget",
       'Toggle area fill from a helper',
       'Set the donut fill from a percentage sensor',
     ],
     entityContext: true,
     demoType: 'graphs',
     target: 'module',
+    demo: {
+      entity: 'sensor.temperature',
+      builderKeys: ['global_color'],
+      bind(m, entity) {
+        m.entities = [{ id: 'uct_g1', entity, name: 'Temperature' }];
+        m.title = 'Temperature · 24h';
+        m.chart_height = 150;
+      },
+      patch(tpl) {
+        return { unified_template_mode: true, unified_template: tpl };
+      },
+    },
   },
   {
     id: 'spinbox',
     label: 'Spinbox',
     icon: 'mdi:plus-minus-variant',
     where: 'Spinbox module → Template Mode',
-    why: 'Colour the value and the +/- buttons by what the number means — warm at 24°, blue at 18° — so a setpoint control reads at a glance.',
+    why: 'Colour the value and the +/- buttons by what the number means, warm at 24° and blue at 18°, so a setpoint control reads at a glance.',
     useCases: [
       'Heat/cool colouring on a thermostat setpoint',
       'Grey the buttons out while the device is off',
@@ -680,6 +808,18 @@ export const TEMPLATE_SCOPES: TemplateScope[] = [
     entityContext: true,
     demoType: 'spinbox',
     target: 'module',
+    demo: {
+      entity: 'sensor.temperature',
+      builderKeys: ['value_color', 'button_background_color', 'button_text_color'],
+      bind(m) {
+        m.value = 22;
+        m.min_value = 5;
+        m.max_value = 35;
+      },
+      patch(tpl) {
+        return { unified_template_mode: true, unified_template: tpl };
+      },
+    },
   },
   {
     id: 'camera',
@@ -695,13 +835,25 @@ export const TEMPLATE_SCOPES: TemplateScope[] = [
     entityContext: true,
     demoType: 'camera',
     target: 'module',
+    demo: {
+      entity: 'camera.front_door',
+      readFrom: 'named',
+      builderKeys: ['overlay_text', 'overlay_color'],
+      bind(m, entity) {
+        m.entity = entity;
+        m.camera_name = 'Front Door';
+      },
+      patch(tpl) {
+        return { unified_template_mode: true, unified_template: tpl };
+      },
+    },
   },
   {
     id: 'toggle',
     label: 'Toggle',
     icon: 'mdi:toggle-switch-outline',
     where: 'Toggle module → per point → Match Mode: Template (Advanced)',
-    why: 'Decide which toggle point counts as selected with a rule instead of a single exact state — ranges, attributes and combinations all work.',
+    why: 'Decide which toggle point counts as selected with a rule instead of a single exact state. Ranges, attributes and combinations all work.',
     useCases: [
       'Highlight "half open" when a cover sits between 15% and 25%',
       'Select a point from two entities agreeing',
@@ -709,6 +861,20 @@ export const TEMPLATE_SCOPES: TemplateScope[] = [
     entityContext: true,
     demoType: 'toggle',
     target: 'toggle_points',
+    demo: {
+      entity: 'cover.garage',
+      builderKeys: ['match'],
+      bind(m, entity) {
+        m.tracking_entity = entity;
+      },
+      patch(tpl) {
+        return {
+          toggle_points: [
+            { match_mode: 'template', unified_template_mode: true, unified_template: tpl },
+          ],
+        };
+      },
+    },
   },
   {
     id: 'qr',
@@ -723,6 +889,13 @@ export const TEMPLATE_SCOPES: TemplateScope[] = [
     entityContext: false,
     demoType: 'qr_code',
     target: 'qr',
+    demo: {
+      entity: 'input_text.guest_wifi_password',
+      builderKeys: ['qr_content'],
+      patch(tpl) {
+        return { content_mode: 'unified', unified_template_mode: true, unified_template: tpl };
+      },
+    },
   },
   {
     id: 'status_summary',
@@ -737,31 +910,53 @@ export const TEMPLATE_SCOPES: TemplateScope[] = [
     entityContext: true,
     demoType: 'status_summary',
     target: 'module',
+    demo: {
+      entity: 'binary_sensor.door',
+      builderKeys: ['color'],
+      bind(m, entity) {
+        m.enable_auto_filter = false;
+        m.entities = [{ id: 'uct_ss1', entity }];
+        m.max_items_to_show = 1;
+      },
+      patch(tpl) {
+        return { unified_template_mode: true, unified_template: tpl };
+      },
+    },
   },
   {
     id: 'layout',
     label: 'Rows & columns',
     icon: 'mdi:view-dashboard-outline',
     where: 'Row or column → Logic tab → Template Mode',
-    why: 'Return `visible` and whole sections of the card appear and disappear — one dashboard that reshapes itself instead of several you switch between.',
+    why: 'Return `visible` and whole sections of the card appear and disappear: one dashboard that reshapes itself instead of several you switch between.',
     useCases: [
       'Hide the away-mode section while someone is home',
       'Only show the irrigation row in summer',
       'Reveal a debug row from a helper toggle',
     ],
     entityContext: false,
+    demo: {
+      entity: '',
+      preview: 'layout',
+      builderKeys: ['visible'],
+    },
   },
   {
     id: 'card',
     label: 'Card appearance',
     icon: 'mdi:card-outline',
     where: 'Card Settings → Appearance Template Mode',
-    why: 'Background, border, radius, padding and shadow become live, so the card itself responds to context — dark at night, red during an alarm.',
+    why: 'Background, border, radius, padding and shadow become live, so the card itself responds to context: dark at night, red during an alarm.',
     useCases: [
       'Night-time background tint',
       'Red border while the alarm is triggered',
       'Tighter padding on a wall tablet dashboard',
     ],
     entityContext: false,
+    demo: {
+      entity: '',
+      preview: 'card',
+      builderKeys: ['card_background', 'card_border_color'],
+    },
   },
 ];

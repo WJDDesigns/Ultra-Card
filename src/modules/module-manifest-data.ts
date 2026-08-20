@@ -3,6 +3,32 @@ import type { ModuleMetadata } from './base-module';
 /** Sync metadata-only view for selector/editor; supports lazy implementation loading. */
 export type ModuleManifest = ModuleMetadata;
 
+/** Category chip metadata for the in-app picker and ultracard.io/modules. */
+export interface ModuleCategoryMeta {
+  id: ModuleMetadata['category'];
+  label: string;
+  icon: string;
+  order: number;
+}
+
+/**
+ * Canonical module categories. The website modules page renders its filter chips
+ * from this list via `UCDemo.categories()`, so a new category shows up automatically.
+ */
+export const MODULE_CATEGORIES: ModuleCategoryMeta[] = [
+  { id: 'layout', label: 'Layout', icon: 'mdi:view-dashboard-outline', order: 1 },
+  { id: 'content', label: 'Content', icon: 'mdi:text-box-outline', order: 2 },
+  { id: 'data', label: 'Data', icon: 'mdi:chart-box-outline', order: 3 },
+  { id: 'interactive', label: 'Controls', icon: 'mdi:gesture-tap', order: 4 },
+  { id: 'input', label: 'Inputs', icon: 'mdi:form-textbox', order: 5 },
+  { id: 'media', label: 'Media', icon: 'mdi:image-multiple-outline', order: 6 },
+];
+
+/** True when a module is Ultra Card PRO (tags include `pro`). */
+export function isProModule(meta: Pick<ModuleMetadata, 'tags'> | null | undefined): boolean {
+  return Array.isArray(meta?.tags) && meta!.tags.includes('pro');
+}
+
 /** Static manifest table for all core modules. Single source of truth for metadata without loading implementations. */
 export const CORE_MANIFESTS: ModuleManifest[] = [
   { type: 'text', title: 'Text', description: 'Display custom text content', author: 'WJD Designs', version: '1.0.0', icon: 'mdi:format-text', category: 'content', tags: ['text', 'content', 'typography', 'template'] },

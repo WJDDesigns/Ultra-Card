@@ -462,7 +462,7 @@ export class UltraTextModule extends BaseUltraModule {
               ${localize(
                 'editor.text.unified_template_section.desc',
                 lang,
-                'Return JSON with content, color, and optional container_background_color. Plain Jinja strings are treated as dynamic text.'
+                'Return JSON with content, color, and optional container_background_color. Plain Jinja strings are treated as dynamic text. HTML tags in the output are shown as text, so style it with color rather than markup.'
               )}
             </div>
           </div>

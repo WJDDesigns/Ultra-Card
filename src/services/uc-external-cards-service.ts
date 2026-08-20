@@ -31,6 +31,26 @@ function stripCustomPrefix(type: string): string {
   return type.startsWith('custom:') ? type.slice('custom:'.length) : type;
 }
 
+/**
+ * Rows that advertise themselves in `window.customCards` without following the
+ * `-row` naming convention, so the suffix test alone would miss them.
+ */
+const ROW_TYPES_WITHOUT_SUFFIX = new Set(['battery-state-entity']);
+
+/**
+ * True for elements that only work inside an Entities card's `entities:` list.
+ *
+ * `window.customCards` is the card registry, but entity rows register there too
+ * because HA offers them no list of their own. They have no standalone `hass` /
+ * `setConfig` contract, so embedding one produces a module that can never
+ * render - HA's own picker has the same gap, which is how `multiple-entity-row`
+ * reached a user as a broken card.
+ */
+export function isEntityRowType(type: string): boolean {
+  const base = stripCustomPrefix(type || '').toLowerCase();
+  return base.endsWith('-row') || ROW_TYPES_WITHOUT_SUFFIX.has(base);
+}
+
 class UcExternalCardsService {
   /**
    * Get all available custom cards registered in Home Assistant
@@ -42,9 +62,10 @@ class UcExternalCardsService {
       return [];
     }
 
-    // Filter out Ultra Card to prevent recursive embedding
+    // Filter out Ultra Card to prevent recursive embedding, and entity rows,
+    // which cannot render outside an Entities card.
     return [...win.customCards]
-      .filter(card => card.type !== 'ultra-card')
+      .filter(card => card.type !== 'ultra-card' && !isEntityRowType(card.type))
       .sort((a, b) => {
         // Sort alphabetically by name
         return (a.name || a.type).localeCompare(b.name || b.type);

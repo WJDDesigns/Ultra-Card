@@ -1,0 +1,61 @@
+name: Website embeds
+
+# Keeps website/pages.json current and tells ultracard.io to drop its harness
+# fragment cache whenever an embed changes.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - 'scripts/build-website-manifest.mjs'
+      - '.github/workflows/website-embeds.yml'
+  pull_request:
+    paths:
+      - 'website/**'
+      - 'scripts/build-website-manifest.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: website-embeds-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build website pages manifest
+        run: node scripts/build-website-manifest.mjs
+
+      - name: Commit refreshed pages.json
+        if: github.event_name != 'pull_request'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add website/pages.json
+          if git diff --cached --quiet; then
+            echo "No pages.json changes."
+          else
+            git commit -m "chore(website): refresh pages.json [skip ci]"
+            git push
+          fi
+
+      - name: Flush website harness cache
+        if: github.event_name != 'pull_request' && secrets.UC_HARNESS_SECRET != ''
+        continue-on-error: true
+        run: |
+          curl -fsS -X POST https://ultracard.io/wp-json/ultra-card/v1/harness/flush \
+            -H "X-UC-Harness-Secret: ${{ secrets.UC_HARNESS_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{"reason":"website-embeds"}'

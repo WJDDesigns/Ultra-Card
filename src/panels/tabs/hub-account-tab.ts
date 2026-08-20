@@ -1100,13 +1100,15 @@ export class HubAccountTab extends LitElement {
         label: 'Cloud reachability',
         value: connectivity.api
           ? 'OK'
-          : connectivity.errors?.length
-            ? 'Failed'
-            : this._diagReport?.source === 'api'
-              ? 'Not tested'
-              : this._diagReport
-                ? 'Unavailable (update Connect)'
-                : 'Run diagnostics',
+          : connectivity.bot_challenge
+            ? 'Blocked by bot protection'
+            : connectivity.errors?.length
+              ? 'Failed'
+              : this._diagReport?.source === 'api'
+                ? 'Not tested'
+                : this._diagReport
+                  ? 'Unavailable (update Connect)'
+                  : 'Run diagnostics',
         ok: connectivity.api === true,
       },
       {
@@ -1150,6 +1152,13 @@ export class HubAccountTab extends LitElement {
         </div>
         ${this._diagError
           ? html`<div class="error-message" style="margin-bottom:12px;">${this._diagError}</div>`
+          : ''}
+        ${connectivity.bot_challenge || coord.last_error
+          ? html`<div class="error-message" style="margin-bottom:12px;">
+              ${connectivity.bot_challenge
+                ? (connectivity.errors || []).join(' ')
+                : coord.last_error}
+            </div>`
           : ''}
         <div style="display:flex;flex-wrap:wrap;gap:8px;">
           <button

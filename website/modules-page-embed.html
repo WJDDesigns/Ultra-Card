@@ -32,8 +32,8 @@
 .page-id-1242 .l-main{background:#0e1015}
 </style>
 <!-- ======================= UCM:EMBED-START =======================
-     Everything between EMBED-START and EMBED-END goes into the
-     WPBakery Raw HTML element on ultracard.io/modules (page 1242).
+     Live delivery: paste [ultra_card_page id="modules"] into a WPBakery
+     Text Block. The Website Harness fetches this fragment from the repo.
      ================================================================ -->
 <div class="ucm" id="ucm">
 
@@ -71,6 +71,8 @@
         <button class="ucm-seg-btn" data-tier="pro" role="tab"><i class="mdi mdi-star"></i> PRO</button>
       </div>
       <div class="ucm-chips" id="ucm-chips">
+        <!-- Rebuilt from UCDemo.categories() once the demo bundle loads; static
+             chips below are the fallback for older pinned bundles. -->
         <button class="ucm-chip active" data-cat="all">All categories</button>
         <button class="ucm-chip" data-cat="layout"><i class="mdi mdi-view-dashboard-outline"></i> Layout</button>
         <button class="ucm-chip" data-cat="content"><i class="mdi mdi-text-box-outline"></i> Content</button>
@@ -529,7 +531,35 @@ function every(el, fn, ms){ fn(); const id=setInterval(fn,ms); addTimer(el,id); 
 function destroyPreview(el){ (timers.get(el)||[]).forEach(clearInterval); timers.delete(el); el.innerHTML=''; el.dataset.ready=''; }
 
 /* ---------- card factory ---------- */
-const CAT_LABEL = {layout:'Layout',content:'Content',data:'Data',interactive:'Controls',input:'Inputs',media:'Media'};
+let CAT_LABEL = {layout:'Layout',content:'Content',data:'Data',interactive:'Controls',input:'Inputs',media:'Media'};
+const FALLBACK_CATEGORIES = [
+  { id:'layout', label:'Layout', icon:'mdi:view-dashboard-outline' },
+  { id:'content', label:'Content', icon:'mdi:text-box-outline' },
+  { id:'data', label:'Data', icon:'mdi:chart-box-outline' },
+  { id:'interactive', label:'Controls', icon:'mdi:gesture-tap' },
+  { id:'input', label:'Inputs', icon:'mdi:form-textbox' },
+  { id:'media', label:'Media', icon:'mdi:image-multiple-outline' },
+];
+function bindChipClicks(){
+  $$('.ucm-chip',root).forEach(b=>b.addEventListener('click',()=>{
+    $$('.ucm-chip',root).forEach(x=>x.classList.toggle('active',x===b));
+    state.cat=b.dataset.cat; applyFilters();
+  }));
+}
+function renderChips(categories){
+  const host = $('#ucm-chips'); if(!host) return;
+  const cats = Array.isArray(categories) && categories.length ? categories : FALLBACK_CATEGORIES;
+  CAT_LABEL = {};
+  cats.forEach(c=>{ CAT_LABEL[c.id] = c.label; });
+  const active = state.cat || 'all';
+  host.innerHTML = `<button class="ucm-chip${active==='all'?' active':''}" data-cat="all">All categories</button>` +
+    cats.map(c=>{
+      const icon = (c.icon||'').replace(/^mdi:/,'mdi-');
+      return `<button class="ucm-chip${active===c.id?' active':''}" data-cat="${c.id}"><i class="mdi ${icon}"></i> ${c.label}</button>`;
+    }).join('');
+  if(active!=='all' && !CAT_LABEL[active]){ state.cat='all'; }
+  bindChipClicks();
+}
 function cardHTML(m){
   return `<article class="ucm-card ${m.pro?'ucm-card-pro':''}" data-type="${m.type}" tabindex="0" role="button" aria-label="${m.title}: open details">
     <div class="ucm-pv" data-pv="${m.type}">
@@ -671,10 +701,7 @@ $$('.ucm-seg-btn',root).forEach(b=>b.addEventListener('click',()=>{
   $$('.ucm-seg-btn',root).forEach(x=>x.classList.toggle('active',x===b));
   state.tier=b.dataset.tier; applyFilters();
 }));
-$$('.ucm-chip',root).forEach(b=>b.addEventListener('click',()=>{
-  $$('.ucm-chip',root).forEach(x=>x.classList.toggle('active',x===b));
-  state.cat=b.dataset.cat; applyFilters();
-}));
+bindChipClicks();
 const searchEl = $('#ucm-search'), clearEl = $('#ucm-search-clear');
 let debounce;
 searchEl.addEventListener('input',()=>{
@@ -733,19 +760,22 @@ function boot(){ renderAll(); applyFilters(); bootProArt(); watchBundle(); }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 
 /* ---------- self-updating catalog ----------
-   Once the demo bundle loads, rebuild the catalog from ITS manifest so a new
-   Ultra Card release (rebuild bundle + push to main) updates this page
-   automatically: new modules, counts and the version badge. */
+   Once the demo bundle loads, rebuild the catalog + category chips from ITS
+   manifest so a new Ultra Card release updates this page automatically. */
 function watchBundle(){
   customElements.whenDefined('uc-module-demo').then(()=>{
     const UC = window.UCDemo; if(!UC || !UC.types) return;
     try{
+      if(typeof UC.categories === 'function'){
+        renderChips(UC.categories());
+      }
       const manifests = UC.types(); if(!Array.isArray(manifests) || manifests.length < 10) return;
       const fresh = manifests.map(m=>({ type:m.type, title:m.title, description:m.description,
-        icon:m.icon, category:m.category, tags:m.tags||[], pro:(m.tags||[]).includes('pro') }));
+        icon:m.icon, category:m.category, tags:m.tags||[],
+        pro: typeof m.pro === 'boolean' ? m.pro : (m.tags||[]).includes('pro') }));
       const changed = fresh.length !== CATALOG.length ||
-        fresh.some(f=>!CATALOG.find(c=>c.type===f.type));
-      if(!changed) return;
+        fresh.some(f=>{ const c=CATALOG.find(x=>x.type===f.type); return !c || c.pro!==f.pro || c.title!==f.title; });
+      if(!changed){ applyFilters(); return; }
       CATALOG.length = 0; CATALOG.push(...fresh);
       counts.total = CATALOG.length;
       counts.free  = CATALOG.filter(m=>!m.pro).length;

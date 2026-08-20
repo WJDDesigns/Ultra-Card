@@ -99,6 +99,7 @@ export class UltraInfoModule extends BaseUltraModule {
           icon_gap: 8,
           // Name/Value layout direction (works with any icon position)
           name_value_layout: 'vertical',
+          name_value_order: 'name-first',
           name_value_gap: 2,
           // Content distribution control
           content_distribution: 'normal',
@@ -174,6 +175,7 @@ export class UltraInfoModule extends BaseUltraModule {
       name_alignment: entity.name_alignment || 'start',
       state_alignment: entity.state_alignment || 'start',
       name_value_layout: entity.name_value_layout || 'vertical',
+      name_value_order: entity.name_value_order || 'name-first',
       name_value_gap: entity.name_value_gap !== undefined ? entity.name_value_gap : 2,
       content_distribution: entity.content_distribution || 'normal',
     };
@@ -649,6 +651,57 @@ export class UltraInfoModule extends BaseUltraModule {
                   infoModule,
                   0,
                   { name_value_layout: next as any },
+                  updateModule
+                );
+                setTimeout(() => this.triggerPreviewUpdate(), 200);
+              }
+            )}
+          </div>
+
+          <div class="field-group" style="margin-bottom: 24px;">
+            <div
+              class="field-title"
+              style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
+            >
+              ${localize('editor.info.name_value_order', lang, 'Name & Value Order')}
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+            >
+              ${(entity.name_value_layout || 'vertical') === 'horizontal'
+                ? localize(
+                    'editor.info.name_value_order_desc_horizontal',
+                    lang,
+                    'Which one comes first on the line'
+                  )
+                : localize(
+                    'editor.info.name_value_order_desc_vertical',
+                    lang,
+                    'Which one sits on top of the other'
+                  )}
+            </div>
+            ${this.renderSegmentedField(
+              '',
+              '',
+              entity.name_value_order || 'name-first',
+              [
+                {
+                  value: 'name-first',
+                  label: localize('editor.info.name_first', lang, 'Name First'),
+                  icon: 'mdi:format-text',
+                },
+                {
+                  value: 'value-first',
+                  label: localize('editor.info.value_first', lang, 'Value First'),
+                  icon: 'mdi:numeric',
+                },
+              ],
+              next => {
+                this._updateEntity(
+                  infoModule,
+                  0,
+                  { name_value_order: next as any },
                   updateModule
                 );
                 setTimeout(() => this.triggerPreviewUpdate(), 200);
@@ -1619,6 +1672,7 @@ export class UltraInfoModule extends BaseUltraModule {
                 name_alignment: entity.name_alignment || 'start',
                 state_alignment: entity.state_alignment || 'start',
                 name_value_layout: entity.name_value_layout || 'vertical',
+                name_value_order: entity.name_value_order || 'name-first',
                 name_value_gap: entity.name_value_gap !== undefined ? entity.name_value_gap : 2,
                 content_distribution: entity.content_distribution || 'normal',
               };
@@ -1818,6 +1872,7 @@ export class UltraInfoModule extends BaseUltraModule {
               // or when icon is disabled, but also available for top/bottom layouts
               const nameValueLayout = entity.name_value_layout || 'vertical';
               const nameValueGap = entity.name_value_gap !== undefined ? entity.name_value_gap : 2;
+              const valueFirst = (entity.name_value_order || 'name-first') === 'value-first';
               
               // Check if we're using horizontal layout with distribution
               const isHorizontalWithDistribution = nameValueLayout === 'horizontal' && contentDistribution !== 'normal';
@@ -1912,8 +1967,9 @@ export class UltraInfoModule extends BaseUltraModule {
                     width: ${isHorizontalWithDistribution && !hasIcon ? '100%' : 'auto'};
                   "
                 >
-                  ${nameElement}
-                  ${valueElement}
+                  ${valueFirst
+                    ? html`${valueElement}${nameElement}`
+                    : html`${nameElement}${valueElement}`}
                 </div>
               `;
               
@@ -1946,7 +2002,9 @@ export class UltraInfoModule extends BaseUltraModule {
               const renderInnerContent = () => {
                 if (iconNameGroupElement) {
                   // Horizontal + distribution + icon: group icon+name, then value
-                  return html`${iconNameGroupElement}${valueElement}`;
+                  return valueFirst
+                    ? html`${valueElement}${iconNameGroupElement}`
+                    : html`${iconNameGroupElement}${valueElement}`;
                 }
                 // Standard layout
                 if (iconPosition === 'left' || iconPosition === 'top') {
@@ -2648,6 +2706,7 @@ export class UltraInfoModule extends BaseUltraModule {
       icon_gap: 8,
       // Name/Value layout direction (works with any icon position)
       name_value_layout: 'vertical',
+      name_value_order: 'name-first',
       name_value_gap: 2,
       // Content distribution control
       content_distribution: 'normal',

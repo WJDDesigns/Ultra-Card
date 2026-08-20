@@ -41,12 +41,12 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
     type: 'auto_entity_list',
     title: 'Auto Entities List',
     description:
-      'Dynamically list entities using domain, device_class, state, and keyword filters',
+      'Dynamically list entities using domain, device_class, area, label, state, and keyword filters',
     author: 'WJD Designs',
     version: '1.0.0',
     icon: 'mdi:format-list-bulleted-type',
     category: 'data',
-    tags: ['auto', 'entities', 'list', 'filter', 'dynamic', 'domain'],
+    tags: ['auto', 'entities', 'list', 'filter', 'dynamic', 'domain', 'label'],
   };
 
   private _expandedEntities: Set<string> = new Set();
@@ -70,6 +70,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
       include_domains: [],
       include_device_classes: [],
       include_areas: [],
+      include_labels: [],
       include_keywords: [],
       exclude_keywords: [],
       show_unavailable: false,
@@ -894,6 +895,33 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
               const areas = e.detail.value.include_areas;
               updateModule({
                 include_areas: Array.isArray(areas) ? areas : areas ? [areas] : [],
+              } as Partial<CardModule>);
+              this.triggerPreviewUpdate();
+            }
+          )}
+        </div>
+
+        <div style="margin-top: 16px;">
+          <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
+            ${localize('editor.auto_entity_list.include_labels', lang, 'Labels')}
+          </div>
+          <div style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 8px;">
+            ${localize(
+              'editor.auto_entity_list.include_labels_desc',
+              lang,
+              'Only entities carrying these Home Assistant labels (on the entity, its device, or its area). Empty = all labels.'
+            )}
+          </div>
+          ${this.renderFieldSection(
+            '',
+            '',
+            hass,
+            { include_labels: m.include_labels || [] },
+            [{ name: 'include_labels', selector: { label: { multiple: true } } }],
+            (e: CustomEvent) => {
+              const labels = e.detail.value.include_labels;
+              updateModule({
+                include_labels: Array.isArray(labels) ? labels : labels ? [labels] : [],
               } as Partial<CardModule>);
               this.triggerPreviewUpdate();
             }
@@ -2095,15 +2123,41 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
   }
 
   /**
+   * Collect every label that applies to an entity. HA itself treats labels as
+   * inherited, so an entity counts as labelled when the label sits on the
+   * entity, on its device, or on the area it resolves to.
+   */
+  private _entityLabels(hass: HomeAssistant, entityId: string): string[] {
+    const h = hass as unknown as {
+      entities?: Record<string, { device_id?: string; labels?: string[] }>;
+      devices?: Record<string, { labels?: string[] }>;
+      areas?: Record<string, { labels?: string[] }>;
+    };
+    const out = new Set<string>();
+    const add = (labels?: string[]) => {
+      if (Array.isArray(labels)) for (const l of labels) if (l) out.add(l);
+    };
+
+    const reg = h.entities?.[entityId];
+    add(reg?.labels);
+    if (reg?.device_id) add(h.devices?.[reg.device_id]?.labels);
+    const areaId = this._entityAreaId(hass, entityId);
+    if (areaId) add(h.areas?.[areaId]?.labels);
+
+    return [...out];
+  }
+
+  /**
    * Walks every entity in the state machine, so the result is cached per hass
-   * tick. Area filtering reads the entity and device registries, which HA
-   * replaces independently of `states` — hence both are cache dependencies.
+   * tick. Area and label filtering read the entity, device and area registries,
+   * which HA replaces independently of `states` — hence all three are cache
+   * dependencies.
    */
   private _collectEntities(m: AutoEntityListModule, hass: HomeAssistant): EntityRow[] {
-    const h = hass as unknown as { entities?: unknown; devices?: unknown };
+    const h = hass as unknown as { entities?: unknown; devices?: unknown; areas?: unknown };
     return this._entitiesMemo.read(
       m.id,
-      [hass.states, h.entities, h.devices],
+      [hass.states, h.entities, h.devices, h.areas],
       statesMemoKey(m),
       () => this._computeEntities(m, hass)
     );
@@ -2115,6 +2169,7 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
     const includeDomains = (m.include_domains || []).map(s => s.toLowerCase());
     const includeDC = (m.include_device_classes || []).map(s => s.toLowerCase());
     const includeAreas = (m.include_areas || []).filter(Boolean);
+    const includeLabels = (m.include_labels || []).filter(Boolean);
     const includeKw = (m.include_keywords || []).map(s => s.toLowerCase());
     const excludeKw = (m.exclude_keywords || []).map(s => s.toLowerCase());
 
@@ -2130,6 +2185,11 @@ export class UltraAutoEntityListModule extends BaseUltraModule {
       if (includeAreas.length) {
         const areaId = this._entityAreaId(hass, id);
         if (!areaId || !includeAreas.includes(areaId)) return false;
+      }
+
+      if (includeLabels.length) {
+        const labels = this._entityLabels(hass, id);
+        if (!labels.some(l => includeLabels.includes(l))) return false;
       }
 
       if (includeKw.length && !includeKw.some(k => lowerId.includes(k))) return false;

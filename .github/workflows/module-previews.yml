@@ -81,3 +81,12 @@ jobs:
             git commit -m "chore(previews): refresh module gallery and demo bundle [skip ci]"
             git push
           fi
+
+      - name: Flush website harness cache
+        if: github.event_name != 'pull_request' && secrets.UC_HARNESS_SECRET != ''
+        continue-on-error: true
+        run: |
+          curl -fsS -X POST https://ultracard.io/wp-json/ultra-card/v1/harness/flush \
+            -H "X-UC-Harness-Secret: ${{ secrets.UC_HARNESS_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{"reason":"module-previews"}'

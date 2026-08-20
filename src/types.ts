@@ -58,6 +58,8 @@ export interface ModuleActionConfig {
   entity?: string | undefined;
   navigation_path?: string | undefined;
   url_path?: string | undefined;
+  /** Where a `url` action opens. Defaults to `_blank` so existing links keep opening a new tab. */
+  url_target?: '_blank' | '_self' | undefined;
   service?: string | undefined;
   perform_action?: string | undefined;
   service_data?: Record<string, any> | undefined;
@@ -666,6 +668,8 @@ export interface InfoEntityConfig {
   icon_gap?: number | undefined;
   // Name/Value layout direction (works with any icon position or when icon is disabled)
   name_value_layout?: 'vertical' | 'horizontal' | undefined;
+  /** Which of the two comes first along the layout direction. Defaults to name first. */
+  name_value_order?: 'name-first' | 'value-first' | undefined;
   name_value_gap?: number | undefined;
   // Content distribution control
   content_distribution?: 'normal' | 'space-between' | 'space-around' | 'space-evenly' | undefined;
@@ -5897,6 +5901,7 @@ export interface AutoEntityListModule extends BaseModule {
   include_domains?: string[] | undefined;
   include_device_classes?: string[] | undefined;
   include_areas?: string[] | undefined; // Area registry IDs; entity matches via its own area or its device's area
+  include_labels?: string[] | undefined; // Label registry IDs; entity matches via its own, its device's, or its area's labels
   include_keywords?: string[] | undefined;
   exclude_keywords?: string[] | undefined;
   show_unavailable?: boolean | undefined;

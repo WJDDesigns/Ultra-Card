@@ -196,6 +196,30 @@ export interface AuthResponse {
 }
 
 /**
+ * Pull the human-readable message out of a rejected `hass.callApi` value, which
+ * carries the response payload on `body` rather than being an Error.
+ */
+export function extractHassApiError(err: unknown): string {
+  if (!err) return '';
+  if (typeof err === 'string') return err;
+  const candidate = err as { body?: unknown; error?: unknown; message?: unknown };
+  const body = candidate.body;
+  if (typeof body === 'string' && body.trim()) return body.trim();
+  if (body && typeof body === 'object') {
+    const { error, message } = body as { error?: unknown; message?: unknown };
+    if (typeof error === 'string' && error.trim()) return error.trim();
+    if (typeof message === 'string' && message.trim()) return message.trim();
+  }
+  if (typeof candidate.message === 'string' && candidate.message.trim()) {
+    return candidate.message.trim();
+  }
+  if (typeof candidate.error === 'string' && candidate.error.trim()) {
+    return candidate.error.trim();
+  }
+  return '';
+}
+
+/**
  * Cloud authentication service for Ultra Card
  * Integrates with WordPress JWT Authentication plugin
  */
@@ -431,10 +455,19 @@ class UcCloudAuthService {
    * Returns the CloudUser from the updated sensor.
    */
   async loginViaHass(hass: any, email: string, password: string): Promise<CloudUser> {
-    const result: any = await hass.callApi('POST', 'ultra_card_pro_cloud/login', {
-      username: email,
-      password,
-    });
+    let result: any;
+    try {
+      result = await hass.callApi('POST', 'ultra_card_pro_cloud/login', {
+        username: email,
+        password,
+      });
+    } catch (err) {
+      // hass.callApi rejects on non-2xx with { status_code, body }, so the
+      // integration's explanation is only reachable through the thrown value.
+      const error = new Error(extractHassApiError(err) || 'Authentication failed');
+      (error as Error & { cause?: unknown }).cause = err;
+      throw error;
+    }
     if (!result?.success || !result?.user) {
       throw new Error(result?.error || 'Authentication failed');
     }

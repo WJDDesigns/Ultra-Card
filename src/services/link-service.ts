@@ -18,6 +18,8 @@ export interface LinkAction {
   navigation_path?: string | undefined;
   url?: string | undefined;
   url_path?: string | undefined;
+  /** Where a `url` action opens. Defaults to `_blank` so existing links keep opening a new tab. */
+  url_target?: '_blank' | '_self' | undefined;
 
   // Service calls
   service?: string | undefined;
@@ -110,7 +112,11 @@ export class LinkService {
         case 'url':
           if (action.url || action.url_path) {
             const url = action.url || action.url_path || '';
-            window.open(url, '_blank');
+            if (action.url_target === '_self') {
+              window.location.assign(url);
+            } else {
+              window.open(url, '_blank', 'noopener');
+            }
           }
           break;
 

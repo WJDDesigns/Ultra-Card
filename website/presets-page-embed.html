@@ -1,7 +1,8 @@
 <!--
   Ultra Card Presets Gallery embed (modules-page twin).
-  Optional: paste into a WPBakery Raw HTML element.
-  Prefer the plugin archive template after uploading ultra-card-integration.
+  Prefer the live shortcode after the harness is installed:
+    [ultra_card_page id="presets"]
+  in a WPBakery Text Block. This file is the source fragment the harness fetches.
 -->
 <style>
 .ucp{margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}
@@ -34,7 +35,8 @@
         <button type="button" class="ucp-seg-btn" data-source="community">Community</button>
         <button type="button" class="ucp-seg-btn" data-source="official"><i class="mdi mdi-shield-check"></i> Official</button>
       </div>
-      <div class="ucp-chips">
+      <div class="ucp-chips" id="ucp-chips">
+        <!-- Rebuilt from /preset-categories once loaded; static chips are the fallback. -->
         <button type="button" class="ucp-chip active" data-cat="all">All categories</button>
         <button type="button" class="ucp-chip" data-cat="layout"><i class="mdi mdi-view-dashboard-outline"></i> Layout</button>
         <button type="button" class="ucp-chip" data-cat="content"><i class="mdi mdi-text-box-outline"></i> Content</button>
@@ -183,6 +185,51 @@
   var API_BASE=API.replace(/\/presets\/?$/,'');
   function esc(s){return String(s||'').replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
   function strip(h){var d=document.createElement('div');d.innerHTML=h||'';return (d.textContent||'').trim().replace(/\s+/g,' ');}
+  function bindChipClicks(){
+    root.querySelectorAll('.ucp-chip').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        root.querySelectorAll('.ucp-chip').forEach(function(b){b.classList.remove('active');});
+        btn.classList.add('active');
+        state.cat=btn.getAttribute('data-cat')||'all';
+        render();
+      });
+    });
+  }
+  function renderCategoryChips(categories){
+    var host=document.getElementById('ucp-chips'); if(!host||!Array.isArray(categories)||!categories.length) return;
+    CAT={}; CAT_LABEL={};
+    categories.forEach(function(c){
+      var id=c.value||c.id; if(!id) return;
+      var icon=(c.icon||'').replace(/^mdi:/,'');
+      if(icon.indexOf('mdi-')!==0) icon='mdi-'+icon.replace(/^mdi-/,'');
+      CAT[id]=icon||'mdi-palette-outline';
+      CAT_LABEL[id]=c.label||id;
+    });
+    var active=state.cat||'all';
+    host.innerHTML='<button type="button" class="ucp-chip'+(active==='all'?' active':'')+'" data-cat="all">All categories</button>'+
+      categories.map(function(c){
+        var id=c.value||c.id;
+        var icon=CAT[id]||'mdi-palette-outline';
+        return '<button type="button" class="ucp-chip'+(active===id?' active':'')+'" data-cat="'+esc(id)+'"><i class="mdi '+icon+'"></i> '+esc(CAT_LABEL[id]||id)+'</button>';
+      }).join('');
+    if(active!=='all'&&!CAT_LABEL[active]) state.cat='all';
+    bindChipClicks();
+  }
+  async function fetchAllPresets(){
+    var all=[], page=1, totalPages=1;
+    do {
+      var url=API+(API.indexOf('?')>=0?'&':'?')+'per_page=100&page='+page;
+      var res=await fetch(url);
+      var data=await res.json();
+      var batch=Array.isArray(data.presets)?data.presets:(Array.isArray(data)?data:[]);
+      all=all.concat(batch);
+      var headerPages=parseInt(res.headers.get('X-WP-TotalPages')||'0',10);
+      totalPages=headerPages||Number(data.total_pages)||1;
+      if(!batch.length) break;
+      page++;
+    } while(page<=totalPages && page<=20);
+    return all;
+  }
   function matches(p){
     if(state.cat!=='all'&&String(p.category||'').toLowerCase()!==state.cat)return false;
     if(state.source!=='all'&&String(p.source||'community')!==state.source)return false;
@@ -303,10 +350,15 @@
   grid.addEventListener('keydown',function(e){ if(e.key!=='Enter'&&e.key!==' ')return; var el=e.target.closest('.ucp-card'); if(!el)return; e.preventDefault(); var p=presets.find(function(x){return String(x.id)===String(el.getAttribute('data-id'));}); if(p) openModal(p); });
 
   try{
-    var res=await fetch(root.getAttribute('data-api'));
-    var data=await res.json();
-    presets=Array.isArray(data.presets)?data.presets:(Array.isArray(data)?data:[]);
+    presets=await fetchAllPresets();
   }catch(e){presets=[];}
+  try{
+    var cres=await fetch(API_BASE+'/preset-categories');
+    if(cres.ok){
+      var catsData=await cres.json();
+      renderCategoryChips(Array.isArray(catsData)?catsData:(catsData.categories||[]));
+    }
+  }catch(e){ /* keep static chips */ }
   var official=presets.filter(function(p){return p.source==='official';}).length;
   var cats={}; presets.forEach(function(p){cats[String(p.category||'').toLowerCase()]=1;});
   root.querySelector('[data-stat="total"]').textContent=String(presets.length);
@@ -314,7 +366,7 @@
   root.querySelector('[data-stat="official"]').textContent=String(official);
   root.querySelector('[data-stat="categories"]').textContent=String(Object.keys(cats).filter(Boolean).length);
   root.querySelectorAll('.ucp-seg-btn').forEach(function(btn){btn.addEventListener('click',function(){root.querySelectorAll('.ucp-seg-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');state.source=btn.getAttribute('data-source')||'all';render();});});
-  root.querySelectorAll('.ucp-chip').forEach(function(btn){btn.addEventListener('click',function(){root.querySelectorAll('.ucp-chip').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');state.cat=btn.getAttribute('data-cat')||'all';render();});});
+  bindChipClicks();
   var search=document.getElementById('ucp-search'), clear=document.getElementById('ucp-search-clear');
   search.addEventListener('input',function(){state.q=(search.value||'').trim().toLowerCase();clear.hidden=!state.q;render();});
   clear.addEventListener('click',function(){search.value='';state.q='';clear.hidden=true;render();});

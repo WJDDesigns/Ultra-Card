@@ -3,6 +3,12 @@
 export * from './base-module';
 export * from './module-registry';
 export { getModuleRegistry } from './module-registry';
+export {
+  CORE_MANIFESTS,
+  MODULE_CATEGORIES,
+  isProModule,
+} from './module-manifest-data';
+export type { ModuleManifest, ModuleCategoryMeta } from './module-manifest-data';
 export { UltraStackModule } from './stack-module';
 
 // Export new services (used by editor/card)

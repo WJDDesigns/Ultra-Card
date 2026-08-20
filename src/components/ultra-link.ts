@@ -36,6 +36,8 @@ export interface TapActionConfig {
   entity?: string | undefined;
   navigation_path?: string | undefined;
   url_path?: string | undefined;
+  /** Where a `url` action opens. Defaults to `_blank` so existing links keep opening a new tab. */
+  url_target?: '_blank' | '_self' | undefined;
   // Modern perform-action property (preferred)
   perform_action?: string | undefined;
   // Legacy service property (for backward compatibility)
@@ -327,6 +329,42 @@ export class UltraLinkComponent {
   }
 
   /**
+   * Where a `url` action opens. Left off the config entirely when set back to a
+   * new tab, so the saved YAML only grows for people who want the other choice.
+   */
+  private static renderUrlTargetField(
+    hass: HomeAssistant,
+    action: TapActionConfig,
+    updateAction: (updates: Partial<TapActionConfig>) => void
+  ): TemplateResult {
+    return html`
+      <div style="margin-top: 12px;">
+        <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">
+          Open In Same Tab
+        </div>
+        <div
+          class="field-description"
+          style="font-size: 12px; font-weight: 400; margin-bottom: 8px; color: var(--secondary-text-color);"
+        >
+          Replace the current page instead of opening a new browser tab.
+        </div>
+        ${UltraLinkComponent.renderCleanForm(
+          hass,
+          { url_target: action.url_target === '_self' },
+          [
+            {
+              name: 'url_target',
+              selector: { boolean: {} },
+            },
+          ],
+          (e: CustomEvent) =>
+            updateAction({ url_target: e.detail.value.url_target ? '_self' : undefined })
+        )}
+      </div>
+    `;
+  }
+
+  /**
    * Inline "Supports templates" hint with a help-circle button that opens the
    * Template Cheatsheet pre-filtered to the action examples.
    */
@@ -451,6 +489,7 @@ export class UltraLinkComponent {
               ],
               (e: CustomEvent) => updateAction({ url_path: e.detail.value.url_path })
             )}
+            ${UltraLinkComponent.renderUrlTargetField(hass, action, updateAction)}
             ${UltraLinkComponent.renderTemplatesHint()}
           </div>
         `;
@@ -1149,7 +1188,11 @@ export class UltraLinkComponent {
 
       case 'url':
         if (resolvedAction.url_path) {
-          window.open(resolvedAction.url_path, '_blank');
+          if (resolvedAction.url_target === '_self') {
+            window.location.assign(resolvedAction.url_path);
+          } else {
+            window.open(resolvedAction.url_path, '_blank', 'noopener');
+          }
         }
         break;
 

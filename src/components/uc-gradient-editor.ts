@@ -324,11 +324,6 @@ export class UCGradientEditor extends LitElement {
       cursor: not-allowed;
     }
 
-    .stop-item.boundary .delete-button {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-
     .icon {
       width: 18px;
       height: 18px;
@@ -464,13 +459,12 @@ export class UCGradientEditor extends LitElement {
   }
 
   private _renderStopItem(stop: GradientStop, index: number, totalStops: number): TemplateResult {
-    const isBoundary = stop.position === 0 || stop.position === 100;
     const isDragging = this._draggedIndex === index;
-    const canDelete = totalStops > 2 && !isBoundary;
+    const canDelete = totalStops > 2;
 
     return html`
       <div
-        class="stop-item ${isBoundary ? 'boundary' : ''} ${isDragging ? 'dragging' : ''}"
+        class="stop-item ${isDragging ? 'dragging' : ''}"
         draggable="true"
         @dragstart=${(e: DragEvent) => this._handleDragStart(e, index)}
         @dragend=${this._handleDragEnd}
@@ -500,12 +494,9 @@ export class UCGradientEditor extends LitElement {
           .value=${stop.position.toString()}
           min="0"
           max="100"
-          @input=${(e: Event) =>
-            this._handlePositionChange(
-              stop.id,
-              parseFloat((e.target as HTMLInputElement).value) || 0
-            )}
-          @blur=${this._validateAndSortStops}
+          @input=${(e: Event) => this._onPositionInput(stop.id, e)}
+          @change=${() => this._commitStops()}
+          @blur=${() => this._commitStops()}
         />
 
         <!-- Stop Info -->
@@ -518,7 +509,7 @@ export class UCGradientEditor extends LitElement {
           class="delete-button"
           ?disabled=${!canDelete}
           @click=${() => this._deleteStop(stop.id)}
-          title=${canDelete ? 'Delete stop' : 'Cannot delete boundary stops'}
+          title=${canDelete ? 'Delete stop' : 'At least two stops are required'}
         >
           <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
             <path
@@ -545,9 +536,6 @@ export class UCGradientEditor extends LitElement {
 
   private _deleteStop(stopId: string): void {
     if (this.stops.length <= 2) return;
-
-    const stopToDelete = this.stops.find(s => s.id === stopId);
-    if (!stopToDelete || stopToDelete.position === 0 || stopToDelete.position === 100) return;
 
     this.stops = this.stops.filter(s => s.id !== stopId);
     this._notifyChange();
@@ -576,28 +564,29 @@ export class UCGradientEditor extends LitElement {
     }
   }
 
-  private _handlePositionChange(stopId: string, newPosition: number): void {
-    // Clamp position between 0 and 100
-    newPosition = Math.max(0, Math.min(100, newPosition));
-
-    this.stops = this.stops.map(stop =>
-      stop.id === stopId ? { ...stop, position: newPosition } : stop
-    );
-    this.requestUpdate(); // Update UI immediately
+  private _onPositionInput(stopId: string, e: Event): void {
+    const raw = (e.target as HTMLInputElement).value;
+    if (raw === '' || raw === '-' || raw === '.') return;
+    const parsed = Number.parseFloat(raw);
+    if (Number.isNaN(parsed)) return;
+    this._handlePositionChange(stopId, parsed);
   }
 
-  private _validateAndSortStops(): void {
-    // Ensure boundary stops stay at 0 and 100
-    this.stops = this.stops.map(stop => {
-      if (stop.position === 0 || (stop.id === '1' && stop.position < 50)) {
-        return { ...stop, position: 0 };
-      }
-      if (stop.position === 100 || (stop.id === '3' && stop.position > 50)) {
-        return { ...stop, position: 100 };
-      }
-      return stop;
-    });
+  private _handlePositionChange(stopId: string, newPosition: number): void {
+    const clamped = Math.max(0, Math.min(100, newPosition));
+    const next = this.stops.map(stop =>
+      stop.id === stopId ? { ...stop, position: clamped } : stop
+    );
+    if (next.every((stop, i) => stop.position === this.stops[i]?.position)) return;
+    this.stops = next;
+    this._notifyChange();
+  }
 
+  private _commitStops(): void {
+    this.stops = this.stops.map(stop => ({
+      ...stop,
+      position: Math.max(0, Math.min(100, stop.position)),
+    }));
     this._notifyChange();
   }
 

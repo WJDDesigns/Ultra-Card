@@ -10,7 +10,7 @@
  */
 import { render, html, TemplateResult } from 'lit';
 import { getMdiSheet } from './ha-shims';
-import { getModuleRegistry } from '../modules';
+import { getModuleRegistry, MODULE_CATEGORIES, isProModule } from '../modules';
 import { createDemoHass } from './demo-hass';
 import { renderTemplate as renderDemoTemplate } from './demo-jinja';
 import { buildEntityContext } from '../utils/template-context';
@@ -20,6 +20,7 @@ import {
   RETURN_PROPERTIES,
   TEMPLATE_SCOPES,
 } from '../components/uc-template-cheatsheet-data';
+import { PLAYGROUND_SIM, PLAYGROUND_SOURCES } from './template-playground-data';
 import { VERSION } from '../version';
 
 const registry = getModuleRegistry();
@@ -1456,7 +1457,12 @@ if (!customElements.get('uc-module-demo')) {
   hass: demoHass,
   registry,
   lit: { render, html },
-  types: () => registry.getAllModuleMetadata(),
+  types: () =>
+    registry.getAllModuleMetadata().map(m => ({
+      ...m,
+      pro: isProModule(m),
+    })),
+  categories: () => MODULE_CATEGORIES.slice().sort((a, b) => a.order - b.order),
 
   /**
    * Template Mode reference data — the same arrays that drive the in-app
@@ -1467,6 +1473,10 @@ if (!customElements.get('uc-module-demo')) {
     returnProperties: RETURN_PROPERTIES,
     examples: EXAMPLE_TEMPLATES,
     scopes: TEMPLATE_SCOPES,
+    playground: {
+      sim: PLAYGROUND_SIM,
+      sources: PLAYGROUND_SOURCES,
+    },
   },
 
   /** Render a template the way the demo websocket does (Jinja + literal_eval). */

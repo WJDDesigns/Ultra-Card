@@ -3185,17 +3185,36 @@ export class UltraNavigationModule extends BaseUltraModule {
 
       <!-- URL: Text field -->
       ${category === 'url'
-        ? UcFormUtils.renderFieldSection(
-            'URL',
-            'External website to open in a new tab (e.g., https://google.com).',
-            hass,
-            { url_path: currentAction?.url_path || '' },
-            [UcFormUtils.text('url_path')],
-            (e: CustomEvent) => {
-              const url = e.detail?.value?.url_path ?? '';
-              setAction({ ...currentAction, action: 'url', url_path: url });
-            }
-          )
+        ? html`
+            ${UcFormUtils.renderFieldSection(
+              'URL',
+              'External website to open (e.g., https://google.com).',
+              hass,
+              { url_path: currentAction?.url_path || '' },
+              [UcFormUtils.text('url_path')],
+              (e: CustomEvent) => {
+                const url = e.detail?.value?.url_path ?? '';
+                setAction({ ...currentAction, action: 'url', url_path: url });
+              }
+            )}
+            ${UcFormUtils.renderFieldSection(
+              'Open In Same Tab',
+              'Replace the current page instead of opening a new browser tab.',
+              hass,
+              { url_target: currentAction?.url_target === '_self' },
+              [UcFormUtils.boolean('url_target')],
+              (e: CustomEvent) => {
+                const sameTab = e.detail?.value?.url_target ?? false;
+                const next = { ...currentAction, action: 'url' } as any;
+                if (sameTab) {
+                  next.url_target = '_self';
+                } else {
+                  delete next.url_target;
+                }
+                setAction(next);
+              }
+            )}
+          `
         : ''}
 
       <!-- Open Popup: Popup picker -->

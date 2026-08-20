@@ -2494,7 +2494,11 @@ class UcNavigationService {
     }
 
     if (action.action === 'url' && action.url_path) {
-      window.open(action.url_path, '_blank', 'noopener');
+      if (action.url_target === '_self') {
+        window.location.assign(action.url_path);
+      } else {
+        window.open(action.url_path, '_blank', 'noopener');
+      }
       this.triggerHaptic(actionType, registered);
       return;
     }

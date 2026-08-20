@@ -1,5 +1,29 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.8.0-beta2
+
+### 🚀 New Features
+
+- **Added Labels filter to the Auto Entities List** - Tag an entity, its device or its area in Home Assistant and it flows straight into the list, the same way the Areas filter already works (#114)
+- **Added a Name and Value order control to the Info module** - Put the value above the name so a big reading can sit over its label, instead of the name always coming first (#113)
+- **Added an Open In Same Tab choice for URL actions** - Tap, hold and double-tap links, navigation routes and global actions can now replace the current page instead of always opening a new browser tab
+- **Added preset authoring and creator dashboard pages to the website integration** - Preset creators can submit and manage their own presets from ultracard.io
+
+### 🔧 Improvements
+
+- **Improved the Text module template hint** - It now says HTML tags render as literal text, so colour belongs in the JSON fields rather than in markup
+- **Improved the website modules and presets pages** - Both are generated from the same module manifest and preview harness the card itself uses, so they can no longer drift out of date
+
+### 🐛 Bug Fixes
+
+- **Fixed bar and gauge gradient percentages snapping back in the visual editor** - Every colour stop is editable again, so you no longer have to drop into YAML to move the first or last one (#115)
+- **Fixed native card modules getting stranded on a config their own editor rejects** - A missing stub or missing visual editor is no longer remembered from a card class Home Assistant had not finished loading
+- **Fixed entity rows being offered as embeddable cards** - Rows only work inside an Entities card, and a layout that already holds one now explains itself instead of just looking broken
+- **Fixed cloud sign-in failures hiding the reason** - The integration's own explanation now reaches the login form rather than a generic authentication error
+- **Fixed Hub diagnostics reporting a plain failure when bot protection blocked the request** - The report now names the block and shows the detail behind it
+
+---
+
 ## Version 3.8.0-beta1
 
 The first 3.8.0 beta. The headline is the new UniFi Network module — a virtual rack with real Ubiquiti product photos and live port lights, plus topology, ports, clients and WAN health — which now discovers UniFi Protect cameras and NVRs alongside your network gear. The Navigation module also learns how to get out of the way, cards can go fully transparent, and a normal dashboard session no longer floods the browser console. This is a pre-release for testing — please report anything odd on GitHub or Discord.

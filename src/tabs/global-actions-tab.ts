@@ -260,6 +260,7 @@ export class GlobalActionsTab extends LitElement {
               this._triggerPreviewUpdate();
             }}
           ></ha-form>
+          ${this._renderUrlTargetToggle('tap_action', tapAction, lang)}
           ${this._renderTemplatesHint(tapAction)}
           ${this._renderEntitySelectors('tap_action', tapAction, moduleHasEntity, lang)}
         </div>
@@ -296,6 +297,7 @@ export class GlobalActionsTab extends LitElement {
               this._triggerPreviewUpdate();
             }}
           ></ha-form>
+          ${this._renderUrlTargetToggle('hold_action', holdAction, lang)}
           ${this._renderTemplatesHint(holdAction)}
           ${this._renderEntitySelectors('hold_action', holdAction, moduleHasEntity, lang)}
         </div>
@@ -332,6 +334,7 @@ export class GlobalActionsTab extends LitElement {
               this._triggerPreviewUpdate();
             }}
           ></ha-form>
+          ${this._renderUrlTargetToggle('double_tap_action', doubleTapAction, lang)}
           ${this._renderTemplatesHint(doubleTapAction)}
           ${this._renderEntitySelectors(
             'double_tap_action',
@@ -586,6 +589,60 @@ export class GlobalActionsTab extends LitElement {
 
       <!-- Hover Effects Section -->
       ${this._renderHoverEffectsSection()}
+    `;
+  }
+
+  /**
+   * HA's `ui_action` selector always opens a URL action in a new tab and offers
+   * no say in it, so the choice is surfaced alongside it. Only written to the
+   * config when the user opts into the same tab, keeping saved YAML unchanged
+   * for everyone else.
+   */
+  private _renderUrlTargetToggle(
+    actionType: 'tap_action' | 'hold_action' | 'double_tap_action',
+    action: any,
+    lang: string
+  ): TemplateResult {
+    if (action?.action !== 'url') return html``;
+
+    return html`
+      <div style="margin-top: 8px;">
+        ${UcFormUtils.renderFieldSection(
+          localize('editor.actions.url_same_tab', lang, 'Open In Same Tab'),
+          localize(
+            'editor.actions.url_same_tab_desc',
+            lang,
+            'Replace the current page instead of opening a new browser tab.'
+          ),
+          this.hass,
+          { url_target: action.url_target === '_self' },
+          [
+            {
+              name: 'url_target',
+              selector: { boolean: {} },
+            },
+          ],
+          (e: CustomEvent) => {
+            const sameTab = e.detail.value?.url_target || false;
+            const updatedAction = { ...action };
+            if (sameTab) {
+              updatedAction.url_target = '_self';
+            } else {
+              delete updatedAction.url_target;
+            }
+            this._config = { ...this._config, [actionType]: updatedAction };
+            this.requestUpdate();
+            this.dispatchEvent(
+              new CustomEvent('module-changed', {
+                detail: { updates: { [actionType]: updatedAction } },
+                bubbles: true,
+                composed: true,
+              })
+            );
+            this._triggerPreviewUpdate();
+          }
+        )}
+      </div>
     `;
   }
 

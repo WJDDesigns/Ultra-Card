@@ -286,8 +286,20 @@ export class UltraNativeCardModule extends BaseUltraModule {
             if (Object.keys(stubConfig).length > 1) {
               updateModule({ card_config: stubConfig });
               setTimeout(() => this.triggerPreviewUpdate(), 50);
+            } else if (!customElements.get(module.card_type)) {
+              // Only `type` came back and the card class still is not
+              // registered, so the stub was read off a class that had not
+              // loaded yet rather than off a card that has no stub. Caching
+              // that answer would strand the module on a config its card and
+              // its editor both reject, leaving no way to set the entity that
+              // would fix it - so let a later render ask again.
+              stubConfigRequests.delete(module.id);
             }
             return stubConfig;
+          })
+          .catch(error => {
+            stubConfigRequests.delete(module.id);
+            throw error;
           });
         stubConfigRequests.set(module.id, pending);
       }
@@ -676,7 +688,13 @@ export class UltraNativeCardModule extends BaseUltraModule {
               module.card_type,
               '- falling back to YAML hint'
             );
-            editorUnavailable.set(module.id, module.card_type);
+            // Only a card class we actually held can tell us the card has no
+            // visual editor. Without one there was nothing to ask, and recording
+            // the verdict would keep answering "no visual editor" for a card
+            // that has one, long after HA imported the chunk.
+            if (cardClass) {
+              editorUnavailable.set(module.id, module.card_type);
+            }
             editorElementCache.delete(cacheKey);
             container.innerHTML = NO_VISUAL_EDITOR_MESSAGE;
           };

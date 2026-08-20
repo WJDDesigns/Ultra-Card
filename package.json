@@ -1,6 +1,6 @@
 {
   "name": "ultra-card",
-  "version": "3.8.0-beta1",
+  "version": "3.8.0-beta2",
   "description": "Ultra Card - A modular card builder for Home Assistant",
   "main": "dist/ultra-card.js",
   "scripts": {
@@ -38,7 +38,8 @@
     "audit:module-tabs": "node scripts/audit-module-tabs.cjs",
     "previews": "node scripts/capture-previews.mjs",
     "previews:check": "node scripts/capture-previews.mjs --strict",
-    "build:demo": "webpack -c webpack.demo.config.js"
+    "build:demo": "webpack -c webpack.demo.config.js",
+    "website:manifest": "node scripts/build-website-manifest.mjs"
   },
   "keywords": [
     "home-assistant",
