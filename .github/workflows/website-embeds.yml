@@ -51,11 +51,19 @@ jobs:
             git push
           fi
 
+      # The `secrets` context is not available in step-level `if:`, so the guard
+      # reads the value through env instead. That also keeps it off the argv.
       - name: Flush website harness cache
-        if: github.event_name != 'pull_request' && secrets.UC_HARNESS_SECRET != ''
+        if: github.event_name != 'pull_request'
         continue-on-error: true
+        env:
+          UC_HARNESS_SECRET: ${{ secrets.UC_HARNESS_SECRET }}
         run: |
+          if [ -z "$UC_HARNESS_SECRET" ]; then
+            echo "No harness secret configured; skipping flush."
+            exit 0
+          fi
           curl -fsS -X POST https://ultracard.io/wp-json/ultra-card/v1/harness/flush \
-            -H "X-UC-Harness-Secret: ${{ secrets.UC_HARNESS_SECRET }}" \
+            -H "X-UC-Harness-Secret: $UC_HARNESS_SECRET" \
             -H "Content-Type: application/json" \
             -d '{"reason":"website-embeds"}'
