@@ -1,6 +1,6 @@
 # Ultra Card module gallery
 
-_Generated from v3.8.0-beta1 on 2026-08-13 — do not edit by hand._
+_Generated from v3.8.0 on 2026-08-24 — do not edit by hand._
 
 **94 modules** · 66 free · 28 PRO
 
@@ -29,7 +29,7 @@ _Generated from v3.8.0-beta1 on 2026-08-13 — do not edit by hand._
 <tr><td width="220"><img src="previews/activity_feed.png" width="200" alt="Activity Feed"></td><td><b>Activity Feed</b> · <sub>PRO</sub><br>Real-time home activity feed with timeline and social views</td></tr>
 <tr><td width="220"><img src="previews/alert_center.png" width="200" alt="Alert Center"></td><td><b>Alert Center</b><br>Monitor and prioritize active Home Assistant alerts in one place</td></tr>
 <tr><td width="220"><img src="previews/area_summary.png" width="200" alt="Area / Room Summary"></td><td><b>Area / Room Summary</b><br>Smart room tile that auto-pulls lights, climate, motion, doors, media, humidity, and presence by Home Assistant area</td></tr>
-<tr><td width="220"><img src="previews/auto_entity_list.png" width="200" alt="Auto Entities List"></td><td><b>Auto Entities List</b><br>Dynamically list entities using domain, device_class, state, and keyword filters</td></tr>
+<tr><td width="220"><img src="previews/auto_entity_list.png" width="200" alt="Auto Entities List"></td><td><b>Auto Entities List</b><br>Dynamically list entities using domain, device_class, area, label, state, and keyword filters</td></tr>
 <tr><td width="220"><img src="previews/bar.png" width="200" alt="Bars"></td><td><b>Bars</b><br>Progress bars for values</td></tr>
 <tr><td width="220"><img src="previews/battery_fleet.png" width="200" alt="Battery Fleet"></td><td><b>Battery Fleet</b> · <sub>PRO</sub><br>Ranked battery health with drain-rate analysis and replacement predictions</td></tr>
 <tr><td width="220"><img src="previews/battery_monitor.png" width="200" alt="Battery Monitor"></td><td><b>Battery Monitor</b><br>Auto-discover battery sensors and highlight low / critical devices with 5 visual styles</td></tr>

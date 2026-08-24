@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-13T15:30:52.329Z",
-  "ultraCardVersion": "3.8.0-beta1",
+  "generatedAt": "2026-08-24T20:13:52.676Z",
+  "ultraCardVersion": "3.8.0",
   "counts": {
     "total": 94,
     "free": 66,
@@ -170,7 +170,7 @@
     {
       "type": "auto_entity_list",
       "title": "Auto Entities List",
-      "description": "Dynamically list entities using domain, device_class, state, and keyword filters",
+      "description": "Dynamically list entities using domain, device_class, area, label, state, and keyword filters",
       "category": "data",
       "icon": "mdi:format-list-bulleted-type",
       "pro": false,
@@ -180,7 +180,8 @@
         "list",
         "filter",
         "dynamic",
-        "domain"
+        "domain",
+        "label"
       ],
       "preview": "previews/auto_entity_list.png",
       "status": "ok"
