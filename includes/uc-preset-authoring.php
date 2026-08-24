@@ -763,9 +763,6 @@ class UltraCardPresetAuthoring {
         add_action('transition_post_status', array($this, 'announce_preset_publish'), 10, 3);
         add_filter('wc_stripe_upe_params', array($this, 'stripe_appearance_fix'));
 
-        // Seed Discord webhook option from legacy hardcoded value once (then rotate in admin).
-        add_action('admin_init', array($this, 'maybe_seed_discord_webhook_option'));
-
         // Public templates + redirects after cutover.
         add_filter('template_include', array($this, 'template_include'), 99);
         add_action('template_redirect', array($this, 'maybe_redirect_legacy_preset_urls'));
@@ -905,19 +902,6 @@ class UltraCardPresetAuthoring {
             'show_in_rest'      => true,
             'rewrite'           => array('slug' => 'preset-integration'),
         ));
-    }
-
-    /**
-     * Seed webhook option once so Discord keeps working after snippet removal.
-     * Admin should rotate the value afterward (URL was previously public in WPCode).
-     */
-    public function maybe_seed_discord_webhook_option() {
-        if (get_option(UC_PRESET_DISCORD_WEBHOOK_OPTION)) {
-            return;
-        }
-        // Legacy URL from absorbed "Announce New Presets in Discord" snippet — rotate after deploy.
-        $legacy = 'https://discord.com/api/webhooks/1438662683531546717/P--xE2GbjrjhmJ5jKscyC-3B9MuEOtLoFOXWgFQOXo6IhwJpwpUDTyqYfHfC9iCWRtpP';
-        add_option(UC_PRESET_DISCORD_WEBHOOK_OPTION, $legacy, '', false);
     }
 
     /**
@@ -2566,12 +2550,12 @@ function ultra_card_render_presets_moderation_tab() {
         $new = esc_url_raw(wp_unslash($_POST['ultra_card_preset_discord_webhook'] ?? ''));
         update_option(UC_PRESET_DISCORD_WEBHOOK_OPTION, $new, false);
         $webhook = $new;
-        echo '<div class="notice notice-success"><p>Discord webhook saved. Rotate the Discord webhook in Discord as well if this URL was previously exposed.</p></div>';
+        echo '<div class="notice notice-success"><p>Discord webhook saved.</p></div>';
     }
 
     echo '<div class="uc-presets-moderation">';
     echo '<h2>Preset Moderation Queue</h2>';
-    echo '<div class="notice notice-warning inline"><p><strong>After deploying plugin 1.3.0:</strong> disable these WPCode snippets so behavior lives only in this plugin — <em>Track Preset Downloads</em>, <em>Announce New Presets in Discord</em>, <em>Clipboard Copy Shortcode Button PReset</em>, <em>Untitled Snippet</em> (copy-button CSS), and <em>Stripe Appearance Fix</em>. Leave <em>Enable Presets API 2</em> disabled (unsafe/broken). Then rotate the Discord webhook URL below.</p></div>';
+    echo '<div class="notice notice-warning inline"><p><strong>After deploying plugin 1.3.0:</strong> disable these WPCode snippets so behavior lives only in this plugin — <em>Track Preset Downloads</em>, <em>Announce New Presets in Discord</em>, <em>Clipboard Copy Shortcode Button PReset</em>, <em>Untitled Snippet</em> (copy-button CSS), and <em>Stripe Appearance Fix</em>. Leave <em>Enable Presets API 2</em> disabled (unsafe/broken).</p></div>';
     echo '<p>Pending submissions and published presets with updates awaiting review. Approving a first-time submission publishes it (and announces in Discord). Approving a revision updates the live preset without a duplicate announcement.</p>';
 
     echo '<p>';
@@ -2598,7 +2582,7 @@ function ultra_card_render_presets_moderation_tab() {
     wp_nonce_field('ultra_card_discord_webhook');
     echo '<table class="form-table"><tr><th>Webhook URL</th><td>';
     echo '<input type="url" class="large-text" name="ultra_card_preset_discord_webhook" value="' . esc_attr($webhook) . '" />';
-    echo '<p class="description">Stored in the <code>ultra_card_preset_discord_webhook</code> option. Rotate this in Discord after absorbing the WPCode snippet.</p>';
+    echo '<p class="description">Stored only in the <code>ultra_card_preset_discord_webhook</code> WordPress option. Never commit this URL. If it was previously exposed, delete the webhook in Discord and paste a new URL here.</p>';
     echo '</td></tr></table>';
     echo '<p><button type="submit" name="ultra_card_save_discord_webhook" class="button button-secondary">Save webhook</button></p>';
     echo '</form>';

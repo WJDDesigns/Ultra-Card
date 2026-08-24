@@ -1,5 +1,44 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.8.0
+
+The stable 3.8.0 release. This rolls up everything from the 3.8.0 betas — the UniFi Network module, a collapsible navbar, transparent cards, and a quieter console — plus labels on Auto Entities, Info name/value order, and native card editor fixes. Thanks to everyone who tested the betas and reported issues.
+
+### 🚀 New Features
+
+- **Added the UniFi Network module (PRO)** - Live monitoring for your Ubiquiti gear, built entirely on Home Assistant's UniFi integration: a virtual rack with real product photos, a per-port panel with RX/TX bars and PoE controls, a topology map, a sortable client table, and WAN latency. Ports light up on the photo itself. Cameras, doorbells, and NVRs from UniFi Protect are discovered alongside the network gear, and you can pin a device's uplink when Home Assistant cannot report one
+- **Added a collapsible navbar to the Navigation module** - Collapse it behind an edge handle, shrink it to an icon rail, or hide it as you scroll. It remembers your choice, can dim the dashboard behind a side navbar, and closes on Escape or after you tap a route. Mobile can use a left or right navbar instead of only top or bottom
+- **Added a Transparent Card option** - One switch in Card Appearance removes the background, border, and shadow so only your modules show on the dashboard
+- **Added Labels filter to the Auto Entities List** - Tag an entity, its device or its area in Home Assistant and it flows into the list the same way the Areas filter already works
+- **Added a Name and Value order control to the Info module** - Put the value above the name so a big reading can sit over its label
+- **Added an Open In Same Tab choice for URL actions** - Tap, hold and double-tap links, navigation routes and global actions can replace the current page instead of always opening a new browser tab
+- **Added preset authoring and creator dashboard pages to the website** - Preset creators can submit and manage their own presets from ultracard.io
+
+### 🔧 Improvements
+
+- **Improved the console during a normal dashboard session** - Favorites, snapshots, session sync, custom variables, sports data, the native card wrapper, and the Dropdown module no longer narrate their internals. The support logs are still there behind the `UC_DEBUG` flag, and warnings and errors are untouched
+- **Improved the UniFi module's topology, temperatures, and port lights** - Live links animate with the measured rate; a dashed edge means the parent was inferred, not that the link is idle. Temperature reads every probe and labels which one it used. Unmapped hardware gets the same lit openings as a row under the photo, and measured port maps were added for the UDM-Pro, UDM-SE, and ten more switches
+- **Improved the Dog Duty module over camera footage** - Duty markers drop the coloured plate and pulsing ring for a drop shadow, so the glyphs stay legible over any picture
+- **Improved the Video Background editor** - The video source fields use the standard editor controls, so they behave like every other module
+- **Improved the Template Mode documentation on ultracard.io** - Every preview is real module code evaluating real Jinja against a simulated home you can drive, and the property reference is generated from the same data as the in-card cheatsheet
+- **Improved the Text module template hint** - It now says HTML tags render as literal text, so colour belongs in the JSON fields rather than in markup
+- **Improved the website modules and presets pages** - Both are generated from the same module manifest and preview harness the card itself uses, so they can no longer drift out of date
+
+### 🐛 Bug Fixes
+
+- **Fixed preset ratings never recording** - Ratings submitted from Home Assistant were rejected by the server, which is why the marketplace showed blank stars next to healthy download counts
+- **Fixed a closed Dropdown menu leaving a ghost list on the dashboard** - Switching views, re-rendering the editor, or removing a card while a menu was open left a copy of the option list painted over whatever replaced the card
+- **Fixed QR templates that return `qr_content` doing nothing, and the QR module taking seconds to draw** - The documented object form now renders, and it no longer starts a fresh encode on every re-render while one is already running
+- **Fixed the Bar module ignoring a template's `label` property**
+- **Fixed four wrong entries in the template property reference** - `color` also applies to bars and `value` to gauges and spinboxes; bar `left_label`, `right_label`, `value_min`, `value_max` and the icon `active` flag were missing entirely
+- **Fixed bar and gauge gradient percentages snapping back in the visual editor** - Every colour stop is editable again, so you no longer have to drop into YAML to move the first or last one
+- **Fixed native card modules getting stranded on a config their own editor rejects** - A missing stub or missing visual editor is no longer remembered from a card class Home Assistant had not finished loading
+- **Fixed entity rows being offered as embeddable cards** - Rows only work inside an Entities card, and a layout that already holds one now explains itself instead of just looking broken
+- **Fixed cloud sign-in failures hiding the reason** - The integration's own explanation now reaches the login form rather than a generic authentication error
+- **Fixed Hub diagnostics reporting a plain failure when bot protection blocked the request** - The report now names the block and shows the detail behind it
+
+---
+
 ## Version 3.8.0-beta2
 
 ### 🚀 New Features
