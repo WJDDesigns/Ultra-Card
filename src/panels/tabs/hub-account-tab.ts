@@ -18,6 +18,10 @@ import {
 } from '../../services/uc-connect-diagnostics';
 import { getConnectInfo } from '../../services/uc-connect-compatibility';
 import {
+  CLOUD_UNAVAILABLE_MESSAGE,
+  userFacingCloudError,
+} from '../../utils/uc-user-facing-cloud-error';
+import {
   fetchBillingSummary,
   formatBillingDate,
   formatMoney,
@@ -837,7 +841,10 @@ export class HubAccountTab extends LitElement {
       this._username = '';
       this._password = '';
     } catch (err) {
-      this._error = err instanceof Error ? err.message : 'Login failed';
+      this._error = userFacingCloudError(
+        err instanceof Error ? err.message : '',
+        'Login failed'
+      );
     } finally {
       this._loading = false;
     }
@@ -1101,7 +1108,7 @@ export class HubAccountTab extends LitElement {
         value: connectivity.api
           ? 'OK'
           : connectivity.bot_challenge
-            ? 'Blocked by bot protection'
+            ? 'Temporarily unavailable'
             : connectivity.errors?.length
               ? 'Failed'
               : this._diagReport?.source === 'api'
@@ -1151,13 +1158,16 @@ export class HubAccountTab extends LitElement {
           )}
         </div>
         ${this._diagError
-          ? html`<div class="error-message" style="margin-bottom:12px;">${this._diagError}</div>`
+          ? html`<div class="error-message" style="margin-bottom:12px;">${userFacingCloudError(this._diagError, this._diagError)}</div>`
           : ''}
         ${connectivity.bot_challenge || coord.last_error
           ? html`<div class="error-message" style="margin-bottom:12px;">
-              ${connectivity.bot_challenge
-                ? (connectivity.errors || []).join(' ')
-                : coord.last_error}
+              ${userFacingCloudError(
+                connectivity.bot_challenge
+                  ? (connectivity.errors || []).join(' ')
+                  : coord.last_error,
+                CLOUD_UNAVAILABLE_MESSAGE
+              )}
             </div>`
           : ''}
         <div style="display:flex;flex-wrap:wrap;gap:8px;">

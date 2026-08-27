@@ -10,6 +10,7 @@ import {
   getConnectInfo,
   hasCapability,
 } from './uc-connect-compatibility';
+import { userFacingCloudError } from '../utils/uc-user-facing-cloud-error';
 
 /** HA integration endpoint that forwards multipart files to ultracard.io (JWT stays on the server). */
 const UC_MEDIA_UPLOAD_PATH = '/api/ultra_card_pro_cloud/media_upload';
@@ -201,20 +202,20 @@ export interface AuthResponse {
  */
 export function extractHassApiError(err: unknown): string {
   if (!err) return '';
-  if (typeof err === 'string') return err;
+  if (typeof err === 'string') return userFacingCloudError(err, err);
   const candidate = err as { body?: unknown; error?: unknown; message?: unknown };
   const body = candidate.body;
-  if (typeof body === 'string' && body.trim()) return body.trim();
+  if (typeof body === 'string' && body.trim()) return userFacingCloudError(body);
   if (body && typeof body === 'object') {
     const { error, message } = body as { error?: unknown; message?: unknown };
-    if (typeof error === 'string' && error.trim()) return error.trim();
-    if (typeof message === 'string' && message.trim()) return message.trim();
+    if (typeof error === 'string' && error.trim()) return userFacingCloudError(error);
+    if (typeof message === 'string' && message.trim()) return userFacingCloudError(message);
   }
   if (typeof candidate.message === 'string' && candidate.message.trim()) {
-    return candidate.message.trim();
+    return userFacingCloudError(candidate.message);
   }
   if (typeof candidate.error === 'string' && candidate.error.trim()) {
-    return candidate.error.trim();
+    return userFacingCloudError(candidate.error);
   }
   return '';
 }
@@ -469,7 +470,7 @@ class UcCloudAuthService {
       throw error;
     }
     if (!result?.success || !result?.user) {
-      throw new Error(result?.error || 'Authentication failed');
+      throw new Error(userFacingCloudError(result?.error, 'Authentication failed'));
     }
     const user = this._sensorAttrsToCloudUser(result.user);
     this._integrationHass = hass;

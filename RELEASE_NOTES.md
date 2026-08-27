@@ -34,8 +34,8 @@ The stable 3.8.0 release. This rolls up everything from the 3.8.0 betas — the 
 - **Fixed bar and gauge gradient percentages snapping back in the visual editor** - Every colour stop is editable again, so you no longer have to drop into YAML to move the first or last one
 - **Fixed native card modules getting stranded on a config their own editor rejects** - A missing stub or missing visual editor is no longer remembered from a card class Home Assistant had not finished loading
 - **Fixed entity rows being offered as embeddable cards** - Rows only work inside an Entities card, and a layout that already holds one now explains itself instead of just looking broken
-- **Fixed cloud sign-in failures hiding the reason** - The integration's own explanation now reaches the login form rather than a generic authentication error
-- **Fixed Hub diagnostics reporting a plain failure when bot protection blocked the request** - The report now names the block and shows the detail behind it
+- **Fixed cloud sign-in failures showing only a generic authentication error** - Login now reports a wrong password separately from Ultra Card cloud being temporarily unreachable
+- **Fixed Hub diagnostics treating a temporary cloud outage as a generic failure** - Cloud reachability now shows when Ultra Card cloud is briefly unavailable, without blaming your password
 
 ---
 
@@ -58,8 +58,8 @@ The stable 3.8.0 release. This rolls up everything from the 3.8.0 betas — the 
 - **Fixed bar and gauge gradient percentages snapping back in the visual editor** - Every colour stop is editable again, so you no longer have to drop into YAML to move the first or last one (#115)
 - **Fixed native card modules getting stranded on a config their own editor rejects** - A missing stub or missing visual editor is no longer remembered from a card class Home Assistant had not finished loading
 - **Fixed entity rows being offered as embeddable cards** - Rows only work inside an Entities card, and a layout that already holds one now explains itself instead of just looking broken
-- **Fixed cloud sign-in failures hiding the reason** - The integration's own explanation now reaches the login form rather than a generic authentication error
-- **Fixed Hub diagnostics reporting a plain failure when bot protection blocked the request** - The report now names the block and shows the detail behind it
+- **Fixed cloud sign-in failures showing only a generic authentication error** - Login now reports a wrong password separately from Ultra Card cloud being temporarily unreachable
+- **Fixed Hub diagnostics treating a temporary cloud outage as a generic failure** - Cloud reachability now shows when Ultra Card cloud is briefly unavailable, without blaming your password
 
 ---
 

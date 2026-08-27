@@ -3,6 +3,7 @@
  * Falls back to a client-side sensor snapshot when the endpoint is missing (old Connect).
  */
 import { VERSION } from '../version';
+import { redactCloudErrorTree, userFacingCloudError } from '../utils/uc-user-facing-cloud-error';
 import {
   CONNECT_AUTH_SENSOR_ID,
   getConnectInfo,
@@ -43,8 +44,10 @@ function apiErrorMessage(err: unknown): string {
   if (status === 403) {
     return 'Only Home Assistant administrators can run Connect diagnostics.';
   }
-  if (bodyMsg) return bodyMsg;
-  if (typeof e?.message === 'string' && e.message.trim()) return e.message;
+  if (bodyMsg) return userFacingCloudError(bodyMsg, bodyMsg);
+  if (typeof e?.message === 'string' && e.message.trim()) {
+    return userFacingCloudError(e.message, e.message);
+  }
   if (status) return `Diagnostics request failed (${status})`;
   return 'Failed to load diagnostics';
 }
@@ -115,12 +118,12 @@ export async function fetchConnectDiagnostics(
       { run_connectivity: runConnectivity }
     )) as ConnectDiagnosticsReport;
 
-    return {
+    return redactCloudErrorTree({
       ...report,
       source: 'api',
       ultra_card_version: VERSION,
       connect_info: getConnectInfo(hass),
-    };
+    });
   } catch (err) {
     const fallback = buildClientDiagnosticsFallback(hass);
     const message = apiErrorMessage(err);
@@ -134,7 +137,16 @@ export async function fetchConnectDiagnostics(
 }
 
 export function downloadDiagnosticsJson(report: ConnectDiagnosticsReport, filename?: string): void {
-  const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+  const blob = new Blob(
+    [
+      JSON.stringify(
+        redactCloudErrorTree(report),
+        (key, value) => (key === 'bot_challenge' ? undefined : value),
+        2
+      ),
+    ],
+    { type: 'application/json' }
+  );
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
