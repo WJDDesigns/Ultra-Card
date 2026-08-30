@@ -76,7 +76,7 @@
     "@tiptap/extension-link": "3.22.5",
     "@tiptap/extension-text-align": "3.22.5",
     "@tiptap/extension-text-style": "3.22.5",
-    "@tiptap/extension-underline": "3.22.5",
+    "@tiptap/extension-underline": "3.30.5",
     "@tiptap/pm": "3.22.5",
     "@tiptap/starter-kit": "3.22.5",
     "@types/leaflet": "1.9.21",
