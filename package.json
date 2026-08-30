@@ -55,6 +55,9 @@
     "type": "git",
     "url": "https://github.com/WJDDesigns/Ultra-Card"
   },
+  "engines": {
+    "node": ">=24.15.0"
+  },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "1.7.7",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "1.1.0",
@@ -94,7 +97,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/js-yaml": "4.0.9",
-    "@types/node": "^20.11.0",
+    "@types/node": "^24.3.0",
     "@types/pako": "2.0.4",
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
@@ -105,7 +108,7 @@
     "eslint-config-prettier": "^10.1.8",
     "file-loader": "^6.2.0",
     "globals": "^17.6.0",
-    "jsdom": "29.1.1",
+    "jsdom": "30.0.1",
     "openai": "6.35.0",
     "playwright": "1.62.1",
     "prettier": "^3.8.3",
