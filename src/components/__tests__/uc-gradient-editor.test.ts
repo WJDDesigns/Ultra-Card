@@ -63,7 +63,7 @@ describe('uc-gradient-editor percentage editing', () => {
     await typePercent(el, 0, '20');
 
     expect(el.stops.find(s => s.id === '1')!.position).toBe(20);
-    expect(emitted.at(-1)!.find(s => s.id === '1')!.position).toBe(20);
+    expect(emitted[emitted.length - 1]!.find(s => s.id === '1')!.position).toBe(20);
   });
 
   it('moves the last default stop off 100% instead of snapping it back', async () => {
@@ -72,7 +72,7 @@ describe('uc-gradient-editor percentage editing', () => {
     await typePercent(el, 2, '80');
 
     expect(el.stops.find(s => s.id === '3')!.position).toBe(80);
-    expect(emitted.at(-1)!.find(s => s.id === '3')!.position).toBe(80);
+    expect(emitted[emitted.length - 1]!.find(s => s.id === '3')!.position).toBe(80);
   });
 
   it('keeps the edited value after blur commits', async () => {
@@ -91,7 +91,7 @@ describe('uc-gradient-editor percentage editing', () => {
     await typePercent(el, 1, '40');
 
     expect(emitted.length).toBeGreaterThan(0);
-    expect(emitted.at(-1)!.find(s => s.id === '2')!.position).toBe(40);
+    expect(emitted[emitted.length - 1]!.find(s => s.id === '2')!.position).toBe(40);
   });
 
   it('clamps out-of-range input into 0-100', async () => {
