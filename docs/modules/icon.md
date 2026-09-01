@@ -9,6 +9,7 @@ Interactive status icons with animations, state-based styling, and tap actions.
 - **Custom styling** - Colors, sizes, backgrounds for each state
 - **Tap actions** - Toggle, more-info, navigate, call-service
 - **Template support** - Advanced template mode for complex logic
+- **Per-user visibility** - Show or hide individual icons for specific Home Assistant users (Logic-style control on each icon)
 
 ## Configuration
 

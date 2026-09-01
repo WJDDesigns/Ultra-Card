@@ -262,6 +262,7 @@ export class LayoutTab extends LitElement {
   /** Listen for template updates from modules to refresh live previews */
   private _templateUpdateListener: (() => void) | undefined;
   private _modulePatchByIdListener: ((e: Event) => void) | undefined;
+  private _haUsersLoadedListener: (() => void) | undefined;
   private _tabSwitchListener: ((e: Event) => void) | undefined;
   private _documentClickListener: ((e: Event) => void) | undefined;
   private _keydownListener: ((e: KeyboardEvent) => void) | undefined;
@@ -313,6 +314,9 @@ export class LayoutTab extends LitElement {
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
     // Also listen for slider updates
     window.addEventListener('ultra-card-slider-update', this._templateUpdateListener);
+
+    this._haUsersLoadedListener = () => this.requestUpdate();
+    window.addEventListener('uc-ha-users-loaded', this._haUsersLoadedListener);
 
     this._modulePatchByIdListener = (e: Event) => {
       const ce = e as CustomEvent<{ moduleId?: string; updates?: Partial<CardModule> }>;
@@ -6927,6 +6931,11 @@ export class LayoutTab extends LitElement {
       window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
       window.removeEventListener('ultra-card-slider-update', this._templateUpdateListener);
       this._templateUpdateListener = undefined;
+    }
+
+    if (this._haUsersLoadedListener) {
+      window.removeEventListener('uc-ha-users-loaded', this._haUsersLoadedListener);
+      this._haUsersLoadedListener = undefined;
     }
 
     if (this._modulePatchByIdListener) {

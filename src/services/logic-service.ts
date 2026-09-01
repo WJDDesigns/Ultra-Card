@@ -1,5 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
-import { DisplayCondition, UltraCardConfig } from '../types';
+import { DisplayCondition, UltraCardConfig, UserVisibility } from '../types';
 import { TemplateService } from './template-service';
 import { parseUnifiedTemplate, unifiedTemplateVisible } from '../utils/template-parser';
 
@@ -102,6 +102,30 @@ export class LogicService {
   }
 
   /**
+   * Evaluate per-user visibility filter (HA auth user IDs).
+   * Empty / omitted users = visible to everyone.
+   * Fail-open when hass or current user id is unavailable.
+   */
+  public evaluateUserVisibility(filter?: UserVisibility | null): boolean {
+    if (!filter?.users || filter.users.length === 0) {
+      return true;
+    }
+    if (!this.hass) {
+      return true;
+    }
+    const currentId = (this.hass as any)?.user?.id as string | undefined;
+    if (!currentId) {
+      return true;
+    }
+    const inList = filter.users.includes(currentId);
+    if (filter.mode === 'hide') {
+      return !inList;
+    }
+    // Default: show only for listed users
+    return inList;
+  }
+
+  /**
    * Evaluate display conditions to determine if an element should be visible
    * @param conditions Array of display conditions
    * @param displayMode 'always' | 'every' | 'any' - how to combine conditions
@@ -148,6 +172,10 @@ export class LogicService {
       return true; // Show by default if hass not available
     }
 
+    if (!this.evaluateUserVisibility(module?.user_visibility)) {
+      return false;
+    }
+
     const displayMode = module.display_mode || 'always';
 
     if (displayMode === 'never') {
@@ -178,6 +206,10 @@ export class LogicService {
   public evaluateRowVisibility(row: any, cardConfig?: UltraCardConfig): boolean {
     if (!this._canEvaluateLogic()) {
       return true; // Show by default if hass not available
+    }
+
+    if (!this.evaluateUserVisibility(row?.user_visibility)) {
+      return false;
     }
 
     if (row.unified_template_mode && row.unified_template) {
@@ -214,6 +246,10 @@ export class LogicService {
   public evaluateColumnVisibility(column: any, cardConfig?: UltraCardConfig): boolean {
     if (!this._canEvaluateLogic()) {
       return true; // Show by default if hass not available
+    }
+
+    if (!this.evaluateUserVisibility(column?.user_visibility)) {
+      return false;
     }
 
     if (column.unified_template_mode && column.unified_template) {

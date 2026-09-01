@@ -769,6 +769,24 @@
       "custom_name_desc": "Optional: Give this condition a custom name for easier identification",
       "condition_type": "Condition Type"
     },
+    "logic": {
+      "hide_on_devices": "Hide on Devices",
+      "hide_on_devices_desc": "Hide this element on specific screen sizes. Use this to create different layouts for different devices.",
+      "user_visibility": {
+        "title": "Visible to Users",
+        "desc": "Show or hide this element for specific Home Assistant users. Same idea as Lovelace card Visibility → User.",
+        "mode": "Who can see this",
+        "everyone": "Everyone",
+        "show_only": "Show only for",
+        "hide_for": "Hide for",
+        "you": "(you)",
+        "no_users": "No users available yet. Enter a user ID below.",
+        "manual_id": "User ID",
+        "manual_id_desc": "Could not load the full user list (admin permission may be required). Add other users by ID:",
+        "add": "Add",
+        "self_hidden_warning": "You will not see this on the live dashboard while signed in as this user. Card Settings still keep the editor preview visible so you can keep editing."
+      }
+    },
     "hover_effects": {
       "title": "Hover Effects",
       "description": "Configure visual effects that appear when hovering over this module, row, or column.",

@@ -101,6 +101,17 @@ export interface DisplayCondition {
   enabled?: boolean | undefined; // Whether this condition is active
 }
 
+/**
+ * Per-user visibility filter (Home Assistant auth user IDs).
+ * Omitted / empty users = visible to everyone (current behavior).
+ * - mode 'show' (default): show only when current user is in `users`
+ * - mode 'hide': hide when current user is in `users`
+ */
+export interface UserVisibility {
+  mode?: 'show' | 'hide' | undefined;
+  users?: string[] | undefined;
+}
+
 /** Anchor points for Stack Overlay child positioning */
 export type StackAnchor =
   | 'top-left'
@@ -226,6 +237,8 @@ export interface BaseModule {
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any' | 'never' | undefined;
   display_conditions?: DisplayCondition[] | undefined;
+  /** Per-HA-user visibility (independent of display_mode). Empty/omitted = everyone. */
+  user_visibility?: UserVisibility | undefined;
   // Responsive visibility - hide on specific device breakpoints
   hidden_on_devices?: DeviceBreakpoint[] | undefined;
   // Legacy design properties (for backward compatibility)
@@ -1472,6 +1485,9 @@ export interface IconConfig {
   unified_template_mode?: boolean | undefined;
   unified_template?: string | undefined;
   ignore_entity_state_config?: boolean | undefined; // When true, template controls state logic too
+
+  /** Per-HA-user visibility for this individual icon. Empty/omitted = everyone. */
+  user_visibility?: UserVisibility | undefined;
 }
 
 // Icon Module
@@ -6486,6 +6502,8 @@ export interface CardColumn {
   border_width?: number | undefined;
   display_mode?: 'always' | 'every' | 'any' | undefined;
   display_conditions?: DisplayCondition[] | undefined;
+  /** Per-HA-user visibility (independent of display_mode). Empty/omitted = everyone. */
+  user_visibility?: UserVisibility | undefined;
   /** @deprecated Prefer unified_template for visibility (JSON `visible` key). */
   template_mode?: boolean | undefined;
   /** @deprecated Prefer unified_template. */
@@ -6578,6 +6596,8 @@ export interface CardRow {
   border_width?: number | undefined;
   display_mode?: 'always' | 'every' | 'any' | undefined;
   display_conditions?: DisplayCondition[] | undefined;
+  /** Per-HA-user visibility (independent of display_mode). Empty/omitted = everyone. */
+  user_visibility?: UserVisibility | undefined;
   /** @deprecated Prefer unified_template for visibility (JSON `visible` key). */
   template_mode?: boolean | undefined;
   /** @deprecated Prefer unified_template. */
@@ -6890,6 +6910,8 @@ export interface UltraCardConfig {
   // Card-level conditional display
   display_mode?: 'always' | 'every' | 'any' | undefined;
   display_conditions?: DisplayCondition[] | undefined;
+  /** Per-HA-user visibility for the whole card. Empty/omitted = everyone. */
+  user_visibility?: UserVisibility | undefined;
   // Favorite colors configuration
   favorite_colors?: FavoriteColor[] | undefined;
   // Haptic feedback configuration

@@ -1527,6 +1527,22 @@ export class UltraCard extends LitElement {
     const breakpoint = responsiveDesignService.getCurrentBreakpoint();
     const renderCtx: RenderContext = { isHaPreview, isDashboardEditMode, breakpoint, hass: effectiveHass };
 
+    // Card-level per-user visibility (skip in editor so you can still edit when hidden from yourself)
+    if (
+      !isInCardEditor &&
+      !isDashboardEditMode &&
+      !logicService.evaluateUserVisibility(this.config.user_visibility)
+    ) {
+      this.setAttribute('data-invisible', 'true');
+      this.style.display = 'none';
+      this.style.height = '0';
+      this.style.overflow = 'hidden';
+      this.style.margin = '0';
+      this.style.padding = '0';
+      this._lastInvisibleState = true;
+      return html``;
+    }
+
     // Track invisible state; parent visibility side-effects are handled in updated()
     const isNowInvisible = onlyInvisibleModules && !isInCardEditor && !isDashboardEditMode;
     this._lastInvisibleState = isNowInvisible;

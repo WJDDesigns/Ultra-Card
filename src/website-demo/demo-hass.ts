@@ -1568,6 +1568,13 @@ export function createDemoHass() {
         };
       }
       if (msg?.type === 'auth/current_user') return hass.user;
+      if (msg?.type === 'config/auth/list') {
+        return [
+          { id: 'demo', name: 'Demo', is_active: true, is_owner: true },
+          { id: 'alice', name: 'Alice', is_active: true, is_owner: false },
+          { id: 'bob', name: 'Bob', is_active: true, is_owner: false },
+        ];
+      }
       return {};
     },
 

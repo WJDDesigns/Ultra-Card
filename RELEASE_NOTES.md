@@ -1,5 +1,20 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.9.0
+
+The stable 3.9.0 release. The headline is **Visible to Users** — show or hide modules, rows, columns, icons, or the whole card for specific Home Assistant users, the same idea as Lovelace's card Visibility → User tab, but inside Ultra Card. Thanks for the request in [#123](https://github.com/WJDDesigns/Ultra-Card/issues/123).
+
+### 🚀 New Features
+
+- **Added Visible to Users controls across Ultra Card** - On the Logic tab for modules, rows, and columns, in Card Settings, and on each icon in an Icon module, choose Everyone, Show only for, or Hide for, then pick Home Assistant users. Empty means everyone still sees it. The live dashboard respects the filter; the editor stays editable so you can keep configuring something you hid from yourself
+
+### 🔧 Improvements
+
+- **Improved cloud outage messaging in Hub login and diagnostics** - Temporary Ultra Card cloud unavailability no longer surfaces host or CDN details; users only see a clear, generic outage message
+- **Improved the README** - Clearer overview of modules, Template Mode, and how Visible to Users relates to Lovelace's card Visibility tab
+
+---
+
 ## Version 3.8.0
 
 The stable 3.8.0 release. This rolls up everything from the 3.8.0 betas — the UniFi Network module, a collapsible navbar, transparent cards, and a quieter console — plus labels on Auto Entities, Info name/value order, and native card editor fixes. Thanks to everyone who tested the betas and reported issues.

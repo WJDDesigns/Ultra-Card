@@ -2,9 +2,10 @@ import { html, TemplateResult } from 'lit';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { FormUtils } from '../utils/form-utils';
 import { UcFormUtils } from '../utils/uc-form-utils';
-import type { CardModule, CardColumn, CardRow, DeviceBreakpoint } from '../types';
+import type { CardModule, CardColumn, CardRow, DeviceBreakpoint, UserVisibility } from '../types';
 import { localize } from '../localize/localize';
 import { renderTemplateKeyWarning } from '../utils/template-key-warning';
+import { renderUserVisibilitySection } from './uc-user-visibility-section';
 import '../components/ultra-template-editor';
 
 /** Unified-template output keys row/column visibility templates read. */
@@ -38,9 +39,17 @@ export class GlobalLogicTab {
       updateModule({ hidden_on_devices: current.length > 0 ? current : undefined } as any);
     };
 
+    const userVisibility = ((module as any).user_visibility || undefined) as
+      | UserVisibility
+      | undefined;
+
     return html`
       <div class="uc-global-logic-tab">
         ${FormUtils.injectCleanFormStyles()}
+
+        ${renderUserVisibilitySection(userVisibility, hass, next => {
+          updateModule({ user_visibility: next } as any);
+        })}
 
         ${showUnifiedLayoutVisibility
           ? html`

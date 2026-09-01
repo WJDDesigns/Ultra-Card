@@ -4,44 +4,41 @@
 
 ## The Visual Dashboard Builder for Home Assistant
 
-**Build professional Home Assistant dashboards without writing YAML.** Ultra Card is a modular card builder that turns dashboard creation into an intuitive visual design experience. Drag-and-drop layouts, a rich set of modules, and a powerful editor put full creative control in your hands—whether you're new to Home Assistant or a power user.
+**Build Home Assistant dashboards without writing YAML.** Ultra Card is a modular card builder with a drag-and-drop layout engine, a large module library, and a full visual editor. You design in the UI; the card handles the rest.
 
 
 https://github.com/user-attachments/assets/e9f28eee-e587-4bc0-ad0b-cea53a3fa5a6
 
 
 
-**[UltraCard.io](https://ultracard.io)** · **[Discord](https://discord.gg/6xVgHxzzBV)** · **[Documentation](https://github.com/WJDDesigns/Ultra-Card/wiki)**
+**[ultracard.io](https://ultracard.io)** · **[Modules](https://ultracard.io/modules/)** · **[Template Mode](https://ultracard.io/template-mode/)** · **[Preset Gallery](https://ultracard.io/presets/)** · **[Discord](https://discord.gg/6xVgHxzzBV)**
 
 ---
 
 ## Why Ultra Card?
 
-**Visual-first** — Every feature and setting is available through the UI. No YAML required.
+**Visual editor** - Every setting lives in the UI. No YAML required.
 
-**Modular layout engine** — 19+ module types, drag-and-drop columns, and unlimited nesting so you can build any dashboard layout you imagine.
+**94 modules** - Layouts, gauges, graphs, controls, media, and more. Drag-and-drop columns with nesting so you can build the layout you want.
 
-**Built for performance** — TypeScript, smart caching, and responsive design so cards run smoothly from phones to large displays.
+**Template Mode** - Jinja2 templates that change how a module looks as your entities change. Free for everyone.
 
-**Preset Marketplace** — Install community presets with one click, preview before installing, and share your own designs.
+**Preset Gallery** - Browse community layouts, install with one click, and share your own.
 
-**Pro: ecosystem unifier** — Embed any custom Home Assistant card (Bubble Card, Mushroom, ApexCharts, and more) inside Ultra Card’s layout system. Third-party cards are unlimited for all users.
-
-**Pro: cloud & backups** — Cloud sync, automatic daily backups (30-day retention), and manual snapshots so your work is safe and available everywhere.
+**Pro cloud & backups** - Cloud sync, automatic daily backups (30-day retention), and manual snapshots so your work stays safe across devices.
 
 ---
 
-## Features at a Glance
+## See it on ultracard.io
 
-- **Drag-and-drop builder** — Arrange layouts with instant feedback
-- **4-tab module editor** — General, Actions, Logic, and Design per module
-- **19+ module types** — Text, Icon, Info, Image, Markdown, Bar, Graphs, Camera, Button, Slider, Spinbox, Dropdown, Light, Gauge, layouts, Tabs, Separator, plus Pro animated modules
-- **Conditional logic** — Show or hide by entity state, time, or Jinja2 templates
-- **Full Jinja2 support** — Templates with CodeMirror editor
-- **Native & 3rd party cards** — Unlimited native and third-party cards for everyone
-- **Design controls** — Typography, colors, spacing, borders, shadows, gradients, animations
-- **Preset Marketplace** — Browse, install, and share community presets
-- **15 languages** — Full internationalization
+The site runs the real card, not mockups. Use it when you want to explore before installing, or when you need a deeper reference than this README.
+
+- **[Modules](https://ultracard.io/modules/)** - Live previews of every free and PRO module (66 free, 28 PRO)
+- **[Template Mode](https://ultracard.io/template-mode/)** - Interactive playground, property reference, and field notes
+- **[Preset Gallery](https://ultracard.io/presets/)** - Community layouts you can browse and install
+- **[FAQs](https://ultracard.io/faqs/)** - Common questions and troubleshooting
+
+Written how-to pages also live in the [GitHub wiki](https://github.com/WJDDesigns/Ultra-Card/wiki) and inside Home Assistant via Ultra Card Hub → Docs.
 
 ---
 
@@ -59,7 +56,7 @@ Or add `https://github.com/WJDDesigns/Ultra-Card` as a custom Lovelace repositor
 
 **Manual**
 
-1. From the [latest release](https://github.com/WJDDesigns/Ultra-Card/releases), download **all** release assets for that version—not only `ultra-card.js`. The card is split into multiple JavaScript files (for example `ultra-card.js`, `ultra-card-panel.js`, and any `uc-*.js` chunks). They must stay **in the same folder** so the browser can load them.
+1. From the [latest release](https://github.com/WJDDesigns/Ultra-Card/releases), download **all** release assets for that version, not only `ultra-card.js`. The card is split into multiple JavaScript files (for example `ultra-card.js`, `ultra-card-panel.js`, and any `uc-*.js` chunks). They must stay **in the same folder** so the browser can load them.
 2. Copy that entire folder’s contents into `config/www` (for example `config/www/ultra-card/`), keeping the same filenames next to each other.
 3. Add **one** Lovelace resource: _Settings_ → _Dashboards_ → _Resources_ → Add Resource → URL pointing at the **main** bundle only, for example `/local/ultra-card/ultra-card.js` (or `/local/ultra-card.js` if you put files directly under `www`), type **JavaScript Module**.
 
@@ -75,7 +72,7 @@ Install the separate **[Ultra Card Connect](https://github.com/WJDDesigns/ultra-
 
 The card works without Connect for building dashboards. Connect is required for Hub sidebar auth and Pro unlock via HA.
 
-Internal HA domain remains `ultra_card_pro_cloud` (entity IDs unchanged).
+(The integration’s HA domain is still `ultra_card_pro_cloud`, so existing entity IDs stay the same.)
 
 ### Create your first card
 
@@ -83,25 +80,29 @@ Internal HA domain remains `ultra_card_pro_cloud` (entity IDs unchanged).
 2. Use the **Layout Builder** tab to add and arrange modules.
 3. Use the **4-tab editor** (General, Actions, Logic, Design) on each module to configure content, taps, visibility, and styling.
 
+**Visible to users** — On the Logic tab (modules, rows, columns), Card Settings, and each icon in an Icon module, you can show or hide content for specific Home Assistant users—the same idea as Lovelace’s card **Visibility → User** tab, but inside Ultra Card. Lovelace’s card-level User condition still works on the wrapper if you prefer that for hiding the whole card.
+
 ### Optional: Pro
 
-Visit **[UltraCard.io](https://ultracard.io)** for Pro modules, cloud sync, and backups. Sign in through Ultra Card Connect (Hub → Account) after installing the integration.
+Visit **[ultracard.io](https://ultracard.io)** for PRO modules, cloud sync, and backups. Sign in through Ultra Card Connect (Hub → Account) after installing the integration.
 
 ---
 
 ## Modules
 
-| Category | Modules |
-|----------|--------|
-| **Content** | Text, Icon, Info, Image, Markdown, Bar, Graphs, Camera |
-| **Areas** | Area / Room Summary |
-| **Controls** | Button, Slider, Spinbox, Dropdown, Light, Gauge |
-| **Layout** | Horizontal, Vertical, Tabs, Separator |
-| **Pro** | Animated Clock, Animated Weather, Animated Forecast, Video Background |
+Ultra Card ships with **94 modules** across content, data, controls, layout, media, and PRO. That includes gauges, graphs, climate and vacuum controls, appliance cards, UniFi network monitoring, Living Canvas backgrounds, and plenty more.
 
-**[Browse every module in the wiki →](https://github.com/WJDDesigns/Ultra-Card/wiki/Modules-Overview)** (74 modules, organized by category, with examples and configuration reference).
+**[Browse every module with live previews →](https://ultracard.io/modules/)**
 
-**Card integration** — Use unlimited native Home Assistant cards inside Ultra Card. Add Bubble Card, Mushroom Cards, ApexCharts, and other custom cards—unlimited for all users.
+You can also embed unlimited native Home Assistant cards and third-party cards (Bubble Card, Mushroom, ApexCharts, and others) inside Ultra Card’s layout system. That is free for everyone.
+
+---
+
+## Template Mode
+
+Template Mode lets a short Jinja2 template decide how a module looks whenever your entities change: icons, colors, labels, visibility of rows, and more. It ships with Ultra Card at no charge.
+
+Try the live playground and property reference on **[ultracard.io/template-mode](https://ultracard.io/template-mode/)**. The same cheatsheet is a click away inside every module editor.
 
 ---
 
@@ -110,29 +111,29 @@ Visit **[UltraCard.io](https://ultracard.io)** for Pro modules, cloud sync, and 
 | Feature | Free | Pro |
 |--------|------|-----|
 | Core modules & visual editor | Yes | Yes |
-| Preset Marketplace | Yes | Yes |
-| Conditional logic & templates | Yes | Yes |
+| Preset Gallery | Yes | Yes |
+| Conditional logic & Template Mode | Yes | Yes |
 | Native HA cards | Unlimited | Unlimited |
 | 3rd party cards | Unlimited | Unlimited |
-| Cloud configuration sync | — | Yes |
-| Automatic daily backups (30-day) | — | Yes |
-| Manual snapshots (up to 30) | — | Yes |
-| Video Background, Animated Clock/Weather/Forecast | — | Yes |
-| Priority support | — | Yes |
+| Cloud configuration sync | - | Yes |
+| Automatic daily backups (30-day) | - | Yes |
+| Manual snapshots (up to 30) | - | Yes |
+| 28 PRO modules | - | Yes |
+| Priority support | - | Yes |
 
-**[Get Pro at UltraCard.io](https://ultracard.io)**
+**[Get Pro at ultracard.io](https://ultracard.io)**
 
 ---
 
-## Preset Marketplace
+## Preset Gallery
 
-Browse and install community presets from inside the editor: **Presets** tab → **Browse Marketplace**. One-click install, categories, previews, and favorites. You can submit your own presets for others to use.
+Browse and install community presets from inside the editor (**Presets** tab → **Browse Marketplace**), or on the web at **[ultracard.io/presets](https://ultracard.io/presets/)**. One-click install, categories, previews, and favorites. You can submit your own layouts for others to use.
 
 ---
 
 ## Translations
 
-Supported languages: Catalan, English, British English, German, French, Spanish, Italian, Dutch, Norwegian, Danish, Czech, Polish, Swedish.
+Supported languages: Catalan, Czech, Danish, German, English, British English, Spanish, French, Italian, Dutch, Norwegian, Norwegian Bokmål, Norwegian Nynorsk, Polish, Swedish.
 
 To contribute translations, see [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md). You can edit files in `src/translations/` on GitHub and open a pull request.
 
@@ -140,9 +141,10 @@ To contribute translations, see [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRAN
 
 ## Community & Support
 
-- **[UltraCard.io](https://ultracard.io)** — Website, Pro subscriptions, account
-- **[Discord](https://discord.gg/6xVgHxzzBV)** — Help, sharing, discussion
-- **[GitHub Issues](https://github.com/WJDDesigns/Ultra-Card/issues)** — Bugs and feature requests
+- **[ultracard.io](https://ultracard.io)** - Website, modules, Template Mode, presets, Pro, and account
+- **[Discord](https://discord.gg/6xVgHxzzBV)** - Help, sharing, discussion
+- **[GitHub Issues](https://github.com/WJDDesigns/Ultra-Card/issues)** - Bugs and feature requests
+- **[FAQs](https://ultracard.io/faqs/)** - Common questions
 
 Pro subscribers get priority support. You can also [support development](https://www.paypal.com/ncp/payment/NLHALFSPA7PUS) with a one-time tip.
 
@@ -164,7 +166,7 @@ Contributions are welcome: translations, presets, code, and documentation. See [
 
 ## License
 
-MIT — see [license](license) file.
+MIT - see [license](license) file.
 
 ---
 

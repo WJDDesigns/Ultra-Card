@@ -16,6 +16,7 @@ import { ucCustomVariablesService } from '../services/uc-custom-variables-servic
 import { ucEntityPickerEnhancer } from '../services/uc-entity-picker-enhancer';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
 import { ucExportImportService } from '../services/uc-export-import-service';
+import { renderUserVisibilitySection } from '../tabs/uc-user-visibility-section';
 import {
   ucSnapshotSchedulerService,
   SnapshotSchedulerStatus,
@@ -118,6 +119,7 @@ export class UltraCardEditor extends LitElement {
 
   private _qrDataReadyListener: (() => void) | undefined;
   private _moduleUpdateListener: (() => void) | undefined;
+  private _haUsersLoadedListener: (() => void) | undefined;
   private _moduleLoadForStylesListener: ((e: Event) => void) | undefined;
   private _lastValidationErrorSignature: string | null = null;
 
@@ -439,6 +441,10 @@ export class UltraCardEditor extends LitElement {
     this._moduleUpdateListener = () => this.requestUpdate();
     window.addEventListener('ultra-card-module-update', this._moduleUpdateListener);
 
+    // Re-render when HA user list finishes loading (Visible to Users picker)
+    this._haUsersLoadedListener = () => this.requestUpdate();
+    window.addEventListener('uc-ha-users-loaded', this._haUsersLoadedListener);
+
     // Setup cloud sync listeners
     this._setupCloudSyncListeners();
 
@@ -514,6 +520,11 @@ export class UltraCardEditor extends LitElement {
 
     if (this._moduleUpdateListener) {
       window.removeEventListener('ultra-card-module-update', this._moduleUpdateListener);
+    }
+
+    if (this._haUsersLoadedListener) {
+      window.removeEventListener('uc-ha-users-loaded', this._haUsersLoadedListener);
+      this._haUsersLoadedListener = undefined;
     }
 
     if (this._moduleLoadForStylesListener) {
@@ -1660,6 +1671,31 @@ export class UltraCardEditor extends LitElement {
                 </div>
               </div>
             ` : ''}
+          </div>
+
+          <!-- Visibility Accordion (per-user) -->
+          <div class="cs-accordion">
+            <button
+              class="cs-accordion-header ${this._expandedCardSections.has('visibility') ? 'expanded' : ''}"
+              @click=${() => this._toggleCardSection('visibility')}
+            >
+              <ha-icon icon="mdi:account-eye" style="--mdc-icon-size: 20px;"></ha-icon>
+              <span class="cs-accordion-title">
+                ${localize('editor.logic.user_visibility.title', lang, 'Visible to Users')}
+              </span>
+              <ha-icon icon="mdi:chevron-${this._expandedCardSections.has('visibility') ? 'up' : 'down'}" style="--mdc-icon-size: 20px; margin-left: auto;"></ha-icon>
+            </button>
+            ${this._expandedCardSections.has('visibility')
+              ? html`
+                  <div class="cs-accordion-content">
+                    ${renderUserVisibilitySection(
+                      this.config.user_visibility,
+                      this.hass,
+                      next => this._updateConfig({ user_visibility: next })
+                    )}
+                  </div>
+                `
+              : ''}
           </div>
 
           <!-- Border Accordion -->

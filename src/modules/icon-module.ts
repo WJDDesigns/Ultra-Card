@@ -12,6 +12,8 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import { getImageUrl } from '../utils/image-upload';
 import { localize } from '../localize/localize';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { renderUserVisibilitySection } from '../tabs/uc-user-visibility-section';
+import { logicService } from '../services/logic-service';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 
 import '../components/ultra-color-picker';
@@ -601,6 +603,10 @@ export class UltraIconModule extends BaseUltraModule {
                   }
                 )}
               </div>
+
+              ${renderUserVisibilitySection(icon.user_visibility, hass, next => {
+                this._updateIcon(iconModule, index, { user_visibility: next }, updateModule);
+              })}
 
               <!-- Icon Mode Selector -->
               <div class="settings-section" style="margin-bottom: 24px;">
@@ -2878,8 +2884,14 @@ export class UltraIconModule extends BaseUltraModule {
     // GRACEFUL RENDERING: Check for incomplete configuration
     // Static icons are always valid (no entity required)
     // Entity-based icons need an entity to be valid
+    // Also respect per-icon user_visibility (HA auth user filter)
+    if (hass) {
+      logicService.setHass(hass);
+    }
     const validIcons = (iconModule.icons || []).filter(
-      i => i.icon_mode === 'static' || (i.entity && i.entity.trim() !== '')
+      i =>
+        (i.icon_mode === 'static' || (i.entity && i.entity.trim() !== '')) &&
+        logicService.evaluateUserVisibility(i.user_visibility)
     );
     // Only entity-based icons without entities are incomplete
     const incompleteIcons = (iconModule.icons || []).filter(
