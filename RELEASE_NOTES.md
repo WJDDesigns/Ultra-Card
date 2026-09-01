@@ -2,16 +2,15 @@
 
 ## Version 3.9.0
 
-The stable 3.9.0 release. The headline is **Visible to Users** — show or hide modules, rows, columns, icons, or the whole card for specific Home Assistant users, the same idea as Lovelace's card Visibility → User tab, but inside Ultra Card. Thanks for the request in [#123](https://github.com/WJDDesigns/Ultra-Card/issues/123).
+The stable 3.9.0 release adds **Visible to Users**. You can show or hide modules, rows, columns, icons, or the whole card for specific Home Assistant users. Same idea as Lovelace's Visibility → User option, just inside Ultra Card. Thanks for the request in [#123](https://github.com/WJDDesigns/Ultra-Card/issues/123).
 
 ### 🚀 New Features
 
-- **Added Visible to Users controls across Ultra Card** - On the Logic tab for modules, rows, and columns, in Card Settings, and on each icon in an Icon module, choose Everyone, Show only for, or Hide for, then pick Home Assistant users. Empty means everyone still sees it. The live dashboard respects the filter; the editor stays editable so you can keep configuring something you hid from yourself
+- **Added Visible to Users** - Show or hide a module, row, column, icon, or the whole card for specific Home Assistant users. Find it on the Logic tab, in Card Settings, and on each icon. Leave it empty and everyone still sees it. The editor stays usable so you can keep editing something you hid from yourself
 
 ### 🔧 Improvements
 
-- **Improved cloud outage messaging in Hub login and diagnostics** - Temporary Ultra Card cloud unavailability no longer surfaces host or CDN details; users only see a clear, generic outage message
-- **Improved the README** - Clearer overview of modules, Template Mode, and how Visible to Users relates to Lovelace's card Visibility tab
+- **Improved cloud outage messaging in Hub login and diagnostics** - When Ultra Card cloud is briefly unreachable, you get a plain outage message instead of host or CDN details
 
 ---
 
