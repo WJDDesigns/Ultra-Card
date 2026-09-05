@@ -14,13 +14,17 @@ export function isTemplateColorString(color: string): boolean {
     /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)$/i,
     /^hsl\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*\)$/i,
     /^hsla\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*,\s*[\d.]+\s*\)$/i,
-    /^var\(--[\w-]+\)$/i,
+    // CSS variable with an optional fallback, e.g. var(--x, #000) or var(--x, var(--y))
+    /^var\(--[\w-]+(?:\s*,\s*[^()]*(?:\([^()]*\)[^()]*)*)?\)$/i,
     /^(red|green|blue|yellow|orange|purple|pink|brown|black|white|gray|grey|transparent)$/i,
   ];
   return colorPatterns.some(pattern => pattern.test(color));
 }
 
-export function parseTemplateColorResult(result: unknown, defaultColor = 'var(--primary-color)'): string {
+export function parseTemplateColorResult(
+  result: unknown,
+  defaultColor = 'var(--primary-color)'
+): string {
   if (result === undefined || result === null) {
     return defaultColor;
   }
