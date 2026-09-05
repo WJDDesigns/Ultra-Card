@@ -6,7 +6,6 @@ import type { CardModule, CardColumn, CardRow, DeviceBreakpoint, UserVisibility 
 import { localize } from '../localize/localize';
 import { renderTemplateKeyWarning } from '../utils/template-key-warning';
 import { renderUserVisibilitySection } from './uc-user-visibility-section';
-import '../components/ultra-template-editor';
 
 /** Unified-template output keys row/column visibility templates read. */
 const LAYOUT_VISIBILITY_TEMPLATE_KEYS = ['visible', 'active', 'is_active'] as const;

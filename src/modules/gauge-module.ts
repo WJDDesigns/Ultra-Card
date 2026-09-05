@@ -7,7 +7,6 @@ import { UltraLinkComponent } from '../components/ultra-link';
 
 import '../components/ultra-color-picker';
 import '../components/uc-gradient-editor';
-import '../components/ultra-template-editor';
 
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';

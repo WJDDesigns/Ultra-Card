@@ -1,9 +1,11 @@
 import { LitElement, html, css, TemplateResult, nothing } from 'lit';
+import { until } from 'lit/directives/until.js';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { localize } from '../../localize/localize';
 import { VERSION } from '../../version';
-import { DEFAULT_VEHICLE_IMAGE, DEFAULT_VEHICLE_IMAGE_FALLBACK } from '../../utils/constants';
+import { DEFAULT_VEHICLE_IMAGE_FALLBACK } from '../../utils/constants';
+import { defaultImageSrc, DEFAULT_IMAGE_PLACEHOLDER } from '../../utils/default-image';
 import { openHubDocs } from '../../panels/hub-navigation';
 
 @customElement('ultra-about-tab')
@@ -16,7 +18,7 @@ export class AboutTab extends LitElement {
       <div class="about-tab">
         <div class="about-logo-container">
           <img
-            src="${DEFAULT_VEHICLE_IMAGE}"
+            src="${until(defaultImageSrc(), DEFAULT_IMAGE_PLACEHOLDER)}"
             alt="Ultra Card"
             class="about-logo"
             @error=${(e: Event) => {

@@ -11,7 +11,6 @@ import {
 } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
-import '../components/ultra-template-editor';
 import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';

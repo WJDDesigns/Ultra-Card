@@ -117,6 +117,34 @@ module.exports = (env, argv) => {
     },
     optimization: {
       usedExports: true,
+      splitChunks: {
+        // Only async chunks are split; the two entries stay self-contained.
+        chunks: 'async',
+        // Shared code smaller than this is duplicated into the requesting
+        // chunks instead of becoming yet another request (HA serves over
+        // HTTP/1.1, so request count matters more than a few duplicated KB).
+        minSize: 40 * 1024,
+        cacheGroups: {
+          // Readable names for the heavy vendors so a missing file in
+          // www/community/Ultra-Card/ is diagnosable at a glance.
+          three: { test: /[\\/]node_modules[\\/]three[\\/]/, name: 'vendor-three', priority: 30 },
+          tiptap: {
+            test: /[\\/]node_modules[\\/](@tiptap|prosemirror-[a-z-]+|linkifyjs)[\\/]/,
+            name: 'vendor-tiptap',
+            priority: 30,
+          },
+          codemirror: {
+            test: /[\\/]node_modules[\\/](@codemirror|@lezer|style-mod|w3c-keyname|crelt)[\\/]/,
+            name: 'vendor-codemirror',
+            priority: 30,
+          },
+          leaflet: { test: /[\\/]node_modules[\\/]leaflet[\\/]/, name: 'vendor-leaflet', priority: 30 },
+          swiper: { test: /[\\/]node_modules[\\/]swiper[\\/]/, name: 'vendor-swiper', priority: 30 },
+          pako: { test: /[\\/]node_modules[\\/]pako[\\/]/, name: 'vendor-pako', priority: 30 },
+          // Everything else keeps webpack's default vendor/shared behaviour
+          // (per usage-combination chunks, hashed ids), gated by minSize above.
+        },
+      },
     },
     plugins: [
       new CopyWebpackPlugin({

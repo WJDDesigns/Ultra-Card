@@ -19,7 +19,6 @@ import { escapeHtml } from '../utils/html-sanitizer';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { resolveOverlayLayer } from '../utils/uc-overlay-host';
 import '../components/ultra-color-picker';
-import '../components/ultra-template-editor';
 
 /**
  * Unified-template keys the dropdown module reads: a top-level `options` array

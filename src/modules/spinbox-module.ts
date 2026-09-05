@@ -15,7 +15,6 @@ import {
 } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import '../components/ultra-color-picker';
-import '../components/ultra-template-editor';
 
 /** Unified-template output keys the spinbox module reads. */
 const SPINBOX_TEMPLATE_KEYS = [

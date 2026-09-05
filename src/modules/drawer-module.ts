@@ -33,6 +33,10 @@ export const closeDrawersForModule = (moduleId: string): void => {
 };
 
 export class UltraDrawerModule extends BaseUltraModule {
+  closePortalsForModule(moduleId: string): void {
+    closeDrawersForModule(moduleId);
+  }
+
   metadata: ModuleMetadata = {
     type: 'drawer',
     title: 'Drawer',

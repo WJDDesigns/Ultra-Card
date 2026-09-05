@@ -49,6 +49,15 @@ export interface UltraModule {
   // Create a default instance of this module
   createDefault(id?: string, hass?: HomeAssistant): CardModule;
 
+  /**
+   * Optional: tear down anything this module rendered outside the card's
+   * shadow root (document.body portals such as popups and drawers) for the
+   * given module id. The host card calls this when the module becomes
+   * logic-hidden, because renderPreview is skipped for hidden modules.
+   * Reached through the registry so the host never imports the module file.
+   */
+  closePortalsForModule?(moduleId: string): void;
+
   // Render the module's general settings tab (`null` = tab not shown)
   renderGeneralTab(
     module: CardModule,

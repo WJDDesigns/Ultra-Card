@@ -1,9 +1,6 @@
 // Path constants
-// Default card image embedded as base64 data URL - no external files needed!
-import { DEFAULT_VEHICLE_IMAGE_BASE64 } from './image-base64';
-
-export const DEFAULT_VEHICLE_IMAGE = DEFAULT_VEHICLE_IMAGE_BASE64;
-// Fallback paths for development or if base64 fails
+// The default card image (base64 JPEG) is lazy: see ./default-image.ts.
+// Fallback path for development or if the lazy chunk fails
 export const DEFAULT_VEHICLE_IMAGE_FALLBACK = '/hacsfiles/Ultra-Card/assets/Ultra.jpg';
 
 // Default configuration values and utilities can be added here

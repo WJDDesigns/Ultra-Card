@@ -1,4 +1,5 @@
 import { TemplateResult, html, nothing } from 'lit';
+import { until } from 'lit/directives/until.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, ImageModule, UltraCardConfig } from '../types';
@@ -7,7 +8,7 @@ import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
 import { GlobalDesignTab } from '../tabs/global-design-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
-import { DEFAULT_VEHICLE_IMAGE, DEFAULT_VEHICLE_IMAGE_FALLBACK } from '../utils/constants';
+import { defaultImageSrc, DEFAULT_IMAGE_PLACEHOLDER } from '../utils/default-image';
 import { getImageUrl } from '../utils/image-upload';
 
 export class UltraImageModule extends BaseUltraModule {
@@ -591,12 +592,13 @@ export class UltraImageModule extends BaseUltraModule {
       return this.renderGradientErrorState(localize('editor.image.error_no_source', lang, 'Configure Image Source'), subtitle, 'mdi:image-outline');
     }
 
-    // Determine image source based on type
-    let imageUrl = '';
+    // Determine image source based on type. The bundled default image is a
+    // lazy chunk, so it may be a promise; rendered through lit `until`.
+    let imageUrl: string | Promise<string> = '';
 
     switch (imageModule.image_type) {
       case 'default':
-        imageUrl = DEFAULT_VEHICLE_IMAGE;
+        imageUrl = defaultImageSrc();
         break;
 
       case 'url':
@@ -641,7 +643,7 @@ export class UltraImageModule extends BaseUltraModule {
 
       default:
         // Fallback to default image
-        imageUrl = DEFAULT_VEHICLE_IMAGE;
+        imageUrl = defaultImageSrc();
         break;
     }
 
@@ -876,7 +878,7 @@ export class UltraImageModule extends BaseUltraModule {
             ${imageUrl
               ? html`
                   <img
-                    src="${imageUrl}"
+                    src="${until(imageUrl, DEFAULT_IMAGE_PLACEHOLDER)}"
                     @error=${(e: Event) => {
                       const img = e.currentTarget as HTMLImageElement;
                       const container = img.closest('.image-module-preview');

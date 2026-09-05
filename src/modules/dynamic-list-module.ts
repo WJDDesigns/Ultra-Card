@@ -16,7 +16,6 @@ import { localize } from '../localize/localize';
 import { autoMigrateCardModule } from '../utils/template-migration';
 import { UcStatesMemo } from '../utils/uc-states-memo';
 
-import '../components/ultra-template-editor';
 import '../components/ultra-color-picker';
 
 // ─── Todo-template example ────────────────────────────────────────────────────

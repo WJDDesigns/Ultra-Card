@@ -17,7 +17,6 @@ import {
 } from '../pro/third-party-limit-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import yaml from 'js-yaml';
-import '../components/ultra-template-editor';
 
 // Debounce timers for editor config updates to prevent rapid re-render loops
 const updateDebounceTimers = new Map<string, number>();

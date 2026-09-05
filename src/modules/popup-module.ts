@@ -140,6 +140,10 @@ export const closePopupsForModule = (moduleId: string): void => {
 };
 
 export class UltraPopupModule extends BaseUltraModule {
+  closePortalsForModule(moduleId: string): void {
+    closePopupsForModule(moduleId);
+  }
+
   metadata: ModuleMetadata = {
     type: 'popup',
     title: 'Popup',

@@ -8,7 +8,6 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import '../components/ultra-color-picker';
 import '../components/uc-gradient-editor';
-import '../components/ultra-template-editor';
 
 import '../components/bar-side-actions';
 import { formatEntityState } from '../utils/number-format';

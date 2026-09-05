@@ -12,7 +12,6 @@ import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import '../components/ultra-color-picker';
-import '../components/ultra-template-editor';
 
 /** Unified-template output keys a toggle point reads (plain true/false strings also work). */
 const TOGGLE_TEMPLATE_KEYS = ['match'] as const;

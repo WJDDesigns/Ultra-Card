@@ -9,9 +9,7 @@ export {
   isProModule,
 } from './module-manifest-data';
 export type { ModuleManifest, ModuleCategoryMeta } from './module-manifest-data';
-export { UltraStackModule } from './stack-module';
-
-// Export new services (used by editor/card)
-export { ucPresetsService } from '../services/uc-presets-service';
-export { ucFavoritesService } from '../services/uc-favorites-service';
-export { ucExportImportService } from '../services/uc-export-import-service';
+// Note: no module implementation or editor-side service is re-exported here.
+// `src/index.ts` does `export * from './modules'`, so anything listed in this
+// file lands in ultra-card.js for every dashboard load. Import services
+// (presets, favorites, export/import) directly from `../services/...` instead.

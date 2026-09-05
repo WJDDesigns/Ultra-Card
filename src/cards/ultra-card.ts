@@ -21,9 +21,7 @@ interface RenderContext {
   breakpoint: DeviceBreakpoint;
   hass: HomeAssistant;
 }
-import { getModuleRegistry } from '../modules';
-import { closePopupsForModule } from '../modules/popup-module';
-import { closeDrawersForModule } from '../modules/drawer-module';
+import { getModuleRegistry, isProModule } from '../modules';
 import { getImageUrl } from '../utils/image-upload';
 import { collectModuleTypesFromLayout, forEachNestedChildModules } from '../utils/uc-layout-module-types';
 import { layoutRequiresBroadHassUpdates } from '../utils/uc-broad-hass-updates';
@@ -38,10 +36,12 @@ import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { clockUpdateService } from '../services/clock-update-service';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
 import { ucVideoBgService } from '../services/uc-video-bg-service';
-import { ucDynamicWeatherService } from '../services/uc-dynamic-weather-service';
-import { ucLivingCanvasService } from '../services/uc-living-canvas-service';
+import {
+  lazyDynamicWeatherService,
+  lazyLivingCanvasService,
+  lazyNavigationService,
+} from '../services/uc-heavy-services';
 import { ucBackgroundService } from '../services/uc-background-service';
-import { ucNavigationService } from '../services/uc-navigation-service';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
 import { UcGestureService } from '../services/uc-gesture-service';
 import { Z_INDEX } from '../utils/uc-z-index';
@@ -182,6 +182,10 @@ export class UltraCard extends LitElement {
   private _cachedCardEditDialogOpenTs = 0;
   /** Tracks which config version the service modules were last registered for. */
   private _lastRegisteredConfigVersion = -1;
+  /** Invalidate in-flight lazy registrations for chunked services (see _register*Modules). */
+  private _weatherRegistrationToken = 0;
+  private _livingCanvasRegistrationToken = 0;
+  private _navigationRegistrationToken = 0;
   /** Tracks invisible state across renders for parent visibility side-effects. */
   private _lastInvisibleState: boolean | null = null;
   /** Parsed layout template results; invalidated when config.layout or template raw string changes. */
@@ -2784,11 +2788,9 @@ export class UltraCard extends LitElement {
     if (!isVisible && !isAnimating && !willStartAnimation) {
       // Popup/drawer modules render into a document.body portal; tear it down here
       // since renderPreview is skipped for hidden modules and can't clean up after itself.
-      if (module.type === 'popup' && module.id) {
-        closePopupsForModule(module.id);
-      }
-      if (module.type === 'drawer' && module.id) {
-        closeDrawersForModule(module.id);
+      // If the module's chunk was never loaded it cannot have opened a portal.
+      if (module.id) {
+        getModuleRegistry().getModule(module.type)?.closePortalsForModule?.(module.id);
       }
       return html``;
     }
@@ -3605,13 +3607,8 @@ export class UltraCard extends LitElement {
    * Check if a module is a pro module by checking its metadata tags
    */
   private _isProModule(module: CardModule): boolean {
-    const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(module.type);
-    if (!moduleHandler || !moduleHandler.metadata) {
-      return false;
-    }
-    const tags = moduleHandler.metadata.tags || [];
-    return tags.includes('pro') || tags.includes('premium');
+    // Manifest lookup: correct even before the module's chunk has loaded.
+    return isProModule(getModuleRegistry().getModuleMetadata(module.type));
   }
 
   /**
@@ -3735,32 +3732,40 @@ export class UltraCard extends LitElement {
    */
   private _registerDynamicWeatherModules(): void {
     if (!this.config || !this.hass || !this._instanceId) return;
-    const cache = this._getConfigCache();
-    for (const { id, module } of cache.dynamicWeatherModules) {
-      ucDynamicWeatherService.registerModule(
-        this._instanceId!,
-        id,
-        module as any,
-        this.hass!,
-        this.config!,
-        this as any,
-        this._isEditorPreviewCard
-      );
-    }
+    if (this._getConfigCache().dynamicWeatherModules.length === 0) return;
+    // The service (and three.js) live in their own chunk. The token drops a
+    // registration that resolves after a newer register/unregister ran.
+    const token = ++this._weatherRegistrationToken;
+    void lazyDynamicWeatherService
+      .load()
+      .then(svc => {
+        if (token !== this._weatherRegistrationToken) return;
+        if (!this.isConnected || !this.config || !this.hass || !this._instanceId) return;
+        for (const { id, module } of this._getConfigCache().dynamicWeatherModules) {
+          svc.registerModule(
+            this._instanceId,
+            id,
+            module as any,
+            this.hass,
+            this.config,
+            this as any,
+            this._isEditorPreviewCard
+          );
+        }
+      })
+      .catch(err => console.warn('Ultra Card: dynamic weather service failed to load', err));
   }
 
   /**
    * Unregister all dynamic weather modules from the dynamic weather service
    */
   private _unregisterDynamicWeatherModules(): void {
+    this._weatherRegistrationToken++;
     if (!this.config || !this._instanceId) return;
-    const cache = this._getConfigCache();
-    for (const { id } of cache.dynamicWeatherModules) {
-      ucDynamicWeatherService.unregisterModule(
-        this._instanceId!,
-        id,
-        this._isEditorPreviewCard
-      );
+    const svc = lazyDynamicWeatherService.peek();
+    if (!svc) return; // never loaded: nothing was registered
+    for (const { id } of this._getConfigCache().dynamicWeatherModules) {
+      svc.unregisterModule(this._instanceId, id, this._isEditorPreviewCard);
     }
   }
 
@@ -3769,25 +3774,35 @@ export class UltraCard extends LitElement {
    */
   private _registerLivingCanvasModules(): void {
     if (!this.config || !this.hass || !this._instanceId) return;
-    const cache = this._getConfigCache();
-    for (const { id, module } of cache.livingCanvasModules) {
-      ucLivingCanvasService.registerModule(
-        this._instanceId!,
-        id,
-        module as any,
-        this.hass!,
-        this.config!,
-        this as any,
-        this._isEditorPreviewCard
-      );
-    }
+    if (this._getConfigCache().livingCanvasModules.length === 0) return;
+    const token = ++this._livingCanvasRegistrationToken;
+    void lazyLivingCanvasService
+      .load()
+      .then(svc => {
+        if (token !== this._livingCanvasRegistrationToken) return;
+        if (!this.isConnected || !this.config || !this.hass || !this._instanceId) return;
+        for (const { id, module } of this._getConfigCache().livingCanvasModules) {
+          svc.registerModule(
+            this._instanceId,
+            id,
+            module as any,
+            this.hass,
+            this.config,
+            this as any,
+            this._isEditorPreviewCard
+          );
+        }
+      })
+      .catch(err => console.warn('Ultra Card: living canvas service failed to load', err));
   }
 
   private _unregisterLivingCanvasModules(): void {
+    this._livingCanvasRegistrationToken++;
     if (!this.config || !this._instanceId) return;
-    const cache = this._getConfigCache();
-    for (const { id } of cache.livingCanvasModules) {
-      ucLivingCanvasService.unregisterModule(this._instanceId!, id, this._isEditorPreviewCard);
+    const svc = lazyLivingCanvasService.peek();
+    if (!svc) return;
+    for (const { id } of this._getConfigCache().livingCanvasModules) {
+      svc.unregisterModule(this._instanceId, id, this._isEditorPreviewCard);
     }
   }
 
@@ -3825,17 +3840,20 @@ export class UltraCard extends LitElement {
    */
   private _registerNavigationModules(): void {
     if (!this.config || !this.hass || !this._instanceId) return;
-    const cache = this._getConfigCache();
-    for (const { id, module } of cache.navigationModules) {
-      ucNavigationService.registerModule(
-        this._instanceId!,
-        id,
-        module as any,
-        this.hass!,
-        this.config!,
-        this as any
-      );
-    }
+    if (this._getConfigCache().navigationModules.length === 0) return;
+    const token = ++this._navigationRegistrationToken;
+    void lazyNavigationService
+      .load()
+      .then(svc => {
+        if (token !== this._navigationRegistrationToken) return;
+        // No isConnected guard: 'all_views' navigation intentionally outlives the
+        // card element (a non-forced unregister keeps it), same as before laziness.
+        if (!this.config || !this.hass || !this._instanceId) return;
+        for (const { id, module } of this._getConfigCache().navigationModules) {
+          svc.registerModule(this._instanceId, id, module as any, this.hass, this.config, this as any);
+        }
+      })
+      .catch(err => console.warn('Ultra Card: navigation service failed to load', err));
   }
 
   /**
@@ -3843,13 +3861,15 @@ export class UltraCard extends LitElement {
    * @param force If true, unregister all modules regardless of scope. If false, only unregister 'current_view' scope modules.
    */
   private _unregisterNavigationModules(force: boolean = false): void {
+    if (force) this._navigationRegistrationToken++;
     if (!this.config || !this._instanceId) return;
-    const cache = this._getConfigCache();
-    for (const { id, module } of cache.navigationModules) {
+    const svc = lazyNavigationService.peek();
+    if (!svc) return; // never loaded: nothing was registered
+    for (const { id, module } of this._getConfigCache().navigationModules) {
       const navModule = module as any;
       const scope = navModule.nav_scope || 'all_views';
       if (force || scope === 'current_view') {
-        ucNavigationService.unregisterModule(this._instanceId!, id);
+        svc.unregisterModule(this._instanceId, id);
       }
     }
   }

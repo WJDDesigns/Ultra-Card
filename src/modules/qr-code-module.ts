@@ -16,7 +16,6 @@ import {
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { getImageUrl } from '../utils/image-upload';
 import '../components/ultra-color-picker';
-import '../components/ultra-template-editor';
 
 /** Event dispatched when QR data URL is ready so the card can re-render */
 export const UC_QR_DATA_READY_EVENT = 'uc-qr-data-ready';

@@ -21,7 +21,6 @@ import {
 } from '../utils/template-parser';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { resolveOverlayLayer } from '../utils/uc-overlay-host';
-import '../components/ultra-template-editor';
 
 /** Unified-template output keys the camera module reads (plain entity_id strings also work). */
 const CAMERA_TEMPLATE_KEYS = ['entity', 'visible', 'overlay_text', 'overlay_color'] as const;

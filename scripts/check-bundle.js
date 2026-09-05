@@ -22,8 +22,11 @@ const path = require('path');
 
 const DIST = path.resolve(__dirname, '..', 'dist');
 const ENTRY = path.join(DIST, 'ultra-card.js');
-const DEFAULT_BUDGET = 8 * 1024 * 1024; // ratchet down as Phase 2 lands
-const WARN_AT = 6 * 1024 * 1024;
+// Phase 2 (lazy modules) landed the entry at ~1.65 MiB. The fail line sits
+// below "entry + three.js" (~+0.5 MiB) so re-inlining any heavy vendor or a
+// large module group fails CI instead of silently regressing.
+const DEFAULT_BUDGET = 2.25 * 1024 * 1024;
+const WARN_AT = 1.9 * 1024 * 1024;
 
 const argIdx = process.argv.indexOf('--budget-bytes');
 const budget = argIdx > -1 ? Number(process.argv[argIdx + 1]) : DEFAULT_BUDGET;
@@ -95,6 +98,29 @@ if (!singleFile) {
   }
   if (!chunks.some(c => c.startsWith('uc-locale-de.'))) {
     errors.push('locales are not emitted as chunks (uc-locale-de.<hash>.js missing).');
+  }
+  // Phase 2 shape: non-essential modules, heavy vendors and heavy services are chunks.
+  for (const prefix of [
+    'uc-m-graphs.',
+    'uc-m-map.',
+    'uc-m-inputs.',
+    'uc-vendor-three.',
+    'uc-vendor-codemirror.',
+    'uc-vendor-tiptap.',
+    'uc-vendor-leaflet.',
+    'uc-svc-dynamic-weather.',
+    'uc-default-image.',
+  ]) {
+    if (!chunks.some(c => c.startsWith(prefix))) {
+      errors.push(
+        `expected chunk ${prefix}<hash>.js was not emitted (folded back into the entry?).`
+      );
+    }
+  }
+  const moduleChunks = chunks.filter(c => c.startsWith('uc-m-')).length;
+  notes.push(`module chunks (uc-m-*): ${moduleChunks}`);
+  if (moduleChunks < 60) {
+    errors.push(`only ${moduleChunks} module chunks emitted; expected most modules to be lazy.`);
   }
   // Every chunk the entry can request must exist on disk (otherwise it 404s in HA).
   // Webpack does not embed full filenames; it builds them from two maps in the

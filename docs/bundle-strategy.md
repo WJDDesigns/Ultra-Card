@@ -10,16 +10,45 @@
   relative `import("./uc-….js")` resolved by the browser against the importing
   module's URL. `src/public-path.ts` additionally pins webpack's public path from
   `import.meta.url` (first import of every entry) for the worker and asset paths.
-- **What is a chunk today (Phase 1):** the editor (`uc-editor.*`), one chunk per
-  non-English locale (`uc-locale-*`), the Dynamic Weather worker and its three.js
-  vendor, Hub panel tabs, and shared chunks between the editor and the Hub.
-  All 91 modules remain eager inside `ultra-card.js` (per-import
-  `webpackMode: "eager"` hints in `src/modules/module-loaders.ts`). Phase 2
-  replaces those hints with grouped `webpackChunkName`s.
+- **What is a chunk today (Phase 2):**
+  - **Eager, inside `ultra-card.js`:** the 10 everyday modules (text, icon,
+    image, info, bar, button, separator, horizontal, vertical, pagebreak), the
+    registry/manifest, English strings, the card runtime and shared services.
+    A typical card renders with no loading skeleton.
+  - **`uc-m-<type>.*`:** every other module (72 chunks). The 9 tiny input
+    modules share `uc-m-inputs`; the 5 appliances share `uc-m-appliance`.
+    Loaded by `ModuleRegistry.ensureModuleLoaded()` the first time a card or
+    the editor needs the type; skeleton → `uc-module-load-state-changed` →
+    re-render + module CSS refresh.
+  - **`uc-vendor-*`:** three (526 KB), codemirror (422 KB), tiptap (356 KB),
+    leaflet (165 KB), swiper (144 KB), pako (46 KB). Named via
+    `optimization.splitChunks.cacheGroups` so a missing file in a user's
+    `www/community/Ultra-Card/` is recognisable.
+  - **`uc-svc-*`:** dynamic weather, living canvas and navigation services,
+    reached through `src/services/uc-heavy-services.ts` (`createLazyService`)
+    only when a card contains the matching module.
+  - **`uc-default-image.*`:** the 180 KB base64 default image, fetched only when
+    an image module is on "default" (`src/utils/default-image.ts`, rendered via
+    lit `until`).
+  - The editor (`uc-editor.*`, ~1.7 MB), one chunk per non-English locale,
+    the Dynamic Weather worker, and Hub panel tabs, as in Phase 1.
+- **Rules that keep the entry small** (each one is something that regressed
+  during Phase 2 and was caught by webpack stats):
+  - Settings-only custom elements (`ultra-template-editor`, `ultra-wysiwyg-editor`,
+    cheatsheet) are imported once in `ultra-card-editor.ts`, never in module
+    files. Modules only render the tags; they upgrade when the editor defines them.
+  - `src/modules/index.ts` re-exports no implementation and no editor-side
+    service (`src/index.ts` does `export * from './modules'`).
+  - The host card never imports a module file. Cross-cutting hooks go through
+    the registry (`UltraModule.closePortalsForModule`).
+  - Shared constants that runtime code needs (`SENSITIVE_PLACEHOLDER`) live in
+    leaf files, not next to pako-using code.
 - **CI / release:** `scripts/check-bundle.js` runs in `release:check`, `ci.yml`,
-  and `build.yml`. It fails on unhashed chunks, on the editor or locales being
-  folded back into the entry, on `file:///` leaks, on entry references to
-  chunks that were not emitted, and on the entry exceeding the core budget.
+  and `build.yml`. It fails on unhashed chunks, on the editor / locales /
+  module / vendor / service chunks being folded back into the entry, on
+  `file:///` leaks, on entry-reachable chunks that were not emitted (resolved
+  from webpack's runtime id→hash map), on `hacs.json` regressing
+  `content_in_root`, and on the entry exceeding 2.25 MiB (warn at 1.9 MiB).
 
 ## How HACS actually distributes a plugin (verified against HACS 2.0.5)
 
@@ -104,16 +133,26 @@ variable is set. Use only for a hotfix while a distribution problem is diagnosed
 
 - `window.__ultraCardLazyEditor = false` / `localStorage['ultra-card-lazy-editor']='false'`:
   fetch the editor chunk at card bootstrap instead of on first edit.
-- Background module preload (`uc-module-preload-scheduler`) defaults to `minimal`;
-  with modules still eager it only affects instantiation order.
+- Background module preload (`uc-module-preload-scheduler`) defaults to `minimal`
+  (no preload); `batched` / `full` fetch module chunks in the background.
 
-## Phase 2 (not yet done)
+## Results
 
-- Replace `webpackMode: "eager"` hints in `module-loaders.ts` with grouped chunk
-  names; split three.js (`living_canvas`, `dynamic_weather`), leaflet (`map`),
-  graphs, vacuum, calendar, camera, media_player, and the household Pro set.
-- Move module editor tabs and the CodeMirror template editor out of module
-  runtime files so they join the editor chunk.
-- Ratchet the `check-bundle.js` core budget down as each split lands.
-- Add a version-skew handler: a failed chunk `import()` after a HACS update shows
-  one "Ultra Card was updated, reload" toast.
+|                           | 3.9.0    | Phase 1 | Phase 2 |
+| ------------------------- | -------- | ------- | ------- |
+| `ultra-card.js` raw       | 12.54 MB | 7.65 MB | 1.64 MB |
+| `ultra-card.js` gzip      | 3.05 MB  | 1.85 MB | 0.36 MB |
+| `ultra-card-panel.js` raw | 4.16 MB  | 0.28 MB | 0.28 MB |
+
+## Later
+
+- Module settings tabs (`src/tabs/global-design-tab.ts` etc., ~190 KB
+  pre-minify) are still reachable from `base-module.ts` and therefore in the
+  entry. Moving them behind a lazy boundary needs `renderDesignTab` & co. to
+  tolerate an async tab implementation.
+- Version-skew handler: a failed chunk `import()` right after a HACS update
+  (old entry cached, new hashes on disk) should surface one "Ultra Card was
+  updated, reload" toast instead of a skeleton.
+- Consider prefetching `uc-m-*` chunks for the types present in the config on
+  idle, so a first cold view of a busy card fetches in parallel rather than as
+  each module renders.

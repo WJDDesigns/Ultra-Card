@@ -18,8 +18,8 @@ import pako from 'pako';
 
 const CONFIG_PREFIX = 'UC_CONFIG_V1:';
 
-/** Placeholder used in exports when a sensitive value is redacted */
-export const SENSITIVE_PLACEHOLDER = '***REDACTED***';
+import { SENSITIVE_PLACEHOLDER } from './uc-sensitive-placeholder';
+export { SENSITIVE_PLACEHOLDER };
 
 /** Keys that must not be included in exports (e.g. API keys, secrets) */
 const SENSITIVE_MODULE_KEYS: string[] = ['google_api_key'];

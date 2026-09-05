@@ -13,7 +13,6 @@ import { buildEntityContext, computeEntitySignature } from '../utils/template-co
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { localize } from '../localize/localize';
 import '../components/ultra-color-picker';
-import '../components/ultra-template-editor';
 
 function dispatchStatusSummaryTemplateUpdate(): void {
   if (typeof window === 'undefined') return;

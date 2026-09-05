@@ -16,8 +16,6 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { sanitizeRichTextHtml } from '../utils/html-sanitizer';
 import { isLocallyAuthoredConfig } from '../utils/uc-content-trust';
 import '../components/ultra-color-picker';
-import '../components/ultra-template-editor';
-import '../components/ultra-wysiwyg-editor';
 
 
 /** Unified-template output keys the text module reads (`state` is an alias for `state_text`). */

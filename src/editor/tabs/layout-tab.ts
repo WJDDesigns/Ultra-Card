@@ -263,6 +263,7 @@ export class LayoutTab extends LitElement {
   private _templateUpdateListener: (() => void) | undefined;
   private _modulePatchByIdListener: ((e: Event) => void) | undefined;
   private _haUsersLoadedListener: (() => void) | undefined;
+  private _moduleLoadStateListener: (() => void) | undefined;
   private _tabSwitchListener: ((e: Event) => void) | undefined;
   private _documentClickListener: ((e: Event) => void) | undefined;
   private _keydownListener: ((e: KeyboardEvent) => void) | undefined;
@@ -317,6 +318,11 @@ export class LayoutTab extends LitElement {
 
     this._haUsersLoadedListener = () => this.requestUpdate();
     window.addEventListener('uc-ha-users-loaded', this._haUsersLoadedListener);
+
+    // Module implementations arrive asynchronously (own chunks). Any settings
+    // panel or nested preview that rendered a loading state needs a re-render.
+    this._moduleLoadStateListener = () => this.requestUpdate();
+    window.addEventListener('uc-module-load-state-changed', this._moduleLoadStateListener);
 
     this._modulePatchByIdListener = (e: Event) => {
       const ce = e as CustomEvent<{ moduleId?: string; updates?: Partial<CardModule> }>;
@@ -6936,6 +6942,10 @@ export class LayoutTab extends LitElement {
     if (this._haUsersLoadedListener) {
       window.removeEventListener('uc-ha-users-loaded', this._haUsersLoadedListener);
       this._haUsersLoadedListener = undefined;
+    }
+    if (this._moduleLoadStateListener) {
+      window.removeEventListener('uc-module-load-state-changed', this._moduleLoadStateListener);
+      this._moduleLoadStateListener = undefined;
     }
 
     if (this._modulePatchByIdListener) {
@@ -24190,13 +24200,50 @@ export class LayoutTab extends LitElement {
       return html` ${moduleNameField} ${moduleContent} `;
     }
 
-    // Fallback for unknown module types
+    return html` ${moduleNameField} ${this._renderModuleSettingsUnavailable(module)} `;
+  }
+
+  /**
+   * Settings body for a module whose implementation is not in memory. Modules
+   * live in their own chunks, so "not loaded yet" is the common case the first
+   * time a settings panel opens: kick the load and show a spinner; the
+   * uc-module-load-state-changed listener re-renders when it lands.
+   */
+  private _renderModuleSettingsUnavailable(module: CardModule): TemplateResult {
+    const registry = getModuleRegistry();
+    const lang = this.hass?.locale?.language || 'en';
+    const loadError = registry.getModuleLoadError(module.type);
+    if (!loadError && registry.canLoadModule(module.type)) {
+      void registry.ensureModuleLoaded(module.type).catch(() => {
+        /* surfaced via getModuleLoadError on the next render */
+      });
+      return html`
+        <div class="settings-section uc-module-settings-loading">
+          <ha-circular-progress indeterminate size="small"></ha-circular-progress>
+          <span>${localize('hub.loading', lang, 'Loading…')}</span>
+        </div>
+      `;
+    }
     return html`
-      ${moduleNameField}
       <div class="settings-section">
         <div class="error-message">
           <ha-icon icon="mdi:alert-circle"></ha-icon>
-          <span>No settings available for module type: ${module.type}</span>
+          <span>
+            ${loadError
+              ? `Module failed to load: ${module.type}`
+              : `No settings available for module type: ${module.type}`}
+          </span>
+          ${loadError
+            ? html`<button
+                class="uc-module-settings-retry"
+                @click=${() => {
+                  registry.clearModuleLoadError(module.type);
+                  this.requestUpdate();
+                }}
+              >
+                ${localize('editor.area_summary.retry', lang, 'Retry')}
+              </button>`
+            : nothing}
         </div>
       </div>
     `;
@@ -25615,16 +25662,7 @@ export class LayoutTab extends LitElement {
       return html` ${moduleNameField} ${moduleContent} `;
     }
 
-    // Fallback for unknown module types
-    return html`
-      ${moduleNameField}
-      <div class="settings-section">
-        <div class="error-message">
-          <ha-icon icon="mdi:alert-circle"></ha-icon>
-          <span>No settings available for module type: ${module.type}</span>
-        </div>
-      </div>
-    `;
+    return html` ${moduleNameField} ${this._renderModuleSettingsUnavailable(module)} `;
   }
 
   private _renderActionsTab(module: CardModule): TemplateResult {
@@ -34316,6 +34354,26 @@ export class LayoutTab extends LitElement {
         color: white;
         border-radius: 4px;
         font-size: 14px;
+      }
+
+      .uc-module-settings-loading {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 24px 12px;
+        color: var(--secondary-text-color);
+        font-size: 14px;
+      }
+
+      .uc-module-settings-retry {
+        margin-left: auto;
+        padding: 4px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        border-radius: 4px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
       }
 
       /* General Settings Popup Styles */

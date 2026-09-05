@@ -6,7 +6,7 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, MapModule, MapMarker, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
 import { getImageUrl } from '../utils/image-upload';
-import { SENSITIVE_PLACEHOLDER } from '../utils/uc-config-encoder';
+import { SENSITIVE_PLACEHOLDER } from '../utils/uc-sensitive-placeholder';
 import * as L from 'leaflet';
 // Bundle Leaflet's stylesheet locally so the map renders without any external
 // CDN. Injected as a shadow-scoped <style> (style-loader can't reach the card's

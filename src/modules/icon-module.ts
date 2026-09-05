@@ -17,7 +17,6 @@ import { logicService } from '../services/logic-service';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 
 import '../components/ultra-color-picker';
-import '../components/ultra-template-editor';
 
 import { buildEntityContext, computeEntitySignature } from '../utils/template-context';
 import {

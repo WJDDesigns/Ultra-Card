@@ -28,7 +28,11 @@ import { renderTemplateKeyWarning } from '../utils/template-key-warning';
 import { safeGetItem, safeSetItem } from '../utils/safe-storage';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
+// Settings-only custom elements used by module tabs. Defined here (editor
+// chunk) rather than in the module files, so CodeMirror and tiptap never ship
+// in ultra-card.js. Modules render the tags; the elements upgrade once defined.
 import '../components/ultra-template-editor';
+import '../components/ultra-wysiwyg-editor';
 import '../components/uc-template-cheatsheet';
 import '../components/uc-custom-variables-manager';
 import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';

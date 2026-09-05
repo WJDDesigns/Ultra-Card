@@ -12,7 +12,6 @@ import { localize } from '../localize/localize';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { getPopupForModule } from '../services/popup-trigger-registry';
 import '../components/ultra-color-picker';
-import '../components/ultra-template-editor';
 
 import {
   parseUnifiedTemplate,
