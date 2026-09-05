@@ -337,7 +337,7 @@ export class UltraDynamicWeatherModule extends BaseUltraModule {
           style="color: var(--warning-color); --mdi-icon-size: 64px; margin-bottom: 16px;"
         ></ha-icon>
         <div style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">
-          ${localize('editor.pro_feature', lang)}
+          ${localize('editor.pro_feature', lang, 'Pro Feature')}
         </div>
         <div style="font-size: 14px; color: var(--secondary-text-color); margin-bottom: 24px;">
           Dynamic Weather Effects is a Pro feature. Upgrade to unlock animated weather effects

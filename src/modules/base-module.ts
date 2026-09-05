@@ -13,12 +13,7 @@ import { renderTemplateKeyWarning } from '../utils/template-key-warning';
 import { requestPreviewUpdate } from '../utils/uc-preview-update';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { build3dTransformStyles } from '../utils/transform-3d-utils';
-import '../components/ultra-file-picker';
-import '../components/ultra-chip-list';
-import '../components/ultra-segmented';
 import type { UltraSegmentedOption } from '../components/ultra-segmented';
-import '../components/ultra-icon-field';
-import '../components/ultra-color-picker';
 
 // Module metadata interface
 export interface ModuleMetadata {
@@ -57,6 +52,14 @@ export interface UltraModule {
    * Reached through the registry so the host never imports the module file.
    */
   closePortalsForModule?(moduleId: string): void;
+
+  /**
+   * Optional: fetch the module's settings UI ahead of time. Modules that ship in
+   * the core bundle keep their settings tabs in a separate chunk (see
+   * uc-lazy-settings.ts); the editor calls this when it opens so the first
+   * settings panel renders without a placeholder.
+   */
+  preloadSettings?(): Promise<void>;
 
   // Render the module's general settings tab (`null` = tab not shown)
   renderGeneralTab(

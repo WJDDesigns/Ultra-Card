@@ -6,16 +6,26 @@
  */
 
 import { reportChunkLoadFailure } from '../utils/uc-chunk-load-error';
+import { preloadDefaultLocale } from '../localize/localize';
 
 let loadPromise: Promise<typeof import('./ultra-card-editor')> | undefined;
 
 export function loadUltraCardEditor(): Promise<typeof import('./ultra-card-editor')> {
   if (!loadPromise) {
-    loadPromise = import(/* webpackChunkName: "editor" */ './ultra-card-editor').catch(err => {
-      loadPromise = undefined;
-      reportChunkLoadFailure(err, 'editor');
-      throw err;
-    });
+    // The English dictionary is a chunk too. Fetching it alongside the (much
+    // larger) editor chunk means the editor's first paint already has it, so
+    // labels never flip from an inline fallback to the dictionary text.
+    const english = preloadDefaultLocale();
+    loadPromise = import(/* webpackChunkName: "editor" */ './ultra-card-editor')
+      .then(async mod => {
+        await english;
+        return mod;
+      })
+      .catch(err => {
+        loadPromise = undefined;
+        reportChunkLoadFailure(err, 'editor');
+        throw err;
+      });
   }
   return loadPromise;
 }

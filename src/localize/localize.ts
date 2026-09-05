@@ -1,18 +1,22 @@
-import * as en from '../translations/en.json';
 import { reportChunkLoadFailure } from '../utils/uc-chunk-load-error';
 
 /**
- * English ships inside the core bundle. Every other locale is its own chunk,
- * fetched the first time `localize()` is asked for that language. Until the
- * chunk arrives, lookups fall back to English exactly as they always did for
- * missing keys; when it lands, `UC_LOCALE_LOADED_EVENT` fires so live cards
- * and editors can re-render with the translated strings.
+ * Every locale, English included, is its own chunk fetched the first time
+ * `localize()` is asked for that language (`preloadDefaultLocale()` starts the
+ * English fetch at card bootstrap). Until a chunk arrives, lookups return the
+ * inline fallback each call site carries, which for English is the same text
+ * the dictionary holds; when it lands, `UC_LOCALE_LOADED_EVENT` fires so live
+ * cards and editors re-render with the dictionary strings.
+ *
+ * English used to ship inside the core bundle. Moving it out saves ~210 KB of
+ * `ultra-card.js` (60 KB gzipped) for every dashboard.
  */
 
 type Dict = Record<string, unknown>;
 type LocaleModule = Dict & { default?: Dict };
 
 const localeLoaders: Record<string, () => Promise<LocaleModule>> = {
+  en: () => import(/* webpackChunkName: "locale-en" */ '../translations/en.json'),
   ca: () => import(/* webpackChunkName: "locale-ca" */ '../translations/ca.json'),
   cs: () => import(/* webpackChunkName: "locale-cs" */ '../translations/cs.json'),
   da: () => import(/* webpackChunkName: "locale-da" */ '../translations/da.json'),
@@ -33,15 +37,12 @@ const DEFAULT_LANG = 'en';
 
 export const UC_LOCALE_LOADED_EVENT = 'uc-locale-loaded';
 
-const languages: Record<string, Dict> = { en: en as unknown as Dict };
+const languages: Record<string, Dict> = {};
 const pending = new Map<string, Promise<void>>();
 const failed = new Set<string>();
 
 /** Every language that can be served, loaded or not. */
-export const SUPPORTED_LANGUAGES: readonly string[] = Object.freeze([
-  DEFAULT_LANG,
-  ...Object.keys(localeLoaders),
-]);
+export const SUPPORTED_LANGUAGES: readonly string[] = Object.freeze(Object.keys(localeLoaders));
 
 function baseOf(lang: string): string {
   return lang.includes('-') || lang.includes('_') ? lang.split(/[-_]/)[0] : lang;
@@ -49,7 +50,7 @@ function baseOf(lang: string): string {
 
 /** Resolve a hass language to the loader key we ship, or undefined if we have none. */
 function resolveLoaderKey(lang: string): string | undefined {
-  if (!lang || lang === DEFAULT_LANG) return undefined;
+  if (!lang) return undefined;
   if (localeLoaders[lang]) return lang;
   const base = baseOf(lang);
   if (base !== lang && localeLoaders[base]) return base;
@@ -63,7 +64,7 @@ function unwrap(mod: LocaleModule): Dict {
 
 /**
  * Start (or join) the fetch for a language chunk. Resolves once the dictionary
- * is available, or immediately for English / unknown / already-loaded languages.
+ * is available, or immediately for unknown / already-loaded languages.
  */
 export function ensureLocaleLoaded(lang: string): Promise<void> {
   const key = resolveLoaderKey(lang);
@@ -124,11 +125,20 @@ function getTranslatedString(key: string, lang: string): string | undefined {
   }
 }
 
+/** Start fetching the English dictionary; called once at card / panel bootstrap. */
+export function preloadDefaultLocale(): Promise<void> {
+  return ensureLocaleLoaded(DEFAULT_LANG);
+}
+
 export function localize(key: string, lang: string, fallback?: string): string {
   // Kick off the chunk fetch the first time any caller asks for this language.
-  // Synchronous callers get English until it lands; the event triggers a re-render.
-  if (lang && lang !== DEFAULT_LANG && !isLocaleLoaded(lang)) {
+  // Synchronous callers get the inline fallback until it lands; the event
+  // triggers a re-render. English is always wanted as the last resort.
+  if (lang && !isLocaleLoaded(lang)) {
     void ensureLocaleLoaded(lang);
+  }
+  if (!languages[DEFAULT_LANG] && !pending.has(DEFAULT_LANG) && !failed.has(DEFAULT_LANG)) {
+    void ensureLocaleLoaded(DEFAULT_LANG);
   }
 
   // Try full locale first (e.g., es-ES)
@@ -170,6 +180,8 @@ export function __resetLocalesForTests(): void {
   for (const k of Object.keys(languages)) {
     if (k !== DEFAULT_LANG) delete languages[k];
   }
-  pending.clear();
+  for (const k of [...pending.keys()]) {
+    if (k !== DEFAULT_LANG) pending.delete(k);
+  }
   failed.clear();
 }

@@ -2,6 +2,7 @@ import { TemplateResult, html } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
+import { createLazySettings } from './uc-lazy-settings';
 import { CardModule, UltraCardConfig } from '../types';
 import { getImageUrl } from '../utils/image-upload';
 import { getModuleRegistry } from './module-registry';
@@ -34,6 +35,11 @@ const INTERACTIVE_CHILD_SELECTORS = [
   '[role="slider"]',
   '[role="switch"]',
 ];
+
+const horizontalSettings = createLazySettings(
+  () => import(/* webpackChunkName: "core-settings" */ './settings/horizontal-module-settings'),
+  'horizontal settings'
+);
 
 export class UltraHorizontalModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -75,182 +81,19 @@ export class UltraHorizontalModule extends BaseUltraModule {
     };
   }
 
+  preloadSettings(): Promise<void> {
+    return horizontalSettings.prefetch();
+  }
+
   renderGeneralTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
-    const horizontalModule = module as HorizontalModule;
-    const lang = hass?.locale?.language || 'en';
-
-    return html`
-      ${this.injectUcFormStyles()}
-
-      <div class="module-general-settings">
-        <!-- Layout Configuration Section -->
-        ${this.renderSettingsSection(
-          localize('editor.horizontal.layout.title', lang, 'Layout Configuration'),
-          localize(
-            'editor.horizontal.layout.desc',
-            lang,
-            'Configure how items are arranged horizontally within the container.'
-          ),
-          [
-            {
-              title: localize(
-                'editor.horizontal.alignment.horizontal',
-                lang,
-                'Horizontal Alignment'
-              ),
-              description: localize(
-                'editor.horizontal.alignment.horizontal_desc',
-                lang,
-                'Choose how items are aligned horizontally within the container.'
-              ),
-              hass,
-              data: horizontalModule,
-              schema: [
-                this.selectField('alignment', [
-                  { value: 'left', label: localize('editor.common.left', lang, 'Left') },
-                  { value: 'center', label: localize('editor.common.center', lang, 'Center') },
-                  { value: 'right', label: localize('editor.common.right', lang, 'Right') },
-                  {
-                    value: 'space-between',
-                    label: localize('editor.common.space_between', lang, 'Space Between'),
-                  },
-                  {
-                    value: 'space-around',
-                    label: localize('editor.common.space_around', lang, 'Space Around'),
-                  },
-                  { value: 'justify', label: localize('editor.common.justify', lang, 'Justify') },
-                ]),
-              ],
-              onChange: (e: CustomEvent) => {
-                const next = e.detail.value.alignment;
-                const prev = horizontalModule.alignment;
-                if (next === prev) return;
-
-                updateModule(e.detail.value);
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              },
-            },
-          ]
-        )}
-        ${this.renderSettingsSection('', '', [
-          {
-            title: localize('editor.horizontal.alignment.vertical', lang, 'Vertical Alignment'),
-            description: localize(
-              'editor.horizontal.alignment.vertical_desc',
-              lang,
-              'Choose how items are aligned vertically within the container.'
-            ),
-            hass,
-            data: { vertical_alignment: horizontalModule.vertical_alignment || '' },
-            schema: [
-              this.selectField('vertical_alignment', [
-                { value: '', label: localize('editor.common.default', lang, 'Default') },
-                { value: 'top', label: localize('editor.common.top', lang, 'Top') },
-                { value: 'center', label: localize('editor.common.center', lang, 'Center') },
-                { value: 'bottom', label: localize('editor.common.bottom', lang, 'Bottom') },
-                { value: 'stretch', label: localize('editor.common.stretch', lang, 'Stretch') },
-                { value: 'baseline', label: localize('editor.common.baseline', lang, 'Baseline') },
-              ]),
-            ],
-            onChange: (e: CustomEvent) => {
-              const raw = e.detail.value?.vertical_alignment;
-              if (raw === undefined) return;
-              // Empty string = "Default" option → store undefined so flexbox works naturally
-              const next = raw === '' ? undefined : raw;
-              if (next === horizontalModule.vertical_alignment) return;
-
-              updateModule({ vertical_alignment: next });
-              setTimeout(() => this.triggerPreviewUpdate(), 50);
-            },
-          },
-        ])}
-
-        <!-- Allow Wrapping Toggle -->
-        ${this.renderSettingsSection(
-          localize('editor.horizontal.wrapping.title', lang, 'Allow Wrapping'),
-          localize('editor.horizontal.wrapping.desc', lang, 'Allow items to wrap to the next line when they exceed the container width.'),
-          [
-            {
-              title: '',
-              description: '',
-              hass,
-              data: { wrap: horizontalModule.wrap || false },
-              schema: [this.booleanField('wrap')],
-              onChange: (e: CustomEvent) => { updateModule({ wrap: e.detail.value.wrap }); setTimeout(() => this.triggerPreviewUpdate(), 50); },
-            },
-          ]
-        )}
-
-        <!-- Gap Between Items Field with Custom Slider -->
-        <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
-        >
-          <div
-            class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
-          >
-            ${localize('editor.horizontal.gap.title', lang, 'Gap Configuration')}
-          </div>
-
-          <div style="margin-bottom: 24px;">
-            ${(() => {
-              const unit: string = (horizontalModule as any).gap_unit || 'rem';
-              const isPx = unit === 'px';
-              const defaultVal = isPx ? 8 : 0.7;
-              const gapNum = horizontalModule.gap !== undefined && horizontalModule.gap !== null
-                ? horizontalModule.gap : defaultVal;
-              const sliderMin = isPx ? -100 : -10;
-              const sliderMax = isPx ? 100 : 10;
-              const sliderStep = isPx ? 1 : 0.1;
-
-              const convertGap = (fromUnit: string, toUnit: string, val: number): number => {
-                if (fromUnit === toUnit) return val;
-                const toPx = (v: number, u: string) => u === 'px' ? v : u === '%' ? v : u === 'vw' ? v : u === 'vh' ? v : v * 16;
-                const fromPx = (v: number, u: string) => u === 'px' ? v : u === '%' ? v : u === 'vw' ? v : u === 'vh' ? v : Math.round((v / 16) * 10) / 10;
-                return fromPx(toPx(val, fromUnit), toUnit);
-              };
-
-              const unitOptions = [
-                { value: 'px', label: 'px' },
-                { value: 'rem', label: 'rem' },
-                { value: 'em', label: 'em' },
-                { value: '%', label: '%' },
-                { value: 'vw', label: 'vw' },
-                { value: 'vh', label: 'vh' },
-              ];
-
-              return this.renderGapWithUnitField(
-                localize('editor.horizontal.gap.between_items', lang, 'Gap Between Items'),
-                localize(
-                  'editor.horizontal.gap.desc',
-                  lang,
-                  'Set the spacing between horizontal items. Use negative values to overlap items.'
-                ),
-                hass,
-                gapNum,
-                defaultVal,
-                sliderMin,
-                sliderMax,
-                sliderStep,
-                unit,
-                unitOptions,
-                next => updateModule({ gap: next }),
-                (newUnit, currentValue) => {
-                  const converted = convertGap(unit, newUnit, currentValue);
-                  updateModule({ gap: converted, gap_unit: newUnit } as any);
-                }
-              );
-            })()}
-          </div>
-        </div>
-      </div>
-    `;
+    return horizontalSettings(s =>
+      s.renderHorizontalGeneralTab(this, module, hass, config, updateModule)
+    );
   }
 
   renderPreview(
@@ -291,9 +134,12 @@ export class UltraHorizontalModule extends BaseUltraModule {
     // Container styles for positioning and effects
     const gapUnit: string = (horizontalModule as any).gap_unit || 'rem';
     const isPxUnit = gapUnit === 'px';
-    const gapValue = horizontalModule.gap !== undefined && horizontalModule.gap !== null
-      ? Number(horizontalModule.gap)
-      : (isPxUnit ? 8 : 0.7);
+    const gapValue =
+      horizontalModule.gap !== undefined && horizontalModule.gap !== null
+        ? Number(horizontalModule.gap)
+        : isPxUnit
+          ? 8
+          : 0.7;
     // Only use alignment if user explicitly sets it - let flexbox work naturally
     const horizontalAlign = horizontalModule.alignment;
 
@@ -312,8 +158,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
     // When design.background_filter is set the background must be rendered via a ::before
     // pseudo-element so the filter only affects the background without blurring the content.
     const hasBackgroundFilter =
-      (effective as any).background_filter &&
-      (effective as any).background_filter !== 'none';
+      (effective as any).background_filter && (effective as any).background_filter !== 'none';
 
     // Use computeBackgroundStyles for consistent background handling (fixes themed colors with opacity)
     // This utility properly sets both 'background' and 'backgroundColor' which ensures
@@ -377,9 +222,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
       // Only use gap for positive values, use negative margins for negative values
       // space-between and space-around handle their own spacing (mirrors vertical module)
       gap:
-        gapValue >= 0 &&
-        horizontalAlign !== 'space-between' &&
-        horizontalAlign !== 'space-around'
+        gapValue >= 0 && horizontalAlign !== 'space-between' && horizontalAlign !== 'space-around'
           ? `${gapValue}${gapUnit}`
           : '0',
       // Enable wrapping when wrap option is true
@@ -415,7 +258,6 @@ export class UltraHorizontalModule extends BaseUltraModule {
       boxSizing: 'border-box',
     };
 
-
     // Create gesture handlers using centralized service
     // Service automatically handles nested module editor control exclusion.
     // Interactive elements inside child modules are excluded so the parent
@@ -445,13 +287,31 @@ export class UltraHorizontalModule extends BaseUltraModule {
     // matching the vertical module.
     const _allDesignStyles = this.buildDesignStyles(module, hass);
     const VISUAL_SURFACE_PROPS = new Set([
-      'border', 'borderRadius',
-      'padding', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight',
-      'background', 'backgroundColor', 'backgroundImage',
-      'backgroundSize', 'backgroundPosition', 'backgroundRepeat',
-      'boxShadow', 'backdropFilter', 'webkitBackdropFilter',
-      'clipPath', 'overflow', 'isolation', 'filter',
-      'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
+      'border',
+      'borderRadius',
+      'padding',
+      'paddingTop',
+      'paddingBottom',
+      'paddingLeft',
+      'paddingRight',
+      'background',
+      'backgroundColor',
+      'backgroundImage',
+      'backgroundSize',
+      'backgroundPosition',
+      'backgroundRepeat',
+      'boxShadow',
+      'backdropFilter',
+      'webkitBackdropFilter',
+      'clipPath',
+      'overflow',
+      'isolation',
+      'filter',
+      'margin',
+      'marginTop',
+      'marginBottom',
+      'marginLeft',
+      'marginRight',
     ]);
     const _wrapperOnlyStyles = Object.fromEntries(
       Object.entries(_allDesignStyles).filter(([k]) => !VISUAL_SURFACE_PROPS.has(k))
@@ -506,121 +366,128 @@ export class UltraHorizontalModule extends BaseUltraModule {
       return html``;
     }
 
-    return this.wrapWithAnimation(html`
-      <style>
-        ${this.getStyles()}
-      </style>
-      <div
-        class="horizontal-module-preview"
-        style="${designStyles}; ${containerStyles.width ? `width: ${containerStyles.width};` : ''}"
-      >
+    return this.wrapWithAnimation(
+      html`
+        <style>
+          ${this.getStyles()}
+        </style>
         <div
-          class="horizontal-preview-content ${hoverEffectClass}"
-          style="${this.styleObjectToCss(containerStyles)}; cursor: ${hasActions
-            ? 'pointer'
-            : 'default'}; ${hasActions ? 'pointer-events: auto;' : ''}"
-          data-wrap=${horizontalModule.wrap ? 'true' : 'false'}
-          @pointerdown=${hasActions ? handlers.onPointerDown : null}
-          @pointermove=${hasActions ? handlers.onPointerMove : null}
-          @pointerup=${hasActions ? handlers.onPointerUp : null}
-          @pointercancel=${hasActions ? handlers.onPointerCancel : null}
-          @pointerleave=${hasActions ? handlers.onPointerLeave : null}
+          class="horizontal-module-preview"
+          style="${designStyles}; ${containerStyles.width
+            ? `width: ${containerStyles.width};`
+            : ''}"
         >
-          ${visibleChildren.length > 0
-            ? (() => {
-                return repeat(
-                  visibleChildren,
-                  (cm) => cm.id || cm.type,
-                  (childModule, index) => {
-                    const childMargin = gapValue < 0 && index > 0 ? `0 0 0 ${gapValue}${gapUnit}` : '0';
-                    const isNegativeGap = gapValue < 0;
+          <div
+            class="horizontal-preview-content ${hoverEffectClass}"
+            style="${this.styleObjectToCss(containerStyles)}; cursor: ${hasActions
+              ? 'pointer'
+              : 'default'}; ${hasActions ? 'pointer-events: auto;' : ''}"
+            data-wrap=${horizontalModule.wrap ? 'true' : 'false'}
+            @pointerdown=${hasActions ? handlers.onPointerDown : null}
+            @pointermove=${hasActions ? handlers.onPointerMove : null}
+            @pointerup=${hasActions ? handlers.onPointerUp : null}
+            @pointercancel=${hasActions ? handlers.onPointerCancel : null}
+            @pointerleave=${hasActions ? handlers.onPointerLeave : null}
+          >
+            ${visibleChildren.length > 0
+              ? (() => {
+                  return repeat(
+                    visibleChildren,
+                    cm => cm.id || cm.type,
+                    (childModule, index) => {
+                      const childMargin =
+                        gapValue < 0 && index > 0 ? `0 0 0 ${gapValue}${gapUnit}` : '0';
+                      const isNegativeGap = gapValue < 0;
 
-                    const layoutShouldGrow = horizontalModule.alignment === 'justify';
-                    const childShouldGrow = this.childShouldFillAvailableSpace(childModule);
+                      const layoutShouldGrow = horizontalModule.alignment === 'justify';
+                      const childShouldGrow = this.childShouldFillAvailableSpace(childModule);
 
-                    const childPreferredWidth =
-                      !layoutShouldGrow && !childShouldGrow
-                        ? this.getChildPreferredWidth(childModule)
-                        : null;
+                      const childPreferredWidth =
+                        !layoutShouldGrow && !childShouldGrow
+                          ? this.getChildPreferredWidth(childModule)
+                          : null;
 
-                    const flexSegments = [
-                      layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
-                      childShouldGrow
-                        ? 'flex-grow: 1; flex-shrink: 1; flex-basis: auto; min-width: 10%;'
-                        : '',
-                      !layoutShouldGrow && !childShouldGrow && childPreferredWidth
-                        ? `flex: 0 0 ${childPreferredWidth}; max-width: ${childPreferredWidth}; width: ${childPreferredWidth};`
-                        : '',
-                    ].filter(Boolean);
+                      const flexSegments = [
+                        layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
+                        childShouldGrow
+                          ? 'flex-grow: 1; flex-shrink: 1; flex-basis: auto; min-width: 10%;'
+                          : '',
+                        !layoutShouldGrow && !childShouldGrow && childPreferredWidth
+                          ? `flex: 0 0 ${childPreferredWidth}; max-width: ${childPreferredWidth}; width: ${childPreferredWidth};`
+                          : '',
+                      ].filter(Boolean);
 
-                    const baseStyles = `
+                      const baseStyles = `
                       overflow: visible;
                       ${flexSegments.join(' ')}
                       box-sizing: border-box;
                       margin: ${childMargin};
                     `;
-                    const negativeGapStyles = isNegativeGap
-                      ? 'padding: 0; border: none; background: transparent;'
-                      : '';
+                      const negativeGapStyles = isNegativeGap
+                        ? 'padding: 0; border: none; background: transparent;'
+                        : '';
 
-                    return html`
-                      <div
-                        class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
-                        data-flex-constrained="${childPreferredWidth ? 'true' : 'false'}"
-                        style="${baseStyles} ${negativeGapStyles}"
-                      >
-                        ${this._renderChildModulePreview(
-                          childModule,
-                          hass,
-                          moduleWithDesign,
-                          (this as any)._currentConfig,
-                          (this as any)._currentPreviewContext
-                        )}
-                      </div>
-                    `;
-                  }
-                );
-              })()
-            : html`
-                <div class="empty-layout-message">
-                  ${allChildrenHiddenByLogic
-                    ? html`
-                        <span
-                          >${localize(
-                            'editor.horizontal.empty.all_hidden',
-                            lang,
-                            'All modules hidden by logic'
-                          )}</span
+                      return html`
+                        <div
+                          class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
+                          data-flex-constrained="${childPreferredWidth ? 'true' : 'false'}"
+                          style="${baseStyles} ${negativeGapStyles}"
                         >
-                        <small
-                          >${localize(
-                            'editor.horizontal.empty.all_hidden_desc',
-                            lang,
-                            'Every module in this layout is hidden by its display conditions'
-                          )}</small
-                        >
-                      `
-                    : html`
-                        <span
-                          >${localize(
-                            'editor.horizontal.empty.no_modules',
-                            lang,
-                            'No modules added yet'
-                          )}</span
-                        >
-                        <small
-                          >${localize(
-                            'editor.horizontal.empty.add_modules',
-                            lang,
-                            'Add modules in the layout builder to see them here'
-                          )}</small
-                        >
-                      `}
-                </div>
-              `}
+                          ${this._renderChildModulePreview(
+                            childModule,
+                            hass,
+                            moduleWithDesign,
+                            (this as any)._currentConfig,
+                            (this as any)._currentPreviewContext
+                          )}
+                        </div>
+                      `;
+                    }
+                  );
+                })()
+              : html`
+                  <div class="empty-layout-message">
+                    ${allChildrenHiddenByLogic
+                      ? html`
+                          <span
+                            >${localize(
+                              'editor.horizontal.empty.all_hidden',
+                              lang,
+                              'All modules hidden by logic'
+                            )}</span
+                          >
+                          <small
+                            >${localize(
+                              'editor.horizontal.empty.all_hidden_desc',
+                              lang,
+                              'Every module in this layout is hidden by its display conditions'
+                            )}</small
+                          >
+                        `
+                      : html`
+                          <span
+                            >${localize(
+                              'editor.horizontal.empty.no_modules',
+                              lang,
+                              'No modules added yet'
+                            )}</span
+                          >
+                          <small
+                            >${localize(
+                              'editor.horizontal.empty.add_modules',
+                              lang,
+                              'Add modules in the layout builder to see them here'
+                            )}</small
+                          >
+                        `}
+                  </div>
+                `}
+          </div>
         </div>
-      </div>
-    `, module, hass);
+      `,
+      module,
+      hass
+    );
   }
 
   private _renderChildModulePreview(

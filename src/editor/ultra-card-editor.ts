@@ -27,7 +27,7 @@ import { Z_INDEX } from '../utils/uc-z-index';
 import { renderTemplateKeyWarning } from '../utils/template-key-warning';
 import { safeGetItem, safeSetItem } from '../utils/safe-storage';
 import './tabs/layout-tab';
-import '../components/ultra-color-picker';
+import './uc-settings-components';
 // Settings-only custom elements used by module tabs. Defined here (editor
 // chunk) rather than in the module files, so CodeMirror and tiptap never ship
 // in ultra-card.js. Modules render the tags; the elements upgrade once defined.
@@ -424,6 +424,16 @@ export class UltraCardEditor extends LitElement {
     // Inject module-level CSS so previews inside the editor show correct
     // animations (e.g. icon spin, pulse, etc.).
     this._injectModuleStyles();
+
+    // Core modules keep their settings UI in one lazy chunk; fetch it now so the
+    // first module the user opens renders its tab without a placeholder.
+    void Promise.resolve().then(() => {
+      for (const handler of getModuleRegistry().getAllModules()) {
+        handler.preloadSettings?.()?.catch(() => {
+          /* reported by the settings loader */
+        });
+      }
+    });
 
     this._moduleLoadForStylesListener = (e: Event) => {
       const d = (e as CustomEvent<{ state?: string }>).detail;

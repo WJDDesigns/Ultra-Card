@@ -1,5 +1,30 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.10.0-beta3
+
+The third 3.10.0 beta cuts the download nearly in half again and works through the open GitHub reports: icon layout options, popup customization, the editor hanging on deeply nested layouts, drag and drop into empty columns, CSS variables with fallbacks, and Dynamic Lists stuck on placeholders after a page reload. The "Loading..." flash on phones from [#124](https://github.com/WJDDesigns/Ultra-Card/issues/124) should be much shorter now that the first download is 93% smaller than 3.9.0. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🚀 New Features
+
+- **Added layout controls to the Icon module** - Each icon can now sit to the left, right, above or below its name and state, and you can choose how the icon and text are spread out, where the whole item sits in its cell, and how the text is aligned. Same controls the Info module already had. Existing icon modules look exactly as before. Thanks for the request in [#125](https://github.com/WJDDesigns/Ultra-Card/issues/125)
+- **Added more ways to style the Popup trigger and its animation** - The trigger icon can have a circle or rounded-square background with its own color and padding, and can take its color from an entity's state just like the Icon module does. The open animation now has a speed slider, an easing choice (including a springy one), and a "slide in from the screen edge" option for the slide animations. Thanks for the request in [#128](https://github.com/WJDDesigns/Ultra-Card/issues/128)
+
+### 🔧 Improvements
+
+- **Made Ultra Card 40% smaller to download than beta2** - The file every dashboard has to load is now 0.85 MB, down from 1.4 MB in beta2 and 12.5 MB in 3.9.0 (0.21 MB compressed, down from 0.33 MB). The settings panels for the built-in modules (Text, Icon, Image, Info, Bar, Button, Separator, Horizontal and Vertical) and the English text for the editor now travel with the editor instead of with every dashboard. Dashboards never needed either of them
+- **Settings panels open without a flash** - The editor fetches the built-in modules' settings the moment it opens, so the first module you click shows its options straight away. If a module's settings are still on their way, a short loading indicator appears instead of a blank panel
+
+### 🐛 Bug Fixes
+
+- **Fixed the editor hanging or misbehaving with deeply nested layouts** - Horizontal and Vertical layouts nested several levels deep could make the editor freeze, or edit and delete the wrong module. The editor now follows the exact path to the module you clicked, however deep it is. Thanks for the report in [#126](https://github.com/WJDDesigns/Ultra-Card/issues/126)
+- **Fixed drag and drop into empty columns and layouts** - Dropping a module onto an empty column or an empty Horizontal/Vertical layout used to land it next to the container instead of inside it, so you had to add a throwaway module first. Dropping onto the empty area now puts the module inside, and the Add Module button lights up to show where it will go. Thanks for the report in [#127](https://github.com/WJDDesigns/Ultra-Card/issues/127)
+- **Fixed CSS variables with a fallback being cut off** - Typing a color like `var(--my-color, #000000)` into a color field was rejected and saved as a broken value. It is now accepted as written. The Bar module's value text also stays on top of the bar even if a color value is malformed. Thanks for the report in [#129](https://github.com/WJDDesigns/Ultra-Card/issues/129)
+- **Fixed Dynamic Lists stuck on placeholders after a page reload** - A Dynamic List loaded fresh (for example after pressing F5) could show grey placeholder boxes for its items forever, and lists built from to-do entities could miss state changes. Items now fill in as soon as they are ready and update live. Thanks for the report in [#130](https://github.com/WJDDesigns/Ultra-Card/issues/130)
+
+---
+
 ## Version 3.10.0-beta2
 
 The second 3.10.0 beta trims the download further, makes cards appear faster on first load, and fixes the Dynamic Weather background helper that beta1 said it had fixed but hadn't. If you are on beta1, update and reload your browser once — after this release Ultra Card will tell you itself whenever a reload is needed. This is a pre-release for testing — please report anything odd on GitHub or Discord.

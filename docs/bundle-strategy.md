@@ -17,11 +17,30 @@
   that file, so the Dynamic Weather worker URL 404'd in 3.10.0-beta1); the
   second is replaced at build time with a `file://` path. `check-bundle.js`
   fails on both.
-- **What is a chunk today (Phase 2):**
-  - **Eager, inside `ultra-card.js`:** the 10 everyday modules (text, icon,
-    image, info, bar, button, separator, horizontal, vertical, pagebreak), the
-    registry/manifest, English strings, the card runtime and shared services.
-    A typical card renders with no loading skeleton.
+- **What is a chunk today (Phase 3):**
+  - **Eager, inside `ultra-card.js`:** the *preview* code of the 10 everyday
+    modules (text, icon, image, info, bar, button, separator, horizontal,
+    vertical, pagebreak), the registry/manifest, the card runtime and shared
+    services. A typical card renders with no loading skeleton.
+  - **`uc-core-settings.*` (Phase 3):** the settings tabs of those 10 modules.
+    Each `src/modules/<type>-module.ts` keeps a one-line
+    `renderGeneralTab()` that delegates through `createLazySettings()`
+    (`src/modules/uc-lazy-settings.ts`); the moved code lives in
+    `src/modules/settings/<type>-module-settings.ts` as a subclass that is never
+    instantiated. `installSettingsMethods()` copies its methods onto the module
+    prototype when the chunk loads, so `this.` still resolves the private
+    helpers that moved with the tab. First call renders a placeholder through
+    lit `until`; every later call is synchronous. `UltraModule.preloadSettings()`
+    is called by the editor on connect (and by the test harness) so the first
+    tab the user opens is already there.
+  - **`uc-locale-en.*` (Phase 3):** the English dictionary is a locale chunk
+    like the others. Every `localize()` call site carries its English text as
+    the inline fallback, so a card renders identically before and after the
+    chunk lands; `preloadDefaultLocale()` starts the fetch from `src/index.ts`
+    and the panel entry, and `loadUltraCardEditor()` awaits it with the editor
+    chunk so editor labels never flip. Keep fallbacks in sync with `en.json`
+    (`/tmp`-style audit: ~4.4k of 4.6k literal call sites match exactly; the
+    rest are editor strings that arrive with the editor).
   - **`uc-m-<type>.*`:** every other module (72 chunks). The 9 tiny input
     modules share `uc-m-inputs`; the 5 appliances share `uc-m-appliance`.
     Loaded by `ModuleRegistry.ensureModuleLoaded()` the first time a card or
@@ -66,8 +85,15 @@
 - **Rules that keep the entry small** (each one is something that regressed
   during Phase 2 and was caught by webpack stats):
   - Settings-only custom elements (`ultra-template-editor`, `ultra-wysiwyg-editor`,
-    cheatsheet) are imported once in `ultra-card-editor.ts`, never in module
-    files. Modules only render the tags; they upgrade when the editor defines them.
+    cheatsheet, and since Phase 3 the form controls: `ultra-color-picker`,
+    `ultra-file-picker`, `ultra-chip-list`, `ultra-segmented`,
+    `ultra-icon-field`, `ultra-navigation-picker`, `uc-gradient-editor` via
+    `src/editor/uc-settings-components.ts`) are imported once in
+    `ultra-card-editor.ts`, never in `base-module.ts` or the core module files.
+    Modules only render the tags; they upgrade when the editor defines them. A
+    module that shows one of these in a *preview* imports it itself.
+  - Pure data helpers that previews need (`uc-gradient-stops.ts`) live in
+    `src/utils/`, not inside the component that edits them.
   - `src/modules/index.ts` re-exports no implementation and no editor-side
     service (`src/index.ts` does `export * from './modules'`).
   - The host card never imports a module file. Cross-cutting hooks go through
@@ -80,7 +106,9 @@
   `file:///` leaks, on entry-reachable chunks that were not emitted (resolved
   from webpack's runtime id→hash map), on `hacs.json` regressing
   `content_in_root`, on a stray hashed asset / file-based public path (see
-  above), and on the entry exceeding 1.85 MiB (warn at 1.6 MiB).
+  above), on the English dictionary or core settings UI being folded back into
+  the entry (marker strings), and on the entry exceeding 1.25 MiB (warn at
+  1.0 MiB).
 
 ## How HACS actually distributes a plugin (verified against HACS 2.0.5)
 
@@ -170,18 +198,26 @@ variable is set. Use only for a hotfix while a distribution problem is diagnosed
 
 ## Results
 
-|                           | 3.9.0    | Phase 1 | Phase 2 (beta1) | beta2   |
-| ------------------------- | -------- | ------- | --------------- | ------- |
-| `ultra-card.js` raw       | 12.54 MB | 7.65 MB | 1.64 MB         | 1.43 MB |
-| `ultra-card.js` gzip      | 3.05 MB  | 1.85 MB | 0.36 MB         | 0.33 MB |
-| `ultra-card-panel.js` raw | 4.16 MB  | 0.28 MB | 0.28 MB         | 0.28 MB |
+|                           | 3.9.0    | Phase 1 | Phase 2 (beta1) | beta2   | Phase 3 (beta3) |
+| ------------------------- | -------- | ------- | --------------- | ------- | --------------- |
+| `ultra-card.js` raw       | 12.54 MB | 7.65 MB | 1.64 MB         | 1.43 MB | 0.85 MB         |
+| `ultra-card.js` gzip      | 3.05 MB  | 1.85 MB | 0.36 MB         | 0.33 MB | 0.21 MB         |
+| `ultra-card-panel.js` raw | 4.16 MB  | 0.28 MB | 0.28 MB         | 0.28 MB | 0.28 MB         |
+
+Phase 3 moved ~1.06 MB of pre-minify source out of the entry: the settings
+tabs of the 10 core modules (`uc-core-settings`, 315 KB minified), the English
+dictionary (`uc-locale-en`, 214 KB), and the editor form controls plus the
+services only they use (`ultra-color-picker`, `uc-gradient-editor`,
+`uc-favorite-colors-*`, ...), which now travel with the editor chunk.
 
 ## Later
 
-- The largest remaining entry residents are the eager modules themselves
-  (`bar-module` 328 KB and `icon-module` 294 KB pre-minify), `en.json` (214 KB)
-  and DOMPurify (122 KB). Splitting bar/icon settings UI from their preview
-  code is the next meaningful cut; the English dictionary could be split into
-  runtime vs. editor keys.
-- `uc-user-visibility-section.ts` (10 KB) is still in the entry because
-  `icon-module` imports it directly; route it through the logic tab element.
+- The largest remaining entry residents are the core modules' preview code and
+  `getStyles()` CSS (`bar-module` 200 KB, `icon-module` 180 KB pre-minify),
+  `ultra-card.ts` itself (195 KB) and DOMPurify (119 KB pre-minify, ~22 KB
+  minified). DOMPurify stays eager on purpose: every text module with rich
+  content sanitises on render, so lazy-loading it would flash unstyled text on
+  cold loads for the most common module.
+- Inline `localize()` fallbacks that differ from `en.json` (about 250 call
+  sites, almost all editor labels) are the only place the English chunk can be
+  seen arriving. Syncing them removes even that window.

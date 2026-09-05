@@ -2,6 +2,7 @@ import { TemplateResult, html } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
+import { createLazySettings } from './uc-lazy-settings';
 import { CardModule, UltraCardConfig } from '../types';
 import { getImageUrl } from '../utils/image-upload';
 import { getModuleRegistry } from './module-registry';
@@ -35,6 +36,11 @@ const INTERACTIVE_CHILD_SELECTORS = [
   '[role="slider"]',
   '[role="switch"]',
 ];
+
+const verticalSettings = createLazySettings(
+  () => import(/* webpackChunkName: "core-settings" */ './settings/vertical-module-settings'),
+  'vertical settings'
+);
 
 export class UltraVerticalModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -79,165 +85,19 @@ export class UltraVerticalModule extends BaseUltraModule {
     };
   }
 
+  preloadSettings(): Promise<void> {
+    return verticalSettings.prefetch();
+  }
+
   renderGeneralTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
-    const verticalModule = module as VerticalModule;
-    const lang = hass?.locale?.language || 'en';
-
-    return html`
-      ${this.injectUcFormStyles()}
-
-      <div class="module-general-settings">
-        <!-- Layout Configuration Section -->
-        ${this.renderSettingsSection(
-          localize('editor.vertical.layout.title', lang, 'Layout Configuration'),
-          localize(
-            'editor.vertical.layout.desc',
-            lang,
-            'Configure alignment and spacing for items in a single column.'
-          ),
-          [
-            {
-              title: localize('editor.vertical.alignment.horizontal', lang, 'Horizontal Alignment'),
-              description: localize(
-                'editor.vertical.alignment.horizontal_desc',
-                lang,
-                'Choose how items are aligned horizontally within the column.'
-              ),
-              hass,
-              data: { horizontal_alignment: verticalModule.horizontal_alignment || 'stretch' },
-              schema: [
-                this.selectField('horizontal_alignment', [
-                  { value: 'left', label: localize('editor.common.left', lang, 'Left') },
-                  { value: 'center', label: localize('editor.common.center', lang, 'Center') },
-                  { value: 'right', label: localize('editor.common.right', lang, 'Right') },
-                  { value: 'stretch', label: localize('editor.common.stretch', lang, 'Stretch') },
-                ]),
-              ],
-              onChange: (e: CustomEvent) => {
-                const next = e.detail.value.horizontal_alignment;
-                const prev = verticalModule.horizontal_alignment || 'stretch';
-                if (next === prev) return;
-                updateModule(e.detail.value);
-                // Trigger re-render to update dropdown UI
-                setTimeout(() => {
-                  this.triggerPreviewUpdate();
-                }, 50);
-              },
-            },
-            {
-              title: localize('editor.vertical.alignment.vertical', lang, 'Vertical Distribution'),
-              description: localize(
-                'editor.vertical.alignment.vertical_desc',
-                lang,
-                'How items are distributed along the vertical axis.'
-              ),
-              hass,
-              data: { alignment: verticalModule.alignment || 'center' },
-              schema: [
-                this.selectField('alignment', [
-                  { value: 'top', label: localize('editor.common.top', lang, 'Top') },
-                  { value: 'center', label: localize('editor.common.center', lang, 'Center') },
-                  { value: 'bottom', label: localize('editor.common.bottom', lang, 'Bottom') },
-                  {
-                    value: 'space-between',
-                    label: localize('editor.common.space_between', lang, 'Space Between'),
-                  },
-                  {
-                    value: 'space-around',
-                    label: localize('editor.common.space_around', lang, 'Space Around'),
-                  },
-                ]),
-              ],
-              onChange: (e: CustomEvent) => {
-                const next = e.detail.value.alignment;
-                const prev = verticalModule.alignment || 'center';
-                if (next === prev) return;
-                updateModule(e.detail.value);
-                // Trigger re-render to update dropdown UI
-                setTimeout(() => {
-                  this.triggerPreviewUpdate();
-                }, 50);
-              },
-            },
-          ]
-        )}
-
-        <!-- Gap Between Items Field with Custom Slider -->
-        <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
-        >
-          <div
-            class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
-          >
-            ${localize('editor.vertical.gap.title', lang, 'Gap Configuration')}
-          </div>
-
-          ${(() => {
-            // Backward compat: if gap_unit is not stored, the value was rem (old behavior)
-            const unit: string = (verticalModule as any).gap_unit || 'rem';
-            const isPx = unit === 'px';
-            const isRem = unit === 'rem' || unit === 'em';
-            const defaultVal = isPx ? 8 : 1.2;
-            const gapNum = verticalModule.gap !== undefined && verticalModule.gap !== null
-              ? Number(verticalModule.gap)
-              : defaultVal;
-            const sliderMin = isPx ? -100 : -10;
-            const sliderMax = isPx ? 100 : 10;
-            const sliderStep = isPx ? 1 : 0.1;
-            const disabled = verticalModule.alignment === 'space-between' || verticalModule.alignment === 'space-around';
-
-            const convertGap = (fromUnit: string, toUnit: string, val: number): number => {
-              if (fromUnit === toUnit) return val;
-              const toPx = (v: number, u: string) => u === 'px' ? v : u === '%' ? v : u === 'vw' ? v : u === 'vh' ? v : v * 16;
-              const fromPx = (v: number, u: string) => u === 'px' ? v : u === '%' ? v : u === 'vw' ? v : u === 'vh' ? v : Math.round((v / 16) * 10) / 10;
-              return fromPx(toPx(val, fromUnit), toUnit);
-            };
-
-            const unitOptions = [
-              { value: 'px', label: 'px' },
-              { value: 'rem', label: 'rem' },
-              { value: 'em', label: 'em' },
-              { value: '%', label: '%' },
-              { value: 'vw', label: 'vw' },
-              { value: 'vh', label: 'vh' },
-            ];
-
-            return html`
-              <div style="margin-bottom: 8px; ${disabled ? 'opacity: 0.5; pointer-events: none;' : ''}">
-                ${this.renderGapWithUnitField(
-                  localize('editor.vertical.gap.between_items', lang, 'Gap Between Items'),
-                  localize(
-                    'editor.vertical.gap.desc',
-                    lang,
-                    'Set the spacing between vertical items. Use negative values to overlap items. Note: Gap is disabled when using Space Between or Space Around distribution.'
-                  ),
-                  hass,
-                  gapNum,
-                  defaultVal,
-                  sliderMin,
-                  sliderMax,
-                  sliderStep,
-                  unit,
-                  unitOptions,
-                  next => updateModule({ gap: next }),
-                  (newUnit, currentValue) => {
-                    const converted = convertGap(unit, newUnit, currentValue);
-                    updateModule({ gap: converted, gap_unit: newUnit } as any);
-                  }
-                )}
-              </div>
-            `;
-          })()}
-        </div>
-      </div>
-    `;
+    return verticalSettings(s =>
+      s.renderVerticalGeneralTab(this, module, hass, config, updateModule)
+    );
   }
 
   renderPreview(
@@ -276,17 +136,19 @@ export class UltraVerticalModule extends BaseUltraModule {
     // Container styles for positioning and effects
     const gapUnit: string = (verticalModule as any).gap_unit || 'rem';
     const isPxUnit = gapUnit === 'px';
-    const gapValue = verticalModule.gap !== undefined && verticalModule.gap !== null
-      ? Number(verticalModule.gap)
-      : (isPxUnit ? 8 : 1.2);
+    const gapValue =
+      verticalModule.gap !== undefined && verticalModule.gap !== null
+        ? Number(verticalModule.gap)
+        : isPxUnit
+          ? 8
+          : 1.2;
 
     // When design.background_filter is set the background must be rendered via a ::before
     // pseudo-element so the filter (e.g. opacity(0.2)) only affects the background image
     // without blurring the content.  In that case we set CSS variables on the container
     // and rely on getStyles() ::before rule instead of inlining the background directly.
     const hasBackgroundFilter =
-      (effective as any).background_filter &&
-      (effective as any).background_filter !== 'none';
+      (effective as any).background_filter && (effective as any).background_filter !== 'none';
 
     const bgResult = hasBackgroundFilter
       ? { styles: {} as Record<string, string> }
@@ -438,13 +300,31 @@ export class UltraVerticalModule extends BaseUltraModule {
     // and double background.  Margin is also stripped — it is handled in containerStyles.
     const _allDesignStyles = this.buildDesignStyles(module, hass);
     const VISUAL_SURFACE_PROPS = new Set([
-      'border', 'borderRadius',
-      'padding', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight',
-      'background', 'backgroundColor', 'backgroundImage',
-      'backgroundSize', 'backgroundPosition', 'backgroundRepeat',
-      'boxShadow', 'backdropFilter', 'webkitBackdropFilter',
-      'clipPath', 'overflow', 'isolation', 'filter',
-      'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
+      'border',
+      'borderRadius',
+      'padding',
+      'paddingTop',
+      'paddingBottom',
+      'paddingLeft',
+      'paddingRight',
+      'background',
+      'backgroundColor',
+      'backgroundImage',
+      'backgroundSize',
+      'backgroundPosition',
+      'backgroundRepeat',
+      'boxShadow',
+      'backdropFilter',
+      'webkitBackdropFilter',
+      'clipPath',
+      'overflow',
+      'isolation',
+      'filter',
+      'margin',
+      'marginTop',
+      'marginBottom',
+      'marginLeft',
+      'marginRight',
     ]);
     const _wrapperOnlyStyles = Object.fromEntries(
       Object.entries(_allDesignStyles).filter(([k]) => !VISUAL_SURFACE_PROPS.has(k))
@@ -465,91 +345,95 @@ export class UltraVerticalModule extends BaseUltraModule {
       return html``;
     }
 
-    return this.wrapWithAnimation(html`
-      <div class="vertical-module-preview ${hoverClass}" style="${designStyles}">
-        <div
-          class="vertical-preview-content"
-          style="${this.styleObjectToCss(containerStyles)}; cursor: ${hasActions
-            ? 'pointer'
-            : 'default'}; ${hasActions ? 'pointer-events: auto;' : ''}"
-          @pointerdown=${hasActions ? handlers.onPointerDown : null}
-          @pointermove=${hasActions ? handlers.onPointerMove : null}
-          @pointerup=${hasActions ? handlers.onPointerUp : null}
-          @pointercancel=${hasActions ? handlers.onPointerCancel : null}
-          @pointerleave=${hasActions ? handlers.onPointerLeave : null}
-        >
-          ${visibleChildren.length > 0
-            ? (() => {
-                return repeat(
-                  visibleChildren,
-                  (cm) => cm.id || cm.type,
-                  (childModule, index) => {
-                    const useNegativeMargin =
-                      gapValue < 0 &&
-                      index > 0 &&
-                      verticalModule.alignment !== 'space-between' &&
-                      verticalModule.alignment !== 'space-around';
-                    const childMargin = useNegativeMargin ? `${gapValue}${gapUnit} 0 0 0` : '0';
-                    const isNegativeGap = useNegativeMargin;
-                    return html`
-                      <div
-                        class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
-                        style="max-width: 100%; box-sizing: border-box; margin: ${childMargin}; ${isNegativeGap
-                          ? 'padding: 0; border: none; background: transparent;'
-                          : ''}"
-                      >
-                        ${this._renderChildModulePreview(
-                          childModule,
-                          hass,
-                          moduleWithDesign,
-                          (this as any)._currentConfig,
-                          (this as any)._currentPreviewContext
-                        )}
-                      </div>
-                    `;
-                  }
-                );
-              })()
-            : html`
-                <div class="empty-layout-message">
-                  ${allChildrenHiddenByLogic
-                    ? html`
-                        <span
-                          >${localize(
-                            'editor.vertical.empty.all_hidden',
-                            lang,
-                            'All modules hidden by logic'
-                          )}</span
+    return this.wrapWithAnimation(
+      html`
+        <div class="vertical-module-preview ${hoverClass}" style="${designStyles}">
+          <div
+            class="vertical-preview-content"
+            style="${this.styleObjectToCss(containerStyles)}; cursor: ${hasActions
+              ? 'pointer'
+              : 'default'}; ${hasActions ? 'pointer-events: auto;' : ''}"
+            @pointerdown=${hasActions ? handlers.onPointerDown : null}
+            @pointermove=${hasActions ? handlers.onPointerMove : null}
+            @pointerup=${hasActions ? handlers.onPointerUp : null}
+            @pointercancel=${hasActions ? handlers.onPointerCancel : null}
+            @pointerleave=${hasActions ? handlers.onPointerLeave : null}
+          >
+            ${visibleChildren.length > 0
+              ? (() => {
+                  return repeat(
+                    visibleChildren,
+                    cm => cm.id || cm.type,
+                    (childModule, index) => {
+                      const useNegativeMargin =
+                        gapValue < 0 &&
+                        index > 0 &&
+                        verticalModule.alignment !== 'space-between' &&
+                        verticalModule.alignment !== 'space-around';
+                      const childMargin = useNegativeMargin ? `${gapValue}${gapUnit} 0 0 0` : '0';
+                      const isNegativeGap = useNegativeMargin;
+                      return html`
+                        <div
+                          class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
+                          style="max-width: 100%; box-sizing: border-box; margin: ${childMargin}; ${isNegativeGap
+                            ? 'padding: 0; border: none; background: transparent;'
+                            : ''}"
                         >
-                        <small
-                          >${localize(
-                            'editor.vertical.empty.all_hidden_desc',
-                            lang,
-                            'Every module in this layout is hidden by its display conditions'
-                          )}</small
-                        >
-                      `
-                    : html`
-                        <span
-                          >${localize(
-                            'editor.vertical.empty.no_modules',
-                            lang,
-                            'No modules added yet'
-                          )}</span
-                        >
-                        <small
-                          >${localize(
-                            'editor.vertical.empty.add_modules',
-                            lang,
-                            'Add modules in the layout builder to see them here'
-                          )}</small
-                        >
-                      `}
-                </div>
-              `}
+                          ${this._renderChildModulePreview(
+                            childModule,
+                            hass,
+                            moduleWithDesign,
+                            (this as any)._currentConfig,
+                            (this as any)._currentPreviewContext
+                          )}
+                        </div>
+                      `;
+                    }
+                  );
+                })()
+              : html`
+                  <div class="empty-layout-message">
+                    ${allChildrenHiddenByLogic
+                      ? html`
+                          <span
+                            >${localize(
+                              'editor.vertical.empty.all_hidden',
+                              lang,
+                              'All modules hidden by logic'
+                            )}</span
+                          >
+                          <small
+                            >${localize(
+                              'editor.vertical.empty.all_hidden_desc',
+                              lang,
+                              'Every module in this layout is hidden by its display conditions'
+                            )}</small
+                          >
+                        `
+                      : html`
+                          <span
+                            >${localize(
+                              'editor.vertical.empty.no_modules',
+                              lang,
+                              'No modules added yet'
+                            )}</span
+                          >
+                          <small
+                            >${localize(
+                              'editor.vertical.empty.add_modules',
+                              lang,
+                              'Add modules in the layout builder to see them here'
+                            )}</small
+                          >
+                        `}
+                  </div>
+                `}
+          </div>
         </div>
-      </div>
-    `, module, hass);
+      `,
+      module,
+      hass
+    );
   }
 
   private _renderChildModulePreview(
@@ -984,7 +868,8 @@ export class UltraVerticalModule extends BaseUltraModule {
     // Support both flat properties (legacy) and nested border object (current editor format)
     const width = moduleWithDesign.border_width ?? moduleWithDesign.border?.width;
     const style = moduleWithDesign.border_style ?? moduleWithDesign.border?.style ?? 'solid';
-    const color = moduleWithDesign.border_color ?? moduleWithDesign.border?.color ?? 'var(--divider-color)';
+    const color =
+      moduleWithDesign.border_color ?? moduleWithDesign.border?.color ?? 'var(--divider-color)';
     const hasStyle = style && style !== 'none';
     const resolvedWidth = this.addPixelUnit(String(width ?? '')) || (hasStyle ? '1px' : '0');
     return `${resolvedWidth} ${style} ${color}`;

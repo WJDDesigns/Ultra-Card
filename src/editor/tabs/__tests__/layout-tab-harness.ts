@@ -27,6 +27,11 @@ export async function loadAllCoreModules(): Promise<void> {
   if (modulesLoaded) return;
   const reg = getModuleRegistry();
   await Promise.all(Object.keys(coreLoaders).map(t => reg.ensureModuleLoaded(t)));
+  // Core modules keep their settings UI in a lazy chunk; tests render tabs
+  // synchronously, so pull those in up front like the editor does.
+  await Promise.all(
+    Object.keys(coreLoaders).map(t => reg.getModule(t)?.preloadSettings?.() ?? Promise.resolve())
+  );
   modulesLoaded = true;
 }
 

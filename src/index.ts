@@ -1,9 +1,8 @@
 import './public-path';
 import './cards/ultra-card';
-import './components/navigation-picker';
-import './components/ultra-color-picker';
 import { CustomCard } from './types';
 import { VERSION } from './version';
+import { preloadDefaultLocale } from './localize/localize';
 
 // Initialize the module registry (manifest-first; no module implementations loaded yet)
 import { getModuleRegistry } from './modules';
@@ -14,6 +13,10 @@ import {
   UC_ULTRA_CARD_HASS_READY,
   runUltraCardVersionBanner,
 } from './utils/uc-pro-banner';
+
+// The English dictionary is its own chunk; start it now so it is in memory
+// before the first card renders (call sites carry the same text as fallbacks).
+void preloadDefaultLocale();
 
 // Editor is lazy-loaded via getConfigElement() unless rollback flag is set.
 if (!isLazyEditorEnabled()) {

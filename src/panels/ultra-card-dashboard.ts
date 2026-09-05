@@ -7,7 +7,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { panelStyles } from './panel-styles';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
-import { localize, onLocaleLoaded } from '../localize/localize';
+import { localize, onLocaleLoaded, preloadDefaultLocale } from '../localize/localize';
 import { reportChunkLoadFailure } from '../utils/uc-chunk-load-error';
 import type { HubProTab } from './tabs/hub-pro-tab';
 import type { HubTab, HubTabDef } from './ultra-card-dashboard-types';
@@ -16,6 +16,9 @@ import {
   PENDING_DOCS_SLUG_KEY,
   type HubNavigateDetail,
 } from './hub-navigation';
+
+// English is a chunk; the panel re-renders via onLocaleLoaded when it lands.
+void preloadDefaultLocale();
 
 const SENSOR_ENTITY = 'sensor.ultra_card_pro_cloud_authentication_status';
 const STORAGE_TAB_KEY = 'ultra_card_hub_tab';

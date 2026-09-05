@@ -25,11 +25,13 @@ const path = require('path');
 const DIST = path.resolve(__dirname, '..', 'dist');
 const ENTRY = path.join(DIST, 'ultra-card.js');
 // Phase 2 (lazy modules) landed the entry at ~1.65 MiB; moving the module
-// settings tabs into the editor chunk took it to ~1.37 MiB. The fail line sits
-// below "entry + three.js" (~+0.5 MiB) so re-inlining any heavy vendor, the
-// settings tabs or a large module group fails CI instead of silently regressing.
-const DEFAULT_BUDGET = 1.85 * 1024 * 1024;
-const WARN_AT = 1.6 * 1024 * 1024;
+// settings tabs into the editor chunk took it to ~1.37 MiB. Phase 3 moved the
+// core modules' settings UI to `uc-core-settings` and the English dictionary
+// to `uc-locale-en`, landing at ~0.81 MiB. The fail line sits below "entry +
+// the English dictionary + core settings" (~+0.5 MiB) so re-inlining either,
+// a heavy vendor, or a large module group fails CI instead of silently regressing.
+const DEFAULT_BUDGET = 1.25 * 1024 * 1024;
+const WARN_AT = 1.0 * 1024 * 1024;
 
 const argIdx = process.argv.indexOf('--budget-bytes');
 const budget = argIdx > -1 ? Number(process.argv[argIdx + 1]) : DEFAULT_BUDGET;
@@ -117,6 +119,7 @@ if (!singleFile) {
     errors.push('locales are not emitted as chunks (uc-locale-de.<hash>.js missing).');
   }
   // Phase 2 shape: non-essential modules, heavy vendors and heavy services are chunks.
+  // Phase 3 shape: the core modules' settings UI and the English dictionary too.
   for (const prefix of [
     'uc-m-graphs.',
     'uc-m-map.',
@@ -127,12 +130,24 @@ if (!singleFile) {
     'uc-vendor-leaflet.',
     'uc-svc-dynamic-weather.',
     'uc-default-image.',
+    'uc-core-settings.',
+    'uc-locale-en.',
   ]) {
     if (!chunks.some(c => c.startsWith(prefix))) {
       errors.push(
         `expected chunk ${prefix}<hash>.js was not emitted (folded back into the entry?).`
       );
     }
+  }
+  // Markers that only exist in code Phase 3 moved out of the entry: an English
+  // dictionary string no source file carries as an inline fallback, and the bar
+  // settings' side-action editor element. Either one in ultra-card.js means the
+  // split regressed.
+  if (entrySource.includes('Control the visual appearance of your card')) {
+    errors.push('ultra-card.js contains the English dictionary (uc-locale-en folded back in).');
+  }
+  if (entrySource.includes('bar-side-actions')) {
+    errors.push('ultra-card.js contains core module settings UI (uc-core-settings folded back in).');
   }
   const moduleChunks = chunks.filter(c => c.startsWith('uc-m-')).length;
   notes.push(`module chunks (uc-m-*): ${moduleChunks}`);
