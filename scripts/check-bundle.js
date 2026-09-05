@@ -9,6 +9,10 @@
  *   - the entry contains a build-machine file:// URL (import.meta.url was
  *     rewritten at build time instead of resolved at runtime)
  *   - dist/ultra-card.js exceeds the core budget
+ *   - hacs.json has content_in_root=true: HACS then keeps ONLY `filename` from
+ *     the release assets and silently drops every chunk (this is what broke
+ *     3.6.0). content_in_root=false puts HACS in release mode, which downloads
+ *     every asset flat into www/community/Ultra-Card/.
  *
  * Usage: node scripts/check-bundle.js [--budget-bytes N]
  * SINGLE_FILE=1 skips the chunk-shape checks (emergency single-file hotfix build).
@@ -42,6 +46,19 @@ if (size > budget) {
   else errors.push(msg);
 } else if (size > WARN_AT) {
   console.log(`::warning::ultra-card.js is ${size} bytes; over the ${WARN_AT}-byte soft target.`);
+}
+
+const hacsManifest = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, '..', 'hacs.json'), 'utf8')
+);
+if (hacsManifest.content_in_root !== false) {
+  errors.push(
+    'hacs.json content_in_root must be false. With content_in_root=true HACS downloads only ' +
+      '`filename` from the release and drops every uc-*.js chunk.'
+  );
+}
+if (hacsManifest.filename !== 'ultra-card.js') {
+  errors.push('hacs.json filename must be ultra-card.js (HACS release-mode detection keys on it).');
 }
 
 const entrySource = fs.readFileSync(ENTRY, 'utf8');

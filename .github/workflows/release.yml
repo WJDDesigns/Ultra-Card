@@ -52,24 +52,6 @@ jobs:
           ls -la *.js | head -20
           echo "Total uc-* chunk files: $(ls uc-*.js 2>/dev/null | wc -l)"
 
-      - name: Create Release Archive
-        run: |
-          mkdir -p release
-          cp ultra-card.js release/
-          cp ultra-card.js.LICENSE.txt release/ 2>/dev/null || true
-          cp ultra-card-panel.js release/ 2>/dev/null || true
-          cp ultra-card-panel.js.LICENSE.txt release/ 2>/dev/null || true
-          cp uc-*.js release/ 2>/dev/null || true
-          cp uc-*.js.LICENSE.txt release/ 2>/dev/null || true
-          cp hacs.json release/
-          cp README.md release/
-          cp license release/
-          cd release
-          zip -r ../ultra-card-${{ github.ref_name }}.zip .
-          cd ..
-          echo "Archive contents:"
-          unzip -l ultra-card-${{ github.ref_name }}.zip
-
       - name: Extract version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
@@ -161,10 +143,14 @@ jobs:
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
           generate_release_notes: false
           body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
+          # Every asset listed here is downloaded flat into each user's
+          # www/community/Ultra-Card/ by HACS (content_in_root=false ->
+          # release mode). Ship only files the browser needs; no zip.
           files: |
-            ultra-card-${{ github.ref_name }}.zip
             ultra-card.js
+            ultra-card.js.LICENSE.txt
             ultra-card-panel.js
+            ultra-card-panel.js.LICENSE.txt
             uc-*.js
             uc-*.js.LICENSE.txt
 

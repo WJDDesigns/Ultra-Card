@@ -21,25 +21,47 @@
   folded back into the entry, on `file:///` leaks, on entry references to
   chunks that were not emitted, and on the entry exceeding the core budget.
 
-## How HACS actually distributes a plugin (verified against `hacs/integration`)
+## How HACS actually distributes a plugin (verified against HACS 2.0.5)
 
-`custom_components/hacs/repositories/base.py`, `gather_files_to_download()`:
+Traced in `custom_components/hacs/repositories/{base,plugin}.py` and confirmed
+against a live HACS install of 3.9.0, which received **only** `ultra-card.js`
+even though `uc-283.js` / `uc-437.js` were release assets.
 
-1. Installing a **tagged release** (`should_try_releases` is true for plugins
-   with releases when the ref is not the default branch): HACS downloads
-   **every asset attached to that release**. `filename` in `hacs.json` only
-   decides which file becomes the Lovelace resource URL.
-2. Installing the **default branch**: with `content_in_root: true`, HACS
-   downloads every `.js` file in the repository root from the git tree.
-   Root `uc-*.js` are gitignored, so this path would miss chunks. `hacs.json`
-   therefore sets `hide_default_branch: true`; releases are the only channel.
-3. `zip_release` is integrations-only (HACS docs). Not applicable to plugins.
+1. `plugin.py` `update_filenames()`: with `content_in_root: false`, HACS looks
+   for `filename` among the **latest release's assets**. Found → `remote =
+"release"` and `content.single = True`. With `content_in_root: true` the
+   release lookup is skipped and `remote = ""` (repo root).
+2. `base.py` `download_content(version)`: in release mode the file list is
+   `release_contents(version)` = **every asset of the installed tag**. Then:
+
+   ```python
+   for content in contents:
+       if self.repository_manifest.content_in_root and self.repository_manifest.filename:
+           if content.name != self.repository_manifest.filename:
+               continue
+   ```
+
+   So `content_in_root: true` + `filename` = **only `ultra-card.js` is kept**.
+   This is the real reason 3.6.0 (and the never-loading Dynamic Weather worker
+   since then) had no chunks on disk. `hacs.json` must keep
+   `content_in_root: false`; `scripts/check-bundle.js` enforces it.
+
+3. `dowload_repository_content()`: with `single`, every asset is written flat
+   into `www/community/Ultra-Card/<asset name>`, and `async_save_file` writes a
+   `.gz` twin for each `.js`. Therefore **every release asset lands in every
+   user's www folder**: ship only `ultra-card.js`, `ultra-card-panel.js`,
+   `uc-*.js` and their `LICENSE.txt` files (the release zip was dropped).
+4. In `single` mode HACS does **not** back up / wipe the folder before an
+   update, so old hashed chunks accumulate until uninstall. Harmless (never
+   referenced), but expect the folder to grow over releases.
+5. Default-branch installs (`remote = ""`) copy root `.js` files from the git
+   tree; root `uc-*.js` are gitignored, so `hide_default_branch: true` keeps
+   releases the only channel. `zip_release` is integrations-only.
 
 HACS serves `www/community/` at `/hacsfiles/` with `Cache-Control: max-age=2678400`
 (31 days) when Lovelace is in storage mode. The `?hacstag=` query on the main
 resource is the cache-buster for `ultra-card.js`; chunks have no hacstag, so
-**the content hash in the chunk filename is mandatory**. On update HACS replaces
-the folder, so stale hashes disappear from disk.
+**the content hash in the chunk filename is mandatory**.
 
 Ultra Card Connect serves the panel from `/ultra_card_pro_cloud_panel/` with
 `cache_headers=True` and registers it via `module_url`, so the same rules apply:
@@ -55,9 +77,11 @@ The same defect rewrote the Dynamic Weather worker URL to a build-machine `file:
 path, which is why the worker never ran in production and always fell back to the
 main thread.
 
-The earlier conclusion that "HACS only distributes one file" was wrong; every
-release since the worker chunks were added has shipped `uc-283.js` / `uc-437.js`
-as assets and HACS has been placing them next to `ultra-card.js`.
+On top of that, `content_in_root: true` made HACS discard every asset except
+`ultra-card.js` (see above), so even a correctly resolved chunk URL would have
+404'd. Both defects are fixed: ESM output for URL resolution, and
+`content_in_root: false` for distribution. The earlier folk conclusion "HACS only
+distributes one file" was a symptom of the manifest, not a HACS limitation.
 
 ## Local verification
 
