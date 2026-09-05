@@ -32,6 +32,22 @@ const singleFile = process.env.SINGLE_FILE === '1';
 const errors = [];
 const notes = [];
 
+function parseIdMap(src) {
+  // {8:"editor",150:"locale-nn"} -> Map(id -> value); ids may also be quoted.
+  const map = new Map();
+  for (const m of src.matchAll(/"?([A-Za-z0-9_-]+)"?:"([^"]+)"/g)) map.set(m[1], m[2]);
+  return map;
+}
+
+function resolveRuntimeChunkNames(source) {
+  const re = /"uc-"\+\((\{[^}]*\})\[\w\]\|\|\w\)\+"\."\+(\{[^}]*\})\[\w\]\+"\.js"/;
+  const m = source.match(re);
+  if (!m) return [];
+  const names = parseIdMap(m[1]);
+  const hashes = parseIdMap(m[2]);
+  return [...hashes].map(([id, hash]) => `uc-${names.get(id) || id}.${hash}.js`);
+}
+
 if (!fs.existsSync(ENTRY)) {
   console.error(`::error::${ENTRY} not found. Run the production build first.`);
   process.exit(1);
@@ -80,12 +96,20 @@ if (!singleFile) {
   if (!chunks.some(c => c.startsWith('uc-locale-de.'))) {
     errors.push('locales are not emitted as chunks (uc-locale-de.<hash>.js missing).');
   }
-  // Every hash referenced by the entry must exist on disk (otherwise it 404s in HA).
-  const referenced = new Set(entrySource.match(/uc-[A-Za-z0-9_-]+\.[0-9a-f]{8}\.js/g) || []);
+  // Every chunk the entry can request must exist on disk (otherwise it 404s in HA).
+  // Webpack does not embed full filenames; it builds them from two maps in the
+  // runtime's `__webpack_require__.u`:  "uc-"+({id:"name"}[e]||e)+"."+{id:"hash"}[e]+".js"
+  const referenced = resolveRuntimeChunkNames(entrySource);
+  if (referenced.length === 0) {
+    errors.push(
+      'could not locate the webpack chunk filename map in ultra-card.js (runtime shape changed?).'
+    );
+  }
   for (const ref of referenced) {
     if (!fs.existsSync(path.join(DIST, ref)))
       errors.push(`entry references ${ref} but it was not emitted.`);
   }
+  notes.push(`chunks reachable from entry: ${referenced.length}`);
 } else {
   notes.push('SINGLE_FILE=1: chunk-shape checks skipped.');
 }
