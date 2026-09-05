@@ -43,7 +43,7 @@ import { getModuleRegistry } from '../modules';
 import { layoutRequiresBroadHassUpdates } from '../utils/uc-broad-hass-updates';
 import { collectConfigEntityIds, anyEntityChanged } from '../utils/uc-config-entity-ids';
 import { collectRuntimeEntityIds } from '../utils/uc-runtime-entity-ids';
-import { localize } from '../localize/localize';
+import { localize, onLocaleLoaded } from '../localize/localize';
 import { ucToastService } from '../services/uc-toast-service';
 
 type EditorTab = 'layout' | 'settings';
@@ -69,6 +69,7 @@ export class UltraCardEditor extends LitElement {
   @property({ attribute: false }) public config!: UltraCardConfig;
   @state() private _activeTab: EditorTab = 'layout';
   @state() private _configDebounceTimeout: number | undefined;
+  private _localeUnsub: (() => void) | undefined;
   @state() private _isFullScreen: boolean = false;
   /**
    * Reflected to `data-settings-open` on the host so `:host([data-settings-open])`
@@ -379,6 +380,8 @@ export class UltraCardEditor extends LitElement {
   override connectedCallback() {
     super.connectedCallback();
 
+    this._localeUnsub = onLocaleLoaded(() => this.requestUpdate());
+
     // Initialize Pro settings from localStorage
     this._skipDefaultModules = UltraCardEditor.getSkipDefaultModulesSetting();
     try {
@@ -487,6 +490,8 @@ export class UltraCardEditor extends LitElement {
 
   override disconnectedCallback() {
     super.disconnectedCallback();
+    this._localeUnsub?.();
+    this._localeUnsub = undefined;
     // Cancel any pending debounced config-changed so a stale config from this
     // editing session can never fire into a later session (issue #103).
     if (this._configDebounceTimeout) {

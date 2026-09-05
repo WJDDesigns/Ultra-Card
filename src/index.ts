@@ -1,3 +1,4 @@
+import './public-path';
 import './cards/ultra-card';
 import './components/navigation-picker';
 import './components/ultra-color-picker';
@@ -8,6 +9,7 @@ import { VERSION } from './version';
 import { getModuleRegistry } from './modules';
 import { scheduleBackgroundModulePreloads } from './utils/uc-module-preload-scheduler';
 import { isLazyEditorEnabled } from './utils/uc-lazy-load-flags';
+import { loadUltraCardEditor } from './editor/load-ultra-card-editor';
 import {
   UC_ULTRA_CARD_HASS_READY,
   runUltraCardVersionBanner,
@@ -15,7 +17,7 @@ import {
 
 // Editor is lazy-loaded via getConfigElement() unless rollback flag is set.
 if (!isLazyEditorEnabled()) {
-  void import(/* webpackChunkName: "editor" */ './editor/ultra-card-editor');
+  void loadUltraCardEditor();
 }
 
 const moduleRegistry = getModuleRegistry();

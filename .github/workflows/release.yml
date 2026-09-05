@@ -41,6 +41,9 @@ jobs:
       - name: Copy chunk files to root for HACS serving
         run: |
           echo "Copying lazy-load chunk files to root..."
+          # Chunk names are content-hashed; drop anything stale so the release
+          # asset glob (uc-*.js) only ships chunks referenced by this build.
+          rm -f uc-*.js uc-*.js.LICENSE.txt
           cp dist/uc-*.js . 2>/dev/null || true
           cp dist/uc-*.js.LICENSE.txt . 2>/dev/null || true
           cp dist/ultra-card-panel.js . 2>/dev/null || true

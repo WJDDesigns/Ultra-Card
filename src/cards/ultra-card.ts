@@ -67,6 +67,7 @@ import { externalCardContainerService } from '../services/external-card-containe
 import { ucCardInstanceRegistry } from '../services/uc-card-instance-registry';
 import { releaseUnusedModuleInstances } from '../services/uc-module-lifecycle-service';
 import { ucTimeMachineService } from '../services/uc-time-machine-service';
+import { ensureLocaleLoaded, onLocaleLoaded } from '../localize/localize';
 
 @customElement('ultra-card')
 export class UltraCard extends LitElement {
@@ -84,6 +85,11 @@ export class UltraCard extends LitElement {
     // Only update external card containers and logic service if hass object reference changed
     // (HA creates new objects when state changes, so reference check is sufficient)
     if (value && value !== oldHass) {
+      // Start fetching the user's locale chunk on first hass so strings are
+      // translated by the time most cards paint (English until it lands).
+      if (value.locale?.language && value.locale.language !== oldHass?.locale?.language) {
+        void ensureLocaleLoaded(value.locale.language);
+      }
       externalCardContainerService.setHass(value);
       logicService.setHass(value);
       try {
@@ -222,6 +228,7 @@ export class UltraCard extends LitElement {
   /** True while a Time Machine module is scrubbed into the past (this render). */
   private _timeTravelActive = false;
   private _timeMachineUnsub: (() => void) | undefined;
+  private _localeUnsub: (() => void) | undefined;
   private _tmFallbackKey = '';
 
   /** Normalize the Time Machine mode (maps deprecated pre-release scope values). */
@@ -362,6 +369,9 @@ export class UltraCard extends LitElement {
 
     // Re-render when a Time Machine scrub/playback tick changes the timeline.
     this._timeMachineUnsub = ucTimeMachineService.subscribe(() => this.requestUpdate());
+
+    // Re-render once a lazily fetched locale chunk lands.
+    this._localeUnsub = onLocaleLoaded(() => this.requestUpdate());
 
     // Same pattern for animated clock intervals + tick listeners (multi-card safe).
     clockUpdateService.registerConsumer();
@@ -592,6 +602,8 @@ export class UltraCard extends LitElement {
     // Tear down Time Machine subscription and any active scrub contexts
     this._timeMachineUnsub?.();
     this._timeMachineUnsub = undefined;
+    this._localeUnsub?.();
+    this._localeUnsub = undefined;
     if (this._configCache?.timeMachineModules?.length) {
       for (const { id } of this._configCache.timeMachineModules) {
         ucTimeMachineService.releaseModule(id);

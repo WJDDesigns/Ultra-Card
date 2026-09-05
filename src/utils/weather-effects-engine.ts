@@ -179,7 +179,9 @@ export class WeatherEffectsEngine {
     }
 
     try {
-      this.worker = new Worker(new URL('../workers/dynamic-weather-worker.ts', import.meta.url));
+      this.worker = new Worker(new URL('../workers/dynamic-weather-worker.ts', import.meta.url), {
+        type: 'module',
+      });
       this.worker.onmessage = (event: MessageEvent<WeatherWorkerResponse>) => {
         if (event.data.type === 'READY') {
           this.workerState = 'ready';

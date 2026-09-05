@@ -1,12 +1,13 @@
 /**
  * Ultra Card Hub - Home Assistant sidebar panel (grouped navigation).
  */
+import '../public-path';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { panelStyles } from './panel-styles';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
-import { localize } from '../localize/localize';
+import { localize, onLocaleLoaded } from '../localize/localize';
 import type { HubProTab } from './tabs/hub-pro-tab';
 import type { HubTab, HubTabDef } from './ultra-card-dashboard-types';
 import {
@@ -65,6 +66,7 @@ export class UltraCardPanel extends LitElement {
   private _tabLoadPromises = new Map<HubTab, Promise<void>>();
 
   private _authListener: ((user: CloudUser | null) => void) | undefined;
+  private _localeUnsub: (() => void) | undefined;
   private _hubKeydownHandler = (e: KeyboardEvent): void => {
     if (e.key !== '?') return;
     const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
@@ -251,6 +253,7 @@ export class UltraCardPanel extends LitElement {
       this._cloudUser = user;
     };
     ucCloudAuthService.addListener(this._authListener);
+    this._localeUnsub = onLocaleLoaded(() => this.requestUpdate());
     this.addEventListener(HUB_NAVIGATE_EVENT, this._onNavigateTab as EventListener);
     document.addEventListener(HUB_NAVIGATE_EVENT, this._onNavigateTab as EventListener);
     document.addEventListener('keydown', this._hubKeydownHandler);
@@ -258,6 +261,8 @@ export class UltraCardPanel extends LitElement {
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    this._localeUnsub?.();
+    this._localeUnsub = undefined;
     this._mql?.removeEventListener('change', this._onMqlChange);
     this._mql = undefined;
     if (this._authListener) {

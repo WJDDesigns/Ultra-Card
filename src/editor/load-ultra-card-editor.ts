@@ -1,14 +1,18 @@
 /**
  * Memoized dynamic import boundary for the visual editor.
- * Eager-bundled: HACS only distributes ultra-card.js, so the editor cannot
- * live in a separate network-loaded chunk. Keeps the async API surface.
+ * The editor (layout tab, design tabs, CodeMirror, TipTap) ships as its own
+ * chunk and is only fetched when Home Assistant calls getConfigElement().
+ * A failed fetch clears the memo so the next attempt retries the network.
  */
 
 let loadPromise: Promise<typeof import('./ultra-card-editor')> | undefined;
 
 export function loadUltraCardEditor(): Promise<typeof import('./ultra-card-editor')> {
   if (!loadPromise) {
-    loadPromise = import(/* webpackMode: "eager" */ './ultra-card-editor');
+    loadPromise = import(/* webpackChunkName: "editor" */ './ultra-card-editor').catch(err => {
+      loadPromise = undefined;
+      throw err;
+    });
   }
   return loadPromise;
 }

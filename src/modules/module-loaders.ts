@@ -2,9 +2,12 @@ import type { UltraModule } from './base-module';
 
 /**
  * Loader: returns the module instance when needed.
- * Uses eager mode so everything is bundled into ultra-card.js: HACS only
- * distributes the single file named in hacs.json, so network-loaded chunks
- * 404 for every HACS install (3.6.0 regression). See docs/bundle-strategy.md.
+ *
+ * Phase 1 of the multi-file build keeps every module eager (inside
+ * ultra-card.js) on purpose: it proves chunk distribution with only the
+ * editor, locale, and worker chunks in play. Phase 2 replaces these
+ * `webpackMode: "eager"` hints with grouped `webpackChunkName`s so heavy
+ * modules (three.js, leaflet, graphs) load on demand. See docs/bundle-strategy.md.
  */
 export type ModuleLoader = () => Promise<UltraModule>;
 

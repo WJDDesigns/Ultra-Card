@@ -51,22 +51,24 @@ generateVersionJs();
 
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
+  // SINGLE_FILE=1 restores the pre-3.10 self-contained bundle (emergency hotfix path).
+  const singleFile = process.env.SINGLE_FILE === '1';
 
   return {
     devtool: isProduction ? 'hidden-source-map' : 'eval-source-map',
+    // Native ESM output. HA loads Lovelace resources via dynamic import(), so
+    // there is no <script> tag; only import.meta.url can locate sibling chunks.
+    // See docs/bundle-strategy.md for the HACS distribution facts.
+    target: ['web', 'es2020'],
+    experiments: { outputModule: true },
     entry: {
       'ultra-card': './src/index.ts',
       'ultra-card-panel': './src/panels/ultra-card-dashboard.ts',
     },
     module: {
-      // HACS only distributes the single file named in hacs.json (ultra-card.js),
-      // so async chunks 404 on every HACS install. Additionally, HA loads the
-      // resource via dynamic import() (no script tag), which breaks webpack's
-      // publicPath:'auto' chunk URL resolution (it falls back to an unrelated
-      // <script> tag on the page). Force ALL dynamic imports to be eager-bundled.
       parser: {
         javascript: {
-          dynamicImportMode: 'eager',
+          dynamicImportMode: singleFile ? 'eager' : 'lazy',
         },
       },
       rules: [
@@ -98,7 +100,20 @@ module.exports = (env, argv) => {
     output: {
       filename: '[name].js',
       path: path.resolve(__dirname, 'dist'),
-      chunkFilename: 'uc-[name].js',
+      // Entry files keep fixed names (HACS busts them with ?hacstag=). Chunks
+      // have no hacstag and /hacsfiles/ is served with a 31-day cache, so the
+      // content hash is what makes updates take effect.
+      chunkFilename: 'uc-[name].[contenthash:8].js',
+      module: true,
+      library: { type: 'module' },
+      chunkFormat: 'module',
+      chunkLoading: 'import',
+      workerChunkLoading: 'import',
+      // Resolved from import.meta.url at runtime; src/public-path.ts pins it explicitly.
+      publicPath: 'auto',
+      clean: {
+        keep: /^(assets\/|bundle-report\.html|version\.js|version\.d\.ts)/,
+      },
     },
     optimization: {
       usedExports: true,
@@ -207,7 +222,24 @@ module.exports = (env, argv) => {
                 }
 
                 // Copy emitted lazy chunks so manifest-first module loaders can resolve in HA.
+                // Prune stale hashed chunks first so the HA folder mirrors dist/.
                 const distRootFiles = fs.readdirSync(path.resolve(__dirname, 'dist'));
+                const isChunkFile = file =>
+                  file.startsWith('uc-') && (file.endsWith('.js') || file.endsWith('.js.LICENSE.txt'));
+                const pruneStaleChunks = dir => {
+                  const current = new Set(distRootFiles.filter(isChunkFile));
+                  for (const name of fs.readdirSync(dir)) {
+                    if (isChunkFile(name) && !current.has(name)) {
+                      try {
+                        fs.unlinkSync(path.join(dir, name));
+                      } catch (e) {
+                        // ignore
+                      }
+                    }
+                  }
+                };
+                pruneStaleChunks(haDeployPath);
+                if (fs.existsSync(panelIntegrationPath)) pruneStaleChunks(panelIntegrationPath);
                 distRootFiles
                   .filter(
                     file =>

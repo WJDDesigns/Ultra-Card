@@ -3,5 +3,6 @@
   "filename": "ultra-card.js",
   "render_readme": true,
   "content_in_root": true,
+  "hide_default_branch": true,
   "homeassistant": "2024.1.0"
 }

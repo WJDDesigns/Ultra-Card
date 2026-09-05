@@ -30,10 +30,5 @@ jobs:
       - name: Release checks and production build
         run: npm run release:check
 
-      - name: Bundle size check
-        run: |
-          SIZE=$(stat -c%s dist/ultra-card.js)
-          echo "Bundle size: $SIZE bytes"
-          if [ "$SIZE" -gt 8388608 ]; then
-            echo "::warning::Bundle size ($SIZE bytes) exceeds 8MB. Consider lazy-loading more modules."
-          fi
+      - name: Bundle policy check
+        run: node scripts/check-bundle.js
