@@ -1,5 +1,27 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.10.0-beta1
+
+The first 3.10.0 beta is all about speed. Ultra Card now arrives in pieces instead of one giant file: the part every dashboard loads is 87% smaller than in 3.9.0, and everything else — modules, the editor, translations, the heavy 3D and map libraries — is fetched only when a dashboard or the editor actually needs it. Nothing about how you build cards changes. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **Made Ultra Card 87% smaller to download** - The file every dashboard has to load before any card appears went from 12.5 MB to 1.6 MB (3 MB down to 0.4 MB compressed). Dashboards open faster, especially on phones, tablets, wall panels and remote connections, and the browser holds far less in memory
+- **Modules now load only when a dashboard uses them** - Each of the 94 modules is its own small file that your browser fetches the first time a card needs it, then keeps cached. A dashboard with a couple of gauges no longer downloads the map, vacuum, calendar, UniFi and eighty other modules it never shows. The everyday modules — Text, Icon, Image, Info, Bar, Button, Separator, Horizontal and Vertical — are still built in, so common cards appear instantly with no placeholder
+- **The editor now loads only when you open it** - The visual editor, the rich text editor, the template editor and the code libraries behind them are downloaded the first time you edit a card, not on every dashboard view
+- **Translations now load only for your language** - English is built in; the other fourteen languages are fetched on demand instead of all shipping to everyone
+- **Heavy libraries stay out of the way until a card needs them** - The 3D engine behind Dynamic Weather and Living Canvas, the map library, the slider engine, the QR generator and the bundled default image are fetched only by cards that use those modules
+- **Made the Ultra Card Hub panel 93% smaller** - The Hub in the sidebar loads 0.3 MB instead of 4.2 MB, and its tabs load as you open them
+- **Updates no longer fight the browser cache** - Every piece has a fingerprinted filename, so after an update your browser fetches the new files instead of running a stale copy for up to a month
+
+### 🐛 Bug Fixes
+
+- **Fixed Dynamic Weather's background helper never starting on HACS installs** - Since 3.6.0 the file that runs weather effects off the main thread could not be found when Ultra Card was installed through HACS, so effects fell back to the slower path. It now loads from the right place
+
+---
+
 ## Version 3.9.0
 
 The stable 3.9.0 release adds **Visible to Users**. You can show or hide modules, rows, columns, icons, or the whole card for specific Home Assistant users. Same idea as Lovelace's Visibility → User option, just inside Ultra Card. Thanks for the request in [#123](https://github.com/WJDDesigns/Ultra-Card/issues/123).
