@@ -5,12 +5,15 @@
  * A failed fetch clears the memo so the next attempt retries the network.
  */
 
+import { reportChunkLoadFailure } from '../utils/uc-chunk-load-error';
+
 let loadPromise: Promise<typeof import('./ultra-card-editor')> | undefined;
 
 export function loadUltraCardEditor(): Promise<typeof import('./ultra-card-editor')> {
   if (!loadPromise) {
     loadPromise = import(/* webpackChunkName: "editor" */ './ultra-card-editor').catch(err => {
       loadPromise = undefined;
+      reportChunkLoadFailure(err, 'editor');
       throw err;
     });
   }

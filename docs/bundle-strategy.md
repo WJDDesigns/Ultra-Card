@@ -8,8 +8,15 @@
 - **Output format:** native ES modules (`experiments.outputModule`, `output.module`,
   `chunkFormat: 'module'`, `chunkLoading: 'import'`). Chunks are loaded with a
   relative `import("./uc-….js")` resolved by the browser against the importing
-  module's URL. `src/public-path.ts` additionally pins webpack's public path from
-  `import.meta.url` (first import of every entry) for the worker and asset paths.
+  module's URL. The public path (worker and asset URLs) comes from webpack's own
+  `publicPath: 'auto'` runtime, which derives the directory from
+  `import.meta.url`; `src/public-path.ts` (first import of every entry) only
+  normalises it defensively. **Never write `new URL('./', import.meta.url)` or a
+  bare `import.meta.url` in source**: the first is webpack's asset syntax (it
+  emitted `src/index.ts` as a hashed `.ts` asset and pointed the public path at
+  that file, so the Dynamic Weather worker URL 404'd in 3.10.0-beta1); the
+  second is replaced at build time with a `file://` path. `check-bundle.js`
+  fails on both.
 - **What is a chunk today (Phase 2):**
   - **Eager, inside `ultra-card.js`:** the 10 everyday modules (text, icon,
     image, info, bar, button, separator, horizontal, vertical, pagebreak), the
@@ -30,8 +37,32 @@
   - **`uc-default-image.*`:** the 180 KB base64 default image, fetched only when
     an image module is on "default" (`src/utils/default-image.ts`, rendered via
     lit `until`).
-  - The editor (`uc-editor.*`, ~1.7 MB), one chunk per non-English locale,
+  - The editor (`uc-editor.*`, ~1.9 MB), one chunk per non-English locale,
     the Dynamic Weather worker, and Hub panel tabs, as in Phase 1.
+  - **Module settings tabs live in the editor chunk (beta2).** `src/tabs/` keeps
+    only shims: `GlobalActionsTab.render()`, `GlobalLogicTab.render()` and
+    `GlobalDesignTab.render()` mount `<ultra-global-actions-tab>`,
+    `<ultra-global-logic-tab>` and `<ultra-global-design-tab>`; the elements are
+    defined in `src/editor/global-*-tab(-element).ts`, imported by
+    `layout-tab.ts`. The logic tab renders into light DOM on purpose (its markup
+    depends on the layout tab's stylesheet) and takes a fresh `args` object per
+    parent render so it re-renders exactly as the inlined template did. The
+    runtime helpers modules call from `renderPreview`
+    (`GlobalActionsTab.getClickableClass` & co.) stay in the shim.
+- **Loading behaviour:**
+  - `setConfig` calls `prefetchModuleChunksForLayout()` before validation: every
+    lazy type in the config, nested containers included, starts its fetch in one
+    parallel burst instead of the render-time waterfall (parent chunk → render →
+    child skeleton → child chunk).
+  - **Version skew.** A failed lazy `import()` (module, service, editor, locale,
+    default image, Hub tab) goes through `reportChunkLoadFailure()` in
+    `src/utils/uc-chunk-load-error.ts`. It recognises the engines' failed-import
+    messages, HEADs the failed URL (404 → the tab runs a stale entry after an
+    update; unreachable → connectivity) and shows one Home Assistant toast per
+    page ("Ultra Card was updated. Reload the page to finish." with a Reload
+    action; falls back to `ucToastService` outside HA). The per-module error
+    tile and the editor's settings placeholder say the same and offer Reload
+    instead of a retry that would 404 again.
 - **Rules that keep the entry small** (each one is something that regressed
   during Phase 2 and was caught by webpack stats):
   - Settings-only custom elements (`ultra-template-editor`, `ultra-wysiwyg-editor`,
@@ -48,7 +79,8 @@
   module / vendor / service chunks being folded back into the entry, on
   `file:///` leaks, on entry-reachable chunks that were not emitted (resolved
   from webpack's runtime id→hash map), on `hacs.json` regressing
-  `content_in_root`, and on the entry exceeding 2.25 MiB (warn at 1.9 MiB).
+  `content_in_root`, on a stray hashed asset / file-based public path (see
+  above), and on the entry exceeding 1.85 MiB (warn at 1.6 MiB).
 
 ## How HACS actually distributes a plugin (verified against HACS 2.0.5)
 
@@ -138,21 +170,18 @@ variable is set. Use only for a hotfix while a distribution problem is diagnosed
 
 ## Results
 
-|                           | 3.9.0    | Phase 1 | Phase 2 |
-| ------------------------- | -------- | ------- | ------- |
-| `ultra-card.js` raw       | 12.54 MB | 7.65 MB | 1.64 MB |
-| `ultra-card.js` gzip      | 3.05 MB  | 1.85 MB | 0.36 MB |
-| `ultra-card-panel.js` raw | 4.16 MB  | 0.28 MB | 0.28 MB |
+|                           | 3.9.0    | Phase 1 | Phase 2 (beta1) | beta2   |
+| ------------------------- | -------- | ------- | --------------- | ------- |
+| `ultra-card.js` raw       | 12.54 MB | 7.65 MB | 1.64 MB         | 1.43 MB |
+| `ultra-card.js` gzip      | 3.05 MB  | 1.85 MB | 0.36 MB         | 0.33 MB |
+| `ultra-card-panel.js` raw | 4.16 MB  | 0.28 MB | 0.28 MB         | 0.28 MB |
 
 ## Later
 
-- Module settings tabs (`src/tabs/global-design-tab.ts` etc., ~190 KB
-  pre-minify) are still reachable from `base-module.ts` and therefore in the
-  entry. Moving them behind a lazy boundary needs `renderDesignTab` & co. to
-  tolerate an async tab implementation.
-- Version-skew handler: a failed chunk `import()` right after a HACS update
-  (old entry cached, new hashes on disk) should surface one "Ultra Card was
-  updated, reload" toast instead of a skeleton.
-- Consider prefetching `uc-m-*` chunks for the types present in the config on
-  idle, so a first cold view of a busy card fetches in parallel rather than as
-  each module renders.
+- The largest remaining entry residents are the eager modules themselves
+  (`bar-module` 328 KB and `icon-module` 294 KB pre-minify), `en.json` (214 KB)
+  and DOMPurify (122 KB). Splitting bar/icon settings UI from their preview
+  code is the next meaningful cut; the English dictionary could be split into
+  runtime vs. editor keys.
+- `uc-user-visibility-section.ts` (10 KB) is still in the entry because
+  `icon-module` imports it directly; route it through the logic tab element.

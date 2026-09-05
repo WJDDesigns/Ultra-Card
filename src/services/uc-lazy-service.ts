@@ -6,6 +6,8 @@
  * card calls `load()` when such a module is present, and `peek()` on teardown
  * paths where "never loaded" simply means "nothing to clean up".
  */
+import { reportChunkLoadFailure } from '../utils/uc-chunk-load-error';
+
 export interface LazyService<T> {
   /** Start (or join) the chunk load. Rejections reset state so a later call retries. */
   load(): Promise<T>;
@@ -13,7 +15,7 @@ export interface LazyService<T> {
   peek(): T | undefined;
 }
 
-export function createLazyService<T>(importer: () => Promise<T>): LazyService<T> {
+export function createLazyService<T>(importer: () => Promise<T>, name = 'service'): LazyService<T> {
   let instance: T | undefined;
   let inflight: Promise<T> | undefined;
 
@@ -28,6 +30,7 @@ export function createLazyService<T>(importer: () => Promise<T>): LazyService<T>
           })
           .catch(err => {
             inflight = undefined;
+            reportChunkLoadFailure(err, name);
             throw err;
           });
       }

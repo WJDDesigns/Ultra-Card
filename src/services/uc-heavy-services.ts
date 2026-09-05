@@ -27,18 +27,21 @@ export const lazyDynamicWeatherService: LazyService<DynamicWeatherServiceApi> = 
   () =>
     import(/* webpackChunkName: "svc-dynamic-weather" */ './uc-dynamic-weather-service').then(
       m => m.ucDynamicWeatherService
-    )
+    ),
+  'dynamic weather service'
 );
 
 /** Not three.js, but ~70 KB minified that only navigation-module cards need. */
 export const lazyNavigationService: LazyService<NavigationServiceApi> = createLazyService(() =>
   import(/* webpackChunkName: "svc-navigation" */ './uc-navigation-service').then(
     m => m.ucNavigationService
-  )
+  ),
+  'navigation service'
 );
 
 export const lazyLivingCanvasService: LazyService<LivingCanvasServiceApi> = createLazyService(() =>
   import(/* webpackChunkName: "svc-living-canvas" */ './uc-living-canvas-service').then(
     m => m.ucLivingCanvasService
-  )
+  ),
+  'living canvas service'
 );

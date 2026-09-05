@@ -1,4 +1,5 @@
 import * as en from '../translations/en.json';
+import { reportChunkLoadFailure } from '../utils/uc-chunk-load-error';
 
 /**
  * English ships inside the core bundle. Every other locale is its own chunk,
@@ -83,6 +84,7 @@ export function ensureLocaleLoaded(lang: string): Promise<void> {
       pending.delete(key);
       // Don't hammer the network on every render; English fallback is acceptable.
       failed.add(key);
+      reportChunkLoadFailure(err, `locale ${key}`);
       if (process.env.NODE_ENV !== 'production') {
         console.warn(`Ultra Card: failed to load locale "${key}"`, err);
       }

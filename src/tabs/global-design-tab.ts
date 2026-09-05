@@ -1,7 +1,6 @@
 import { html, TemplateResult } from 'lit';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { CardModule } from '../types';
-import '../editor/global-design-tab';
 import {
   applyModuleDesignUpdates,
   extractModuleDesignProperties,
@@ -10,6 +9,10 @@ import {
 /**
  * GlobalDesignTab — thin shim that mounts the canonical
  * `<ultra-global-design-tab>` for module Design tabs.
+ *
+ * The element is defined by `src/editor/global-design-tab.ts`, imported from
+ * the editor chunk (layout tab), not here: importing it from this file would
+ * drag ~200 KB of design-tab source into ultra-card.js via base-module.
  */
 export class GlobalDesignTab {
   static render<M extends CardModule>(

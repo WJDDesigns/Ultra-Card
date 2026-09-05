@@ -24,7 +24,11 @@ import { getModuleRegistry, type ModuleManifest } from '../../modules/module-reg
 import { BaseUltraModule } from '../../modules/base-module';
 import { cleanupExternalCardCache } from '../../modules/external-card-module';
 import { UcHoverEffectsService } from '../../services/uc-hover-effects-service';
+// Module settings tab elements are defined here (editor chunk). Modules and the
+// src/tabs shims only render the tags, so none of this reaches ultra-card.js.
 import '../global-design-tab';
+import '../global-logic-tab-element';
+import '../global-actions-tab-element';
 import { DesignProperties } from '../global-design-tab';
 import { GlobalLogicTab } from '../../tabs/global-logic-tab';
 import { logicService } from '../../services/logic-service';
@@ -38,6 +42,7 @@ import { getImageUrl, uploadImage, SUPPORTED_IMAGE_ACCEPT } from '../../utils/im
 import { localize } from '../../localize/localize';
 import { moduleDocsSlug, openHubDocs } from '../../panels/hub-navigation';
 import { Z_INDEX } from '../../utils/uc-z-index';
+import { isChunkLoadError } from '../../utils/uc-chunk-load-error';
 import { promoteToTopLayer } from '../../utils/uc-top-layer';
 import { ucToastService } from '../../services/uc-toast-service';
 import {
@@ -24224,24 +24229,31 @@ export class LayoutTab extends LitElement {
         </div>
       `;
     }
+    const staleBundle = !!loadError && isChunkLoadError(loadError);
     return html`
       <div class="settings-section">
         <div class="error-message">
           <ha-icon icon="mdi:alert-circle"></ha-icon>
           <span>
-            ${loadError
-              ? `Module failed to load: ${module.type}`
-              : `No settings available for module type: ${module.type}`}
+            ${staleBundle
+              ? 'Ultra Card was updated. Reload the page to finish.'
+              : loadError
+                ? `Module failed to load: ${module.type}`
+                : `No settings available for module type: ${module.type}`}
           </span>
           ${loadError
             ? html`<button
                 class="uc-module-settings-retry"
                 @click=${() => {
+                  if (staleBundle) {
+                    window.location.reload();
+                    return;
+                  }
                   registry.clearModuleLoadError(module.type);
                   this.requestUpdate();
                 }}
               >
-                ${localize('editor.area_summary.retry', lang, 'Retry')}
+                ${staleBundle ? 'Reload' : localize('editor.area_summary.retry', lang, 'Retry')}
               </button>`
             : nothing}
         </div>

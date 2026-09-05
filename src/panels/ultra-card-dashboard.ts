@@ -8,6 +8,7 @@ import type { HomeAssistant } from 'custom-card-helpers';
 import { panelStyles } from './panel-styles';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
 import { localize, onLocaleLoaded } from '../localize/localize';
+import { reportChunkLoadFailure } from '../utils/uc-chunk-load-error';
 import type { HubProTab } from './tabs/hub-pro-tab';
 import type { HubTab, HubTabDef } from './ultra-card-dashboard-types';
 import {
@@ -451,8 +452,9 @@ export class UltraCardPanel extends LitElement {
           this._tabLoadPromises.delete(tab);
           this.requestUpdate();
         })
-        .catch((): void => {
+        .catch((err: unknown): void => {
           this._tabLoadPromises.delete(tab);
+          reportChunkLoadFailure(err, `hub tab ${tab}`);
         }) as Promise<void>;
       this._tabLoadPromises.set(tab, promise);
     }

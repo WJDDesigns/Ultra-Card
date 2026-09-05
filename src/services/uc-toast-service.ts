@@ -2,10 +2,17 @@ import { Z_INDEX } from '../utils/uc-z-index';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface ToastOptions {
   message: string;
   type?: ToastType | undefined;
+  /** Milliseconds before auto-dismiss. `0` keeps the toast until its action is clicked. */
   duration?: number | undefined;
+  action?: ToastAction | undefined;
 }
 
 const TOAST_CONTAINER_ID = 'uc-toast-live-region';
@@ -64,6 +71,40 @@ class UcToastService {
     toast.setAttribute('aria-atomic', 'true');
     toast.textContent = opts.message;
 
+    const dismiss = () => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(40px)';
+      setTimeout(() => {
+        toast.remove();
+        if (container.children.length === 0) {
+          container.setAttribute('role', 'status');
+          container.setAttribute('aria-live', 'polite');
+        }
+      }, 260);
+    };
+
+    if (opts.action) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = opts.action.label;
+      button.style.cssText = `
+        margin-left: 12px;
+        padding: 4px 10px;
+        border: 1px solid rgba(255,255,255,0.7);
+        border-radius: 6px;
+        background: rgba(255,255,255,0.15);
+        color: inherit;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      `;
+      button.addEventListener('click', () => {
+        dismiss();
+        opts.action?.onClick();
+      });
+      toast.appendChild(button);
+    }
+
     const colorVar =
       resolvedType === 'success'
         ? 'var(--success-color, #4caf50)'
@@ -96,17 +137,9 @@ class UcToastService {
       toast.style.transform = 'translateX(0)';
     });
 
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateX(40px)';
-      setTimeout(() => {
-        toast.remove();
-        if (container.children.length === 0) {
-          container.setAttribute('role', 'status');
-          container.setAttribute('aria-live', 'polite');
-        }
-      }, 260);
-    }, resolvedDuration);
+    if (resolvedDuration > 0) {
+      setTimeout(dismiss, resolvedDuration);
+    }
   }
 
   success(message: string, duration?: number): void {

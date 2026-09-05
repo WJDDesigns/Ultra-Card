@@ -8,6 +8,8 @@
  *   - the editor or a locale is not emitted as its own chunk (regression to eager)
  *   - the entry contains a build-machine file:// URL (import.meta.url was
  *     rewritten at build time instead of resolved at runtime)
+ *   - a source file was emitted as a stray asset / the public path points at a
+ *     file instead of a directory (breaks worker and asset URLs)
  *   - dist/ultra-card.js exceeds the core budget
  *   - hacs.json has content_in_root=true: HACS then keeps ONLY `filename` from
  *     the release assets and silently drops every chunk (this is what broke
@@ -22,11 +24,12 @@ const path = require('path');
 
 const DIST = path.resolve(__dirname, '..', 'dist');
 const ENTRY = path.join(DIST, 'ultra-card.js');
-// Phase 2 (lazy modules) landed the entry at ~1.65 MiB. The fail line sits
-// below "entry + three.js" (~+0.5 MiB) so re-inlining any heavy vendor or a
-// large module group fails CI instead of silently regressing.
-const DEFAULT_BUDGET = 2.25 * 1024 * 1024;
-const WARN_AT = 1.9 * 1024 * 1024;
+// Phase 2 (lazy modules) landed the entry at ~1.65 MiB; moving the module
+// settings tabs into the editor chunk took it to ~1.37 MiB. The fail line sits
+// below "entry + three.js" (~+0.5 MiB) so re-inlining any heavy vendor, the
+// settings tabs or a large module group fails CI instead of silently regressing.
+const DEFAULT_BUDGET = 1.85 * 1024 * 1024;
+const WARN_AT = 1.6 * 1024 * 1024;
 
 const argIdx = process.argv.indexOf('--budget-bytes');
 const budget = argIdx > -1 ? Number(process.argv[argIdx + 1]) : DEFAULT_BUDGET;
@@ -83,6 +86,20 @@ if (hacsManifest.filename !== 'ultra-card.js') {
 const entrySource = fs.readFileSync(ENTRY, 'utf8');
 if (entrySource.includes('file:///')) {
   errors.push('ultra-card.js contains a file:/// URL; import.meta.url was resolved at build time.');
+}
+// `new URL('./', import.meta.url)` in source makes webpack emit src/index.ts as
+// a hashed .ts asset and point the public path at that file, which breaks every
+// `publicPath + file` URL (the Dynamic Weather worker 404'd in 3.10.0-beta1).
+const strayAssets = fs
+  .readdirSync(DIST)
+  .filter(f => /^[0-9a-f]{16,}\.\w+$/.test(f) && !f.endsWith('.js'));
+for (const f of strayAssets) {
+  errors.push(
+    `dist/${f} is a stray asset module (a source file referenced via new URL(..., import.meta.url)).`
+  );
+}
+if (/\.p=new URL\(\w+\(\d+\)/.test(entrySource)) {
+  errors.push('ultra-card.js sets the public path from an asset module; it must stay a directory.');
 }
 
 const chunks = fs.readdirSync(DIST).filter(f => f.startsWith('uc-') && f.endsWith('.js'));

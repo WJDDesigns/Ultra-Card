@@ -4,6 +4,8 @@
  * though it only shows when an image module is left on "default". It now lives
  * in its own chunk and is fetched the first time something renders it.
  */
+import { reportChunkLoadFailure } from './uc-chunk-load-error';
+
 const TRANSPARENT_PIXEL =
   'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
@@ -17,6 +19,7 @@ export function loadDefaultImage(): Promise<string> {
       .then(m => (cached = m.DEFAULT_VEHICLE_IMAGE_BASE64))
       .catch(err => {
         inflight = undefined;
+        reportChunkLoadFailure(err, 'default image');
         throw err;
       });
   }

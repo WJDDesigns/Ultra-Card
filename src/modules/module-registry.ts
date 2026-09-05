@@ -2,6 +2,7 @@ import { UltraModule } from './base-module';
 import { CORE_MANIFESTS } from './module-manifest-data';
 import { coreLoaders } from './module-loaders';
 import { CardModule } from '../types';
+import { reportChunkLoadFailure } from '../utils/uc-chunk-load-error';
 
 /** Sync metadata-only view for selector/editor; supports future async implementation loading. */
 export type ModuleManifest = import('./module-manifest-data').ModuleManifest;
@@ -137,6 +138,9 @@ export class ModuleRegistry {
       .catch(error => {
         const normalizedError =
           error instanceof Error ? error : new Error(`Failed to load module type "${type}"`);
+        // A missing chunk right after an update means this tab runs a stale entry;
+        // one reload toast is more useful than a per-module "failed to load".
+        reportChunkLoadFailure(normalizedError, `module ${type}`);
         this.loadErrors.set(type, normalizedError);
         this._notifyLoadStateChanged(type, 'error');
         throw normalizedError;

@@ -9,6 +9,7 @@ import { localize } from '../localize/localize';
 import { responsiveDesignService } from './uc-responsive-design-service';
 import { ucCustomVariablesService } from './uc-custom-variables-service';
 import { autoMigrateCardModule } from '../utils/template-migration';
+import { isChunkLoadError } from '../utils/uc-chunk-load-error';
 import { TemplateService } from './template-service';
 import {
   registerCardAppearanceTemplateSubscriptions,
@@ -285,12 +286,18 @@ class UcModulePreviewService {
       return this._renderSkeleton(module.type, metadata);
     }
 
+    // A chunk that 404s after an update will keep 404ing; retrying is pointless,
+    // only a reload picks up the new file names.
+    const staleBundle = !!loadError && isChunkLoadError(loadError);
+
     return html`
       <div class="unknown-module" role="status">
         <span>
-          ${loadError
-            ? `Module failed to load: ${metadata?.title || module.type}`
-            : `Unknown Module: ${module.type}`}
+          ${staleBundle
+            ? 'Ultra Card was updated. Reload the page to finish.'
+            : loadError
+              ? `Module failed to load: ${metadata?.title || module.type}`
+              : `Unknown Module: ${module.type}`}
         </span>
         ${loadError && canLoad
           ? html`
@@ -299,11 +306,15 @@ class UcModulePreviewService {
                 class="uc-module-retry-load"
                 style="margin-top:8px;cursor:pointer;"
                 @click=${() => {
+                  if (staleBundle) {
+                    window.location.reload();
+                    return;
+                  }
                   registry.clearModuleLoadError(module.type);
                   onModuleEnsureRequested?.();
                 }}
               >
-                Retry load
+                ${staleBundle ? 'Reload' : 'Retry load'}
               </button>
             `
           : ''}

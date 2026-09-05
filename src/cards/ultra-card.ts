@@ -24,6 +24,7 @@ interface RenderContext {
 import { getModuleRegistry, isProModule } from '../modules';
 import { getImageUrl } from '../utils/image-upload';
 import { collectModuleTypesFromLayout, forEachNestedChildModules } from '../utils/uc-layout-module-types';
+import { prefetchModuleChunksForLayout } from '../utils/uc-module-chunk-prefetch';
 import { layoutRequiresBroadHassUpdates } from '../utils/uc-broad-hass-updates';
 import { collectConfigEntityIds } from '../utils/uc-config-entity-ids';
 import { UcMaxWaitDebounce } from '../utils/uc-max-wait-debounce';
@@ -1056,6 +1057,10 @@ export class UltraCard extends LitElement {
     if (structuralErrors.length > 0) {
       throw new Error(`Invalid configuration: ${structuralErrors.join(', ')}`);
     }
+
+    // Fetch every lazy module chunk this card needs in one parallel burst,
+    // nested children included, instead of the render-time waterfall.
+    prefetchModuleChunksForLayout(getModuleRegistry(), config.layout);
 
     // Snapshot of the raw stored config as HA passed it, before any
     // validation/normalization. The editor compares against this to tell
