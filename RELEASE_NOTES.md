@@ -1,5 +1,24 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 3.10.0-beta2
+
+The second 3.10.0 beta trims the download further, makes cards appear faster on first load, and fixes the Dynamic Weather background helper that beta1 said it had fixed but hadn't. If you are on beta1, update and reload your browser once — after this release Ultra Card will tell you itself whenever a reload is needed. This is a pre-release for testing — please report anything odd on GitHub or Discord.
+
+**If you install by hand instead of through HACS:** copy every file from this release into `www/community/Ultra-Card/`, not just `ultra-card.js`. HACS does this for you. Seeing around 120 files in that folder after updating is normal.
+
+### 🔧 Improvements
+
+- **Made Ultra Card another 13% smaller to download** - The file every dashboard has to load is now 1.4 MB, down from 1.6 MB in beta1 and 12.5 MB in 3.9.0 (0.33 MB compressed). The Design, Logic and Actions tabs that every module shares now travel with the editor instead of with every dashboard, since only the editor ever shows them
+- **Cards appear faster on first load** - Ultra Card now reads your card's configuration the moment it arrives and fetches every module it needs in one go, including modules nested inside layouts, popups, drawers and tabs. Before, each module was requested only when it came time to draw it, so nested layouts loaded one layer at a time
+- **Ultra Card now tells you when a reload is needed after an update** - Because the card is now delivered in pieces, a browser tab left open across an update could end up asking for files that no longer exist. Ultra Card now notices that, shows a single "Ultra Card was updated. Reload the page to finish." message with a Reload button, and any module that could not load offers the same button in place of a broken preview. Genuine connection problems are told apart from updates and reported as such
+
+### 🐛 Bug Fixes
+
+- **Fixed Dynamic Weather's background helper really not starting** - Beta1 claimed to fix this, but the file that runs weather effects off the main thread was still being requested from the wrong address, so effects kept falling back to the slower path. The build now works out the right folder, the release check refuses to ship a build where it doesn't, and this time it has been confirmed loading from the HACS folder on a live Home Assistant
+- **Fixed module settings staying blank while a module was still loading** - Opening a module's settings before its file had arrived showed nothing. It now shows a short loading indicator and fills in the moment the module is ready
+
+---
+
 ## Version 3.10.0-beta1
 
 The first 3.10.0 beta is all about speed. Ultra Card now arrives in pieces instead of one giant file: the part every dashboard loads is 87% smaller than in 3.9.0, and everything else — modules, the editor, translations, the heavy 3D and map libraries — is fetched only when a dashboard or the editor actually needs it. Nothing about how you build cards changes. This is a pre-release for testing — please report anything odd on GitHub or Discord.
