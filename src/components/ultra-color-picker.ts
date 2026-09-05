@@ -354,7 +354,7 @@ export class UltraColorPicker extends LitElement {
       /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)$/, // RGBA
       /^hsl\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*\)$/, // HSL
       /^hsla\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*,\s*[\d.]+\s*\)$/, // HSLA
-      /^var\(--[\w-]+\)$/, // CSS variables
+      /^var\(--[\w-]+(?:\s*,\s*[^()]*(?:\([^()]*\)[^()]*)*)?\)$/, // CSS variables, with optional fallback
     ];
 
     // Extended named colors list

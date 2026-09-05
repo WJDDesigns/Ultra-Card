@@ -531,6 +531,72 @@ export class UltraIconModule extends BaseUltraModule {
               this.triggerPreviewUpdate();
             }
           )}
+          ${this.renderSegmentedField(
+            localize('editor.icon.layout.icon_position', lang, 'Icon Position'),
+            localize(
+              'editor.icon.layout.icon_position_desc',
+              lang,
+              'Position the icon relative to the name and state (left, top, right, or bottom)'
+            ),
+            iconModule.icon_position || 'top',
+            [
+              { value: 'left', label: localize('editor.icon.layout.pos_left', lang, 'Left'), icon: 'mdi:arrow-left' },
+              { value: 'top', label: localize('editor.icon.layout.pos_top', lang, 'Top'), icon: 'mdi:arrow-up' },
+              { value: 'right', label: localize('editor.icon.layout.pos_right', lang, 'Right'), icon: 'mdi:arrow-right' },
+              { value: 'bottom', label: localize('editor.icon.layout.pos_bottom', lang, 'Bottom'), icon: 'mdi:arrow-down' },
+            ],
+            next => updateModule({ icon_position: next as IconModule['icon_position'] }),
+            2
+          )}
+          ${this.renderSegmentedField(
+            localize('editor.icon.layout.content_distribution', lang, 'Content Distribution'),
+            localize(
+              'editor.icon.layout.content_distribution_desc',
+              lang,
+              'Control how the icon and text are distributed inside each item'
+            ),
+            iconModule.content_distribution || 'normal',
+            [
+              { value: 'normal', label: localize('editor.icon.layout.dist_normal', lang, 'Normal'), icon: 'mdi:format-align-left' },
+              { value: 'space-between', label: localize('editor.icon.layout.dist_space_between', lang, 'Space Between'), icon: 'mdi:arrow-left-right' },
+              { value: 'space-around', label: localize('editor.icon.layout.dist_space_around', lang, 'Space Around'), icon: 'mdi:arrow-expand-horizontal' },
+              { value: 'space-evenly', label: localize('editor.icon.layout.dist_space_evenly', lang, 'Space Evenly'), icon: 'mdi:arrow-expand-all' },
+            ],
+            next => updateModule({ content_distribution: next as IconModule['content_distribution'] }),
+            2
+          )}
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+            ${this.renderSegmentedField(
+              localize('editor.icon.layout.overall_alignment', lang, 'Overall Alignment'),
+              localize(
+                'editor.icon.layout.overall_alignment_desc',
+                lang,
+                'Align each item within its grid cell'
+              ),
+              iconModule.overall_alignment || 'center',
+              [
+                { value: 'left', label: localize('editor.icon.layout.align_left', lang, 'Left'), icon: 'mdi:format-align-left' },
+                { value: 'center', label: localize('editor.icon.layout.align_center', lang, 'Center'), icon: 'mdi:format-align-center' },
+                { value: 'right', label: localize('editor.icon.layout.align_right', lang, 'Right'), icon: 'mdi:format-align-right' },
+              ],
+              next => updateModule({ overall_alignment: next as IconModule['overall_alignment'] })
+            )}
+            ${this.renderSegmentedField(
+              localize('editor.icon.layout.name_alignment', lang, 'Text Alignment'),
+              localize(
+                'editor.icon.layout.name_alignment_desc',
+                lang,
+                'Align the name and state text within the item'
+              ),
+              iconModule.name_alignment || 'center',
+              [
+                { value: 'start', label: localize('editor.icon.layout.text_start', lang, 'Start'), icon: 'mdi:format-align-left' },
+                { value: 'center', label: localize('editor.icon.layout.text_center', lang, 'Center'), icon: 'mdi:format-align-center' },
+                { value: 'end', label: localize('editor.icon.layout.text_end', lang, 'End'), icon: 'mdi:format-align-right' },
+              ],
+              next => updateModule({ name_alignment: next as IconModule['name_alignment'] })
+            )}
+          </div>
         </div>
 
         ${iconModule.icons.map(
@@ -2635,6 +2701,55 @@ export class UltraIconModule extends BaseUltraModule {
     return this.renderLogicTab(module, hass, config, updateModule);
   }
 
+  /**
+   * Resolves the module-level item layout (issue #125) into flex styles shared by
+   * the live preview and the split preview. Defaults reproduce the classic
+   * centered icon-above-text arrangement.
+   */
+  private _getIconItemLayout(
+    iconModule: IconModule | undefined,
+    icon: IconConfig
+  ): {
+    flexDirection: string;
+    justifyContent: string;
+    alignItems: string;
+    margin: string;
+    textAlignItems: string;
+    textAlign: string;
+  } {
+    const position = iconModule?.icon_position || 'top';
+    const distribution = iconModule?.content_distribution || 'normal';
+    const overall = iconModule?.overall_alignment || 'center';
+    const nameAlignment = iconModule?.name_alignment || 'center';
+    const horizontal = position === 'left' || position === 'right';
+    const reversed = position === 'right' || position === 'bottom';
+
+    const flexFor = (v: string): string =>
+      v === 'left' || v === 'top' || v === 'start'
+        ? 'flex-start'
+        : v === 'right' || v === 'bottom' || v === 'end'
+          ? 'flex-end'
+          : 'center';
+    const overallFlex = flexFor(overall);
+    const verticalFlex = flexFor(icon.vertical_alignment || 'center');
+
+    return {
+      flexDirection: horizontal
+        ? reversed
+          ? 'row-reverse'
+          : 'row'
+        : reversed
+          ? 'column-reverse'
+          : 'column',
+      justifyContent:
+        distribution !== 'normal' ? distribution : horizontal ? overallFlex : verticalFlex,
+      alignItems: horizontal ? verticalFlex : overallFlex,
+      margin: overall === 'left' ? '0 auto 0 0' : overall === 'right' ? '0 0 0 auto' : '0 auto',
+      textAlignItems: flexFor(nameAlignment),
+      textAlign: nameAlignment === 'start' ? 'left' : nameAlignment === 'end' ? 'right' : 'center',
+    };
+  }
+
   renderPreview(
     module: CardModule,
     hass: HomeAssistant,
@@ -3191,11 +3306,12 @@ export class UltraIconModule extends BaseUltraModule {
               }
 
               // Container styles
+              const itemLayout = this._getIconItemLayout(iconModule, icon);
               const containerStyles: Record<string, string> = {
                 display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: icon.vertical_alignment || 'center',
+                flexDirection: itemLayout.flexDirection,
+                alignItems: itemLayout.alignItems,
+                justifyContent: itemLayout.justifyContent,
                 // Apply padding from design properties if set, otherwise use 0
                 padding:
                   designProperties.padding_top ||
@@ -3325,13 +3441,19 @@ export class UltraIconModule extends BaseUltraModule {
                   aria-label=${ifDefined(hasActionableGestures ? iconAriaLabel : undefined)}
                   style=${this.styleObjectToCss({
                     ...containerStyles,
-                    gap: '0px', // Remove global gap, use specific spacing instead
+                    // Flex gap works for every icon position; name/state spacing is
+                    // handled inside the text block.
+                    gap: shouldShowName
+                      ? `${icon.name_icon_gap ?? 8}px`
+                      : shouldShowState
+                        ? `${icon.icon_state_gap ?? 4}px`
+                        : '0px',
                     touchAction: 'manipulation', // Improve touch responsiveness
                     backgroundImage: this.getBackgroundImageCSS(icon, hass, config),
                     backgroundSize: (icon as any).background_size || 'cover',
                     backgroundPosition: designProperties.background_position || 'center',
                     backgroundRepeat: designProperties.background_repeat || 'no-repeat',
-                    margin: '0 auto',
+                    margin: itemLayout.margin,
                   })}
                   @keydown=${hasActionableGestures ? onIconKeyDown : undefined}
                   @pointerdown=${handleGestures.onPointerDown}
@@ -3345,11 +3467,7 @@ export class UltraIconModule extends BaseUltraModule {
                         <div
                           style="${this.styleObjectToCss({
                             ...mergedWrapperStyle,
-                            marginBottom: shouldShowName
-                              ? `${icon.name_icon_gap ?? 8}px`
-                              : shouldShowState
-                                ? `${icon.icon_state_gap ?? 4}px`
-                                : '0px',
+                            flexShrink: '0',
                           })}"
                         >
                           ${this._shouldUseEntityPicture(entityState, icon)
@@ -3401,60 +3519,69 @@ export class UltraIconModule extends BaseUltraModule {
                         </div>
                       `
                     : ''}
-                  ${shouldShowName
+                  ${shouldShowName || shouldShowState
                     ? html`
                         <div
-                          class="icon-name"
-                          style="
-                      font-size: ${globalTextStyles.fontSize
-                            ? globalTextStyles.fontSize
-                            : `${
-                                isActive
-                                  ? icon.active_text_size || icon.text_size || 12
-                                  : icon.inactive_text_size || icon.text_size || 14
-                              }px`};
-                        color: ${nameColor || 'var(--primary-text-color)'};
-                      text-align: ${globalTextStyles.textAlign || 'center'};
-                      line-height: ${globalTextStyles.lineHeight || '1.2'};
-                        max-width: 120px;
-                      word-wrap: break-word;
-                      margin-bottom: ${shouldShowState ? `${icon.name_state_gap ?? 2}px` : '0px'};
-                      font-family: ${globalTextStyles.fontFamily || 'inherit'};
-                      font-weight: ${globalTextStyles.fontWeight || 'inherit'};
-                      font-style: ${globalTextStyles.fontStyle || 'inherit'};
-                      text-transform: ${globalTextStyles.textTransform || 'inherit'};
-                      letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
-                      text-shadow: ${globalTextStyles.textShadow || 'none'};
-                    "
+                          class="icon-text"
+                          style="display: flex; flex-direction: column; min-width: 0; align-items: ${itemLayout.textAlignItems}; text-align: ${itemLayout.textAlign};"
                         >
-                          ${displayName}
-                        </div>
-                      `
-                    : ''}
-                  ${shouldShowState
-                    ? html`
-                        <div
-                          class="icon-state"
-                          style="
-                      font-size: ${globalTextStyles.fontSize
-                            ? globalTextStyles.fontSize
-                            : `${
-                                isActive
-                                  ? icon.active_state_size || icon.state_size || 12
-                                  : icon.inactive_state_size || icon.state_size || 12
-                              }px`};
-                        color: ${stateColor || 'var(--secondary-text-color)'};
-                      text-align: ${globalTextStyles.textAlign || 'center'};
-                      line-height: ${globalTextStyles.lineHeight || '1.2'};
-                      font-family: ${globalTextStyles.fontFamily || 'inherit'};
-                      font-weight: ${globalTextStyles.fontWeight || 'inherit'};
-                      font-style: ${globalTextStyles.fontStyle || 'inherit'};
-                      text-transform: ${globalTextStyles.textTransform || 'inherit'};
-                      letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
-                      text-shadow: ${globalTextStyles.textShadow || 'none'};
-                    "
-                        >
-                          ${displayState}
+                        ${shouldShowName
+                          ? html`
+                              <div
+                                class="icon-name"
+                                style="
+                            font-size: ${globalTextStyles.fontSize
+                                  ? globalTextStyles.fontSize
+                                  : `${
+                                      isActive
+                                        ? icon.active_text_size || icon.text_size || 12
+                                        : icon.inactive_text_size || icon.text_size || 14
+                                    }px`};
+                              color: ${nameColor || 'var(--primary-text-color)'};
+                            text-align: ${globalTextStyles.textAlign || itemLayout.textAlign};
+                            line-height: ${globalTextStyles.lineHeight || '1.2'};
+                              max-width: 120px;
+                            word-wrap: break-word;
+                            margin-bottom: ${shouldShowState ? `${icon.name_state_gap ?? 2}px` : '0px'};
+                            font-family: ${globalTextStyles.fontFamily || 'inherit'};
+                            font-weight: ${globalTextStyles.fontWeight || 'inherit'};
+                            font-style: ${globalTextStyles.fontStyle || 'inherit'};
+                            text-transform: ${globalTextStyles.textTransform || 'inherit'};
+                            letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
+                            text-shadow: ${globalTextStyles.textShadow || 'none'};
+                          "
+                              >
+                                ${displayName}
+                              </div>
+                            `
+                          : ''}
+                        ${shouldShowState
+                          ? html`
+                              <div
+                                class="icon-state"
+                                style="
+                            font-size: ${globalTextStyles.fontSize
+                                  ? globalTextStyles.fontSize
+                                  : `${
+                                      isActive
+                                        ? icon.active_state_size || icon.state_size || 12
+                                        : icon.inactive_state_size || icon.state_size || 12
+                                    }px`};
+                              color: ${stateColor || 'var(--secondary-text-color)'};
+                            text-align: ${globalTextStyles.textAlign || itemLayout.textAlign};
+                            line-height: ${globalTextStyles.lineHeight || '1.2'};
+                            font-family: ${globalTextStyles.fontFamily || 'inherit'};
+                            font-weight: ${globalTextStyles.fontWeight || 'inherit'};
+                            font-style: ${globalTextStyles.fontStyle || 'inherit'};
+                            text-transform: ${globalTextStyles.textTransform || 'inherit'};
+                            letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
+                            text-shadow: ${globalTextStyles.textShadow || 'none'};
+                          "
+                              >
+                                ${displayState}
+                              </div>
+                            `
+                          : ''}
                         </div>
                       `
                     : ''}
@@ -3942,11 +4069,12 @@ export class UltraIconModule extends BaseUltraModule {
     const animationClass = currentAnimation !== 'none' ? `icon-animation-${currentAnimation}` : '';
 
     // Container styles - exact same as main card
+    const itemLayout = this._getIconItemLayout(iconModule, icon);
     const containerStyles: Record<string, string> = {
       display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: icon.vertical_alignment || 'center',
+      flexDirection: itemLayout.flexDirection,
+      alignItems: itemLayout.alignItems,
+      justifyContent: itemLayout.justifyContent,
       // Apply padding from design properties if set, otherwise use 0
       padding:
         designProperties?.padding_top ||
@@ -3967,7 +4095,7 @@ export class UltraIconModule extends BaseUltraModule {
       cursor: 'pointer',
       transition: 'all 0.2s ease',
       width: icon.container_width ? `${icon.container_width}%` : 'auto',
-      margin: '0 auto',
+      margin: itemLayout.margin,
     };
 
     const hasContainerBackground =
@@ -4015,7 +4143,11 @@ export class UltraIconModule extends BaseUltraModule {
         class="icon-item-preview ${hoverEffectClass}"
         style=${this.styleObjectToCss({
           ...containerStyles,
-          gap: '0px',
+          gap: shouldShowName
+            ? `${actualNameIconGap}px`
+            : shouldShowState
+              ? `${actualIconStateGap}px`
+              : '0px',
         })}
         @click=${(e: Event) => {
           e.preventDefault();
@@ -4042,11 +4174,7 @@ export class UltraIconModule extends BaseUltraModule {
               <div
                 style="${this.styleObjectToCss({
                   ...mergedWrapperStyle,
-                  marginBottom: shouldShowName
-                    ? `${actualNameIconGap}px`
-                    : shouldShowState
-                      ? `${actualIconStateGap}px`
-                      : '0px',
+                  flexShrink: '0',
                 })}"
               >
                 ${this._shouldUseEntityPicture(entityState, icon)
@@ -4109,78 +4237,87 @@ export class UltraIconModule extends BaseUltraModule {
               </div>
             `
           : ''}
-        ${shouldShowName
+        ${shouldShowName || shouldShowState
           ? html`
               <div
-                class="icon-name"
-                style="
-                  font-size: ${(() => {
-                  // Priority: 1) Design tab font_size, 2) Icon-specific sizes, 3) Module text_size, 4) Default
-                  if (globalTextStyles.fontSize) {
-                    return globalTextStyles.fontSize;
-                  }
-                  const iconTextSize = isActiveState
-                    ? icon.active_text_size || icon.text_size
-                    : icon.inactive_text_size || icon.text_size;
-                  if (iconTextSize) {
-                    return `${iconTextSize}px`;
-                  }
-                  if (iconModule?.text_size) {
-                    return `${iconModule.text_size}px`;
-                  }
-                  return isActiveState ? '12px' : '14px';
-                })()};
-                  color: ${nameColor || 'var(--primary-text-color)'};
-                  text-align: ${globalTextStyles.textAlign || 'center'};
-                  line-height: ${globalTextStyles.lineHeight || '1.2'};
-                  max-width: 120px;
-                  word-wrap: break-word;
-                  margin-bottom: ${shouldShowState ? `${actualNameStateGap}px` : '0px'};
-                  font-family: ${globalTextStyles.fontFamily || 'inherit'};
-                  font-weight: ${globalTextStyles.fontWeight || 'inherit'};
-                  font-style: ${globalTextStyles.fontStyle || 'inherit'};
-                  text-transform: ${globalTextStyles.textTransform || 'inherit'};
-                  letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
-                  text-shadow: ${globalTextStyles.textShadow || 'none'};
-                "
+                class="icon-text"
+                style="display: flex; flex-direction: column; min-width: 0; align-items: ${itemLayout.textAlignItems}; text-align: ${itemLayout.textAlign};"
               >
-                ${displayName}
-              </div>
-            `
-          : ''}
-        ${shouldShowState
-          ? html`
-              <div
-                class="icon-state"
-                style="
-                  font-size: ${(() => {
-                  // Priority: 1) Design tab font_size, 2) Icon-specific sizes, 3) Module text_size, 4) Default
-                  if (globalTextStyles.fontSize) {
-                    return globalTextStyles.fontSize;
-                  }
-                  const iconStateSize = isActiveState
-                    ? icon.active_state_size || icon.state_size
-                    : icon.inactive_state_size || icon.state_size;
-                  if (iconStateSize) {
-                    return `${iconStateSize}px`;
-                  }
-                  if (iconModule?.text_size) {
-                    return `${iconModule.text_size}px`;
-                  }
-                  return '10px';
-                })()};
-                  color: ${stateColor || 'var(--secondary-text-color)'};
-                  text-align: ${globalTextStyles.textAlign || 'center'};
-                  line-height: ${globalTextStyles.lineHeight || '1.2'};
-                  font-family: ${globalTextStyles.fontFamily || 'inherit'};
-                  font-weight: ${globalTextStyles.fontWeight || 'inherit'};
-                  font-style: ${globalTextStyles.fontStyle || 'inherit'};
-                  text-transform: ${globalTextStyles.textTransform || 'inherit'};
-                  letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
-                  text-shadow: ${globalTextStyles.textShadow || 'none'};
-                "
-              >
-                ${displayState}
+              ${shouldShowName
+                ? html`
+                    <div
+                      class="icon-name"
+                      style="
+                        font-size: ${(() => {
+                        // Priority: 1) Design tab font_size, 2) Icon-specific sizes, 3) Module text_size, 4) Default
+                        if (globalTextStyles.fontSize) {
+                          return globalTextStyles.fontSize;
+                        }
+                        const iconTextSize = isActiveState
+                          ? icon.active_text_size || icon.text_size
+                          : icon.inactive_text_size || icon.text_size;
+                        if (iconTextSize) {
+                          return `${iconTextSize}px`;
+                        }
+                        if (iconModule?.text_size) {
+                          return `${iconModule.text_size}px`;
+                        }
+                        return isActiveState ? '12px' : '14px';
+                      })()};
+                        color: ${nameColor || 'var(--primary-text-color)'};
+                        text-align: ${globalTextStyles.textAlign || itemLayout.textAlign};
+                        line-height: ${globalTextStyles.lineHeight || '1.2'};
+                        max-width: 120px;
+                        word-wrap: break-word;
+                        margin-bottom: ${shouldShowState ? `${actualNameStateGap}px` : '0px'};
+                        font-family: ${globalTextStyles.fontFamily || 'inherit'};
+                        font-weight: ${globalTextStyles.fontWeight || 'inherit'};
+                        font-style: ${globalTextStyles.fontStyle || 'inherit'};
+                        text-transform: ${globalTextStyles.textTransform || 'inherit'};
+                        letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
+                        text-shadow: ${globalTextStyles.textShadow || 'none'};
+                      "
+                    >
+                      ${displayName}
+                    </div>
+                  `
+                : ''}
+              ${shouldShowState
+                ? html`
+                    <div
+                      class="icon-state"
+                      style="
+                        font-size: ${(() => {
+                        // Priority: 1) Design tab font_size, 2) Icon-specific sizes, 3) Module text_size, 4) Default
+                        if (globalTextStyles.fontSize) {
+                          return globalTextStyles.fontSize;
+                        }
+                        const iconStateSize = isActiveState
+                          ? icon.active_state_size || icon.state_size
+                          : icon.inactive_state_size || icon.state_size;
+                        if (iconStateSize) {
+                          return `${iconStateSize}px`;
+                        }
+                        if (iconModule?.text_size) {
+                          return `${iconModule.text_size}px`;
+                        }
+                        return '10px';
+                      })()};
+                        color: ${stateColor || 'var(--secondary-text-color)'};
+                        text-align: ${globalTextStyles.textAlign || itemLayout.textAlign};
+                        line-height: ${globalTextStyles.lineHeight || '1.2'};
+                        font-family: ${globalTextStyles.fontFamily || 'inherit'};
+                        font-weight: ${globalTextStyles.fontWeight || 'inherit'};
+                        font-style: ${globalTextStyles.fontStyle || 'inherit'};
+                        text-transform: ${globalTextStyles.textTransform || 'inherit'};
+                        letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
+                        text-shadow: ${globalTextStyles.textShadow || 'none'};
+                      "
+                    >
+                      ${displayState}
+                    </div>
+                  `
+                : ''}
               </div>
             `
           : ''}

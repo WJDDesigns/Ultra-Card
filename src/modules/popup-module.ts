@@ -1052,25 +1052,131 @@ export class UltraPopupModule extends BaseUltraModule {
                           )}
 
                           <!-- Trigger Icon Color -->
-                          <div style="margin-bottom: 16px;">
-                            <ultra-color-picker
-                              .label=${localize(
-                                'editor.popup.trigger.icon_color',
-                                lang,
-                                'Trigger Icon Color'
-                              )}
-                              .value=${popupModule.trigger_icon_color || ''}
-                              .defaultValue=${''}
-                              .hass=${hass}
-                              @value-changed=${(e: CustomEvent) => {
-                                const value = e.detail.value;
-                                updateModule({ trigger_icon_color: value });
-                                setTimeout(() => {
-                                  this.triggerPreviewUpdate();
-                                }, 50);
-                              }}
-                            ></ultra-color-picker>
-                          </div>
+                          ${this.renderFieldSection(
+                            localize('editor.popup.trigger.icon_use_entity_color', lang, 'Use Entity Color'),
+                            localize(
+                              'editor.popup.trigger.icon_use_entity_color_desc',
+                              lang,
+                              'Color the icon from an entity state instead of a fixed color.'
+                            ),
+                            hass,
+                            { trigger_icon_use_entity_color: popupModule.trigger_icon_use_entity_color || false },
+                            [this.booleanField('trigger_icon_use_entity_color')],
+                            (e: CustomEvent) => {
+                              const enabled = !!e.detail.value.trigger_icon_use_entity_color;
+                              updateModule({
+                                trigger_icon_use_entity_color: enabled,
+                                trigger_icon_color_entity: enabled ? popupModule.trigger_icon_color_entity : '',
+                              });
+                              setTimeout(() => this.triggerPreviewUpdate(), 50);
+                            }
+                          )}
+                          ${popupModule.trigger_icon_use_entity_color
+                            ? html`
+                                <div style="margin-bottom: 16px;">
+                                  ${this.renderEntityPickerWithVariables(
+                                    hass, config, 'trigger_icon_color_entity', popupModule.trigger_icon_color_entity || '',
+                                    (value: string) => {
+                                      updateModule({ trigger_icon_color_entity: value });
+                                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                                    },
+                                    undefined,
+                                    localize('editor.button.background_color_entity', lang, 'Entity')
+                                  )}
+                                </div>
+                                <div style="margin-bottom: 16px;">
+                                  <div class="field-title" style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 8px;">
+                                    ${localize('editor.button.state_colors', lang, 'State Colors')}
+                                  </div>
+                                  <div class="field-description" style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);">
+                                    ${localize('editor.button.state_colors_desc', lang, 'Optional: Map specific entity states to colors (e.g., on: green, off: gray). If not set, will use entity RGB color or state-based defaults.')}
+                                  </div>
+                                  ${this._renderTriggerStateColorsEditor(
+                                    popupModule.trigger_icon_state_colors || {},
+                                    hass,
+                                    lang,
+                                    (stateColors: { [state: string]: string }) => {
+                                      updateModule({ trigger_icon_state_colors: stateColors });
+                                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                                    }
+                                  )}
+                                </div>
+                              `
+                            : html`
+                                <div style="margin-bottom: 16px;">
+                                  <ultra-color-picker
+                                    .label=${localize(
+                                      'editor.popup.trigger.icon_color',
+                                      lang,
+                                      'Trigger Icon Color'
+                                    )}
+                                    .value=${popupModule.trigger_icon_color || ''}
+                                    .defaultValue=${''}
+                                    .hass=${hass}
+                                    @value-changed=${(e: CustomEvent) => {
+                                      const value = e.detail.value;
+                                      updateModule({ trigger_icon_color: value });
+                                      setTimeout(() => {
+                                        this.triggerPreviewUpdate();
+                                      }, 50);
+                                    }}
+                                  ></ultra-color-picker>
+                                </div>
+                              `}
+
+                          <!-- Trigger Icon Background -->
+                          ${this.renderSegmentedField(
+                            localize('editor.popup.trigger.icon_background', lang, 'Icon Background'),
+                            localize(
+                              'editor.popup.trigger.icon_background_desc',
+                              lang,
+                              'Shape drawn behind the icon, like the Icon module.'
+                            ),
+                            popupModule.trigger_icon_background || 'none',
+                            [
+                              { value: 'none', label: localize('editor.popup.trigger.icon_background_none', lang, 'None'), icon: 'mdi:close' },
+                              { value: 'circle', label: localize('editor.popup.trigger.icon_background_circle', lang, 'Circle'), icon: 'mdi:circle-outline' },
+                              { value: 'rounded-square', label: localize('editor.popup.trigger.icon_background_rounded', lang, 'Rounded'), icon: 'mdi:square-rounded-outline' },
+                            ],
+                            next =>
+                              updateModule({
+                                trigger_icon_background: next as PopupModule['trigger_icon_background'],
+                              })
+                          )}
+                          ${(popupModule.trigger_icon_background || 'none') !== 'none'
+                            ? html`
+                                <div style="margin-bottom: 16px;">
+                                  <ultra-color-picker
+                                    .label=${localize(
+                                      'editor.popup.trigger.icon_background_color',
+                                      lang,
+                                      'Icon Background Color'
+                                    )}
+                                    .value=${popupModule.trigger_icon_background_color || ''}
+                                    .defaultValue=${'var(--secondary-background-color)'}
+                                    .hass=${hass}
+                                    @value-changed=${(e: CustomEvent) => {
+                                      updateModule({ trigger_icon_background_color: e.detail.value });
+                                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                                    }}
+                                  ></ultra-color-picker>
+                                </div>
+                                ${this.renderSliderField(
+                                  localize('editor.popup.trigger.icon_background_padding', lang, 'Icon Background Padding'),
+                                  localize(
+                                    'editor.popup.trigger.icon_background_padding_desc',
+                                    lang,
+                                    'Space between the icon and the edge of its background.'
+                                  ),
+                                  popupModule.trigger_icon_background_padding ?? 8,
+                                  8,
+                                  0,
+                                  40,
+                                  1,
+                                  (value: number) => updateModule({ trigger_icon_background_padding: value })
+                                )}
+                              `
+                            : ''}
                         `
                       )}
                     </div>
@@ -1408,8 +1514,69 @@ export class UltraPopupModule extends BaseUltraModule {
                 }, 50);
               },
             },
+            {
+              title: localize('editor.popup.animation.easing', lang, 'Animation Easing'),
+              description: localize(
+                'editor.popup.animation.easing_desc',
+                lang,
+                'How the motion accelerates. Spring adds a little overshoot.'
+              ),
+              hass,
+              data: { open_animation_easing: popupModule.open_animation_easing || 'ease' },
+              schema: [
+                this.selectField('open_animation_easing', [
+                  { value: 'ease', label: localize('editor.popup.animation.easing_ease', lang, 'Ease') },
+                  { value: 'ease-out', label: localize('editor.popup.animation.easing_ease_out', lang, 'Ease Out') },
+                  { value: 'ease-in-out', label: localize('editor.popup.animation.easing_ease_in_out', lang, 'Ease In Out') },
+                  { value: 'linear', label: localize('editor.popup.animation.easing_linear', lang, 'Linear') },
+                  { value: 'spring', label: localize('editor.popup.animation.easing_spring', lang, 'Spring') },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => {
+                const next = e.detail.value.open_animation_easing;
+                if (!next || next === (popupModule.open_animation_easing || 'ease')) return;
+                updateModule({ open_animation_easing: next });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              },
+            },
+            ...((popupModule.animation || 'fade').startsWith('slide_')
+              ? [
+                  {
+                    title: localize('editor.popup.animation.from_edge', lang, 'Slide From Screen Edge'),
+                    description: localize(
+                      'editor.popup.animation.from_edge_desc',
+                      lang,
+                      'Start the slide off-screen so the popup glides in like a panel instead of nudging into place.'
+                    ),
+                    hass,
+                    data: { open_animation_from_edge: popupModule.open_animation_from_edge || false },
+                    schema: [this.booleanField('open_animation_from_edge')],
+                    onChange: (e: CustomEvent) => {
+                      updateModule({ open_animation_from_edge: !!e.detail.value.open_animation_from_edge });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    },
+                  },
+                ]
+              : []),
           ]
         )}
+        <div class="settings-section" style="margin-top: -8px; margin-bottom: 24px;">
+          ${this.renderSliderField(
+            localize('editor.popup.animation.duration', lang, 'Animation Speed'),
+            localize(
+              'editor.popup.animation.duration_desc',
+              lang,
+              'How long the open animation runs, in milliseconds.'
+            ),
+            popupModule.open_animation_duration ?? 400,
+            400,
+            100,
+            2000,
+            50,
+            (value: number) => updateModule({ open_animation_duration: value }),
+            'ms'
+          )}
+        </div>
 
         <!-- Background Overlay Section -->
         ${this.renderSettingsSection(
@@ -1699,21 +1866,44 @@ export class UltraPopupModule extends BaseUltraModule {
     hass: HomeAssistant,
     config?: UltraCardConfig
   ): string | null {
-    if (
-      !popupModule.trigger_button_use_entity_color ||
-      !popupModule.trigger_button_color_entity ||
-      !hass
-    ) {
+    if (!popupModule.trigger_button_use_entity_color) return null;
+    return this._getTriggerEntityColor(
+      popupModule.trigger_button_color_entity,
+      popupModule.trigger_button_state_colors,
+      hass,
+      config
+    );
+  }
+
+  private _getTriggerIconEntityColor(
+    popupModule: PopupModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): string | null {
+    if (!popupModule.trigger_icon_use_entity_color) return null;
+    return this._getTriggerEntityColor(
+      popupModule.trigger_icon_color_entity,
+      popupModule.trigger_icon_state_colors,
+      hass,
+      config
+    );
+  }
+
+  /** State-colour map first, then the entity's own colour, then a domain default. */
+  private _getTriggerEntityColor(
+    colorEntity: string | undefined,
+    stateColors: { [state: string]: string } | undefined,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): string | null {
+    if (!colorEntity || !hass) {
       return null;
     }
     // Resolve $variable references to the actual entity ID
-    const colorEntityId =
-      this.resolveEntity(popupModule.trigger_button_color_entity, config) ||
-      popupModule.trigger_button_color_entity;
+    const colorEntityId = this.resolveEntity(colorEntity, config) || colorEntity;
     const entityState = hass.states[colorEntityId];
     if (!entityState) return null;
 
-    const stateColors = popupModule.trigger_button_state_colors;
     if (stateColors && Object.keys(stateColors).length > 0) {
       const mapped = stateColors[entityState.state];
       if (mapped) return mapped;
@@ -3181,24 +3371,54 @@ export class UltraPopupModule extends BaseUltraModule {
       } else if (triggerType === 'icon') {
         const triggerIcon = popupModule.trigger_icon || 'mdi:information';
         const triggerIconSize = popupModule.trigger_icon_size || 24;
-        const triggerIconColor = popupModule.trigger_icon_color || 'var(--primary-color)';
+        const triggerIconColor =
+          this._getTriggerIconEntityColor(popupModule, hass, config) ||
+          popupModule.trigger_icon_color ||
+          'var(--primary-color)';
+        const iconBackground = popupModule.trigger_icon_background || 'none';
+        const iconWrapperStyle = [
+          'display: inline-flex',
+          'align-items: center',
+          'justify-content: center',
+          'cursor: pointer',
+          'transition: transform 0.2s ease',
+          'touch-action: manipulation',
+          'pointer-events: auto',
+          iconBackground !== 'none'
+            ? `background: ${popupModule.trigger_icon_background_color || 'var(--secondary-background-color)'}`
+            : '',
+          iconBackground !== 'none'
+            ? `padding: ${popupModule.trigger_icon_background_padding ?? 8}px`
+            : '',
+          iconBackground === 'circle'
+            ? 'border-radius: 50%'
+            : iconBackground === 'rounded-square'
+              ? 'border-radius: 8px'
+              : '',
+        ]
+          .filter(Boolean)
+          .join('; ');
         triggerElement = html`
-          <ha-icon
+          <div
             class="swiper-no-swiping popup-trigger"
-            icon="${triggerIcon}"
             @click=${handleTriggerClick}
             @touchstart=${trackTouchStart}
             @touchend=${guardedTouchEnd(handleTriggerClick)}
-            style="--mdc-icon-size: ${triggerIconSize}px; cursor: pointer; color: ${triggerIconColor}; transition: transform 0.2s ease; touch-action: manipulation; pointer-events: auto;"
+            style="${iconWrapperStyle}"
             @mouseover=${(e: Event) => {
-              const target = e.target as HTMLElement;
+              const target = e.currentTarget as HTMLElement;
               target.style.transform = 'scale(1.1)';
             }}
             @mouseout=${(e: Event) => {
-              const target = e.target as HTMLElement;
+              const target = e.currentTarget as HTMLElement;
               target.style.transform = 'scale(1)';
             }}
-          ></ha-icon>
+          >
+            <ha-icon
+              icon="${triggerIcon}"
+              style="--mdc-icon-size: ${triggerIconSize}px; color: ${triggerIconColor}; display: flex;"
+            ></ha-icon>
+          </div>
         `;
       }
 
@@ -3231,8 +3451,27 @@ export class UltraPopupModule extends BaseUltraModule {
         slide_right: 'animation-slideInRight',
         slide_bottom: 'animation-slideInUp',
       };
-      return animationMap[animation] || 'animation-fadeIn';
+      const base = animationMap[animation] || 'animation-fadeIn';
+      // Off-screen variants make slide-ins read like a sheet coming in from the edge (#128).
+      return popupModule.open_animation_from_edge && animation.startsWith('slide_')
+        ? `${base} from-edge`
+        : base;
     };
+    const animationDurationMs = Math.max(0, Number(popupModule.open_animation_duration) || 400);
+    const animationEasing = (() => {
+      switch (popupModule.open_animation_easing) {
+        case 'linear':
+          return 'linear';
+        case 'ease-out':
+          return 'ease-out';
+        case 'ease-in-out':
+          return 'ease-in-out';
+        case 'spring':
+          return 'cubic-bezier(0.34, 1.56, 0.64, 1)';
+        default:
+          return 'ease';
+      }
+    })();
 
     // Get layout class and style
     const layout = popupModule.layout || 'default';
@@ -3621,6 +3860,56 @@ export class UltraPopupModule extends BaseUltraModule {
           .animation-slideInRight {
             animation-name: slideInRight;
           }
+          @keyframes slideInDownEdge {
+            from {
+              transform: translateY(-100vh);
+            }
+            to {
+              transform: translateY(0);
+            }
+          }
+          @keyframes slideInUpEdge {
+            from {
+              transform: translateY(100vh);
+            }
+            to {
+              transform: translateY(0);
+            }
+          }
+          @keyframes slideInLeftEdge {
+            from {
+              transform: translateX(-100vw);
+            }
+            to {
+              transform: translateX(0);
+            }
+          }
+          @keyframes slideInRightEdge {
+            from {
+              transform: translateX(100vw);
+            }
+            to {
+              transform: translateX(0);
+            }
+          }
+          .animation-slideInDown.from-edge {
+            animation-name: slideInDownEdge;
+          }
+          .animation-slideInUp.from-edge {
+            animation-name: slideInUpEdge;
+          }
+          .animation-slideInLeft.from-edge {
+            animation-name: slideInLeftEdge;
+          }
+          .animation-slideInRight.from-edge {
+            animation-name: slideInRightEdge;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .ultra-popup-container {
+              animation-name: fadeIn !important;
+              animation-duration: 150ms !important;
+            }
+          }
         </style>
         <div
           class="ultra-popup-overlay"
@@ -3647,7 +3936,7 @@ export class UltraPopupModule extends BaseUltraModule {
             ? popupModule.overlay_background || 'rgba(0,0,0,0.85)'
             : 'transparent'};
             ${popupModule.show_overlay !== false ? 'backdrop-filter: blur(2px);' : ''}
-            animation: fadeIn 0.3s ease both;
+            animation: fadeIn ${Math.min(animationDurationMs, 300)}ms ease both;
             pointer-events: auto !important;
           "
         >
@@ -3668,9 +3957,9 @@ export class UltraPopupModule extends BaseUltraModule {
               ? popupModule.popup_border_radius || '8px'
               : '0'};
               box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-              animation-duration: 0.4s;
+              animation-duration: ${animationDurationMs}ms;
               animation-fill-mode: both;
-              animation-timing-function: ease;
+              animation-timing-function: ${animationEasing};
               pointer-events: auto !important;
               z-index: ${Z_INDEX.DIALOG_CONTENT};
               isolation: isolate;

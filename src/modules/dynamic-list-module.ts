@@ -162,7 +162,7 @@ const EXAMPLE_TEMPERATURE = `{# Temperature sensors — text with hot/cold color
 {% set ns = namespace(mods=[]) %}
 {% for s in sensors %}
   {% set temp = states(s.entity) | float(0) | round(1) %}
-  {% set unit = state_attr(s.entity, 'unit_of_measurement') | default('°') %}
+  {% set unit = state_attr(s.entity, 'unit_of_measurement') | default('°', true) %}
   {% set color = '#f44336' if temp > 26 else ('#2196f3' if temp < 18 else '#4caf50') %}
   {% set mod = {
     'id': 'temp_' ~ loop.index,
@@ -2326,7 +2326,13 @@ export class UltraDynamicListModule extends BaseUltraModule {
 
       const moduleHandler = registry.getModule(childModule.type);
       if (!moduleHandler) {
-        return ucModulePreviewService.renderModuleLoadingState(childModule);
+        // Generated children are not in the card config, so the card's own
+        // "module loaded" listener ignores them; without this callback a list
+        // rendered on a cold page load stays a skeleton until something else
+        // happens to re-render (issue #130).
+        return ucModulePreviewService.renderModuleLoadingState(childModule, () =>
+          this.triggerPreviewUpdate()
+        );
       }
 
       // Check Pro access for generated child modules

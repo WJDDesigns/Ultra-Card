@@ -43,6 +43,22 @@ describe('moduleRequiresBroadHassUpdates', () => {
     ).toBe(false);
   });
 
+  it('flags the dynamic list only for todo sources (its registered type is hyphenated)', () => {
+    expect(
+      moduleRequiresBroadHassUpdates({ id: 'm', type: 'dynamic-list', source_type: 'todo' } as never)
+    ).toBe(true);
+    expect(
+      moduleRequiresBroadHassUpdates({
+        id: 'm',
+        type: 'dynamic-list',
+        source_type: 'todo-template',
+      } as never)
+    ).toBe(true);
+    expect(
+      moduleRequiresBroadHassUpdates({ id: 'm', type: 'dynamic-list', source_type: 'template' } as never)
+    ).toBe(false);
+  });
+
   it('does not flag templated markdown, which is driven by its subscription', () => {
     expect(
       moduleRequiresBroadHassUpdates({

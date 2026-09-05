@@ -40,7 +40,7 @@ function scansAllStatesWhenConfigured(mod: Record<string, unknown>): boolean {
     case 'battery_fleet':
     case 'vampire_power':
       return (mod.discovery_mode ?? 'auto') !== 'manual';
-    case 'dynamic_list':
+    case 'dynamic-list':
       // Resolves the "first available" todo entity by scanning for `todo.*`.
       return mod.source_type === 'todo' || mod.source_type === 'todo-template';
     default:

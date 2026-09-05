@@ -6175,12 +6175,6 @@ export class UltraBarModule extends BaseUltraModule {
                 };
                 text-align: ${percentageTextAlignment === 'follow-fill' ? 'right' : percentageTextAlignment};
                 font-size: ${percentageFontSize};
-                color: ${
-                  barModule.percentage_text_color ||
-                  designProperties.color ||
-                  moduleWithDesign.color ||
-                  'white'
-                };
                 font-weight: ${barModule.percentage_text_bold ? 'bold' : '600'};
                 font-style: ${barModule.percentage_text_italic ? 'italic' : 'normal'};
                 text-decoration: ${barModule.percentage_text_strikethrough ? 'line-through' : 'none'};
@@ -6190,6 +6184,12 @@ export class UltraBarModule extends BaseUltraModule {
                 overflow: hidden;
                 text-overflow: ellipsis;
                 max-width: 100%;
+                color: ${
+                  barModule.percentage_text_color ||
+                  designProperties.color ||
+                  moduleWithDesign.color ||
+                  'white'
+                };
               "
             >
               ${percentageDisplayText}

@@ -171,8 +171,25 @@ export class LayoutTab extends LitElement {
     deepNestedChildIndex?: number | undefined; // For deeply nested layout children (3 levels deep)
     parentLayoutChildIndex?: number | undefined;
     isNested: boolean;
+    /** Path-addressed child at any depth: [row, column, module, ...nested layout indices]. */
+    isDeepNested?: boolean;
+    deepNestedPath?: number[];
   } | null = null;
   @state() private _activeTabsChildTab = 'general';
+
+  /**
+   * The modules array and index for a path-addressed selection, or null when
+   * the current selection is not one (or the path no longer resolves).
+   */
+  private _resolveDeepNestedSelection(layout: any): { modules: any[]; index: number } | null {
+    const selected = this._selectedTabsSectionChild;
+    if (!selected?.isDeepNested || !selected.deepNestedPath || selected.childIndex === undefined) {
+      return null;
+    }
+    const modules = resolveModuleListPure(layout, selected.deepNestedPath);
+    if (!modules || !modules[selected.childIndex]) return null;
+    return { modules, index: selected.childIndex };
+  }
 
   // Column layout selector state
   @state() private _showColumnLayoutSelector = false;
@@ -634,7 +651,12 @@ export class LayoutTab extends LitElement {
         layoutChildIndex,
         nestedChildIndex,
         deepNestedChildIndex,
+        isDeepNested,
+        deepNestedPath,
       } = this._selectedTabsSectionChild;
+      if (isDeepNested && deepNestedPath) {
+        return `path-child-${deepNestedPath.join('-')}-${childIndex}`;
+      }
       if (deepNestedChildIndex !== undefined) {
         return `tabs-deep-${rowIndex}-${columnIndex}-${moduleIndex}-${sectionIndex}-${layoutChildIndex}-${nestedChildIndex}-${deepNestedChildIndex}`;
       } else if (nestedChildIndex !== undefined) {
@@ -6497,12 +6519,19 @@ export class LayoutTab extends LitElement {
   }
 
   private _openDeepNestedSettings(parentPath: number[], childIndex: number): void {
-    // Store context for settings popup
+    // Store context for settings popup. The settings panel is shared with the
+    // tabs-section child editor, which resolves this by `deepNestedPath` instead
+    // of the fixed-depth index fields (issue #126).
     this._selectedTabsSectionChild = {
+      rowIndex: parentPath[0],
+      columnIndex: parentPath[1],
+      moduleIndex: parentPath[2],
+      sectionIndex: -1,
+      isNested: false,
       deepNestedPath: parentPath,
       childIndex,
       isDeepNested: true,
-    } as any;
+    };
     this._showTabsSectionChildSettings = true;
     this._activeTabsChildTab = 'general';
     this.requestUpdate();
@@ -12471,9 +12500,13 @@ export class LayoutTab extends LitElement {
     const hasHeaderDropZone =
       dtType === 'layout' || dtType === 'nested-layout' || dtType === 'column' || dtType === 'row';
     const isOverHeader = hasHeaderDropZone && !!header && !!el && header.contains(el);
+    const isOverEmptyBody =
+      !isOverHeader && this._isOverEmptyContainerBody(node, dtType, el ?? null);
     let insertEdge: 'before' | 'after' | 'inside' = 'after';
     let boundary: { element: HTMLElement; edge: 'before' | 'after' } | null = null;
-    if (hasHeaderDropZone && isOverHeader && header) {
+    if (isOverEmptyBody) {
+      insertEdge = 'inside';
+    } else if (hasHeaderDropZone && isOverHeader && header) {
       const headerRect = header.getBoundingClientRect();
       const headerY = e.clientY;
       const topZone = headerRect.top + headerRect.height * 0.25;
@@ -12586,8 +12619,12 @@ export class LayoutTab extends LitElement {
     const hasHeaderDropZone =
       type === 'layout' || type === 'nested-layout' || type === 'column' || type === 'row';
     const isOverHeader = hasHeaderDropZone && !!header && header.contains(e.target as Element);
+    const isOverEmptyBody =
+      !isOverHeader && this._isOverEmptyContainerBody(target, type, e.target as Element | null);
     let insertEdge: 'before' | 'after' | 'inside' = 'after';
-    if (hasHeaderDropZone && isOverHeader && header) {
+    if (isOverEmptyBody) {
+      insertEdge = 'inside';
+    } else if (hasHeaderDropZone && isOverHeader && header) {
       const headerRect = header.getBoundingClientRect();
       const headerY = e.clientY;
       const topZone = headerRect.top + headerRect.height * 0.25;
@@ -12595,7 +12632,7 @@ export class LayoutTab extends LitElement {
       insertEdge = headerY < topZone ? 'before' : headerY > bottomZone ? 'after' : 'inside';
     }
     let boundary: { element: HTMLElement; edge: 'before' | 'after' } | null = null;
-    if (!isOverHeader && rect.height) {
+    if (!isOverHeader && !isOverEmptyBody && rect.height) {
       boundary = this._resolveListBoundary(target, e.clientY);
       insertEdge = boundary.edge;
     }
@@ -12796,6 +12833,26 @@ export class LayoutTab extends LitElement {
         el.dataset.moduleIndex != null ? parseInt(el.dataset.moduleIndex, 10) : undefined,
       childIndex: el.dataset.childIndex != null ? parseInt(el.dataset.childIndex, 10) : undefined,
     };
+  }
+
+  /**
+   * True when the pointer is over a container's own children area and that area has
+   * no child nodes yet. Before/after resolution would otherwise pick a boundary in
+   * the *parent* list, so dropping into a freshly added column or layout only worked
+   * from the header's middle band (issue #127).
+   */
+  private _isOverEmptyContainerBody(
+    node: HTMLElement,
+    type: string | null | undefined,
+    pointEl: Element | null
+  ): boolean {
+    if (!pointEl) return false;
+    if (type !== 'column' && type !== 'layout' && type !== 'nested-layout') return false;
+    const body = Array.from(node.children).find(c =>
+      c.classList.contains('tree-node-children')
+    ) as HTMLElement | undefined;
+    if (!body || !body.contains(pointEl)) return false;
+    return !body.querySelector('.tree-node');
   }
 
   /** Resolve a single shared boundary between items using list order (no dual zones). */
@@ -18896,6 +18953,16 @@ export class LayoutTab extends LitElement {
       isNested,
     } = selected;
 
+    if (selected.isDeepNested) {
+      const layout = this._ensureLayout();
+      const newLayout = JSON.parse(JSON.stringify(layout));
+      const target = this._resolveDeepNestedSelection(newLayout);
+      if (!target) return;
+      Object.assign(target.modules[target.index], updates);
+      this._updateLayout(newLayout);
+      return;
+    }
+
     if (rowIndex === undefined || columnIndex === undefined || moduleIndex === undefined) {
       return;
     }
@@ -22661,7 +22728,9 @@ export class LayoutTab extends LitElement {
 
     // Level-4 path: Column → layout (e.g. Popup) → layout → layout → leaf (no tabs/sections)
     let module: any;
-    if (
+    if (selected.isDeepNested) {
+      module = this._resolveDeepNestedSelection(layout)?.modules[childIndex];
+    } else if (
       selected.isLevel4 &&
       selected.nestedLayoutIndex !== undefined &&
       selected.deepLayoutIndex !== undefined &&
@@ -22874,35 +22943,39 @@ export class LayoutTab extends LitElement {
 
     const layout = this._ensureLayout();
 
-    // Get the tabs module
-    let tabsModule: any;
-    if (isNested && parentLayoutChildIndex !== undefined) {
-      const parentLayout = layout.rows[rowIndex].columns[columnIndex].modules[moduleIndex] as any;
-      tabsModule = parentLayout.modules[parentLayoutChildIndex];
-    } else {
-      tabsModule = layout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
-    }
-
-    // Handle direct children, nested layout children, and deeply nested layout children
+    // Handle path-addressed children, direct children, nested layout children,
+    // and deeply nested layout children
     let module: any;
-    if (
-      layoutChildIndex !== undefined &&
-      nestedChildIndex !== undefined &&
-      deepNestedChildIndex !== undefined
-    ) {
-      // Deeply nested layout child (3 levels deep)
-      const section = tabsModule?.sections?.[sectionIndex];
-      const layoutModule = section?.modules?.[layoutChildIndex];
-      const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
-      module = nestedLayoutModule?.modules?.[deepNestedChildIndex];
-    } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
-      // Nested layout child
-      const section = tabsModule?.sections?.[sectionIndex];
-      const layoutModule = section?.modules?.[layoutChildIndex];
-      module = layoutModule?.modules?.[nestedChildIndex];
-    } else if (childIndex !== undefined) {
-      // Direct tabs section child
-      module = tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex];
+    if (this._selectedTabsSectionChild.isDeepNested) {
+      module = this._resolveDeepNestedSelection(layout)?.modules[childIndex!];
+    } else {
+      let tabsModule: any;
+      if (isNested && parentLayoutChildIndex !== undefined) {
+        const parentLayout = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex] as any;
+        tabsModule = parentLayout?.modules?.[parentLayoutChildIndex];
+      } else {
+        tabsModule = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+      }
+
+      if (
+        layoutChildIndex !== undefined &&
+        nestedChildIndex !== undefined &&
+        deepNestedChildIndex !== undefined
+      ) {
+        // Deeply nested layout child (3 levels deep)
+        const section = tabsModule?.sections?.[sectionIndex];
+        const layoutModule = section?.modules?.[layoutChildIndex];
+        const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
+        module = nestedLayoutModule?.modules?.[deepNestedChildIndex];
+      } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
+        // Nested layout child
+        const section = tabsModule?.sections?.[sectionIndex];
+        const layoutModule = section?.modules?.[layoutChildIndex];
+        module = layoutModule?.modules?.[nestedChildIndex];
+      } else if (childIndex !== undefined) {
+        // Direct tabs section child
+        module = tabsModule?.sections?.[sectionIndex]?.modules?.[childIndex];
+      }
     }
 
     if (!module) {
@@ -23114,6 +23187,10 @@ export class LayoutTab extends LitElement {
     if (!this._selectedTabsSectionChild) return;
 
     const selected = this._selectedTabsSectionChild as any;
+    if (selected.isDeepNested && selected.deepNestedPath && selected.childIndex !== undefined) {
+      this._duplicateDeepNestedChild(selected.deepNestedPath, selected.childIndex);
+      return;
+    }
     const {
       rowIndex,
       columnIndex,
@@ -23238,6 +23315,10 @@ export class LayoutTab extends LitElement {
     if (!this._selectedTabsSectionChild) return;
 
     const selected = this._selectedTabsSectionChild as any;
+    if (selected.isDeepNested && selected.deepNestedPath && selected.childIndex !== undefined) {
+      this._deleteDeepNestedChild(selected.deepNestedPath, selected.childIndex);
+      return;
+    }
     const {
       rowIndex,
       columnIndex,
@@ -31861,6 +31942,13 @@ export class LayoutTab extends LitElement {
         border-color: var(--primary-color);
         color: var(--primary-color);
         background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.05);
+      }
+
+      /* Empty container being dropped into: light up its own add-module slot too */
+      .tree-node.drag-over > .tree-node-children > .tree-add-button-container > .tree-add-btn {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.12);
       }
 
       .tree-add-btn ha-icon {

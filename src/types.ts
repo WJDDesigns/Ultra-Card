@@ -1499,6 +1499,12 @@ export interface IconModule extends BaseModule {
   columns?: number | undefined;
   gap?: number | undefined;
   allow_wrap?: boolean | undefined; // Allow grid items to wrap to new rows
+  // Per-item layout (same controls as the Info module). Defaults keep the
+  // classic icon-above-text look.
+  icon_position?: 'left' | 'top' | 'right' | 'bottom' | undefined;
+  content_distribution?: 'normal' | 'space-between' | 'space-around' | 'space-evenly' | undefined;
+  overall_alignment?: 'left' | 'center' | 'right' | undefined;
+  name_alignment?: 'start' | 'center' | 'end' | undefined;
   // Global action configuration (for the module container)
   tap_action?:
     | {
@@ -2094,6 +2100,13 @@ export interface PopupModule extends BaseModule {
   trigger_image_full_width?: boolean | undefined;
   trigger_icon_size?: number | undefined;
   trigger_icon_color?: string | undefined;
+  // Trigger icon styling (mirrors the Icon module's icon background options)
+  trigger_icon_background?: 'none' | 'circle' | 'rounded-square' | undefined;
+  trigger_icon_background_color?: string | undefined;
+  trigger_icon_background_padding?: number | undefined;
+  trigger_icon_use_entity_color?: boolean | undefined;
+  trigger_icon_color_entity?: string | undefined;
+  trigger_icon_state_colors?: { [state: string]: string } | undefined;
 
   // Trigger button styling (mirrors ButtonModule styling options)
   trigger_button_style?:
@@ -2133,6 +2146,9 @@ export interface PopupModule extends BaseModule {
     | 'slide_right'
     | 'slide_bottom'
     | undefined;
+  open_animation_duration?: number | undefined; // ms, default 400
+  open_animation_easing?: 'ease' | 'ease-out' | 'ease-in-out' | 'linear' | 'spring' | undefined;
+  open_animation_from_edge?: boolean | undefined; // slide animations start off-screen
 
   // Popup styling
   popup_width?: string | undefined; // '600px', '100%', '14rem', '10vw'
