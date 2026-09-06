@@ -403,20 +403,52 @@ const HILLARY_TAUPE_INK = '#6f5a40'; // taupe deepened for secondary text (5.1:1
 const HILLARY_HAIRLINE = 'rgba(139, 115, 85, 0.35)'; // taupe hairline
 const HILLARY_SHADOW = 'rgba(30, 47, 75, 0.14)'; // navy-tinted shadow
 
+// Hydrangea heads for Hillary: a mophead of four-petal florets over two sage
+// leaves, in a dusty blue and a blush. Florets are laid out by hand so the
+// cluster reads as one bloom, with a darker shade toward the shadow side.
+type HydrangeaShades = { light: string; mid: string; deep: string; eye: string };
+const HYDRANGEA_FLORETS: ReadonlyArray<readonly [number, number, number, 0 | 1 | 2]> = [
+  [60, 34, 9, 0], [44, 40, 9, 0], [76, 40, 9, 1], [30, 52, 9, 1], [58, 50, 10, 0], [88, 54, 9, 1],
+  [40, 64, 10, 1], [70, 64, 10, 0], [26, 74, 8, 2], [52, 76, 9, 1], [82, 76, 9, 2], [38, 86, 8, 2],
+  [64, 88, 9, 2], [92, 66, 7, 2], [48, 28, 6, 0], [74, 28, 6, 0], [20, 62, 6, 2],
+];
+function hydrangeaSvg(c: HydrangeaShades): string {
+  const shade = [c.light, c.mid, c.deep];
+  const florets = HYDRANGEA_FLORETS.map(([x, y, r, k]) => {
+    const p = r * 0.62;
+    return `<g transform='translate(${x} ${y})' fill='${shade[k]}' fill-opacity='.92'><circle cx='${-p}' cy='0' r='${p}'/><circle cx='${p}' cy='0' r='${p}'/><circle cx='0' cy='${-p}' r='${p}'/><circle cx='0' cy='${p}' r='${p}'/><circle r='${(p * 0.4).toFixed(1)}' fill='${c.eye}'/></g>`;
+  }).join('');
+  return svgDataUrl(`
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'>
+  <g fill='#8a9a7b'>
+    <path d='M14 98 C30 70 62 78 78 100 C56 116 28 116 14 98Z'/>
+    <path d='M70 104 C80 84 106 84 114 100 C102 112 82 114 70 104Z' fill='#7c8d6e'/>
+  </g>
+  <g stroke='#6c7c5f' stroke-width='1' fill='none' stroke-linecap='round'>
+    <path d='M18 99 C40 92 58 92 76 100 M74 104 C86 96 100 96 112 100'/>
+  </g>
+  ${florets}
+</svg>`);
+}
+const HILLARY_HYDRANGEA_BLUE = hydrangeaSvg({ light: '#a7bad6', mid: '#8fa5c4', deep: '#7489a8', eye: '#e4ebf5' });
+const HILLARY_HYDRANGEA_BLUSH = hydrangeaSvg({ light: '#e6c9cc', mid: '#d9b3b8', deep: '#c497a0', eye: '#f7ecec' });
+
 /**
  * "Hillary": a Nancy Meyers kitchen in Ralph Lauren tailoring. Linen
  * surfaces, pine ink for text, gold for the accent, a navy-tinted shadow and
- * an editorial serif. Cards carry a fine gold piping along the top edge. The
- * palette is pinned, so it reads the same over light and dark HA themes: this
- * one is the room, not a filter on it.
+ * an editorial serif. Cards carry a fine gold piping along the top edge, and
+ * here and there a hydrangea head (dusty blue or blush over sage leaves)
+ * tucks into a corner, placed by the card's seeds so no two cards match and
+ * some carry none. The palette is pinned, so it reads the same over light and
+ * dark HA themes: this one is the room, not a filter on it.
  */
 export const HILLARY_THEME: UcThemeDefinition = {
   id: 'hillary',
   name: 'Hillary',
-  version: 1,
+  version: 2,
   author: 'Ultra Card',
   description:
-    'Linen, pine ink and taupe with gold accents. A Nancy Meyers palette in Ralph Lauren tailoring: warm, elevated, unhurried.',
+    'Linen, pine ink and taupe with gold accents, a hydrangea tucked into the odd corner. A Nancy Meyers palette in Ralph Lauren tailoring: warm, elevated, unhurried.',
   icon: 'mdi:flower-tulip-outline',
   source: 'builtin',
   tokens: {
@@ -468,6 +500,24 @@ export const HILLARY_THEME: UcThemeDefinition = {
   },
   css: `
 .card-container {
+  /* Which corners get a bloom, from the card's seeds. */
+  --h-s1: var(--uc-card-seed-1, 0.5);
+  --h-s2: var(--uc-card-seed-2, 0.5);
+  --h-s3: var(--uc-card-seed-3, 0.5);
+  --h-size: calc(96px + var(--h-s3) * 40px);
+  /* 0 or 1: the blue head sits top-right or bottom-right; the blush head keeps to the bottom-left, clear of titles. */
+  --h-side: clamp(0, (var(--h-s2) - 0.5) * 100, 1);
+  /* Each head shows only when its seed clears the bar; otherwise its size collapses to 0. */
+  --h-blue: calc(clamp(0, (var(--h-s1) - 0.35) * 20, 1) * var(--h-size));
+  --h-blush: calc(clamp(0, (var(--h-s3) - 0.55) * 20, 1) * var(--h-size) * 0.85);
+  background-color: ${HILLARY_LINEN} !important;
+  /* Blue head off the right edge, blush head off the bottom-left, each cropped by the corner. */
+  background-image: ${HILLARY_HYDRANGEA_BLUE}, ${HILLARY_HYDRANGEA_BLUSH} !important;
+  background-repeat: no-repeat !important;
+  background-size: var(--h-blue) var(--h-blue), var(--h-blush) var(--h-blush) !important;
+  background-position:
+    calc(100% + var(--h-size) * 0.3 - var(--h-s2) * 12px) calc(var(--h-size) * -0.3 + var(--h-side) * (100% + var(--h-size) * 0.55)),
+    calc(var(--h-size) * -0.3 + var(--h-s1) * 10px) calc(100% + var(--h-size) * 0.22) !important;
   /* Gold piping along the top edge, then the navy-tinted shadow. */
   box-shadow:
     inset 0 2px 0 ${HILLARY_GOLD},
